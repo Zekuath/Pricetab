@@ -16,7 +16,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Whale alert integration
 - Keyboard shortcuts
 - Portfolio tracking (optional)
-- Multi-language support
 
 ---
 

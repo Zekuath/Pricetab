@@ -81,7 +81,7 @@ And 55+ more...
 TECHNICAL DETAILS
 
 - Manifest V3 compliant
-- Minimal permissions (storage only)
+- Zero permissions required
 - All JavaScript bundled locally
 - No external CDN dependencies
 - Lightweight and fast
@@ -194,18 +194,4 @@ Before submitting, verify:
 | Small Tile | `assets/promotional/Small Tile.png` | 440x280 |
 | Large Tile | `assets/promotional/Large Tile.png` | 920x680 |
 | Marquee | `assets/promotional/Marquee.png` | 1400x560 |
-
----
-
-## Turkish Version (Future)
-
-### Kisa Aciklama
-```
-Her yeni sekmede canli kripto para grafikleri. 75+ coin takibi. Gizlilik oncelikli, hesap gerektirmez.
-```
-
-### Uzun Aciklama (Ozet)
-```
-PriceTab, her yeni sekmenizi canli kripto para panosu haline getirir. 75+ kripto para birimi icin gercek zamanli fiyat grafikleri. Hizli, guvenli ve tamamen ucretsiz.
-```
 

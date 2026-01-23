@@ -1,5 +1,7 @@
 # PriceTab
 
+![PriceTab Banner](assets/promotional/Marquee.png)
+
 **Live cryptocurrency price charts on every new tab.**
 
 A lightweight, privacy-focused Chrome extension that transforms your new tab into a real-time crypto dashboard. No accounts, no tracking, just data.

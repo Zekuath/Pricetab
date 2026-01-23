@@ -417,7 +417,6 @@ const loadThemeFromStorage = () => {
     }
     return "auto"; // Default to auto
   } catch (error) {
-    console.error("Failed to load theme from localStorage:", error);
     return "auto";
   }
 };
@@ -426,7 +425,7 @@ const saveThemeToStorage = (theme) => {
   try {
     localStorage.setItem(THEME_STORAGE_KEY, theme);
   } catch (error) {
-    console.error("Failed to save theme to localStorage:", error);
+    // Silently fail
   }
 };
 
@@ -463,7 +462,6 @@ const loadRefreshIntervalFromStorage = () => {
     }
     return DEFAULT_REFRESH_INTERVAL;
   } catch (error) {
-    console.error("Failed to load refresh interval from localStorage:", error);
     return DEFAULT_REFRESH_INTERVAL;
   }
 };
@@ -472,7 +470,7 @@ const saveRefreshIntervalToStorage = (interval) => {
   try {
     localStorage.setItem(REFRESH_INTERVAL_STORAGE_KEY, interval.toString());
   } catch (error) {
-    console.error("Failed to save refresh interval to localStorage:", error);
+    // Silently fail
   }
 };
 
@@ -491,7 +489,6 @@ const loadDecimalPlacesFromStorage = () => {
     }
     return DEFAULT_DECIMAL_PLACES;
   } catch (error) {
-    console.error("Failed to load decimal places from localStorage:", error);
     return DEFAULT_DECIMAL_PLACES;
   }
 };
@@ -500,7 +497,7 @@ const saveDecimalPlacesToStorage = (places) => {
   try {
     localStorage.setItem(DECIMAL_PLACES_STORAGE_KEY, places.toString());
   } catch (error) {
-    console.error("Failed to save decimal places to localStorage:", error);
+    // Silently fail
   }
 };
 
@@ -512,7 +509,6 @@ const loadSeparatorFormatFromStorage = () => {
     }
     return DEFAULT_SEPARATOR_FORMAT;
   } catch (error) {
-    console.error("Failed to load separator format from localStorage:", error);
     return DEFAULT_SEPARATOR_FORMAT;
   }
 };
@@ -521,7 +517,7 @@ const saveSeparatorFormatToStorage = (format) => {
   try {
     localStorage.setItem(SEPARATOR_FORMAT_STORAGE_KEY, format);
   } catch (error) {
-    console.error("Failed to save separator format to localStorage:", error);
+    // Silently fail
   }
 };
 
@@ -534,7 +530,6 @@ const loadCurrencyFromStorage = () => {
     }
     return DEFAULT_CURRENCY;
   } catch (error) {
-    console.error("Failed to load currency from localStorage:", error);
     return DEFAULT_CURRENCY;
   }
 };
@@ -543,7 +538,7 @@ const saveCurrencyToStorage = (currency) => {
   try {
     localStorage.setItem(CURRENCY_STORAGE_KEY, currency);
   } catch (error) {
-    console.error("Failed to save currency to localStorage:", error);
+    // Silently fail
   }
 };
 
@@ -565,7 +560,7 @@ const loadCoinOptionsFromStorage = () => {
       }
     }
   } catch (e) {
-    console.warn("Failed to load coin options from localStorage:", e);
+    // Silently fail
   }
   return DEFAULT_COIN_OPTIONS.slice();
 };
@@ -574,7 +569,7 @@ const saveCoinOptionsToStorage = (coinOptions) => {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(coinOptions));
   } catch (e) {
-    console.warn("Failed to save coin options to localStorage:", e);
+    // Silently fail
   }
 };
 
@@ -605,7 +600,6 @@ const updateTabTitle = (coinOptions, coinIndex, currentValue, valueHistory) => {
       document.title = activeCoin;
     }
   } catch (e) {
-    console.warn("Failed to update tab title:", e);
     document.title = "New Tab";
   }
 };
@@ -2911,8 +2905,6 @@ class CryptoChart extends PureComponent {
         if (e.name === "AbortError") {
           return;
         }
-
-        console.warn(e);
 
         // Clear skeleton timer
         if (this.skeletonTimer) {

@@ -65,13 +65,12 @@ Since we're now only using local scripts, we removed the CSP directive entirely 
 ```json
 {
   "manifest_version": 3,
-  "name": "CryptoTab",
+  "name": "PriceTab",
   "version": "1.0.0",
   "description": "Live cryptocurrency price charts on every new tab",
   "chrome_url_overrides": {
     "newtab": "index.html"
   },
-  "permissions": ["storage"],
   "icons": {
     "16": "assets/icons/icon16.png",
     "48": "assets/icons/icon48.png",

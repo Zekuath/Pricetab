@@ -9,7 +9,7 @@
 | Metric | Value |
 |--------|-------|
 | **Current Version** | 1.0.0 |
-| **Status** | Pre-Launch (Security Hardened) |
+| **Status** | Chrome Web Store Ready |
 | **Codebase Size** | ~3,400 lines |
 | **Next Milestone** | Chrome Web Store Launch |
 | **Security Status** | Input validation complete |
@@ -127,8 +127,8 @@ Core functionality that has been implemented and tested.
 #### Console & Errors
 | Task | Status | Priority |
 |------|--------|----------|
-| Clear all console errors | [ ] | Critical |
-| Clear all console warnings | [ ] | High |
+| Clear all console errors | [x] | Critical |
+| Clear all console warnings | [x] | High |
 | No uncaught promise rejections | [ ] | High |
 | No memory leaks (1h runtime test) | [ ] | Medium |
 
@@ -136,10 +136,10 @@ Core functionality that has been implemented and tested.
 
 | Task | Status | Notes |
 |------|--------|-------|
-| Verify minimal permissions | [ ] | Only `storage` needed |
-| Check CSP compliance | [ ] | No inline scripts |
-| Validate icon sizes (16, 48, 128) | [ ] | All present |
-| Test manifest.json validity | [ ] | Chrome validates |
+| Verify minimal permissions | [x] | Zero permissions required |
+| Check CSP compliance | [x] | No inline scripts |
+| Validate icon sizes (16, 48, 128) | [x] | All present |
+| Test manifest.json validity | [x] | Chrome validates |
 
 ---
 
@@ -381,7 +381,7 @@ High-impact, low-effort tasks for immediate value.
 | Take store screenshots | Low | Critical | 1 | [x] Done |
 | Write store description | Low | Critical | 1 | [x] Done |
 | Create promotional tiles | Low | Critical | 1 | [x] Done |
-| Clear console errors/warnings | Low | High | 1 | [ ] |
+| Clear console errors/warnings | Low | High | 1 | [x] Done |
 | Add keyboard shortcut: ←/→ | Low | High | 2 | [ ] |
 | Add keyboard shortcut: 1-6 | Low | High | 2 | [ ] |
 | Add "retry" button on error | Low | Medium | 2 | [ ] |

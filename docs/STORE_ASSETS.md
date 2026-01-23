@@ -268,11 +268,6 @@ Productivity
 English (United States)
 ```
 
-**Additional Languages** (optional):
-```
-Turkish (Türkçe) - for future releases
-```
-
 ---
 
 ## 📊 Asset Creation Checklist
