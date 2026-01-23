@@ -1,0 +1,174 @@
+# Privacy Policy for PriceTab
+
+**Last Updated:** January 23, 2026
+**Effective Date:** January 23, 2026
+
+## Introduction
+
+PriceTab ("we", "our", or "the extension") is committed to protecting your privacy. This Privacy Policy explains how we handle information when you use our Chrome browser extension.
+
+## Information We Collect
+
+### Data Stored Locally
+
+PriceTab stores the following information **locally on your device only**:
+
+- **Cryptocurrency Preferences**: The list of cryptocurrency symbols you select (e.g., BTC, ETH, SOL)
+- **Coin Order**: The order in which you arrange your selected coins
+
+This data is stored using the browser's `localStorage` API and **never leaves your device**.
+
+### Data We DO NOT Collect
+
+We want to be clear about what we DON'T do:
+
+- ❌ We do NOT collect any personal information
+- ❌ We do NOT collect your browsing history
+- ❌ We do NOT track your activity
+- ❌ We do NOT use cookies for tracking
+- ❌ We do NOT share any data with third parties
+- ❌ We do NOT use analytics or telemetry
+- ❌ We do NOT store data on our servers (we don't have any servers)
+- ❌ We do NOT sell or monetize user data in any way
+
+## Third-Party Services
+
+### Coinbase Public API
+
+PriceTab fetches cryptocurrency price data from the Coinbase Public API:
+- **Endpoint**: `https://www.coinbase.com/api/v2/prices/`
+- **Purpose**: Display real-time cryptocurrency prices and historical charts
+- **Data Sent**: Only the cryptocurrency symbol (e.g., "BTC-USD") and time period
+- **Authentication**: None required - this is a public API
+- **Privacy**: Please refer to [Coinbase's Privacy Policy](https://www.coinbase.com/legal/privacy) for how they handle API requests
+
+### CDN Services (Local Vendor Files)
+
+PriceTab loads the following JavaScript libraries from local vendor files:
+- React (UI framework)
+- D3.js (chart rendering)
+- styled-components (styling)
+
+These are loaded from local files in the extension (no external requests).
+
+## Data Storage Location
+
+All preference data is stored:
+- **Where**: Locally in your Chrome browser's localStorage
+- **Encryption**: Not encrypted (data is not sensitive - just coin symbols)
+- **Access**: Only accessible by this extension
+- **Persistence**: Remains until you clear browser data or uninstall the extension
+- **Size**: Typically 50-100 bytes (your coin list)
+
+## Data Sharing
+
+**We do not share any data because we do not collect any data.**
+
+Your cryptocurrency preferences never leave your device and are not transmitted to us or any third party.
+
+## Children's Privacy
+
+PriceTab does not knowingly collect any information from anyone, including children under 13. The extension does not require any personal information to function.
+
+## Data Retention
+
+- **Local Data**: Your coin preferences remain in localStorage until you:
+  - Clear your browser data
+  - Uninstall the extension
+  - Manually reset preferences
+
+- **We Have No Server Data**: We cannot retain data because we don't collect it in the first place.
+
+## Your Rights and Choices
+
+You have complete control over your data:
+
+### View Your Data
+Open the browser console on any new tab and run:
+```javascript
+localStorage.getItem('crypto_chart_coin_options')
+```
+
+### Delete Your Data
+You can delete all extension data by:
+1. Opening the browser console on any new tab
+2. Running: `localStorage.removeItem('crypto_chart_coin_options')`
+3. Refreshing the page
+
+Or simply uninstall the extension.
+
+### Export Your Data
+Your data is just a JSON array of coin symbols. You can copy it from the console at any time.
+
+## Security
+
+While we implement reasonable security measures:
+- Data is stored using standard browser localStorage APIs
+- We use HTTPS for all API calls
+- We do not execute arbitrary code from external sources
+- We follow Chrome extension security best practices
+
+However, localStorage is not encrypted. Since we only store non-sensitive data (coin symbols), this is acceptable.
+
+## Changes to This Privacy Policy
+
+We may update this Privacy Policy from time to time. We will notify users of any material changes by:
+- Updating the "Last Updated" date at the top of this policy
+- Posting a notice in the extension description
+- Requiring acceptance of updated policy (if necessary)
+
+Your continued use of PriceTab after any changes constitutes acceptance of the new Privacy Policy.
+
+## Open Source
+
+PriceTab is open source. You can review our code at:
+- **GitHub Repository**: https://github.com/zekuath/pricetab
+- **License**: MIT License
+
+We encourage security researchers to review our code and report any concerns.
+
+## Contact Us
+
+If you have any questions about this Privacy Policy or our practices, please contact us:
+
+- **GitHub Issues**: https://github.com/zekuath/pricetab/issues
+
+## Compliance
+
+### GDPR Compliance (EU)
+Since we do not collect, process, or store any personal data:
+- No data subject rights are applicable (there is no data to access, modify, or delete beyond what's in your local browser)
+- No Data Protection Officer is required
+- No data processing agreements are needed
+
+### CCPA Compliance (California)
+We do not sell personal information because we do not collect personal information.
+
+### Other Jurisdictions
+We do not collect personal data, so most privacy regulations do not apply.
+
+## Disclaimer
+
+This extension is provided "as is" without warranty. We are not responsible for:
+- Accuracy of data from Coinbase API
+- Financial decisions made based on displayed information
+- Service interruptions or API downtime
+
+**This extension is for informational purposes only and does not constitute financial advice.**
+
+---
+
+## Summary (TL;DR)
+
+✅ **What we store**: Only your coin preferences, locally on your device
+✅ **What we collect**: Nothing
+✅ **What we share**: Nothing
+✅ **Third parties**: Only Coinbase API for price data
+✅ **Your control**: Delete data anytime by clearing localStorage or uninstalling
+
+**We respect your privacy because we simply don't collect any data.**
+
+---
+
+**PriceTab Privacy Policy v1.0.0**
+Last Updated: January 23, 2026

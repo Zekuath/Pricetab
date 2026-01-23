@@ -1,0 +1,27 @@
+# AI Development Files
+CLAUDE.md
+docs/AI_GUIDELINES.md
+docs/MEMORY.md
+.claude/
+
+# macOS
+.DS_Store
+._*
+
+# Windows
+Thumbs.db
+desktop.ini
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Logs
+*.log
+npm-debug.log*
+
+# Temporary files
+*.tmp
+*.temp
