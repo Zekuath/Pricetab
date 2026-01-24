@@ -407,6 +407,20 @@ const REFRESH_INTERVAL_STORAGE_KEY = "crypto_chart_refresh_interval";
 const DECIMAL_PLACES_STORAGE_KEY = "crypto_chart_decimal_places";
 const SEPARATOR_FORMAT_STORAGE_KEY = "crypto_chart_separator_format";
 const CURRENCY_STORAGE_KEY = "crypto_chart_currency";
+const TICKER_STORAGE_KEY = "crypto_chart_ticker_enabled";
+const TICKER_FORMAT_STORAGE_KEY = "crypto_chart_ticker_format";
+
+// Ticker constants
+const DEFAULT_TICKER_ENABLED = false;
+const DEFAULT_TICKER_FORMAT = "compact"; // 'compact' (43.2K) or 'full' ($43,250)
+const TICKER_SCROLL_INTERVAL = 250; // 250ms for smooth scrolling effect
+const TICKER_SCROLL_CHARS = 1; // Characters to scroll each interval
+
+// Ticker format options
+const TICKER_FORMAT_OPTIONS = [
+  { value: "compact", label: "Compact (43.2K)" },
+  { value: "full", label: "Full ($43,250)" },
+];
 
 // Theme helper functions
 const loadThemeFromStorage = () => {
@@ -539,6 +553,73 @@ const saveCurrencyToStorage = (currency) => {
     localStorage.setItem(CURRENCY_STORAGE_KEY, currency);
   } catch (error) {
     // Silently fail
+  }
+};
+
+// Ticker helper functions
+const loadTickerFromStorage = () => {
+  try {
+    const saved = localStorage.getItem(TICKER_STORAGE_KEY);
+    if (saved !== null) {
+      return saved === "true";
+    }
+    return DEFAULT_TICKER_ENABLED;
+  } catch (error) {
+    return DEFAULT_TICKER_ENABLED;
+  }
+};
+
+const saveTickerToStorage = (enabled) => {
+  try {
+    localStorage.setItem(TICKER_STORAGE_KEY, enabled.toString());
+  } catch (error) {
+    // Silently fail
+  }
+};
+
+const loadTickerFormatFromStorage = () => {
+  try {
+    const saved = localStorage.getItem(TICKER_FORMAT_STORAGE_KEY);
+    if (saved && TICKER_FORMAT_OPTIONS.some((opt) => opt.value === saved)) {
+      return saved;
+    }
+    return DEFAULT_TICKER_FORMAT;
+  } catch (error) {
+    return DEFAULT_TICKER_FORMAT;
+  }
+};
+
+const saveTickerFormatToStorage = (format) => {
+  try {
+    localStorage.setItem(TICKER_FORMAT_STORAGE_KEY, format);
+  } catch (error) {
+    // Silently fail
+  }
+};
+
+// Format price for ticker (compact or full)
+const formatTickerPrice = (price, currencySymbol, format, decimalPlaces, separatorFormat) => {
+  if (typeof price !== "number" || isNaN(price)) {
+    return "—";
+  }
+
+  if (format === "compact") {
+    // Compact format: 43.2K, 1.5M, etc.
+    const absPrice = Math.abs(price);
+    let formatted;
+    if (absPrice >= 1000000) {
+      formatted = (price / 1000000).toFixed(2) + "M";
+    } else if (absPrice >= 1000) {
+      formatted = (price / 1000).toFixed(1) + "K";
+    } else if (absPrice >= 1) {
+      formatted = price.toFixed(2);
+    } else {
+      formatted = price.toFixed(4);
+    }
+    return formatted;
+  } else {
+    // Full format with currency symbol
+    return formatNumberString(price, currencySymbol, true, false, decimalPlaces, separatorFormat);
   }
 };
 
@@ -1921,6 +2002,74 @@ const ThemeDescription = styled.p`
   line-height: 1.4;
 `;
 
+// Toggle Switch Components
+const ToggleSection = styled.div`
+  margin: 0 auto ${({ theme }) => theme.spacing.medium}rem;
+  padding: 0 0 ${({ theme }) => theme.spacing.medium}rem;
+  border-bottom: 1px solid ${({ theme }) => theme.color.border};
+  width: 100%;
+  max-width: 20rem;
+`;
+
+const ToggleSectionTitle = styled.div`
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  opacity: 0.8;
+  text-align: center;
+  margin-bottom: 0.25rem;
+`;
+
+const ToggleSectionDesc = styled.div`
+  font-size: 0.65rem;
+  opacity: 0.5;
+  text-align: center;
+  margin-bottom: ${({ theme }) => theme.spacing.small}rem;
+`;
+
+const ToggleRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: ${({ theme }) => theme.spacing.medium}rem;
+`;
+
+const ToggleLabel = styled.label`
+  font-size: 0.7rem;
+  opacity: 0.6;
+`;
+
+const ToggleSwitch = styled.button`
+  position: relative;
+  width: 44px;
+  height: 24px;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  background-color: ${({ active, theme }) =>
+    active ? theme.color.text : theme.color.border};
+  transition: background-color 0.2s ease;
+  flex-shrink: 0;
+
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px ${({ theme }) => theme.color.text}40;
+  }
+
+  &::after {
+    content: "";
+    position: absolute;
+    top: 2px;
+    left: ${({ active }) => (active ? "22px" : "2px")};
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background-color: ${({ active, theme }) =>
+      active ? theme.color.bg : theme.color.text};
+    transition: left 0.2s ease;
+  }
+`;
+
 const RefreshIntervalSection = styled.div`
   margin: 0 auto ${({ theme }) => theme.spacing.medium}rem;
   padding: 0 0 ${({ theme }) => theme.spacing.medium}rem;
@@ -2364,6 +2513,10 @@ class SettingsPanel extends PureComponent {
       onSeparatorFormatChange,
       currency,
       onCurrencyChange,
+      tickerEnabled,
+      onTickerChange,
+      tickerFormat,
+      onTickerFormatChange,
     } = this.props;
     const { feedback, status, pendingCoin, suggestions, activeTab } =
       this.state;
@@ -2635,7 +2788,51 @@ class SettingsPanel extends PureComponent {
                   )
                 )
               )
-            )
+            ),
+
+            // Tab Ticker Section
+            React.createElement(
+              ToggleSection,
+              null,
+              React.createElement(ToggleSectionTitle, null, "Tab Ticker"),
+              React.createElement(ToggleSectionDesc, null, "Scroll prices in browser tab"),
+              React.createElement(
+                ToggleRow,
+                null,
+                React.createElement(ToggleLabel, null, tickerEnabled ? "On" : "Off"),
+                React.createElement(ToggleSwitch, {
+                  active: tickerEnabled,
+                  onClick: () => onTickerChange && onTickerChange(!tickerEnabled),
+                  "aria-label": "Toggle tab ticker",
+                })
+              )
+            ),
+
+            // Ticker Format Section (only show when ticker is enabled)
+            tickerEnabled &&
+              React.createElement(
+                RefreshIntervalSection,
+                null,
+                React.createElement(RefreshIntervalLabel, null, "Ticker Format"),
+                React.createElement(
+                  RefreshIntervalSelect,
+                  {
+                    value: tickerFormat || DEFAULT_TICKER_FORMAT,
+                    onChange: (e) => {
+                      if (onTickerFormatChange) {
+                        onTickerFormatChange(e.target.value);
+                      }
+                    },
+                  },
+                  TICKER_FORMAT_OPTIONS.map((option) =>
+                    React.createElement(
+                      "option",
+                      { key: option.value, value: option.value },
+                      option.label
+                    )
+                  )
+                )
+              )
           )
       )
     );
@@ -2677,7 +2874,13 @@ class CryptoChart extends PureComponent {
       showSkeleton: false, // Delayed skeleton (shows after 300ms)
       invalidCoin: null, // Invalid coin warning
       apiError: false, // API failure state
+      tickerEnabled: loadTickerFromStorage(), // Tab ticker mode
+      tickerFormat: loadTickerFormatFromStorage(), // 'compact' or 'full'
+      tickerText: "", // Full ticker string
     });
+
+    // Ticker scroll position (class property to avoid re-renders)
+    this.tickerScrollPos = 0;
 
     _defineProperty(this, "cycleCoinIndex", () => {
       this.setState(
@@ -2892,12 +3095,17 @@ class CryptoChart extends PureComponent {
           },
           () => {
             // Update tab title after state is set
+            // Always update normal title first (ticker will override when it starts)
             updateTabTitle(
               this.state.coinOptions,
               this.state.coinIndex,
               this.state.currentValue,
               this.state.valueHistory
             );
+            // Also update ticker text if ticker is running
+            if (this.state.tickerEnabled && this.tickerInterval) {
+              this.buildTickerText();
+            }
           }
         );
       } catch (e) {
@@ -3014,6 +3222,35 @@ class CryptoChart extends PureComponent {
       });
     });
 
+    _defineProperty(this, "handleTickerChange", (enabled) => {
+      saveTickerToStorage(enabled);
+      this.tickerScrollPos = 0;
+      this.setState({ tickerEnabled: enabled }, () => {
+        if (enabled) {
+          this.buildTickerText();
+          this.startTickerInterval();
+        } else {
+          this.stopTickerInterval();
+          // Reset to current coin title
+          updateTabTitle(
+            this.state.coinOptions,
+            this.state.coinIndex,
+            this.state.currentValue,
+            this.state.valueHistory
+          );
+        }
+      });
+    });
+
+    _defineProperty(this, "handleTickerFormatChange", (format) => {
+      saveTickerFormatToStorage(format);
+      this.setState({ tickerFormat: format }, () => {
+        if (this.state.tickerEnabled) {
+          this.buildTickerText();
+        }
+      });
+    });
+
     _defineProperty(this, "handleOnline", () => {
       this.setState({ isOffline: false });
       // Refetch data when coming back online
@@ -3063,9 +3300,23 @@ class CryptoChart extends PureComponent {
             true,
             coinOptions
           );
+
+          // Throttled ticker update (max once per 2 seconds during prefetch)
+          if (this.state.tickerEnabled && !this.tickerUpdatePending) {
+            this.tickerUpdatePending = true;
+            setTimeout(() => {
+              this.buildTickerText();
+              this.tickerUpdatePending = false;
+            }, 2000);
+          }
         } catch (error) {
           // Continue with next coin even if this one fails
         }
+      }
+
+      // Final ticker update after prefetch completes
+      if (this.state.tickerEnabled) {
+        this.buildTickerText();
       }
     });
 
@@ -3134,6 +3385,94 @@ class CryptoChart extends PureComponent {
         };
       });
     });
+
+    // Ticker interval methods
+    // Build the full ticker text from all coins
+    _defineProperty(this, "buildTickerText", () => {
+      const { coinOptions, currency, period, tickerFormat, decimalPlaces, separatorFormat } = this.state;
+      if (!coinOptions || coinOptions.length === 0) {
+        this.setState({ tickerText: "" });
+        return;
+      }
+
+      const curr = currency || DEFAULT_CURRENCY;
+      const currencySymbol = getCurrencySymbol(curr);
+      const parts = [];
+
+      for (const coin of coinOptions) {
+        const cachedSpot = getCachedData(coin, "current", curr, "spot");
+        const cachedHistory = getCachedData(coin, period, curr, "history");
+
+        let priceStr = "—";
+        let percentStr = "";
+
+        if (cachedSpot && cachedSpot.data) {
+          const price = cachedSpot.data;
+          priceStr = formatTickerPrice(price, currencySymbol, tickerFormat, decimalPlaces, separatorFormat);
+
+          if (cachedHistory && cachedHistory.data && cachedHistory.data.length > 0) {
+            const percentDelta = derivePercentDelta(price, cachedHistory.data);
+            if (typeof percentDelta === "number") {
+              const sign = percentDelta >= 0 ? "+" : "";
+              percentStr = ` ${sign}${percentDelta.toFixed(1)}%`;
+            }
+          }
+        }
+
+        parts.push(`${coin} ${priceStr}${percentStr}`);
+      }
+
+      // Join with separator and add padding for smooth loop
+      const tickerText = parts.join("  ●  ") + "  ●  ";
+      this.tickerScrollPos = 0;
+      this.setState({ tickerText });
+    });
+
+    _defineProperty(this, "startTickerInterval", () => {
+      this.stopTickerInterval();
+      // Build initial ticker text
+      this.buildTickerText();
+      // Start scrolling interval
+      this.tickerInterval = setInterval(() => {
+        this.scrollTickerTitle();
+      }, TICKER_SCROLL_INTERVAL);
+      // Refresh ticker text every 30 seconds to update prices
+      this.tickerRefreshInterval = setInterval(() => {
+        this.buildTickerText();
+      }, 30000);
+    });
+
+    _defineProperty(this, "stopTickerInterval", () => {
+      if (this.tickerInterval) {
+        clearInterval(this.tickerInterval);
+        this.tickerInterval = null;
+      }
+      if (this.tickerRefreshInterval) {
+        clearInterval(this.tickerRefreshInterval);
+        this.tickerRefreshInterval = null;
+      }
+    });
+
+    _defineProperty(this, "scrollTickerTitle", () => {
+      const { tickerText } = this.state;
+      if (!tickerText) {
+        document.title = "New Tab";
+        return;
+      }
+
+      const displayLength = 50;
+      const textLength = tickerText.length;
+
+      // Use slice for better performance (no loop, no string concatenation)
+      // Double the text for seamless wrap-around
+      const doubledText = tickerText + tickerText;
+      const visibleText = doubledText.slice(this.tickerScrollPos, this.tickerScrollPos + displayLength);
+
+      document.title = visibleText;
+
+      // Update scroll position without setState (avoids re-render every 250ms)
+      this.tickerScrollPos = (this.tickerScrollPos + TICKER_SCROLL_CHARS) % textLength;
+    });
   }
 
   componentDidMount() {
@@ -3172,12 +3511,22 @@ class CryptoChart extends PureComponent {
     this.cacheCleanupInterval = setInterval(cleanupCache, 120000); // 2 minutes
 
     // Prefetch top 10 coins in background (after initial load)
-    setTimeout(() => this.prefetchTopCoins(), 2000); // Wait 2 seconds after initial load
+    this.prefetchTimer = setTimeout(() => this.prefetchTopCoins(), 2000);
+
+    // Start ticker interval if enabled (delay 3s for prices to load)
+    if (this.state.tickerEnabled) {
+      this.tickerStartTimer = setTimeout(() => {
+        this.startTickerInterval();
+      }, 3000);
+    }
   }
 
   componentWillUnmount() {
     clearTimeout(this.fetchTimeout);
+    clearTimeout(this.prefetchTimer);
+    clearTimeout(this.tickerStartTimer);
     clearInterval(this.cacheCleanupInterval);
+    this.stopTickerInterval();
 
     // Cancel any ongoing requests
     if (this.abortController) {
@@ -3383,6 +3732,10 @@ class CryptoChart extends PureComponent {
             onSeparatorFormatChange: this.handleSeparatorFormatChange,
             currency: currency,
             onCurrencyChange: this.handleCurrencyChange,
+            tickerEnabled: this.state.tickerEnabled,
+            onTickerChange: this.handleTickerChange,
+            tickerFormat: this.state.tickerFormat,
+            onTickerFormatChange: this.handleTickerFormatChange,
           })
       )
     );
