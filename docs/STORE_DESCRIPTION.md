@@ -70,13 +70,9 @@ HOW TO USE
 4. Click the gear icon to customize your watchlist
 5. Use time period buttons to change the chart view
 
-SUPPORTED CRYPTOCURRENCIES
+WIDE CRYPTOCURRENCY SUPPORT
 
-Major: BTC, ETH, BNB, SOL, XRP, USDT, USDC, DOGE, ADA, AVAX
-DeFi: LINK, UNI, AAVE, MKR, SNX, COMP, CRV, SUSHI
-Layer 2: ARB, OP, MATIC, IMX, LRC
-Meme: DOGE, SHIB, PEPE, BONK, WIF, FLOKI
-And 55+ more...
+Track over 75 cryptocurrencies from the Coinbase API. Whether you follow major coins like Bitcoin and Ethereum, explore DeFi protocols, or keep an eye on meme coins, PriceTab has you covered. New coins are added regularly based on Coinbase availability.
 
 TECHNICAL DETAILS
 
