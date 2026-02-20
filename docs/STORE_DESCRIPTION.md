@@ -37,7 +37,7 @@ Real-Time Price Charts
 Live data updated every 30 seconds. Smooth, interactive charts powered by D3.js with elegant animations.
 
 75+ Cryptocurrencies
-Bitcoin, Ethereum, Solana, XRP, Dogecoin, Cardano, and 70+ more. All major coins supported via Coinbase API.
+From major market leaders to emerging altcoins, track over 75 different cryptocurrencies. All data sourced directly from the Coinbase API.
 
 6 Time Periods
 Track price movements across 1 Hour, 1 Day, 1 Week, 1 Month, 1 Year, and All Time views.
@@ -49,7 +49,7 @@ Dark & Light Themes
 Auto-detects your system preference. Manual override available for dark, light, or auto modes.
 
 37 Fiat Currencies
-USD, EUR, GBP, TRY, JPY, CAD, AUD, CHF, and 29 more currencies supported.
+View prices in your local currency. Supports 37 major world currencies including most G20 nations.
 
 Drag & Drop Reordering
 Customize your coin order with intuitive drag-and-drop. Your preferences are saved automatically.
@@ -72,7 +72,7 @@ HOW TO USE
 
 WIDE CRYPTOCURRENCY SUPPORT
 
-Track over 75 cryptocurrencies from the Coinbase API. Whether you follow major coins like Bitcoin and Ethereum, explore DeFi protocols, or keep an eye on meme coins, PriceTab has you covered. New coins are added regularly based on Coinbase availability.
+Track over 75 cryptocurrencies from the Coinbase API. View real-time prices and historical charts for any coin available on Coinbase. New coins are added automatically as Coinbase expands its coverage.
 
 TECHNICAL DETAILS
 

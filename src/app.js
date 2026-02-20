@@ -1727,6 +1727,30 @@ const SettingsCard = styled.div`
   overflow-y: auto;
   overflow-x: hidden;
   scroll-behavior: smooth;
+
+  /* Custom scrollbar - Firefox */
+  scrollbar-width: thin;
+  scrollbar-color: ${({ theme }) => theme.color.border} transparent;
+
+  /* Custom scrollbar - Webkit (Chrome, Edge, Safari) */
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+    margin: ${({ theme }) => theme.scale * 4}rem 0;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: ${({ theme }) => theme.color.border};
+    border-radius: 3px;
+    transition: background 0.2s ease;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background: ${({ theme }) => theme.color.borderHover};
+  }
 `;
 
 const SettingsTitle = styled.h2`
