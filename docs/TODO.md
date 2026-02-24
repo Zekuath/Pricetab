@@ -92,6 +92,7 @@ Core functionality that has been implemented and tested.
 |------|--------|--------|-------|
 | Write 132-character summary | [x] | Low | See `docs/STORE_DESCRIPTION.md` |
 | Write detailed description (2000+ chars) | [x] | Medium | See `docs/STORE_DESCRIPTION.md` |
+| Fix keyword spam (CWS policy compliance) | [x] | Low | Removed coin/currency lists |
 | Select category: Productivity | [x] | Low | Productivity |
 | Add privacy policy URL | [ ] | Low | Host on GitHub Pages |
 | Setup support email | [ ] | Low | - |
@@ -200,6 +201,7 @@ Core functionality that has been implemented and tested.
 
 | Task | Status | Effort | Priority |
 |------|--------|--------|----------|
+| Custom themed scrollbar for settings | [x] | Low | Medium |
 | Add coin logos/icons | [ ] | Medium | Medium |
 | Loading skeleton improvements | [ ] | Low | Low |
 | Subtle hover animations | [ ] | Low | Low |

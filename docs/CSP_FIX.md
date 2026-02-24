@@ -97,6 +97,7 @@ These trade-offs are acceptable and standard practice for Chrome extensions.
 
 ## What About CSS and Fonts?
 
+
 The extension still loads:
 - Normalize CSS from codepenassets.com
 - Roboto Mono font from fonts.googleapis.com

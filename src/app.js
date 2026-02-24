@@ -106,6 +106,29 @@ const API_BASE = "https://www.coinbase.com/api/v2/prices/";
 const API_HISTORY = "historic?period=";
 const API_SPOT = "spot";
 
+/* WIDGET API ENDPOINTS */
+const FEAR_GREED_API = "https://api.alternative.me/fng/?limit=1";
+const COINGECKO_GLOBAL_API = "https://api.coingecko.com/api/v3/global";
+const MEMPOOL_API = "https://mempool.space/api/blocks/tip/height";
+
+/* FEAR & GREED GAUGE CONSTANTS */
+const GAUGE_ARC = "M 12 50 A 38 38 0 0 1 88 50";
+const GAUGE_LEN = Math.PI * 38; // semicircle arc length ≈ 119.38
+const GAUGE_SEGS = [
+  { color: "#ea3943", len: GAUGE_LEN * 0.25, offset: 0 },
+  { color: "#f5a623", len: GAUGE_LEN * 0.20, offset: GAUGE_LEN * 0.25 },
+  { color: "#c9c9c9", len: GAUGE_LEN * 0.10, offset: GAUGE_LEN * 0.45 },
+  { color: "#93d572", len: GAUGE_LEN * 0.20, offset: GAUGE_LEN * 0.55 },
+  { color: "#16c784", len: GAUGE_LEN * 0.25, offset: GAUGE_LEN * 0.75 },
+];
+
+/* WIDGET CACHE TTL */
+const WIDGET_CACHE_TTL = {
+  fearGreed: 3600000, // 1 hour (updates every 12h, so 1h cache is fine)
+  marketOverview: 300000, // 5 minutes
+  halvingCountdown: 3600000, // 1 hour (block height changes slowly)
+};
+
 /* RETRY MECHANISM WITH CANCELLATION SUPPORT */
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -113,6 +136,7 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const CACHE_TTL = 30000; // 30 seconds cache lifetime
 const CACHE_CLEANUP_INTERVAL = 600000; // 10 minutes
 const MAX_CACHED_COINS = 10; // Only cache first 10 coins in rotation
+const MAX_COINS = 20; // Hard limit on coin list size
 const cache = new Map();
 
 const getCacheKey = (coin, period, currency) => `${coin}-${period}-${currency}`;
@@ -232,6 +256,107 @@ const fetchWithRetry = async (url, options = {}, maxRetries = 3) => {
   }
 
   throw lastError;
+};
+
+/* WIDGET DATA FETCHERS */
+const widgetCache = new Map();
+
+const getWidgetCache = (key) => {
+  const cached = widgetCache.get(key);
+  if (!cached) return null;
+
+  const ttl = WIDGET_CACHE_TTL[key] || 300000;
+  if (Date.now() - cached.timestamp > ttl) {
+    return null; // Expired
+  }
+  return cached.data;
+};
+
+const setWidgetCache = (key, data) => {
+  widgetCache.set(key, { data, timestamp: Date.now() });
+};
+
+const fetchFearGreedIndex = async () => {
+  const cached = getWidgetCache("fearGreed");
+  if (cached) return cached;
+
+  try {
+    const response = await fetch(FEAR_GREED_API);
+    if (!response.ok) throw new Error("Fear & Greed API error");
+
+    const json = await response.json();
+    const data = {
+      value: parseInt(json.data[0].value, 10),
+      classification: json.data[0].value_classification,
+      timestamp: json.data[0].timestamp,
+    };
+
+    setWidgetCache("fearGreed", data);
+    return data;
+  } catch (e) {
+    return null;
+  }
+};
+
+const fetchMarketOverview = async () => {
+  const cached = getWidgetCache("marketOverview");
+  if (cached) return cached;
+
+  try {
+    const response = await fetch(COINGECKO_GLOBAL_API);
+    if (!response.ok) throw new Error("CoinGecko API error");
+
+    const json = await response.json();
+    const data = {
+      totalMarketCap: json.data.total_market_cap.usd,
+      totalVolume: json.data.total_volume.usd,
+      btcDominance: json.data.market_cap_percentage.btc,
+      ethDominance: json.data.market_cap_percentage.eth,
+      marketCapChange24h: json.data.market_cap_change_percentage_24h_usd,
+    };
+
+    setWidgetCache("marketOverview", data);
+    return data;
+  } catch (e) {
+    return null;
+  }
+};
+
+const fetchHalvingData = async () => {
+  const cached = getWidgetCache("halvingCountdown");
+  if (cached) return cached;
+
+  try {
+    const response = await fetch(MEMPOOL_API);
+    if (!response.ok) throw new Error("Mempool API error");
+
+    const blockHeight = await response.json();
+    const HALVING_INTERVAL = 210000;
+    const nextHalvingBlock = Math.ceil((blockHeight + 1) / HALVING_INTERVAL) * HALVING_INTERVAL;
+    const blocksLeft = nextHalvingBlock - blockHeight;
+    const secondsLeft = blocksLeft * 600; // ~10 minutes/block
+
+    const days = Math.floor(secondsLeft / 86400);
+    const hours = Math.floor((secondsLeft % 86400) / 3600);
+    const minutes = Math.floor((secondsLeft % 3600) / 60);
+    const years = Math.floor(days / 365);
+    const remainingDays = days % 365;
+
+    const etaMs = Date.now() + secondsLeft * 1000;
+    const etaDate = new Date(etaMs);
+    const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    const etaFormatted =
+      etaDate.getUTCDate() + " " + MONTHS[etaDate.getUTCMonth()] + " " + etaDate.getUTCFullYear() +
+      ", " + String(etaDate.getUTCHours()).padStart(2, "0") +
+      ":" + String(etaDate.getUTCMinutes()).padStart(2, "0") + " UTC";
+
+    const progressPercent = Math.round(((HALVING_INTERVAL - blocksLeft) / HALVING_INTERVAL) * 100);
+    const data = { days, hours, minutes, years, remainingDays, etaFormatted, blocksLeft, nextHalvingBlock, progressPercent };
+    setWidgetCache("halvingCountdown", data);
+    return data;
+  } catch (e) {
+    return null;
+  }
 };
 
 const DEFAULT_COIN_OPTIONS = ["BTC", "ETH", "XRP", "LTC"];
@@ -597,6 +722,36 @@ const saveTickerFormatToStorage = (format) => {
   }
 };
 
+/* WIDGET SETTINGS STORAGE */
+const WIDGETS_STORAGE_KEY = "crypto_chart_widgets";
+const DEFAULT_WIDGETS = {
+  fearGreed: false,
+  marketOverview: false,
+  halvingCountdown: false,
+  rsiWidget: false,
+};
+
+const loadWidgetsFromStorage = () => {
+  try {
+    const saved = localStorage.getItem(WIDGETS_STORAGE_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      return { ...DEFAULT_WIDGETS, ...parsed };
+    }
+    return DEFAULT_WIDGETS;
+  } catch (error) {
+    return DEFAULT_WIDGETS;
+  }
+};
+
+const saveWidgetsToStorage = (widgets) => {
+  try {
+    localStorage.setItem(WIDGETS_STORAGE_KEY, JSON.stringify(widgets));
+  } catch (error) {
+    // Silently fail
+  }
+};
+
 // Format price for ticker (compact or full)
 const formatTickerPrice = (price, currencySymbol, format, decimalPlaces, separatorFormat) => {
   if (typeof price !== "number" || isNaN(price)) {
@@ -828,6 +983,44 @@ const derivePercentDelta = (currentValue, valueHistory) => {
     );
   }
   return null;
+};
+
+const calculateRSI = (valueHistory, period = 14) => {
+  if (!Array.isArray(valueHistory) || valueHistory.length < period + 1) return null;
+
+  // Sample to ~50 points to avoid noise on short-interval periods (e.g. 1H)
+  const maxPoints = 50;
+  const step = valueHistory.length > maxPoints ? Math.floor(valueHistory.length / maxPoints) : 1;
+  const sampled = valueHistory.filter((_, i) => i % step === 0);
+
+  if (sampled.length < period + 1) return null;
+
+  const prices = sampled.map((d) => d.price);
+  const changes = [];
+  for (let i = 1; i < prices.length; i++) {
+    changes.push(prices[i] - prices[i - 1]);
+  }
+
+  let avgGain = 0;
+  let avgLoss = 0;
+  for (let i = 0; i < period; i++) {
+    if (changes[i] > 0) avgGain += changes[i];
+    else avgLoss += Math.abs(changes[i]);
+  }
+  avgGain /= period;
+  avgLoss /= period;
+
+  // Wilder's smoothing
+  for (let i = period; i < changes.length; i++) {
+    const gain = changes[i] > 0 ? changes[i] : 0;
+    const loss = changes[i] < 0 ? Math.abs(changes[i]) : 0;
+    avgGain = (avgGain * (period - 1) + gain) / period;
+    avgLoss = (avgLoss * (period - 1) + loss) / period;
+  }
+
+  if (avgLoss === 0) return 100;
+  const rs = avgGain / avgLoss;
+  return Math.round((100 - 100 / (1 + rs)) * 10) / 10;
 };
 
 /* API FETCHING WITH CACHE & STALE-WHILE-REVALIDATE */
@@ -1351,6 +1544,8 @@ class Overview extends PureComponent {
 const AppShell = styled.main`
   width: 100%;
   max-width: 100%;
+  height: 100vh;
+  max-height: 100vh;
   margin: 0;
   display: flex;
   flex-direction: column;
@@ -1358,6 +1553,7 @@ const AppShell = styled.main`
   padding: ${({ theme }) =>
     `${theme.spacing.medium}rem ${theme.spacing.large * 2}rem`};
   position: relative;
+  overflow: hidden;
 
   @media (max-width: ${({ theme }) => theme.breakpoint.down.md}px) {
     padding: ${({ theme }) =>
@@ -1376,8 +1572,8 @@ const ChartWrapper = styled.section`
   flex: 1 1 auto;
   min-height: calc(100vh - 18rem);
   height: calc(100vh - 18rem);
-  padding-top: 1px;
-  padding-bottom: ${({ theme }) => theme.spacing.small}rem;
+  padding: 0;
+  margin: 0;
 
   @media (max-width: ${({ theme }) => theme.breakpoint.down.sm}px) {
     min-height: calc(100vh - 20rem);
@@ -1387,11 +1583,21 @@ const ChartWrapper = styled.section`
 
 const FullBleed = styled.div`
   width: 100vw;
-  margin-left: calc(50% - 50vw);
-  margin-right: calc(50% - 50vw);
+  margin-left: calc(-1 * ${({ theme }) => theme.spacing.large * 2}rem);
+  margin-right: calc(-1 * ${({ theme }) => theme.spacing.large * 2}rem);
   display: block;
   overflow: hidden;
   padding: 1px 0;
+
+  @media (max-width: ${({ theme }) => theme.breakpoint.down.md}px) {
+    margin-left: calc(-1 * ${({ theme }) => theme.spacing.medium}rem);
+    margin-right: calc(-1 * ${({ theme }) => theme.spacing.medium}rem);
+  }
+
+  @media (max-width: ${({ theme }) => theme.breakpoint.down.sm}px) {
+    margin-left: calc(-1 * ${({ theme }) => theme.spacing.small}rem);
+    margin-right: calc(-1 * ${({ theme }) => theme.spacing.small}rem);
+  }
 `;
 
 const OfflineMessage = styled.div`
@@ -1704,6 +1910,257 @@ const SettingsOverlay = styled.div`
   padding: ${({ theme }) => theme.spacing.medium}rem;
 `;
 
+/* WIDGET PANEL STYLES */
+const WidgetPanel = styled.div`
+  position: fixed;
+  z-index: 40;
+  display: flex;
+  gap: 0.5rem;
+  opacity: ${({ visible }) => (visible ? 1 : 0)};
+  pointer-events: ${({ visible }) => (visible ? "auto" : "none")};
+  transition: opacity 0.3s ease;
+
+  /* Desktop: sol üst, dikey */
+  top: 1rem;
+  left: 1rem;
+  flex-direction: column;
+
+  /* Tablet: alt orta, yatay */
+  @media (max-width: 1024px) {
+    top: auto;
+    left: 50%;
+    bottom: 1rem;
+    transform: translateX(-50%);
+    flex-direction: row;
+  }
+
+  /* Mobil: daha kompakt */
+  @media (max-width: 600px) {
+    bottom: 0.5rem;
+    gap: 0.3rem;
+  }
+`;
+
+const WidgetCard = styled.div`
+  background: ${({ theme }) =>
+    theme.color.bg === "#ffffff"
+      ? "rgba(255, 255, 255, 0.95)"
+      : "rgba(15, 15, 15, 0.9)"};
+  backdrop-filter: blur(8px);
+  border: 1px solid ${({ theme }) => theme.color.border};
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  text-align: center;
+  box-shadow: 0 2px 8px ${({ theme }) => theme.color.shadow};
+
+  /* Tablet */
+  @media (max-width: 1024px) {
+    padding: 0.4rem 0.6rem;
+  }
+
+  /* Mobil */
+  @media (max-width: 600px) {
+    padding: 0.3rem 0.5rem;
+    border-radius: 0.4rem;
+  }
+`;
+
+const WidgetLabel = styled.div`
+  font-size: 0.55rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  opacity: 0.6;
+  margin-bottom: 0.2rem;
+
+  @media (max-width: 600px) {
+    font-size: 0.5rem;
+    margin-bottom: 0.1rem;
+  }
+`;
+
+const WidgetValue = styled.div`
+  font-size: 1rem;
+  font-weight: ${({ theme }) => theme.fontWeight.medium};
+  letter-spacing: 0.02em;
+
+  @media (max-width: 600px) {
+    font-size: 0.85rem;
+  }
+`;
+
+const WidgetSubtext = styled.div`
+  font-size: 0.65rem;
+  opacity: 0.7;
+  margin-top: 2px;
+  text-transform: capitalize;
+
+  @media (max-width: 600px) {
+    font-size: 0.55rem;
+  }
+`;
+
+const FearGreedGauge = styled.div`
+  display: flex;
+  justify-content: center;
+  gap: 2px;
+  margin-top: 3px;
+
+  @media (max-width: 600px) {
+    gap: 1px;
+    margin-top: 2px;
+  }
+`;
+
+const GaugeDot = styled.span`
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: ${({ active, value, theme }) => {
+    if (!active) return theme.color.border;
+    if (value <= 25) return "#ea3943";
+    if (value <= 45) return "#f5a623";
+    if (value <= 55) return "#c9c9c9";
+    if (value <= 75) return "#93d572";
+    return "#16c784";
+  }};
+
+  @media (max-width: 600px) {
+    width: 4px;
+    height: 4px;
+  }
+`;
+
+const GaugeTrackPath = styled.path`
+  fill: none;
+  stroke: ${({ theme }) => theme.color.border};
+  stroke-width: 7;
+  stroke-linecap: round;
+`;
+
+const GaugeNeedle = styled.line`
+  stroke: ${({ theme }) => theme.color.text};
+  stroke-width: 1.5;
+  stroke-linecap: round;
+`;
+
+const GaugeCenterDot = styled.circle`
+  fill: ${({ theme }) => theme.color.text};
+`;
+
+const MarketStatLabel = styled.span`
+  opacity: 0.5;
+  margin-right: 2px;
+  font-size: 0.6rem;
+
+  @media (max-width: 600px) {
+    font-size: 0.5rem;
+  }
+`;
+
+const HalvingProgressBar = styled.div`
+  width: 100%;
+  height: 4px;
+  background: ${({ theme }) => theme.color.border};
+  border-radius: 2px;
+  margin-top: 5px;
+  overflow: hidden;
+
+  @media (max-width: 600px) {
+    height: 3px;
+    margin-top: 4px;
+  }
+`;
+
+const HalvingProgressFill = styled.div`
+  height: 100%;
+  width: ${({ percent }) => percent}%;
+  background: ${({ theme }) => theme.color.text};
+  border-radius: 2px;
+  transition: width 0.4s ease;
+`;
+
+const HalvingTimeGrid = styled.div`
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 0.4rem;
+`;
+
+const HalvingTimeUnit = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 2rem;
+`;
+
+const HalvingTimeNumber = styled.span`
+  font-size: 1.15rem;
+  font-weight: ${({ theme }) => theme.fontWeight.medium};
+  letter-spacing: 0.02em;
+  line-height: 1;
+
+  @media (max-width: 600px) {
+    font-size: 0.95rem;
+  }
+`;
+
+const HalvingTimeLabel = styled.span`
+  font-size: 0.45rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin-top: 2px;
+`;
+
+const HalvingTimeSep = styled.span`
+  font-size: 1rem;
+  opacity: 0.3;
+  align-self: flex-start;
+  padding-top: 1px;
+`;
+
+const HalvingEta = styled.div`
+  font-size: 0.55rem;
+  opacity: 0.55;
+  margin-top: 4px;
+  letter-spacing: 0.03em;
+
+  @media (max-width: 600px) {
+    font-size: 0.5rem;
+  }
+`;
+
+const RsiBar = styled.div`
+  width: 100%;
+  height: 4px;
+  background: linear-gradient(90deg, #16c784 0%, #f5a623 50%, #ea3943 100%);
+  border-radius: 2px;
+  margin: 5px 0 3px;
+  position: relative;
+`;
+
+const RsiMarker = styled.div`
+  position: absolute;
+  top: 50%;
+  left: ${({ value }) => value}%;
+  transform: translate(-50%, -50%);
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: ${({ theme }) => theme.color.bg};
+  border: 1.5px solid ${({ theme }) => theme.color.text};
+
+  @media (max-width: 600px) {
+    width: 6px;
+    height: 6px;
+  }
+`;
+
+const RsiLabels = styled.div`
+  display: flex;
+  justify-content: space-between;
+`;
+
 const panelLift = keyframes`
   from { transform: translateY(24px) scale(0.95); opacity: 0; }
   to { transform: translateY(0) scale(1); opacity: 1; }
@@ -1834,7 +2291,7 @@ const CoinChip = styled.button.attrs(() => ({ type: "button" }))`
   border: 1px solid
     ${({ selected, theme }) =>
       selected ? theme.color.text : theme.color.border};
-  padding: 0.35rem 0.75rem;
+  padding: ${({ selected }) => selected ? '0.45rem 1.8rem 0.45rem 0.85rem' : '0.35rem 0.75rem'};
   font-size: 0.75rem;
   letter-spacing: 0.08em;
   background: ${({ selected, theme }) =>
@@ -1877,11 +2334,74 @@ const CoinChip = styled.button.attrs(() => ({ type: "button" }))`
   }
 `;
 
+const CoinChipRemove = styled.span`
+  position: absolute;
+  right: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1rem;
+  height: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  font-weight: 300;
+  opacity: 0.5;
+  cursor: pointer;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  border-radius: 50%;
+
+  &:hover {
+    opacity: 1;
+    transform: translateY(-50%) scale(1.2);
+  }
+`;
+
 const CoinSectionTitle = styled.h3`
   margin: 0 0 ${({ theme }) => theme.spacing.small}rem;
   font-size: 0.875rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
+`;
+
+const CoinSectionHeader = styled.div`
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin: 0 0 ${({ theme }) => theme.spacing.small}rem;
+`;
+
+const CoinCounter = styled.span`
+  font-size: 0.65rem;
+  opacity: 0.4;
+  letter-spacing: 0.05em;
+`;
+
+const CoinDragHint = styled.p`
+  font-size: 0.65rem;
+  opacity: 0.4;
+  margin: 0.2rem 0 0.75rem;
+  letter-spacing: 0.04em;
+`;
+
+const ResetButton = styled.button.attrs(() => ({ type: "button" }))`
+  background: none;
+  border: 1px solid ${({ theme }) => theme.color.border};
+  color: ${({ theme }) => theme.color.text};
+  border-radius: ${({ theme }) => theme.scale * 2}rem;
+  padding: 0.4rem 0.75rem;
+  font-size: 0.7rem;
+  font-family: inherit;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  opacity: 0.5;
+  margin-top: 0.75rem;
+  width: 100%;
+  transition: opacity 0.15s;
+
+  &:hover {
+    opacity: 1;
+  }
 `;
 
 const SuggestionHint = styled.p`
@@ -2054,8 +2574,13 @@ const ToggleSectionDesc = styled.div`
 const ToggleRow = styled.div`
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
   gap: ${({ theme }) => theme.spacing.medium}rem;
+  padding: 0.4rem 0;
+
+  &:not(:last-child) {
+    border-bottom: 1px solid ${({ theme }) => theme.color.border}22;
+  }
 `;
 
 const ToggleLabel = styled.label`
@@ -2350,6 +2875,8 @@ class SettingsPanel extends PureComponent {
           feedback = "Use 2-10 letters/numbers only";
         } else if (result && result.reason === "empty") {
           feedback = "Enter a symbol first";
+        } else if (result && result.reason === "limit") {
+          feedback = "Max " + MAX_COINS + " coins reached";
         }
 
         this.setState({ feedback, status: "error" });
@@ -2401,6 +2928,8 @@ class SettingsPanel extends PureComponent {
           feedback = "Use 2-10 letters/numbers only";
         } else if (result && result.reason === "empty") {
           feedback = "Enter a symbol first";
+        } else if (result && result.reason === "limit") {
+          feedback = "Max " + MAX_COINS + " coins reached";
         }
         this.setState({ feedback, status: "error" });
       }
@@ -2541,6 +3070,9 @@ class SettingsPanel extends PureComponent {
       onTickerChange,
       tickerFormat,
       onTickerFormatChange,
+      widgets,
+      onWidgetToggle,
+      onResetCoins,
     } = this.props;
     const { feedback, status, pendingCoin, suggestions, activeTab } =
       this.state;
@@ -2576,6 +3108,14 @@ class SettingsPanel extends PureComponent {
               onClick: () => this.handleTabChange("preferences"),
             },
             "Preferences"
+          ),
+          React.createElement(
+            TabButton,
+            {
+              active: activeTab === "widgets",
+              onClick: () => this.handleTabChange("widgets"),
+            },
+            "Widgets"
           )
         ),
 
@@ -2590,7 +3130,12 @@ class SettingsPanel extends PureComponent {
               "Tap any ticker below to add it to the rotation. Selected coins stay highlighted white."
             ),
 
-            React.createElement(CoinSectionTitle, null, "Selected"),
+            React.createElement(
+              CoinSectionHeader,
+              null,
+              React.createElement(CoinSectionTitle, { style: { margin: 0 } }, "Selected"),
+              React.createElement(CoinCounter, null, activeCoins.length + " / " + MAX_COINS)
+            ),
             React.createElement(
               CoinList,
               null,
@@ -2605,15 +3150,24 @@ class SettingsPanel extends PureComponent {
                       onDragEnd: this.handleDragEnd,
                       onDragOver: (e) => this.handleDragOver(coin, e),
                       onDrop: (e) => this.handleDrop(coin, e),
-                      onClick: () => this.handleChipClick(coin),
-                      children: coin,
-                    })
+                    },
+                      coin,
+                      React.createElement(CoinChipRemove, {
+                        onClick: (e) => {
+                          e.stopPropagation();
+                          this.handleChipClick(coin);
+                        },
+                        title: "Remove " + coin,
+                      }, "×")
+                    )
                   )
                 : React.createElement(CoinChip, {
                     disabled: true,
                     children: "No coins yet",
                   })
             ),
+            activeCoins.length > 1 &&
+              React.createElement(CoinDragHint, null, "Drag to reorder"),
             React.createElement(CoinSectionTitle, null, "Quick add"),
             React.createElement(
               SettingsForm,
@@ -2661,7 +3215,12 @@ class SettingsPanel extends PureComponent {
                   { error: status === "error" },
                   feedback
                 )
-              : null
+              : null,
+            React.createElement(
+              ResetButton,
+              { onClick: () => onResetCoins && onResetCoins() },
+              "Reset to defaults"
+            )
           ),
 
         // Preferences Tab Content
@@ -2856,7 +3415,60 @@ class SettingsPanel extends PureComponent {
                     )
                   )
                 )
+              ),
+
+          ),
+
+        // Widgets Tab Content
+        activeTab === "widgets" &&
+          React.createElement(
+            TabContent,
+            { key: "widgets-tab" },
+            React.createElement(
+              ToggleSection,
+              null,
+              React.createElement(ToggleSectionDesc, null, "Show data widgets below chart"),
+              React.createElement(
+                ToggleRow,
+                null,
+                React.createElement(ToggleLabel, null, "Fear & Greed"),
+                React.createElement(ToggleSwitch, {
+                  active: widgets.fearGreed,
+                  onClick: () => onWidgetToggle && onWidgetToggle("fearGreed"),
+                  "aria-label": "Toggle Fear & Greed widget",
+                })
+              ),
+              React.createElement(
+                ToggleRow,
+                null,
+                React.createElement(ToggleLabel, null, "Market Overview"),
+                React.createElement(ToggleSwitch, {
+                  active: widgets.marketOverview,
+                  onClick: () => onWidgetToggle && onWidgetToggle("marketOverview"),
+                  "aria-label": "Toggle Market Overview widget",
+                })
+              ),
+              React.createElement(
+                ToggleRow,
+                null,
+                React.createElement(ToggleLabel, null, "BTC Halving Countdown"),
+                React.createElement(ToggleSwitch, {
+                  active: widgets.halvingCountdown,
+                  onClick: () => onWidgetToggle && onWidgetToggle("halvingCountdown"),
+                  "aria-label": "Toggle BTC Halving Countdown widget",
+                })
+              ),
+              React.createElement(
+                ToggleRow,
+                null,
+                React.createElement(ToggleLabel, null, "RSI"),
+                React.createElement(ToggleSwitch, {
+                  active: widgets.rsiWidget,
+                  onClick: () => onWidgetToggle && onWidgetToggle("rsiWidget"),
+                  "aria-label": "Toggle RSI widget",
+                })
               )
+            )
           )
       )
     );
@@ -2868,8 +3480,11 @@ SettingsPanel.defaultProps = {
   onAddCoin: null,
   onRemoveCoin: null,
   onReorderCoin: null,
+  onResetCoins: null,
   onClose: null,
   visible: false,
+  widgets: { fearGreed: false, marketOverview: false, halvingCountdown: false, rsiWidget: false },
+  onWidgetToggle: null,
 };
 
 /* CRYPTO CHART */
@@ -2901,10 +3516,19 @@ class CryptoChart extends PureComponent {
       tickerEnabled: loadTickerFromStorage(), // Tab ticker mode
       tickerFormat: loadTickerFormatFromStorage(), // 'compact' or 'full'
       tickerText: "", // Full ticker string
+      // Widget states
+      widgets: loadWidgetsFromStorage(), // { fearGreed, marketOverview, halvingCountdown, rsiWidget }
+      fearGreedData: null, // { value, classification, timestamp }
+      marketOverviewData: null, // { totalMarketCap, totalVolume, btcDominance, ... }
+      halvingData: null, // { days, hours, minutes, blocksLeft, nextHalvingBlock }
+      rsiValue: null, // RSI calculated from current valueHistory (0-100)
     });
 
     // Ticker scroll position (class property to avoid re-renders)
     this.tickerScrollPos = 0;
+
+    // Widget refresh interval
+    this.widgetRefreshInterval = null;
 
     _defineProperty(this, "cycleCoinIndex", () => {
       this.setState(
@@ -2953,6 +3577,51 @@ class CryptoChart extends PureComponent {
           this.setState({ showSkeleton: true });
         }
       }, 300);
+    });
+
+    _defineProperty(this, "fetchWidgets", async () => {
+      const { widgets } = this.state;
+
+      // Fetch Fear & Greed if enabled
+      if (widgets.fearGreed) {
+        const data = await fetchFearGreedIndex();
+        if (data) {
+          this.setState({ fearGreedData: data });
+        }
+      }
+
+      // Fetch Market Overview if enabled
+      if (widgets.marketOverview) {
+        const data = await fetchMarketOverview();
+        if (data) {
+          this.setState({ marketOverviewData: data });
+        }
+      }
+
+      // Fetch BTC Halving Countdown if enabled
+      if (widgets.halvingCountdown) {
+        const data = await fetchHalvingData();
+        if (data) this.setState({ halvingData: data });
+      }
+    });
+
+    _defineProperty(this, "handleWidgetToggle", (widgetName) => {
+      this.setState(
+        (prevState) => {
+          const newWidgets = {
+            ...prevState.widgets,
+            [widgetName]: !prevState.widgets[widgetName],
+          };
+          saveWidgetsToStorage(newWidgets);
+          return { widgets: newWidgets };
+        },
+        () => {
+          // Fetch widget data if it was just enabled
+          if (this.state.widgets[widgetName]) {
+            this.fetchWidgets();
+          }
+        }
+      );
     });
 
     _defineProperty(this, "fetchData", async () => {
@@ -3019,6 +3688,7 @@ class CryptoChart extends PureComponent {
           const newState = { isLoading: false, showSkeleton: false };
           if (cachedHistory && cachedHistory.data) {
             newState.valueHistory = cachedHistory.data;
+            newState.rsiValue = calculateRSI(cachedHistory.data);
           }
           if (cachedSpot && cachedSpot.data) {
             newState.currentValue = cachedSpot.data;
@@ -3066,7 +3736,7 @@ class CryptoChart extends PureComponent {
 
       // If we have stale data, show it immediately while fetching fresh data
       if (cachedHistory && cachedHistory.isStale && cachedHistory.data) {
-        this.setState({ valueHistory: cachedHistory.data });
+        this.setState({ valueHistory: cachedHistory.data, rsiValue: calculateRSI(cachedHistory.data) });
       }
 
       if (cachedSpot && cachedSpot.isStale && cachedSpot.data) {
@@ -3112,10 +3782,11 @@ class CryptoChart extends PureComponent {
           {
             currentValue,
             valueHistory,
+            rsiValue: calculateRSI(valueHistory),
             isLoading: false,
             showSkeleton: false,
             invalidCoin: null,
-            apiError: false, // Clear API error on success
+            apiError: false,
           },
           () => {
             // Update tab title after state is set
@@ -3182,6 +3853,7 @@ class CryptoChart extends PureComponent {
         // If we have cached data, use it
         if (cachedHistory && cachedHistory.data) {
           newState.valueHistory = cachedHistory.data;
+          newState.rsiValue = calculateRSI(cachedHistory.data);
         }
         if (cachedSpot && cachedSpot.data) {
           newState.currentValue = cachedSpot.data;
@@ -3359,6 +4031,10 @@ class CryptoChart extends PureComponent {
         return { success: false, reason: "duplicate" };
       }
 
+      if (this.state.coinOptions.length >= MAX_COINS) {
+        return { success: false, reason: "limit" };
+      }
+
       this.setState((prevState) => {
         const newCoinOptions = [...prevState.coinOptions, normalized];
         saveCoinOptionsToStorage(newCoinOptions);
@@ -3380,6 +4056,12 @@ class CryptoChart extends PureComponent {
           coinIndex: Math.max(0, nextIndex),
         };
       }, this.fetchData);
+    });
+
+    _defineProperty(this, "handleResetCoins", () => {
+      const defaults = [...DEFAULT_COIN_OPTIONS];
+      saveCoinOptionsToStorage(defaults);
+      this.setState({ coinOptions: defaults, coinIndex: 0 }, this.fetchData);
     });
 
     _defineProperty(this, "handleReorderCoinOption", (source, target) => {
@@ -3543,6 +4225,11 @@ class CryptoChart extends PureComponent {
         this.startTickerInterval();
       }, 3000);
     }
+
+    // Fetch widget data if any widgets are enabled
+    this.fetchWidgets();
+    // Refresh widgets every 5 minutes
+    this.widgetRefreshInterval = setInterval(() => this.fetchWidgets(), 300000);
   }
 
   componentWillUnmount() {
@@ -3550,6 +4237,7 @@ class CryptoChart extends PureComponent {
     clearTimeout(this.prefetchTimer);
     clearTimeout(this.tickerStartTimer);
     clearInterval(this.cacheCleanupInterval);
+    clearInterval(this.widgetRefreshInterval);
     this.stopTickerInterval();
 
     // Cancel any ongoing requests
@@ -3607,7 +4295,17 @@ class CryptoChart extends PureComponent {
       showSkeleton,
       invalidCoin,
       apiError,
+      widgets,
+      fearGreedData,
+      marketOverviewData,
+      halvingData,
+      rsiValue,
     } = this.state;
+    const fgAngle = fearGreedData
+      ? (180 - fearGreedData.value * 1.8) * (Math.PI / 180)
+      : Math.PI / 2;
+    const fgNeedleX = (50 + 30 * Math.cos(fgAngle)).toFixed(1);
+    const fgNeedleY = (50 - 30 * Math.sin(fgAngle)).toFixed(1);
     const activeCoin = coinOptions[coinIndex] || coinOptions[0] || "BTC";
 
     // Select color palette based on active theme
@@ -3736,6 +4434,164 @@ class CryptoChart extends PureComponent {
             )
           )
         ),
+        // Widget Panel (show if any widget is enabled)
+        (widgets.fearGreed || widgets.marketOverview || widgets.halvingCountdown || widgets.rsiWidget) &&
+          React.createElement(
+            WidgetPanel,
+            { visible: widgets.fearGreed || widgets.marketOverview || widgets.halvingCountdown || widgets.rsiWidget },
+            // Fear & Greed Widget
+            widgets.fearGreed &&
+              React.createElement(
+                WidgetCard,
+                { key: "fear-greed" },
+                React.createElement(WidgetLabel, null, "Fear & Greed"),
+                fearGreedData
+                  ? React.createElement(
+                      Fragment,
+                      null,
+                      React.createElement(
+                        "svg",
+                        {
+                          viewBox: "0 8 100 44",
+                          style: { display: "block", margin: "0 auto", width: "92px", height: "40px", overflow: "visible" },
+                        },
+                        React.createElement(GaugeTrackPath, { d: GAUGE_ARC }),
+                        GAUGE_SEGS.map((seg, i) =>
+                          React.createElement("path", {
+                            key: "seg-" + i,
+                            d: GAUGE_ARC,
+                            fill: "none",
+                            stroke: seg.color,
+                            strokeWidth: "7",
+                            strokeLinecap: i === 0 || i === 4 ? "round" : "butt",
+                            strokeDasharray: seg.len + " " + GAUGE_LEN,
+                            strokeDashoffset: -seg.offset,
+                          })
+                        ),
+                        React.createElement(GaugeNeedle, {
+                          x1: "50", y1: "50",
+                          x2: fgNeedleX, y2: fgNeedleY,
+                        }),
+                        React.createElement(GaugeCenterDot, { cx: "50", cy: "50", r: "3" })
+                      ),
+                      React.createElement(WidgetValue, { style: { marginTop: "3px" } }, fearGreedData.value),
+                      React.createElement(WidgetSubtext, null, fearGreedData.classification)
+                    )
+                  : React.createElement(WidgetSubtext, null, "Loading...")
+              ),
+            // Market Overview Widget
+            widgets.marketOverview &&
+              React.createElement(
+                WidgetCard,
+                { key: "market-overview" },
+                React.createElement(WidgetLabel, null, "Market"),
+                marketOverviewData
+                  ? React.createElement(
+                      Fragment,
+                      null,
+                      React.createElement(
+                        WidgetValue,
+                        { style: { fontSize: "0.85rem" } },
+                        React.createElement(MarketStatLabel, null, "Cap"),
+                        "$" + (marketOverviewData.totalMarketCap / 1e12).toFixed(2) + "T"
+                      ),
+                      React.createElement(
+                        WidgetSubtext,
+                        null,
+                        React.createElement(MarketStatLabel, null, "BTC"),
+                        marketOverviewData.btcDominance.toFixed(1) + "%",
+                        " ",
+                        React.createElement(MarketStatLabel, null, "ETH"),
+                        marketOverviewData.ethDominance.toFixed(1) + "%"
+                      )
+                    )
+                  : React.createElement(WidgetSubtext, null, "Loading...")
+              ),
+            // BTC Halving Countdown Widget
+            widgets.halvingCountdown &&
+              React.createElement(
+                WidgetCard,
+                { key: "halving-extended" },
+                React.createElement(WidgetLabel, null, "BTC Halving"),
+                halvingData
+                  ? React.createElement(
+                      Fragment,
+                      null,
+                      React.createElement(
+                        HalvingTimeGrid,
+                        null,
+                        React.createElement(
+                          HalvingTimeUnit,
+                          null,
+                          React.createElement(HalvingTimeNumber, null, String(halvingData.years).padStart(2, "0")),
+                          React.createElement(HalvingTimeLabel, null, "Yrs")
+                        ),
+                        React.createElement(HalvingTimeSep, null, ":"),
+                        React.createElement(
+                          HalvingTimeUnit,
+                          null,
+                          React.createElement(HalvingTimeNumber, null, String(halvingData.remainingDays).padStart(3, "0")),
+                          React.createElement(HalvingTimeLabel, null, "Days")
+                        ),
+                        React.createElement(HalvingTimeSep, null, ":"),
+                        React.createElement(
+                          HalvingTimeUnit,
+                          null,
+                          React.createElement(HalvingTimeNumber, null, String(halvingData.hours).padStart(2, "0")),
+                          React.createElement(HalvingTimeLabel, null, "Hrs")
+                        ),
+                        React.createElement(HalvingTimeSep, null, ":"),
+                        React.createElement(
+                          HalvingTimeUnit,
+                          null,
+                          React.createElement(HalvingTimeNumber, null, String(halvingData.minutes).padStart(2, "0")),
+                          React.createElement(HalvingTimeLabel, null, "Min")
+                        )
+                      ),
+                      React.createElement(
+                        "div",
+                        { style: { display: "flex", alignItems: "center", gap: "6px", marginTop: "5px" } },
+                        React.createElement(
+                          HalvingProgressBar,
+                          { style: { flex: 1, marginTop: 0 } },
+                          React.createElement(HalvingProgressFill, { percent: halvingData.progressPercent })
+                        ),
+                        React.createElement(HalvingTimeLabel, null, halvingData.progressPercent + "%")
+                      ),
+                      React.createElement(
+                        HalvingEta,
+                        null,
+                        "ETA: " + halvingData.etaFormatted
+                      )
+                    )
+                  : React.createElement(WidgetSubtext, null, "Loading...")
+              ),
+            // RSI Widget
+            widgets.rsiWidget &&
+              React.createElement(
+                WidgetCard,
+                { key: "rsi-widget" },
+                React.createElement(WidgetLabel, null, "RSI"),
+                rsiValue !== null
+                  ? React.createElement(
+                      Fragment,
+                      null,
+                      React.createElement(WidgetValue, null, rsiValue),
+                      React.createElement(
+                        RsiBar,
+                        null,
+                        React.createElement(RsiMarker, { value: Math.min(Math.max(rsiValue, 2), 98) })
+                      ),
+                      React.createElement(
+                        RsiLabels,
+                        null,
+                        React.createElement(HalvingTimeLabel, null, "Oversold"),
+                        React.createElement(HalvingTimeLabel, null, "Overbought")
+                      )
+                    )
+                  : React.createElement(WidgetSubtext, null, "Loading...")
+              )
+          ),
         // LAZY LOADING: Only render SettingsPanel when user opens it
         showSettings &&
           React.createElement(SettingsPanel, {
@@ -3744,6 +4600,7 @@ class CryptoChart extends PureComponent {
             onAddCoin: this.handleAddCoinOption,
             onRemoveCoin: this.handleRemoveCoinOption,
             onReorderCoin: this.handleReorderCoinOption,
+            onResetCoins: this.handleResetCoins,
             onClose: this.toggleSettings,
             themePreference: themePreference,
             activeTheme: activeTheme,
@@ -3760,6 +4617,8 @@ class CryptoChart extends PureComponent {
             onTickerChange: this.handleTickerChange,
             tickerFormat: this.state.tickerFormat,
             onTickerFormatChange: this.handleTickerFormatChange,
+            widgets: widgets,
+            onWidgetToggle: this.handleWidgetToggle,
           })
       )
     );
@@ -3789,6 +4648,8 @@ injectGlobal`
   html,
   body {
     min-height: 100vh;
+    max-height: 100vh;
+    overflow: hidden;
   }
 
   body {
@@ -3805,6 +4666,7 @@ injectGlobal`
     font-size: 14px;
     -moz-osx-font-smoothing: grayscale;
     -webkit-font-smoothing: antialiased;
+    overflow: hidden;
   }
 
   @media (max-width: ${theme.breakpoint.down.sm}px) {
@@ -3815,10 +4677,12 @@ injectGlobal`
 
   #root {
     width: 100%;
-    min-height: 100%;
+    height: 100vh;
+    max-height: 100vh;
     display: flex;
     flex-direction: column;
     flex: 1 1 auto;
+    overflow: hidden;
   }
 `;
 
