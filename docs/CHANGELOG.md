@@ -11,11 +11,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Planned
 - Price alerts with browser notifications
-- Fear & Greed Index widget
-- Ethereum gas tracker
-- Whale alert integration
-- Keyboard shortcuts
-- Portfolio tracking (optional)
+- Keyboard shortcuts (←/→ coins, 1-6 periods, S settings)
+- Portfolio tracking (optional, local only)
+- Ethereum gas tracker widget
+- Whale alert feed widget
+
+---
+
+## [1.1.0] - Widget System & Market Data
+
+### Added
+- **Widget System** - Toggleable side panel with 9 market data widgets
+  - Fear & Greed Index (Alternative.me API)
+  - Market Overview (total market cap + 24h volume)
+  - BTC Halving Countdown
+  - RSI Widget (coin-specific, 14-period)
+  - Funding Rate (Binance Futures API)
+  - Long/Short Ratio (Binance Futures API)
+  - Open Interest in USD (Binance Futures API)
+  - Liquidations 24h (OKX Public API)
+  - Altcoin Season Index (CoinGecko BTC dominance)
+- **Drag-and-drop widget reordering** - Widget panel order persisted to localStorage
+- **Hide-all widgets button** - Single-click toggle to show/hide all widgets at once
+- **Hover tooltips** - All interactive elements now have descriptive title tooltips
+  - Period buttons (1H → "1 Hour", etc.)
+  - Price area ("Next coin")
+  - Change area ("Switch to price change / percent change")
+  - Settings button ("Settings / Close settings")
+
+### Changed
+- Widget panel moves with coin changes for coin-specific data (funding, L/S, OI, liquidations)
+- App source grown to ~5600+ lines
 
 ---
 

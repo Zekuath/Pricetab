@@ -116,9 +116,9 @@ const GAUGE_ARC = "M 12 50 A 38 38 0 0 1 88 50";
 const GAUGE_LEN = Math.PI * 38; // semicircle arc length ≈ 119.38
 const GAUGE_SEGS = [
   { color: "#ea3943", len: GAUGE_LEN * 0.25, offset: 0 },
-  { color: "#f5a623", len: GAUGE_LEN * 0.20, offset: GAUGE_LEN * 0.25 },
-  { color: "#c9c9c9", len: GAUGE_LEN * 0.10, offset: GAUGE_LEN * 0.45 },
-  { color: "#93d572", len: GAUGE_LEN * 0.20, offset: GAUGE_LEN * 0.55 },
+  { color: "#f5a623", len: GAUGE_LEN * 0.2, offset: GAUGE_LEN * 0.25 },
+  { color: "#c9c9c9", len: GAUGE_LEN * 0.1, offset: GAUGE_LEN * 0.45 },
+  { color: "#93d572", len: GAUGE_LEN * 0.2, offset: GAUGE_LEN * 0.55 },
   { color: "#16c784", len: GAUGE_LEN * 0.25, offset: GAUGE_LEN * 0.75 },
 ];
 
@@ -169,7 +169,7 @@ const setCachedData = (
   currency,
   type,
   data,
-  allowedCoins = []
+  allowedCoins = [],
 ) => {
   // Only cache if coin is in the first 10 of user's rotation
   const coinIndex = allowedCoins.indexOf(coin);
@@ -332,7 +332,8 @@ const fetchHalvingData = async () => {
 
     const blockHeight = await response.json();
     const HALVING_INTERVAL = 210000;
-    const nextHalvingBlock = Math.ceil((blockHeight + 1) / HALVING_INTERVAL) * HALVING_INTERVAL;
+    const nextHalvingBlock =
+      Math.ceil((blockHeight + 1) / HALVING_INTERVAL) * HALVING_INTERVAL;
     const blocksLeft = nextHalvingBlock - blockHeight;
     const secondsLeft = blocksLeft * 600; // ~10 minutes/block
 
@@ -344,14 +345,46 @@ const fetchHalvingData = async () => {
 
     const etaMs = Date.now() + secondsLeft * 1000;
     const etaDate = new Date(etaMs);
-    const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    const MONTHS = [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
+    ];
     const etaFormatted =
-      etaDate.getUTCDate() + " " + MONTHS[etaDate.getUTCMonth()] + " " + etaDate.getUTCFullYear() +
-      ", " + String(etaDate.getUTCHours()).padStart(2, "0") +
-      ":" + String(etaDate.getUTCMinutes()).padStart(2, "0") + " UTC";
+      etaDate.getUTCDate() +
+      " " +
+      MONTHS[etaDate.getUTCMonth()] +
+      " " +
+      etaDate.getUTCFullYear() +
+      ", " +
+      String(etaDate.getUTCHours()).padStart(2, "0") +
+      ":" +
+      String(etaDate.getUTCMinutes()).padStart(2, "0") +
+      " UTC";
 
-    const progressPercent = Math.round(((HALVING_INTERVAL - blocksLeft) / HALVING_INTERVAL) * 100);
-    const data = { days, hours, minutes, years, remainingDays, etaFormatted, blocksLeft, nextHalvingBlock, progressPercent };
+    const progressPercent = Math.round(
+      ((HALVING_INTERVAL - blocksLeft) / HALVING_INTERVAL) * 100,
+    );
+    const data = {
+      days,
+      hours,
+      minutes,
+      years,
+      remainingDays,
+      etaFormatted,
+      blocksLeft,
+      nextHalvingBlock,
+      progressPercent,
+    };
     setWidgetCache("halvingCountdown", data);
     return data;
   } catch (e) {
@@ -445,12 +478,12 @@ const SUGGESTED_COINS = [
 ];
 
 const PERIOD_OPTIONS = [
-  { value: "hour", label: "1H" },
-  { value: "day", label: "1D" },
-  { value: "week", label: "1W" },
-  { value: "month", label: "1M" },
-  { value: "year", label: "1Y" },
-  { value: "all", label: "ALL" },
+  { value: "hour", label: "1H", title: "1 Hour" },
+  { value: "day", label: "1D", title: "1 Day" },
+  { value: "week", label: "1W", title: "1 Week" },
+  { value: "month", label: "1M", title: "1 Month" },
+  { value: "year", label: "1Y", title: "1 Year" },
+  { value: "all", label: "ALL", title: "All Time" },
 ];
 
 const REFRESH_INTERVAL_OPTIONS = [
@@ -593,7 +626,7 @@ const loadRefreshIntervalFromStorage = () => {
       const parsed = parseInt(saved, 10);
       // Validate it's one of our valid options
       const isValid = REFRESH_INTERVAL_OPTIONS.some(
-        (opt) => opt.value === parsed
+        (opt) => opt.value === parsed,
       );
       if (isValid) {
         return parsed;
@@ -620,7 +653,7 @@ const loadDecimalPlacesFromStorage = () => {
     if (saved) {
       const parsed = parseInt(saved, 10);
       const isValid = DECIMAL_PLACES_OPTIONS.some(
-        (opt) => opt.value === parsed
+        (opt) => opt.value === parsed,
       );
       if (isValid) {
         return parsed;
@@ -724,11 +757,35 @@ const saveTickerFormatToStorage = (format) => {
 
 /* WIDGET SETTINGS STORAGE */
 const WIDGETS_STORAGE_KEY = "crypto_chart_widgets";
+const HIDDEN_WIDGETS_KEY = "crypto_chart_hidden_widgets";
+
+const loadHiddenWidgetsFromStorage = () => {
+  try {
+    const saved = localStorage.getItem(HIDDEN_WIDGETS_KEY);
+    return saved ? JSON.parse(saved) : {};
+  } catch (error) {
+    return {};
+  }
+};
+
+const saveHiddenWidgetsToStorage = (hidden) => {
+  try {
+    localStorage.setItem(HIDDEN_WIDGETS_KEY, JSON.stringify(hidden));
+  } catch (error) {
+    // Silently fail
+  }
+};
+
 const DEFAULT_WIDGETS = {
   fearGreed: false,
   marketOverview: false,
   halvingCountdown: false,
   rsiWidget: false,
+  fundingRate: false,
+  longShortRatio: false,
+  openInterest: false,
+  liquidations: false,
+  altcoinSeason: false,
 };
 
 const loadWidgetsFromStorage = () => {
@@ -752,8 +809,176 @@ const saveWidgetsToStorage = (widgets) => {
   }
 };
 
+/* ── COINGLASS / BINANCE WIDGET FETCHERS ─────────────────────────────── */
+const BINANCE_FUTURES = "https://fapi.binance.com";
+const COINGLASS_BASE  = "https://open-api.coinglass.com/public/v2";
+
+const formatWidgetUsd = (n) => {
+  if (n >= 1e9) return "$" + (n / 1e9).toFixed(2) + "B";
+  if (n >= 1e6) return "$" + (n / 1e6).toFixed(1) + "M";
+  if (n >= 1e3) return "$" + (n / 1e3).toFixed(0) + "K";
+  return "$" + n.toFixed(0);
+};
+
+const fetchFundingRate = async (coin) => {
+  try {
+    const symbol = coin + "USDT";
+    const res = await fetch(
+      `${BINANCE_FUTURES}/fapi/v1/fundingRate?symbol=${symbol}&limit=1`,
+    );
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (!Array.isArray(data) || !data.length) return null;
+    const rate = parseFloat(data[0].fundingRate);
+    return {
+      rate,
+      percent: (rate * 100).toFixed(4),
+      annualized: (rate * 3 * 365 * 100).toFixed(2),
+    };
+  } catch (e) {
+    return null;
+  }
+};
+
+const fetchLongShortRatio = async (coin) => {
+  try {
+    const symbol = coin + "USDT";
+    const res = await fetch(
+      `${BINANCE_FUTURES}/futures/data/globalLongShortAccountRatio?symbol=${symbol}&period=5m&limit=1`,
+    );
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (!Array.isArray(data) || !data.length) return null;
+    const longPct = (parseFloat(data[0].longAccount) * 100).toFixed(1);
+    const shortPct = (parseFloat(data[0].shortAccount) * 100).toFixed(1);
+    return { longPct, shortPct };
+  } catch (e) {
+    return null;
+  }
+};
+
+const fetchOpenInterest = async (coin) => {
+  try {
+    const symbol = coin + "USDT";
+    const [oiRes, priceRes] = await Promise.all([
+      fetch(`${BINANCE_FUTURES}/fapi/v1/openInterest?symbol=${symbol}`),
+      fetch(`${BINANCE_FUTURES}/fapi/v1/ticker/price?symbol=${symbol}`),
+    ]);
+    if (!oiRes.ok || !priceRes.ok) return null;
+    const oiData = await oiRes.json();
+    const priceData = await priceRes.json();
+    const oi = parseFloat(oiData.openInterest);
+    const price = parseFloat(priceData.price);
+    const oiUsd = oi * price;
+    return { oiUsd, formatted: formatWidgetUsd(oiUsd) };
+  } catch (e) {
+    return null;
+  }
+};
+
+const fetchLiquidations = async (coin) => {
+  try {
+    // OKX public liquidation endpoint — no auth required
+    const uly = coin + "-USDT";
+    const res = await fetch(
+      `https://www.okx.com/api/v5/public/liquidation-orders?instType=SWAP&state=filled&uly=${uly}&limit=100`,
+    );
+    if (!res.ok) return null;
+    const json = await res.json();
+    if (!json || json.code !== "0" || !Array.isArray(json.data)) return null;
+    const cutoff = Date.now() - 86400000; // 24h ago
+    let longLiq = 0;
+    let shortLiq = 0;
+    json.data.forEach((order) => {
+      (order.details || []).forEach((det) => {
+        if (parseInt(det.ts) < cutoff) return;
+        const val = parseFloat(det.sz) * parseFloat(det.bkPx);
+        if (det.posSide === "long") longLiq += val;
+        else shortLiq += val;
+      });
+    });
+    const total = longLiq + shortLiq;
+    if (total === 0) return null;
+    return {
+      total,
+      longLiq,
+      shortLiq,
+      totalFormatted: formatWidgetUsd(total),
+      longFormatted: formatWidgetUsd(longLiq),
+      shortFormatted: formatWidgetUsd(shortLiq),
+      longPct: Math.round((longLiq / total) * 100),
+    };
+  } catch (e) {
+    return null;
+  }
+};
+
+const STABLE_SYMBOLS = new Set([
+  "USDT","USDC","BUSD","DAI","TUSD","USDP","FRAX","LUSD","GUSD","USDD","USDE","FDUSD",
+]);
+
+const fetchAltcoinSeason = async () => {
+  try {
+    // CoinGecko global endpoint — free, no auth needed
+    const res = await fetch("https://api.coingecko.com/api/v3/global");
+    if (!res.ok) return null;
+    const json = await res.json();
+    const dom = json.data.market_cap_percentage.btc;
+    // Map BTC dominance to 0-100 alt season index
+    // dom ≥ 65% → index ~0 (BTC Season), dom ≤ 40% → index ~100 (Alt Season)
+    const index = Math.round(Math.max(0, Math.min(100, ((65 - dom) / 25) * 100)));
+    let label;
+    if (index >= 75) label = "Altcoin Season";
+    else if (index <= 25) label = "BTC Season";
+    else label = "Neutral";
+    return { index, label, btcDom: dom.toFixed(1) };
+  } catch (e) {
+    return null;
+  }
+};
+
+const WIDGET_ORDER_KEY = "crypto_chart_widget_order";
+const DEFAULT_WIDGET_ORDER = [
+  "fearGreed",
+  "marketOverview",
+  "halvingCountdown",
+  "rsiWidget",
+  "fundingRate",
+  "longShortRatio",
+  "openInterest",
+  "liquidations",
+  "altcoinSeason",
+];
+
+const loadWidgetOrderFromStorage = () => {
+  try {
+    const saved = localStorage.getItem(WIDGET_ORDER_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      const valid = parsed.filter((k) => DEFAULT_WIDGET_ORDER.includes(k));
+      const extra = DEFAULT_WIDGET_ORDER.filter((k) => !valid.includes(k));
+      return [...valid, ...extra];
+    }
+    return [...DEFAULT_WIDGET_ORDER];
+  } catch (e) {
+    return [...DEFAULT_WIDGET_ORDER];
+  }
+};
+
+const saveWidgetOrderToStorage = (order) => {
+  try {
+    localStorage.setItem(WIDGET_ORDER_KEY, JSON.stringify(order));
+  } catch (e) {}
+};
+
 // Format price for ticker (compact or full)
-const formatTickerPrice = (price, currencySymbol, format, decimalPlaces, separatorFormat) => {
+const formatTickerPrice = (
+  price,
+  currencySymbol,
+  format,
+  decimalPlaces,
+  separatorFormat,
+) => {
   if (typeof price !== "number" || isNaN(price)) {
     return "—";
   }
@@ -774,7 +999,14 @@ const formatTickerPrice = (price, currencySymbol, format, decimalPlaces, separat
     return formatted;
   } else {
     // Full format with currency symbol
-    return formatNumberString(price, currencySymbol, true, false, decimalPlaces, separatorFormat);
+    return formatNumberString(
+      price,
+      currencySymbol,
+      true,
+      false,
+      decimalPlaces,
+      separatorFormat,
+    );
   }
 };
 
@@ -786,8 +1018,12 @@ const loadCoinOptionsFromStorage = () => {
       if (Array.isArray(parsed) && parsed.length > 0) {
         // Validate coins against whitelist and limit to 20
         const validCoins = parsed
-          .filter(coin => typeof coin === 'string' && SUGGESTED_COINS.includes(coin.toUpperCase()))
-          .map(coin => coin.toUpperCase())
+          .filter(
+            (coin) =>
+              typeof coin === "string" &&
+              SUGGESTED_COINS.includes(coin.toUpperCase()),
+          )
+          .map((coin) => coin.toUpperCase())
           .slice(0, 20);
 
         if (validCoins.length > 0) {
@@ -887,7 +1123,7 @@ const scalePricesCore = (
   paddingTop = 0,
   paddingBottom = 0,
   paddingLeft = 0,
-  paddingRight = 0
+  paddingRight = 0,
 ) => {
   const priceToY = scaleLinear()
     .range([height - paddingBottom, paddingTop])
@@ -924,7 +1160,7 @@ const formatNumberStringCore = (
   hidePlus = false,
   symbolAfter = false,
   decimalPlaces = DEFAULT_DECIMAL_PLACES,
-  separatorFormat = DEFAULT_SEPARATOR_FORMAT
+  separatorFormat = DEFAULT_SEPARATOR_FORMAT,
 ) => {
   if (typeof price === "number") {
     const sign = getSign(price, hidePlus);
@@ -986,11 +1222,15 @@ const derivePercentDelta = (currentValue, valueHistory) => {
 };
 
 const calculateRSI = (valueHistory, period = 14) => {
-  if (!Array.isArray(valueHistory) || valueHistory.length < period + 1) return null;
+  if (!Array.isArray(valueHistory) || valueHistory.length < period + 1)
+    return null;
 
   // Sample to ~50 points to avoid noise on short-interval periods (e.g. 1H)
   const maxPoints = 50;
-  const step = valueHistory.length > maxPoints ? Math.floor(valueHistory.length / maxPoints) : 1;
+  const step =
+    valueHistory.length > maxPoints
+      ? Math.floor(valueHistory.length / maxPoints)
+      : 1;
   const sampled = valueHistory.filter((_, i) => i % step === 0);
 
   if (sampled.length < period + 1) return null;
@@ -1030,7 +1270,7 @@ const fetchValueHistory = async (
   currency = "USD",
   signal = null,
   useCache = true,
-  allowedCoins = []
+  allowedCoins = [],
 ) => {
   // Check cache first
   if (useCache) {
@@ -1045,7 +1285,7 @@ const fetchValueHistory = async (
   const options = signal ? { signal } : {};
   const d = await fetchWithRetry(
     `${API_BASE}${coin}-${currency}/${API_HISTORY}${period}`,
-    options
+    options,
   ).then((r) => r.json());
   const prices = d && d.data && d.data.prices;
 
@@ -1058,7 +1298,7 @@ const fetchValueHistory = async (
       currency,
       "history",
       formattedData,
-      allowedCoins
+      allowedCoins,
     );
     return formattedData;
   }
@@ -1071,7 +1311,7 @@ const fetchCurrentValue = async (
   currency = "USD",
   signal = null,
   useCache = true,
-  allowedCoins = []
+  allowedCoins = [],
 ) => {
   // Check cache first (using "current" as period since spot price doesn't have periods)
   if (useCache) {
@@ -1086,7 +1326,7 @@ const fetchCurrentValue = async (
   const options = signal ? { signal } : {};
   const d = await fetchWithRetry(
     `${API_BASE}${coin}-${currency}/${API_SPOT}`,
-    options
+    options,
   ).then((r) => r.json());
   const spot = d && d.data && d.data.amount;
 
@@ -1136,7 +1376,7 @@ class LineBase extends PureComponent {
           this.width = width;
           this.updatePath();
         }
-      }, 150)
+      }, 150),
     );
 
     _defineProperty(this, "updatePath", () => {
@@ -1148,8 +1388,8 @@ class LineBase extends PureComponent {
           this.height,
           this.width,
           PADDING,
-          PADDING
-        )
+          PADDING,
+        ),
       );
 
       this.path
@@ -1177,7 +1417,7 @@ class LineBase extends PureComponent {
       this.width = width;
 
       const d = lineFromPrices(
-        scalePrices(safePrices(prices), height, width, PADDING, PADDING)
+        scalePrices(safePrices(prices), height, width, PADDING, PADDING),
       );
       this.path.attr("d", d);
       this.d = d;
@@ -1206,7 +1446,7 @@ class LineBase extends PureComponent {
         ref: this.pathRef,
         stroke: this.props.theme.color.text,
         strokeWidth: "1.5",
-      })
+      }),
     );
   }
 }
@@ -1236,7 +1476,9 @@ const PeriodButton = styled.button`
   cursor: pointer;
   appearance: none;
   border-radius: ${({ theme }) => theme.scale * 2}rem;
-  transition: background 0.2s ease, color 0.2s ease;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
   position: relative;
 
   &::before {
@@ -1261,8 +1503,8 @@ const PeriodButton = styled.button`
       active
         ? "transparent"
         : theme.color.bg === "#ffffff"
-        ? "rgba(0, 0, 0, 0.05)"
-        : "rgba(255, 255, 255, 0.08)"};
+          ? "rgba(0, 0, 0, 0.05)"
+          : "rgba(255, 255, 255, 0.08)"};
   }
 
   &:focus-visible {
@@ -1286,7 +1528,9 @@ const PeriodText = styled.span`
   user-select: none;
   font-weight: ${({ active, theme }) =>
     active ? theme.fontWeight.medium : theme.fontWeight.regular};
-  transition: color 0.2s ease, font-weight 0.2s ease;
+  transition:
+    color 0.2s ease,
+    font-weight 0.2s ease;
   position: relative;
   z-index: 1;
 `;
@@ -1304,12 +1548,12 @@ class PeriodItem extends PureComponent {
   }
 
   render() {
-    const { active, children } = this.props;
+    const { active, children, title } = this.props;
 
     return React.createElement(
       PeriodButton,
-      { active: active, onClick: this.handleClick },
-      React.createElement(PeriodText, { active: active }, children)
+      { active: active, onClick: this.handleClick, title: title },
+      React.createElement(PeriodText, { active: active }, children),
     );
   }
 }
@@ -1319,6 +1563,7 @@ _defineProperty(PeriodItem, "defaultProps", {
   children: null,
   onClick: null,
   value: null,
+  title: null,
 });
 
 const PeriodSwitcherWrapper = styled.div`
@@ -1359,10 +1604,11 @@ class PeriodSwitcher extends PureComponent {
               key: o.value,
               onClick: onChange,
               value: o.value,
+              title: o.title,
             },
-            o.label
-          )
-        )
+            o.label,
+          ),
+        ),
     );
   }
 }
@@ -1423,22 +1669,23 @@ const Label = styled.div`
   color: ${({ theme }) => theme.color.textSecondary};
 `;
 
-const OverviewItem = ({ children, label, onClick }) =>
+const OverviewItem = ({ children, label, onClick, title }) =>
   React.createElement(
     OverviewItemButton,
-    { onClick },
+    { onClick, title: title },
     React.createElement(
       Value,
       null,
-      children || React.createElement(Fragment, null, "\u00A0")
+      children || React.createElement(Fragment, null, "\u00A0"),
     ),
-    React.createElement(Label, null, label)
+    React.createElement(Label, null, label),
   );
 
 OverviewItem.defaultProps = {
   children: null,
   label: "",
   onClick: null,
+  title: null,
 };
 
 const OverviewWrapper = styled.div`
@@ -1499,7 +1746,7 @@ class Overview extends PureComponent {
           false,
           true,
           decimalPlaces,
-          separatorFormat
+          separatorFormat,
         )
       : formatNumberString(
           deriveValueDelta(currentValue, valueHistory),
@@ -1507,7 +1754,7 @@ class Overview extends PureComponent {
           false,
           false,
           decimalPlaces,
-          separatorFormat
+          separatorFormat,
         );
 
     return React.createElement(
@@ -1518,6 +1765,7 @@ class Overview extends PureComponent {
         {
           onClick: this.props.cycleCoinIndex,
           label: `${coin} Price`,
+          title: "Next coin",
         },
         formatNumberString(
           currentValue,
@@ -1525,17 +1773,18 @@ class Overview extends PureComponent {
           true,
           false,
           decimalPlaces,
-          separatorFormat
-        )
+          separatorFormat,
+        ),
       ),
       React.createElement(
         OverviewItem,
         {
           onClick: this.togglePercentage,
           label: `${calcPercentage ? "Percent" : "Price"} Change`,
+          title: calcPercentage ? "Switch to price change" : "Switch to percent change",
         },
-        delta
-      )
+        delta,
+      ),
     );
   }
 }
@@ -1911,6 +2160,65 @@ const SettingsOverlay = styled.div`
 `;
 
 /* WIDGET PANEL STYLES */
+const WidgetRestoreButton = styled.button`
+  position: absolute;
+  top: ${({ theme }) => theme.spacing.large}rem;
+  left: ${({ theme }) => theme.spacing.large}rem;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: ${({ theme }) => theme.color.text};
+  font-size: 1.35rem;
+  font-weight: ${({ theme }) => theme.fontWeight.bold};
+  cursor: pointer;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.25s ease;
+  z-index: 120;
+  opacity: 0.75;
+
+  &:hover {
+    transform: scale(1.1);
+    opacity: 1;
+  }
+
+  &:focus {
+    outline: none;
+  }
+
+  @media (max-width: ${({ theme }) => theme.breakpoint.down.sm}px) {
+    left: ${({ theme }) => theme.spacing.small}rem;
+    top: ${({ theme }) => theme.spacing.small}rem;
+  }
+`;
+
+const WidgetHideButton = styled.button`
+  position: absolute;
+  top: 0.2rem;
+  right: 0.2rem;
+  width: 1rem;
+  height: 1rem;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: ${({ theme }) => theme.color.text};
+  font-size: 0.6rem;
+  cursor: pointer;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  border-radius: 50%;
+
+  &:hover {
+    background: ${({ theme }) => theme.color.border}44;
+  }
+`;
+
 const WidgetPanel = styled.div`
   position: fixed;
   z-index: 40;
@@ -1921,7 +2229,7 @@ const WidgetPanel = styled.div`
   transition: opacity 0.3s ease;
 
   /* Desktop: sol üst, dikey */
-  top: 1rem;
+  top: 4rem;
   left: 1rem;
   flex-direction: column;
 
@@ -1941,7 +2249,108 @@ const WidgetPanel = styled.div`
   }
 `;
 
+/* ── New widget styled components ─────────────────────────── */
+const FundingValue = styled.div`
+  font-size: 1rem;
+  font-weight: ${({ theme }) => theme.fontWeight.semibold};
+  color: ${({ positive }) =>
+    positive ? "#f87171" : "#34d399"}; /* red = positive (long pays), green = negative (shorts pay) */
+  letter-spacing: 0.02em;
+`;
+
+const FundingAnnual = styled.div`
+  font-size: 0.6rem;
+  opacity: 0.6;
+  margin-top: 2px;
+`;
+
+const LSBarWrap = styled.div`
+  display: flex;
+  width: 100%;
+  height: 5px;
+  border-radius: 3px;
+  overflow: hidden;
+  margin: 4px 0 2px;
+`;
+
+const LSBarLong = styled.div`
+  height: 100%;
+  background: #34d399;
+  width: ${({ pct }) => pct}%;
+  transition: width 0.4s ease;
+`;
+
+const LSBarShort = styled.div`
+  flex: 1;
+  height: 100%;
+  background: #f87171;
+`;
+
+const LSRow = styled.div`
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.6rem;
+  opacity: 0.75;
+`;
+
+const OIValue = styled.div`
+  font-size: 0.95rem;
+  font-weight: ${({ theme }) => theme.fontWeight.semibold};
+  letter-spacing: 0.02em;
+`;
+
+const LiqBarWrap = styled.div`
+  display: flex;
+  width: 100%;
+  height: 5px;
+  border-radius: 3px;
+  overflow: hidden;
+  margin: 4px 0 2px;
+`;
+
+const LiqBarLong = styled.div`
+  height: 100%;
+  background: #f87171;
+  width: ${({ pct }) => pct}%;
+  transition: width 0.4s ease;
+`;
+
+const LiqBarShort = styled.div`
+  flex: 1;
+  height: 100%;
+  background: #34d399;
+`;
+
+const LiqRow = styled.div`
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.6rem;
+  opacity: 0.75;
+`;
+
+const AltSeasonBar = styled.div`
+  width: 100%;
+  height: 5px;
+  border-radius: 3px;
+  background: linear-gradient(to right, #f97316, #facc15, #34d399);
+  position: relative;
+  margin: 4px 0 2px;
+`;
+
+const AltSeasonMarker = styled.div`
+  position: absolute;
+  top: -2px;
+  left: ${({ pct }) => Math.min(Math.max(pct, 2), 96)}%;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: ${({ theme }) => theme.color.text};
+  transform: translateX(-50%);
+  transition: left 0.4s ease;
+`;
+
 const WidgetCard = styled.div`
+  position: relative;
   background: ${({ theme }) =>
     theme.color.bg === "#ffffff"
       ? "rgba(255, 255, 255, 0.95)"
@@ -1952,6 +2361,19 @@ const WidgetCard = styled.div`
   padding: 0.5rem 0.75rem;
   text-align: center;
   box-shadow: 0 2px 8px ${({ theme }) => theme.color.shadow};
+  cursor: grab;
+  user-select: none;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  opacity: ${({ dragging }) => (dragging ? 0.4 : 1)};
+  transform: ${({ dragging }) => (dragging ? "scale(0.97)" : "scale(1)")};
+
+  &:hover ${WidgetHideButton} {
+    opacity: 0.5;
+  }
+
+  &:hover ${WidgetHideButton}:hover {
+    opacity: 1;
+  }
 
   /* Tablet */
   @media (max-width: 1024px) {
@@ -2291,7 +2713,8 @@ const CoinChip = styled.button.attrs(() => ({ type: "button" }))`
   border: 1px solid
     ${({ selected, theme }) =>
       selected ? theme.color.text : theme.color.border};
-  padding: ${({ selected }) => selected ? '0.45rem 1.8rem 0.45rem 0.85rem' : '0.35rem 0.75rem'};
+  padding: ${({ selected }) =>
+    selected ? "0.45rem 1.8rem 0.45rem 0.85rem" : "0.35rem 0.75rem"};
   font-size: 0.75rem;
   letter-spacing: 0.08em;
   background: ${({ selected, theme }) =>
@@ -2301,8 +2724,13 @@ const CoinChip = styled.button.attrs(() => ({ type: "button" }))`
   text-transform: uppercase;
   font-weight: ${({ theme }) => theme.fontWeight.medium};
   cursor: pointer;
-  transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease,
-    opacity 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    transform 0.2s ease,
+    opacity 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
   min-width: 3.5rem;
   position: relative;
   display: inline-flex;
@@ -2348,7 +2776,9 @@ const CoinChipRemove = styled.span`
   font-weight: 300;
   opacity: 0.5;
   cursor: pointer;
-  transition: opacity 0.15s ease, transform 0.15s ease;
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
   border-radius: 50%;
 
   &:hover {
@@ -2454,6 +2884,18 @@ const SuggestionTray = styled.div`
   display: flex;
   align-items: center;
   gap: 0.25rem;
+  max-width: 60%;
+  overflow: hidden;
+  cursor: pointer;
+  transition: max-width 0.6s ease-in-out;
+
+  & > * {
+    flex-shrink: 0;
+  }
+
+  &:hover {
+    max-width: 75%;
+  }
 `;
 
 const SettingsActionButton = styled.button`
@@ -2464,7 +2906,9 @@ const SettingsActionButton = styled.button`
   background: ${({ theme }) => theme.color.text};
   color: ${({ theme }) => theme.color.bg};
   font-weight: ${({ theme }) => theme.fontWeight.bold};
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
 
   &:hover {
     transform: translateY(-1px);
@@ -2651,7 +3095,8 @@ const RefreshIntervalSelect = styled.select`
   cursor: pointer;
   transition: all 0.2s ease;
   appearance: none;
-  background-image: linear-gradient(
+  background-image:
+    linear-gradient(
       45deg,
       transparent 50%,
       ${({ theme }) => theme.color.text} 50%
@@ -2661,8 +3106,12 @@ const RefreshIntervalSelect = styled.select`
       ${({ theme }) => theme.color.text} 50%,
       transparent 50%
     );
-  background-position: calc(100% - 15px) center, calc(100% - 10px) center;
-  background-size: 5px 5px, 5px 5px;
+  background-position:
+    calc(100% - 15px) center,
+    calc(100% - 10px) center;
+  background-size:
+    5px 5px,
+    5px 5px;
   background-repeat: no-repeat;
   padding-right: 2rem;
 
@@ -2713,7 +3162,8 @@ const NumberFormatSelect = styled.select`
   cursor: pointer;
   transition: all 0.2s ease;
   appearance: none;
-  background-image: linear-gradient(
+  background-image:
+    linear-gradient(
       45deg,
       transparent 50%,
       ${({ theme }) => theme.color.text} 50%
@@ -2723,8 +3173,12 @@ const NumberFormatSelect = styled.select`
       ${({ theme }) => theme.color.text} 50%,
       transparent 50%
     );
-  background-position: calc(100% - 15px) center, calc(100% - 10px) center;
-  background-size: 5px 5px, 5px 5px;
+  background-position:
+    calc(100% - 15px) center,
+    calc(100% - 10px) center;
+  background-size:
+    5px 5px,
+    5px 5px;
   background-repeat: no-repeat;
   padding-right: 2rem;
   margin-bottom: ${({ theme }) => theme.spacing.small}rem;
@@ -2776,7 +3230,8 @@ const CurrencySelect = styled.select`
   cursor: pointer;
   transition: all 0.2s ease;
   appearance: none;
-  background-image: linear-gradient(
+  background-image:
+    linear-gradient(
       45deg,
       transparent 50%,
       ${({ theme }) => theme.color.text} 50%
@@ -2786,8 +3241,12 @@ const CurrencySelect = styled.select`
       ${({ theme }) => theme.color.text} 50%,
       transparent 50%
     );
-  background-position: calc(100% - 15px) center, calc(100% - 10px) center;
-  background-size: 5px 5px, 5px 5px;
+  background-position:
+    calc(100% - 15px) center,
+    calc(100% - 10px) center;
+  background-size:
+    5px 5px,
+    5px 5px;
   background-repeat: no-repeat;
   padding-right: 2rem;
 
@@ -2947,12 +3406,12 @@ class SettingsPanel extends PureComponent {
         const suggestions = pendingCoin
           ? SUGGESTED_COINS.filter(
               (coin) =>
-                coin.startsWith(pendingCoin) && !activeCoins.includes(coin)
-            ).slice(0, 6)
+                coin.startsWith(pendingCoin) && !activeCoins.includes(coin),
+            ).slice(0, 4)
           : [];
 
         this.setState({ suggestions });
-      }, 200)
+      }, 200),
     );
 
     _defineProperty(this, "handleInputChange", (e) => {
@@ -3099,7 +3558,7 @@ class SettingsPanel extends PureComponent {
               active: activeTab === "coins",
               onClick: () => this.handleTabChange("coins"),
             },
-            "Coins"
+            "Coins",
           ),
           React.createElement(
             TabButton,
@@ -3107,7 +3566,7 @@ class SettingsPanel extends PureComponent {
               active: activeTab === "preferences",
               onClick: () => this.handleTabChange("preferences"),
             },
-            "Preferences"
+            "Preferences",
           ),
           React.createElement(
             TabButton,
@@ -3115,8 +3574,8 @@ class SettingsPanel extends PureComponent {
               active: activeTab === "widgets",
               onClick: () => this.handleTabChange("widgets"),
             },
-            "Widgets"
-          )
+            "Widgets",
+          ),
         ),
 
         // Coins Tab Content
@@ -3127,44 +3586,58 @@ class SettingsPanel extends PureComponent {
             React.createElement(
               SettingsDescription,
               null,
-              "Tap any ticker below to add it to the rotation. Selected coins stay highlighted white."
+              "Tap any ticker below to add it to the rotation. Selected coins stay highlighted white.",
             ),
 
             React.createElement(
               CoinSectionHeader,
               null,
-              React.createElement(CoinSectionTitle, { style: { margin: 0 } }, "Selected"),
-              React.createElement(CoinCounter, null, activeCoins.length + " / " + MAX_COINS)
+              React.createElement(
+                CoinSectionTitle,
+                { style: { margin: 0 } },
+                "Selected",
+              ),
+              React.createElement(
+                CoinCounter,
+                null,
+                activeCoins.length + " / " + MAX_COINS,
+              ),
             ),
             React.createElement(
               CoinList,
               null,
               activeCoins.length
                 ? activeCoins.map((coin) =>
-                    React.createElement(CoinChip, {
-                      key: coin,
-                      selected: true,
-                      "data-symbol": coin,
-                      draggable: true,
-                      onDragStart: (e) => this.handleDragStart(coin, e),
-                      onDragEnd: this.handleDragEnd,
-                      onDragOver: (e) => this.handleDragOver(coin, e),
-                      onDrop: (e) => this.handleDrop(coin, e),
-                    },
+                    React.createElement(
+                      CoinChip,
+                      {
+                        key: coin,
+                        selected: true,
+                        "data-symbol": coin,
+                        draggable: true,
+                        onDragStart: (e) => this.handleDragStart(coin, e),
+                        onDragEnd: this.handleDragEnd,
+                        onDragOver: (e) => this.handleDragOver(coin, e),
+                        onDrop: (e) => this.handleDrop(coin, e),
+                      },
                       coin,
-                      React.createElement(CoinChipRemove, {
-                        onClick: (e) => {
-                          e.stopPropagation();
-                          this.handleChipClick(coin);
+                      React.createElement(
+                        CoinChipRemove,
+                        {
+                          onClick: (e) => {
+                            e.stopPropagation();
+                            this.handleChipClick(coin);
+                          },
+                          title: "Remove " + coin,
                         },
-                        title: "Remove " + coin,
-                      }, "×")
-                    )
+                        "×",
+                      ),
+                    ),
                   )
                 : React.createElement(CoinChip, {
                     disabled: true,
                     children: "No coins yet",
-                  })
+                  }),
             ),
             activeCoins.length > 1 &&
               React.createElement(CoinDragHint, null, "Drag to reorder"),
@@ -3192,35 +3665,35 @@ class SettingsPanel extends PureComponent {
                           "data-symbol": coin,
                           onClick: () => this.handleSuggestionClick(coin),
                           children: coin,
-                        })
+                        }),
                       )
                     : pendingCoin
-                    ? React.createElement(
-                        SuggestionHint,
-                        null,
-                        "Try BTC, ETH, SOL..."
-                      )
-                    : null
-                )
+                      ? React.createElement(
+                          SuggestionHint,
+                          null,
+                          "Try BTC, ETH, SOL...",
+                        )
+                      : null,
+                ),
               ),
               React.createElement(
                 SettingsActionButton,
                 { type: "submit" },
-                "Add coin"
-              )
+                "Add coin",
+              ),
             ),
             feedback
               ? React.createElement(
                   SettingsFeedback,
                   { error: status === "error" },
-                  feedback
+                  feedback,
                 )
               : null,
             React.createElement(
               ResetButton,
               { onClick: () => onResetCoins && onResetCoins() },
-              "Reset to defaults"
-            )
+              "Reset to defaults",
+            ),
           ),
 
         // Preferences Tab Content
@@ -3243,7 +3716,7 @@ class SettingsPanel extends PureComponent {
                     active: themePreference === "auto",
                     onClick: () => onThemeChange && onThemeChange("auto"),
                   },
-                  "Auto"
+                  "Auto",
                 ),
                 React.createElement(
                   ThemeButton,
@@ -3251,7 +3724,7 @@ class SettingsPanel extends PureComponent {
                     active: themePreference === "light",
                     onClick: () => onThemeChange && onThemeChange("light"),
                   },
-                  "Light"
+                  "Light",
                 ),
                 React.createElement(
                   ThemeButton,
@@ -3259,16 +3732,16 @@ class SettingsPanel extends PureComponent {
                     active: themePreference === "dark",
                     onClick: () => onThemeChange && onThemeChange("dark"),
                   },
-                  "Dark"
-                )
+                  "Dark",
+                ),
               ),
               React.createElement(
                 ThemeDescription,
                 null,
                 themePreference === "auto"
                   ? `Using ${activeTheme} mode (system preference)`
-                  : `Using ${themePreference} mode`
-              )
+                  : `Using ${themePreference} mode`,
+              ),
             ),
 
             // Refresh Interval Section
@@ -3278,7 +3751,7 @@ class SettingsPanel extends PureComponent {
               React.createElement(
                 RefreshIntervalLabel,
                 null,
-                "Refresh Interval"
+                "Refresh Interval",
               ),
               React.createElement(
                 RefreshIntervalSelect,
@@ -3295,10 +3768,10 @@ class SettingsPanel extends PureComponent {
                   React.createElement(
                     "option",
                     { key: option.value, value: option.value },
-                    option.label
-                  )
-                )
-              )
+                    option.label,
+                  ),
+                ),
+              ),
             ),
 
             // Number Format Section
@@ -3321,9 +3794,9 @@ class SettingsPanel extends PureComponent {
                   React.createElement(
                     "option",
                     { key: option.value, value: option.value },
-                    option.label
-                  )
-                )
+                    option.label,
+                  ),
+                ),
               ),
               React.createElement(NumberFormatLabel, null, "Number Format"),
               React.createElement(
@@ -3341,10 +3814,10 @@ class SettingsPanel extends PureComponent {
                   React.createElement(
                     "option",
                     { key: option.value, value: option.value },
-                    option.label
-                  )
-                )
-              )
+                    option.label,
+                  ),
+                ),
+              ),
             ),
 
             // Currency Section
@@ -3367,10 +3840,10 @@ class SettingsPanel extends PureComponent {
                   React.createElement(
                     "option",
                     { key: option.value, value: option.value },
-                    option.label
-                  )
-                )
-              )
+                    option.label,
+                  ),
+                ),
+              ),
             ),
 
             // Tab Ticker Section
@@ -3378,17 +3851,26 @@ class SettingsPanel extends PureComponent {
               ToggleSection,
               null,
               React.createElement(ToggleSectionTitle, null, "Tab Ticker"),
-              React.createElement(ToggleSectionDesc, null, "Scroll prices in browser tab"),
+              React.createElement(
+                ToggleSectionDesc,
+                null,
+                "Scroll prices in browser tab",
+              ),
               React.createElement(
                 ToggleRow,
                 null,
-                React.createElement(ToggleLabel, null, tickerEnabled ? "On" : "Off"),
+                React.createElement(
+                  ToggleLabel,
+                  null,
+                  tickerEnabled ? "On" : "Off",
+                ),
                 React.createElement(ToggleSwitch, {
                   active: tickerEnabled,
-                  onClick: () => onTickerChange && onTickerChange(!tickerEnabled),
+                  onClick: () =>
+                    onTickerChange && onTickerChange(!tickerEnabled),
                   "aria-label": "Toggle tab ticker",
-                })
-              )
+                }),
+              ),
             ),
 
             // Ticker Format Section (only show when ticker is enabled)
@@ -3396,7 +3878,11 @@ class SettingsPanel extends PureComponent {
               React.createElement(
                 RefreshIntervalSection,
                 null,
-                React.createElement(RefreshIntervalLabel, null, "Ticker Format"),
+                React.createElement(
+                  RefreshIntervalLabel,
+                  null,
+                  "Ticker Format",
+                ),
                 React.createElement(
                   RefreshIntervalSelect,
                   {
@@ -3411,12 +3897,11 @@ class SettingsPanel extends PureComponent {
                     React.createElement(
                       "option",
                       { key: option.value, value: option.value },
-                      option.label
-                    )
-                  )
-                )
+                      option.label,
+                    ),
+                  ),
+                ),
               ),
-
           ),
 
         // Widgets Tab Content
@@ -3427,7 +3912,11 @@ class SettingsPanel extends PureComponent {
             React.createElement(
               ToggleSection,
               null,
-              React.createElement(ToggleSectionDesc, null, "Show data widgets below chart"),
+              React.createElement(
+                ToggleSectionDesc,
+                null,
+                "Show data widgets below chart",
+              ),
               React.createElement(
                 ToggleRow,
                 null,
@@ -3436,7 +3925,7 @@ class SettingsPanel extends PureComponent {
                   active: widgets.fearGreed,
                   onClick: () => onWidgetToggle && onWidgetToggle("fearGreed"),
                   "aria-label": "Toggle Fear & Greed widget",
-                })
+                }),
               ),
               React.createElement(
                 ToggleRow,
@@ -3444,9 +3933,10 @@ class SettingsPanel extends PureComponent {
                 React.createElement(ToggleLabel, null, "Market Overview"),
                 React.createElement(ToggleSwitch, {
                   active: widgets.marketOverview,
-                  onClick: () => onWidgetToggle && onWidgetToggle("marketOverview"),
+                  onClick: () =>
+                    onWidgetToggle && onWidgetToggle("marketOverview"),
                   "aria-label": "Toggle Market Overview widget",
-                })
+                }),
               ),
               React.createElement(
                 ToggleRow,
@@ -3454,9 +3944,10 @@ class SettingsPanel extends PureComponent {
                 React.createElement(ToggleLabel, null, "BTC Halving Countdown"),
                 React.createElement(ToggleSwitch, {
                   active: widgets.halvingCountdown,
-                  onClick: () => onWidgetToggle && onWidgetToggle("halvingCountdown"),
+                  onClick: () =>
+                    onWidgetToggle && onWidgetToggle("halvingCountdown"),
                   "aria-label": "Toggle BTC Halving Countdown widget",
-                })
+                }),
               ),
               React.createElement(
                 ToggleRow,
@@ -3466,11 +3957,61 @@ class SettingsPanel extends PureComponent {
                   active: widgets.rsiWidget,
                   onClick: () => onWidgetToggle && onWidgetToggle("rsiWidget"),
                   "aria-label": "Toggle RSI widget",
-                })
-              )
-            )
-          )
-      )
+                }),
+              ),
+              React.createElement(
+                ToggleRow,
+                null,
+                React.createElement(ToggleLabel, null, "Funding Rate"),
+                React.createElement(ToggleSwitch, {
+                  active: widgets.fundingRate,
+                  onClick: () => onWidgetToggle && onWidgetToggle("fundingRate"),
+                  "aria-label": "Toggle Funding Rate widget",
+                }),
+              ),
+              React.createElement(
+                ToggleRow,
+                null,
+                React.createElement(ToggleLabel, null, "Long / Short Ratio"),
+                React.createElement(ToggleSwitch, {
+                  active: widgets.longShortRatio,
+                  onClick: () => onWidgetToggle && onWidgetToggle("longShortRatio"),
+                  "aria-label": "Toggle Long/Short Ratio widget",
+                }),
+              ),
+              React.createElement(
+                ToggleRow,
+                null,
+                React.createElement(ToggleLabel, null, "Open Interest"),
+                React.createElement(ToggleSwitch, {
+                  active: widgets.openInterest,
+                  onClick: () => onWidgetToggle && onWidgetToggle("openInterest"),
+                  "aria-label": "Toggle Open Interest widget",
+                }),
+              ),
+              React.createElement(
+                ToggleRow,
+                null,
+                React.createElement(ToggleLabel, null, "Liquidations 24h"),
+                React.createElement(ToggleSwitch, {
+                  active: widgets.liquidations,
+                  onClick: () => onWidgetToggle && onWidgetToggle("liquidations"),
+                  "aria-label": "Toggle Liquidations widget",
+                }),
+              ),
+              React.createElement(
+                ToggleRow,
+                null,
+                React.createElement(ToggleLabel, null, "Altcoin Season"),
+                React.createElement(ToggleSwitch, {
+                  active: widgets.altcoinSeason,
+                  onClick: () => onWidgetToggle && onWidgetToggle("altcoinSeason"),
+                  "aria-label": "Toggle Altcoin Season widget",
+                }),
+              ),
+            ),
+          ),
+      ),
     );
   }
 }
@@ -3483,7 +4024,17 @@ SettingsPanel.defaultProps = {
   onResetCoins: null,
   onClose: null,
   visible: false,
-  widgets: { fearGreed: false, marketOverview: false, halvingCountdown: false, rsiWidget: false },
+  widgets: {
+    fearGreed: false,
+    marketOverview: false,
+    halvingCountdown: false,
+    rsiWidget: false,
+    fundingRate: false,
+    longShortRatio: false,
+    openInterest: false,
+    liquidations: false,
+    altcoinSeason: false,
+  },
   onWidgetToggle: null,
 };
 
@@ -3518,10 +4069,18 @@ class CryptoChart extends PureComponent {
       tickerText: "", // Full ticker string
       // Widget states
       widgets: loadWidgetsFromStorage(), // { fearGreed, marketOverview, halvingCountdown, rsiWidget }
+      hiddenWidgets: loadHiddenWidgetsFromStorage(), // Per-widget hide state from main screen
+      widgetOrder: loadWidgetOrderFromStorage(), // Drag-reorder
+      dragWidget: null, // Currently dragged widget key
       fearGreedData: null, // { value, classification, timestamp }
       marketOverviewData: null, // { totalMarketCap, totalVolume, btcDominance, ... }
       halvingData: null, // { days, hours, minutes, blocksLeft, nextHalvingBlock }
       rsiValue: null, // RSI calculated from current valueHistory (0-100)
+      fundingRateData: null, // { rate, percent, annualized }
+      longShortData: null, // { longPct, shortPct }
+      openInterestData: null, // { oiUsd, formatted }
+      liquidationsData: null, // { total, longLiq, shortLiq, longPct, ... }
+      altcoinSeasonData: null, // { index, label, outperformers, total }
     });
 
     // Ticker scroll position (class property to avoid re-renders)
@@ -3531,6 +4090,7 @@ class CryptoChart extends PureComponent {
     this.widgetRefreshInterval = null;
 
     _defineProperty(this, "cycleCoinIndex", () => {
+      this.tickerScrollPos = 0; // Reset ticker scroll on coin change
       this.setState(
         (prevState) => {
           const { coinOptions } = prevState;
@@ -3547,11 +4107,10 @@ class CryptoChart extends PureComponent {
           };
         },
         () => {
-          // Start skeleton timer (show after 300ms if still loading)
           this.startSkeletonTimer();
-          // Fetch new data - updateTabTitle will be called after data is loaded
           this.fetchData();
-        }
+          this.fetchWidgets();
+        },
       );
     });
 
@@ -3561,7 +4120,7 @@ class CryptoChart extends PureComponent {
           period,
           apiError: false, // Clear API error when changing period
         },
-        this.fetchData
+        this.fetchData,
       );
     });
 
@@ -3580,29 +4139,106 @@ class CryptoChart extends PureComponent {
     });
 
     _defineProperty(this, "fetchWidgets", async () => {
-      const { widgets } = this.state;
+      const { widgets, coinOptions, coinIndex } = this.state;
+      const coin = coinOptions[coinIndex] || "BTC";
 
-      // Fetch Fear & Greed if enabled
+      // Market-wide widgets
       if (widgets.fearGreed) {
-        const data = await fetchFearGreedIndex();
-        if (data) {
-          this.setState({ fearGreedData: data });
-        }
+        try {
+          const data = await fetchFearGreedIndex();
+          if (data) this.setState({ fearGreedData: data });
+        } catch (e) { /* silent fail – widget shows stale data */ }
       }
-
-      // Fetch Market Overview if enabled
       if (widgets.marketOverview) {
-        const data = await fetchMarketOverview();
-        if (data) {
-          this.setState({ marketOverviewData: data });
-        }
+        try {
+          const data = await fetchMarketOverview();
+          if (data) this.setState({ marketOverviewData: data });
+        } catch (e) { /* silent fail */ }
+      }
+      if (widgets.halvingCountdown) {
+        try {
+          const data = await fetchHalvingData();
+          if (data) this.setState({ halvingData: data });
+        } catch (e) { /* silent fail */ }
+      }
+      if (widgets.altcoinSeason) {
+        try {
+          const data = await fetchAltcoinSeason();
+          if (data) this.setState({ altcoinSeasonData: data });
+        } catch (e) { /* silent fail */ }
       }
 
-      // Fetch BTC Halving Countdown if enabled
-      if (widgets.halvingCountdown) {
-        const data = await fetchHalvingData();
-        if (data) this.setState({ halvingData: data });
+      // Coin-specific widgets
+      if (widgets.fundingRate) {
+        try {
+          const data = await fetchFundingRate(coin);
+          this.setState({ fundingRateData: data });
+        } catch (e) { /* silent fail */ }
       }
+      if (widgets.longShortRatio) {
+        try {
+          const data = await fetchLongShortRatio(coin);
+          this.setState({ longShortData: data });
+        } catch (e) { /* silent fail */ }
+      }
+      if (widgets.openInterest) {
+        try {
+          const data = await fetchOpenInterest(coin);
+          this.setState({ openInterestData: data });
+        } catch (e) { /* silent fail */ }
+      }
+      if (widgets.liquidations) {
+        try {
+          const data = await fetchLiquidations(coin);
+          this.setState({ liquidationsData: data });
+        } catch (e) { /* silent fail */ }
+      }
+    });
+
+    _defineProperty(this, "hideWidget", (widgetName) => {
+      this.setState((prevState) => {
+        const newHidden = { ...prevState.hiddenWidgets, [widgetName]: true };
+        saveHiddenWidgetsToStorage(newHidden);
+        return { hiddenWidgets: newHidden };
+      });
+    });
+
+    _defineProperty(this, "restoreAllWidgets", () => {
+      saveHiddenWidgetsToStorage({});
+      this.setState({ hiddenWidgets: {} }, () => {
+        this.fetchWidgets();
+      });
+    });
+
+    _defineProperty(this, "onWidgetDragStart", (key) => {
+      this.setState({ dragWidget: key });
+    });
+
+    _defineProperty(this, "onWidgetDragOver", (key) => {
+      const { dragWidget, widgetOrder } = this.state;
+      if (!dragWidget || dragWidget === key) return;
+      const from = widgetOrder.indexOf(dragWidget);
+      const to = widgetOrder.indexOf(key);
+      if (from === -1 || to === -1) return;
+      const newOrder = [...widgetOrder];
+      newOrder.splice(from, 1);
+      newOrder.splice(to, 0, dragWidget);
+      saveWidgetOrderToStorage(newOrder);
+      this.setState({ widgetOrder: newOrder });
+    });
+
+    _defineProperty(this, "onWidgetDragEnd", () => {
+      this.setState({ dragWidget: null });
+    });
+
+    _defineProperty(this, "hideAllWidgets", () => {
+      const { widgets } = this.state;
+      const newHidden = {};
+      Object.keys(widgets).forEach((key) => {
+        if (widgets[key]) newHidden[key] = true;
+      });
+      saveHiddenWidgetsToStorage(newHidden);
+      this.setState({ hiddenWidgets: newHidden });
     });
 
     _defineProperty(this, "handleWidgetToggle", (widgetName) => {
@@ -3620,7 +4256,7 @@ class CryptoChart extends PureComponent {
           if (this.state.widgets[widgetName]) {
             this.fetchWidgets();
           }
-        }
+        },
       );
     });
 
@@ -3659,20 +4295,15 @@ class CryptoChart extends PureComponent {
           activeCoin,
           period,
           currency,
-          "history"
+          "history",
         );
         const cachedSpot = getCachedData(
           activeCoin,
           "current",
           currency,
-          "spot"
+          "spot",
         );
-        const cachedOHLC = getCachedData(
-          activeCoin,
-          period,
-          currency,
-          "ohlc"
-        );
+        const cachedOHLC = getCachedData(activeCoin, period, currency, "ohlc");
 
         // Clear skeleton timer
         if (this.skeletonTimer) {
@@ -3701,7 +4332,7 @@ class CryptoChart extends PureComponent {
               this.state.coinOptions,
               this.state.coinIndex,
               this.state.currentValue,
-              this.state.valueHistory
+              this.state.valueHistory,
             );
           });
         } else {
@@ -3724,19 +4355,22 @@ class CryptoChart extends PureComponent {
         activeCoin,
         period,
         currency,
-        "history"
+        "history",
       );
       const cachedSpot = getCachedData(activeCoin, "current", currency, "spot");
       const cachedOHLCStale = getCachedData(
         activeCoin,
         period,
         currency,
-        "ohlc"
+        "ohlc",
       );
 
       // If we have stale data, show it immediately while fetching fresh data
       if (cachedHistory && cachedHistory.isStale && cachedHistory.data) {
-        this.setState({ valueHistory: cachedHistory.data, rsiValue: calculateRSI(cachedHistory.data) });
+        this.setState({
+          valueHistory: cachedHistory.data,
+          rsiValue: calculateRSI(cachedHistory.data),
+        });
       }
 
       if (cachedSpot && cachedSpot.isStale && cachedSpot.data) {
@@ -3745,7 +4379,7 @@ class CryptoChart extends PureComponent {
             this.state.coinOptions,
             this.state.coinIndex,
             this.state.currentValue,
-            this.state.valueHistory
+            this.state.valueHistory,
           );
         });
       }
@@ -3761,7 +4395,7 @@ class CryptoChart extends PureComponent {
           currency,
           signal,
           true,
-          coinOptions
+          coinOptions,
         );
         const valueHistory = await fetchValueHistory(
           activeCoin,
@@ -3769,7 +4403,7 @@ class CryptoChart extends PureComponent {
           currency,
           signal,
           true,
-          coinOptions
+          coinOptions,
         );
 
         // Clear skeleton timer
@@ -3795,13 +4429,13 @@ class CryptoChart extends PureComponent {
               this.state.coinOptions,
               this.state.coinIndex,
               this.state.currentValue,
-              this.state.valueHistory
+              this.state.valueHistory,
             );
             // Also update ticker text if ticker is running
             if (this.state.tickerEnabled && this.tickerInterval) {
               this.buildTickerText();
             }
-          }
+          },
         );
       } catch (e) {
         // Don't log errors if request was aborted (expected behavior)
@@ -3830,20 +4464,7 @@ class CryptoChart extends PureComponent {
         }
 
         // For other API errors, show error banner but keep cached data if available
-        // Check if we have cached data to show
-        const cachedHistory = getCachedData(
-          activeCoin,
-          period,
-          currency,
-          "history"
-        );
-        const cachedSpot = getCachedData(
-          activeCoin,
-          "current",
-          currency,
-          "spot"
-        );
-
+        // Reuse cachedHistory / cachedSpot already fetched above for stale-while-revalidate
         const newState = {
           isLoading: false,
           showSkeleton: false,
@@ -3866,7 +4487,7 @@ class CryptoChart extends PureComponent {
               this.state.coinOptions,
               this.state.coinIndex,
               this.state.currentValue,
-              this.state.valueHistory
+              this.state.valueHistory,
             );
           }
         });
@@ -3895,7 +4516,7 @@ class CryptoChart extends PureComponent {
         clearTimeout(this.fetchTimeout);
         this.fetchTimeout = setTimeout(
           this.fetchData,
-          this.state.refreshInterval
+          this.state.refreshInterval,
         );
       });
     });
@@ -3932,7 +4553,7 @@ class CryptoChart extends PureComponent {
             this.state.coinOptions,
             this.state.coinIndex,
             this.state.currentValue,
-            this.state.valueHistory
+            this.state.valueHistory,
           );
         }
       });
@@ -3994,7 +4615,7 @@ class CryptoChart extends PureComponent {
             currency,
             null,
             true,
-            coinOptions
+            coinOptions,
           );
 
           // Throttled ticker update (max once per 2 seconds during prefetch)
@@ -4025,6 +4646,10 @@ class CryptoChart extends PureComponent {
 
       if (!/^[A-Z0-9]{2,10}$/.test(normalized)) {
         return { success: false, reason: "format" };
+      }
+
+      if (!SUGGESTED_COINS.includes(normalized)) {
+        return { success: false, reason: "unsupported" };
       }
 
       if (this.state.coinOptions.includes(normalized)) {
@@ -4095,7 +4720,14 @@ class CryptoChart extends PureComponent {
     // Ticker interval methods
     // Build the full ticker text from all coins
     _defineProperty(this, "buildTickerText", () => {
-      const { coinOptions, currency, period, tickerFormat, decimalPlaces, separatorFormat } = this.state;
+      const {
+        coinOptions,
+        currency,
+        period,
+        tickerFormat,
+        decimalPlaces,
+        separatorFormat,
+      } = this.state;
       if (!coinOptions || coinOptions.length === 0) {
         this.setState({ tickerText: "" });
         return;
@@ -4114,9 +4746,19 @@ class CryptoChart extends PureComponent {
 
         if (cachedSpot && cachedSpot.data) {
           const price = cachedSpot.data;
-          priceStr = formatTickerPrice(price, currencySymbol, tickerFormat, decimalPlaces, separatorFormat);
+          priceStr = formatTickerPrice(
+            price,
+            currencySymbol,
+            tickerFormat,
+            decimalPlaces,
+            separatorFormat,
+          );
 
-          if (cachedHistory && cachedHistory.data && cachedHistory.data.length > 0) {
+          if (
+            cachedHistory &&
+            cachedHistory.data &&
+            cachedHistory.data.length > 0
+          ) {
             const percentDelta = derivePercentDelta(price, cachedHistory.data);
             if (typeof percentDelta === "number") {
               const sign = percentDelta >= 0 ? "+" : "";
@@ -4172,12 +4814,16 @@ class CryptoChart extends PureComponent {
       // Use slice for better performance (no loop, no string concatenation)
       // Double the text for seamless wrap-around
       const doubledText = tickerText + tickerText;
-      const visibleText = doubledText.slice(this.tickerScrollPos, this.tickerScrollPos + displayLength);
+      const visibleText = doubledText.slice(
+        this.tickerScrollPos,
+        this.tickerScrollPos + displayLength,
+      );
 
       document.title = visibleText;
 
       // Update scroll position without setState (avoids re-render every 250ms)
-      this.tickerScrollPos = (this.tickerScrollPos + TICKER_SCROLL_CHARS) % textLength;
+      this.tickerScrollPos =
+        (this.tickerScrollPos + TICKER_SCROLL_CHARS) % textLength;
     });
   }
 
@@ -4188,7 +4834,7 @@ class CryptoChart extends PureComponent {
       this.state.coinOptions,
       this.state.coinIndex,
       this.state.currentValue,
-      this.state.valueHistory
+      this.state.valueHistory,
     );
 
     // Set initial body theme
@@ -4253,7 +4899,7 @@ class CryptoChart extends PureComponent {
     if (this.mediaQuery) {
       this.mediaQuery.removeEventListener(
         "change",
-        this.handleSystemThemeChange
+        this.handleSystemThemeChange,
       );
     }
 
@@ -4300,6 +4946,13 @@ class CryptoChart extends PureComponent {
       marketOverviewData,
       halvingData,
       rsiValue,
+      fundingRateData,
+      longShortData,
+      openInterestData,
+      liquidationsData,
+      altcoinSeasonData,
+      widgetOrder,
+      dragWidget,
     } = this.state;
     const fgAngle = fearGreedData
       ? (180 - fearGreedData.value * 1.8) * (Math.PI / 180)
@@ -4326,7 +4979,7 @@ class CryptoChart extends PureComponent {
           React.createElement(
             OfflineMessage,
             null,
-            "You are offline. Data will update when connection is restored."
+            "You are offline. Data will update when connection is restored.",
           ),
         // API error notification (only show if not offline)
         !isOffline &&
@@ -4334,7 +4987,7 @@ class CryptoChart extends PureComponent {
           React.createElement(
             ApiErrorMessage,
             null,
-            "Unable to fetch latest data. Showing cached prices."
+            "Unable to fetch latest data. Showing cached prices.",
           ),
         // Invalid coin warning
         invalidCoin &&
@@ -4344,18 +4997,18 @@ class CryptoChart extends PureComponent {
             React.createElement(
               InvalidCoinMessage,
               null,
-              `${invalidCoin} is not available or invalid`
+              `${invalidCoin} is not available or invalid`,
             ),
             React.createElement(
               InvalidCoinButton,
               { onClick: this.handleRemoveInvalidCoin },
-              "Remove"
+              "Remove",
             ),
             React.createElement(
               InvalidCoinButton,
               { onClick: this.handleDismissInvalidCoin },
-              "Skip"
-            )
+              "Skip",
+            ),
           ),
         React.createElement(
           AppShell,
@@ -4367,8 +5020,9 @@ class CryptoChart extends PureComponent {
               open: showSettings,
               type: "button",
               "aria-label": showSettings ? "Close settings" : "Open settings",
+              title: showSettings ? "Close settings" : "Settings",
             },
-            showSettings ? "×" : "⚙"
+            showSettings ? "×" : "⚙",
           ),
 
           React.createElement(
@@ -4387,7 +5041,7 @@ class CryptoChart extends PureComponent {
                   React.createElement(SkeletonBox, {
                     width: "6rem",
                     height: "1rem",
-                  })
+                  }),
                 )
               : React.createElement(Overview, {
                   coin: activeCoin,
@@ -4411,14 +5065,14 @@ class CryptoChart extends PureComponent {
                         key: i,
                         width: "3rem",
                         height: "2rem",
-                      })
-                    )
+                      }),
+                    ),
                 )
               : React.createElement(PeriodSwitcher, {
                   onChange: this.setPeriod,
                   options: PERIOD_OPTIONS,
                   value: period,
-                })
+                }),
           ),
 
           React.createElement(
@@ -4430,148 +5084,224 @@ class CryptoChart extends PureComponent {
               // Show skeleton or actual chart
               showSkeleton
                 ? React.createElement(SkeletonChart, null)
-                : React.createElement(Line, { prices: valueHistory })
-            )
-          )
+                : React.createElement(Line, { prices: valueHistory }),
+            ),
+          ),
         ),
-        // Widget Panel (show if any widget is enabled)
-        (widgets.fearGreed || widgets.marketOverview || widgets.halvingCountdown || widgets.rsiWidget) &&
-          React.createElement(
-            WidgetPanel,
-            { visible: widgets.fearGreed || widgets.marketOverview || widgets.halvingCountdown || widgets.rsiWidget },
-            // Fear & Greed Widget
-            widgets.fearGreed &&
-              React.createElement(
-                WidgetCard,
-                { key: "fear-greed" },
-                React.createElement(WidgetLabel, null, "Fear & Greed"),
-                fearGreedData
-                  ? React.createElement(
-                      Fragment,
-                      null,
-                      React.createElement(
-                        "svg",
-                        {
-                          viewBox: "0 8 100 44",
-                          style: { display: "block", margin: "0 auto", width: "92px", height: "40px", overflow: "visible" },
+        // Widget toggle button (eye icon): hide-all when visible, restore when all hidden
+        (() => {
+          if (showSettings) return null;
+          const hidden = this.state.hiddenWidgets;
+          const anyEnabled = Object.keys(widgets).some((k) => widgets[k]);
+          if (!anyEnabled) return null;
+          const anyVisible = Object.keys(widgets).some(
+            (k) => widgets[k] && !hidden[k],
+          );
+          if (anyVisible) {
+            // × — hide all widgets
+            return React.createElement(
+              WidgetRestoreButton,
+              {
+                onClick: this.hideAllWidgets,
+                type: "button",
+                "aria-label": "Hide all widgets",
+                title: "Hide all widgets",
+              },
+              "\u00d7",
+            );
+          }
+          // Open eye — restore all widgets
+          return React.createElement(
+            WidgetRestoreButton,
+            {
+              onClick: this.restoreAllWidgets,
+              type: "button",
+              "aria-label": "Show hidden widgets",
+              title: "Show hidden widgets",
+            },
+            "\uD83D\uDC41",
+          );
+        })(),
+        // Widget Panel (drag-reorderable, show enabled widgets that are not individually hidden)
+        (() => {
+          const hidden = this.state.hiddenWidgets;
+          const widgetDefs = {
+            fearGreed: {
+              label: "Fear & Greed",
+              visible: widgets.fearGreed && !hidden.fearGreed,
+              content: fearGreedData
+                ? React.createElement(
+                    Fragment,
+                    null,
+                    React.createElement(
+                      "svg",
+                      {
+                        viewBox: "0 8 100 44",
+                        style: {
+                          display: "block",
+                          margin: "0 auto",
+                          width: "92px",
+                          height: "40px",
+                          overflow: "visible",
                         },
-                        React.createElement(GaugeTrackPath, { d: GAUGE_ARC }),
-                        GAUGE_SEGS.map((seg, i) =>
-                          React.createElement("path", {
-                            key: "seg-" + i,
-                            d: GAUGE_ARC,
-                            fill: "none",
-                            stroke: seg.color,
-                            strokeWidth: "7",
-                            strokeLinecap: i === 0 || i === 4 ? "round" : "butt",
-                            strokeDasharray: seg.len + " " + GAUGE_LEN,
-                            strokeDashoffset: -seg.offset,
-                          })
-                        ),
-                        React.createElement(GaugeNeedle, {
-                          x1: "50", y1: "50",
-                          x2: fgNeedleX, y2: fgNeedleY,
+                      },
+                      React.createElement(GaugeTrackPath, { d: GAUGE_ARC }),
+                      GAUGE_SEGS.map((seg, i) =>
+                        React.createElement("path", {
+                          key: "seg-" + i,
+                          d: GAUGE_ARC,
+                          fill: "none",
+                          stroke: seg.color,
+                          strokeWidth: "7",
+                          strokeLinecap:
+                            i === 0 || i === 4 ? "round" : "butt",
+                          strokeDasharray: seg.len + " " + GAUGE_LEN,
+                          strokeDashoffset: -seg.offset,
                         }),
-                        React.createElement(GaugeCenterDot, { cx: "50", cy: "50", r: "3" })
                       ),
-                      React.createElement(WidgetValue, { style: { marginTop: "3px" } }, fearGreedData.value),
-                      React.createElement(WidgetSubtext, null, fearGreedData.classification)
-                    )
-                  : React.createElement(WidgetSubtext, null, "Loading...")
-              ),
-            // Market Overview Widget
-            widgets.marketOverview &&
-              React.createElement(
-                WidgetCard,
-                { key: "market-overview" },
-                React.createElement(WidgetLabel, null, "Market"),
-                marketOverviewData
-                  ? React.createElement(
-                      Fragment,
+                      React.createElement(GaugeNeedle, {
+                        x1: "50",
+                        y1: "50",
+                        x2: fgNeedleX,
+                        y2: fgNeedleY,
+                      }),
+                      React.createElement(GaugeCenterDot, {
+                        cx: "50",
+                        cy: "50",
+                        r: "3",
+                      }),
+                    ),
+                    React.createElement(
+                      WidgetValue,
+                      { style: { marginTop: "3px" } },
+                      fearGreedData.value,
+                    ),
+                    React.createElement(
+                      WidgetSubtext,
+                      null,
+                      fearGreedData.classification,
+                    ),
+                  )
+                : React.createElement(WidgetSubtext, null, "Loading..."),
+            },
+            marketOverview: {
+              label: "Market",
+              visible: widgets.marketOverview && !hidden.marketOverview,
+              content: marketOverviewData
+                ? React.createElement(
+                    Fragment,
+                    null,
+                    React.createElement(
+                      WidgetValue,
+                      { style: { fontSize: "0.85rem" } },
+                      React.createElement(MarketStatLabel, null, "Cap"),
+                      "$" +
+                        (marketOverviewData.totalMarketCap / 1e12).toFixed(
+                          2,
+                        ) +
+                        "T",
+                    ),
+                    React.createElement(
+                      WidgetSubtext,
+                      null,
+                      React.createElement(MarketStatLabel, null, "BTC"),
+                      marketOverviewData.btcDominance.toFixed(1) + "%",
+                      " ",
+                      React.createElement(MarketStatLabel, null, "ETH"),
+                      marketOverviewData.ethDominance.toFixed(1) + "%",
+                    ),
+                  )
+                : React.createElement(WidgetSubtext, null, "Loading..."),
+            },
+            halvingCountdown: {
+              label: "BTC Halving",
+              visible: widgets.halvingCountdown && !hidden.halvingCountdown,
+              content: halvingData
+                ? React.createElement(
+                    Fragment,
+                    null,
+                    React.createElement(
+                      HalvingTimeGrid,
                       null,
                       React.createElement(
-                        WidgetValue,
-                        { style: { fontSize: "0.85rem" } },
-                        React.createElement(MarketStatLabel, null, "Cap"),
-                        "$" + (marketOverviewData.totalMarketCap / 1e12).toFixed(2) + "T"
+                        HalvingTimeUnit,
+                        null,
+                        React.createElement(
+                          HalvingTimeNumber,
+                          null,
+                          String(halvingData.years).padStart(2, "0"),
+                        ),
+                        React.createElement(HalvingTimeLabel, null, "Yrs"),
+                      ),
+                      React.createElement(HalvingTimeSep, null, ":"),
+                      React.createElement(
+                        HalvingTimeUnit,
+                        null,
+                        React.createElement(
+                          HalvingTimeNumber,
+                          null,
+                          String(halvingData.remainingDays).padStart(3, "0"),
+                        ),
+                        React.createElement(HalvingTimeLabel, null, "Days"),
+                      ),
+                      React.createElement(HalvingTimeSep, null, ":"),
+                      React.createElement(
+                        HalvingTimeUnit,
+                        null,
+                        React.createElement(
+                          HalvingTimeNumber,
+                          null,
+                          String(halvingData.hours).padStart(2, "0"),
+                        ),
+                        React.createElement(HalvingTimeLabel, null, "Hrs"),
+                      ),
+                      React.createElement(HalvingTimeSep, null, ":"),
+                      React.createElement(
+                        HalvingTimeUnit,
+                        null,
+                        React.createElement(
+                          HalvingTimeNumber,
+                          null,
+                          String(halvingData.minutes).padStart(2, "0"),
+                        ),
+                        React.createElement(HalvingTimeLabel, null, "Min"),
+                      ),
+                    ),
+                    React.createElement(
+                      "div",
+                      {
+                        style: {
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "6px",
+                          marginTop: "5px",
+                        },
+                      },
+                      React.createElement(
+                        HalvingProgressBar,
+                        { style: { flex: 1, marginTop: 0 } },
+                        React.createElement(HalvingProgressFill, {
+                          percent: halvingData.progressPercent,
+                        }),
                       ),
                       React.createElement(
-                        WidgetSubtext,
+                        HalvingTimeLabel,
                         null,
-                        React.createElement(MarketStatLabel, null, "BTC"),
-                        marketOverviewData.btcDominance.toFixed(1) + "%",
-                        " ",
-                        React.createElement(MarketStatLabel, null, "ETH"),
-                        marketOverviewData.ethDominance.toFixed(1) + "%"
-                      )
-                    )
-                  : React.createElement(WidgetSubtext, null, "Loading...")
-              ),
-            // BTC Halving Countdown Widget
-            widgets.halvingCountdown &&
-              React.createElement(
-                WidgetCard,
-                { key: "halving-extended" },
-                React.createElement(WidgetLabel, null, "BTC Halving"),
-                halvingData
-                  ? React.createElement(
-                      Fragment,
+                        halvingData.progressPercent + "%",
+                      ),
+                    ),
+                    React.createElement(
+                      HalvingEta,
                       null,
-                      React.createElement(
-                        HalvingTimeGrid,
-                        null,
-                        React.createElement(
-                          HalvingTimeUnit,
-                          null,
-                          React.createElement(HalvingTimeNumber, null, String(halvingData.years).padStart(2, "0")),
-                          React.createElement(HalvingTimeLabel, null, "Yrs")
-                        ),
-                        React.createElement(HalvingTimeSep, null, ":"),
-                        React.createElement(
-                          HalvingTimeUnit,
-                          null,
-                          React.createElement(HalvingTimeNumber, null, String(halvingData.remainingDays).padStart(3, "0")),
-                          React.createElement(HalvingTimeLabel, null, "Days")
-                        ),
-                        React.createElement(HalvingTimeSep, null, ":"),
-                        React.createElement(
-                          HalvingTimeUnit,
-                          null,
-                          React.createElement(HalvingTimeNumber, null, String(halvingData.hours).padStart(2, "0")),
-                          React.createElement(HalvingTimeLabel, null, "Hrs")
-                        ),
-                        React.createElement(HalvingTimeSep, null, ":"),
-                        React.createElement(
-                          HalvingTimeUnit,
-                          null,
-                          React.createElement(HalvingTimeNumber, null, String(halvingData.minutes).padStart(2, "0")),
-                          React.createElement(HalvingTimeLabel, null, "Min")
-                        )
-                      ),
-                      React.createElement(
-                        "div",
-                        { style: { display: "flex", alignItems: "center", gap: "6px", marginTop: "5px" } },
-                        React.createElement(
-                          HalvingProgressBar,
-                          { style: { flex: 1, marginTop: 0 } },
-                          React.createElement(HalvingProgressFill, { percent: halvingData.progressPercent })
-                        ),
-                        React.createElement(HalvingTimeLabel, null, halvingData.progressPercent + "%")
-                      ),
-                      React.createElement(
-                        HalvingEta,
-                        null,
-                        "ETA: " + halvingData.etaFormatted
-                      )
-                    )
-                  : React.createElement(WidgetSubtext, null, "Loading...")
-              ),
-            // RSI Widget
-            widgets.rsiWidget &&
-              React.createElement(
-                WidgetCard,
-                { key: "rsi-widget" },
-                React.createElement(WidgetLabel, null, "RSI"),
+                      "ETA: " + halvingData.etaFormatted,
+                    ),
+                  )
+                : React.createElement(WidgetSubtext, null, "Loading..."),
+            },
+            rsiWidget: {
+              label: "RSI",
+              visible: widgets.rsiWidget && !hidden.rsiWidget,
+              content:
                 rsiValue !== null
                   ? React.createElement(
                       Fragment,
@@ -4580,18 +5310,209 @@ class CryptoChart extends PureComponent {
                       React.createElement(
                         RsiBar,
                         null,
-                        React.createElement(RsiMarker, { value: Math.min(Math.max(rsiValue, 2), 98) })
+                        React.createElement(RsiMarker, {
+                          value: Math.min(Math.max(rsiValue, 2), 98),
+                        }),
                       ),
                       React.createElement(
                         RsiLabels,
                         null,
-                        React.createElement(HalvingTimeLabel, null, "Oversold"),
-                        React.createElement(HalvingTimeLabel, null, "Overbought")
-                      )
+                        React.createElement(
+                          HalvingTimeLabel,
+                          null,
+                          "Oversold",
+                        ),
+                        React.createElement(
+                          HalvingTimeLabel,
+                          null,
+                          "Overbought",
+                        ),
+                      ),
                     )
-                  : React.createElement(WidgetSubtext, null, "Loading...")
-              )
-          ),
+                  : React.createElement(WidgetSubtext, null, "Loading..."),
+            },
+            fundingRate: {
+              label: activeCoin + " Funding",
+              visible: widgets.fundingRate && !hidden.fundingRate,
+              content: fundingRateData
+                ? React.createElement(
+                    Fragment,
+                    null,
+                    React.createElement(
+                      FundingValue,
+                      { positive: fundingRateData.rate > 0 },
+                      (fundingRateData.rate >= 0 ? "+" : "") +
+                        fundingRateData.percent +
+                        "%",
+                    ),
+                    React.createElement(
+                      FundingAnnual,
+                      null,
+                      "Ann. " +
+                        (fundingRateData.annualized >= 0 ? "+" : "") +
+                        fundingRateData.annualized +
+                        "%",
+                    ),
+                  )
+                : React.createElement(WidgetSubtext, null, "Loading..."),
+            },
+            longShortRatio: {
+              label: activeCoin + " L/S Ratio",
+              visible: widgets.longShortRatio && !hidden.longShortRatio,
+              content: longShortData
+                ? React.createElement(
+                    Fragment,
+                    null,
+                    React.createElement(
+                      LSBarWrap,
+                      null,
+                      React.createElement(LSBarLong, {
+                        pct: parseFloat(longShortData.longPct),
+                      }),
+                      React.createElement(LSBarShort, null),
+                    ),
+                    React.createElement(
+                      LSRow,
+                      null,
+                      React.createElement(
+                        "span",
+                        { style: { color: "#34d399" } },
+                        "L " + longShortData.longPct + "%",
+                      ),
+                      React.createElement(
+                        "span",
+                        { style: { color: "#f87171" } },
+                        "S " + longShortData.shortPct + "%",
+                      ),
+                    ),
+                  )
+                : React.createElement(WidgetSubtext, null, "Loading..."),
+            },
+            openInterest: {
+              label: activeCoin + " Open Int.",
+              visible: widgets.openInterest && !hidden.openInterest,
+              content: openInterestData
+                ? React.createElement(
+                    Fragment,
+                    null,
+                    React.createElement(
+                      OIValue,
+                      null,
+                      openInterestData.formatted,
+                    ),
+                    React.createElement(
+                      WidgetSubtext,
+                      null,
+                      "Open Interest",
+                    ),
+                  )
+                : React.createElement(WidgetSubtext, null, "Loading..."),
+            },
+            liquidations: {
+              label: activeCoin + " Liqs 24h",
+              visible: widgets.liquidations && !hidden.liquidations,
+              content: liquidationsData
+                ? React.createElement(
+                    Fragment,
+                    null,
+                    React.createElement(
+                      OIValue,
+                      null,
+                      liquidationsData.totalFormatted,
+                    ),
+                    React.createElement(
+                      LiqBarWrap,
+                      null,
+                      React.createElement(LiqBarLong, {
+                        pct: liquidationsData.longPct,
+                      }),
+                      React.createElement(LiqBarShort, null),
+                    ),
+                    React.createElement(
+                      LiqRow,
+                      null,
+                      React.createElement(
+                        "span",
+                        { style: { color: "#f87171" } },
+                        "L " + liquidationsData.longFormatted,
+                      ),
+                      React.createElement(
+                        "span",
+                        { style: { color: "#34d399" } },
+                        "S " + liquidationsData.shortFormatted,
+                      ),
+                    ),
+                  )
+                : React.createElement(WidgetSubtext, null, "Loading..."),
+            },
+            altcoinSeason: {
+              label: "Alt Season",
+              visible: widgets.altcoinSeason && !hidden.altcoinSeason,
+              content: altcoinSeasonData
+                ? React.createElement(
+                    Fragment,
+                    null,
+                    React.createElement(
+                      OIValue,
+                      null,
+                      altcoinSeasonData.index + " / 100",
+                    ),
+                    React.createElement(
+                      AltSeasonBar,
+                      null,
+                      React.createElement(AltSeasonMarker, {
+                        pct: altcoinSeasonData.index,
+                      }),
+                    ),
+                    React.createElement(
+                      WidgetSubtext,
+                      null,
+                      altcoinSeasonData.label,
+                    ),
+                    React.createElement(
+                      FundingAnnual,
+                      null,
+                      "BTC Dom " + altcoinSeasonData.btcDom + "%",
+                    ),
+                  )
+                : React.createElement(WidgetSubtext, null, "Loading..."),
+            },
+          };
+
+          const visibleOrder = widgetOrder.filter(
+            (key) => widgetDefs[key] && widgetDefs[key].visible,
+          );
+          if (!visibleOrder.length) return null;
+
+          return React.createElement(
+            WidgetPanel,
+            { visible: true },
+            ...visibleOrder.map((key) => {
+              const def = widgetDefs[key];
+              return React.createElement(
+                WidgetCard,
+                {
+                  key: key,
+                  dragging: dragWidget === key,
+                  draggable: true,
+                  onDragStart: () => this.onWidgetDragStart(key),
+                  onDragOver: (e) => {
+                    e.preventDefault();
+                    this.onWidgetDragOver(key);
+                  },
+                  onDragEnd: this.onWidgetDragEnd,
+                },
+                React.createElement(
+                  WidgetHideButton,
+                  { onClick: () => this.hideWidget(key), title: "Hide" },
+                  "\u00d7",
+                ),
+                React.createElement(WidgetLabel, null, def.label),
+                def.content,
+              );
+            }),
+          );
+        })(),
         // LAZY LOADING: Only render SettingsPanel when user opens it
         showSettings &&
           React.createElement(SettingsPanel, {
@@ -4619,8 +5540,8 @@ class CryptoChart extends PureComponent {
             onTickerFormatChange: this.handleTickerFormatChange,
             widgets: widgets,
             onWidgetToggle: this.handleWidgetToggle,
-          })
-      )
+          }),
+      ),
     );
   }
 }
@@ -4630,7 +5551,7 @@ const App = () =>
   React.createElement(
     ThemeProvider,
     { theme: theme },
-    React.createElement(CryptoChart, null)
+    React.createElement(CryptoChart, null),
   );
 
 /* GLOBAL STYLES */

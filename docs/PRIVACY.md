@@ -1,6 +1,6 @@
 # Privacy Policy for PriceTab
 
-**Last Updated:** January 23, 2026
+**Last Updated:** May 20, 2026
 **Effective Date:** January 23, 2026
 
 ## Introduction
@@ -15,6 +15,8 @@ PriceTab stores the following information **locally on your device only**:
 
 - **Cryptocurrency Preferences**: The list of cryptocurrency symbols you select (e.g., BTC, ETH, SOL)
 - **Coin Order**: The order in which you arrange your selected coins
+- **Widget Settings**: Which widgets are enabled and their display order
+- **UI Preferences**: Theme, currency, refresh interval, hidden widget states
 
 This data is stored using the browser's `localStorage` API and **never leaves your device**.
 
@@ -33,23 +35,45 @@ We want to be clear about what we DON'T do:
 
 ## Third-Party Services
 
+All APIs used by PriceTab are **public** — no authentication or accounts required.
+
 ### Coinbase Public API
 
-PriceTab fetches cryptocurrency price data from the Coinbase Public API:
 - **Endpoint**: `https://www.coinbase.com/api/v2/prices/`
-- **Purpose**: Display real-time cryptocurrency prices and historical charts
-- **Data Sent**: Only the cryptocurrency symbol (e.g., "BTC-USD") and time period
-- **Authentication**: None required - this is a public API
-- **Privacy**: Please refer to [Coinbase's Privacy Policy](https://www.coinbase.com/legal/privacy) for how they handle API requests
+- **Purpose**: Real-time cryptocurrency prices and historical charts
+- **Data Sent**: Coin symbol (e.g., "BTC-USD") and time period
+- **Privacy**: See [Coinbase's Privacy Policy](https://www.coinbase.com/legal/privacy)
 
-### CDN Services (Local Vendor Files)
+### Alternative.me (Fear & Greed Index)
 
-PriceTab loads the following JavaScript libraries from local vendor files:
-- React (UI framework)
-- D3.js (chart rendering)
-- styled-components (styling)
+- **Endpoint**: `https://api.alternative.me/fng/`
+- **Purpose**: Crypto Fear & Greed Index widget
+- **Data Sent**: No user data — plain GET request
 
-These are loaded from local files in the extension (no external requests).
+### Binance Futures API (optional widgets)
+
+- **Endpoint**: `https://fapi.binance.com/`
+- **Purpose**: Funding rate, Long/Short ratio, Open Interest widgets
+- **Data Sent**: Coin symbol and period — no user data
+- **Privacy**: See [Binance Privacy Policy](https://www.binance.com/en/privacy)
+
+### OKX Public API (optional widget)
+
+- **Endpoint**: `https://www.okx.com/api/v5/public/`
+- **Purpose**: Liquidations widget (24h volume)
+- **Data Sent**: Coin pair — no user data
+- **Privacy**: See [OKX Privacy Policy](https://www.okx.com/privacy)
+
+### CoinGecko Public API (optional widgets)
+
+- **Endpoint**: `https://api.coingecko.com/api/v3/`
+- **Purpose**: Market Overview (total MCap/volume) and Altcoin Season Index (BTC dominance)
+- **Data Sent**: No user data — plain GET requests
+- **Privacy**: See [CoinGecko Privacy Policy](https://www.coingecko.com/en/privacy)
+
+### Local Vendor Files
+
+All JavaScript libraries (React, D3.js, styled-components) are loaded from local files bundled with the extension — no external CDN requests for scripts.
 
 ## Data Storage Location
 

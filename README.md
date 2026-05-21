@@ -26,6 +26,18 @@ A lightweight, privacy-focused Chrome extension that transforms your new tab int
 - **Offline Capable** - Shows cached data when disconnected
 - **Fast** - Loads instantly, no external dependencies
 
+### Market Widgets (optional, toggleable from settings)
+
+- **Fear & Greed Index** - Crypto market sentiment score
+- **Market Overview** - Total market cap and 24h volume
+- **BTC Halving Countdown** - Days until next halving
+- **RSI Widget** - Relative Strength Index for current coin
+- **Funding Rate** - Perpetual futures funding rate (Binance)
+- **Long/Short Ratio** - Global long vs short account ratio (Binance)
+- **Open Interest** - Total open futures contracts in USD (Binance)
+- **Liquidations** - 24h long/short liquidation volume (OKX)
+- **Altcoin Season Index** - BTC dominance-based market phase indicator
+
 ---
 
 ## Installation
@@ -122,7 +134,14 @@ PriceTab is designed with privacy as a core principle:
 - **No third-party sharing** - Your data is yours
 - **Public API only** - No authentication tokens stored
 
-The only network requests are to Coinbase's public API for price data.
+Network requests are made only to:
+- Coinbase Public API (price charts and spot prices)
+- Alternative.me (Fear & Greed Index)
+- Binance Futures API (funding rate, long/short ratio, open interest)
+- OKX Public API (liquidation data)
+- CoinGecko Public API (altcoin season / BTC dominance)
+
+All of these are public APIs requiring no authentication or account.
 
 ---
 
@@ -151,7 +170,7 @@ git clone https://github.com/zekuath/pricetab.git
 ```
 pricetab/
 ├── src/
-│   ├── app.js          # Main application (~3400 lines)
+│   ├── app.js          # Main application (~5600+ lines)
 │   └── theme-init.js   # Prevents white flash on load
 ├── vendor/             # Bundled dependencies
 ├── assets/icons/       # Extension icons
@@ -180,6 +199,9 @@ No build process required - changes are immediate after extension reload.
 | [CHANGELOG.md](docs/CHANGELOG.md) | Version history |
 | [PRIVACY.md](docs/PRIVACY.md) | Privacy policy |
 | [STORE_DESCRIPTION.md](docs/STORE_DESCRIPTION.md) | Chrome Web Store listing content |
+| [STORE_ASSETS.md](docs/STORE_ASSETS.md) | Chrome Web Store asset guide |
+| [AI_GUIDELINES.md](docs/AI_GUIDELINES.md) | AI development guidelines |
+| [policies/](docs/policies/) | Chrome Web Store policy compliance |
 
 ---
 

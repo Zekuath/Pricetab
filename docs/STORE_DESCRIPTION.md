@@ -1,6 +1,8 @@
 # Chrome Web Store Listing - PriceTab
 
-> Ready-to-use content for Chrome Web Store submission. Copy and paste directly into the Developer Dashboard.
+> **This is the single canonical source for Chrome Web Store submission content.**
+> Copy the "Detailed Description" block below directly into the Developer Dashboard.
+> Do NOT use descriptions from any other file — `STORE_ASSETS.md` previously had a duplicate that caused a Yellow Argon rejection.
 
 ---
 
@@ -43,7 +45,7 @@ From major market leaders to emerging altcoins, track over 75 different cryptocu
 Track price movements across 1 Hour, 1 Day, 1 Week, 1 Month, 1 Year, and All Time views.
 
 Live Tab Title
-See current price right in your browser tab - even while working in other tabs. Format: "BTC $43,250 (+5.2%)"
+See current price right in your browser tab - even while working in other tabs. Updates automatically with the coin symbol, price, and 24h change.
 
 Dark & Light Themes
 Auto-detects your system preference. Manual override available for dark, light, or auto modes.
@@ -53,6 +55,9 @@ View prices in your local currency. Supports 37 major world currencies including
 
 Drag & Drop Reordering
 Customize your coin order with intuitive drag-and-drop. Your preferences are saved automatically.
+
+Market Data Widgets
+Optional side panel with real-time market data: Fear & Greed Index, BTC Halving Countdown, Market Overview, RSI, Funding Rate, Long/Short Ratio, Open Interest, Liquidations, and Altcoin Season Index. Enable only what you want from settings.
 
 PRIVACY FIRST
 
@@ -72,7 +77,7 @@ HOW TO USE
 
 WIDE CRYPTOCURRENCY SUPPORT
 
-Track over 75 cryptocurrencies from the Coinbase API. View real-time prices and historical charts for any coin available on Coinbase. New coins are added automatically as Coinbase expands its coverage.
+Track over 75 different cryptocurrencies sourced directly from the Coinbase API. Coverage expands automatically as Coinbase adds new assets — no extension updates needed.
 
 TECHNICAL DETAILS
 

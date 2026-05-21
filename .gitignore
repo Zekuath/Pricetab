@@ -1,8 +1,4 @@
-# AI Development Files
-CLAUDE.md
-docs/AI_GUIDELINES.md
-docs/MEMORY.md
-docs/policies/
+# Claude Code personal session files (not project config)
 .claude/
 
 # macOS

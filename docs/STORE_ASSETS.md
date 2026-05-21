@@ -112,7 +112,7 @@ convert screenshot-1.png -bordercolor white -border 20x20 \
 
 **Design Tips:**
 - Feature the app icon (graph.png)
-- App name "CryptoTab" prominently
+- App name "PriceTab" prominently
 - Simple tagline: "Live Crypto Charts"
 - Use brand colors (black background, white text)
 - Keep it simple and recognizable at small size
@@ -122,7 +122,7 @@ convert screenshot-1.png -bordercolor white -border 20x20 \
 Canvas: 440x280px
 Background: #000000 (black)
 Icon: graph.png at 128x128 centered
-Text: "CryptoTab" - Roboto Mono, 32px, white, bold
+Text: "PriceTab" - Roboto Mono, 32px, white, bold
 Subtext: "Real-time crypto price charts" - 14px, #CCCCCC
 ```
 
@@ -132,7 +132,7 @@ Subtext: "Real-time crypto price charts" - 14px, #CCCCCC
             display: flex; flex-direction: column; align-items: center;
             justify-content: center; font-family: 'Roboto Mono', monospace;">
   <img src="assets/icons/graph.png" width="120" height="120">
-  <h1 style="color: white; font-size: 32px; margin: 16px 0 4px 0;">CryptoTab</h1>
+  <h1 style="color: white; font-size: 32px; margin: 16px 0 4px 0;">PriceTab</h1>
   <p style="color: #ccc; font-size: 14px; margin: 0;">Real-time crypto price charts</p>
 </div>
 ```
@@ -195,68 +195,9 @@ Real-time cryptocurrency price charts on every new tab. Track 75+ coins with cus
 ```
 
 **Description** (required, max 16,000 characters):
-```markdown
-# PriceTab - Your Personal Crypto Dashboard
 
-Transform every new tab into a real-time cryptocurrency price tracker. PriceTab brings live price charts and data for 75+ cryptocurrencies right to your browser.
-
-## 🚀 Key Features
-
-✅ **Real-Time Price Charts** - Live data from Coinbase API, updated every 30 seconds
-✅ **75+ Cryptocurrencies** - BTC, ETH, SOL, DOGE, and 70+ more
-✅ **6 Time Periods** - 1 Hour, 1 Day, 1 Week, 1 Month, 1 Year, All Time
-✅ **Persistent Preferences** - Your coin selections saved automatically
-✅ **Drag & Drop** - Easily reorder your favorite coins
-✅ **Beautiful Charts** - Interactive D3.js visualizations
-✅ **Zero Configuration** - Works instantly, no API keys needed
-✅ **Privacy First** - No tracking, no data collection, all preferences stored locally
-
-## 📊 How It Works
-
-1. **Install** the extension
-2. **Open** a new tab - CryptoTab loads automatically
-3. **Click** the settings icon (⚙) to add/remove coins
-4. **Drag** coins to reorder them
-5. **Click** the price box to cycle through your selected coins
-6. **Choose** time periods with the buttons below the chart
-
-## 🎯 Perfect For
-
-- Crypto investors tracking portfolio assets
-- Traders monitoring price movements
-- Enthusiasts keeping up with the crypto market
-- Anyone who wants quick access to crypto data
-
-## 💎 Supported Cryptocurrencies
-
-Bitcoin (BTC), Ethereum (ETH), Tether (USDT), Binance Coin (BNB), Solana (SOL), XRP, USD Coin (USDC), Dogecoin (DOGE), Cardano (ADA), Avalanche (AVAX), Tron (TRX), Chainlink (LINK), Polkadot (DOT), Polygon (MATIC), Toncoin (TON), Shiba Inu (SHIB), Litecoin (LTC), Bitcoin Cash (BCH), and 55+ more...
-
-## 🔒 Privacy & Security
-
-- **No tracking** - We don't collect any data
-- **No accounts** - No sign-up required
-- **Local storage** - Preferences saved in your browser only
-- **Open source** - Code available for review
-- **No analytics** - Zero telemetry
-
-## 🆓 100% Free
-
-PriceTab is completely free with no premium features, no ads, and no in-app purchases. Enjoy all features with no limitations.
-
-## 📝 Feedback & Support
-
-Found a bug? Have a feature request? We'd love to hear from you!
-- GitHub: [Your Repo URL]
-- Email: [Your Email]
-
-## ⚡ Quick Start
-
-Install PriceTab now and transform your new tab into a powerful crypto dashboard. No configuration needed - it just works!
-
----
-
-**Disclaimer**: This extension is for informational purposes only and does not constitute financial advice. Cryptocurrency investments are risky. Always do your own research.
-```
+> ⚠️ **Use the description from `docs/STORE_DESCRIPTION.md`** — that file is the canonical, policy-compliant version.
+> Do NOT use the description below; it has been removed to prevent accidental keyword spam rejections.
 
 **Category**:
 ```
@@ -309,7 +250,7 @@ English (United States)
 3. (15-30s) Demonstrate adding/removing coins
 4. (30-40s) Show different time periods
 5. (40-50s) Highlight drag-and-drop
-6. (50-60s) CTA: "Install CryptoTab Now"
+6. (50-60s) CTA: "Install PriceTab Now"
 
 **Tools:**
 - **Free**: OBS Studio, ShareX, QuickTime (macOS)

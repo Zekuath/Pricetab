@@ -8,9 +8,9 @@
 
 | Metric | Value |
 |--------|-------|
-| **Current Version** | 1.0.0 |
+| **Current Version** | 1.1.0 |
 | **Status** | Chrome Web Store Ready |
-| **Codebase Size** | ~3,400 lines |
+| **Codebase Size** | ~5,600+ lines |
 | **Next Milestone** | Chrome Web Store Launch |
 | **Security Status** | Input validation complete |
 
@@ -64,6 +64,21 @@ Core functionality that has been implemented and tested.
 - [x] Settings modal with tabs (Coins / Preferences)
 - [x] Responsive design
 - [x] Monospace typography (Roboto Mono)
+- [x] Hover tooltips on all interactive elements
+
+### Widget System
+- [x] Fear & Greed Index widget (Alternative.me)
+- [x] Market Overview widget (total MCap + volume)
+- [x] BTC Halving Countdown widget
+- [x] RSI Widget (14-period, coin-specific)
+- [x] Funding Rate widget (Binance Futures)
+- [x] Long/Short Ratio widget (Binance Futures)
+- [x] Open Interest widget (Binance Futures)
+- [x] Liquidations widget (OKX Public API)
+- [x] Altcoin Season Index widget (CoinGecko)
+- [x] Enable/disable widgets from settings
+- [x] Drag-and-drop widget reordering
+- [x] Hide-all / show-all widgets toggle button
 
 ---
 
@@ -255,19 +270,27 @@ Core functionality that has been implemented and tested.
 
 **Privacy Note:** All data local, no cloud sync in Phase 3.
 
-### 3.3 Widget System Foundation
+### 3.3 Widget System Foundation ✅ COMPLETED
+
+| Widget | Status | API Source |
+|--------|--------|------------|
+| Fear & Greed Index | [x] Done | Alternative.me |
+| Market Overview (MCap + Volume) | [x] Done | CoinGecko |
+| BTC Halving Countdown | [x] Done | Calculated |
+| RSI (14-period) | [x] Done | Coinbase history |
+| Funding Rate | [x] Done | Binance Futures |
+| Long/Short Ratio | [x] Done | Binance Futures |
+| Open Interest | [x] Done | Binance Futures |
+| Liquidations (24h) | [x] Done | OKX Public API |
+| Altcoin Season Index | [x] Done | CoinGecko Global |
+
+### 3.4 Additional Widgets (Planned)
 
 | Widget | Status | Effort | API Source |
 |--------|--------|--------|------------|
-| Fear & Greed Index display | [ ] | Medium | Alternative.me |
-| Ethereum Gas Tracker | [ ] | Medium | Etherscan / Alchemy |
-| Quick stats bar (MCap, Volume, Dominance) | [ ] | High | CoinGecko |
-| Whale Alert feed (optional) | [ ] | High | Whale Alert API |
-
-**Design Considerations:**
-- Widgets should be toggleable
-- Minimal impact on load time
-- Graceful fallback if API unavailable
+| Ethereum Gas Tracker | [ ] | Medium | Etherscan / Blocknative |
+| Whale Alert feed | [ ] | High | Whale Alert API |
+| Crypto news feed | [ ] | High | CryptoPanic |
 
 ---
 
@@ -346,7 +369,7 @@ Core functionality that has been implemented and tested.
 
 | Task | Status | Effort | Priority |
 |------|--------|--------|----------|
-| Split app.js when >5000 lines | [ ] | High | Low |
+| Split app.js (currently ~5600 lines, over threshold) | [~] | High | Medium |
 | Add ESLint configuration | [ ] | Low | Medium |
 | Add Prettier for formatting | [ ] | Low | Medium |
 | TypeScript migration | [ ] | Very High | Low |
@@ -446,9 +469,9 @@ What needs attention:
 | Document | Purpose |
 |----------|---------|
 | [VISION.md](VISION.md) | Long-term feature vision |
-| [CODE_OPTIMIZATIONS.md](CODE_OPTIMIZATIONS.md) | Technical improvements |
 | [CHANGELOG.md](CHANGELOG.md) | Version history |
 | [PRIVACY.md](PRIVACY.md) | Privacy policy |
+| [STORE_DESCRIPTION.md](STORE_DESCRIPTION.md) | Web Store listing content |
 | [STORE_ASSETS.md](STORE_ASSETS.md) | Web Store asset specs |
 
 ---
