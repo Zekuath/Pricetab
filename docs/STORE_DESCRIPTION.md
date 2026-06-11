@@ -83,8 +83,7 @@ TECHNICAL DETAILS
 
 - Manifest V3 compliant
 - Zero permissions required
-- All JavaScript bundled locally
-- No external CDN dependencies
+- All JavaScript bundled locally — no external scripts
 - Lightweight and fast
 
 100% FREE

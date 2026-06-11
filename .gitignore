@@ -1,5 +1,7 @@
-# Claude Code personal session files (not project config)
+# Local editor / internal notes (not part of the published extension)
 .claude/
+CLAUDE.md
+docs/AI_GUIDELINES.md
 
 # macOS
 .DS_Store
@@ -22,3 +24,7 @@ npm-debug.log*
 # Temporary files
 *.tmp
 *.temp
+
+# Packaged store build artifacts
+assets/upload/
+*.zip

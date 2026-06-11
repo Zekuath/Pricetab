@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Privacy Policy — PriceTab</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: #0f0f0f;
+      color: #e0e0e0;
+      line-height: 1.7;
+      padding: 2rem 1rem;
+    }
+    .container {
+      max-width: 760px;
+      margin: 0 auto;
+    }
+    header {
+      margin-bottom: 3rem;
+      border-bottom: 1px solid #2a2a2a;
+      padding-bottom: 1.5rem;
+    }
+    header a {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: #888;
+      text-decoration: none;
+      font-size: 0.875rem;
+      margin-bottom: 1.5rem;
+    }
+    header a:hover { color: #e0e0e0; }
+    h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 0.5rem;
+    }
+    .meta {
+      font-size: 0.825rem;
+      color: #666;
+    }
+    h2 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #ffffff;
+      margin: 2rem 0 0.75rem;
+    }
+    h3 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #cccccc;
+      margin: 1.25rem 0 0.5rem;
+    }
+    p { margin-bottom: 0.75rem; color: #c0c0c0; }
+    ul, ol {
+      padding-left: 1.5rem;
+      margin-bottom: 0.75rem;
+      color: #c0c0c0;
+    }
+    li { margin-bottom: 0.25rem; }
+    a { color: #7c9cf5; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    code {
+      font-family: "Roboto Mono", "Fira Code", "Courier New", monospace;
+      background: #1e1e1e;
+      border: 1px solid #2a2a2a;
+      border-radius: 4px;
+      padding: 0.1em 0.4em;
+      font-size: 0.875em;
+      color: #8affc1;
+    }
+    pre {
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      border-radius: 8px;
+      padding: 1rem;
+      overflow-x: auto;
+      margin-bottom: 0.75rem;
+    }
+    pre code {
+      background: none;
+      border: none;
+      padding: 0;
+      font-size: 0.85rem;
+    }
+    .callout {
+      background: #1a1a1a;
+      border-left: 3px solid #7c9cf5;
+      border-radius: 0 8px 8px 0;
+      padding: 1rem 1.25rem;
+      margin: 1.5rem 0;
+    }
+    .callout p { margin: 0; }
+    .no-list { list-style: none; padding-left: 0; }
+    .no-list li::before { content: "✅ "; }
+    .no-list.deny li::before { content: "❌ "; }
+    footer {
+      margin-top: 3rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid #2a2a2a;
+      font-size: 0.8rem;
+      color: #555;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <a href="https://github.com/Zekuath/Pricetab">← Back to PriceTab</a>
+      <h1>Privacy Policy</h1>
+      <p class="meta">Last Updated: June 8, 2026 &nbsp;·&nbsp; Effective Date: January 23, 2026</p>
+    </header>
+
+    <div class="callout">
+      <p><strong>TL;DR:</strong> PriceTab stores only your coin preferences, locally on your device. We collect nothing, share nothing, and have no servers.</p>
+    </div>
+
+    <h2>Introduction</h2>
+    <p>PriceTab ("we", "our", or "the extension") is committed to protecting your privacy. This Privacy Policy explains how we handle information when you use our Chrome browser extension.</p>
+
+    <h2>Information We Collect</h2>
+
+    <h3>Data Stored Locally</h3>
+    <p>PriceTab stores the following information <strong>locally on your device only</strong>:</p>
+    <ul>
+      <li><strong>Cryptocurrency Preferences:</strong> The list of cryptocurrency symbols you select (e.g., BTC, ETH, SOL)</li>
+      <li><strong>Coin Order:</strong> The order in which you arrange your selected coins</li>
+      <li><strong>Widget Settings:</strong> Which widgets are enabled and their display order</li>
+      <li><strong>UI Preferences:</strong> Theme, currency, refresh interval, hidden widget states</li>
+    </ul>
+    <p>This data is stored using the browser's <code>localStorage</code> API and <strong>never leaves your device</strong>.</p>
+
+    <h3>Data We Do NOT Collect</h3>
+    <ul class="no-list deny">
+      <li>We do NOT collect any personal information</li>
+      <li>We do NOT collect your browsing history</li>
+      <li>We do NOT track your activity</li>
+      <li>We do NOT use cookies for tracking</li>
+      <li>We do NOT share any data with third parties</li>
+      <li>We do NOT use analytics or telemetry</li>
+      <li>We do NOT store data on our servers (we don't have any servers)</li>
+      <li>We do NOT sell or monetize user data in any way</li>
+    </ul>
+
+    <h2>Third-Party Services</h2>
+    <p>All APIs used by PriceTab are <strong>public</strong> — no authentication or accounts required.</p>
+
+    <h3>Coinbase Public API</h3>
+    <ul>
+      <li><strong>Endpoint:</strong> <code>https://www.coinbase.com/api/v2/prices/</code></li>
+      <li><strong>Purpose:</strong> Real-time cryptocurrency prices and historical charts</li>
+      <li><strong>Data Sent:</strong> Coin symbol (e.g., "BTC-USD") and time period</li>
+      <li><strong>Privacy:</strong> <a href="https://www.coinbase.com/legal/privacy" target="_blank" rel="noopener">Coinbase Privacy Policy</a></li>
+    </ul>
+
+    <h3>Alternative.me (Fear &amp; Greed Index)</h3>
+    <ul>
+      <li><strong>Endpoint:</strong> <code>https://api.alternative.me/fng/</code></li>
+      <li><strong>Purpose:</strong> Crypto Fear &amp; Greed Index widget</li>
+      <li><strong>Data Sent:</strong> No user data — plain GET request</li>
+    </ul>
+
+    <h3>Binance Futures API (optional widgets)</h3>
+    <ul>
+      <li><strong>Endpoint:</strong> <code>https://fapi.binance.com/</code></li>
+      <li><strong>Purpose:</strong> Funding rate, Long/Short ratio, Open Interest widgets</li>
+      <li><strong>Data Sent:</strong> Coin symbol and period — no user data</li>
+      <li><strong>Privacy:</strong> <a href="https://www.binance.com/en/privacy" target="_blank" rel="noopener">Binance Privacy Policy</a></li>
+    </ul>
+
+    <h3>OKX Public API (optional widget)</h3>
+    <ul>
+      <li><strong>Endpoint:</strong> <code>https://www.okx.com/api/v5/public/</code></li>
+      <li><strong>Purpose:</strong> Liquidations widget (24h volume)</li>
+      <li><strong>Data Sent:</strong> Coin pair — no user data</li>
+      <li><strong>Privacy:</strong> <a href="https://www.okx.com/privacy" target="_blank" rel="noopener">OKX Privacy Policy</a></li>
+    </ul>
+
+    <h3>CoinGecko Public API (optional widgets)</h3>
+    <ul>
+      <li><strong>Endpoint:</strong> <code>https://api.coingecko.com/api/v3/</code></li>
+      <li><strong>Purpose:</strong> Market Overview and Altcoin Season Index widgets</li>
+      <li><strong>Data Sent:</strong> No user data — plain GET requests</li>
+      <li><strong>Privacy:</strong> <a href="https://www.coingecko.com/en/privacy" target="_blank" rel="noopener">CoinGecko Privacy Policy</a></li>
+    </ul>
+
+    <h2>Data Storage</h2>
+    <ul>
+      <li><strong>Where:</strong> Locally in your Chrome browser's localStorage</li>
+      <li><strong>Encryption:</strong> Not encrypted (data is not sensitive — just coin symbols)</li>
+      <li><strong>Access:</strong> Only accessible by this extension</li>
+      <li><strong>Size:</strong> Typically 50–100 bytes (your coin list)</li>
+      <li><strong>Persistence:</strong> Remains until you clear browser data or uninstall the extension</li>
+    </ul>
+
+    <h2>Your Rights and Choices</h2>
+
+    <h3>View Your Data</h3>
+    <p>Open the browser console on any new tab and run:</p>
+    <pre><code>localStorage.getItem('crypto_chart_coin_options')</code></pre>
+
+    <h3>Delete Your Data</h3>
+    <p>Run the following in the browser console, or simply uninstall the extension:</p>
+    <pre><code>localStorage.removeItem('crypto_chart_coin_options')
+location.reload()</code></pre>
+
+    <h2>Children's Privacy</h2>
+    <p>PriceTab does not knowingly collect any information from anyone, including children under 13. No personal information is required to use the extension.</p>
+
+    <h2>Security</h2>
+    <ul>
+      <li>We use HTTPS for all API calls</li>
+      <li>We do not execute arbitrary code from external sources</li>
+      <li>All scripts, styles, and fonts are bundled locally — no external CDN or font requests</li>
+      <li>We follow Chrome Manifest V3 security best practices</li>
+    </ul>
+
+    <h2>Open Source</h2>
+    <p>PriceTab is open source. You can review our code at <a href="https://github.com/Zekuath/Pricetab" target="_blank" rel="noopener">github.com/Zekuath/Pricetab</a>.</p>
+
+    <h2>Changes to This Policy</h2>
+    <p>We may update this Privacy Policy from time to time. Material changes will be noted by updating the "Last Updated" date above.</p>
+
+    <h2>Contact</h2>
+    <p>Questions? Open an issue at <a href="https://github.com/Zekuath/Pricetab/issues" target="_blank" rel="noopener">github.com/Zekuath/Pricetab/issues</a>.</p>
+
+    <h2>Compliance</h2>
+    <p><strong>GDPR:</strong> Since we do not collect, process, or store any personal data, no data subject rights are applicable beyond what is in your local browser.</p>
+    <p><strong>CCPA:</strong> We do not sell personal information because we do not collect personal information.</p>
+
+    <footer>
+      PriceTab Privacy Policy v1.0.0 &nbsp;·&nbsp; MIT License &nbsp;·&nbsp; This extension is for informational purposes only and does not constitute financial advice.
+    </footer>
+  </div>
+</body>
+</html>

@@ -139,6 +139,13 @@ const MAX_CACHED_COINS = 10; // Only cache first 10 coins in rotation
 const MAX_COINS = 20; // Hard limit on coin list size
 const cache = new Map();
 
+// Separate cache for page ticker (all 75+ coins, bypasses the 10-coin limit)
+const pageTickerCache = new Map(); // key: "COIN-CURRENCY" → { price, timestamp }
+const PAGE_TICKER_TTL = 30000; // 30s TTL per coin
+const PAGE_TICKER_BATCH_SIZE = 5; // concurrent requests per batch
+const PAGE_TICKER_BATCH_DELAY = 300; // ms between batches
+const PAGE_TICKER_REFRESH_MS = 60000; // full refresh every 60s
+
 const getCacheKey = (coin, period, currency) => `${coin}-${period}-${currency}`;
 
 const getCachedData = (coin, period, currency, type) => {
@@ -580,6 +587,12 @@ const TICKER_FORMAT_OPTIONS = [
   { value: "full", label: "Full ($43,250)" },
 ];
 
+// Page ticker constants
+const PAGE_TICKER_STORAGE_KEY = "crypto_chart_page_ticker_enabled";
+const PAGE_TICKER_POSITION_STORAGE_KEY = "crypto_chart_page_ticker_position";
+const DEFAULT_PAGE_TICKER_ENABLED = false;
+const DEFAULT_PAGE_TICKER_POSITION = "bottom"; // 'top' or 'bottom'
+
 // Theme helper functions
 const loadThemeFromStorage = () => {
   try {
@@ -750,6 +763,42 @@ const loadTickerFormatFromStorage = () => {
 const saveTickerFormatToStorage = (format) => {
   try {
     localStorage.setItem(TICKER_FORMAT_STORAGE_KEY, format);
+  } catch (error) {
+    // Silently fail
+  }
+};
+
+const loadPageTickerFromStorage = () => {
+  try {
+    const saved = localStorage.getItem(PAGE_TICKER_STORAGE_KEY);
+    if (saved !== null) return saved === "true";
+    return DEFAULT_PAGE_TICKER_ENABLED;
+  } catch (error) {
+    return DEFAULT_PAGE_TICKER_ENABLED;
+  }
+};
+
+const savePageTickerToStorage = (enabled) => {
+  try {
+    localStorage.setItem(PAGE_TICKER_STORAGE_KEY, String(enabled));
+  } catch (error) {
+    // Silently fail
+  }
+};
+
+const loadPageTickerPositionFromStorage = () => {
+  try {
+    const saved = localStorage.getItem(PAGE_TICKER_POSITION_STORAGE_KEY);
+    if (saved === "top" || saved === "bottom") return saved;
+    return DEFAULT_PAGE_TICKER_POSITION;
+  } catch (error) {
+    return DEFAULT_PAGE_TICKER_POSITION;
+  }
+};
+
+const savePageTickerPositionToStorage = (position) => {
+  try {
+    localStorage.setItem(PAGE_TICKER_POSITION_STORAGE_KEY, position);
   } catch (error) {
     // Silently fail
   }
@@ -1799,19 +1848,20 @@ const AppShell = styled.main`
   display: flex;
   flex-direction: column;
   gap: 0.125rem;
-  padding: ${({ theme }) =>
-    `${theme.spacing.medium}rem ${theme.spacing.large * 2}rem`};
+  padding: ${({ theme, tickerTop }) =>
+    `${tickerTop ? theme.spacing.medium + 3 : theme.spacing.medium}rem ${theme.spacing.large * 2}rem`};
   position: relative;
   overflow: hidden;
+  transition: padding-top 0.4s cubic-bezier(0.22, 1, 0.36, 1);
 
   @media (max-width: ${({ theme }) => theme.breakpoint.down.md}px) {
-    padding: ${({ theme }) =>
-      `${theme.spacing.large}rem ${theme.spacing.medium}rem`};
+    padding: ${({ theme, tickerTop }) =>
+      `${tickerTop ? theme.spacing.large + 3 : theme.spacing.large}rem ${theme.spacing.medium}rem`};
   }
 
   @media (max-width: ${({ theme }) => theme.breakpoint.down.sm}px) {
-    padding: ${({ theme }) =>
-      `${theme.spacing.medium}rem ${theme.spacing.small}rem`};
+    padding: ${({ theme, tickerTop }) =>
+      `${tickerTop ? theme.spacing.medium + 3 : theme.spacing.medium}rem ${theme.spacing.small}rem`};
   }
 `;
 
@@ -1819,22 +1869,18 @@ const ChartWrapper = styled.section`
   width: 100%;
   display: flex;
   flex: 1 1 auto;
-  min-height: calc(100vh - 18rem);
-  height: calc(100vh - 18rem);
+  min-height: 0;
   padding: 0;
   margin: 0;
-
-  @media (max-width: ${({ theme }) => theme.breakpoint.down.sm}px) {
-    min-height: calc(100vh - 20rem);
-    height: calc(100vh - 20rem);
-  }
 `;
 
 const FullBleed = styled.div`
   width: 100vw;
   margin-left: calc(-1 * ${({ theme }) => theme.spacing.large * 2}rem);
   margin-right: calc(-1 * ${({ theme }) => theme.spacing.large * 2}rem);
-  display: block;
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
   overflow: hidden;
   padding: 1px 0;
 
@@ -2105,7 +2151,10 @@ const settingsPulse = keyframes`
 
 const SettingsToggleButton = styled.button`
   position: absolute;
-  top: ${({ theme }) => theme.spacing.large}rem;
+  top: ${({ theme, tickerTop }) =>
+    tickerTop
+      ? `calc(${theme.spacing.large}rem + 3rem)`
+      : `${theme.spacing.large}rem`};
   right: ${({ theme }) => theme.spacing.large}rem;
   padding: 0;
   border: none;
@@ -2115,10 +2164,12 @@ const SettingsToggleButton = styled.button`
   font-weight: ${({ theme }) => theme.fontWeight.bold};
   cursor: pointer;
   line-height: 1;
+  width: 1.6rem;
+  height: 1.6rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.25s ease;
+  transition: transform 0.25s ease, top 0.4s cubic-bezier(0.22, 1, 0.36, 1);
   z-index: 120;
 
   &:hover {
@@ -2132,7 +2183,10 @@ const SettingsToggleButton = styled.button`
 
   @media (max-width: ${({ theme }) => theme.breakpoint.down.sm}px) {
     right: ${({ theme }) => theme.spacing.small}rem;
-    top: ${({ theme }) => theme.spacing.small}rem;
+    top: ${({ theme, tickerTop }) =>
+      tickerTop
+        ? `calc(${theme.spacing.small}rem + 3rem)`
+        : `${theme.spacing.small}rem`};
   }
 `;
 
@@ -2159,11 +2213,96 @@ const SettingsOverlay = styled.div`
   padding: ${({ theme }) => theme.spacing.medium}rem;
 `;
 
+/* PAGE TICKER STYLES */
+const pageTickerScroll = keyframes`
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+`;
+
+const pageTickerSlideBottom = keyframes`
+  from { transform: translateY(100%); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+`;
+
+const pageTickerSlideTop = keyframes`
+  from { transform: translateY(-100%); opacity: 0; }
+  to   { transform: translateY(0);     opacity: 1; }
+`;
+
+const PageTickerBar = styled.div`
+  position: fixed;
+  ${({ position }) => position === "top" ? "top: 0;" : "bottom: 0;"}
+  left: 0;
+  right: 0;
+  z-index: 90;
+  background: ${({ theme }) => theme.color.bg};
+  ${({ position }) =>
+    position === "top"
+      ? "border-bottom: 1px solid rgba(128,128,128,0.2);"
+      : "border-top: 1px solid rgba(128,128,128,0.2);"}
+  overflow: hidden;
+  animation: ${({ position }) =>
+    position === "top" ? pageTickerSlideTop : pageTickerSlideBottom} 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+`;
+
+const PageTickerRow = styled.div`
+  display: flex;
+  overflow: hidden;
+  height: 1.5rem;
+  align-items: center;
+  border-bottom: 1px solid ${({ theme }) => theme.color.border || "rgba(128,128,128,0.12)"};
+  &:last-child {
+    border-bottom: none;
+  }
+`;
+
+const PageTickerTrack = styled.div`
+  display: inline-flex;
+  white-space: nowrap;
+  animation: ${pageTickerScroll} ${({ speed }) => speed || 35}s linear infinite;
+  will-change: transform;
+`;
+
+const PageTickerItem = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0 1.25rem;
+  font-size: 0.68rem;
+  letter-spacing: 0.025em;
+  line-height: 1;
+`;
+
+const PageTickerSep = styled.span`
+  color: ${({ theme }) => theme.color.text};
+  opacity: 0.2;
+  font-size: 0.6rem;
+`;
+
+const PageTickerSymbol = styled.span`
+  font-weight: ${({ theme }) => theme.fontWeight.bold};
+  color: ${({ theme }) => theme.color.text};
+  opacity: 0.9;
+`;
+
+const PageTickerPrice = styled.span`
+  color: ${({ theme }) => theme.color.text};
+  opacity: 0.65;
+`;
+
+const PageTickerChange = styled.span`
+  color: ${({ up }) => (up ? "#26a69a" : "#ef5350")};
+  font-size: 0.62rem;
+`;
+
 /* WIDGET PANEL STYLES */
 const WidgetRestoreButton = styled.button`
-  position: absolute;
-  top: ${({ theme }) => theme.spacing.large}rem;
+  position: fixed;
   left: ${({ theme }) => theme.spacing.large}rem;
+  top: ${({ theme, tickerTop }) =>
+    tickerTop
+      ? `calc(${theme.spacing.large}rem + 3rem)`
+      : `${theme.spacing.large}rem`};
   padding: 0;
   border: none;
   background: transparent;
@@ -2172,16 +2311,16 @@ const WidgetRestoreButton = styled.button`
   font-weight: ${({ theme }) => theme.fontWeight.bold};
   cursor: pointer;
   line-height: 1;
+  z-index: 120;
+  width: 1.6rem;
+  height: 1.6rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.25s ease;
-  z-index: 120;
-  opacity: 0.75;
+  transition: transform 0.25s ease, top 0.4s cubic-bezier(0.22, 1, 0.36, 1);
 
   &:hover {
     transform: scale(1.1);
-    opacity: 1;
   }
 
   &:focus {
@@ -2190,7 +2329,10 @@ const WidgetRestoreButton = styled.button`
 
   @media (max-width: ${({ theme }) => theme.breakpoint.down.sm}px) {
     left: ${({ theme }) => theme.spacing.small}rem;
-    top: ${({ theme }) => theme.spacing.small}rem;
+    top: ${({ theme, tickerTop }) =>
+      tickerTop
+        ? `calc(${theme.spacing.small}rem + 3rem)`
+        : `${theme.spacing.small}rem`};
   }
 `;
 
@@ -2226,26 +2368,45 @@ const WidgetPanel = styled.div`
   gap: 0.5rem;
   opacity: ${({ visible }) => (visible ? 1 : 0)};
   pointer-events: ${({ visible }) => (visible ? "auto" : "none")};
-  transition: opacity 0.3s ease;
+  transition: opacity 0.3s ease, top 0.4s cubic-bezier(0.22, 1, 0.36, 1);
 
   /* Desktop: sol üst, dikey */
-  top: 4rem;
+  top: ${({ tickerTop }) => tickerTop ? "8rem" : "5rem"};
   left: 1rem;
   flex-direction: column;
 
-  /* Tablet: alt orta, yatay */
+  /* Tablet: alt orta, yatay + yatay kaydırma */
   @media (max-width: 1024px) {
     top: auto;
     left: 50%;
     bottom: 1rem;
     transform: translateX(-50%);
     flex-direction: row;
+    max-width: calc(100vw - 2rem);
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-bottom: 0.35rem;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: ${({ theme }) => theme.color.border} transparent;
+
+    &::-webkit-scrollbar {
+      height: 5px;
+    }
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    &::-webkit-scrollbar-thumb {
+      background: ${({ theme }) => theme.color.border};
+      border-radius: 3px;
+    }
   }
 
   /* Mobil: daha kompakt */
   @media (max-width: 600px) {
     bottom: 0.5rem;
     gap: 0.3rem;
+    max-width: calc(100vw - 1rem);
   }
 `;
 
@@ -2351,6 +2512,7 @@ const AltSeasonMarker = styled.div`
 
 const WidgetCard = styled.div`
   position: relative;
+  flex: 0 0 auto;
   background: ${({ theme }) =>
     theme.color.bg === "#ffffff"
       ? "rgba(255, 255, 255, 0.95)"
@@ -3529,6 +3691,10 @@ class SettingsPanel extends PureComponent {
       onTickerChange,
       tickerFormat,
       onTickerFormatChange,
+      pageTicker,
+      onPageTickerChange,
+      pageTickerPosition,
+      onPageTickerPositionChange,
       widgets,
       onWidgetToggle,
       onResetCoins,
@@ -3902,6 +4068,52 @@ class SettingsPanel extends PureComponent {
                   ),
                 ),
               ),
+
+            // Page Ticker Section
+            React.createElement(
+              ToggleSection,
+              null,
+              React.createElement(ToggleSectionTitle, null, "Page Ticker"),
+              React.createElement(
+                ToggleSectionDesc,
+                null,
+                "Scrolling price bar at the bottom of the page",
+              ),
+              React.createElement(
+                ToggleRow,
+                null,
+                React.createElement(
+                  ToggleLabel,
+                  null,
+                  pageTicker ? "On" : "Off",
+                ),
+                React.createElement(ToggleSwitch, {
+                  active: pageTicker,
+                  onClick: () =>
+                    onPageTickerChange && onPageTickerChange(!pageTicker),
+                  "aria-label": "Toggle page ticker",
+                }),
+              ),
+            ),
+
+            // Page Ticker Position (only when enabled)
+            pageTicker &&
+              React.createElement(
+                RefreshIntervalSection,
+                null,
+                React.createElement(RefreshIntervalLabel, null, "Position"),
+                React.createElement(
+                  RefreshIntervalSelect,
+                  {
+                    value: pageTickerPosition || DEFAULT_PAGE_TICKER_POSITION,
+                    onChange: (e) =>
+                      onPageTickerPositionChange &&
+                      onPageTickerPositionChange(e.target.value),
+                  },
+                  React.createElement("option", { value: "bottom" }, "Bottom"),
+                  React.createElement("option", { value: "top" }, "Top"),
+                ),
+              ),
           ),
 
         // Widgets Tab Content
@@ -4081,6 +4293,10 @@ class CryptoChart extends PureComponent {
       openInterestData: null, // { oiUsd, formatted }
       liquidationsData: null, // { total, longLiq, shortLiq, longPct, ... }
       altcoinSeasonData: null, // { index, label, outperformers, total }
+      pageTicker: loadPageTickerFromStorage(), // Visual page ticker bar
+      pageTickerPosition: loadPageTickerPositionFromStorage(), // 'top' or 'bottom'
+      pageTickerItems: [], // [{ coin, price, change, up }]
+      pageTickerReady: false, // true after first full fetch completes
     });
 
     // Ticker scroll position (class property to avoid re-renders)
@@ -4088,6 +4304,10 @@ class CryptoChart extends PureComponent {
 
     // Widget refresh interval
     this.widgetRefreshInterval = null;
+
+    // Page ticker fetch state
+    this.pageTickerRefreshInterval = null;
+    this._pageTickerFetching = false;
 
     _defineProperty(this, "cycleCoinIndex", () => {
       this.tickerScrollPos = 0; // Reset ticker scroll on coin change
@@ -4390,21 +4610,11 @@ class CryptoChart extends PureComponent {
 
       // Fetch fresh data (will use cache if fresh, or make API call if stale/missing)
       try {
-        const currentValue = await fetchCurrentValue(
-          activeCoin,
-          currency,
-          signal,
-          true,
-          coinOptions,
-        );
-        const valueHistory = await fetchValueHistory(
-          activeCoin,
-          period,
-          currency,
-          signal,
-          true,
-          coinOptions,
-        );
+        // Spot price and history are independent endpoints — fetch in parallel
+        const [currentValue, valueHistory] = await Promise.all([
+          fetchCurrentValue(activeCoin, currency, signal, true, coinOptions),
+          fetchValueHistory(activeCoin, period, currency, signal, true, coinOptions),
+        ]);
 
         // Clear skeleton timer
         if (this.skeletonTimer) {
@@ -4564,6 +4774,125 @@ class CryptoChart extends PureComponent {
       this.setState({ tickerFormat: format }, () => {
         if (this.state.tickerEnabled) {
           this.buildTickerText();
+        }
+      });
+    });
+
+    _defineProperty(this, "buildPageTickerItems", () => {
+      const { currency, decimalPlaces, separatorFormat } = this.state;
+      const curr = currency || DEFAULT_CURRENCY;
+      const currencySymbol = getCurrencySymbol(curr);
+      const items = [];
+
+      for (const coin of SUGGESTED_COINS) {
+        const cached = pageTickerCache.get(`${coin}-${curr}`);
+        if (!cached) continue;
+
+        const priceStr = formatTickerPrice(
+          cached.price,
+          currencySymbol,
+          "compact",
+          decimalPlaces,
+          separatorFormat,
+        );
+
+        const changeStr =
+          cached.change !== null && cached.change !== undefined
+            ? `${cached.up ? "+" : ""}${cached.change.toFixed(2)}%`
+            : null;
+
+        items.push({ coin, price: priceStr, change: changeStr, up: cached.up });
+      }
+
+      this.setState({ pageTickerItems: items });
+    });
+
+    _defineProperty(this, "fetchPageTickerData", async () => {
+      if (this._pageTickerFetching) return;
+      this._pageTickerFetching = true;
+
+      const curr = this.state.currency || DEFAULT_CURRENCY;
+      const now = Date.now();
+
+      for (let i = 0; i < SUGGESTED_COINS.length; i += PAGE_TICKER_BATCH_SIZE) {
+        if (!this.state.pageTicker) break;
+
+        const batch = SUGGESTED_COINS.slice(i, i + PAGE_TICKER_BATCH_SIZE);
+
+        await Promise.all(
+          batch.map(async (coin) => {
+            const cached = pageTickerCache.get(`${coin}-${curr}`);
+            if (cached && now - cached.timestamp < PAGE_TICKER_TTL) return;
+
+            try {
+              const [spotRes, histRes] = await Promise.all([
+                fetchWithRetry(`${API_BASE}${coin}-${curr}/${API_SPOT}`).then((r) => r.json()),
+                fetchWithRetry(`${API_BASE}${coin}-${curr}/${API_HISTORY}day`).then((r) => r.json()),
+              ]);
+
+              const spotStr = spotRes && spotRes.data && spotRes.data.amount;
+              if (typeof spotStr !== "string") return;
+
+              const spotPrice = Number(spotStr);
+              let change = null;
+              let up = null;
+
+              const prices = histRes && histRes.data && histRes.data.prices;
+              if (Array.isArray(prices) && prices.length > 0) {
+                // Sort ascending by time → [0] is 24h ago
+                const sorted = prices.slice().sort((a, b) => a.time - b.time);
+                const oldest = Number(sorted[0].price);
+                if (oldest !== 0 && !isNaN(oldest)) {
+                  change = ((spotPrice - oldest) / Math.abs(oldest)) * 100;
+                  up = change >= 0;
+                }
+              }
+
+              pageTickerCache.set(`${coin}-${curr}`, {
+                price: spotPrice,
+                change,
+                up,
+                timestamp: Date.now(),
+              });
+            } catch (e) {
+              // silently skip unavailable coins
+            }
+          }),
+        );
+
+        this.buildPageTickerItems();
+
+        if (i + PAGE_TICKER_BATCH_SIZE < SUGGESTED_COINS.length) {
+          await new Promise((resolve) =>
+            setTimeout(resolve, PAGE_TICKER_BATCH_DELAY),
+          );
+        }
+      }
+
+      this._pageTickerFetching = false;
+      // Mark ready after first complete fetch so the bar animates in
+      if (!this.state.pageTickerReady) {
+        this.setState({ pageTickerReady: true });
+      }
+    });
+
+    _defineProperty(this, "handlePageTickerPositionChange", (position) => {
+      savePageTickerPositionToStorage(position);
+      this.setState({ pageTickerPosition: position });
+    });
+
+    _defineProperty(this, "handlePageTickerChange", (enabled) => {
+      savePageTickerToStorage(enabled);
+      this.setState({ pageTicker: enabled, pageTickerReady: false }, () => {
+        if (enabled) {
+          this.fetchPageTickerData();
+          this.pageTickerRefreshInterval = setInterval(
+            () => this.fetchPageTickerData(),
+            PAGE_TICKER_REFRESH_MS,
+          );
+        } else {
+          clearInterval(this.pageTickerRefreshInterval);
+          this.pageTickerRefreshInterval = null;
         }
       });
     });
@@ -4872,6 +5201,17 @@ class CryptoChart extends PureComponent {
       }, 3000);
     }
 
+    // Fetch all-coin page ticker data if enabled (delay 3s for initial load to settle)
+    if (this.state.pageTicker) {
+      this.pageTickerStartTimer = setTimeout(() => {
+        this.fetchPageTickerData();
+      }, 3000);
+      this.pageTickerRefreshInterval = setInterval(
+        () => this.fetchPageTickerData(),
+        PAGE_TICKER_REFRESH_MS,
+      );
+    }
+
     // Fetch widget data if any widgets are enabled
     this.fetchWidgets();
     // Refresh widgets every 5 minutes
@@ -4882,8 +5222,10 @@ class CryptoChart extends PureComponent {
     clearTimeout(this.fetchTimeout);
     clearTimeout(this.prefetchTimer);
     clearTimeout(this.tickerStartTimer);
+    clearTimeout(this.pageTickerStartTimer);
     clearInterval(this.cacheCleanupInterval);
     clearInterval(this.widgetRefreshInterval);
+    clearInterval(this.pageTickerRefreshInterval);
     this.stopTickerInterval();
 
     // Cancel any ongoing requests
@@ -4960,6 +5302,10 @@ class CryptoChart extends PureComponent {
     const fgNeedleX = (50 + 30 * Math.cos(fgAngle)).toFixed(1);
     const fgNeedleY = (50 - 30 * Math.sin(fgAngle)).toFixed(1);
     const activeCoin = coinOptions[coinIndex] || coinOptions[0] || "BTC";
+    const tickerTop =
+      this.state.pageTicker &&
+      this.state.pageTickerReady &&
+      (this.state.pageTickerPosition || DEFAULT_PAGE_TICKER_POSITION) === "top";
 
     // Select color palette based on active theme
     const colors = activeTheme === "light" ? lightColors : darkColors;
@@ -5012,13 +5358,14 @@ class CryptoChart extends PureComponent {
           ),
         React.createElement(
           AppShell,
-          null,
+          { tickerTop },
           React.createElement(
             SettingsToggleButton,
             {
               onClick: this.toggleSettings,
               open: showSettings,
               type: "button",
+              tickerTop,
               "aria-label": showSettings ? "Close settings" : "Open settings",
               title: showSettings ? "Close settings" : "Settings",
             },
@@ -5088,41 +5435,26 @@ class CryptoChart extends PureComponent {
             ),
           ),
         ),
-        // Widget toggle button (eye icon): hide-all when visible, restore when all hidden
+        // Widget toggle button (fixed, above the panel)
         (() => {
           if (showSettings) return null;
           const hidden = this.state.hiddenWidgets;
           const anyEnabled = Object.keys(widgets).some((k) => widgets[k]);
           if (!anyEnabled) return null;
-          const anyVisible = Object.keys(widgets).some(
-            (k) => widgets[k] && !hidden[k],
-          );
-          if (anyVisible) {
-            // × — hide all widgets
-            return React.createElement(
-              WidgetRestoreButton,
-              {
-                onClick: this.hideAllWidgets,
-                type: "button",
-                "aria-label": "Hide all widgets",
-                title: "Hide all widgets",
-              },
-              "\u00d7",
-            );
-          }
-          // Open eye — restore all widgets
+          const anyVisible = Object.keys(widgets).some((k) => widgets[k] && !hidden[k]);
           return React.createElement(
             WidgetRestoreButton,
             {
-              onClick: this.restoreAllWidgets,
               type: "button",
-              "aria-label": "Show hidden widgets",
-              title: "Show hidden widgets",
+              tickerTop,
+              onClick: anyVisible ? this.hideAllWidgets : this.restoreAllWidgets,
+              "aria-label": anyVisible ? "Hide all widgets" : "Show hidden widgets",
+              title: anyVisible ? "Hide all widgets" : "Show hidden widgets",
             },
-            "\uD83D\uDC41",
+            anyVisible ? "\u00d7" : "\uD83D\uDC41",
           );
         })(),
-        // Widget Panel (drag-reorderable, show enabled widgets that are not individually hidden)
+        // Widget Panel (drag-reorderable, widgets only)
         (() => {
           const hidden = this.state.hiddenWidgets;
           const widgetDefs = {
@@ -5479,14 +5811,18 @@ class CryptoChart extends PureComponent {
             },
           };
 
+          const anyEnabled = Object.keys(widgets).some((k) => widgets[k]);
+          if (!anyEnabled) return null;
+
           const visibleOrder = widgetOrder.filter(
             (key) => widgetDefs[key] && widgetDefs[key].visible,
           );
+
           if (!visibleOrder.length) return null;
 
           return React.createElement(
             WidgetPanel,
-            { visible: true },
+            { visible: true, tickerTop },
             ...visibleOrder.map((key) => {
               const def = widgetDefs[key];
               return React.createElement(
@@ -5513,6 +5849,63 @@ class CryptoChart extends PureComponent {
             }),
           );
         })(),
+        // Page Ticker Bar (fixed position, two rows)
+        (() => {
+          const { pageTicker, pageTickerReady, pageTickerItems, pageTickerPosition } = this.state;
+          if (!pageTicker || !pageTickerReady || !pageTickerItems || pageTickerItems.length === 0) return null;
+
+          // Build doubled item list for seamless loop (translateX -50%)
+          const makeTrack = (items) => {
+            const doubled = [...items, ...items];
+            return doubled.map((item, i) =>
+              React.createElement(
+                PageTickerItem,
+                { key: i },
+                React.createElement(PageTickerSymbol, null, item.coin),
+                item.up !== null && item.up !== undefined
+                  ? React.createElement(
+                      PageTickerChange,
+                      { up: item.up },
+                      item.up ? "\u25b2" : "\u25bc",
+                    )
+                  : null,
+                React.createElement(PageTickerPrice, null, item.price),
+                item.change
+                  ? React.createElement(
+                      PageTickerChange,
+                      { up: item.up },
+                      item.change,
+                    )
+                  : null,
+                React.createElement(PageTickerSep, null, "\u2502"),
+              ),
+            );
+          };
+
+          return React.createElement(
+            PageTickerBar,
+            { position: pageTickerPosition || DEFAULT_PAGE_TICKER_POSITION },
+            React.createElement(
+              PageTickerRow,
+              null,
+              React.createElement(
+                PageTickerTrack,
+                { speed: Math.max(30, pageTickerItems.length * 2) },
+                ...makeTrack(pageTickerItems),
+              ),
+            ),
+            React.createElement(
+              PageTickerRow,
+              null,
+              React.createElement(
+                PageTickerTrack,
+                { speed: Math.max(38, pageTickerItems.length * 2.5), style: { animationDelay: "-15s" } },
+                ...makeTrack([...pageTickerItems].reverse()),
+              ),
+            ),
+          );
+        })(),
+
         // LAZY LOADING: Only render SettingsPanel when user opens it
         showSettings &&
           React.createElement(SettingsPanel, {
@@ -5538,6 +5931,10 @@ class CryptoChart extends PureComponent {
             onTickerChange: this.handleTickerChange,
             tickerFormat: this.state.tickerFormat,
             onTickerFormatChange: this.handleTickerFormatChange,
+            pageTicker: this.state.pageTicker,
+            onPageTickerChange: this.handlePageTickerChange,
+            pageTickerPosition: this.state.pageTickerPosition,
+            onPageTickerPositionChange: this.handlePageTickerPositionChange,
             widgets: widgets,
             onWidgetToggle: this.handleWidgetToggle,
           }),

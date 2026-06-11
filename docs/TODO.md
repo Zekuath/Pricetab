@@ -8,8 +8,8 @@
 
 | Metric | Value |
 |--------|-------|
-| **Current Version** | 1.1.0 |
-| **Status** | Chrome Web Store Ready |
+| **Current Version** | 1.1.1 |
+| **Status** | Published on Chrome Web Store |
 | **Codebase Size** | ~5,600+ lines |
 | **Next Milestone** | Chrome Web Store Launch |
 | **Security Status** | Input validation complete |
@@ -65,6 +65,10 @@ Core functionality that has been implemented and tested.
 - [x] Responsive design
 - [x] Monospace typography (Roboto Mono)
 - [x] Hover tooltips on all interactive elements
+- [x] Scrolling price ticker bar (top/bottom, configurable)
+- [x] Settings and widget-toggle buttons aligned across screen sizes
+- [x] Bottom widget row horizontally scrollable on small screens
+- [x] Chart fills available space without overflowing the controls
 
 ### Widget System
 - [x] Fear & Greed Index widget (Alternative.me)
@@ -109,7 +113,7 @@ Core functionality that has been implemented and tested.
 | Write detailed description (2000+ chars) | [x] | Medium | See `docs/STORE_DESCRIPTION.md` |
 | Fix keyword spam (CWS policy compliance) | [x] | Low | Removed coin/currency lists |
 | Select category: Productivity | [x] | Low | Productivity |
-| Add privacy policy URL | [ ] | Low | Host on GitHub Pages |
+| Add privacy policy URL | [~] | Low | `privacy.html` created — needs hosting (GitHub Pages) + URL in CWS field |
 | Setup support email | [ ] | Low | - |
 | Prepare FAQ responses | [ ] | Low | Common questions |
 

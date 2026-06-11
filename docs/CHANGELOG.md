@@ -18,6 +18,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.1.1] - Privacy, Performance & Layout Polish
+
+### Changed
+- Self-hosted the Roboto Mono font (no more external Google Fonts request) — faster, fully offline, zero third-party calls
+- Spot price and chart history now fetched in parallel for faster loads
+
+### Fixed
+- Settings and widget-toggle buttons now stay aligned on small/short screens
+- Bottom widget row is horizontally scrollable so all widgets stay reachable
+- Chart now fills the available space without overflowing over the controls
+
+---
+
 ## [1.1.0] - Widget System & Market Data
 
 ### Added
@@ -38,6 +51,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Price area ("Next coin")
   - Change area ("Switch to price change / percent change")
   - Settings button ("Settings / Close settings")
+- **Scrolling price ticker bar** - Optional top/bottom ticker showing multiple coins
 
 ### Changed
 - Widget panel moves with coin changes for coin-specific data (funding, L/S, OI, liquidations)

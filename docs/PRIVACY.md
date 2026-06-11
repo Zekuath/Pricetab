@@ -1,6 +1,6 @@
 # Privacy Policy for PriceTab
 
-**Last Updated:** May 20, 2026
+**Last Updated:** June 8, 2026
 **Effective Date:** January 23, 2026
 
 ## Introduction
@@ -73,7 +73,7 @@ All APIs used by PriceTab are **public** — no authentication or accounts requi
 
 ### Local Vendor Files
 
-All JavaScript libraries (React, D3.js, styled-components) are loaded from local files bundled with the extension — no external CDN requests for scripts.
+All JavaScript libraries (React, D3.js, styled-components), styles, and fonts are loaded from local files bundled with the extension — no external CDN or font requests.
 
 ## Data Storage Location
 
@@ -146,7 +146,7 @@ Your continued use of PriceTab after any changes constitutes acceptance of the n
 ## Open Source
 
 PriceTab is open source. You can review our code at:
-- **GitHub Repository**: https://github.com/zekuath/pricetab
+- **GitHub Repository**: https://github.com/Zekuath/Pricetab
 - **License**: MIT License
 
 We encourage security researchers to review our code and report any concerns.
@@ -155,7 +155,7 @@ We encourage security researchers to review our code and report any concerns.
 
 If you have any questions about this Privacy Policy or our practices, please contact us:
 
-- **GitHub Issues**: https://github.com/zekuath/pricetab/issues
+- **GitHub Issues**: https://github.com/Zekuath/Pricetab/issues
 
 ## Compliance
 
@@ -195,4 +195,4 @@ This extension is provided "as is" without warranty. We are not responsible for:
 ---
 
 **PriceTab Privacy Policy v1.0.0**
-Last Updated: January 23, 2026
+Last Updated: June 8, 2026

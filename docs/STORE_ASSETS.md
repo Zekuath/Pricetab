@@ -25,34 +25,66 @@ This document explains how to create all required assets for publishing PriceTab
 
 ## 📸 Screenshot Guide
 
-### What to Capture
+> ⚠️ **All existing screenshots (1-6, 9) are outdated — taken before the widget system.**
+> Screenshots 7 and 8 are missing entirely. Retake all of them.
 
-Create 3-5 high-quality screenshots showing:
+### What to Capture (v1.1.0)
 
-1. **Main View** (screenshot-1.png)
-   - Clean new tab with BTC chart
-   - Show time period buttons
-   - Show price and change in top bar
-   - Caption: "Real-time cryptocurrency price charts on every new tab"
+Take 5 screenshots at **1280x800**. Minimum 1, recommended 5.
 
-2. **Settings Panel** (screenshot-2.png)
-   - Settings modal open
-   - Show selected coins
-   - Show search/quick-add section
-   - Caption: "Easy coin management with drag-and-drop reordering"
+**1. Main view with widgets (dark mode)**
+- BTC 1D or 1W chart
+- Widget panel visible on the left: Fear & Greed + Market Overview + Halving Countdown at minimum
+- × button visible top-left
+- Shows the full new feature set
 
-3. **Different Coin** (screenshot-3.png)
-   - ETH or SOL chart
-   - Different time period (1W or 1M)
-   - Caption: "Support for 75+ cryptocurrencies with 6 time periods"
+**2. Widget panel close-up**
+- BTC chart with ALL 9 widgets enabled and visible
+- Shows Fear & Greed, Market Overview, Halving, RSI, Funding Rate, Long/Short, OI, Liquidations, Altcoin Season
+- Demonstrates the depth of market data
 
-4. **Multiple Features** (screenshot-4.png - optional)
-   - Show switching between $ and % view
-   - Caption: "Toggle between dollar amount and percentage changes"
+**3. Settings — Widgets tab**
+- Settings panel open, Preferences tab selected, scrolled to WIDGETS section
+- Shows widget toggles (some on, some off)
+- Demonstrates customisability
 
-5. **Mobile/Responsive** (screenshot-5.png - optional)
-   - Narrow browser window showing responsive design
-   - Caption: "Fully responsive design works on any screen size"
+**4. Settings — Coins tab**
+- Settings panel open, Coins tab selected
+- A few coins selected (BTC, ETH, SOL, XRP)
+- Shows the coin management UI
+
+**5. Light mode — clean view**
+- BTC ALL chart, light theme, no widgets (clean/minimal look)
+- Demonstrates theme support and minimal option
+
+### How to Take Screenshots on Windows
+
+```
+1. Load the extension: chrome://extensions/ → Reload PriceTab
+2. Open a new tab
+3. Set up the view you want (widgets, coin, period)
+4. Press F12 → Console → run: document.title  (just to confirm it's loaded)
+5. Press Ctrl+Shift+P → type "screenshot" → "Capture screenshot"
+   OR use the Snipping Tool: Win+Shift+S → set window to exactly 1280×800
+6. Save as 1.png, 2.png, etc. to assets/screenshots/
+```
+
+**Resize to exact 1280×800 if needed (PowerShell):**
+```powershell
+Add-Type -AssemblyName System.Drawing
+$img = [System.Drawing.Image]::FromFile("C:\path\to\screenshot.png")
+$bmp = New-Object System.Drawing.Bitmap(1280, 800)
+$g = [System.Drawing.Graphics]::FromImage($bmp)
+$g.DrawImage($img, 0, 0, 1280, 800)
+$bmp.Save("C:\path\to\1.png")
+```
+
+### Screenshot Specifications
+
+- **Dimensions**: 1280x800 exactly (Chrome Web Store requirement)
+- **Format**: PNG
+- **File Size**: Under 2MB each
+- **Content**: Real live data, not placeholders
 
 ### How to Create Screenshots
 

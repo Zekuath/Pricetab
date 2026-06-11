@@ -1,51 +1,50 @@
 <!DOCTYPE html>
 <html lang="en">
-  <style>
-    /* CRITICAL: Prevent white flash on load by setting initial background based on system theme */
-    body {
-      margin: 0;
-      padding: 0;
-      background-color: #000000;
-      color: #ffffff;
-    }
-
-    /* Auto-detect system preference for initial load */
-    @media (prefers-color-scheme: light) {
-      body {
-        background-color: #ffffff;
-        color: #1a1a1a;
-      }
-    }
-
-    @media (max-width: 600px) {
-      .overview-wrapper {
-        flex-direction: column;
-        align-items: center;
-        gap: 1rem;
-        padding: 1rem;
-      }
-      .period-button {
-        font-size: 0.8rem;
-        width: 2.5rem;
-        height: 2.5rem;
-      }
-      .value-text {
-        font-size: 1.25rem;
-      }
-      .label-text {
-        font-size: 0.625rem;
-      }
-      svg {
-        width: 100% !important;
-        height: auto !important;
-      }
-    }
-  </style>
   <head>
     <meta charset="UTF-8" />
     <title>Cryptocurrency Price Chart</title>
-    <link rel="stylesheet" href="https://public.codepenassets.com/css/normalize-5.0.0.min.css" />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto+Mono:400,500" />
+    <link rel="stylesheet" href="./vendor/normalize.min.css" />
+    <link rel="stylesheet" href="./vendor/roboto-mono.css" />
+    <style>
+      /* Prevent white flash on load — matches system theme before React mounts */
+      body {
+        margin: 0;
+        padding: 0;
+        background-color: #000000;
+        color: #ffffff;
+      }
+
+      @media (prefers-color-scheme: light) {
+        body {
+          background-color: #ffffff;
+          color: #1a1a1a;
+        }
+      }
+
+      @media (max-width: 600px) {
+        .overview-wrapper {
+          flex-direction: column;
+          align-items: center;
+          gap: 1rem;
+          padding: 1rem;
+        }
+        .period-button {
+          font-size: 0.8rem;
+          width: 2.5rem;
+          height: 2.5rem;
+        }
+        .value-text {
+          font-size: 1.25rem;
+        }
+        .label-text {
+          font-size: 0.625rem;
+        }
+        svg {
+          width: 100% !important;
+          height: auto !important;
+        }
+      }
+    </style>
   </head>
   <body>
     <script src="./src/theme-init.js"></script>

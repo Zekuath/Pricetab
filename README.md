@@ -119,7 +119,7 @@ BTC $43,250 (+5.2%)
 | Coinbase API | Price Data |
 | Chrome Manifest V3 | Extension Platform |
 
-All dependencies are bundled locally - no external CDN requests for JavaScript.
+All dependencies — scripts, styles, and fonts — are bundled locally. No external CDN requests.
 
 ---
 
@@ -156,7 +156,7 @@ All of these are public APIs requiring no authentication or account.
 
 ```bash
 # Clone the repository
-git clone https://github.com/zekuath/pricetab.git
+git clone https://github.com/Zekuath/Pricetab.git
 
 # Load in Chrome
 1. Go to chrome://extensions/
@@ -200,7 +200,6 @@ No build process required - changes are immediate after extension reload.
 | [PRIVACY.md](docs/PRIVACY.md) | Privacy policy |
 | [STORE_DESCRIPTION.md](docs/STORE_DESCRIPTION.md) | Chrome Web Store listing content |
 | [STORE_ASSETS.md](docs/STORE_ASSETS.md) | Chrome Web Store asset guide |
-| [AI_GUIDELINES.md](docs/AI_GUIDELINES.md) | AI development guidelines |
 | [policies/](docs/policies/) | Chrome Web Store policy compliance |
 
 ---
@@ -229,8 +228,8 @@ This project is based on work by [halvves](https://codepen.io/halvves/pen/JmgbVV
 
 ## Support
 
-- **Issues:** [GitHub Issues](https://github.com/zekuath/pricetab/issues)
-- **Discussions:** [GitHub Discussions](https://github.com/zekuath/pricetab/discussions)
+- **Issues:** [GitHub Issues](https://github.com/Zekuath/Pricetab/issues)
+- **Discussions:** [GitHub Discussions](https://github.com/Zekuath/Pricetab/discussions)
 
 ---
 
