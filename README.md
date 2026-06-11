@@ -1,12 +1,12 @@
 # PriceTab
 
-![PriceTab Banner](assets/promotional/Marquee.png)
+[![PriceTab Banner](assets/promotional/Marquee.png)](https://chromewebstore.google.com/detail/pricetab/dobkidjmhpnniiipliollbaefpppalaf)
 
 **Live cryptocurrency price charts on every new tab.**
 
 A lightweight, privacy-focused Chrome extension that transforms your new tab into a real-time crypto dashboard. No accounts, no tracking, just data.
 
-![Chrome Web Store](https://img.shields.io/badge/Chrome-Extension-4285F4?logo=googlechrome&logoColor=white)
+[![Chrome Web Store](https://img.shields.io/badge/Chrome_Web_Store-Install-4285F4?logo=googlechrome&logoColor=white)](https://chromewebstore.google.com/detail/pricetab/dobkidjmhpnniiipliollbaefpppalaf)
 ![Manifest V3](https://img.shields.io/badge/Manifest-V3-green)
 ![License](https://img.shields.io/badge/License-MIT-blue)
 
@@ -20,7 +20,9 @@ A lightweight, privacy-focused Chrome extension that transforms your new tab int
 - **Watchlist Heatmap** - Your coins as a colour-coded grid (green up / red down)
 - **Top Movers** - The day's biggest gainers and losers at a glance
 - **One-Click Presets** - "Holder", "Trader" or "Minimal" widget bundles
+- **Auto Rotate** - Switch to the next coin automatically at your chosen interval (10s–15m)
 - **Scrolling Ticker** - Optional live price bar across the top or bottom
+- **News Headlines** - Optional crypto news row in the ticker (Blockchair + Cointelegraph)
 - **Live Tab Title** - Current price + 24h change right in the tab (`BTC $43,250 (+5.2%)`)
 - **6 Time Periods** - 1H, 1D, 1W, 1M, 1Y, ALL
 - **Dark / Light / Auto Themes** - Follows your system preference
@@ -47,9 +49,11 @@ A lightweight, privacy-focused Chrome extension that transforms your new tab int
 
 ## Installation
 
-### Chrome Web Store
+### Chrome Web Store (Recommended)
 
-*Submission ready - Coming soon*
+**[Install PriceTab from the Chrome Web Store](https://chromewebstore.google.com/detail/pricetab/dobkidjmhpnniiipliollbaefpppalaf)** — one click, auto-updates.
+
+If PriceTab makes your new tab better, a rating on the store page helps others find it.
 
 ### Manual Installation (Developer Mode)
 
@@ -146,6 +150,7 @@ Network requests are made only to:
 - Bybit Public API (long/short ratio)
 - Coinlore Public API (market overview, altcoin season / BTC dominance)
 - mempool.space (BTC halving block height)
+- Blockchair Public API and Cointelegraph RSS (crypto news headlines, optional ticker row)
 
 All of these are public APIs requiring no authentication or account.
 
@@ -176,13 +181,17 @@ git clone https://github.com/Zekuath/Pricetab.git
 ```
 pricetab/
 ├── src/
-│   ├── app.js          # Main application (~5600+ lines)
-│   └── theme-init.js   # Prevents white flash on load
+│   ├── app.js          # Main application (~7,700 lines)
+│   ├── theme-init.js   # Prevents white flash on load
+│   └── rate.js         # Toolbar popup script (opens store listing)
 ├── vendor/             # Bundled dependencies
 ├── assets/icons/       # Extension icons
 ├── docs/               # Documentation
+├── site/               # Promo website (GitHub Pages, not shipped)
 ├── manifest.json       # Chrome extension config
-└── index.html          # Entry point
+├── index.html          # Entry point (new tab page)
+├── rate.html           # Toolbar icon popup
+└── privacy.html        # Privacy policy (GitHub Pages)
 ```
 
 ### Making Changes
@@ -234,6 +243,7 @@ This project is based on work by [halvves](https://codepen.io/halvves/pen/JmgbVV
 
 ## Support
 
+- **Website:** [zekuath.github.io/Pricetab/site](https://zekuath.github.io/Pricetab/site/)
 - **Issues:** [GitHub Issues](https://github.com/Zekuath/Pricetab/issues)
 - **Discussions:** [GitHub Discussions](https://github.com/Zekuath/Pricetab/discussions)
 

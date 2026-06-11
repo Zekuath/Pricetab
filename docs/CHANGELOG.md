@@ -18,6 +18,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.1] - Settings Polish, Auto Rotate & News Ticker (staged)
+
+### Added
+- **Auto Rotate** (Preferences → Data) - the chart switches to the next coin on your list automatically; pick the interval (10s to 15m). Pauses while the tab is hidden or settings are open
+- **News headlines row** in the price ticker bar (opt-in, off by default) - crypto headlines from Blockchair + Cointelegraph, merged and deduplicated, cached for 10 minutes. Clicking opens the article in a new tab with no referrer
+- **Search coins by name** - typing "Dogecoin" now finds DOGE; suggestion chips show full names, Enter picks the top match
+- **Undo for "Reset to defaults"** - the button flips to "Undo reset" so a mis-click can't destroy your list
+- **ESC closes settings** and a visible × close button in the panel header
+- **One-time rating reminder** in settings (dismiss forever with one click) and the toolbar icon now opens the store listing
+- **Promo website** (`site/`) on GitHub Pages - extension-styled landing page with an animated lightbox screenshot gallery
+
+### Changed
+- **Settings panel reorganized** - larger card (32×40rem); Preferences grouped into Appearance / Display / Data / Tickers; Widgets grouped into Portfolio / Market / Trader with one-line explanations per widget
+- **Search suggestions redesigned** - chips open in an animated area between the search bar and Add coin; several coins can be added from one search; the area collapses smoothly when cleared
+- **Preset buttons show their active state** (Holder / Trader / Minimal highlight when they match)
+- **Clearer names** - "Tab Ticker" → "Browser Tab Title", "Page Ticker" → "Price Ticker Bar"
+- **Currency dropdown** groups popular currencies (USD, EUR, GBP, TRY, JPY) at the top
+- Settings scrollbar moved to the card edge with a stable gutter (no more layout shift)
+- Feedback message colors are now theme-aware (readable in light mode)
+
+### Fixed
+- Stale suggestion chips no longer repaint over the search placeholder after clearing the input (debounce is now cancellable)
+
+---
+
 ## [1.2.0] - Watchlist, Top Movers & Reliability
 
 ### Added

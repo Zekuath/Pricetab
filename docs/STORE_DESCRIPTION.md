@@ -1,10 +1,15 @@
 # Chrome Web Store Listing - PriceTab
 
+> **Live listing:** https://chromewebstore.google.com/detail/pricetab/dobkidjmhpnniiipliollbaefpppalaf
+
 > **This is the single canonical source for Chrome Web Store submission content.**
-> Copy the "Detailed Description" block below directly into the Developer Dashboard.
+> Each section below maps 1:1 to a field in the Developer Dashboard — work through it
+> top to bottom and copy each block into the matching field.
 > Do NOT use descriptions from any other file — `STORE_ASSETS.md` previously had a duplicate that caused a Yellow Argon rejection.
 
 ---
+
+# 1. Store Listing Tab
 
 ## Extension Name
 
@@ -12,7 +17,7 @@
 PriceTab - Crypto Charts on Every New Tab
 ```
 
-**Character count:** 41/75 — also set as `name` in `manifest.json` (the store title is derived from the manifest name).
+**Character count:** 41/75 — the store title comes from `name` in `manifest.json`, so any change must be made there. Do NOT add coin names to the title — both rejections (Yellow Argon) were triggered by coin-name keywords.
 
 ---
 
@@ -22,7 +27,7 @@ PriceTab - Crypto Charts on Every New Tab
 Every new tab opens a live crypto chart. Watch your coins, spot the top movers, and read 9 market signals. Free, no account.
 ```
 
-**Character count:** 124/132 — also mirrored in `manifest.json` `description`.
+**Character count:** 124/132 — also mirrored in `manifest.json` `description`. The first sentence is what shows in search-result cards, so it must stand alone.
 
 ---
 
@@ -34,10 +39,10 @@ Turn every new browser tab into a live cryptocurrency dashboard.
 New to crypto or a seasoned trader, PriceTab puts the market in front of you with zero effort. Instead of a blank page, every new tab opens a clean, real-time price chart. No account, no sign-up, nothing to configure — just install it and open a tab.
 
 WHAT IT DOES (in plain words)
-Every time you open a new tab, PriceTab shows the live price of a coin you choose — for example Bitcoin (BTC) or Ethereum (ETH) — drawn as a smooth, easy-to-read chart. Click the price to flip to the next coin on your list. That is it. The market is always one tab away.
+Every time you open a new tab, PriceTab shows the live price of a coin you choose, drawn as a smooth, easy-to-read chart. Click the price to flip to the next coin on your list. That is it. The market is always one tab away.
 
 PICK YOUR COINS
-Choose from 60+ popular cryptocurrencies — Bitcoin, Ethereum, Solana, XRP and many more. Add the ones you care about and drag to reorder them. Your list is saved and remembered every time.
+Track over 60 popular cryptocurrencies, whether you follow major coins like Bitcoin and Ethereum or keep an eye on smaller projects. Add the ones you care about and drag to reorder them. Your list is saved and remembered every time.
 
 SEE ANY TIMEFRAME
 Switch between 1 Hour, 1 Day, 1 Week, 1 Month, 1 Year and All Time with one click — see today's move or the full history at a glance.
@@ -52,7 +57,8 @@ MARKET SIGNALS (optional — only if you want them)
 Switch on extra panels whenever you are ready for more:
 - Fear & Greed Index — is the market fearful or greedy today?
 - Market Overview — total market size and Bitcoin / Ethereum dominance.
-- Bitcoin Halving Countdown — time until the next Bitcoin halving.
+- Halving Countdown — time until the next Bitcoin halving.
+- A scrolling price bar with an optional crypto news headline row.
 - For active traders: RSI, funding rate, long/short ratio, open interest, liquidations and an altcoin-season index.
 New here? Leave them off and PriceTab stays clean and simple. Want depth? One click turns them on.
 
@@ -63,7 +69,7 @@ MADE THE WAY YOU LIKE
 - Dark, light, or automatic theme (follows your system).
 - Show prices in your local currency — 37 supported — with adjustable decimals.
 - Turn the chart's green/red fill on or off for a cleaner look.
-- Set how often prices refresh.
+- Set how often prices refresh, or let the chart rotate through your coins automatically.
 Everything you choose is saved on your own computer and remembered next time.
 
 PRIVATE BY DESIGN
@@ -83,17 +89,24 @@ Questions or ideas? Find us on GitHub: github.com/zekuath/pricetab
 Disclaimer: PriceTab is for information only and is not financial advice. Cryptocurrency prices are volatile and risky. Always do your own research.
 ```
 
-**Character count:** ~3,300/16,000
+**Character count:** ~3,400/16,000
 
 ---
 
 ## Category
 
 ```
-Productivity
+Tools
 ```
 
-**Alternative options:** Finance, Tools
+> ⚠️ The old "Productivity" category no longer exists — the Chrome Web Store
+> reorganised categories in 2023 into three groups (Productivity, Lifestyle,
+> Make Chrome Yours). "Tools" sits in the Productivity group and is where
+> crypto price trackers live.
+
+**Alternatives considered:**
+- `Functionality & UI` — for new-tab customisers (Momentum-style); fine but users searching "crypto" browse Tools, not UI tweaks.
+- `News & Weather` — plausible for market data, but lower discovery for crypto searches.
 
 ---
 
@@ -105,78 +118,117 @@ English (United States)
 
 ---
 
+## Graphic Assets
+
+| Dashboard field | File | Size |
+| --- | --- | --- |
+| Store icon | `assets/icons/icon128.png` | 128x128 |
+| Screenshots (upload in this order) | `assets/screenshots/01-hero.png` … `06-themes.png` | 1280x800 |
+| Small promo tile | `assets/promotional/Small Tile.png` | 440x280 |
+| Marquee promo tile | `assets/promotional/Marquee.png` | 1400x560 |
+
+`01-hero` must be FIRST — it is the image shown in search results and drives most clicks. (`Large Tile.png` 920x680 is no longer requested by the dashboard; keep it for other marketing use.)
+
+---
+
+## Additional Fields
+
+| Field | Value |
+| --- | --- |
+| Official URL | (leave unset unless a verified domain is added) |
+| Homepage URL | `https://zekuath.github.io/Pricetab/site/` |
+| Support URL | `https://github.com/zekuath/pricetab/issues` |
+| Mature content | No |
+
+---
+
+# 2. Privacy Tab
+
+## Single Purpose Description
+
+```
+PriceTab replaces the browser's new tab page with a live cryptocurrency price chart. Every feature — the coin watchlist, time-period switching, currency display and optional market-data panels — serves this one purpose: showing cryptocurrency market data on the new tab page. The extension requests zero permissions, runs entirely locally, and stores user preferences only in the browser's localStorage.
+```
+
+## Permission Justifications
+
+The manifest requests **no permissions and no host permissions**, so no justification fields appear. (`chrome_url_overrides.newtab` is not a permission.)
+
+## Remote Code
+
+```
+No, I am not using remote code.
+```
+
+All JavaScript is bundled locally in `vendor/` and `src/`.
+
+## Data Usage
+
+**Check NONE of the data-type boxes.** PriceTab does not collect or transmit:
+personally identifiable information, health info, financial and payment info,
+authentication info, personal communications, location, web history,
+user activity, or website content.
+
+Then certify all three disclosures:
+
+- [x] I do not sell or transfer user data to third parties, outside of the approved use cases
+- [x] I do not use or transfer user data for purposes that are unrelated to my item's single purpose
+- [x] I do not use or transfer user data to determine creditworthiness or for lending purposes
+
 ## Privacy Policy URL
 
 ```
-https://[your-github-username].github.io/pricetab/PRIVACY
+https://zekuath.github.io/Pricetab/privacy.html
 ```
 
-**Note:** Host `docs/PRIVACY.md` on GitHub Pages or any static hosting service.
+**Verified live (HTTP 200).** Note the capital "P" in `Pricetab` — GitHub Pages
+URLs are case-sensitive; `…github.io/pricetab/…` returns 404.
+Source file: `privacy.html` in the repo root, served via GitHub Pages.
 
-**Alternative format (raw GitHub):**
-```
-https://github.com/zekuath/pricetab/blob/main/docs/PRIVACY.md
+> Privacy policy URL goes in this designated field only — never in the description.
+
+---
+
+# 3. Distribution Tab
+
+| Field | Value |
+| --- | --- |
+| Payments | Free of charge |
+| Visibility | Public |
+| Distribution regions | All regions |
+
+---
+
+# 4. Pre-Submit Checklist
+
+- [ ] `manifest.json` `name`/`description` match the Name and Summary above exactly
+- [ ] Description pasted from this file only (no coin ticker lists — Yellow Argon)
+- [ ] Privacy policy URL opens in an incognito window (case-sensitive!)
+- [ ] Screenshots uploaded in order — `01-hero` FIRST, then `02`–`06`
+- [ ] Small tile + marquee uploaded
+- [ ] Category = Tools, Language = English (United States)
+- [ ] Privacy tab: single purpose filled, no data types checked, all 3 certifications checked, remote code = No
+- [ ] Account tab: contact email added and verified (required to publish)
+- [ ] ZIP contains only: `manifest.json`, `index.html`, `privacy.html`, `rate.html`, `src/`, `vendor/`, `assets/icons/` — no `docs/`, `site/`, `.git/`, `CLAUDE.md`, screenshots, or mockups
+
+**Build the ZIP:**
+
+```bash
+cd /path/to/Pricetab
+zip -r pricetab-$(python3 -c "import json;print(json.load(open('manifest.json'))['version'])").zip \
+  manifest.json index.html privacy.html rate.html src vendor assets/icons
 ```
 
 ---
 
-## Keywords (for SEO)
+# 5. Getting More Clicks (CTR Notes)
 
-Use these terms naturally in your description:
-- cryptocurrency
-- crypto
-- bitcoin
-- ethereum
-- price tracker
-- new tab
-- charts
-- real-time
-- portfolio
-- coinbase
+What users see in store search results: **small tile/icon + name + rating + user count + summary**. Optimise in this order:
 
----
-
-## Support
-
-```
-GitHub Issues: https://github.com/zekuath/pricetab/issues
-```
-
----
-
-## Website URL (Optional)
-
-```
-https://github.com/zekuath/pricetab
-```
-
----
-
-## Quick Copy-Paste Checklist
-
-Before submitting, verify:
-
-- [ ] Extension name is 75 characters or less
-- [ ] Summary is exactly 132 characters or less
-- [ ] Description has no broken links
-- [ ] Privacy policy URL is live and accessible
-- [ ] All placeholders replaced with actual values
-- [ ] Screenshots uploaded in order — `01-hero` (promotional) FIRST, then `02`–`06`
-- [ ] Promotional images uploaded (`assets/promotional/`)
-- [ ] Category selected
-- [ ] Language set
-
----
-
-## Asset Files
-
-| Asset | File | Size |
-|-------|------|------|
-| Icon 16x16 | `assets/icons/icon16.png` | 16x16 |
-| Icon 48x48 | `assets/icons/icon48.png` | 48x48 |
-| Icon 128x128 | `assets/icons/icon128.png` | 128x128 |
-| Screenshots (upload in order; see `assets/screenshots/README.md`) | `assets/screenshots/01-hero.png` … `06-themes.png` | 1280x800 |
-| Small Tile | `assets/promotional/Small Tile.png` | 440x280 |
-| Large Tile | `assets/promotional/Large Tile.png` | 920x680 |
-| Marquee | `assets/promotional/Marquee.png` | 1400x560 |
-
+1. **First screenshot (01-hero)** — the single biggest click driver on the listing page. Already a composed promotional hero; refresh it whenever the UI changes meaningfully.
+2. **Name keywords** — "Crypto", "Charts", "New Tab" are already in the title and cover the main queries. Do not add coin names (e.g. Bitcoin) to the title or summary — coin-name keywords caused both Yellow Argon rejections.
+3. **Early ratings** — listings with no rating get far fewer clicks. After launch, ask for reviews in the GitHub README and release notes (never inside the extension with nag prompts — policy risk).
+4. **Verified publisher** — in the dashboard Account tab, verify a contact email; later, verify a website via Search Console to get the publisher badge ("Established publisher" comes automatically with time + good standing).
+5. **Featured badge** — awarded by the CWS team to listings that follow best practices (quality listing, no spam, MV3, minimal permissions). PriceTab already qualifies on the technical side; a polished listing is the remaining criterion.
+6. **Localized listings (later)** — CWS shows localized listings only for locales declared in the manifest (`_locales/` + `default_locale`). Turkish, Spanish, German, and Portuguese are cheap wins once the listing is stable.
+7. **Update cadence** — regular updates (even small) keep the "last updated" date fresh, which users check before installing.

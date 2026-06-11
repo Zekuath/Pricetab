@@ -475,6 +475,74 @@ const SUGGESTED_COINS = [
   "PYTH",
 ];
 
+// Full names so users can search "Dogecoin" as well as "DOGE"
+const COIN_NAMES = {
+  BTC: "Bitcoin",
+  ETH: "Ethereum",
+  USDT: "Tether",
+  BNB: "BNB",
+  SOL: "Solana",
+  XRP: "XRP",
+  USDC: "USD Coin",
+  DOGE: "Dogecoin",
+  ADA: "Cardano",
+  AVAX: "Avalanche",
+  LINK: "Chainlink",
+  DOT: "Polkadot",
+  MATIC: "Polygon",
+  TON: "Toncoin",
+  SHIB: "Shiba Inu",
+  LTC: "Litecoin",
+  BCH: "Bitcoin Cash",
+  ATOM: "Cosmos",
+  XLM: "Stellar",
+  FIL: "Filecoin",
+  HBAR: "Hedera",
+  APT: "Aptos",
+  ARB: "Arbitrum",
+  STX: "Stacks",
+  NEAR: "NEAR Protocol",
+  IMX: "Immutable",
+  ICP: "Internet Computer",
+  VET: "VeChain",
+  MKR: "Maker",
+  QNT: "Quant",
+  GRT: "The Graph",
+  ALGO: "Algorand",
+  AAVE: "Aave",
+  SAND: "The Sandbox",
+  MANA: "Decentraland",
+  XTZ: "Tezos",
+  EGLD: "MultiversX",
+  FLOW: "Flow",
+  AXS: "Axie Infinity",
+  RNDR: "Render",
+  RPL: "Rocket Pool",
+  OP: "Optimism",
+  TIA: "Celestia",
+  INJ: "Injective",
+  ENS: "Ethereum Name Service",
+  ZEC: "Zcash",
+  KSM: "Kusama",
+  CHZ: "Chiliz",
+  CAKE: "PancakeSwap",
+  CRV: "Curve DAO",
+  COMP: "Compound",
+  SNX: "Synthetix",
+  "1INCH": "1inch",
+  BAT: "Basic Attention Token",
+  KAVA: "Kava",
+  MINA: "Mina",
+  LDO: "Lido DAO",
+  SUI: "Sui",
+  PEPE: "Pepe",
+  SEI: "Sei",
+  GALA: "Gala",
+  ILV: "Illuvium",
+  BLUR: "Blur",
+  PYTH: "Pyth Network",
+};
+
 const PERIOD_OPTIONS = [
   { value: "hour", label: "1H", title: "1 Hour" },
   { value: "day", label: "1D", title: "1 Day" },
@@ -505,6 +573,9 @@ const SEPARATOR_FORMAT_OPTIONS = [
   { value: "eu", label: "EU Format (1.234,56)" },
   { value: "space", label: "Space Format (1 234.56)" },
 ];
+
+// Shown first in the currency dropdown for quick access
+const POPULAR_CURRENCIES = ["USD", "EUR", "GBP", "TRY", "JPY"];
 
 const CURRENCY_OPTIONS = [
   { value: "AED", label: "UAE Dirham (د.إ)", symbol: "د.إ" },
@@ -567,6 +638,29 @@ const DEFAULT_CHART_COLOR = true;
 const CURRENCY_STORAGE_KEY = "crypto_chart_currency";
 const TICKER_STORAGE_KEY = "crypto_chart_ticker_enabled";
 const TICKER_FORMAT_STORAGE_KEY = "crypto_chart_ticker_format";
+const NEWS_TICKER_STORAGE_KEY = "crypto_chart_news_ticker_enabled";
+const NEWS_CACHE_KEY = "crypto_chart_news_cache";
+const NEWS_REFRESH_MS = 600000; // 10 minutes
+// News sources — both no-auth + CORS-enabled (verified); most other crypto
+// news APIs (CryptoCompare, CoinGecko, Messari, CryptoPanic) require keys,
+// and most RSS feeds (CoinDesk, Decrypt, ...) don't send CORS headers.
+const NEWS_API_URL = "https://api.blockchair.com/news?q=language(en)&limit=40";
+const COINTELEGRAPH_RSS_URL = "https://cointelegraph.com/rss";
+const MAX_NEWS_ITEMS = 50;
+const AUTO_ROTATE_STORAGE_KEY = "crypto_chart_auto_rotate";
+const AUTO_ROTATE_INTERVAL_STORAGE_KEY = "crypto_chart_auto_rotate_interval";
+const DEFAULT_AUTO_ROTATE = false;
+const DEFAULT_AUTO_ROTATE_INTERVAL = 30000;
+const AUTO_ROTATE_OPTIONS = [
+  { value: 10000, label: "Every 10 seconds" },
+  { value: 30000, label: "Every 30 seconds" },
+  { value: 60000, label: "Every minute" },
+  { value: 300000, label: "Every 5 minutes" },
+  { value: 900000, label: "Every 15 minutes" },
+];
+const RATE_PROMPT_DISMISSED_KEY = "crypto_chart_rate_prompt_dismissed";
+const STORE_LISTING_URL =
+  "https://chromewebstore.google.com/detail/pricetab/dobkidjmhpnniiipliollbaefpppalaf";
 
 // Ticker constants
 const DEFAULT_TICKER_ENABLED = false;
@@ -604,6 +698,80 @@ const loadThemeFromStorage = () => {
 const saveThemeToStorage = (theme) => {
   try {
     localStorage.setItem(THEME_STORAGE_KEY, theme);
+  } catch (error) {
+    // Silently fail
+  }
+};
+
+const loadRatePromptDismissed = () => {
+  try {
+    return localStorage.getItem(RATE_PROMPT_DISMISSED_KEY) === "true";
+  } catch (error) {
+    return true;
+  }
+};
+
+const saveRatePromptDismissed = () => {
+  try {
+    localStorage.setItem(RATE_PROMPT_DISMISSED_KEY, "true");
+  } catch (error) {
+    // Silently fail
+  }
+};
+
+const loadNewsTickerFromStorage = () => {
+  try {
+    return localStorage.getItem(NEWS_TICKER_STORAGE_KEY) === "true";
+  } catch (error) {
+    return false;
+  }
+};
+
+const saveNewsTickerToStorage = (enabled) => {
+  try {
+    localStorage.setItem(NEWS_TICKER_STORAGE_KEY, String(enabled));
+  } catch (error) {
+    // Silently fail
+  }
+};
+
+const loadAutoRotateFromStorage = () => {
+  try {
+    return localStorage.getItem(AUTO_ROTATE_STORAGE_KEY) === "true";
+  } catch (error) {
+    return DEFAULT_AUTO_ROTATE;
+  }
+};
+
+const saveAutoRotateToStorage = (enabled) => {
+  try {
+    localStorage.setItem(AUTO_ROTATE_STORAGE_KEY, String(enabled));
+  } catch (error) {
+    // Silently fail
+  }
+};
+
+const loadAutoRotateIntervalFromStorage = () => {
+  try {
+    const saved = parseInt(
+      localStorage.getItem(AUTO_ROTATE_INTERVAL_STORAGE_KEY),
+      10,
+    );
+    if (AUTO_ROTATE_OPTIONS.some((option) => option.value === saved)) {
+      return saved;
+    }
+    return DEFAULT_AUTO_ROTATE_INTERVAL;
+  } catch (error) {
+    return DEFAULT_AUTO_ROTATE_INTERVAL;
+  }
+};
+
+const saveAutoRotateIntervalToStorage = (interval) => {
+  try {
+    localStorage.setItem(
+      AUTO_ROTATE_INTERVAL_STORAGE_KEY,
+      interval.toString(),
+    );
   } catch (error) {
     // Silently fail
   }
@@ -900,6 +1068,91 @@ const WIDGET_PRESETS = {
     fearGreed: true,
   },
 };
+
+// A preset is "active" when the current toggles match it exactly
+const isPresetActive = (widgets, presetKey) => {
+  const preset = WIDGET_PRESETS[presetKey];
+  if (!preset || !widgets) {
+    return false;
+  }
+  return Object.keys(DEFAULT_WIDGETS).every(
+    (key) => Boolean(widgets[key]) === Boolean(preset[key]),
+  );
+};
+
+// Settings panel grouping + one-line explanations for each widget
+const WIDGET_GROUPS = [
+  {
+    title: "Portfolio",
+    items: [
+      {
+        key: "watchlist",
+        label: "Watchlist",
+        desc: "Your coins as a colour-coded 24h grid",
+      },
+      {
+        key: "topMovers",
+        label: "Top Movers",
+        desc: "Today's biggest gainers and losers",
+      },
+    ],
+  },
+  {
+    title: "Market",
+    items: [
+      {
+        key: "fearGreed",
+        label: "Fear & Greed",
+        desc: "Market sentiment score from 0 to 100",
+      },
+      {
+        key: "marketOverview",
+        label: "Market Overview",
+        desc: "Total market cap and BTC/ETH dominance",
+      },
+      {
+        key: "halvingCountdown",
+        label: "BTC Halving Countdown",
+        desc: "Time until the next Bitcoin halving",
+      },
+      {
+        key: "altcoinSeason",
+        label: "Altcoin Season",
+        desc: "Are altcoins outperforming Bitcoin?",
+      },
+    ],
+  },
+  {
+    title: "Trader",
+    items: [
+      {
+        key: "rsiWidget",
+        label: "RSI",
+        desc: "Momentum — overbought above 70, oversold below 30",
+      },
+      {
+        key: "fundingRate",
+        label: "Funding Rate",
+        desc: "What longs pay shorts on perpetual futures",
+      },
+      {
+        key: "longShortRatio",
+        label: "Long / Short Ratio",
+        desc: "How traders are positioned right now",
+      },
+      {
+        key: "openInterest",
+        label: "Open Interest",
+        desc: "Value of open futures contracts",
+      },
+      {
+        key: "liquidations",
+        label: "Liquidations 24h",
+        desc: "Forced position closures, last 24 hours",
+      },
+    ],
+  },
+];
 
 const loadWidgetsFromStorage = () => {
   try {
@@ -1223,13 +1476,18 @@ const memoize = (fn) => {
 /* DEBOUNCE HELPER */
 const debounce = (fn, delay) => {
   let timeoutId = null;
-  return function (...args) {
+  const debounced = function (...args) {
     const context = this;
     clearTimeout(timeoutId);
     timeoutId = setTimeout(() => {
       fn.apply(context, args);
     }, delay);
   };
+  debounced.cancel = () => {
+    clearTimeout(timeoutId);
+    timeoutId = null;
+  };
+  return debounced;
 };
 
 /* UTILITY FUNCTIONS */
@@ -2483,6 +2741,15 @@ const PageTickerRow = styled.div`
   }
 `;
 
+const PageTickerNewsLink = styled.a`
+  color: inherit;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+`;
+
 // Rows wrapper (fixed positioning now lives on the Shell)
 const PageTickerBar = styled.div`
   position: relative;
@@ -3136,8 +3403,8 @@ const panelLift = keyframes`
 `;
 
 const SettingsCard = styled.div`
-  width: min(90vw, 28rem);
-  height: min(90vh, 36rem);
+  width: min(92vw, 32rem);
+  height: min(92vh, 40rem);
   display: flex;
   flex-direction: column;
   border-radius: ${({ theme }) => theme.scale * 8}rem;
@@ -3153,6 +3420,48 @@ const SettingsCard = styled.div`
   color: ${({ theme }) => theme.color.text};
   font-family: ${({ theme }) => theme.font.primary};
   overflow: hidden;
+  position: relative;
+`;
+
+const SettingsClose = styled.button.attrs(() => ({ type: "button" }))`
+  position: absolute;
+  top: ${({ theme }) => theme.spacing.medium}rem;
+  right: ${({ theme }) => theme.spacing.medium}rem;
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: ${({ theme }) => theme.color.textSecondary};
+  font-family: ${({ theme }) => theme.font.primary};
+  font-size: 1.15rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+
+  &:hover {
+    background: ${({ theme }) => theme.color.bgSecondary};
+    color: ${({ theme }) => theme.color.text};
+  }
+`;
+
+const SettingsGroupTitle = styled.h4`
+  width: 100%;
+  max-width: 22rem;
+  margin: ${({ theme }) => theme.spacing.medium}rem auto
+    ${({ theme }) => theme.spacing.small}rem;
+  font-size: 0.66rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-align: left;
+  color: ${({ theme }) => theme.color.textSecondary};
+
+  &:first-child {
+    margin-top: 0;
+  }
 `;
 
 const SettingsTitle = styled.h2`
@@ -3160,6 +3469,55 @@ const SettingsTitle = styled.h2`
   font-size: 1.25rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
+`;
+
+const RatePromptBar = styled.div`
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing.small}rem;
+  margin-bottom: ${({ theme }) => theme.spacing.medium}rem;
+  padding: ${({ theme }) => theme.spacing.small}rem
+    ${({ theme }) => theme.spacing.medium}rem;
+  border: 1px solid ${({ theme }) => theme.color.border};
+  border-radius: ${({ theme }) => theme.scale * 4}rem;
+  font-size: 0.8125rem;
+  color: ${({ theme }) => theme.color.textSecondary};
+  text-align: left;
+`;
+
+const RatePromptText = styled.span`
+  flex: 1;
+`;
+
+const RatePromptLink = styled.a`
+  flex: 0 0 auto;
+  color: ${({ theme }) => theme.color.text};
+  font-weight: ${({ theme }) => theme.fontWeight.medium};
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  text-decoration: underline;
+  cursor: pointer;
+`;
+
+const RatePromptClose = styled.button.attrs(() => ({ type: "button" }))`
+  flex: 0 0 auto;
+  background: transparent;
+  border: none;
+  padding: 0;
+  font-family: ${({ theme }) => theme.font.primary};
+  font-size: 1rem;
+  line-height: 1;
+  color: ${({ theme }) => theme.color.textSecondary};
+  cursor: pointer;
+
+  &:hover {
+    color: ${({ theme }) => theme.color.text};
+  }
+
+  &:focus {
+    outline: none;
+  }
 `;
 
 const TabContainer = styled.div`
@@ -3217,6 +3575,11 @@ const TabContent = styled.div`
   overflow-y: auto;
   overflow-x: hidden;
   scroll-behavior: smooth;
+  /* Keep the scrollbar out by the card edge and reserve its lane so
+     content never shifts when it appears */
+  scrollbar-gutter: stable;
+  margin-right: -${({ theme }) => theme.spacing.large}rem;
+  padding-right: ${({ theme }) => theme.spacing.large}rem;
   animation: ${tabFadeIn} 0.25s ease-out;
 
   /* Custom scrollbar - Firefox */
@@ -3242,14 +3605,6 @@ const TabContent = styled.div`
   &::-webkit-scrollbar-thumb:hover {
     background: ${({ theme }) => theme.color.borderHover};
   }
-`;
-
-const SettingsDescription = styled.p`
-  margin: 0 auto ${({ theme }) => theme.spacing.medium}rem;
-  max-width: 20rem;
-  font-size: 0.875rem;
-  opacity: 0.8;
-  line-height: 1.5;
 `;
 
 // Wraps a conditional sub-setting so it expands/collapses smoothly with its parent toggle.
@@ -3358,17 +3713,12 @@ const CoinSectionTitle = styled.h3`
   text-transform: uppercase;
 `;
 
-const CoinSectionHeader = styled.div`
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  margin: 0 0 ${({ theme }) => theme.spacing.small}rem;
-`;
-
-const CoinCounter = styled.span`
-  font-size: 0.65rem;
-  opacity: 0.4;
-  letter-spacing: 0.05em;
+const SettingsDescription = styled.p`
+  margin: 0 auto ${({ theme }) => theme.spacing.medium}rem;
+  max-width: 22rem;
+  font-size: 0.875rem;
+  opacity: 0.8;
+  line-height: 1.5;
 `;
 
 const CoinDragHint = styled.p`
@@ -3378,19 +3728,40 @@ const CoinDragHint = styled.p`
   letter-spacing: 0.04em;
 `;
 
+const CoinSectionHeader = styled.div`
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin: 0 0 ${({ theme }) => theme.spacing.medium}rem;
+`;
+
+const CoinCounter = styled.span`
+  font-size: 0.65rem;
+  opacity: 0.4;
+  letter-spacing: 0.05em;
+`;
+
+const ResetRow = styled.div`
+  margin-top: ${({ compact, theme }) =>
+    compact ? theme.spacing.small : theme.spacing.large}rem;
+  padding-top: ${({ compact, theme }) =>
+    compact ? theme.spacing.xsmall : theme.spacing.medium}rem;
+  border-top: 1px solid ${({ theme }) => theme.color.border}22;
+  transition: margin-top 0.45s cubic-bezier(0.33, 1, 0.68, 1),
+    padding-top 0.45s cubic-bezier(0.33, 1, 0.68, 1);
+`;
+
 const ResetButton = styled.button.attrs(() => ({ type: "button" }))`
   background: none;
   border: 1px solid ${({ theme }) => theme.color.border};
   color: ${({ theme }) => theme.color.text};
   border-radius: ${({ theme }) => theme.scale * 2}rem;
-  padding: 0.4rem 0.75rem;
+  padding: 0.4rem 1.25rem;
   font-size: 0.7rem;
   font-family: inherit;
   letter-spacing: 0.06em;
   cursor: pointer;
   opacity: 0.5;
-  margin-top: 0.75rem;
-  width: 100%;
   transition: opacity 0.15s;
 
   &:hover {
@@ -3405,6 +3776,14 @@ const SuggestionHint = styled.p`
   opacity: 0.7;
 `;
 
+const CoinChipName = styled.span`
+  margin-left: 0.4em;
+  font-size: 0.75em;
+  opacity: 0.6;
+  text-transform: none;
+  letter-spacing: 0.02em;
+`;
+
 const SettingsForm = styled.form`
   display: flex;
   flex-direction: column;
@@ -3413,13 +3792,8 @@ const SettingsForm = styled.form`
   position: relative;
 `;
 
-const SearchInputWrapper = styled.div`
-  position: relative;
-  width: 100%;
-`;
-
 const SettingsInput = styled.input`
-  padding: 0.75rem 5.5rem 0.75rem 1rem;
+  padding: 0.75rem 1rem;
   border-radius: ${({ theme }) => theme.scale * 3}rem;
   border: 1px solid ${({ theme }) => theme.color.border};
   background: ${({ theme }) => theme.color.bgSecondary};
@@ -3440,26 +3814,28 @@ const SettingsInput = styled.input`
   }
 `;
 
-const SuggestionTray = styled.div`
-  position: absolute;
-  top: 0;
-  right: 0.75rem;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  max-width: 60%;
+/* Suggestion area between the search bar and the Add coin button.
+   grid-template-rows 0fr→1fr animates to the REAL content height in one
+   uninterrupted motion (no max-height guessing). */
+const SuggestionsArea = styled.div`
+  display: grid;
+  grid-template-rows: ${({ open }) => (open ? "1fr" : "0fr")};
+  opacity: ${({ open }) => (open ? 1 : 0)};
+  transition: grid-template-rows 0.45s cubic-bezier(0.33, 1, 0.68, 1),
+    opacity 0.45s cubic-bezier(0.33, 1, 0.68, 1);
+`;
+
+const SuggestionsAreaInner = styled.div`
+  min-height: 0;
   overflow: hidden;
-  cursor: pointer;
-  transition: max-width 0.6s ease-in-out;
+`;
 
-  & > * {
-    flex-shrink: 0;
-  }
-
-  &:hover {
-    max-width: 75%;
-  }
+const SuggestionList = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: ${({ theme }) => theme.spacing.small}rem;
+  padding: 0.25rem 0;
 `;
 
 const SettingsActionButton = styled.button`
@@ -3488,15 +3864,21 @@ const SettingsFeedback = styled.p`
   margin: ${({ theme }) => theme.spacing.small}rem 0 0;
   font-size: 0.8rem;
   letter-spacing: 0.05em;
-  color: ${({ error }) => (error ? "#ff8a8a" : "#8affc1")};
+  color: ${({ error, theme }) =>
+    theme.color.bg === "#ffffff"
+      ? error
+        ? "#c62828"
+        : "#1e7e46"
+      : error
+        ? "#ff8a8a"
+        : "#8affc1"};
 `;
 
 const ThemeSection = styled.div`
-  margin: ${({ theme }) => theme.spacing.medium}rem auto;
-  padding: ${({ theme }) => theme.spacing.medium}rem 0;
-  border-bottom: 1px solid ${({ theme }) => theme.color.border};
+  margin: 0 auto ${({ theme }) => theme.spacing.medium}rem;
+  padding: 0;
   width: 100%;
-  max-width: 20rem;
+  max-width: 22rem;
 `;
 
 const ThemeSectionTitle = styled.h3`
@@ -3557,10 +3939,9 @@ const ThemeDescription = styled.p`
 // Toggle Switch Components
 const ToggleSection = styled.div`
   margin: 0 auto ${({ theme }) => theme.spacing.medium}rem;
-  padding: 0 0 ${({ theme }) => theme.spacing.medium}rem;
-  border-bottom: 1px solid ${({ theme }) => theme.color.border};
+  padding: 0;
   width: 100%;
-  max-width: 20rem;
+  max-width: 22rem;
 `;
 
 const ToggleSectionTitle = styled.div`
@@ -3596,6 +3977,30 @@ const ToggleLabel = styled.label`
   opacity: 0.6;
 `;
 
+const WidgetGroupTitle = styled.h4`
+  margin: ${({ theme }) => theme.spacing.medium}rem 0
+    ${({ theme }) => theme.spacing.xsmall}rem;
+  font-size: 0.66rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-align: left;
+  color: ${({ theme }) => theme.color.textSecondary};
+`;
+
+const ToggleTextCol = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  gap: 2px;
+`;
+
+const ToggleDesc = styled.span`
+  font-size: 0.62rem;
+  letter-spacing: 0.02em;
+  color: ${({ theme }) => theme.color.textSecondary};
+`;
+
 const PresetRow = styled.div`
   display: flex;
   gap: 6px;
@@ -3607,12 +4012,17 @@ const PresetButton = styled.button`
   flex: 1 1 auto;
   min-width: 64px;
   padding: 6px 8px;
-  border: 1px solid ${({ theme }) => theme.color.border};
+  border: 1px solid
+    ${({ active, theme }) =>
+      active ? theme.color.text : theme.color.border};
   border-radius: 7px;
-  background: transparent;
+  background: ${({ active, theme }) =>
+    active ? theme.color.bgSecondary : "transparent"};
   color: ${({ theme }) => theme.color.text};
   font-family: ${({ theme }) => theme.font.primary};
   font-size: 0.66rem;
+  font-weight: ${({ active, theme }) =>
+    active ? theme.fontWeight.medium : theme.fontWeight.normal};
   letter-spacing: 0.02em;
   cursor: pointer;
   transition: border-color 0.15s ease, background 0.15s ease;
@@ -3656,10 +4066,9 @@ const ToggleSwitch = styled.button`
 
 const RefreshIntervalSection = styled.div`
   margin: 0 auto ${({ theme }) => theme.spacing.medium}rem;
-  padding: 0 0 ${({ theme }) => theme.spacing.medium}rem;
-  border-bottom: 1px solid ${({ theme }) => theme.color.border};
+  padding: 0;
   width: 100%;
-  max-width: 20rem;
+  max-width: 22rem;
 `;
 
 const RefreshIntervalLabel = styled.label`
@@ -3723,10 +4132,9 @@ const RefreshIntervalSelect = styled.select`
 
 const NumberFormatSection = styled.div`
   margin: 0 auto ${({ theme }) => theme.spacing.medium}rem;
-  padding: 0 0 ${({ theme }) => theme.spacing.medium}rem;
-  border-bottom: 1px solid ${({ theme }) => theme.color.border};
+  padding: 0;
   width: 100%;
-  max-width: 20rem;
+  max-width: 22rem;
 `;
 
 const NumberFormatLabel = styled.label`
@@ -3791,10 +4199,9 @@ const NumberFormatSelect = styled.select`
 
 const CurrencySection = styled.div`
   margin: 0 auto ${({ theme }) => theme.spacing.medium}rem;
-  padding: 0 0 ${({ theme }) => theme.spacing.medium}rem;
-  border-bottom: 1px solid ${({ theme }) => theme.color.border};
+  padding: 0;
   width: 100%;
-  max-width: 20rem;
+  max-width: 22rem;
 `;
 
 const CurrencyLabel = styled.label`
@@ -3865,15 +4272,61 @@ class SettingsPanel extends PureComponent {
       status: "idle",
       pendingCoin: "",
       suggestions: [],
+      searching: false,
       activeTab: "coins", // 'coins' or 'preferences'
+      showRatePrompt: !loadRatePromptDismissed(),
+      undoCoins: null,
     });
 
     this.draggingSymbol = null;
     this.draggingChipNode = null;
     this.lastEnteredSymbol = null;
+    this.suggestionCleanupTimer = null;
 
     _defineProperty(this, "handleTabChange", (tab) => {
       this.setState({ activeTab: tab });
+    });
+
+    _defineProperty(this, "handleRatePromptDismiss", () => {
+      saveRatePromptDismissed();
+      this.setState({ showRatePrompt: false });
+    });
+
+    _defineProperty(this, "handleKeyDown", (event) => {
+      if (event.key === "Escape" && typeof this.props.onClose === "function") {
+        this.props.onClose();
+      }
+    });
+
+    _defineProperty(this, "handleResetClick", () => {
+      const { coins, onResetCoins } = this.props;
+      if (typeof onResetCoins !== "function") {
+        return;
+      }
+      const previous = Array.isArray(coins) ? [...coins] : [];
+      onResetCoins();
+      this.setState({
+        undoCoins: previous,
+        feedback: "Coins reset to defaults",
+        status: "info",
+      });
+    });
+
+    _defineProperty(this, "handleUndoReset", () => {
+      const { onRestoreCoins } = this.props;
+      const { undoCoins } = this.state;
+      if (
+        undoCoins &&
+        undoCoins.length &&
+        typeof onRestoreCoins === "function"
+      ) {
+        onRestoreCoins(undoCoins);
+      }
+      this.setState({
+        undoCoins: null,
+        feedback: "Previous coins restored",
+        status: "success",
+      });
     });
 
     _defineProperty(this, "handleChipClick", (symbol) => {
@@ -3974,9 +4427,10 @@ class SettingsPanel extends PureComponent {
         this.setState({
           feedback: `${normalized} added to the rotation`,
           status: "success",
-          pendingCoin: "",
-          suggestions: [],
         });
+        // Keep the query alive so several matches can be added in one go;
+        // the added coin drops out of the refreshed suggestions
+        this.updateSuggestions(this.state.pendingCoin);
       } else {
         let feedback = "Could not add coin";
         if (result && result.reason === "duplicate") {
@@ -4001,22 +4455,56 @@ class SettingsPanel extends PureComponent {
           ? this.props.coins
           : [];
 
-        const suggestions = pendingCoin
-          ? SUGGESTED_COINS.filter(
-              (coin) =>
-                coin.startsWith(pendingCoin) && !activeCoins.includes(coin),
-            ).slice(0, 4)
+        const query = pendingCoin.trim();
+        const suggestions = query
+          ? SUGGESTED_COINS.filter((coin) => {
+              if (activeCoins.includes(coin)) {
+                return false;
+              }
+              if (coin.startsWith(query)) {
+                return true;
+              }
+              const name = COIN_NAMES[coin];
+              return name ? name.toUpperCase().includes(query) : false;
+            }).slice(0, 4)
           : [];
 
-        this.setState({ suggestions });
+        this.setState({ suggestions, searching: false });
       }, 200),
     );
 
     _defineProperty(this, "handleInputChange", (e) => {
       const pendingCoin = e.target.value.toUpperCase();
 
-      // Update input value immediately for better UX
-      this.setState({ pendingCoin, status: "idle", feedback: "" });
+      // Input cleared → drop suggestions instantly, and cancel the pending
+      // debounce so stale chips don't repaint over the placeholder
+      if (!pendingCoin.trim()) {
+        this.updateSuggestions.cancel();
+        // Keep the chips mounted while the area collapses, then clean up
+        clearTimeout(this.suggestionCleanupTimer);
+        this.suggestionCleanupTimer = setTimeout(() => {
+          this.setState({ suggestions: [] });
+        }, 500);
+        this.setState({
+          pendingCoin,
+          searching: false,
+          status: "idle",
+          feedback: "",
+        });
+        return;
+      }
+
+      // Update input value immediately for better UX. A fresh search
+      // (input was empty) starts with no chips so the area opens once,
+      // with real results; ongoing typing morphs the open list in place.
+      clearTimeout(this.suggestionCleanupTimer);
+      this.setState((prev) => ({
+        pendingCoin,
+        searching: true,
+        suggestions: prev.pendingCoin.trim() ? prev.suggestions : [],
+        status: "idle",
+        feedback: "",
+      }));
 
       // Filter suggestions with debounce
       this.updateSuggestions(pendingCoin);
@@ -4024,8 +4512,14 @@ class SettingsPanel extends PureComponent {
 
     _defineProperty(this, "handleSubmit", (e) => {
       e.preventDefault();
-      const { pendingCoin } = this.state;
-      this.handleSuggestionClick(pendingCoin);
+      const { pendingCoin, suggestions } = this.state;
+      const normalized = pendingCoin.trim().toUpperCase();
+      // Typed a full name ("DOGECOIN")? Fall back to the top suggestion.
+      const target =
+        !SUGGESTED_COINS.includes(normalized) && suggestions.length
+          ? suggestions[0]
+          : normalized;
+      this.handleSuggestionClick(target);
     });
 
     _defineProperty(this, "handleDragStart", (symbol, event) => {
@@ -4101,10 +4595,22 @@ class SettingsPanel extends PureComponent {
         status: "idle",
         pendingCoin: "",
         suggestions: [],
+        searching: false,
+        undoCoins: null,
       });
       this.draggingSymbol = null;
       this.lastEnteredSymbol = null;
     }
+  }
+
+  componentDidMount() {
+    document.addEventListener("keydown", this.handleKeyDown);
+  }
+
+  componentWillUnmount() {
+    document.removeEventListener("keydown", this.handleKeyDown);
+    this.updateSuggestions.cancel();
+    clearTimeout(this.suggestionCleanupTimer);
   }
 
   render() {
@@ -4127,20 +4633,36 @@ class SettingsPanel extends PureComponent {
       onTickerChange,
       tickerFormat,
       onTickerFormatChange,
+      autoRotate,
+      onAutoRotateChange,
+      autoRotateInterval,
+      onAutoRotateIntervalChange,
       pageTicker,
       onPageTickerChange,
       pageTickerPosition,
       onPageTickerPositionChange,
+      newsTicker,
+      onNewsTickerChange,
       chartColor,
       onChartColorChange,
       widgets,
       onWidgetToggle,
       onWidgetPreset,
-      onResetCoins,
     } = this.props;
-    const { feedback, status, pendingCoin, suggestions, activeTab } =
-      this.state;
+    const {
+      feedback,
+      status,
+      pendingCoin,
+      suggestions,
+      searching,
+      activeTab,
+      showRatePrompt,
+      undoCoins,
+    } = this.state;
     const activeCoins = Array.isArray(coins) ? coins : [];
+    const suggestionsOpen = Boolean(
+      pendingCoin.trim() && (suggestions.length || !searching),
+    );
 
     return React.createElement(
       SettingsOverlay,
@@ -4152,6 +4674,41 @@ class SettingsPanel extends PureComponent {
           onClick: (e) => e.stopPropagation(),
         },
         React.createElement(SettingsTitle, null, "Settings"),
+        React.createElement(
+          SettingsClose,
+          { onClick: onClose, "aria-label": "Close settings" },
+          "×",
+        ),
+
+        // One-time rating reminder (dismiss or rate hides it forever)
+        showRatePrompt &&
+          React.createElement(
+            RatePromptBar,
+            null,
+            React.createElement(
+              RatePromptText,
+              null,
+              "Enjoying PriceTab? A quick rating helps others find it.",
+            ),
+            React.createElement(
+              RatePromptLink,
+              {
+                href: STORE_LISTING_URL,
+                target: "_blank",
+                rel: "noreferrer",
+                onClick: this.handleRatePromptDismiss,
+              },
+              "Rate",
+            ),
+            React.createElement(
+              RatePromptClose,
+              {
+                onClick: this.handleRatePromptDismiss,
+                "aria-label": "Dismiss rating reminder",
+              },
+              "×",
+            ),
+          ),
 
         // Tab Buttons
         React.createElement(
@@ -4191,7 +4748,7 @@ class SettingsPanel extends PureComponent {
             React.createElement(
               SettingsDescription,
               null,
-              "Tap any ticker below to add it to the rotation. Selected coins stay highlighted white.",
+              "Search to add coins. Drag the chips to reorder, hit × to remove.",
             ),
 
             React.createElement(
@@ -4250,35 +4807,48 @@ class SettingsPanel extends PureComponent {
             React.createElement(
               SettingsForm,
               { onSubmit: this.handleSubmit },
+              React.createElement(SettingsInput, {
+                maxLength: 24,
+                onChange: this.handleInputChange,
+                placeholder: "Search name or symbol",
+                autoComplete: "off",
+                value: pendingCoin,
+              }),
               React.createElement(
-                SearchInputWrapper,
-                null,
-                React.createElement(SettingsInput, {
-                  maxLength: 10,
-                  onChange: this.handleInputChange,
-                  placeholder: "Search symbol",
-                  autoComplete: "off",
-                  value: pendingCoin,
-                }),
+                SuggestionsArea,
+                { open: suggestionsOpen },
                 React.createElement(
-                  SuggestionTray,
+                  SuggestionsAreaInner,
                   null,
-                  suggestions.length
-                    ? suggestions.map((coin) =>
-                        React.createElement(CoinChip, {
-                          key: coin,
-                          "data-symbol": coin,
-                          onClick: () => this.handleSuggestionClick(coin),
-                          children: coin,
-                        }),
-                      )
-                    : pendingCoin
-                      ? React.createElement(
-                          SuggestionHint,
-                          null,
-                          "Try BTC, ETH, SOL...",
+                  React.createElement(
+                    SuggestionList,
+                    null,
+                    suggestions.length
+                      ? suggestions.map((coin) =>
+                          React.createElement(
+                            CoinChip,
+                            {
+                              key: coin,
+                              "data-symbol": coin,
+                              onClick: () => this.handleSuggestionClick(coin),
+                            },
+                            coin,
+                            COIN_NAMES[coin] &&
+                              React.createElement(
+                                CoinChipName,
+                                null,
+                                COIN_NAMES[coin],
+                              ),
+                          ),
                         )
-                      : null,
+                      : pendingCoin.trim() && !searching
+                        ? React.createElement(
+                            SuggestionHint,
+                            null,
+                            'No match — try "Bitcoin" or "BTC"',
+                          )
+                        : null,
+                  ),
                 ),
               ),
               React.createElement(
@@ -4295,9 +4865,17 @@ class SettingsPanel extends PureComponent {
                 )
               : null,
             React.createElement(
-              ResetButton,
-              { onClick: () => onResetCoins && onResetCoins() },
-              "Reset to defaults",
+              ResetRow,
+              { compact: suggestionsOpen },
+              React.createElement(
+                ResetButton,
+                {
+                  onClick: undoCoins
+                    ? this.handleUndoReset
+                    : this.handleResetClick,
+                },
+                undoCoins ? "Undo reset" : "Reset to defaults",
+              ),
             ),
           ),
 
@@ -4306,12 +4884,13 @@ class SettingsPanel extends PureComponent {
           React.createElement(
             TabContent,
             { key: "preferences-tab" },
+            React.createElement(SettingsGroupTitle, null, "Appearance"),
 
             // Theme Section
             React.createElement(
               ThemeSection,
               null,
-              React.createElement(ThemeSectionTitle, null, "Appearance"),
+              React.createElement(ThemeSectionTitle, null, "Theme"),
               React.createElement(
                 ThemeButtonGroup,
                 null,
@@ -4349,31 +4928,78 @@ class SettingsPanel extends PureComponent {
               ),
             ),
 
-            // Refresh Interval Section
+            // Chart Color Section
             React.createElement(
-              RefreshIntervalSection,
+              ToggleSection,
               null,
+              React.createElement(ToggleSectionTitle, null, "Chart Color"),
               React.createElement(
-                RefreshIntervalLabel,
+                ToggleSectionDesc,
                 null,
-                "Refresh Interval",
+                "Green when up, red when down — turn off for a plain line",
               ),
               React.createElement(
-                RefreshIntervalSelect,
+                ToggleRow,
+                null,
+                React.createElement(
+                  ToggleLabel,
+                  null,
+                  chartColor === false ? "Off" : "On",
+                ),
+                React.createElement(ToggleSwitch, {
+                  active: chartColor !== false,
+                  onClick: () =>
+                    onChartColorChange && onChartColorChange(chartColor === false),
+                  "aria-label": "Toggle chart color",
+                }),
+              ),
+            ),
+
+            React.createElement(SettingsGroupTitle, null, "Display"),
+
+            // Currency Section
+            React.createElement(
+              CurrencySection,
+              null,
+              React.createElement(CurrencyLabel, null, "Currency"),
+              React.createElement(
+                CurrencySelect,
                 {
-                  value: refreshInterval || DEFAULT_REFRESH_INTERVAL,
+                  value: currency || DEFAULT_CURRENCY,
                   onChange: (e) => {
-                    const newInterval = parseInt(e.target.value, 10);
-                    if (onRefreshIntervalChange) {
-                      onRefreshIntervalChange(newInterval);
+                    const newCurrency = e.target.value;
+                    if (onCurrencyChange) {
+                      onCurrencyChange(newCurrency);
                     }
                   },
                 },
-                REFRESH_INTERVAL_OPTIONS.map((option) =>
-                  React.createElement(
-                    "option",
-                    { key: option.value, value: option.value },
-                    option.label,
+                React.createElement(
+                  "optgroup",
+                  { label: "Popular" },
+                  POPULAR_CURRENCIES.map((code) => {
+                    const option = CURRENCY_OPTIONS.find(
+                      (o) => o.value === code,
+                    );
+                    return option
+                      ? React.createElement(
+                          "option",
+                          { key: option.value, value: option.value },
+                          option.label,
+                        )
+                      : null;
+                  }),
+                ),
+                React.createElement(
+                  "optgroup",
+                  { label: "All currencies" },
+                  CURRENCY_OPTIONS.filter(
+                    (option) => !POPULAR_CURRENCIES.includes(option.value),
+                  ).map((option) =>
+                    React.createElement(
+                      "option",
+                      { key: option.value, value: option.value },
+                      option.label,
+                    ),
                   ),
                 ),
               ),
@@ -4425,23 +5051,29 @@ class SettingsPanel extends PureComponent {
               ),
             ),
 
-            // Currency Section
+            React.createElement(SettingsGroupTitle, null, "Data"),
+
+            // Refresh Interval Section
             React.createElement(
-              CurrencySection,
+              RefreshIntervalSection,
               null,
-              React.createElement(CurrencyLabel, null, "Currency"),
               React.createElement(
-                CurrencySelect,
+                RefreshIntervalLabel,
+                null,
+                "Refresh Interval",
+              ),
+              React.createElement(
+                RefreshIntervalSelect,
                 {
-                  value: currency || DEFAULT_CURRENCY,
+                  value: refreshInterval || DEFAULT_REFRESH_INTERVAL,
                   onChange: (e) => {
-                    const newCurrency = e.target.value;
-                    if (onCurrencyChange) {
-                      onCurrencyChange(newCurrency);
+                    const newInterval = parseInt(e.target.value, 10);
+                    if (onRefreshIntervalChange) {
+                      onRefreshIntervalChange(newInterval);
                     }
                   },
                 },
-                CURRENCY_OPTIONS.map((option) =>
+                REFRESH_INTERVAL_OPTIONS.map((option) =>
                   React.createElement(
                     "option",
                     { key: option.value, value: option.value },
@@ -4451,15 +5083,78 @@ class SettingsPanel extends PureComponent {
               ),
             ),
 
+            // Auto Rotate Section
+            React.createElement(
+              ToggleSection,
+              null,
+              React.createElement(ToggleSectionTitle, null, "Auto Rotate"),
+              React.createElement(
+                ToggleSectionDesc,
+                null,
+                "Switch to the next coin in your list automatically",
+              ),
+              React.createElement(
+                ToggleRow,
+                null,
+                React.createElement(
+                  ToggleLabel,
+                  null,
+                  autoRotate ? "On" : "Off",
+                ),
+                React.createElement(ToggleSwitch, {
+                  active: autoRotate,
+                  onClick: () =>
+                    onAutoRotateChange && onAutoRotateChange(!autoRotate),
+                  "aria-label": "Toggle auto rotate",
+                }),
+              ),
+            ),
+
+            // Auto Rotate Interval (collapses smoothly when off)
+            React.createElement(
+              SettingReveal,
+              { key: "auto-rotate-interval", open: autoRotate },
+              React.createElement(
+                RefreshIntervalSection,
+                null,
+                React.createElement(RefreshIntervalLabel, null, "Switch Every"),
+                React.createElement(
+                  RefreshIntervalSelect,
+                  {
+                    value: autoRotateInterval || DEFAULT_AUTO_ROTATE_INTERVAL,
+                    onChange: (e) => {
+                      const newInterval = parseInt(e.target.value, 10);
+                      if (onAutoRotateIntervalChange) {
+                        onAutoRotateIntervalChange(newInterval);
+                      }
+                    },
+                  },
+                  AUTO_ROTATE_OPTIONS.map((option) =>
+                    React.createElement(
+                      "option",
+                      { key: option.value, value: option.value },
+                      option.label,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+
+            React.createElement(SettingsGroupTitle, null, "Tickers"),
+
             // Tab Ticker Section
             React.createElement(
               ToggleSection,
               null,
-              React.createElement(ToggleSectionTitle, null, "Tab Ticker"),
+              React.createElement(
+                ToggleSectionTitle,
+                null,
+                "Browser Tab Title",
+              ),
               React.createElement(
                 ToggleSectionDesc,
                 null,
-                "Scroll prices in browser tab",
+                "Show live prices in the browser tab title",
               ),
               React.createElement(
                 ToggleRow,
@@ -4488,7 +5183,7 @@ class SettingsPanel extends PureComponent {
                 React.createElement(
                   RefreshIntervalLabel,
                   null,
-                  "Ticker Format",
+                  "Title Format",
                 ),
                 React.createElement(
                   RefreshIntervalSelect,
@@ -4511,42 +5206,19 @@ class SettingsPanel extends PureComponent {
               ),
               ),
 
-            // Chart Color Section
-            React.createElement(
-              ToggleSection,
-              null,
-              React.createElement(ToggleSectionTitle, null, "Chart Color"),
-              React.createElement(
-                ToggleSectionDesc,
-                null,
-                "Green when up, red when down — turn off for a plain line",
-              ),
-              React.createElement(
-                ToggleRow,
-                null,
-                React.createElement(
-                  ToggleLabel,
-                  null,
-                  chartColor === false ? "Off" : "On",
-                ),
-                React.createElement(ToggleSwitch, {
-                  active: chartColor !== false,
-                  onClick: () =>
-                    onChartColorChange && onChartColorChange(chartColor === false),
-                  "aria-label": "Toggle chart color",
-                }),
-              ),
-            ),
-
             // Page Ticker Section
             React.createElement(
               ToggleSection,
               null,
-              React.createElement(ToggleSectionTitle, null, "Page Ticker"),
+              React.createElement(
+                ToggleSectionTitle,
+                null,
+                "Price Ticker Bar",
+              ),
               React.createElement(
                 ToggleSectionDesc,
                 null,
-                "Scrolling price bar at the bottom of the page",
+                "Scrolling price bar across the page (top or bottom)",
               ),
               React.createElement(
                 ToggleRow,
@@ -4584,6 +5256,30 @@ class SettingsPanel extends PureComponent {
                   React.createElement("option", { value: "bottom" }, "Bottom"),
                   React.createElement("option", { value: "top" }, "Top"),
                 ),
+                React.createElement(
+                  ToggleRow,
+                  null,
+                  React.createElement(
+                    ToggleLabel,
+                    null,
+                    "News Headlines",
+                  ),
+                  React.createElement(ToggleSwitch, {
+                    active: newsTicker,
+                    onClick: () =>
+                      onNewsTickerChange && onNewsTickerChange(!newsTicker),
+                    "aria-label": "Toggle news headlines row",
+                  }),
+                ),
+                React.createElement(
+                  SettingReveal,
+                  { key: "news-disclosure", open: newsTicker },
+                  React.createElement(
+                    ToggleSectionDesc,
+                    null,
+                    "Headlines come from public sources via Blockchair. Clicking one opens the news site in a new tab.",
+                  ),
+                ),
               ),
               ),
           ),
@@ -4608,6 +5304,7 @@ class SettingsPanel extends PureComponent {
                   PresetButton,
                   {
                     type: "button",
+                    active: isPresetActive(widgets, "holder"),
                     onClick: () => onWidgetPreset && onWidgetPreset("holder"),
                   },
                   "Holder",
@@ -4616,6 +5313,7 @@ class SettingsPanel extends PureComponent {
                   PresetButton,
                   {
                     type: "button",
+                    active: isPresetActive(widgets, "trader"),
                     onClick: () => onWidgetPreset && onWidgetPreset("trader"),
                   },
                   "Trader",
@@ -4624,122 +5322,36 @@ class SettingsPanel extends PureComponent {
                   PresetButton,
                   {
                     type: "button",
+                    active: isPresetActive(widgets, "minimal"),
                     onClick: () => onWidgetPreset && onWidgetPreset("minimal"),
                   },
                   "Minimal",
                 ),
               ),
-              React.createElement(
-                ToggleRow,
-                null,
-                React.createElement(ToggleLabel, null, "Watchlist"),
-                React.createElement(ToggleSwitch, {
-                  active: widgets.watchlist,
-                  onClick: () => onWidgetToggle && onWidgetToggle("watchlist"),
-                  "aria-label": "Toggle Watchlist widget",
-                }),
-              ),
-              React.createElement(
-                ToggleRow,
-                null,
-                React.createElement(ToggleLabel, null, "Top Movers"),
-                React.createElement(ToggleSwitch, {
-                  active: widgets.topMovers,
-                  onClick: () => onWidgetToggle && onWidgetToggle("topMovers"),
-                  "aria-label": "Toggle Top Movers widget",
-                }),
-              ),
-              React.createElement(
-                ToggleRow,
-                null,
-                React.createElement(ToggleLabel, null, "Fear & Greed"),
-                React.createElement(ToggleSwitch, {
-                  active: widgets.fearGreed,
-                  onClick: () => onWidgetToggle && onWidgetToggle("fearGreed"),
-                  "aria-label": "Toggle Fear & Greed widget",
-                }),
-              ),
-              React.createElement(
-                ToggleRow,
-                null,
-                React.createElement(ToggleLabel, null, "Market Overview"),
-                React.createElement(ToggleSwitch, {
-                  active: widgets.marketOverview,
-                  onClick: () =>
-                    onWidgetToggle && onWidgetToggle("marketOverview"),
-                  "aria-label": "Toggle Market Overview widget",
-                }),
-              ),
-              React.createElement(
-                ToggleRow,
-                null,
-                React.createElement(ToggleLabel, null, "BTC Halving Countdown"),
-                React.createElement(ToggleSwitch, {
-                  active: widgets.halvingCountdown,
-                  onClick: () =>
-                    onWidgetToggle && onWidgetToggle("halvingCountdown"),
-                  "aria-label": "Toggle BTC Halving Countdown widget",
-                }),
-              ),
-              React.createElement(
-                ToggleRow,
-                null,
-                React.createElement(ToggleLabel, null, "RSI"),
-                React.createElement(ToggleSwitch, {
-                  active: widgets.rsiWidget,
-                  onClick: () => onWidgetToggle && onWidgetToggle("rsiWidget"),
-                  "aria-label": "Toggle RSI widget",
-                }),
-              ),
-              React.createElement(
-                ToggleRow,
-                null,
-                React.createElement(ToggleLabel, null, "Funding Rate"),
-                React.createElement(ToggleSwitch, {
-                  active: widgets.fundingRate,
-                  onClick: () => onWidgetToggle && onWidgetToggle("fundingRate"),
-                  "aria-label": "Toggle Funding Rate widget",
-                }),
-              ),
-              React.createElement(
-                ToggleRow,
-                null,
-                React.createElement(ToggleLabel, null, "Long / Short Ratio"),
-                React.createElement(ToggleSwitch, {
-                  active: widgets.longShortRatio,
-                  onClick: () => onWidgetToggle && onWidgetToggle("longShortRatio"),
-                  "aria-label": "Toggle Long/Short Ratio widget",
-                }),
-              ),
-              React.createElement(
-                ToggleRow,
-                null,
-                React.createElement(ToggleLabel, null, "Open Interest"),
-                React.createElement(ToggleSwitch, {
-                  active: widgets.openInterest,
-                  onClick: () => onWidgetToggle && onWidgetToggle("openInterest"),
-                  "aria-label": "Toggle Open Interest widget",
-                }),
-              ),
-              React.createElement(
-                ToggleRow,
-                null,
-                React.createElement(ToggleLabel, null, "Liquidations 24h"),
-                React.createElement(ToggleSwitch, {
-                  active: widgets.liquidations,
-                  onClick: () => onWidgetToggle && onWidgetToggle("liquidations"),
-                  "aria-label": "Toggle Liquidations widget",
-                }),
-              ),
-              React.createElement(
-                ToggleRow,
-                null,
-                React.createElement(ToggleLabel, null, "Altcoin Season"),
-                React.createElement(ToggleSwitch, {
-                  active: widgets.altcoinSeason,
-                  onClick: () => onWidgetToggle && onWidgetToggle("altcoinSeason"),
-                  "aria-label": "Toggle Altcoin Season widget",
-                }),
+              ...WIDGET_GROUPS.map((group) =>
+                React.createElement(
+                  Fragment,
+                  { key: group.title },
+                  React.createElement(WidgetGroupTitle, null, group.title),
+                  ...group.items.map((item) =>
+                    React.createElement(
+                      ToggleRow,
+                      { key: item.key },
+                      React.createElement(
+                        ToggleTextCol,
+                        null,
+                        React.createElement(ToggleLabel, null, item.label),
+                        React.createElement(ToggleDesc, null, item.desc),
+                      ),
+                      React.createElement(ToggleSwitch, {
+                        active: widgets[item.key],
+                        onClick: () =>
+                          onWidgetToggle && onWidgetToggle(item.key),
+                        "aria-label": "Toggle " + item.label + " widget",
+                      }),
+                    ),
+                  ),
+                ),
               ),
             ),
           ),
@@ -4750,10 +5362,17 @@ class SettingsPanel extends PureComponent {
 
 SettingsPanel.defaultProps = {
   coins: [],
+  newsTicker: false,
+  onNewsTickerChange: null,
+  autoRotate: false,
+  onAutoRotateChange: null,
+  autoRotateInterval: DEFAULT_AUTO_ROTATE_INTERVAL,
+  onAutoRotateIntervalChange: null,
   onAddCoin: null,
   onRemoveCoin: null,
   onReorderCoin: null,
   onResetCoins: null,
+  onRestoreCoins: null,
   onClose: null,
   visible: false,
   widgets: {
@@ -4798,6 +5417,10 @@ class CryptoChart extends PureComponent {
       apiError: false, // API failure state
       tickerEnabled: loadTickerFromStorage(), // Tab ticker mode
       tickerFormat: loadTickerFormatFromStorage(), // 'compact' or 'full'
+      autoRotate: loadAutoRotateFromStorage(), // Auto-cycle through coins
+      autoRotateInterval: loadAutoRotateIntervalFromStorage(), // ms
+      newsTicker: loadNewsTickerFromStorage(), // News row in the page ticker
+      newsItems: [], // [{ source, title, url }]
       tickerText: "", // Full ticker string
       // Widget states
       widgets: loadWidgetsFromStorage(), // { fearGreed, marketOverview, halvingCountdown, rsiWidget }
@@ -4834,6 +5457,13 @@ class CryptoChart extends PureComponent {
     // Page ticker fetch state
     this.pageTickerRefreshInterval = null;
     this._pageTickerFetching = false;
+
+    // Auto-rotate timer
+    this.autoRotateTimer = null;
+
+    // News ticker state
+    this.newsRefreshInterval = null;
+    this._newsFetching = false;
 
     _defineProperty(this, "cycleCoinIndex", () => {
       this.tickerScrollPos = 0; // Reset ticker scroll on coin change
@@ -5292,6 +5922,202 @@ class CryptoChart extends PureComponent {
       });
     });
 
+    _defineProperty(this, "fetchNewsData", async () => {
+      if (!this.state.newsTicker || this._newsFetching) {
+        return;
+      }
+
+      // Serve from cache while fresh
+      try {
+        const cached = JSON.parse(localStorage.getItem(NEWS_CACHE_KEY));
+        if (
+          cached &&
+          Date.now() - cached.t < NEWS_REFRESH_MS &&
+          Array.isArray(cached.items) &&
+          cached.items.length
+        ) {
+          this.setState({ newsItems: cached.items });
+          return;
+        }
+      } catch (error) {
+        // Ignore cache errors
+      }
+
+      this._newsFetching = true;
+      try {
+        // Fetch both feeds; one failing must not sink the other
+        const [blockchairItems, cointelegraphItems] = await Promise.all([
+          this.fetchBlockchairNews().catch(() => []),
+          this.fetchCointelegraphNews().catch(() => []),
+        ]);
+
+        // Interleave so the bar alternates between sources, then dedupe
+        const merged = [];
+        const longest = Math.max(
+          blockchairItems.length,
+          cointelegraphItems.length,
+        );
+        for (let i = 0; i < longest; i++) {
+          if (cointelegraphItems[i]) {
+            merged.push(cointelegraphItems[i]);
+          }
+          if (blockchairItems[i]) {
+            merged.push(blockchairItems[i]);
+          }
+        }
+        const seen = new Set();
+        const items = merged
+          .filter((item) => {
+            const key = item.title.toLowerCase();
+            if (seen.has(key)) {
+              return false;
+            }
+            seen.add(key);
+            return true;
+          })
+          .slice(0, MAX_NEWS_ITEMS);
+
+        if (items.length) {
+          this.setState({ newsItems: items });
+          try {
+            localStorage.setItem(
+              NEWS_CACHE_KEY,
+              JSON.stringify({ t: Date.now(), items }),
+            );
+          } catch (error) {
+            // Silently fail
+          }
+        }
+      } catch (error) {
+        // Silently fail — the news row simply stays hidden
+      } finally {
+        this._newsFetching = false;
+      }
+    });
+
+    _defineProperty(this, "fetchBlockchairNews", async () => {
+      const res = await fetch(NEWS_API_URL);
+      if (!res.ok) {
+        throw new Error("Blockchair news request failed");
+      }
+      const json = await res.json();
+      return (json && Array.isArray(json.data) ? json.data : [])
+        .map((article) => ({
+          source:
+            typeof article.source === "string"
+              ? article.source.replace(/^(www|en)\./, "").slice(0, 30)
+              : "news",
+          title:
+            typeof article.title === "string"
+              ? article.title.slice(0, 140)
+              : "",
+          url:
+            typeof article.link === "string" &&
+            /^https:\/\//.test(article.link)
+              ? article.link
+              : null,
+        }))
+        .filter((item) => item.title);
+    });
+
+    _defineProperty(this, "fetchCointelegraphNews", async () => {
+      const res = await fetch(COINTELEGRAPH_RSS_URL);
+      if (!res.ok) {
+        throw new Error("Cointelegraph RSS request failed");
+      }
+      const xml = await res.text();
+      const doc = new DOMParser().parseFromString(xml, "text/xml");
+      return Array.from(doc.querySelectorAll("item"))
+        .slice(0, 20)
+        .map((node) => {
+          const titleNode = node.querySelector("title");
+          const linkNode = node.querySelector("link");
+          const url = linkNode && linkNode.textContent
+            ? linkNode.textContent.trim()
+            : "";
+          return {
+            source: "cointelegraph.com",
+            title:
+              titleNode && titleNode.textContent
+                ? titleNode.textContent.trim().slice(0, 140)
+                : "",
+            url: /^https:\/\//.test(url) ? url : null,
+          };
+        })
+        .filter((item) => item.title);
+    });
+
+    _defineProperty(this, "startNewsTicker", () => {
+      this.stopNewsTicker();
+      if (!this.state.newsTicker) {
+        return;
+      }
+      this.fetchNewsData();
+      this.newsRefreshInterval = setInterval(() => {
+        if (!document.hidden) {
+          this.fetchNewsData();
+        }
+      }, NEWS_REFRESH_MS);
+    });
+
+    _defineProperty(this, "stopNewsTicker", () => {
+      clearInterval(this.newsRefreshInterval);
+      this.newsRefreshInterval = null;
+    });
+
+    _defineProperty(this, "handleNewsTickerChange", (enabled) => {
+      saveNewsTickerToStorage(enabled);
+      this.setState({ newsTicker: enabled }, () => {
+        if (enabled) {
+          this.startNewsTicker();
+        } else {
+          this.stopNewsTicker();
+        }
+      });
+    });
+
+    _defineProperty(this, "startAutoRotate", () => {
+      this.stopAutoRotate();
+      if (!this.state.autoRotate) {
+        return;
+      }
+      this.autoRotateTimer = setInterval(() => {
+        // Skip ticks while the tab is hidden (saves API calls) or while
+        // the user is editing settings
+        if (document.hidden || this.state.showSettings) {
+          return;
+        }
+        if (this.state.coinOptions.length > 1) {
+          this.cycleCoinIndex();
+        }
+      }, this.state.autoRotateInterval);
+    });
+
+    _defineProperty(this, "stopAutoRotate", () => {
+      clearInterval(this.autoRotateTimer);
+      this.autoRotateTimer = null;
+    });
+
+    _defineProperty(this, "handleAutoRotateChange", (enabled) => {
+      saveAutoRotateToStorage(enabled);
+      this.setState({ autoRotate: enabled }, () => {
+        if (enabled) {
+          this.startAutoRotate();
+        } else {
+          this.stopAutoRotate();
+        }
+      });
+    });
+
+    _defineProperty(this, "handleAutoRotateIntervalChange", (interval) => {
+      saveAutoRotateIntervalToStorage(interval);
+      this.setState({ autoRotateInterval: interval }, () => {
+        if (this.state.autoRotate) {
+          this.startAutoRotate(); // restart with the new timing
+        }
+      });
+    });
+
     _defineProperty(this, "handleDecimalPlacesChange", (newPlaces) => {
       saveDecimalPlacesToStorage(newPlaces);
       this.setState({ decimalPlaces: newPlaces });
@@ -5660,6 +6486,22 @@ class CryptoChart extends PureComponent {
       this.setState({ coinOptions: defaults, coinIndex: 0 }, this.fetchData);
     });
 
+    _defineProperty(this, "handleRestoreCoins", (coins) => {
+      if (!Array.isArray(coins)) {
+        return;
+      }
+      const restored = coins
+        .filter(
+          (coin) => typeof coin === "string" && SUGGESTED_COINS.includes(coin),
+        )
+        .slice(0, MAX_COINS);
+      if (!restored.length) {
+        return;
+      }
+      saveCoinOptionsToStorage(restored);
+      this.setState({ coinOptions: restored, coinIndex: 0 }, this.fetchData);
+    });
+
     _defineProperty(this, "handleReorderCoinOption", (source, target) => {
       if (!source || !target || source === target) {
         return;
@@ -5859,6 +6701,12 @@ class CryptoChart extends PureComponent {
     this.fetchWidgets();
     // Refresh widgets every 5 minutes
     this.widgetRefreshInterval = setInterval(() => this.fetchWidgets(), 300000);
+
+    // Auto-rotate through coins if enabled
+    this.startAutoRotate();
+
+    // News ticker row if enabled
+    this.startNewsTicker();
   }
 
   componentWillUnmount() {
@@ -5871,6 +6719,8 @@ class CryptoChart extends PureComponent {
     clearInterval(this.widgetRefreshInterval);
     clearInterval(this.pageTickerRefreshInterval);
     this.stopTickerInterval();
+    this.stopAutoRotate();
+    this.stopNewsTicker();
 
     // Cancel any ongoing requests
     if (this.abortController) {
@@ -6565,6 +7415,8 @@ class CryptoChart extends PureComponent {
             pageTickerItems,
             pageTickerPosition,
             pageTickerCollapsed,
+            newsTicker,
+            newsItems,
           } = this.state;
           if (showSettings || !pageTicker || !pageTickerReady || !pageTickerItems || pageTickerItems.length === 0) return null;
 
@@ -6641,6 +7493,54 @@ class CryptoChart extends PureComponent {
                     ...makeTrack([...pageTickerItems].reverse()),
                   ),
                 ),
+                newsTicker && newsItems.length > 0
+                  ? React.createElement(
+                      PageTickerRow,
+                      null,
+                      React.createElement(
+                        PageTickerTrack,
+                        { speed: Math.max(90, newsItems.length * 10) },
+                        ...(() => {
+                          const doubled = [...newsItems, ...newsItems];
+                          return doubled.map((item, i) =>
+                            React.createElement(
+                              PageTickerItem,
+                              { key: "news-" + i },
+                              React.createElement(
+                                PageTickerSymbol,
+                                null,
+                                item.source,
+                              ),
+                              item.url
+                                ? React.createElement(
+                                    PageTickerNewsLink,
+                                    {
+                                      href: item.url,
+                                      target: "_blank",
+                                      rel: "noopener noreferrer",
+                                      title:
+                                        "Read on " +
+                                        item.source +
+                                        " — opens in a new tab",
+                                    },
+                                    item.title,
+                                  )
+                                : React.createElement(
+                                    PageTickerPrice,
+                                    null,
+                                    item.title,
+                                  ),
+                              React.createElement(
+                                PageTickerSep,
+                                null,
+                                "│",
+                              ),
+                            ),
+                          );
+                        })(),
+                      ),
+                    )
+                  : null,
               ),
               React.createElement(
                 PageTickerChevron,
@@ -6678,6 +7578,7 @@ class CryptoChart extends PureComponent {
             onRemoveCoin: this.handleRemoveCoinOption,
             onReorderCoin: this.handleReorderCoinOption,
             onResetCoins: this.handleResetCoins,
+            onRestoreCoins: this.handleRestoreCoins,
             onClose: this.toggleSettings,
             themePreference: themePreference,
             activeTheme: activeTheme,
@@ -6694,10 +7595,16 @@ class CryptoChart extends PureComponent {
             onTickerChange: this.handleTickerChange,
             tickerFormat: this.state.tickerFormat,
             onTickerFormatChange: this.handleTickerFormatChange,
+            autoRotate: this.state.autoRotate,
+            onAutoRotateChange: this.handleAutoRotateChange,
+            autoRotateInterval: this.state.autoRotateInterval,
+            onAutoRotateIntervalChange: this.handleAutoRotateIntervalChange,
             pageTicker: this.state.pageTicker,
             onPageTickerChange: this.handlePageTickerChange,
             pageTickerPosition: this.state.pageTickerPosition,
             onPageTickerPositionChange: this.handlePageTickerPositionChange,
+            newsTicker: this.state.newsTicker,
+            onNewsTickerChange: this.handleNewsTickerChange,
             chartColor: this.state.chartColor,
             onChartColorChange: this.handleChartColorChange,
             widgets: widgets,

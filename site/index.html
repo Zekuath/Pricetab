@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PriceTab — Live Crypto Charts on Every New Tab</title>
+    <meta
+      name="description"
+      content="PriceTab turns every new browser tab into a live cryptocurrency dashboard. Real-time charts, 60+ coins, 9 market signals. Free, no account, zero permissions."
+    />
+    <link rel="icon" href="../assets/icons/icon48.png" />
+    <link rel="canonical" href="https://zekuath.github.io/Pricetab/site/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="PriceTab — Live Crypto Charts on Every New Tab" />
+    <meta
+      property="og:description"
+      content="Turn every new tab into a live crypto dashboard. Free, private, zero permissions."
+    />
+    <meta property="og:image" content="https://zekuath.github.io/Pricetab/assets/promotional/Marquee.png" />
+    <meta property="og:url" content="https://zekuath.github.io/Pricetab/site/" />
+    <link rel="stylesheet" href="../vendor/roboto-mono.css" />
+    <style>
+      /* Design tokens mirrored from the extension's dark palette */
+      :root {
+        --bg: #000000;
+        --bg-soft: #1a1a1a;
+        --text: #ffffff;
+        --text-dim: #a0a0a0;
+        --border: rgba(255, 255, 255, 0.12);
+        --border-hover: rgba(255, 255, 255, 0.25);
+        --green: #34d399;
+        --up: #26a69a;
+        --down: #ef5350;
+        --shadow: rgba(0, 0, 0, 0.5);
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: "Roboto Mono", ui-monospace, Menlo, Consolas, monospace;
+        line-height: 1.6;
+      }
+      a {
+        color: inherit;
+      }
+      .wrap {
+        max-width: 60rem;
+        margin: 0 auto;
+        padding: 0 1.25rem;
+      }
+
+      /* ── Scrolling ticker bar (the extension's signature element) ── */
+      .ticker {
+        overflow: hidden;
+        height: 1.7rem;
+        display: flex;
+        align-items: center;
+        border-bottom: 1px solid var(--border);
+        background: var(--bg);
+      }
+      .ticker-track {
+        display: inline-flex;
+        white-space: nowrap;
+        animation: tickerScroll 48s linear infinite;
+        will-change: transform;
+      }
+      .ticker:hover .ticker-track {
+        animation-play-state: paused;
+      }
+      @keyframes tickerScroll {
+        from {
+          transform: translateX(0);
+        }
+        to {
+          transform: translateX(-50%);
+        }
+      }
+      .t-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0 1.25rem;
+        font-size: 0.68rem;
+        letter-spacing: 0.025em;
+        line-height: 1;
+      }
+      .t-sym {
+        font-weight: 700;
+        opacity: 0.9;
+      }
+      .t-up {
+        color: var(--up);
+        font-size: 0.62rem;
+      }
+      .t-down {
+        color: var(--down);
+        font-size: 0.62rem;
+      }
+      .t-sep {
+        opacity: 0.25;
+        margin-left: 1.4rem;
+      }
+
+      /* ── Hero ── */
+      .hero {
+        text-align: center;
+        padding: 4rem 0 3rem;
+        position: relative;
+      }
+      .hero img.logo {
+        width: 84px;
+        height: 84px;
+      }
+      .live-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        margin: 1.2rem 0 0.4rem;
+        padding: 0.35rem 0.9rem;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        font-size: 0.62rem;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--text-dim);
+      }
+      .live-dot {
+        width: 0.42rem;
+        height: 0.42rem;
+        border-radius: 50%;
+        background: var(--green);
+        animation: livePulse 1.6s ease-in-out infinite alternate;
+      }
+      @keyframes livePulse {
+        from {
+          opacity: 0.35;
+        }
+        to {
+          opacity: 0.95;
+        }
+      }
+      .hero h1 {
+        margin: 0.4rem 0 0.6rem;
+        font-size: clamp(1.8rem, 5vw, 2.6rem);
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+      }
+      .hero p.tagline {
+        margin: 0 auto 2rem;
+        max-width: 34rem;
+        color: var(--text-dim);
+        font-size: 0.95rem;
+      }
+      .cta {
+        display: inline-block;
+        padding: 0.85rem 1.8rem;
+        border-radius: 999px;
+        background: var(--text);
+        color: var(--bg);
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-decoration: none;
+        text-transform: uppercase;
+        font-size: 0.8rem;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+      }
+      .cta:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 12px 24px var(--shadow);
+      }
+      .cta:active {
+        transform: scale(0.98);
+      }
+      .cta-secondary {
+        display: inline-block;
+        margin-left: 0.6rem;
+        padding: 0.85rem 1.5rem;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        color: var(--text);
+        text-decoration: none;
+        font-size: 0.8rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        transition: border-color 0.2s ease, transform 0.2s ease;
+      }
+      .cta-secondary:hover {
+        border-color: var(--border-hover);
+        transform: translateY(-1px);
+      }
+      .cta-secondary:active {
+        transform: scale(0.98);
+      }
+
+      /* Decorative chart line, drawn on load like the extension's chart */
+      .spark {
+        display: block;
+        width: 100%;
+        max-width: 54rem;
+        height: 110px;
+        margin: 2.4rem auto -3.2rem;
+        pointer-events: none;
+      }
+      .spark .line {
+        fill: none;
+        stroke: var(--green);
+        stroke-width: 2;
+        stroke-dasharray: 2400;
+        stroke-dashoffset: 2400;
+        animation: sparkDraw 1.8s cubic-bezier(0.22, 1, 0.36, 1) 0.2s forwards;
+      }
+      .spark .area {
+        opacity: 0;
+        animation: sparkFade 1s ease 1.2s forwards;
+      }
+      @keyframes sparkDraw {
+        to {
+          stroke-dashoffset: 0;
+        }
+      }
+      @keyframes sparkFade {
+        to {
+          opacity: 1;
+        }
+      }
+      .hero .shot {
+        position: relative;
+        display: block;
+        width: 100%;
+        height: auto;
+        max-width: 54rem;
+        margin: 3rem auto 0;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        box-shadow: 0 30px 80px rgba(0, 0, 0, 0.55);
+      }
+
+      /* ── Sections ── */
+      section {
+        padding: 3.5rem 0;
+        border-top: 1px solid var(--border);
+      }
+      h2 {
+        margin: 0 0 2.2rem;
+        text-align: center;
+        font-size: 1.15rem;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      /* Feature cards — settings-panel language, decorative toggles ON */
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+        gap: 1rem;
+      }
+      .card {
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 1.25rem;
+        background: var(--bg-soft);
+        text-align: left;
+        transition: transform 0.2s ease, border-color 0.2s ease;
+      }
+      .card:hover {
+        transform: translateY(-1px);
+        border-color: var(--border-hover);
+      }
+      .card .card-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        margin-bottom: 0.5rem;
+      }
+      .card h3 {
+        margin: 0;
+        font-size: 0.78rem;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        opacity: 0.9;
+      }
+      .card p {
+        margin: 0;
+        color: var(--text-dim);
+        font-size: 0.74rem;
+        line-height: 1.55;
+      }
+      /* Replica of the extension's toggle switch, always on */
+      .switch {
+        flex-shrink: 0;
+        width: 38px;
+        height: 21px;
+        border-radius: 11px;
+        background: var(--text);
+        position: relative;
+      }
+      .switch::after {
+        content: "";
+        position: absolute;
+        top: 3px;
+        right: 3px;
+        width: 15px;
+        height: 15px;
+        border-radius: 50%;
+        background: var(--bg);
+      }
+
+      /* Screenshots */
+      .shots {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+        gap: 1rem;
+      }
+      .shots img {
+        display: block;
+        width: 100%;
+        height: auto;
+        aspect-ratio: 1280 / 800;
+        object-fit: cover;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+      }
+      .gallery-img {
+        cursor: zoom-in;
+        transition: transform 0.25s ease, border-color 0.25s ease,
+          box-shadow 0.25s ease;
+      }
+      .gallery-img:hover {
+        transform: translateY(-4px);
+        border-color: var(--border-hover);
+        box-shadow: 0 14px 40px rgba(0, 0, 0, 0.5);
+      }
+
+      /* Privacy chips — replicas of the extension's coin chips */
+      .privacy {
+        text-align: center;
+      }
+      .privacy p {
+        max-width: 38rem;
+        margin: 0 auto 1.4rem;
+        color: var(--text-dim);
+        font-size: 0.85rem;
+      }
+      .badges {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 0.6rem;
+      }
+      .chip {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 3.5rem;
+        padding: 0.45rem 1rem;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        transition: transform 0.2s ease, border-color 0.2s ease;
+      }
+      .chip:hover {
+        transform: translateY(-1px);
+        border-color: var(--border-hover);
+      }
+      .chip.selected {
+        background: var(--text);
+        color: var(--bg);
+        border-color: var(--text);
+      }
+
+      /* Steps — period-switcher style circles */
+      .steps {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+        gap: 1.5rem;
+        text-align: center;
+      }
+      .step .num {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 3rem;
+        height: 3rem;
+        border: 1px solid var(--border);
+        border-radius: 50%;
+        font-weight: 700;
+        font-size: 0.9rem;
+        margin-bottom: 0.8rem;
+      }
+      .step p {
+        margin: 0;
+        font-size: 0.78rem;
+        color: var(--text-dim);
+        line-height: 1.6;
+      }
+
+      /* Footer */
+      footer {
+        border-top: 1px solid var(--border);
+        padding: 2.5rem 0 3rem;
+        text-align: center;
+        font-size: 0.72rem;
+        color: var(--text-dim);
+      }
+      footer a {
+        color: var(--text-dim);
+      }
+      footer a:hover {
+        color: var(--text);
+      }
+      footer .links {
+        margin-bottom: 1rem;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        font-size: 0.68rem;
+      }
+      footer .links a {
+        margin: 0 0.75rem;
+        text-decoration: none;
+      }
+      .disclaimer {
+        max-width: 44rem;
+        margin: 0 auto;
+      }
+
+      /* ── Lightbox ── */
+      #lightbox {
+        border: none;
+        padding: 0;
+        background: transparent;
+        max-width: min(94vw, 72rem);
+        overflow: visible;
+      }
+      #lightbox::backdrop {
+        background: rgba(0, 0, 0, 0.88);
+        backdrop-filter: blur(6px);
+      }
+      #lightbox[open] {
+        animation: lbZoomIn 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+      }
+      #lightbox[open]::backdrop {
+        animation: lbFadeIn 0.32s ease;
+      }
+      #lightbox.closing {
+        animation: lbZoomOut 0.22s ease forwards;
+      }
+      #lightbox.closing::backdrop {
+        animation: lbFadeOut 0.22s ease forwards;
+      }
+      @keyframes lbZoomIn {
+        from {
+          opacity: 0;
+          transform: scale(0.92) translateY(12px);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1) translateY(0);
+        }
+      }
+      @keyframes lbZoomOut {
+        to {
+          opacity: 0;
+          transform: scale(0.94) translateY(8px);
+        }
+      }
+      @keyframes lbFadeIn {
+        from {
+          opacity: 0;
+        }
+      }
+      @keyframes lbFadeOut {
+        to {
+          opacity: 0;
+        }
+      }
+      #lb-img {
+        display: block;
+        width: 100%;
+        height: auto;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        box-shadow: 0 40px 120px rgba(0, 0, 0, 0.7);
+      }
+      #lb-img.swap {
+        animation: lbSwap 0.25s ease;
+      }
+      @keyframes lbSwap {
+        from {
+          opacity: 0.15;
+          transform: scale(0.985);
+        }
+      }
+      .lb-caption {
+        margin: 0.9rem 0 0;
+        text-align: center;
+        font-size: 0.72rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--text-dim);
+      }
+      .lb-caption .lb-count {
+        margin-left: 0.75rem;
+        color: var(--text);
+      }
+      .lb-btn {
+        position: absolute;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 2.75rem;
+        height: 2.75rem;
+        border: 1px solid var(--border);
+        border-radius: 50%;
+        background: rgba(10, 10, 10, 0.85);
+        color: var(--text);
+        font-family: inherit;
+        font-size: 1.3rem;
+        line-height: 1;
+        cursor: pointer;
+        transition: border-color 0.2s ease, background 0.2s ease,
+          transform 0.2s ease;
+      }
+      .lb-btn:hover {
+        border-color: var(--border-hover);
+        background: var(--bg-soft);
+        transform: translateY(-1px);
+      }
+      .lb-prev:hover,
+      .lb-next:hover {
+        transform: translateY(-50%) translateX(0) scale(1.05);
+      }
+      .lb-close {
+        top: -1.1rem;
+        right: -1.1rem;
+      }
+      .lb-prev {
+        left: -1.1rem;
+        top: 50%;
+        transform: translateY(-50%);
+      }
+      .lb-next {
+        right: -1.1rem;
+        top: 50%;
+        transform: translateY(-50%);
+      }
+      @media (max-width: 700px) {
+        .lb-close {
+          top: -3.4rem;
+          right: 0;
+        }
+        .lb-prev {
+          left: 0.4rem;
+        }
+        .lb-next {
+          right: 0.4rem;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .ticker-track,
+        .live-dot,
+        .spark .line,
+        .spark .area,
+        #lightbox[open],
+        #lightbox[open]::backdrop,
+        #lightbox.closing,
+        #lightbox.closing::backdrop,
+        #lb-img.swap,
+        .gallery-img,
+        .card,
+        .chip,
+        .cta,
+        .cta-secondary {
+          animation: none;
+          transition: none;
+        }
+        .spark .line {
+          stroke-dashoffset: 0;
+        }
+        .spark .area {
+          opacity: 1;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Decorative ticker bar, just like the extension's price ticker -->
+    <div class="ticker" aria-hidden="true">
+      <div class="ticker-track">
+        <span class="t-item"><span class="t-sym">BTC</span><span class="t-up">▲</span>$104,250<span class="t-up">+2.4%</span><span class="t-sep">│</span></span>
+        <span class="t-item"><span class="t-sym">ETH</span><span class="t-up">▲</span>$3,890<span class="t-up">+1.8%</span><span class="t-sep">│</span></span>
+        <span class="t-item"><span class="t-sym">SOL</span><span class="t-down">▼</span>$172.40<span class="t-down">-0.9%</span><span class="t-sep">│</span></span>
+        <span class="t-item"><span class="t-sym">XRP</span><span class="t-up">▲</span>$2.31<span class="t-up">+3.1%</span><span class="t-sep">│</span></span>
+        <span class="t-item"><span class="t-sym">DOGE</span><span class="t-down">▼</span>$0.182<span class="t-down">-1.2%</span><span class="t-sep">│</span></span>
+        <span class="t-item"><span class="t-sym">ADA</span><span class="t-up">▲</span>$0.74<span class="t-up">+0.6%</span><span class="t-sep">│</span></span>
+        <span class="t-item"><span class="t-sym">LINK</span><span class="t-up">▲</span>$18.95<span class="t-up">+2.0%</span><span class="t-sep">│</span></span>
+        <span class="t-item"><span class="t-sym">AVAX</span><span class="t-down">▼</span>$31.20<span class="t-down">-0.4%</span><span class="t-sep">│</span></span>
+        <span class="t-item"><span class="t-sym">BTC</span><span class="t-up">▲</span>$104,250<span class="t-up">+2.4%</span><span class="t-sep">│</span></span>
+        <span class="t-item"><span class="t-sym">ETH</span><span class="t-up">▲</span>$3,890<span class="t-up">+1.8%</span><span class="t-sep">│</span></span>
+        <span class="t-item"><span class="t-sym">SOL</span><span class="t-down">▼</span>$172.40<span class="t-down">-0.9%</span><span class="t-sep">│</span></span>
+        <span class="t-item"><span class="t-sym">XRP</span><span class="t-up">▲</span>$2.31<span class="t-up">+3.1%</span><span class="t-sep">│</span></span>
+        <span class="t-item"><span class="t-sym">DOGE</span><span class="t-down">▼</span>$0.182<span class="t-down">-1.2%</span><span class="t-sep">│</span></span>
+        <span class="t-item"><span class="t-sym">ADA</span><span class="t-up">▲</span>$0.74<span class="t-up">+0.6%</span><span class="t-sep">│</span></span>
+        <span class="t-item"><span class="t-sym">LINK</span><span class="t-up">▲</span>$18.95<span class="t-up">+2.0%</span><span class="t-sep">│</span></span>
+        <span class="t-item"><span class="t-sym">AVAX</span><span class="t-down">▼</span>$31.20<span class="t-down">-0.4%</span><span class="t-sep">│</span></span>
+      </div>
+    </div>
+
+    <header class="hero wrap">
+      <img class="logo" src="../assets/icons/icon128.png" alt="PriceTab logo" width="84" height="84" />
+      <div>
+        <span class="live-badge"><span class="live-dot"></span>Live on the Chrome Web Store</span>
+      </div>
+      <h1>PriceTab</h1>
+      <p class="tagline">
+        Every new browser tab opens a live cryptocurrency chart. Watch your
+        coins, spot the top movers, and read the market at a glance.
+      </p>
+      <a
+        class="cta"
+        href="https://chromewebstore.google.com/detail/pricetab/dobkidjmhpnniiipliollbaefpppalaf"
+        >Add to Chrome — Free</a
+      >
+      <a class="cta-secondary" href="https://github.com/Zekuath/Pricetab">GitHub</a>
+
+      <svg class="spark" viewBox="0 0 1200 160" preserveAspectRatio="none" aria-hidden="true">
+        <defs>
+          <linearGradient id="sparkFill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#34d399" stop-opacity="0.22" />
+            <stop offset="100%" stop-color="#34d399" stop-opacity="0" />
+          </linearGradient>
+        </defs>
+        <path
+          class="area"
+          fill="url(#sparkFill)"
+          d="M0,122 C90,114 140,70 230,84 S370,138 470,104 S610,38 710,58 S870,118 970,88 S1120,42 1200,62 L1200,160 L0,160 Z"
+        />
+        <path
+          class="line"
+          d="M0,122 C90,114 140,70 230,84 S370,138 470,104 S610,38 710,58 S870,118 970,88 S1120,42 1200,62"
+        />
+      </svg>
+
+      <img
+        class="shot gallery-img"
+        src="../assets/screenshots/01-hero.png"
+        alt="PriceTab live crypto chart on a new tab"
+        width="1280"
+        height="800"
+      />
+    </header>
+
+    <section>
+      <div class="wrap">
+        <h2>What you get</h2>
+        <div class="grid">
+          <div class="card">
+            <div class="card-head"><h3>Live Charts</h3><span class="switch"></span></div>
+            <p>Real-time price charts with smooth animations, six timeframes from one hour to all-time.</p>
+          </div>
+          <div class="card">
+            <div class="card-head"><h3>60+ Coins</h3><span class="switch"></span></div>
+            <p>Build your own rotation, drag to reorder, and flip through coins with a single click.</p>
+          </div>
+          <div class="card">
+            <div class="card-head"><h3>9 Market Signals</h3><span class="switch"></span></div>
+            <p>Fear &amp; Greed, market overview, halving countdown, RSI, funding, liquidations and more — all optional.</p>
+          </div>
+          <div class="card">
+            <div class="card-head"><h3>Watchlist &amp; Movers</h3><span class="switch"></span></div>
+            <p>A colour-coded grid of your coins plus the day's biggest gainers and losers.</p>
+          </div>
+          <div class="card">
+            <div class="card-head"><h3>Tickers &amp; News</h3><span class="switch"></span></div>
+            <p>Scrolling price bar, live prices in the tab title, and an optional crypto headline row.</p>
+          </div>
+          <div class="card">
+            <div class="card-head"><h3>Your Style</h3><span class="switch"></span></div>
+            <p>Dark, light or auto theme. 37 display currencies. Presets for holders, traders and minimalists.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <h2>See it in action</h2>
+        <div class="shots">
+          <img class="gallery-img" src="../assets/screenshots/02-dashboard.png" alt="Full dashboard with market widgets" loading="lazy" width="1280" height="800" />
+          <img class="gallery-img" src="../assets/screenshots/04-signals.png" alt="Market signal widgets" loading="lazy" width="1280" height="800" />
+          <img class="gallery-img" src="../assets/screenshots/06-themes.png" alt="Light and dark themes" loading="lazy" width="1280" height="800" />
+        </div>
+      </div>
+    </section>
+
+    <section class="privacy">
+      <div class="wrap">
+        <h2>Private by design</h2>
+        <p>
+          PriceTab requests zero browser permissions. No account, no analytics,
+          no tracking — your settings never leave your device, and prices come
+          straight from public market data.
+        </p>
+        <div class="badges">
+          <span class="chip selected">Zero permissions</span>
+          <span class="chip">No account</span>
+          <span class="chip">No tracking</span>
+          <span class="chip">100% free</span>
+          <span class="chip">Open source</span>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <h2>Up and running in seconds</h2>
+        <div class="steps">
+          <div class="step">
+            <span class="num">1</span>
+            <p>Click "Add to Chrome" — no sign-up, nothing to configure.</p>
+          </div>
+          <div class="step">
+            <span class="num">2</span>
+            <p>Open a new tab. Your live chart is already there.</p>
+          </div>
+          <div class="step">
+            <span class="num">3</span>
+            <p>Click the price to switch coins, or open settings to make it yours.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      <div class="wrap">
+        <div class="links">
+          <a href="https://chromewebstore.google.com/detail/pricetab/dobkidjmhpnniiipliollbaefpppalaf">Chrome Web Store</a>
+          <a href="https://github.com/Zekuath/Pricetab">GitHub</a>
+          <a href="https://github.com/Zekuath/Pricetab/issues">Support</a>
+          <a href="../privacy.html">Privacy Policy</a>
+        </div>
+        <p class="disclaimer">
+          PriceTab is for information only and is not financial advice.
+          Cryptocurrency prices are volatile and risky. Always do your own
+          research.
+        </p>
+      </div>
+    </footer>
+
+    <dialog id="lightbox" aria-label="Screenshot gallery">
+      <button class="lb-btn lb-close" type="button" aria-label="Close gallery">×</button>
+      <button class="lb-btn lb-prev" type="button" aria-label="Previous screenshot">‹</button>
+      <img id="lb-img" src="" alt="" />
+      <button class="lb-btn lb-next" type="button" aria-label="Next screenshot">›</button>
+      <p class="lb-caption"><span class="lb-text"></span><span class="lb-count"></span></p>
+    </dialog>
+
+    <script>
+      (function () {
+        var shots = Array.prototype.slice.call(
+          document.querySelectorAll(".gallery-img"),
+        );
+        var dlg = document.getElementById("lightbox");
+        if (!shots.length || !dlg || !dlg.showModal) return;
+
+        var img = document.getElementById("lb-img");
+        var text = dlg.querySelector(".lb-text");
+        var count = dlg.querySelector(".lb-count");
+        var idx = 0;
+
+        function show(i, animate) {
+          idx = (i + shots.length) % shots.length;
+          img.src = shots[idx].src;
+          img.alt = shots[idx].alt;
+          text.textContent = shots[idx].alt;
+          count.textContent = idx + 1 + " / " + shots.length;
+          if (animate) {
+            img.classList.remove("swap");
+            void img.offsetWidth; /* restart the swap animation */
+            img.classList.add("swap");
+          }
+        }
+
+        function open(i) {
+          show(i, false);
+          dlg.showModal();
+        }
+
+        function close() {
+          if (dlg.classList.contains("closing")) return;
+          dlg.classList.add("closing");
+          dlg.addEventListener(
+            "animationend",
+            function () {
+              dlg.classList.remove("closing");
+              dlg.close();
+            },
+            { once: true },
+          );
+        }
+
+        shots.forEach(function (el, i) {
+          el.addEventListener("click", function () {
+            open(i);
+          });
+        });
+
+        dlg.querySelector(".lb-close").addEventListener("click", close);
+        dlg.querySelector(".lb-prev").addEventListener("click", function () {
+          show(idx - 1, true);
+        });
+        dlg.querySelector(".lb-next").addEventListener("click", function () {
+          show(idx + 1, true);
+        });
+
+        /* Clicking the backdrop (outside the image/buttons) closes */
+        dlg.addEventListener("click", function (e) {
+          if (e.target === dlg) close();
+        });
+
+        /* ESC: intercept the native instant close to play the animation */
+        dlg.addEventListener("cancel", function (e) {
+          e.preventDefault();
+          close();
+        });
+
+        document.addEventListener("keydown", function (e) {
+          if (!dlg.open || dlg.classList.contains("closing")) return;
+          if (e.key === "ArrowRight") show(idx + 1, true);
+          if (e.key === "ArrowLeft") show(idx - 1, true);
+        });
+      })();
+    </script>
+  </body>
+</html>

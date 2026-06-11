@@ -1,6 +1,6 @@
 # Privacy Policy for PriceTab
 
-**Last Updated:** June 8, 2026
+**Last Updated:** June 11, 2026
 **Effective Date:** January 23, 2026
 
 ## Introduction
@@ -16,7 +16,8 @@ PriceTab stores the following information **locally on your device only**:
 - **Cryptocurrency Preferences**: The list of cryptocurrency symbols you select (e.g., BTC, ETH, SOL)
 - **Coin Order**: The order in which you arrange your selected coins
 - **Widget Settings**: Which widgets are enabled and their display order
-- **UI Preferences**: Theme, currency, refresh interval, hidden widget states
+- **UI Preferences**: Theme, currency, refresh interval, auto-rotate, ticker and news settings, hidden widget states
+- **News Cache**: The latest fetched headlines (kept for 10 minutes to reduce network requests)
 
 This data is stored using the browser's `localStorage` API and **never leaves your device**.
 
@@ -77,6 +78,14 @@ All APIs used by PriceTab are **public** — no authentication or accounts requi
 - **Purpose**: Bitcoin Halving Countdown (current block height)
 - **Data Sent**: No user data — plain GET request
 - **Privacy**: See [mempool.space Privacy Policy](https://mempool.space/privacy-policy)
+
+### News sources (optional ticker row, off by default)
+
+- **Endpoints**: `https://api.blockchair.com/news` and `https://cointelegraph.com/rss`
+- **Purpose**: Crypto news headlines in the optional ticker bar
+- **Data Sent**: No user data — plain GET requests
+- **Outbound links**: Clicking a headline opens the news site in a new tab. The link carries no referrer information (`rel="noreferrer"`), so the site cannot tell the visit came from PriceTab. From that point the news site's own privacy policy applies.
+- **Privacy**: See [Blockchair Privacy Policy](https://blockchair.com/privacy) and [Cointelegraph Privacy Policy](https://cointelegraph.com/privacy-policy)
 
 ### Local Vendor Files
 
@@ -194,7 +203,7 @@ This extension is provided "as is" without warranty. We are not responsible for:
 ✅ **What we store**: Only your coin preferences, locally on your device
 ✅ **What we collect**: Nothing
 ✅ **What we share**: Nothing
-✅ **Third parties**: Only Coinbase API for price data
+✅ **Third parties**: Only public, no-auth APIs — Coinbase (prices), OKX/Bybit/Coinlore/Alternative.me/mempool.space (optional widgets), Blockchair/Cointelegraph (optional news headlines)
 ✅ **Your control**: Delete data anytime by clearing localStorage or uninstalling
 
 **We respect your privacy because we simply don't collect any data.**

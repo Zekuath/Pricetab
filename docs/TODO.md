@@ -8,19 +8,21 @@
 
 | Metric | Value |
 |--------|-------|
-| **Current Version** | 1.2.0 (staged — not yet uploaded) |
-| **Live Build** | Older version published, ~0 installs |
-| **Status** | Pre-relaunch: copy + visuals + marketing refresh |
-| **Codebase Size** | ~6,400 lines |
-| **Next Milestone** | Relaunch 1.2.0 with new listing |
+| **Current Version** | 1.2.1 (staged — not yet uploaded) |
+| **Live Build** | 1.2.0 live on the Chrome Web Store (June 2026) |
+| **Status** | Published — post-launch polish shipped locally (settings UX, auto-rotate, news ticker, promo site) |
+| **Codebase Size** | ~7,700 lines |
+| **Next Milestone** | Ship 1.2.1 to the store (confirm version with user first) |
 | **Security Status** | Input validation complete |
 
 ---
 
 ## Active Focus
 
-> **Current priority: bug fixes (in progress).** The store/visual/marketing relaunch
-> work is staged and tracked in **Phase 1** below; resume it after the bugs are fixed.
+> **Current priority: ship 1.2.1.** The 1.2.0 relaunch is DONE — the listing is live.
+> Staged since then (all verified locally, see CHANGELOG 1.2.1): settings panel
+> redesign (groups, ESC, close button, undo reset, name search, presets state),
+> auto-rotate, news ticker row, rating prompt + toolbar popup, promo website.
 
 ### Bug Fixes (do first)
 | Issue | Status | Notes |
@@ -443,7 +445,7 @@ Core functionality that has been implemented and tested.
 
 | Task | Status | Effort | Priority |
 |------|--------|--------|----------|
-| Split app.js (currently ~5600 lines, over threshold) | [~] | High | Medium |
+| Split app.js (currently ~7,700 lines, over threshold) | [~] | High | Medium |
 | Add ESLint configuration | [ ] | Low | Medium |
 | Add Prettier for formatting | [ ] | Low | Medium |
 | TypeScript migration | [ ] | Very High | Low |

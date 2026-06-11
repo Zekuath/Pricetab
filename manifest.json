@@ -1,10 +1,14 @@
 {
   "manifest_version": 3,
   "name": "PriceTab - Crypto Charts on Every New Tab",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Every new tab opens a live crypto chart. Watch your coins, spot the top movers, and read 9 market signals. Free, no account.",
   "chrome_url_overrides": {
     "newtab": "index.html"
+  },
+  "action": {
+    "default_title": "PriceTab - Rate on Chrome Web Store",
+    "default_popup": "rate.html"
   },
   "icons": {
     "16": "assets/icons/icon16.png",

@@ -232,9 +232,9 @@ Every new tab opens a live crypto chart. Watch your coins, spot the top movers, 
 > ⚠️ **Use the description from `docs/STORE_DESCRIPTION.md`** — that file is the canonical, policy-compliant version.
 > Do NOT use the description below; it has been removed to prevent accidental keyword spam rejections.
 
-**Category**:
+**Category** (old "Productivity" category no longer exists — see `STORE_DESCRIPTION.md`):
 ```
-Productivity
+Tools
 ```
 
 **Language**:
@@ -250,7 +250,7 @@ English (United States)
 - [x] Take 3-5 screenshots (1280x800) ✓ 9 screenshots ready
 - [x] Create small tile (440x280) ✓
 - [x] Write store description - see `docs/STORE_DESCRIPTION.md`
-- [ ] Prepare privacy policy URL (host PRIVACY.md on GitHub Pages)
+- [x] Privacy policy URL live: `https://zekuath.github.io/Pricetab/privacy.html` ✓
 
 ### Optional (For Better Results)
 - [x] Create large tile (920x680) ✓
