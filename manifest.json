@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "PriceTab",
-  "version": "1.1.1",
-  "description": "Live cryptocurrency price charts on every new tab",
+  "name": "PriceTab - Crypto Charts on Every New Tab",
+  "version": "1.2.0",
+  "description": "Every new tab opens a live crypto chart. Watch your coins, spot the top movers, and read 9 market signals. Free, no account.",
   "chrome_url_overrides": {
     "newtab": "index.html"
   },

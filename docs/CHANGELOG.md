@@ -18,6 +18,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.0] - Watchlist, Top Movers & Reliability
+
+### Added
+- **Watchlist widget** - your coins as a colour-coded heatmap (green up / red down)
+- **Top Movers widget** - the day's biggest 24h gainers and losers
+- **One-click widget presets** - "Holder", "Trader" and "Minimal" bundles
+- **Animated chart** - draws itself in on load, with a trend-tinted area fill (green when up, red when down) and a price count-up
+- **Chart color toggle** (Preferences) - turn the green/red fill off for a plain line
+- **Collapsible price ticker** - hover-reveal chevron to minimise it, pause-on-hover, and the collapsed state is remembered
+- **Starter widgets for new installs** - Watchlist + Fear & Greed + Market Overview enabled out of the box
+
+### Changed
+- **Geo-resilient market data** - funding rate and open interest moved from Binance (geo-blocked in the US/UK) to OKX; long/short ratio to Bybit; global market data (cap, dominance, altcoin season) from CoinGecko to Coinlore. Derivatives widgets now work worldwide.
+- Trimmed the suggested-coin list to coins Coinbase actually serves (no more 404/console noise)
+- Gentler ticker fetching (slower refresh, smaller batches, no retry while rate-limited) to stay within Coinbase's limits
+- Bolder coin names in settings
+- Refreshed Chrome Web Store screenshots, listing copy and description
+
+### Fixed
+- Chart no longer overflows below the screen when the ticker appears or the layout resizes (re-measures via ResizeObserver)
+- Removing a non-active coin no longer switches the displayed coin
+- The last remaining coin can no longer be removed (no empty rotation)
+- Coin-specific widgets no longer show the previous coin's values after switching coins
+- Cleared a timer that was left running on unmount
+
+---
+
 ## [1.1.1] - Privacy, Performance & Layout Polish
 
 ### Changed
@@ -64,7 +91,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Real-time cryptocurrency price charts on every new tab
 - **Dynamic Tab Title** - Live prices visible in browser tab (`BTC $43,250 (+5.2%)`)
-- 75+ supported cryptocurrencies from Coinbase API
+- 60+ supported cryptocurrencies from Coinbase API
 - Persistent coin selection using localStorage
 - Drag-and-drop coin reordering
 - 6 time periods: 1H, 1D, 1W, 1M, 1Y, ALL

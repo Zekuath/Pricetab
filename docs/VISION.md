@@ -20,7 +20,7 @@ PriceTab aims to be the go-to new tab experience for crypto enthusiasts — beau
 ### Phase 1: Core (Completed) ✅
 
 - Real-time price charts with D3.js
-- 75+ cryptocurrencies from Coinbase API
+- 60+ cryptocurrencies from Coinbase API
 - 6 time periods (1H, 1D, 1W, 1M, 1Y, ALL)
 - Dark/Light/Auto themes
 - Drag-and-drop coin reordering
@@ -31,15 +31,16 @@ PriceTab aims to be the go-to new tab experience for crypto enthusiasts — beau
 
 ### Phase 2: Widget System (Completed) ✅
 
+- Watchlist heatmap + Top Movers (your coins / 24h gainers & losers)
 - Fear & Greed Index (Alternative.me)
-- Market Overview — total MCap + 24h volume (CoinGecko)
-- BTC Halving Countdown
+- Market Overview — market cap, volume + dominance (Coinlore)
+- BTC Halving Countdown (mempool.space)
 - RSI Widget — 14-period, coin-specific
-- Funding Rate (Binance Futures)
-- Long/Short Ratio (Binance Futures)
-- Open Interest in USD (Binance Futures)
-- Liquidations 24h (OKX Public API)
-- Altcoin Season Index — BTC dominance based (CoinGecko)
+- Funding Rate (OKX)
+- Long/Short Ratio (Bybit)
+- Open Interest in USD (OKX)
+- Liquidations 24h (OKX)
+- Altcoin Season Index — BTC dominance based (Coinlore)
 - All widgets toggleable from settings
 - Drag-and-drop widget reordering
 - Hide-all / show-all widget toggle

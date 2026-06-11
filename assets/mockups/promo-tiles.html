@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>PriceTab — Promo Tiles</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@300;400;500;700;900&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #000000;
+    --bg2: #0a0a0a;
+    --text: #ffffff;
+    --muted: #8a8a8a;
+    --blue: #60a5fa;
+    --green: #34d399;
+    --red: #f87171;
+    --grid: rgba(255, 255, 255, 0.05);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #161616;
+    font-family: 'Roboto Mono', ui-monospace, monospace;
+    color: var(--text);
+    padding: 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 48px;
+    align-items: flex-start;
+  }
+  .label {
+    color: #bbb;
+    font-size: 13px;
+    margin-bottom: 10px;
+    letter-spacing: 1px;
+  }
+  .tile {
+    position: relative;
+    overflow: hidden;
+    background: radial-gradient(120% 120% at 50% 0%, #0e0e0e 0%, #000 60%);
+    border: 1px solid rgba(255,255,255,0.04);
+  }
+  /* faint background chart that bleeds behind content */
+  .bg-chart {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0.18;
+    pointer-events: none;
+  }
+  .grid-bg {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 48px 48px;
+    mask-image: radial-gradient(120% 100% at 50% 40%, #000 40%, transparent 80%);
+  }
+
+  /* ---- Logo mark ---- */
+  .logo {
+    display: inline-flex;
+    align-items: center;
+    gap: 22px;
+  }
+  .mark {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 22%;
+    display: grid;
+    place-items: center;
+  }
+  .wordmark {
+    font-weight: 700;
+    letter-spacing: -1px;
+    line-height: 1;
+  }
+  .tagline {
+    color: var(--muted);
+    font-weight: 400;
+  }
+
+  /* ===== SMALL TILE 440x280 ===== */
+  #small { width: 440px; height: 280px; padding: 36px; display: flex; flex-direction: column; justify-content: center; }
+  #small .mark { width: 64px; height: 64px; }
+  #small .wordmark { font-size: 40px; }
+  #small .tagline { font-size: 15px; margin-top: 20px; max-width: 320px; line-height: 1.5; }
+
+  /* ===== LARGE TILE 920x680 ===== */
+  #large { width: 920px; height: 680px; padding: 64px; display: flex; flex-direction: column; }
+  #large .mark { width: 96px; height: 96px; }
+  #large .wordmark { font-size: 64px; }
+  #large .headline { font-size: 46px; font-weight: 500; line-height: 1.25; margin-top: 56px; letter-spacing: -1px; }
+  #large .headline .accent { color: var(--green); }
+  #large .sub { color: var(--muted); font-size: 19px; margin-top: 22px; line-height: 1.6; max-width: 560px; }
+  #large .pills { display: flex; gap: 12px; margin-top: 40px; flex-wrap: wrap; }
+  #large .pill { border: 1px solid rgba(255,255,255,0.14); color: #ddd; font-size: 14px; padding: 9px 16px; border-radius: 999px; }
+  #large .priceTag {
+    position: absolute; right: 64px; top: 64px; text-align: right;
+  }
+  #large .priceTag .p { font-size: 34px; font-weight: 700; }
+  #large .priceTag .c { color: var(--green); font-size: 18px; margin-top: 6px; }
+
+  /* ===== MARQUEE 1400x560 ===== */
+  #marquee { width: 1400px; height: 560px; padding: 0 96px; display: flex; align-items: center; gap: 72px; }
+  #marquee .mark { width: 120px; height: 120px; }
+  #marquee .left { flex: 0 0 auto; }
+  #marquee .wordmark { font-size: 92px; }
+  #marquee .tagline { font-size: 28px; margin-top: 24px; }
+  #marquee .right { flex: 1; position: relative; height: 320px; }
+
+  svg.chart line, svg.chart path { vector-effect: non-scaling-stroke; }
+</style>
+</head>
+<body>
+
+  <!-- ================= SMALL TILE ================= -->
+  <div>
+    <div class="label">SMALL TILE — 440 × 280 (right-click #small in DevTools → "Capture node screenshot")</div>
+    <div class="tile" id="small">
+      <div class="grid-bg"></div>
+      <svg class="bg-chart" viewBox="0 0 440 280" preserveAspectRatio="none">
+        <path d="M0,210 L40,200 L80,215 L120,180 L160,190 L200,150 L240,165 L280,120 L320,135 L360,90 L400,70 L440,40"
+              fill="none" stroke="#60a5fa" stroke-width="2.5"/>
+      </svg>
+      <div class="logo">
+        <div class="mark">
+          <svg width="60%" height="60%" viewBox="0 0 100 100" fill="none">
+            <path d="M10,78 L34,58 L52,66 L88,18" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M70,18 L88,18 L88,36" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="34" cy="58" r="5" fill="#fff"/>
+            <circle cx="52" cy="66" r="5" fill="#fff"/>
+          </svg>
+        </div>
+        <div class="wordmark">pricetab</div>
+      </div>
+      <div class="tagline">Live crypto charts on every new tab</div>
+    </div>
+  </div>
+
+  <!-- ================= LARGE TILE ================= -->
+  <div>
+    <div class="label">LARGE TILE — 920 × 680</div>
+    <div class="tile" id="large">
+      <div class="grid-bg"></div>
+      <svg class="bg-chart" viewBox="0 0 920 680" preserveAspectRatio="none">
+        <path d="M0,520 L90,500 L180,540 L270,440 L360,470 L450,360 L540,400 L630,280 L720,320 L810,180 L920,120"
+              fill="none" stroke="#34d399" stroke-width="3"/>
+      </svg>
+      <div class="priceTag">
+        <div class="p">$89,785.68</div>
+        <div class="c">BTC ▲ +2.41%</div>
+      </div>
+      <div class="logo">
+        <div class="mark">
+          <svg width="60%" height="60%" viewBox="0 0 100 100" fill="none">
+            <path d="M10,78 L34,58 L52,66 L88,18" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M70,18 L88,18 L88,36" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="34" cy="58" r="5" fill="#fff"/>
+            <circle cx="52" cy="66" r="5" fill="#fff"/>
+          </svg>
+        </div>
+        <div class="wordmark">pricetab</div>
+      </div>
+      <div class="headline">Every new tab becomes a<br><span class="accent">live crypto dashboard.</span></div>
+      <div class="sub">Real-time charts for 60+ coins, market widgets, and a live price right in your tab title. No account, no tracking.</div>
+      <div class="pills">
+        <div class="pill">Zero permissions</div>
+        <div class="pill">9 market widgets</div>
+        <div class="pill">37 currencies</div>
+        <div class="pill">100% free</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MARQUEE ================= -->
+  <div>
+    <div class="label">MARQUEE — 1400 × 560</div>
+    <div class="tile" id="marquee">
+      <div class="grid-bg"></div>
+      <svg class="bg-chart" viewBox="0 0 1400 560" preserveAspectRatio="none" style="opacity:0.14">
+        <path d="M0,440 L140,410 L280,460 L420,360 L560,400 L700,300 L840,340 L980,220 L1120,260 L1260,120 L1400,80"
+              fill="none" stroke="#60a5fa" stroke-width="3"/>
+      </svg>
+      <div class="left">
+        <div class="logo">
+          <div class="mark">
+            <svg width="60%" height="60%" viewBox="0 0 100 100" fill="none">
+              <path d="M10,78 L34,58 L52,66 L88,18" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M70,18 L88,18 L88,36" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+              <circle cx="34" cy="58" r="5" fill="#fff"/>
+              <circle cx="52" cy="66" r="5" fill="#fff"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+      <div class="right" style="display:flex;flex-direction:column;justify-content:center;">
+        <div class="wordmark">pricetab</div>
+        <div class="tagline">Live crypto charts on every new tab — 60+ coins, market widgets, dark mode.</div>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

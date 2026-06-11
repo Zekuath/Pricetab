@@ -8,11 +8,28 @@
 
 | Metric | Value |
 |--------|-------|
-| **Current Version** | 1.1.1 |
-| **Status** | Published on Chrome Web Store |
-| **Codebase Size** | ~5,600+ lines |
-| **Next Milestone** | Chrome Web Store Launch |
+| **Current Version** | 1.2.0 (staged — not yet uploaded) |
+| **Live Build** | Older version published, ~0 installs |
+| **Status** | Pre-relaunch: copy + visuals + marketing refresh |
+| **Codebase Size** | ~6,400 lines |
+| **Next Milestone** | Relaunch 1.2.0 with new listing |
 | **Security Status** | Input validation complete |
+
+---
+
+## Active Focus
+
+> **Current priority: bug fixes (in progress).** The store/visual/marketing relaunch
+> work is staged and tracked in **Phase 1** below; resume it after the bugs are fixed.
+
+### Bug Fixes (do first)
+| Issue | Status | Notes |
+|-------|--------|-------|
+| Page ticker bar still visible behind open settings | [x] | Added `showSettings` to ticker render guard (`src/app.js`) |
+| Settings panel resizes/jumps between tabs (click target moves) | [x] | `SettingsCard` now fixed height + flex column; `TabContent` scrolls internally |
+| Widgets popped in instantly when enabled — no entrance animation | [x] | Shared `widgetAppear` fade+rise on `WidgetCard`; widgets enabled in settings defer mounting (`pendingWidgetReveal`) so the animation plays on panel close |
+| Conditional sub-settings popped in/out instantly (e.g. Ticker Format, Page Ticker Position) | [x] | Shared `SettingReveal` with `open` prop — smooth fade + accordion expand AND collapse (always mounted, CSS transition) |
+| Collapsible/dropdown sections in settings (smooth expand) | [ ] | Enhancement — decide which items become dropdowns |
 
 ---
 
@@ -28,7 +45,7 @@ Core functionality that has been implemented and tested.
 - [x] Price change percentage with color coding
 
 ### Cryptocurrency Support
-- [x] 75+ cryptocurrencies available
+- [x] 60+ cryptocurrencies available
 - [x] 4 default coins (BTC, ETH, XRP, LTC)
 - [x] Coin search functionality in settings
 - [x] Custom coin list per user
@@ -75,11 +92,14 @@ Core functionality that has been implemented and tested.
 - [x] Market Overview widget (total MCap + volume)
 - [x] BTC Halving Countdown widget
 - [x] RSI Widget (14-period, coin-specific)
-- [x] Funding Rate widget (Binance Futures)
-- [x] Long/Short Ratio widget (Binance Futures)
-- [x] Open Interest widget (Binance Futures)
+- [x] Funding Rate widget (OKX)
+- [x] Long/Short Ratio widget (Bybit)
+- [x] Open Interest widget (OKX)
 - [x] Liquidations widget (OKX Public API)
-- [x] Altcoin Season Index widget (CoinGecko)
+- [x] Altcoin Season Index widget (Coinlore)
+- [x] Watchlist heatmap widget
+- [x] Top Movers (24h) widget
+- [x] One-click widget presets (Holder / Trader / Minimal)
 - [x] Enable/disable widgets from settings
 - [x] Drag-and-drop widget reordering
 - [x] Hide-all / show-all widgets toggle button
@@ -92,32 +112,37 @@ Core functionality that has been implemented and tested.
 
 ### 1.1 Store Visual Assets
 
-| Task | Status | Effort | Owner |
-|------|--------|--------|-------|
-| Screenshots (9 total) | [x] | Low | Done |
-| Small promotional tile (440x280) | [x] | Medium | Done |
-| Large promotional tile (920x680) | [x] | Medium | Done |
-| Marquee banner (1400x560) | [x] | Medium | Done |
+> **Old screenshots are outdated** — they predate the 1.1.x widget panel + ticker bar.
+> Must be re-captured from the running 1.2.0 build before relaunch.
+> Mockup/templating tools live in `assets/mockups/` (see its `README.md` for export steps).
 
-**Assets Location:**
-- Screenshots: `assets/screenshots/1-9.png`
-- Small Tile: `assets/promotional/Small Tile.png`
-- Large Tile: `assets/promotional/Large Tile.png`
-- Marquee: `assets/promotional/Marquee.png`
+| Task | Status | Effort | Notes |
+|------|--------|--------|-------|
+| Capture fresh screenshots (1.2.0, widgets/ticker visible) | [x] | Medium | 6 done → `assets/screenshots/01-06`; raw in `assets/mockups/raw/` |
+| Wrap screenshots in caption frames (1280×800) | [x] | Low | `assets/mockups/store-frames.html` |
+| Re-export Small Tile (440×280) | [ ] | Low | `assets/mockups/promo-tiles.html` (current tiles kept) |
+| Re-export Large Tile (920×680) | [ ] | Low | `assets/mockups/promo-tiles.html` (current tiles kept) |
+| Re-export Marquee (1400×560) | [ ] | Low | `assets/mockups/promo-tiles.html` (current tiles kept) |
+| Mockup/template HTML created | [x] | Medium | `assets/mockups/store-frames.html` + `promo-tiles.html` |
+
+**Asset status:**
+- Screenshots: `assets/screenshots/01-hero … 06-themes.png` (fresh, 1.2.0)
+- Promo tiles: `assets/promotional/*.png` (kept)
 
 ### 1.2 Store Listing Content
 
 | Task | Status | Effort | Notes |
 |------|--------|--------|-------|
-| Write 132-character summary | [x] | Low | See `docs/STORE_DESCRIPTION.md` |
-| Write detailed description (2000+ chars) | [x] | Medium | See `docs/STORE_DESCRIPTION.md` |
-| Fix keyword spam (CWS policy compliance) | [x] | Low | Removed coin/currency lists |
+| Rewrite extension name (SEO: "new tab") | [x] | Low | `manifest.json` + `STORE_DESCRIPTION.md` |
+| Write 132-character summary | [x] | Low | 126 chars — `docs/STORE_DESCRIPTION.md` |
+| Rewrite detailed description (trust-first) | [x] | Medium | `docs/STORE_DESCRIPTION.md` |
+| Fix keyword spam (CWS policy compliance) | [x] | Low | No coin/currency lists |
 | Select category: Productivity | [x] | Low | Productivity |
-| Add privacy policy URL | [~] | Low | `privacy.html` created — needs hosting (GitHub Pages) + URL in CWS field |
-| Setup support email | [ ] | Low | - |
+| Host privacy policy + add URL in CWS field | [~] | Low | `privacy.html` exists — needs GitHub Pages hosting |
+| Setup support email | [ ] | Low | Add in CWS dashboard |
 | Prepare FAQ responses | [ ] | Low | Common questions |
 
-**Store Description:** See `docs/STORE_DESCRIPTION.md` for ready-to-copy content.
+**Store Description:** See `docs/STORE_DESCRIPTION.md` (single canonical source — never copy elsewhere).
 
 ### 1.3 Pre-Launch Quality Assurance
 
@@ -133,7 +158,7 @@ Core functionality that has been implemented and tested.
 #### Functional Testing
 | Test Case | Status | Priority |
 |-----------|--------|----------|
-| All 75+ coins load correctly | [ ] | High |
+| All 60+ coins load correctly | [ ] | High |
 | All 6 time periods work | [ ] | High |
 | All 37 currencies display correctly | [ ] | High |
 | Theme switching (auto/light/dark) | [ ] | High |
@@ -160,6 +185,49 @@ Core functionality that has been implemented and tested.
 | Check CSP compliance | [x] | No inline scripts |
 | Validate icon sizes (16, 48, 128) | [x] | All present |
 | Test manifest.json validity | [x] | Chrome validates |
+
+### 1.5 Marketing & Launch
+
+> Full step-by-step plan with copy-paste templates: **`docs/MARKETING_LAUNCH.md`**.
+> Goal: first real installs + first 10 reviews (4.5★+) for the ~0-install listing.
+
+#### Phase 0 — Store readiness (before telling anyone)
+| Task | Status | Priority |
+|------|--------|----------|
+| Upload 1.2.0 with new title + description | [ ] | Critical |
+| Host privacy policy + URL in CWS Privacy field | [ ] | Critical |
+| Add support email in dashboard | [ ] | High |
+| Replace screenshots (first 3 = one benefit each) | [ ] | High |
+| Self-test on a clean Chrome profile for a day | [ ] | Medium |
+
+#### Phase 1 — Seed first reviews (week 1)
+| Task | Status | Priority |
+|------|--------|----------|
+| Ask 8–12 contacts for honest reviews | [ ] | Critical |
+| Post in 2–3 communities you already belong to | [ ] | High |
+| Reach 5+ reviews, 4.5★+ before public launch | [ ] | High |
+
+#### Phase 2 — Owned channels (week 1–2)
+| Task | Status | Priority |
+|------|--------|----------|
+| Polish GitHub README (hero shot, pitch, install link) | [ ] | High |
+| Add repo topics for organic discovery | [ ] | Medium |
+| X/Twitter launch thread (template ready) | [ ] | Medium |
+
+#### Phase 3 — Launch pushes (week 2–3, spaced out)
+| Task | Status | Priority |
+|------|--------|----------|
+| Product Hunt launch (Tue–Thu, 12:01 AM PT) | [ ] | High |
+| Reddit value-first posts (r/SideProject, r/chrome_extensions) | [ ] | Medium |
+| Show HN post | [ ] | Medium |
+| Indie Hackers "I shipped this" | [ ] | Low |
+
+#### Phase 4 — Ongoing (week 3+)
+| Task | Status | Priority |
+|------|--------|----------|
+| Reply to every store review | [ ] | High |
+| Ship a small update every few weeks | [ ] | Medium |
+| Track installs weekly, double down on best channel | [ ] | Medium |
 
 ---
 
@@ -279,14 +347,16 @@ Core functionality that has been implemented and tested.
 | Widget | Status | API Source |
 |--------|--------|------------|
 | Fear & Greed Index | [x] Done | Alternative.me |
-| Market Overview (MCap + Volume) | [x] Done | CoinGecko |
-| BTC Halving Countdown | [x] Done | Calculated |
+| Market Overview (MCap + Volume + Dominance) | [x] Done | Coinlore |
+| BTC Halving Countdown | [x] Done | mempool.space |
 | RSI (14-period) | [x] Done | Coinbase history |
-| Funding Rate | [x] Done | Binance Futures |
-| Long/Short Ratio | [x] Done | Binance Futures |
-| Open Interest | [x] Done | Binance Futures |
+| Funding Rate | [x] Done | OKX |
+| Long/Short Ratio | [x] Done | Bybit |
+| Open Interest | [x] Done | OKX |
 | Liquidations (24h) | [x] Done | OKX Public API |
-| Altcoin Season Index | [x] Done | CoinGecko Global |
+| Altcoin Season Index | [x] Done | Coinlore Global |
+| Watchlist heatmap | [x] Done | Coinbase (sweep) |
+| Top Movers (24h) | [x] Done | Coinbase (sweep) |
 
 ### 3.4 Additional Widgets (Planned)
 
@@ -475,8 +545,10 @@ What needs attention:
 | [VISION.md](VISION.md) | Long-term feature vision |
 | [CHANGELOG.md](CHANGELOG.md) | Version history |
 | [PRIVACY.md](PRIVACY.md) | Privacy policy |
-| [STORE_DESCRIPTION.md](STORE_DESCRIPTION.md) | Web Store listing content |
+| [STORE_DESCRIPTION.md](STORE_DESCRIPTION.md) | Web Store listing content (canonical) |
 | [STORE_ASSETS.md](STORE_ASSETS.md) | Web Store asset specs |
+| [MARKETING_LAUNCH.md](MARKETING_LAUNCH.md) | Launch checklist + copy templates |
+| [../assets/mockups/README.md](../assets/mockups/README.md) | Promo tile + screenshot export tools |
 
 ---
 

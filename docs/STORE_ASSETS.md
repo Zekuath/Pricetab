@@ -13,8 +13,9 @@ This document explains how to create all required assets for publishing PriceTab
 - [x] Source icon - `assets/icons/icon.png`
 
 ### Screenshots (✅ COMPLETED)
-- [x] 9 screenshots created - `assets/screenshots/1-9.png`
-- [x] Recommended: 3-5 screenshots ✓ (9 provided)
+- [x] 6 store screenshots (1280×800) - `assets/screenshots/01-hero.png` … `06-themes.png`
+- [x] Upload order + on-image captions documented in `assets/screenshots/README.md`
+- [x] First image is the promotional hero
 
 ### Promotional Images (✅ COMPLETED)
 - [x] Small Tile: 440x280 - `assets/promotional/Small Tile.png`
@@ -25,10 +26,10 @@ This document explains how to create all required assets for publishing PriceTab
 
 ## 📸 Screenshot Guide
 
-> ⚠️ **All existing screenshots (1-6, 9) are outdated — taken before the widget system.**
-> Screenshots 7 and 8 are missing entirely. Retake all of them.
+> ✅ **Current screenshots are fresh (1.2.0)** — composed from the live UI via
+> `assets/mockups/store-frames.html` + `assets/mockups/raw/`. Re-capture from there if features change.
 
-### What to Capture (v1.1.0)
+### What to Capture (v1.2.0)
 
 Take 5 screenshots at **1280x800**. Minimum 1, recommended 5.
 
@@ -218,12 +219,12 @@ Subtext: "Real-time crypto price charts" - 14px, #CCCCCC
 
 **Name** (required, max 75 characters):
 ```
-PriceTab - Live Crypto Price Charts
+PriceTab - Crypto Charts on Every New Tab
 ```
 
-**Summary** (required, max 132 characters):
+**Summary** (required, max 132 characters) — keep in sync with `manifest.json` and `STORE_DESCRIPTION.md`:
 ```
-Real-time cryptocurrency price charts on every new tab. Track 75+ coins with customizable charts and persistent preferences.
+Every new tab opens a live crypto chart. Watch your coins, spot the top movers, and read 9 market signals. Free, no account.
 ```
 
 **Description** (required, max 16,000 characters):

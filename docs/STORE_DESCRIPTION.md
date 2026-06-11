@@ -9,96 +9,81 @@
 ## Extension Name
 
 ```
-PriceTab - Live Crypto Price Charts
+PriceTab - Crypto Charts on Every New Tab
 ```
 
-**Character count:** 33/75
+**Character count:** 41/75 — also set as `name` in `manifest.json` (the store title is derived from the manifest name).
 
 ---
 
 ## Short Description (Summary)
 
 ```
-Real-time cryptocurrency charts on every new tab. Track 75+ coins with beautiful visualizations. Privacy-first, no account needed.
+Every new tab opens a live crypto chart. Watch your coins, spot the top movers, and read 9 market signals. Free, no account.
 ```
 
-**Character count:** 130/132
+**Character count:** 124/132 — also mirrored in `manifest.json` `description`.
 
 ---
 
 ## Detailed Description
 
 ```
-Transform every new tab into a live cryptocurrency dashboard.
+Turn every new browser tab into a live cryptocurrency dashboard.
 
-PriceTab brings real-time price charts for 75+ cryptocurrencies directly to your browser. Beautiful D3.js visualizations, instant loading, and zero configuration required.
+New to crypto or a seasoned trader, PriceTab puts the market in front of you with zero effort. Instead of a blank page, every new tab opens a clean, real-time price chart. No account, no sign-up, nothing to configure — just install it and open a tab.
 
-KEY FEATURES
+WHAT IT DOES (in plain words)
+Every time you open a new tab, PriceTab shows the live price of a coin you choose — for example Bitcoin (BTC) or Ethereum (ETH) — drawn as a smooth, easy-to-read chart. Click the price to flip to the next coin on your list. That is it. The market is always one tab away.
 
-Real-Time Price Charts
-Live data updated every 30 seconds. Smooth, interactive charts powered by D3.js with elegant animations.
+PICK YOUR COINS
+Choose from 60+ popular cryptocurrencies — Bitcoin, Ethereum, Solana, XRP and many more. Add the ones you care about and drag to reorder them. Your list is saved and remembered every time.
 
-75+ Cryptocurrencies
-From major market leaders to emerging altcoins, track over 75 different cryptocurrencies. All data sourced directly from the Coinbase API.
+SEE ANY TIMEFRAME
+Switch between 1 Hour, 1 Day, 1 Week, 1 Month, 1 Year and All Time with one click — see today's move or the full history at a glance.
 
-6 Time Periods
-Track price movements across 1 Hour, 1 Day, 1 Week, 1 Month, 1 Year, and All Time views.
+YOUR WATCHLIST, AT A GLANCE
+An optional panel shows all your coins as a colour-coded grid: green when a coin is up, red when it is down — so you can read the whole market in a second. A "Top Movers" panel highlights the biggest gainers and losers of the day.
 
-Live Tab Title
-See current price right in your browser tab - even while working in other tabs. Updates automatically with the coin symbol, price, and 24h change.
+PRICE IN YOUR TAB TITLE
+PriceTab can show the current price and 24-hour change in the browser tab itself, so you can keep an eye on the market even while you work in another tab.
 
-Dark & Light Themes
-Auto-detects your system preference. Manual override available for dark, light, or auto modes.
+MARKET SIGNALS (optional — only if you want them)
+Switch on extra panels whenever you are ready for more:
+- Fear & Greed Index — is the market fearful or greedy today?
+- Market Overview — total market size and Bitcoin / Ethereum dominance.
+- Bitcoin Halving Countdown — time until the next Bitcoin halving.
+- For active traders: RSI, funding rate, long/short ratio, open interest, liquidations and an altcoin-season index.
+New here? Leave them off and PriceTab stays clean and simple. Want depth? One click turns them on.
 
-37 Fiat Currencies
-View prices in your local currency. Supports 37 major world currencies including most G20 nations.
+ONE-CLICK SETUP
+Not sure where to start? Pick a preset: "Holder" for a simple watchlist view, "Trader" for the pro signals, or "Minimal" for just the essentials.
 
-Drag & Drop Reordering
-Customize your coin order with intuitive drag-and-drop. Your preferences are saved automatically.
+MADE THE WAY YOU LIKE
+- Dark, light, or automatic theme (follows your system).
+- Show prices in your local currency — 37 supported — with adjustable decimals.
+- Turn the chart's green/red fill on or off for a cleaner look.
+- Set how often prices refresh.
+Everything you choose is saved on your own computer and remembered next time.
 
-Market Data Widgets
-Optional side panel with real-time market data: Fear & Greed Index, BTC Halving Countdown, Market Overview, RSI, Funding Rate, Long/Short Ratio, Open Interest, Liquidations, and Altcoin Season Index. Enable only what you want from settings.
-
-PRIVACY FIRST
-
-- No account required
-- No data collection
-- No analytics or tracking
-- All preferences stored locally in your browser
-- Open source friendly
-
-HOW TO USE
-
-1. Install the extension
-2. Open any new tab - your crypto dashboard appears
-3. Click the price to cycle through your coins
-4. Click the gear icon to customize your watchlist
-5. Use time period buttons to change the chart view
-
-WIDE CRYPTOCURRENCY SUPPORT
-
-Track over 75 different cryptocurrencies sourced directly from the Coinbase API. Coverage expands automatically as Coinbase adds new assets — no extension updates needed.
-
-TECHNICAL DETAILS
-
-- Manifest V3 compliant
-- Zero permissions required
-- All JavaScript bundled locally — no external scripts
-- Lightweight and fast
+PRIVATE BY DESIGN
+PriceTab asks for ZERO permissions. It cannot read your browsing history or your other tabs, because it never requests access. There is no account, no analytics and no tracking. Your settings live only in your browser, and prices come straight from public market data.
 
 100% FREE
+No ads. No paid tier. No in-app purchases. Just a fast, clean crypto dashboard on every new tab.
 
-No premium features, no ads, no in-app purchases. All features are available to everyone.
+HOW TO START
+1. Click "Add to Chrome".
+2. Open any new tab — your chart appears instantly.
+3. Click the price to switch between your coins.
+4. Open settings (the gear icon, top right) to add coins and turn on widgets.
 
-FEEDBACK & SUPPORT
+Questions or ideas? Find us on GitHub: github.com/zekuath/pricetab
 
-Found a bug? Have a feature request? We'd love to hear from you!
-GitHub: github.com/zekuath/pricetab
-
-Disclaimer: This extension is for informational purposes only and does not constitute financial advice. Cryptocurrency investments carry risk. Always do your own research.
+Disclaimer: PriceTab is for information only and is not financial advice. Cryptocurrency prices are volatile and risky. Always do your own research.
 ```
 
-**Character count:** ~2,100/16,000
+**Character count:** ~3,300/16,000
 
 ---
 
@@ -176,8 +161,8 @@ Before submitting, verify:
 - [ ] Description has no broken links
 - [ ] Privacy policy URL is live and accessible
 - [ ] All placeholders replaced with actual values
-- [ ] Screenshots uploaded (1-5 required)
-- [ ] Promotional images uploaded
+- [ ] Screenshots uploaded in order — `01-hero` (promotional) FIRST, then `02`–`06`
+- [ ] Promotional images uploaded (`assets/promotional/`)
 - [ ] Category selected
 - [ ] Language set
 
@@ -190,7 +175,7 @@ Before submitting, verify:
 | Icon 16x16 | `assets/icons/icon16.png` | 16x16 |
 | Icon 48x48 | `assets/icons/icon48.png` | 48x48 |
 | Icon 128x128 | `assets/icons/icon128.png` | 128x128 |
-| Screenshots | `assets/screenshots/1-9.png` | 1280x800 |
+| Screenshots (upload in order; see `assets/screenshots/README.md`) | `assets/screenshots/01-hero.png` … `06-themes.png` | 1280x800 |
 | Small Tile | `assets/promotional/Small Tile.png` | 440x280 |
 | Large Tile | `assets/promotional/Large Tile.png` | 920x680 |
 | Marquee | `assets/promotional/Marquee.png` | 1400x560 |

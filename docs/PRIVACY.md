@@ -50,26 +50,33 @@ All APIs used by PriceTab are **public** — no authentication or accounts requi
 - **Purpose**: Crypto Fear & Greed Index widget
 - **Data Sent**: No user data — plain GET request
 
-### Binance Futures API (optional widgets)
-
-- **Endpoint**: `https://fapi.binance.com/`
-- **Purpose**: Funding rate, Long/Short ratio, Open Interest widgets
-- **Data Sent**: Coin symbol and period — no user data
-- **Privacy**: See [Binance Privacy Policy](https://www.binance.com/en/privacy)
-
-### OKX Public API (optional widget)
+### OKX Public API (optional widgets)
 
 - **Endpoint**: `https://www.okx.com/api/v5/public/`
-- **Purpose**: Liquidations widget (24h volume)
+- **Purpose**: Funding rate, Open Interest, and Liquidations widgets
 - **Data Sent**: Coin pair — no user data
 - **Privacy**: See [OKX Privacy Policy](https://www.okx.com/privacy)
 
-### CoinGecko Public API (optional widgets)
+### Bybit Public API (optional widget)
 
-- **Endpoint**: `https://api.coingecko.com/api/v3/`
-- **Purpose**: Market Overview (total MCap/volume) and Altcoin Season Index (BTC dominance)
+- **Endpoint**: `https://api.bybit.com/v5/market/`
+- **Purpose**: Long/Short ratio widget
+- **Data Sent**: Coin symbol — no user data
+- **Privacy**: See [Bybit Privacy Policy](https://www.bybit.com/en/privacy)
+
+### Coinlore Public API (optional widgets)
+
+- **Endpoint**: `https://api.coinlore.com/api/`
+- **Purpose**: Market Overview (total market cap/volume, BTC/ETH dominance) and Altcoin Season Index
 - **Data Sent**: No user data — plain GET requests
-- **Privacy**: See [CoinGecko Privacy Policy](https://www.coingecko.com/en/privacy)
+- **Privacy**: See [Coinlore](https://www.coinlore.com)
+
+### mempool.space API (optional widget)
+
+- **Endpoint**: `https://mempool.space/api/`
+- **Purpose**: Bitcoin Halving Countdown (current block height)
+- **Data Sent**: No user data — plain GET request
+- **Privacy**: See [mempool.space Privacy Policy](https://mempool.space/privacy-policy)
 
 ### Local Vendor Files
 

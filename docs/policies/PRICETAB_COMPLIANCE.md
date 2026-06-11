@@ -130,7 +130,7 @@ And 55+ more...
 ```
 WIDE CRYPTOCURRENCY SUPPORT
 
-Track over 75 cryptocurrencies from the Coinbase API. Whether you
+Track over 60 cryptocurrencies from the Coinbase API. Whether you
 follow major coins like Bitcoin and Ethereum, explore DeFi protocols,
 or keep an eye on meme coins, PriceTab has you covered. New coins
 are added regularly based on Coinbase availability.

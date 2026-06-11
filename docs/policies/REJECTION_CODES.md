@@ -72,7 +72,7 @@ WRONG: Long coin lists separated by dots or commas
 
 **Correct Approach:**
 ```
-CORRECT: "Track over 75 cryptocurrencies from the Coinbase API"
+CORRECT: "Track over 60 cryptocurrencies from the Coinbase API"
 CORRECT: "Monitor the coins you care about with real-time price charts"
 CORRECT: "Support for major, mid-cap, and emerging cryptocurrencies"
 ```
@@ -259,7 +259,7 @@ executeCommands(commands);
 **Solution:**
 1. Remove long coin lists
 2. Rewrite description in natural language
-3. Example: "Track over 75 cryptocurrencies"
+3. Example: "Track over 60 cryptocurrencies"
 
 ---
 

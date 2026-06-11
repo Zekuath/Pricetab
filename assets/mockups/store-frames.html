@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>PriceTab — Store Screenshot Frames (1280×800)</title>
+<link rel="stylesheet" href="/vendor/roboto-mono.css" />
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root { --green: #34d399; --muted: #9a9a9a; }
+  body {
+    background: #161616; padding: 40px;
+    font-family: "Roboto Mono", ui-monospace, monospace;
+    display: flex; flex-direction: column; gap: 44px; align-items: flex-start;
+  }
+  .hint { color: #888; font-size: 12px; margin-bottom: 8px; letter-spacing: .4px; }
+  .frame { width: 1280px; height: 800px; position: relative; overflow: hidden; background: #000; }
+
+  /* ---------- HERO ---------- */
+  .hero { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .hero .bg {
+    position: absolute; inset: 0;
+    background: url('/assets/mockups/raw/dashboard.png') center/cover no-repeat;
+    opacity: 0.16;
+  }
+  .hero .bg::after {
+    content: ""; position: absolute; inset: 0;
+    background: radial-gradient(circle at 50% 42%, rgba(0,0,0,0.35), #000 72%);
+  }
+  .hero .brand { display: flex; align-items: center; gap: 26px; z-index: 2; }
+  .hero .brand img { width: 96px; height: 96px; border-radius: 22px; }
+  .hero .wm { font-size: 80px; font-weight: 500; color: #fff; letter-spacing: -2px; }
+  .hero .tag { z-index: 2; color: #e3e3e3; font-size: 27px; margin-top: 26px; font-weight: 300; }
+  .hero .bullets { z-index: 2; display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin-top: 44px; max-width: 1000px; }
+  .hero .pill {
+    border: 1px solid rgba(255,255,255,0.18); border-radius: 999px;
+    padding: 11px 20px; font-size: 17px; color: #ededed; background: rgba(255,255,255,0.02);
+  }
+  .hero .pill b { color: var(--green); font-weight: 500; }
+
+  /* ---------- FEATURE FRAMES ---------- */
+  .feat { background: radial-gradient(120% 120% at 50% 0%, #0f0f0f 0%, #000 58%); display: flex; flex-direction: column; }
+  .cap { flex: 0 0 146px; padding: 0 60px; display: flex; flex-direction: column; justify-content: center; border-bottom: 1px solid rgba(255,255,255,0.06); }
+  .cap .row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .cap .row img { width: 26px; height: 26px; border-radius: 7px; }
+  .cap .kicker { color: var(--green); font-size: 14px; letter-spacing: 2.5px; text-transform: uppercase; }
+  .cap .title { color: #fff; font-size: 35px; font-weight: 500; letter-spacing: -0.5px; line-height: 1.15; }
+  .shot {
+    flex: 1; margin: 26px 44px 40px; border-radius: 12px; overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.10);
+    background-color: #000; background-size: cover; background-position: top center; background-repeat: no-repeat;
+  }
+</style>
+</head>
+<body>
+
+  <!-- 01 HERO -->
+  <div>
+    <div class="hint">01-hero — right-click .frame → "Capture node screenshot"</div>
+    <div class="frame hero" id="f01">
+      <div class="bg"></div>
+      <div class="brand">
+        <img src="/assets/icons/icon128.png" alt="" />
+        <span class="wm">pricetab</span>
+      </div>
+      <div class="tag">Live crypto charts on every new tab.</div>
+      <div class="bullets">
+        <span class="pill"><b>60+</b> coins</span>
+        <span class="pill"><b>9</b> market signals</span>
+        <span class="pill">Watchlist &amp; top movers</span>
+        <span class="pill">Live price in your tab title</span>
+        <span class="pill">Dark / light / auto</span>
+        <span class="pill"><b>Zero</b> permissions</span>
+        <span class="pill"><b>100%</b> free</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 02 DASHBOARD -->
+  <div>
+    <div class="hint">02-dashboard</div>
+    <div class="frame feat" id="f02">
+      <div class="cap">
+        <div class="row"><img src="/assets/icons/icon128.png" alt="" /><span class="kicker">New tab → instant dashboard</span></div>
+        <div class="title">Every new tab is a live crypto chart</div>
+      </div>
+      <div class="shot" style="background-image:url('/assets/mockups/raw/dashboard.png')"></div>
+    </div>
+  </div>
+
+  <!-- 03 WATCHLIST + MOVERS -->
+  <div>
+    <div class="hint">03-watchlist-movers</div>
+    <div class="frame feat" id="f03">
+      <div class="cap">
+        <div class="row"><img src="/assets/icons/icon128.png" alt="" /><span class="kicker">Make it yours</span></div>
+        <div class="title">Your watchlist + the day's top movers</div>
+      </div>
+      <div class="shot" style="background-image:url('/assets/mockups/raw/wl-movers.png')"></div>
+    </div>
+  </div>
+
+  <!-- 04 SIGNALS -->
+  <div>
+    <div class="hint">04-signals</div>
+    <div class="frame feat" id="f04">
+      <div class="cap">
+        <div class="row"><img src="/assets/icons/icon128.png" alt="" /><span class="kicker">Pro market data</span></div>
+        <div class="title">9 market signals traders actually watch</div>
+      </div>
+      <div class="shot" style="background-image:url('/assets/mockups/raw/signals.png')"></div>
+    </div>
+  </div>
+
+  <!-- 05 PRESETS -->
+  <div>
+    <div class="hint">05-presets</div>
+    <div class="frame feat" id="f05">
+      <div class="cap">
+        <div class="row"><img src="/assets/icons/icon128.png" alt="" /><span class="kicker">One-click setup</span></div>
+        <div class="title">Holder or Trader — set up in a tap</div>
+      </div>
+      <div class="shot" style="background-image:url('/assets/mockups/raw/presets.png')"></div>
+    </div>
+  </div>
+
+  <!-- 06 THEMES -->
+  <div>
+    <div class="hint">06-themes</div>
+    <div class="frame feat" id="f06">
+      <div class="cap">
+        <div class="row"><img src="/assets/icons/icon128.png" alt="" /><span class="kicker">Themes</span></div>
+        <div class="title">Dark, light, or auto — your call</div>
+      </div>
+      <div class="shot" style="background-image:url('/assets/mockups/raw/light.png')"></div>
+    </div>
+  </div>
+
+</body>
+</html>

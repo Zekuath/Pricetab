@@ -108,7 +108,9 @@ const API_SPOT = "spot";
 
 /* WIDGET API ENDPOINTS */
 const FEAR_GREED_API = "https://api.alternative.me/fng/?limit=1";
-const COINGECKO_GLOBAL_API = "https://api.coingecko.com/api/v3/global";
+// Coinlore global market data — CORS-enabled (sends Access-Control-Allow-Origin: *),
+// unlike CoinGecko which rate-limits browser/extension origins and then fails CORS.
+const COINLORE_GLOBAL_API = "https://api.coinlore.com/api/global/";
 const MEMPOOL_API = "https://mempool.space/api/blocks/tip/height";
 
 /* FEAR & GREED GAUGE CONSTANTS */
@@ -139,12 +141,12 @@ const MAX_CACHED_COINS = 10; // Only cache first 10 coins in rotation
 const MAX_COINS = 20; // Hard limit on coin list size
 const cache = new Map();
 
-// Separate cache for page ticker (all 75+ coins, bypasses the 10-coin limit)
+// Separate cache for page ticker (all suggested coins, bypasses the 10-coin limit)
 const pageTickerCache = new Map(); // key: "COIN-CURRENCY" → { price, timestamp }
-const PAGE_TICKER_TTL = 30000; // 30s TTL per coin
-const PAGE_TICKER_BATCH_SIZE = 5; // concurrent requests per batch
-const PAGE_TICKER_BATCH_DELAY = 300; // ms between batches
-const PAGE_TICKER_REFRESH_MS = 60000; // full refresh every 60s
+const PAGE_TICKER_TTL = 60000; // 60s TTL per coin (still < refresh, so prices update)
+const PAGE_TICKER_BATCH_SIZE = 4; // coins per batch (each does 2 reqs) — keeps bursts gentle
+const PAGE_TICKER_BATCH_DELAY = 500; // ms between batches — avoids hammering Coinbase
+const PAGE_TICKER_REFRESH_MS = 120000; // full refresh every 2 min (background ticker, no need faster)
 
 const getCacheKey = (coin, period, currency) => `${coin}-${period}-${currency}`;
 
@@ -310,16 +312,18 @@ const fetchMarketOverview = async () => {
   if (cached) return cached;
 
   try {
-    const response = await fetch(COINGECKO_GLOBAL_API);
-    if (!response.ok) throw new Error("CoinGecko API error");
+    const response = await fetch(COINLORE_GLOBAL_API);
+    if (!response.ok) throw new Error("Coinlore API error");
 
     const json = await response.json();
+    const g = Array.isArray(json) ? json[0] : null;
+    if (!g) return null;
     const data = {
-      totalMarketCap: json.data.total_market_cap.usd,
-      totalVolume: json.data.total_volume.usd,
-      btcDominance: json.data.market_cap_percentage.btc,
-      ethDominance: json.data.market_cap_percentage.eth,
-      marketCapChange24h: json.data.market_cap_change_percentage_24h_usd,
+      totalMarketCap: g.total_mcap,
+      totalVolume: g.total_volume,
+      btcDominance: parseFloat(g.btc_d),
+      ethDominance: parseFloat(g.eth_d),
+      marketCapChange24h: parseFloat(g.mcap_change),
     };
 
     setWidgetCache("marketOverview", data);
@@ -401,6 +405,9 @@ const fetchHalvingData = async () => {
 
 const DEFAULT_COIN_OPTIONS = ["BTC", "ETH", "XRP", "LTC"];
 
+// Only coins Coinbase actually serves at {COIN}-USD via the public price API.
+// Pairs that 404 (TRX, OKB, THETA, FTM, DYDX, KAS, GMX, XDC, NEO, FXS, RUNE,
+// CELO, AGIX, WOO, CFX, ORDI) were removed — they only produced console errors.
 const SUGGESTED_COINS = [
   "BTC",
   "ETH",
@@ -412,7 +419,6 @@ const SUGGESTED_COINS = [
   "DOGE",
   "ADA",
   "AVAX",
-  "TRX",
   "LINK",
   "DOT",
   "MATIC",
@@ -428,7 +434,6 @@ const SUGGESTED_COINS = [
   "ARB",
   "STX",
   "NEAR",
-  "OKB",
   "IMX",
   "ICP",
   "VET",
@@ -442,46 +447,32 @@ const SUGGESTED_COINS = [
   "XTZ",
   "EGLD",
   "FLOW",
-  "THETA",
   "AXS",
   "RNDR",
-  "FTM",
   "RPL",
   "OP",
-  "DYDX",
-  "KAS",
   "TIA",
   "INJ",
-  "GMX",
-  "XDC",
   "ENS",
-  "NEO",
   "ZEC",
   "KSM",
   "CHZ",
   "CAKE",
   "CRV",
-  "FXS",
   "COMP",
   "SNX",
-  "RUNE",
   "1INCH",
   "BAT",
   "KAVA",
-  "CELO",
   "MINA",
   "LDO",
   "SUI",
-  "AGIX",
   "PEPE",
   "SEI",
-  "WOO",
   "GALA",
   "ILV",
-  "CFX",
   "BLUR",
   "PYTH",
-  "ORDI",
 ];
 
 const PERIOD_OPTIONS = [
@@ -571,6 +562,8 @@ const THEME_STORAGE_KEY = "crypto_chart_theme";
 const REFRESH_INTERVAL_STORAGE_KEY = "crypto_chart_refresh_interval";
 const DECIMAL_PLACES_STORAGE_KEY = "crypto_chart_decimal_places";
 const SEPARATOR_FORMAT_STORAGE_KEY = "crypto_chart_separator_format";
+const CHART_COLOR_STORAGE_KEY = "crypto_chart_chart_color"; // green/red area fill on/off
+const DEFAULT_CHART_COLOR = true;
 const CURRENCY_STORAGE_KEY = "crypto_chart_currency";
 const TICKER_STORAGE_KEY = "crypto_chart_ticker_enabled";
 const TICKER_FORMAT_STORAGE_KEY = "crypto_chart_ticker_format";
@@ -590,8 +583,10 @@ const TICKER_FORMAT_OPTIONS = [
 // Page ticker constants
 const PAGE_TICKER_STORAGE_KEY = "crypto_chart_page_ticker_enabled";
 const PAGE_TICKER_POSITION_STORAGE_KEY = "crypto_chart_page_ticker_position";
+const PAGE_TICKER_COLLAPSED_STORAGE_KEY = "crypto_chart_page_ticker_collapsed";
 const DEFAULT_PAGE_TICKER_ENABLED = false;
 const DEFAULT_PAGE_TICKER_POSITION = "bottom"; // 'top' or 'bottom'
+const DEFAULT_PAGE_TICKER_COLLAPSED = false;
 
 // Theme helper functions
 const loadThemeFromStorage = () => {
@@ -804,6 +799,42 @@ const savePageTickerPositionToStorage = (position) => {
   }
 };
 
+const loadPageTickerCollapsedFromStorage = () => {
+  try {
+    const saved = localStorage.getItem(PAGE_TICKER_COLLAPSED_STORAGE_KEY);
+    if (saved !== null) return saved === "true";
+    return DEFAULT_PAGE_TICKER_COLLAPSED;
+  } catch (error) {
+    return DEFAULT_PAGE_TICKER_COLLAPSED;
+  }
+};
+
+const savePageTickerCollapsedToStorage = (collapsed) => {
+  try {
+    localStorage.setItem(PAGE_TICKER_COLLAPSED_STORAGE_KEY, String(collapsed));
+  } catch (error) {
+    // Silently fail
+  }
+};
+
+const loadChartColorFromStorage = () => {
+  try {
+    const saved = localStorage.getItem(CHART_COLOR_STORAGE_KEY);
+    if (saved !== null) return saved === "true";
+    return DEFAULT_CHART_COLOR;
+  } catch (error) {
+    return DEFAULT_CHART_COLOR;
+  }
+};
+
+const saveChartColorToStorage = (enabled) => {
+  try {
+    localStorage.setItem(CHART_COLOR_STORAGE_KEY, String(enabled));
+  } catch (error) {
+    // Silently fail
+  }
+};
+
 /* WIDGET SETTINGS STORAGE */
 const WIDGETS_STORAGE_KEY = "crypto_chart_widgets";
 const HIDDEN_WIDGETS_KEY = "crypto_chart_hidden_widgets";
@@ -826,6 +857,8 @@ const saveHiddenWidgetsToStorage = (hidden) => {
 };
 
 const DEFAULT_WIDGETS = {
+  watchlist: false,
+  topMovers: false,
   fearGreed: false,
   marketOverview: false,
   halvingCountdown: false,
@@ -837,6 +870,37 @@ const DEFAULT_WIDGETS = {
   altcoinSeason: false,
 };
 
+// Shown to brand-new installs only (existing users keep their saved choices).
+// A small, high-signal starter set so the panel demonstrates value on first open.
+const STARTER_WIDGETS = {
+  watchlist: true,
+  fearGreed: true,
+  marketOverview: true,
+};
+
+// One-click widget bundles for the two main audiences (+ a minimal set).
+const WIDGET_PRESETS = {
+  holder: {
+    watchlist: true,
+    topMovers: true,
+    fearGreed: true,
+    marketOverview: true,
+    altcoinSeason: true,
+  },
+  trader: {
+    fearGreed: true,
+    rsiWidget: true,
+    fundingRate: true,
+    longShortRatio: true,
+    openInterest: true,
+    liquidations: true,
+  },
+  minimal: {
+    watchlist: true,
+    fearGreed: true,
+  },
+};
+
 const loadWidgetsFromStorage = () => {
   try {
     const saved = localStorage.getItem(WIDGETS_STORAGE_KEY);
@@ -844,7 +908,8 @@ const loadWidgetsFromStorage = () => {
       const parsed = JSON.parse(saved);
       return { ...DEFAULT_WIDGETS, ...parsed };
     }
-    return DEFAULT_WIDGETS;
+    // New install → seed a curated starter set
+    return { ...DEFAULT_WIDGETS, ...STARTER_WIDGETS };
   } catch (error) {
     return DEFAULT_WIDGETS;
   }
@@ -858,9 +923,15 @@ const saveWidgetsToStorage = (widgets) => {
   }
 };
 
-/* ── COINGLASS / BINANCE WIDGET FETCHERS ─────────────────────────────── */
-const BINANCE_FUTURES = "https://fapi.binance.com";
-const COINGLASS_BASE  = "https://open-api.coinglass.com/public/v2";
+/* ── DERIVATIVES WIDGET FETCHERS (OKX + Bybit) ───────────────────────────
+ * Moved off Binance: its futures API (fapi.binance.com) is geo-blocked in
+ * the US, UK and other regions, so funding/OI/long-short silently failed for
+ * a large share of users. OKX (already used for liquidations) covers funding
+ * + open interest. OKX's long/short lives on its CORS-less "rubik" endpoint,
+ * so that one uses Bybit, whose public API is CORS-enabled.
+ */
+const OKX_API = "https://www.okx.com/api/v5";
+const BYBIT_API = "https://api.bybit.com";
 
 const formatWidgetUsd = (n) => {
   if (n >= 1e9) return "$" + (n / 1e9).toFixed(2) + "B";
@@ -871,18 +942,19 @@ const formatWidgetUsd = (n) => {
 
 const fetchFundingRate = async (coin) => {
   try {
-    const symbol = coin + "USDT";
     const res = await fetch(
-      `${BINANCE_FUTURES}/fapi/v1/fundingRate?symbol=${symbol}&limit=1`,
+      `${OKX_API}/public/funding-rate?instId=${coin}-USDT-SWAP`,
     );
     if (!res.ok) return null;
-    const data = await res.json();
-    if (!Array.isArray(data) || !data.length) return null;
-    const rate = parseFloat(data[0].fundingRate);
+    const json = await res.json();
+    const d = json && json.data && json.data[0];
+    if (!d || d.fundingRate === "" || d.fundingRate == null) return null;
+    const rate = parseFloat(d.fundingRate);
+    if (!isFinite(rate)) return null;
     return {
       rate,
       percent: (rate * 100).toFixed(4),
-      annualized: (rate * 3 * 365 * 100).toFixed(2),
+      annualized: (rate * 3 * 365 * 100).toFixed(2), // funding settles 3x/day
     };
   } catch (e) {
     return null;
@@ -891,16 +963,18 @@ const fetchFundingRate = async (coin) => {
 
 const fetchLongShortRatio = async (coin) => {
   try {
-    const symbol = coin + "USDT";
     const res = await fetch(
-      `${BINANCE_FUTURES}/futures/data/globalLongShortAccountRatio?symbol=${symbol}&period=5m&limit=1`,
+      `${BYBIT_API}/v5/market/account-ratio?category=linear&symbol=${coin}USDT&period=5min&limit=1`,
     );
     if (!res.ok) return null;
-    const data = await res.json();
-    if (!Array.isArray(data) || !data.length) return null;
-    const longPct = (parseFloat(data[0].longAccount) * 100).toFixed(1);
-    const shortPct = (parseFloat(data[0].shortAccount) * 100).toFixed(1);
-    return { longPct, shortPct };
+    const json = await res.json();
+    const d = json && json.result && json.result.list && json.result.list[0];
+    if (!d) return null;
+    // buyRatio / sellRatio are fractions that sum to 1
+    const long = parseFloat(d.buyRatio);
+    const short = parseFloat(d.sellRatio);
+    if (!isFinite(long) || !isFinite(short)) return null;
+    return { longPct: (long * 100).toFixed(1), shortPct: (short * 100).toFixed(1) };
   } catch (e) {
     return null;
   }
@@ -908,17 +982,15 @@ const fetchLongShortRatio = async (coin) => {
 
 const fetchOpenInterest = async (coin) => {
   try {
-    const symbol = coin + "USDT";
-    const [oiRes, priceRes] = await Promise.all([
-      fetch(`${BINANCE_FUTURES}/fapi/v1/openInterest?symbol=${symbol}`),
-      fetch(`${BINANCE_FUTURES}/fapi/v1/ticker/price?symbol=${symbol}`),
-    ]);
-    if (!oiRes.ok || !priceRes.ok) return null;
-    const oiData = await oiRes.json();
-    const priceData = await priceRes.json();
-    const oi = parseFloat(oiData.openInterest);
-    const price = parseFloat(priceData.price);
-    const oiUsd = oi * price;
+    const res = await fetch(
+      `${OKX_API}/public/open-interest?instType=SWAP&instId=${coin}-USDT-SWAP`,
+    );
+    if (!res.ok) return null;
+    const json = await res.json();
+    const d = json && json.data && json.data[0];
+    if (!d) return null;
+    const oiUsd = parseFloat(d.oiUsd); // OKX returns USD value directly
+    if (!isFinite(oiUsd) || oiUsd <= 0) return null;
     return { oiUsd, formatted: formatWidgetUsd(oiUsd) };
   } catch (e) {
     return null;
@@ -968,11 +1040,13 @@ const STABLE_SYMBOLS = new Set([
 
 const fetchAltcoinSeason = async () => {
   try {
-    // CoinGecko global endpoint — free, no auth needed
-    const res = await fetch("https://api.coingecko.com/api/v3/global");
+    // Coinlore global endpoint — free, CORS-enabled, no auth needed
+    const res = await fetch(COINLORE_GLOBAL_API);
     if (!res.ok) return null;
     const json = await res.json();
-    const dom = json.data.market_cap_percentage.btc;
+    const g = Array.isArray(json) ? json[0] : null;
+    const dom = g ? parseFloat(g.btc_d) : NaN;
+    if (!isFinite(dom)) return null;
     // Map BTC dominance to 0-100 alt season index
     // dom ≥ 65% → index ~0 (BTC Season), dom ≤ 40% → index ~100 (Alt Season)
     const index = Math.round(Math.max(0, Math.min(100, ((65 - dom) / 25) * 100)));
@@ -988,6 +1062,8 @@ const fetchAltcoinSeason = async () => {
 
 const WIDGET_ORDER_KEY = "crypto_chart_widget_order";
 const DEFAULT_WIDGET_ORDER = [
+  "watchlist",
+  "topMovers",
   "fearGreed",
   "marketOverview",
   "halvingCountdown",
@@ -1396,9 +1472,24 @@ const LINE_DUMMY = Array(2)
 
 const PADDING = 24;
 const TRANSITION_DURATION = 500;
+const REVEAL_DURATION = 900;
 
 const safePrices = (prices) =>
   Array.isArray(prices) && prices.length > 1 ? prices : LINE_DUMMY;
+
+// Closes a line path down to the chart baseline to make a fillable area.
+const buildAreaD = (lineD, scaled, height) => {
+  if (!scaled || scaled.length < 2) return "";
+  const x0 = scaled[0].time;
+  const xN = scaled[scaled.length - 1].time;
+  return `${lineD}L${xN},${height}L${x0},${height}Z`;
+};
+
+// Trend direction of a price series (last vs first), used to tint the area.
+const isTrendUp = (prices) => {
+  const p = safePrices(prices);
+  return Number(p[p.length - 1].price) >= Number(p[0].price);
+};
 
 const Svg = styled.svg`
   height: 100%;
@@ -1412,7 +1503,14 @@ class LineBase extends PureComponent {
     super(...args);
 
     _defineProperty(this, "pathRef", createRef());
+    _defineProperty(this, "areaRef", createRef());
     _defineProperty(this, "svgRef", createRef());
+    _defineProperty(this, "clipRectRef", createRef());
+
+    // Unique ids so the gradient/clip defs never collide in the DOM
+    const uid = Math.random().toString(36).slice(2, 9);
+    this.gradId = "ptArea_" + uid;
+    this.clipId = "ptReveal_" + uid;
 
     // Debounced resize handler (150ms delay)
     _defineProperty(
@@ -1423,6 +1521,10 @@ class LineBase extends PureComponent {
           const { height, width } = this.svgRef.current.getBoundingClientRect();
           this.height = height;
           this.width = width;
+          // Keep the reveal clip covering the full chart after a resize
+          if (this.clipRect) {
+            this.clipRect.attr("width", width).attr("height", height);
+          }
           this.updatePath();
         }
       }, 150),
@@ -1431,15 +1533,15 @@ class LineBase extends PureComponent {
     _defineProperty(this, "updatePath", () => {
       const { prices } = this.props;
 
-      const d = lineFromPrices(
-        scalePrices(
-          safePrices(prices),
-          this.height,
-          this.width,
-          PADDING,
-          PADDING,
-        ),
+      const scaled = scalePrices(
+        safePrices(prices),
+        this.height,
+        this.width,
+        PADDING,
+        PADDING,
       );
+      const d = lineFromPrices(scaled);
+      const areaD = buildAreaD(d, scaled, this.height);
 
       this.path
         .transition()
@@ -1447,7 +1549,14 @@ class LineBase extends PureComponent {
         .ease(easeCubicOut)
         .attrTween("d", interpolatePath.bind(null, this.d, d));
 
+      this.area
+        .transition()
+        .duration(TRANSITION_DURATION)
+        .ease(easeCubicOut)
+        .attrTween("d", interpolatePath.bind(null, this.areaD || d, areaD));
+
       this.d = d;
+      this.areaD = areaD;
     });
   }
 
@@ -1462,16 +1571,53 @@ class LineBase extends PureComponent {
       const { prices } = this.props;
 
       this.path = select(this.pathRef.current);
+      this.area = select(this.areaRef.current);
+      this.clipRect = select(this.clipRectRef.current);
       this.height = height;
       this.width = width;
 
-      const d = lineFromPrices(
-        scalePrices(safePrices(prices), height, width, PADDING, PADDING),
+      const scaled = scalePrices(
+        safePrices(prices),
+        height,
+        width,
+        PADDING,
+        PADDING,
       );
+      const d = lineFromPrices(scaled);
+      const areaD = buildAreaD(d, scaled, height);
       this.path.attr("d", d);
+      this.area.attr("d", areaD);
       this.d = d;
+      this.areaD = areaD;
 
-      window.addEventListener("resize", this.handleResize);
+      // "Draw-in": reveal the chart left→right by widening the clip rect
+      this.clipRect
+        .attr("x", 0)
+        .attr("y", 0)
+        .attr("height", height)
+        .attr("width", 0)
+        .transition()
+        .duration(REVEAL_DURATION)
+        .ease(easeCubicOut)
+        .attr("width", width);
+
+      // Re-measure on ANY change to the chart box — window resize, but also
+      // the page ticker appearing/collapsing or other padding shifts that
+      // resize the chart without firing a window resize event. (Skip the
+      // initial observe callback so it doesn't cut the draw-in reveal short.)
+      if (typeof ResizeObserver !== "undefined") {
+        let firstObserve = true;
+        this.resizeObserver = new ResizeObserver(() => {
+          if (firstObserve) {
+            firstObserve = false;
+            return;
+          }
+          this.handleResize();
+        });
+        this.resizeObserver.observe(this.svgRef.current);
+      } else {
+        window.addEventListener("resize", this.handleResize);
+      }
     }
   }
 
@@ -1483,19 +1629,63 @@ class LineBase extends PureComponent {
   }
 
   componentWillUnmount() {
+    if (this.resizeObserver) {
+      this.resizeObserver.disconnect();
+      this.resizeObserver = null;
+    }
     window.removeEventListener("resize", this.handleResize);
   }
 
   render() {
+    const { color } = this.props.theme;
+    const tint = isTrendUp(this.props.prices)
+      ? color.chartLineGreen
+      : color.chartLineRed;
+
     return React.createElement(
       Svg,
       { innerRef: this.svgRef },
-      React.createElement("path", {
-        fill: "none",
-        ref: this.pathRef,
-        stroke: this.props.theme.color.text,
-        strokeWidth: "1.5",
-      }),
+      React.createElement(
+        "defs",
+        null,
+        React.createElement(
+          "linearGradient",
+          { id: this.gradId, x1: "0", y1: "0", x2: "0", y2: "1" },
+          React.createElement("stop", {
+            offset: "0%",
+            stopColor: tint,
+            stopOpacity: 0.25,
+          }),
+          React.createElement("stop", {
+            offset: "100%",
+            stopColor: tint,
+            stopOpacity: 0,
+          }),
+        ),
+        React.createElement(
+          "clipPath",
+          { id: this.clipId },
+          // width/height are set imperatively (reveal animation + resize),
+          // so they are intentionally omitted here to avoid React clobbering them
+          React.createElement("rect", { ref: this.clipRectRef, x: "0", y: "0" }),
+        ),
+      ),
+      React.createElement(
+        "g",
+        { clipPath: `url(#${this.clipId})` },
+        React.createElement("path", {
+          // colorize off → no fill, just the line (the "colourless" chart)
+          fill: this.props.colorize === false ? "none" : `url(#${this.gradId})`,
+          stroke: "none",
+          ref: this.areaRef,
+        }),
+        React.createElement("path", {
+          fill: "none",
+          ref: this.pathRef,
+          stroke: color.text,
+          strokeWidth: "1.5",
+        }),
+      ),
     );
   }
 }
@@ -1766,6 +1956,7 @@ class Overview extends PureComponent {
 
     _defineProperty(this, "state", {
       calcPercentage: false,
+      countValue: null, // non-null only while the intro count-up is running
     });
 
     _defineProperty(this, "togglePercentage", () => {
@@ -1773,6 +1964,39 @@ class Overview extends PureComponent {
         calcPercentage: !prevState.calcPercentage,
       }));
     });
+
+    // One-time count-up to the first real price (intro flourish only)
+    _defineProperty(this, "maybeCountUp", () => {
+      if (this._counted) return;
+      const target = this.props.currentValue;
+      if (typeof target !== "number" || !isFinite(target)) return;
+      this._counted = true;
+      const start =
+        typeof performance !== "undefined" ? performance.now() : Date.now();
+      const tick = (now) => {
+        const t = Math.min(1, (now - start) / 700);
+        const eased = 1 - Math.pow(1 - t, 3);
+        this.setState({ countValue: target * eased });
+        if (t < 1) {
+          this._rafId = requestAnimationFrame(tick);
+        } else {
+          this.setState({ countValue: null });
+        }
+      };
+      this._rafId = requestAnimationFrame(tick);
+    });
+  }
+
+  componentDidMount() {
+    this.maybeCountUp();
+  }
+
+  componentDidUpdate() {
+    this.maybeCountUp();
+  }
+
+  componentWillUnmount() {
+    if (this._rafId) cancelAnimationFrame(this._rafId);
   }
 
   render() {
@@ -1785,8 +2009,10 @@ class Overview extends PureComponent {
       separatorFormat,
       currency,
     } = this.props;
-    const { calcPercentage } = this.state;
+    const { calcPercentage, countValue } = this.state;
     const currencySymbol = getCurrencySymbol(currency || DEFAULT_CURRENCY);
+    // During the intro count-up show the animating value; otherwise the real price
+    const displayValue = countValue != null ? countValue : currentValue;
 
     const delta = calcPercentage
       ? formatNumberString(
@@ -1817,7 +2043,7 @@ class Overview extends PureComponent {
           title: "Next coin",
         },
         formatNumberString(
-          currentValue,
+          displayValue,
           currencySymbol,
           true,
           false,
@@ -2229,20 +2455,21 @@ const pageTickerSlideTop = keyframes`
   to   { transform: translateY(0);     opacity: 1; }
 `;
 
-const PageTickerBar = styled.div`
-  position: fixed;
-  ${({ position }) => position === "top" ? "top: 0;" : "bottom: 0;"}
-  left: 0;
-  right: 0;
-  z-index: 90;
-  background: ${({ theme }) => theme.color.bg};
-  ${({ position }) =>
-    position === "top"
-      ? "border-bottom: 1px solid rgba(128,128,128,0.2);"
-      : "border-top: 1px solid rgba(128,128,128,0.2);"}
-  overflow: hidden;
-  animation: ${({ position }) =>
-    position === "top" ? pageTickerSlideTop : pageTickerSlideBottom} 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+// Gentle up/down bob to invite a click on the collapsed handle
+const pageTickerHandleBobTop = keyframes`
+  0%, 100% { transform: translate(-50%, 0); }
+  50%      { transform: translate(-50%, 3px); }
+`;
+const pageTickerHandleBobBottom = keyframes`
+  0%, 100% { transform: translate(-50%, 0); }
+  50%      { transform: translate(-50%, -3px); }
+`;
+
+const PageTickerTrack = styled.div`
+  display: inline-flex;
+  white-space: nowrap;
+  animation: ${pageTickerScroll} ${({ speed }) => speed || 35}s linear infinite;
+  will-change: transform;
 `;
 
 const PageTickerRow = styled.div`
@@ -2256,11 +2483,102 @@ const PageTickerRow = styled.div`
   }
 `;
 
-const PageTickerTrack = styled.div`
-  display: inline-flex;
-  white-space: nowrap;
-  animation: ${pageTickerScroll} ${({ speed }) => speed || 35}s linear infinite;
-  will-change: transform;
+// Rows wrapper (fixed positioning now lives on the Shell)
+const PageTickerBar = styled.div`
+  position: relative;
+  pointer-events: auto;
+  background: ${({ theme }) => theme.color.bg};
+  ${({ position }) =>
+    position === "top"
+      ? "border-bottom: 1px solid rgba(128,128,128,0.2);"
+      : "border-top: 1px solid rgba(128,128,128,0.2);"}
+  overflow: hidden;
+  animation: ${({ position }) =>
+    position === "top" ? pageTickerSlideTop : pageTickerSlideBottom} 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+`;
+
+// Hover-revealed chevron tab that collapses the ticker toward the screen edge
+const PageTickerChevron = styled.button`
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  ${({ position }) => (position === "top" ? "bottom: -14px;" : "top: -14px;")}
+  width: 34px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid ${({ theme }) => theme.color.border};
+  ${({ position }) =>
+    position === "top"
+      ? "border-top: none; border-radius: 0 0 9px 9px;"
+      : "border-bottom: none; border-radius: 9px 9px 0 0;"}
+  background: ${({ theme }) => theme.color.bg};
+  color: ${({ theme }) => theme.color.textSecondary};
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.22s ease, color 0.2s ease;
+  &:hover {
+    color: ${({ theme }) => theme.color.text};
+  }
+`;
+
+// Small bobbing handle that remains when the ticker is collapsed
+const PageTickerHandle = styled.button`
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  ${({ position }) => (position === "top" ? "top: 0;" : "bottom: 0;")}
+  width: 46px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid ${({ theme }) => theme.color.border};
+  ${({ position }) =>
+    position === "top"
+      ? "border-top: none; border-radius: 0 0 9px 9px;"
+      : "border-bottom: none; border-radius: 9px 9px 0 0;"}
+  background: ${({ theme }) => theme.color.bg};
+  color: ${({ theme }) => theme.color.textSecondary};
+  cursor: pointer;
+  pointer-events: auto;
+  animation: ${({ position }) =>
+    position === "top" ? pageTickerHandleBobTop : pageTickerHandleBobBottom} 1.9s ease-in-out infinite;
+  transition: color 0.2s ease;
+  &:hover {
+    color: ${({ theme }) => theme.color.text};
+    animation-play-state: paused;
+  }
+`;
+
+// Slides the whole ticker off-screen when collapsed; pauses scroll + reveals
+// the chevron on hover
+const PageTickerCollapsible = styled.div`
+  position: relative;
+  pointer-events: auto;
+  transform: translateY(${({ collapsed, position }) =>
+    collapsed ? (position === "top" ? "-100%" : "100%") : "0"});
+  transition: transform 0.42s cubic-bezier(0.22, 1, 0.36, 1);
+  &:hover ${PageTickerTrack} {
+    animation-play-state: paused;
+  }
+  &:hover ${PageTickerChevron} {
+    opacity: 1;
+    pointer-events: auto;
+  }
+`;
+
+const PageTickerShell = styled.div`
+  position: fixed;
+  ${({ position }) => (position === "top" ? "top: 0;" : "bottom: 0;")}
+  left: 0;
+  right: 0;
+  z-index: 90;
+  pointer-events: none;
 `;
 
 const PageTickerItem = styled.span`
@@ -2510,6 +2828,17 @@ const AltSeasonMarker = styled.div`
   transition: left 0.4s ease;
 `;
 
+const widgetAppear = keyframes`
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+`;
+
 const WidgetCard = styled.div`
   position: relative;
   flex: 0 0 auto;
@@ -2526,6 +2855,7 @@ const WidgetCard = styled.div`
   cursor: grab;
   user-select: none;
   transition: opacity 0.15s ease, transform 0.15s ease;
+  animation: ${widgetAppear} 0.35s cubic-bezier(0.22, 1, 0.36, 1);
   opacity: ${({ dragging }) => (dragging ? 0.4 : 1)};
   transform: ${({ dragging }) => (dragging ? "scale(0.97)" : "scale(1)")};
 
@@ -2570,6 +2900,61 @@ const WidgetValue = styled.div`
   @media (max-width: 600px) {
     font-size: 0.85rem;
   }
+`;
+
+/* Watchlist heatmap + Top movers widgets */
+const WatchlistGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  width: 100%;
+  margin-top: 2px;
+`;
+const WatchlistCell = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: 5px 2px;
+  border-radius: 5px;
+  background: ${({ up, intensity }) =>
+    up
+      ? `rgba(52, 211, 153, ${intensity})`
+      : `rgba(248, 113, 113, ${intensity})`};
+`;
+const WatchlistSym = styled.span`
+  font-size: 0.62rem;
+  font-weight: ${({ theme }) => theme.fontWeight.bold};
+  color: ${({ theme }) => theme.color.text};
+`;
+const WatchlistChg = styled.span`
+  font-size: 0.55rem;
+  color: ${({ theme }) => theme.color.text};
+  opacity: 0.85;
+`;
+
+const MoversWrap = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 100%;
+  margin-top: 2px;
+`;
+const MoverRow = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.66rem;
+  line-height: 1.3;
+`;
+const MoverSym = styled.span`
+  font-weight: ${({ theme }) => theme.fontWeight.bold};
+  color: ${({ theme }) => theme.color.text};
+  opacity: 0.9;
+`;
+const MoverChg = styled.span`
+  color: ${({ up, theme }) =>
+    up ? theme.color.chartLineGreen : theme.color.chartLineRed};
 `;
 
 const WidgetSubtext = styled.div`
@@ -2752,7 +3137,9 @@ const panelLift = keyframes`
 
 const SettingsCard = styled.div`
   width: min(90vw, 28rem);
-  max-height: 90vh;
+  height: min(90vh, 36rem);
+  display: flex;
+  flex-direction: column;
   border-radius: ${({ theme }) => theme.scale * 8}rem;
   padding: ${({ theme }) => theme.spacing.large * 1.5}rem;
   background: ${({ theme }) =>
@@ -2765,33 +3152,7 @@ const SettingsCard = styled.div`
   animation: ${panelLift} 0.4s ease;
   color: ${({ theme }) => theme.color.text};
   font-family: ${({ theme }) => theme.font.primary};
-  overflow-y: auto;
-  overflow-x: hidden;
-  scroll-behavior: smooth;
-
-  /* Custom scrollbar - Firefox */
-  scrollbar-width: thin;
-  scrollbar-color: ${({ theme }) => theme.color.border} transparent;
-
-  /* Custom scrollbar - Webkit (Chrome, Edge, Safari) */
-  &::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  &::-webkit-scrollbar-track {
-    background: transparent;
-    margin: ${({ theme }) => theme.scale * 4}rem 0;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    background: ${({ theme }) => theme.color.border};
-    border-radius: 3px;
-    transition: background 0.2s ease;
-  }
-
-  &::-webkit-scrollbar-thumb:hover {
-    background: ${({ theme }) => theme.color.borderHover};
-  }
+  overflow: hidden;
 `;
 
 const SettingsTitle = styled.h2`
@@ -2802,6 +3163,7 @@ const SettingsTitle = styled.h2`
 `;
 
 const TabContainer = styled.div`
+  flex: 0 0 auto;
   display: flex;
   justify-content: center;
   gap: ${({ theme }) => theme.spacing.small}rem;
@@ -2850,7 +3212,36 @@ const tabFadeIn = keyframes`
 `;
 
 const TabContent = styled.div`
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scroll-behavior: smooth;
   animation: ${tabFadeIn} 0.25s ease-out;
+
+  /* Custom scrollbar - Firefox */
+  scrollbar-width: thin;
+  scrollbar-color: ${({ theme }) => theme.color.border} transparent;
+
+  /* Custom scrollbar - Webkit (Chrome, Edge, Safari) */
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+    margin: ${({ theme }) => theme.scale * 4}rem 0;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: ${({ theme }) => theme.color.border};
+    border-radius: 3px;
+    transition: background 0.2s ease;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background: ${({ theme }) => theme.color.borderHover};
+  }
 `;
 
 const SettingsDescription = styled.p`
@@ -2859,6 +3250,17 @@ const SettingsDescription = styled.p`
   font-size: 0.875rem;
   opacity: 0.8;
   line-height: 1.5;
+`;
+
+// Wraps a conditional sub-setting so it expands/collapses smoothly with its parent toggle.
+const SettingReveal = styled.div`
+  overflow: hidden;
+  max-height: ${({ open }) => (open ? "8rem" : "0")};
+  opacity: ${({ open }) => (open ? 1 : 0)};
+  transform: translateY(${({ open }) => (open ? "0" : "-6px")});
+  transition: max-height 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.28s ease,
+    transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
 `;
 
 const CoinList = styled.div`
@@ -2884,7 +3286,7 @@ const CoinChip = styled.button.attrs(() => ({ type: "button" }))`
   color: ${({ selected, theme }) =>
     selected ? theme.color.bg : theme.color.text};
   text-transform: uppercase;
-  font-weight: ${({ theme }) => theme.fontWeight.medium};
+  font-weight: ${({ theme }) => theme.fontWeight.bold};
   cursor: pointer;
   transition:
     background 0.2s ease,
@@ -3194,6 +3596,33 @@ const ToggleLabel = styled.label`
   opacity: 0.6;
 `;
 
+const PresetRow = styled.div`
+  display: flex;
+  gap: 6px;
+  margin: 4px 0 10px;
+  flex-wrap: wrap;
+`;
+
+const PresetButton = styled.button`
+  flex: 1 1 auto;
+  min-width: 64px;
+  padding: 6px 8px;
+  border: 1px solid ${({ theme }) => theme.color.border};
+  border-radius: 7px;
+  background: transparent;
+  color: ${({ theme }) => theme.color.text};
+  font-family: ${({ theme }) => theme.font.primary};
+  font-size: 0.66rem;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+
+  &:hover {
+    border-color: ${({ theme }) => theme.color.borderHover};
+    background: ${({ theme }) => theme.color.bgSecondary};
+  }
+`;
+
 const ToggleSwitch = styled.button`
   position: relative;
   width: 44px;
@@ -3463,6 +3892,13 @@ class SettingsPanel extends PureComponent {
 
       const activeCoins = Array.isArray(coins) ? coins : [];
       if (activeCoins.includes(normalized)) {
+        if (activeCoins.length <= 1) {
+          this.setState({
+            feedback: "Keep at least one coin in the rotation",
+            status: "error",
+          });
+          return;
+        }
         if (typeof onRemoveCoin === "function") {
           onRemoveCoin(normalized);
           this.setState({
@@ -3695,8 +4131,11 @@ class SettingsPanel extends PureComponent {
       onPageTickerChange,
       pageTickerPosition,
       onPageTickerPositionChange,
+      chartColor,
+      onChartColorChange,
       widgets,
       onWidgetToggle,
+      onWidgetPreset,
       onResetCoins,
     } = this.props;
     const { feedback, status, pendingCoin, suggestions, activeTab } =
@@ -4039,9 +4478,11 @@ class SettingsPanel extends PureComponent {
               ),
             ),
 
-            // Ticker Format Section (only show when ticker is enabled)
-            tickerEnabled &&
-              React.createElement(
+            // Ticker Format (collapses smoothly when the tab ticker is off)
+            React.createElement(
+              SettingReveal,
+              { key: "ticker-format", open: tickerEnabled },
+                React.createElement(
                 RefreshIntervalSection,
                 null,
                 React.createElement(
@@ -4068,6 +4509,34 @@ class SettingsPanel extends PureComponent {
                   ),
                 ),
               ),
+              ),
+
+            // Chart Color Section
+            React.createElement(
+              ToggleSection,
+              null,
+              React.createElement(ToggleSectionTitle, null, "Chart Color"),
+              React.createElement(
+                ToggleSectionDesc,
+                null,
+                "Green when up, red when down — turn off for a plain line",
+              ),
+              React.createElement(
+                ToggleRow,
+                null,
+                React.createElement(
+                  ToggleLabel,
+                  null,
+                  chartColor === false ? "Off" : "On",
+                ),
+                React.createElement(ToggleSwitch, {
+                  active: chartColor !== false,
+                  onClick: () =>
+                    onChartColorChange && onChartColorChange(chartColor === false),
+                  "aria-label": "Toggle chart color",
+                }),
+              ),
+            ),
 
             // Page Ticker Section
             React.createElement(
@@ -4096,9 +4565,11 @@ class SettingsPanel extends PureComponent {
               ),
             ),
 
-            // Page Ticker Position (only when enabled)
-            pageTicker &&
-              React.createElement(
+            // Page Ticker Position (collapses smoothly when the page ticker is off)
+            React.createElement(
+              SettingReveal,
+              { key: "page-ticker-position", open: pageTicker },
+                React.createElement(
                 RefreshIntervalSection,
                 null,
                 React.createElement(RefreshIntervalLabel, null, "Position"),
@@ -4114,6 +4585,7 @@ class SettingsPanel extends PureComponent {
                   React.createElement("option", { value: "top" }, "Top"),
                 ),
               ),
+              ),
           ),
 
         // Widgets Tab Content
@@ -4128,6 +4600,54 @@ class SettingsPanel extends PureComponent {
                 ToggleSectionDesc,
                 null,
                 "Show data widgets below chart",
+              ),
+              React.createElement(
+                PresetRow,
+                null,
+                React.createElement(
+                  PresetButton,
+                  {
+                    type: "button",
+                    onClick: () => onWidgetPreset && onWidgetPreset("holder"),
+                  },
+                  "Holder",
+                ),
+                React.createElement(
+                  PresetButton,
+                  {
+                    type: "button",
+                    onClick: () => onWidgetPreset && onWidgetPreset("trader"),
+                  },
+                  "Trader",
+                ),
+                React.createElement(
+                  PresetButton,
+                  {
+                    type: "button",
+                    onClick: () => onWidgetPreset && onWidgetPreset("minimal"),
+                  },
+                  "Minimal",
+                ),
+              ),
+              React.createElement(
+                ToggleRow,
+                null,
+                React.createElement(ToggleLabel, null, "Watchlist"),
+                React.createElement(ToggleSwitch, {
+                  active: widgets.watchlist,
+                  onClick: () => onWidgetToggle && onWidgetToggle("watchlist"),
+                  "aria-label": "Toggle Watchlist widget",
+                }),
+              ),
+              React.createElement(
+                ToggleRow,
+                null,
+                React.createElement(ToggleLabel, null, "Top Movers"),
+                React.createElement(ToggleSwitch, {
+                  active: widgets.topMovers,
+                  onClick: () => onWidgetToggle && onWidgetToggle("topMovers"),
+                  "aria-label": "Toggle Top Movers widget",
+                }),
               ),
               React.createElement(
                 ToggleRow,
@@ -4282,6 +4802,7 @@ class CryptoChart extends PureComponent {
       // Widget states
       widgets: loadWidgetsFromStorage(), // { fearGreed, marketOverview, halvingCountdown, rsiWidget }
       hiddenWidgets: loadHiddenWidgetsFromStorage(), // Per-widget hide state from main screen
+      pendingWidgetReveal: {}, // Widgets enabled while settings open — mounted (animated) on close
       widgetOrder: loadWidgetOrderFromStorage(), // Drag-reorder
       dragWidget: null, // Currently dragged widget key
       fearGreedData: null, // { value, classification, timestamp }
@@ -4293,8 +4814,13 @@ class CryptoChart extends PureComponent {
       openInterestData: null, // { oiUsd, formatted }
       liquidationsData: null, // { total, longLiq, shortLiq, longPct, ... }
       altcoinSeasonData: null, // { index, label, outperformers, total }
+      watchlistData: null, // [{ coin, change, up }] for the user's coins
+      topMoversData: null, // { gainers: [...], losers: [...] }
       pageTicker: loadPageTickerFromStorage(), // Visual page ticker bar
       pageTickerPosition: loadPageTickerPositionFromStorage(), // 'top' or 'bottom'
+      pageTickerCollapsed: loadPageTickerCollapsedFromStorage(), // minimized to a handle
+      chartColor: loadChartColorFromStorage(), // green/red area fill on/off
+
       pageTickerItems: [], // [{ coin, price, change, up }]
       pageTickerReady: false, // true after first full fetch completes
     });
@@ -4324,6 +4850,12 @@ class CryptoChart extends PureComponent {
             showSkeleton: false, // Reset skeleton
             invalidCoin: null, // Clear invalid coin warning
             apiError: false, // Clear API error when switching coins
+            // Clear coin-specific widget data so we never show the previous
+            // coin's numbers under the new coin's label
+            fundingRateData: null,
+            longShortData: null,
+            openInterestData: null,
+            liquidationsData: null,
           };
         },
         () => {
@@ -4361,6 +4893,9 @@ class CryptoChart extends PureComponent {
     _defineProperty(this, "fetchWidgets", async () => {
       const { widgets, coinOptions, coinIndex } = this.state;
       const coin = coinOptions[coinIndex] || "BTC";
+      // Drop late responses for a coin the user already switched away from
+      const isStillCurrent = () =>
+        (this.state.coinOptions[this.state.coinIndex] || "BTC") === coin;
 
       // Market-wide widgets
       if (widgets.fearGreed) {
@@ -4392,25 +4927,25 @@ class CryptoChart extends PureComponent {
       if (widgets.fundingRate) {
         try {
           const data = await fetchFundingRate(coin);
-          this.setState({ fundingRateData: data });
+          if (isStillCurrent()) this.setState({ fundingRateData: data });
         } catch (e) { /* silent fail */ }
       }
       if (widgets.longShortRatio) {
         try {
           const data = await fetchLongShortRatio(coin);
-          this.setState({ longShortData: data });
+          if (isStillCurrent()) this.setState({ longShortData: data });
         } catch (e) { /* silent fail */ }
       }
       if (widgets.openInterest) {
         try {
           const data = await fetchOpenInterest(coin);
-          this.setState({ openInterestData: data });
+          if (isStillCurrent()) this.setState({ openInterestData: data });
         } catch (e) { /* silent fail */ }
       }
       if (widgets.liquidations) {
         try {
           const data = await fetchLiquidations(coin);
-          this.setState({ liquidationsData: data });
+          if (isStillCurrent()) this.setState({ liquidationsData: data });
         } catch (e) { /* silent fail */ }
       }
     });
@@ -4464,20 +4999,43 @@ class CryptoChart extends PureComponent {
     _defineProperty(this, "handleWidgetToggle", (widgetName) => {
       this.setState(
         (prevState) => {
+          const enabling = !prevState.widgets[widgetName];
           const newWidgets = {
             ...prevState.widgets,
-            [widgetName]: !prevState.widgets[widgetName],
+            [widgetName]: enabling,
           };
           saveWidgetsToStorage(newWidgets);
-          return { widgets: newWidgets };
+          // Defer mounting widgets enabled while settings is open, so their
+          // entrance animation plays on close instead of behind the overlay.
+          const pendingWidgetReveal = { ...prevState.pendingWidgetReveal };
+          if (prevState.showSettings && enabling) {
+            pendingWidgetReveal[widgetName] = true;
+          } else {
+            delete pendingWidgetReveal[widgetName];
+          }
+          return { widgets: newWidgets, pendingWidgetReveal };
         },
         () => {
           // Fetch widget data if it was just enabled
           if (this.state.widgets[widgetName]) {
             this.fetchWidgets();
           }
+          // watchlist / top-movers ride the all-coin sweep — start/stop as needed
+          this.ensureCoinSweep();
         },
       );
+    });
+
+    _defineProperty(this, "handleWidgetPreset", (presetKey) => {
+      const preset = WIDGET_PRESETS[presetKey];
+      if (!preset) return;
+      // start from all-off so a preset is an exact set, not additive
+      const newWidgets = { ...DEFAULT_WIDGETS, ...preset };
+      saveWidgetsToStorage(newWidgets);
+      this.setState({ widgets: newWidgets }, () => {
+        this.fetchWidgets();
+        this.ensureCoinSweep();
+      });
     });
 
     _defineProperty(this, "fetchData", async () => {
@@ -4707,7 +5265,10 @@ class CryptoChart extends PureComponent {
     });
 
     _defineProperty(this, "toggleSettings", () => {
-      this.setState((prevState) => ({ showSettings: !prevState.showSettings }));
+      this.setState((prevState) => ({
+        showSettings: !prevState.showSettings,
+        pendingWidgetReveal: {},
+      }));
     });
 
     _defineProperty(this, "handleThemeChange", (newTheme) => {
@@ -4739,6 +5300,11 @@ class CryptoChart extends PureComponent {
     _defineProperty(this, "handleSeparatorFormatChange", (newFormat) => {
       saveSeparatorFormatToStorage(newFormat);
       this.setState({ separatorFormat: newFormat });
+    });
+
+    _defineProperty(this, "handleChartColorChange", (enabled) => {
+      saveChartColorToStorage(enabled);
+      this.setState({ chartColor: enabled });
     });
 
     _defineProperty(this, "handleCurrencyChange", (newCurrency) => {
@@ -4779,10 +5345,12 @@ class CryptoChart extends PureComponent {
     });
 
     _defineProperty(this, "buildPageTickerItems", () => {
-      const { currency, decimalPlaces, separatorFormat } = this.state;
+      const { currency, decimalPlaces, separatorFormat, coinOptions } =
+        this.state;
       const curr = currency || DEFAULT_CURRENCY;
       const currencySymbol = getCurrencySymbol(curr);
       const items = [];
+      const moverPool = []; // { coin, change, up } for everything we have
 
       for (const coin of SUGGESTED_COINS) {
         const cached = pageTickerCache.get(`${coin}-${curr}`);
@@ -4796,15 +5364,42 @@ class CryptoChart extends PureComponent {
           separatorFormat,
         );
 
-        const changeStr =
-          cached.change !== null && cached.change !== undefined
-            ? `${cached.up ? "+" : ""}${cached.change.toFixed(2)}%`
-            : null;
+        const hasChange =
+          cached.change !== null &&
+          cached.change !== undefined &&
+          isFinite(cached.change);
+        const changeStr = hasChange
+          ? `${cached.up ? "+" : ""}${cached.change.toFixed(2)}%`
+          : null;
 
         items.push({ coin, price: priceStr, change: changeStr, up: cached.up });
+        if (hasChange) moverPool.push({ coin, change: cached.change, up: cached.up });
       }
 
-      this.setState({ pageTickerItems: items });
+      // Watchlist heatmap — the user's coins, in their own order
+      const watchlist = (coinOptions || [])
+        .map((coin) => {
+          const c = pageTickerCache.get(`${coin}-${curr}`);
+          if (!c || c.change === null || c.change === undefined) return null;
+          return { coin, change: c.change, up: c.up };
+        })
+        .filter(Boolean);
+
+      // Top movers — 3 biggest gainers + 3 biggest losers (24h)
+      let topMovers = null;
+      if (moverPool.length >= 4) {
+        const sorted = moverPool.slice().sort((a, b) => b.change - a.change);
+        topMovers = {
+          gainers: sorted.slice(0, 3),
+          losers: sorted.slice(-3).reverse(),
+        };
+      }
+
+      this.setState({
+        pageTickerItems: items,
+        watchlistData: watchlist.length ? watchlist : null,
+        topMoversData: topMovers,
+      });
     });
 
     _defineProperty(this, "fetchPageTickerData", async () => {
@@ -4815,7 +5410,7 @@ class CryptoChart extends PureComponent {
       const now = Date.now();
 
       for (let i = 0; i < SUGGESTED_COINS.length; i += PAGE_TICKER_BATCH_SIZE) {
-        if (!this.state.pageTicker) break;
+        if (!this.needsCoinSweep()) break;
 
         const batch = SUGGESTED_COINS.slice(i, i + PAGE_TICKER_BATCH_SIZE);
 
@@ -4825,9 +5420,12 @@ class CryptoChart extends PureComponent {
             if (cached && now - cached.timestamp < PAGE_TICKER_TTL) return;
 
             try {
+              // maxRetries = 0: this is the bulk background ticker, so a rate
+              // limit (429) should fail quietly and retry on the next sweep —
+              // retrying here would only pile more load onto Coinbase.
               const [spotRes, histRes] = await Promise.all([
-                fetchWithRetry(`${API_BASE}${coin}-${curr}/${API_SPOT}`).then((r) => r.json()),
-                fetchWithRetry(`${API_BASE}${coin}-${curr}/${API_HISTORY}day`).then((r) => r.json()),
+                fetchWithRetry(`${API_BASE}${coin}-${curr}/${API_SPOT}`, {}, 0).then((r) => r.json()),
+                fetchWithRetry(`${API_BASE}${coin}-${curr}/${API_HISTORY}day`, {}, 0).then((r) => r.json()),
               ]);
 
               const spotStr = spotRes && spotRes.data && spotRes.data.amount;
@@ -4881,20 +5479,47 @@ class CryptoChart extends PureComponent {
       this.setState({ pageTickerPosition: position });
     });
 
-    _defineProperty(this, "handlePageTickerChange", (enabled) => {
-      savePageTickerToStorage(enabled);
-      this.setState({ pageTicker: enabled, pageTickerReady: false }, () => {
-        if (enabled) {
+    _defineProperty(this, "togglePageTickerCollapsed", () => {
+      this.setState((prevState) => {
+        const next = !prevState.pageTickerCollapsed;
+        savePageTickerCollapsedToStorage(next);
+        return { pageTickerCollapsed: next };
+      });
+    });
+
+    // The all-coin sweep feeds the page ticker AND the watchlist / top-movers
+    // widgets, so it should run whenever ANY of them is active.
+    _defineProperty(this, "needsCoinSweep", () => {
+      const w = this.state.widgets || {};
+      return this.state.pageTicker || w.watchlist || w.topMovers;
+    });
+
+    _defineProperty(this, "ensureCoinSweep", () => {
+      if (this.needsCoinSweep()) {
+        if (!this.pageTickerRefreshInterval) {
           this.fetchPageTickerData();
           this.pageTickerRefreshInterval = setInterval(
             () => this.fetchPageTickerData(),
             PAGE_TICKER_REFRESH_MS,
           );
-        } else {
-          clearInterval(this.pageTickerRefreshInterval);
-          this.pageTickerRefreshInterval = null;
         }
-      });
+      } else if (this.pageTickerRefreshInterval) {
+        clearInterval(this.pageTickerRefreshInterval);
+        this.pageTickerRefreshInterval = null;
+      }
+    });
+
+    _defineProperty(this, "handlePageTickerChange", (enabled) => {
+      savePageTickerToStorage(enabled);
+      // Turning the ticker on from settings should always show it expanded
+      if (enabled) savePageTickerCollapsedToStorage(false);
+      this.setState(
+        {
+          pageTicker: enabled,
+          pageTickerCollapsed: enabled ? false : this.state.pageTickerCollapsed,
+        },
+        this.ensureCoinSweep,
+      );
     });
 
     _defineProperty(this, "handleOnline", () => {
@@ -5000,16 +5625,33 @@ class CryptoChart extends PureComponent {
 
     _defineProperty(this, "handleRemoveCoinOption", (symbol) => {
       const normalized = (symbol || "").trim().toUpperCase();
+      const prevActive = this.state.coinOptions[this.state.coinIndex];
 
-      this.setState((prevState) => {
-        const filtered = prevState.coinOptions.filter((c) => c !== normalized);
-        const nextIndex = Math.min(prevState.coinIndex, filtered.length - 1);
-        saveCoinOptionsToStorage(filtered);
-        return {
-          coinOptions: filtered,
-          coinIndex: Math.max(0, nextIndex),
-        };
-      }, this.fetchData);
+      this.setState(
+        (prevState) => {
+          const activeCoin = prevState.coinOptions[prevState.coinIndex];
+          const filtered = prevState.coinOptions.filter(
+            (c) => c !== normalized,
+          );
+          // Keep the same coin displayed; only move if it was the one removed
+          let nextIndex = filtered.indexOf(activeCoin);
+          if (nextIndex === -1) {
+            nextIndex = Math.min(prevState.coinIndex, filtered.length - 1);
+          }
+          saveCoinOptionsToStorage(filtered);
+          return {
+            coinOptions: filtered,
+            coinIndex: Math.max(0, nextIndex),
+          };
+        },
+        () => {
+          this.fetchData();
+          // Only refresh widgets if removal changed which coin is displayed
+          if (this.state.coinOptions[this.state.coinIndex] !== prevActive) {
+            this.fetchWidgets();
+          }
+        },
+      );
     });
 
     _defineProperty(this, "handleResetCoins", () => {
@@ -5201,8 +5843,9 @@ class CryptoChart extends PureComponent {
       }, 3000);
     }
 
-    // Fetch all-coin page ticker data if enabled (delay 3s for initial load to settle)
-    if (this.state.pageTicker) {
+    // Start the all-coin sweep if the ticker OR the watchlist / top-movers
+    // widgets need it (delay 3s for the initial chart load to settle)
+    if (this.needsCoinSweep()) {
       this.pageTickerStartTimer = setTimeout(() => {
         this.fetchPageTickerData();
       }, 3000);
@@ -5220,6 +5863,7 @@ class CryptoChart extends PureComponent {
 
   componentWillUnmount() {
     clearTimeout(this.fetchTimeout);
+    clearTimeout(this.skeletonTimer);
     clearTimeout(this.prefetchTimer);
     clearTimeout(this.tickerStartTimer);
     clearTimeout(this.pageTickerStartTimer);
@@ -5293,6 +5937,8 @@ class CryptoChart extends PureComponent {
       openInterestData,
       liquidationsData,
       altcoinSeasonData,
+      watchlistData,
+      topMoversData,
       widgetOrder,
       dragWidget,
     } = this.state;
@@ -5305,6 +5951,7 @@ class CryptoChart extends PureComponent {
     const tickerTop =
       this.state.pageTicker &&
       this.state.pageTickerReady &&
+      !this.state.pageTickerCollapsed &&
       (this.state.pageTickerPosition || DEFAULT_PAGE_TICKER_POSITION) === "top";
 
     // Select color palette based on active theme
@@ -5431,7 +6078,10 @@ class CryptoChart extends PureComponent {
               // Show skeleton or actual chart
               showSkeleton
                 ? React.createElement(SkeletonChart, null)
-                : React.createElement(Line, { prices: valueHistory }),
+                : React.createElement(Line, {
+                    prices: valueHistory,
+                    colorize: this.state.chartColor,
+                  }),
             ),
           ),
         ),
@@ -5458,6 +6108,61 @@ class CryptoChart extends PureComponent {
         (() => {
           const hidden = this.state.hiddenWidgets;
           const widgetDefs = {
+            watchlist: {
+              label: "Watchlist",
+              visible: widgets.watchlist && !hidden.watchlist,
+              content:
+                watchlistData && watchlistData.length
+                  ? React.createElement(
+                      WatchlistGrid,
+                      null,
+                      watchlistData.slice(0, 12).map((c) =>
+                        React.createElement(
+                          WatchlistCell,
+                          {
+                            key: c.coin,
+                            up: c.up,
+                            intensity: Math.min(
+                              0.34,
+                              0.07 + Math.abs(c.change) / 45,
+                            ),
+                          },
+                          React.createElement(WatchlistSym, null, c.coin),
+                          React.createElement(
+                            WatchlistChg,
+                            null,
+                            `${c.up ? "+" : ""}${c.change.toFixed(1)}%`,
+                          ),
+                        ),
+                      ),
+                    )
+                  : React.createElement(WidgetSubtext, null, "Loading..."),
+            },
+            topMovers: {
+              label: "Top Movers 24h",
+              visible: widgets.topMovers && !hidden.topMovers,
+              content: topMoversData
+                ? React.createElement(
+                    MoversWrap,
+                    null,
+                    [
+                      ...topMoversData.gainers,
+                      ...topMoversData.losers,
+                    ].map((m, i) =>
+                      React.createElement(
+                        MoverRow,
+                        { key: m.coin + "-" + i },
+                        React.createElement(MoverSym, null, m.coin),
+                        React.createElement(
+                          MoverChg,
+                          { up: m.up },
+                          `${m.up ? "+" : ""}${m.change.toFixed(1)}%`,
+                        ),
+                      ),
+                    ),
+                  )
+                : React.createElement(WidgetSubtext, null, "Loading..."),
+            },
             fearGreed: {
               label: "Fear & Greed",
               visible: widgets.fearGreed && !hidden.fearGreed,
@@ -5815,7 +6520,10 @@ class CryptoChart extends PureComponent {
           if (!anyEnabled) return null;
 
           const visibleOrder = widgetOrder.filter(
-            (key) => widgetDefs[key] && widgetDefs[key].visible,
+            (key) =>
+              widgetDefs[key] &&
+              widgetDefs[key].visible &&
+              !(showSettings && this.state.pendingWidgetReveal[key]),
           );
 
           if (!visibleOrder.length) return null;
@@ -5849,10 +6557,34 @@ class CryptoChart extends PureComponent {
             }),
           );
         })(),
-        // Page Ticker Bar (fixed position, two rows)
+        // Page Ticker (two scrolling rows, collapsible with a hover chevron)
         (() => {
-          const { pageTicker, pageTickerReady, pageTickerItems, pageTickerPosition } = this.state;
-          if (!pageTicker || !pageTickerReady || !pageTickerItems || pageTickerItems.length === 0) return null;
+          const {
+            pageTicker,
+            pageTickerReady,
+            pageTickerItems,
+            pageTickerPosition,
+            pageTickerCollapsed,
+          } = this.state;
+          if (showSettings || !pageTicker || !pageTickerReady || !pageTickerItems || pageTickerItems.length === 0) return null;
+
+          const position = pageTickerPosition || DEFAULT_PAGE_TICKER_POSITION;
+
+          const chevron = (dir) =>
+            React.createElement(
+              "svg",
+              { width: "14", height: "14", viewBox: "0 0 16 16", fill: "none", "aria-hidden": "true" },
+              React.createElement("path", {
+                d: dir === "up" ? "M3.5 10.5l4.5-4.5 4.5 4.5" : "M3.5 6l4.5 4.5 4.5-4.5",
+                stroke: "currentColor",
+                strokeWidth: "1.6",
+                strokeLinecap: "round",
+                strokeLinejoin: "round",
+              }),
+            );
+          // Collapse tucks toward the screen edge; expand pulls back toward centre
+          const collapseDir = position === "top" ? "up" : "down";
+          const expandDir = position === "top" ? "down" : "up";
 
           // Build doubled item list for seamless loop (translateX -50%)
           const makeTrack = (items) => {
@@ -5883,26 +6615,57 @@ class CryptoChart extends PureComponent {
           };
 
           return React.createElement(
-            PageTickerBar,
-            { position: pageTickerPosition || DEFAULT_PAGE_TICKER_POSITION },
+            PageTickerShell,
+            { position },
             React.createElement(
-              PageTickerRow,
-              null,
+              PageTickerCollapsible,
+              { position, collapsed: pageTickerCollapsed },
               React.createElement(
-                PageTickerTrack,
-                { speed: Math.max(30, pageTickerItems.length * 2) },
-                ...makeTrack(pageTickerItems),
+                PageTickerBar,
+                { position },
+                React.createElement(
+                  PageTickerRow,
+                  null,
+                  React.createElement(
+                    PageTickerTrack,
+                    { speed: Math.max(30, pageTickerItems.length * 2) },
+                    ...makeTrack(pageTickerItems),
+                  ),
+                ),
+                React.createElement(
+                  PageTickerRow,
+                  null,
+                  React.createElement(
+                    PageTickerTrack,
+                    { speed: Math.max(38, pageTickerItems.length * 2.5), style: { animationDelay: "-15s" } },
+                    ...makeTrack([...pageTickerItems].reverse()),
+                  ),
+                ),
+              ),
+              React.createElement(
+                PageTickerChevron,
+                {
+                  position,
+                  type: "button",
+                  onClick: this.togglePageTickerCollapsed,
+                  title: "Hide ticker",
+                  "aria-label": "Hide ticker",
+                },
+                chevron(collapseDir),
               ),
             ),
-            React.createElement(
-              PageTickerRow,
-              null,
+            pageTickerCollapsed &&
               React.createElement(
-                PageTickerTrack,
-                { speed: Math.max(38, pageTickerItems.length * 2.5), style: { animationDelay: "-15s" } },
-                ...makeTrack([...pageTickerItems].reverse()),
+                PageTickerHandle,
+                {
+                  position,
+                  type: "button",
+                  onClick: this.togglePageTickerCollapsed,
+                  title: "Show ticker",
+                  "aria-label": "Show ticker",
+                },
+                chevron(expandDir),
               ),
-            ),
           );
         })(),
 
@@ -5935,8 +6698,11 @@ class CryptoChart extends PureComponent {
             onPageTickerChange: this.handlePageTickerChange,
             pageTickerPosition: this.state.pageTickerPosition,
             onPageTickerPositionChange: this.handlePageTickerPositionChange,
+            chartColor: this.state.chartColor,
+            onChartColorChange: this.handleChartColorChange,
             widgets: widgets,
             onWidgetToggle: this.handleWidgetToggle,
+            onWidgetPreset: this.handleWidgetPreset,
           }),
       ),
     );

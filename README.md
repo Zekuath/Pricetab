@@ -14,27 +14,32 @@ A lightweight, privacy-focused Chrome extension that transforms your new tab int
 
 ## Features
 
-- **Real-time Charts** - Beautiful D3.js visualizations with smooth animations
-- **75+ Cryptocurrencies** - Bitcoin, Ethereum, Solana, and many more
-- **Dynamic Tab Title** - See prices without switching tabs (`BTC $43,250 (+5.2%)`)
+- **Live Price Charts** - Real-time charts with smooth animations on every new tab
+- **60+ Cryptocurrencies** - Bitcoin, Ethereum, Solana, and many more
+- **Market Widget Panel** - 9 optional signals: Fear & Greed, Market Overview, BTC Halving, RSI, funding rate, long/short ratio, open interest, liquidations, altcoin season
+- **Watchlist Heatmap** - Your coins as a colour-coded grid (green up / red down)
+- **Top Movers** - The day's biggest gainers and losers at a glance
+- **One-Click Presets** - "Holder", "Trader" or "Minimal" widget bundles
+- **Scrolling Ticker** - Optional live price bar across the top or bottom
+- **Live Tab Title** - Current price + 24h change right in the tab (`BTC $43,250 (+5.2%)`)
 - **6 Time Periods** - 1H, 1D, 1W, 1M, 1Y, ALL
-- **Dark/Light Themes** - Auto-detects system preference
+- **Dark / Light / Auto Themes** - Follows your system preference
 - **37 Currencies** - USD, EUR, GBP, TRY, JPY, and more
-- **Drag & Drop** - Reorder your coin watchlist
-- **Persistent Settings** - Your preferences survive browser restarts
-- **Privacy First** - All data stored locally, no accounts required
-- **Offline Capable** - Shows cached data when disconnected
-- **Fast** - Loads instantly, no external dependencies
+- **Drag & Drop** - Reorder your coins and widgets
+- **Privacy First** - Zero permissions, no account, all data stored locally
+- **100% Free** - No ads, no premium tier, loads instantly
 
 ### Market Widgets (optional, toggleable from settings)
 
+- **Watchlist** - Your coins as a colour-coded 24h heatmap
+- **Top Movers** - The day's biggest 24h gainers and losers
 - **Fear & Greed Index** - Crypto market sentiment score
-- **Market Overview** - Total market cap and 24h volume
+- **Market Overview** - Total market cap, volume and BTC/ETH dominance
 - **BTC Halving Countdown** - Days until next halving
 - **RSI Widget** - Relative Strength Index for current coin
-- **Funding Rate** - Perpetual futures funding rate (Binance)
-- **Long/Short Ratio** - Global long vs short account ratio (Binance)
-- **Open Interest** - Total open futures contracts in USD (Binance)
+- **Funding Rate** - Perpetual futures funding rate (OKX)
+- **Long/Short Ratio** - Long vs short account ratio (Bybit)
+- **Open Interest** - Total open futures contracts in USD (OKX)
 - **Liquidations** - 24h long/short liquidation volume (OKX)
 - **Altcoin Season Index** - BTC dominance-based market phase indicator
 
@@ -137,9 +142,10 @@ PriceTab is designed with privacy as a core principle:
 Network requests are made only to:
 - Coinbase Public API (price charts and spot prices)
 - Alternative.me (Fear & Greed Index)
-- Binance Futures API (funding rate, long/short ratio, open interest)
-- OKX Public API (liquidation data)
-- CoinGecko Public API (altcoin season / BTC dominance)
+- OKX Public API (funding rate, open interest, liquidations)
+- Bybit Public API (long/short ratio)
+- Coinlore Public API (market overview, altcoin season / BTC dominance)
+- mempool.space (BTC halving block height)
 
 All of these are public APIs requiring no authentication or account.
 
