@@ -1,0 +1,11 @@
+{
+  "name": "pricetab-tests",
+  "private": true,
+  "description": "Dev-only test dependencies (jsdom for the smoke test)",
+  "scripts": {
+    "test": "node run-all.js"
+  },
+  "devDependencies": {
+    "jsdom": "^24.0.0"
+  }
+}

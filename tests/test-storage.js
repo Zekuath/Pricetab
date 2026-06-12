@@ -1,0 +1,146 @@
+// Smoke test for the centralized storage helpers.
+// Runs config.js + storage.js + widgets-data.js + utils.js in a vm context
+// with a stubbed localStorage, then asserts load/save semantics.
+const fs = require("fs");
+const path = require("path");
+const vm = require("vm");
+const assert = require("assert");
+
+const store = {};
+const sandbox = {
+  console,
+  Date,
+  JSON,
+  Math,
+  Array,
+  Object,
+  Set,
+  Promise,
+  parseInt,
+  parseFloat,
+  isFinite,
+  setTimeout,
+  fetch: () => Promise.reject(new Error("no network in test")),
+  window: { matchMedia: () => ({ matches: false }) },
+  localStorage: {
+    getItem: (k) => (k in store ? store[k] : null),
+    setItem: (k, v) => {
+      store[k] = String(v);
+    },
+    removeItem: (k) => {
+      delete store[k];
+    },
+  },
+  // d3 line() stub — chainable, only referenced at top level of utils.js
+  line: () => {
+    const o = {};
+    o.x = () => o;
+    o.y = () => o;
+    return o;
+  },
+};
+vm.createContext(sandbox);
+
+const base = path.join(__dirname, "..", "src");
+for (const f of ["config.js", "storage.js", "widgets-data.js", "utils.js"]) {
+  vm.runInContext(fs.readFileSync(`${base}/${f}`, "utf8"), sandbox, {
+    filename: f,
+  });
+}
+
+const run = (code) => vm.runInContext(code, sandbox);
+
+// --- theme ---
+assert.strictEqual(run("loadThemeFromStorage()"), "auto", "theme default");
+run('saveThemeToStorage("dark")');
+assert.strictEqual(run("loadThemeFromStorage()"), "dark", "theme roundtrip");
+store["crypto_chart_theme"] = "purple";
+assert.strictEqual(run("loadThemeFromStorage()"), "auto", "theme whitelist");
+
+// --- bools ---
+assert.strictEqual(run("loadNewsTickerFromStorage()"), false, "news default");
+run("saveNewsTickerToStorage(true)");
+assert.strictEqual(run("loadNewsTickerFromStorage()"), true, "news roundtrip");
+assert.strictEqual(run("loadChartColorFromStorage()"), true, "chartColor default true");
+run("saveChartColorToStorage(false)");
+assert.strictEqual(run("loadChartColorFromStorage()"), false, "chartColor roundtrip");
+assert.strictEqual(run("loadAutoRotateFromStorage()"), false, "autoRotate default");
+assert.strictEqual(run("loadTickerFromStorage()"), false, "ticker default");
+assert.strictEqual(run("loadPageTickerFromStorage()"), false, "pageTicker default");
+assert.strictEqual(run("loadPageTickerCollapsedFromStorage()"), false, "collapsed default");
+
+// --- numbers with whitelist ---
+assert.strictEqual(run("loadRefreshIntervalFromStorage()"), run("DEFAULT_REFRESH_INTERVAL"), "refresh default");
+const validRefresh = run("REFRESH_INTERVAL_OPTIONS[1].value");
+run(`saveRefreshIntervalToStorage(${validRefresh})`);
+assert.strictEqual(run("loadRefreshIntervalFromStorage()"), validRefresh, "refresh roundtrip");
+store["crypto_chart_refresh_interval"] = "123456";
+assert.strictEqual(run("loadRefreshIntervalFromStorage()"), run("DEFAULT_REFRESH_INTERVAL"), "refresh whitelist");
+
+assert.strictEqual(run("loadDecimalPlacesFromStorage()"), run("DEFAULT_DECIMAL_PLACES"), "decimals default");
+const validDp = run("DECIMAL_PLACES_OPTIONS[0].value");
+run(`saveDecimalPlacesToStorage(${validDp})`);
+assert.strictEqual(run("loadDecimalPlacesFromStorage()"), validDp, "decimals roundtrip");
+
+assert.strictEqual(run("loadAutoRotateIntervalFromStorage()"), run("DEFAULT_AUTO_ROTATE_INTERVAL"), "rotate interval default");
+const validRot = run("AUTO_ROTATE_OPTIONS[2].value");
+run(`saveAutoRotateIntervalToStorage(${validRot})`);
+assert.strictEqual(run("loadAutoRotateIntervalFromStorage()"), validRot, "rotate interval roundtrip");
+
+// --- enums ---
+assert.strictEqual(run("loadSeparatorFormatFromStorage()"), run("DEFAULT_SEPARATOR_FORMAT"), "separator default");
+run('saveSeparatorFormatToStorage("eu")');
+assert.strictEqual(run("loadSeparatorFormatFromStorage()"), "eu", "separator roundtrip");
+store["crypto_chart_separator_format"] = "weird";
+assert.strictEqual(run("loadSeparatorFormatFromStorage()"), run("DEFAULT_SEPARATOR_FORMAT"), "separator whitelist");
+
+assert.strictEqual(run("loadCurrencyFromStorage()"), "USD", "currency default");
+run('saveCurrencyToStorage("EUR")');
+assert.strictEqual(run("loadCurrencyFromStorage()"), "EUR", "currency roundtrip");
+store["crypto_chart_currency"] = "ZZZ";
+assert.strictEqual(run("loadCurrencyFromStorage()"), "USD", "currency whitelist");
+
+assert.strictEqual(run("loadTickerFormatFromStorage()"), run("DEFAULT_TICKER_FORMAT"), "ticker format default");
+assert.strictEqual(run("loadPageTickerPositionFromStorage()"), "bottom", "position default");
+run('savePageTickerPositionToStorage("top")');
+assert.strictEqual(run("loadPageTickerPositionFromStorage()"), "top", "position roundtrip");
+
+// --- rate prompt (custom: null→false, error→true) ---
+assert.strictEqual(run("loadRatePromptDismissed()"), false, "rate prompt default");
+run("saveRatePromptDismissed()");
+assert.strictEqual(run("loadRatePromptDismissed()"), true, "rate prompt roundtrip");
+
+// --- JSON: widgets ---
+assert.strictEqual(
+  JSON.stringify(run("loadWidgetsFromStorage()")),
+  JSON.stringify(run("({ ...DEFAULT_WIDGETS, ...STARTER_WIDGETS })")),
+  "widgets: new install seeds starter set",
+);
+run("saveWidgetsToStorage({ ...DEFAULT_WIDGETS, rsiWidget: true })");
+assert.strictEqual(run("loadWidgetsFromStorage().rsiWidget"), true, "widgets roundtrip");
+assert.strictEqual(run("loadWidgetsFromStorage().watchlist"), false, "widgets: saved choices win over starter");
+
+// --- JSON: hidden widgets ---
+assert.strictEqual(JSON.stringify(run("loadHiddenWidgetsFromStorage()")), "{}", "hidden default");
+run('saveHiddenWidgetsToStorage({ fearGreed: true })');
+assert.strictEqual(JSON.stringify(run("loadHiddenWidgetsFromStorage()")), JSON.stringify({ fearGreed: true }), "hidden roundtrip");
+
+// --- JSON: widget order ---
+assert.strictEqual(JSON.stringify(run("loadWidgetOrderFromStorage()")), JSON.stringify(run("DEFAULT_WIDGET_ORDER")), "order default");
+run('saveWidgetOrderToStorage(["fearGreed", "watchlist", "bogusKey"])');
+const order = run("loadWidgetOrderFromStorage()");
+assert.strictEqual(order[0], "fearGreed", "order: saved order respected");
+assert.strictEqual(order[1], "watchlist", "order: saved order respected");
+assert.ok(!order.includes("bogusKey"), "order: unknown keys dropped");
+assert.strictEqual(order.length, run("DEFAULT_WIDGET_ORDER.length"), "order: missing keys appended");
+
+// --- JSON: coin options ---
+assert.strictEqual(JSON.stringify(run("loadCoinOptionsFromStorage()")), JSON.stringify(["BTC", "ETH", "XRP", "LTC"]), "coins default");
+run('saveCoinOptionsToStorage(["SOL", "BTC"])');
+assert.strictEqual(JSON.stringify(run("loadCoinOptionsFromStorage()")), JSON.stringify(["SOL", "BTC"]), "coins roundtrip");
+store["crypto_chart_coin_options"] = JSON.stringify(["sol", "FAKECOIN", 42]);
+assert.strictEqual(JSON.stringify(run("loadCoinOptionsFromStorage()")), JSON.stringify(["SOL"]), "coins: whitelist + uppercase, junk dropped");
+store["crypto_chart_coin_options"] = "not json{";
+assert.strictEqual(JSON.stringify(run("loadCoinOptionsFromStorage()")), JSON.stringify(["BTC", "ETH", "XRP", "LTC"]), "coins: corrupt JSON falls back");
+
+console.log("ALL STORAGE TESTS PASSED");

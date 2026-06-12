@@ -28,3 +28,7 @@ npm-debug.log*
 # Packaged store build artifacts
 assets/upload/
 *.zip
+
+# Test dependencies (dev-only)
+tests/node_modules/
+tests/package-lock.json
