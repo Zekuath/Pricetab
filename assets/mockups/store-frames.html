@@ -3,64 +3,128 @@
 <head>
 <meta charset="UTF-8" />
 <title>PriceTab — Store Screenshot Frames (1280×800)</title>
-<link rel="stylesheet" href="/vendor/roboto-mono.css" />
+<link rel="stylesheet" href="../../vendor/roboto-mono.css" />
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  :root { --green: #34d399; --muted: #9a9a9a; }
+  :root {
+    --green: #34d399;
+    --green-dim: rgba(52, 211, 153, 0.55);
+    --red: #f87171;
+    --ink: #f4f6f5;
+    --muted: #aab3ae;
+    --base: #07090c;
+  }
   body {
     background: #161616; padding: 40px;
     font-family: "Roboto Mono", ui-monospace, monospace;
     display: flex; flex-direction: column; gap: 44px; align-items: flex-start;
   }
   .hint { color: #888; font-size: 12px; margin-bottom: 8px; letter-spacing: .4px; }
-  .frame { width: 1280px; height: 800px; position: relative; overflow: hidden; background: #000; }
+  .frame { width: 1280px; height: 800px; position: relative; overflow: hidden; background: var(--base); }
 
-  /* ---------- HERO ---------- */
-  .hero { display: flex; flex-direction: column; align-items: center; justify-content: center; }
-  .hero .bg {
-    position: absolute; inset: 0;
-    background: url('/assets/mockups/raw/dashboard.png') center/cover no-repeat;
-    opacity: 0.16;
+  /* ---------- SHARED BACKDROP ---------- */
+  .frame::before {
+    content: ""; position: absolute; inset: 0; z-index: 0;
+    background:
+      radial-gradient(900px 520px at 18% -10%, rgba(52, 211, 153, 0.14), transparent 64%),
+      radial-gradient(820px 560px at 105% 112%, rgba(248, 113, 113, 0.10), transparent 60%),
+      radial-gradient(1200px 800px at 50% 50%, rgba(20, 27, 34, 0.85), var(--base) 100%);
   }
-  .hero .bg::after {
-    content: ""; position: absolute; inset: 0;
-    background: radial-gradient(circle at 50% 42%, rgba(0,0,0,0.35), #000 72%);
+  .frame::after { /* chart-paper grid */
+    content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none;
+    background:
+      repeating-linear-gradient(to right, rgba(255,255,255,0.025) 0 1px, transparent 1px 64px),
+      repeating-linear-gradient(to bottom, rgba(255,255,255,0.025) 0 1px, transparent 1px 64px);
+    mask-image: radial-gradient(85% 85% at 50% 40%, #000 30%, transparent 100%);
   }
-  .hero .brand { display: flex; align-items: center; gap: 26px; z-index: 2; }
-  .hero .brand img { width: 96px; height: 96px; border-radius: 22px; }
-  .hero .wm { font-size: 80px; font-weight: 500; color: #fff; letter-spacing: -2px; }
-  .hero .tag { z-index: 2; color: #e3e3e3; font-size: 27px; margin-top: 26px; font-weight: 300; }
-  .hero .bullets { z-index: 2; display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin-top: 44px; max-width: 1000px; }
+  .frame > * { position: relative; z-index: 2; }
+
+  /* ---------- BROWSER WINDOW ---------- */
+  .browser {
+    border-radius: 14px; overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.10);
+    background: #0d1015;
+    box-shadow:
+      0 40px 90px -20px rgba(0, 0, 0, 0.85),
+      0 0 80px -24px rgba(52, 211, 153, 0.28);
+  }
+  .browser .bar {
+    height: 44px; display: flex; align-items: center; gap: 14px; padding: 0 18px;
+    background: linear-gradient(#181c22, #14171d);
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+  }
+  .browser .dots { display: flex; gap: 8px; }
+  .browser .dots i { width: 12px; height: 12px; border-radius: 50%; display: block; }
+  .browser .dots i:nth-child(1) { background: #ff5f57; }
+  .browser .dots i:nth-child(2) { background: #febc2e; }
+  .browser .dots i:nth-child(3) { background: #28c840; }
+  .browser .tab {
+    display: flex; align-items: center; gap: 9px;
+    background: rgba(255,255,255,0.07); border-radius: 8px;
+    padding: 7px 16px; font-size: 13px; color: #cfd5d1; letter-spacing: .3px;
+  }
+  .browser .tab img { width: 15px; height: 15px; border-radius: 4px; }
+  .browser .shot { display: block; width: 100%; }
+
+  /* ---------- HERO (01) ---------- */
+  .hero { display: flex; flex-direction: column; align-items: center; }
+  .hero .brand { display: flex; align-items: center; gap: 24px; margin-top: 86px; }
+  .hero .brand img {
+    width: 84px; height: 84px; border-radius: 20px;
+    box-shadow: 0 14px 40px -8px rgba(0,0,0,.8), 0 0 44px -10px var(--green-dim);
+  }
+  .hero .wm { font-size: 72px; font-weight: 500; color: var(--ink); letter-spacing: -2px; }
+  .hero .wm b { color: var(--green); font-weight: 500; }
+  .hero .tag { color: var(--muted); font-size: 24px; margin-top: 20px; font-weight: 300; letter-spacing: .2px; }
+  .hero .bullets { display: flex; flex-wrap: wrap; gap: 11px; justify-content: center; margin-top: 34px; max-width: 980px; }
   .hero .pill {
-    border: 1px solid rgba(255,255,255,0.18); border-radius: 999px;
-    padding: 11px 20px; font-size: 17px; color: #ededed; background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(52, 211, 153, 0.28); border-radius: 999px;
+    padding: 10px 19px; font-size: 15.5px; color: #e9eeec;
+    background: linear-gradient(rgba(52,211,153,0.08), rgba(52,211,153,0.03));
   }
   .hero .pill b { color: var(--green); font-weight: 500; }
+  .hero .browser { width: 1020px; margin-top: 52px; flex: none; }
 
-  /* ---------- FEATURE FRAMES ---------- */
-  .feat { background: radial-gradient(120% 120% at 50% 0%, #0f0f0f 0%, #000 58%); display: flex; flex-direction: column; }
-  .cap { flex: 0 0 146px; padding: 0 60px; display: flex; flex-direction: column; justify-content: center; border-bottom: 1px solid rgba(255,255,255,0.06); }
-  .cap .row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  /* ---------- FEATURE FRAMES (02-06) ---------- */
+  .feat { display: flex; flex-direction: column; }
+  .cap { flex: 0 0 178px; padding: 0 64px; display: flex; flex-direction: column; justify-content: center; }
+  .cap .row { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
   .cap .row img { width: 26px; height: 26px; border-radius: 7px; }
-  .cap .kicker { color: var(--green); font-size: 14px; letter-spacing: 2.5px; text-transform: uppercase; }
-  .cap .title { color: #fff; font-size: 35px; font-weight: 500; letter-spacing: -0.5px; line-height: 1.15; }
-  .shot {
-    flex: 1; margin: 26px 44px 40px; border-radius: 12px; overflow: hidden;
-    border: 1px solid rgba(255,255,255,0.10);
-    background-color: #000; background-size: cover; background-position: top center; background-repeat: no-repeat;
+  .cap .kicker { color: var(--green); font-size: 14px; letter-spacing: 3px; text-transform: uppercase; }
+  .cap .kicker::after {
+    content: ""; display: inline-block; vertical-align: middle;
+    width: 64px; height: 1px; margin-left: 16px;
+    background: linear-gradient(to right, var(--green-dim), transparent);
   }
+  .cap .title { color: var(--ink); font-size: 40px; font-weight: 500; letter-spacing: -0.8px; line-height: 1.12; }
+  .cap .title b { color: var(--green); font-weight: 500; }
+  .feat .browser { margin: 10px 64px 0; flex: 1; }
+  .feat .browser .shot { object-fit: cover; object-position: top center; width: 100%; height: calc(100% - 44px); }
 </style>
+<script>
+  // ?only=f01 → show a single frame at 0,0 for exact headless capture
+  addEventListener("DOMContentLoaded", () => {
+    const only = new URLSearchParams(location.search).get("only");
+    if (!only) return;
+    document.body.style.cssText = "padding:0;margin:0;background:#000;overflow:hidden;";
+    document.querySelectorAll("body > div").forEach((wrap) => {
+      const frame = wrap.querySelector(".frame");
+      if (!frame || frame.id !== only) { wrap.style.display = "none"; return; }
+      wrap.querySelector(".hint").style.display = "none";
+      frame.style.cssText += "position:fixed;top:0;left:0;";
+    });
+  });
+</script>
 </head>
 <body>
 
   <!-- 01 HERO -->
   <div>
-    <div class="hint">01-hero — right-click .frame → "Capture node screenshot"</div>
+    <div class="hint">01-hero — headless: ?only=f01 (or right-click .frame → "Capture node screenshot")</div>
     <div class="frame hero" id="f01">
-      <div class="bg"></div>
       <div class="brand">
-        <img src="/assets/icons/icon128.png" alt="" />
-        <span class="wm">pricetab</span>
+        <img src="../icons/icon128.png" alt="" />
+        <span class="wm">price<b>tab</b></span>
       </div>
       <div class="tag">Live crypto charts on every new tab.</div>
       <div class="bullets">
@@ -72,66 +136,103 @@
         <span class="pill"><b>Zero</b> permissions</span>
         <span class="pill"><b>100%</b> free</span>
       </div>
+      <div class="browser">
+        <div class="bar">
+          <span class="dots"><i></i><i></i><i></i></span>
+          <span class="tab"><img src="../icons/icon128.png" alt="" />New Tab</span>
+        </div>
+        <img class="shot" src="raw/dashboard.png" alt="" />
+      </div>
     </div>
   </div>
 
   <!-- 02 DASHBOARD -->
   <div>
-    <div class="hint">02-dashboard</div>
+    <div class="hint">02-dashboard — ?only=f02</div>
     <div class="frame feat" id="f02">
       <div class="cap">
-        <div class="row"><img src="/assets/icons/icon128.png" alt="" /><span class="kicker">New tab → instant dashboard</span></div>
-        <div class="title">Every new tab is a live crypto chart</div>
+        <div class="row"><img src="../icons/icon128.png" alt="" /><span class="kicker">New tab → instant dashboard</span></div>
+        <div class="title">Every new tab is a <b>live crypto chart</b></div>
       </div>
-      <div class="shot" style="background-image:url('/assets/mockups/raw/dashboard.png')"></div>
+      <div class="browser">
+        <div class="bar">
+          <span class="dots"><i></i><i></i><i></i></span>
+          <span class="tab"><img src="../icons/icon128.png" alt="" />New Tab</span>
+        </div>
+        <img class="shot" src="raw/dashboard.png" alt="" />
+      </div>
     </div>
   </div>
 
   <!-- 03 WATCHLIST + MOVERS -->
   <div>
-    <div class="hint">03-watchlist-movers</div>
+    <div class="hint">03-watchlist-movers — ?only=f03</div>
     <div class="frame feat" id="f03">
       <div class="cap">
-        <div class="row"><img src="/assets/icons/icon128.png" alt="" /><span class="kicker">Make it yours</span></div>
-        <div class="title">Your watchlist + the day's top movers</div>
+        <div class="row"><img src="../icons/icon128.png" alt="" /><span class="kicker">Make it yours</span></div>
+        <div class="title">Your <b>watchlist</b> + the day's <b>top movers</b></div>
       </div>
-      <div class="shot" style="background-image:url('/assets/mockups/raw/wl-movers.png')"></div>
+      <div class="browser">
+        <div class="bar">
+          <span class="dots"><i></i><i></i><i></i></span>
+          <span class="tab"><img src="../icons/icon128.png" alt="" />New Tab</span>
+        </div>
+        <img class="shot" src="raw/wl-movers.png" alt="" />
+      </div>
     </div>
   </div>
 
   <!-- 04 SIGNALS -->
   <div>
-    <div class="hint">04-signals</div>
+    <div class="hint">04-signals — ?only=f04</div>
     <div class="frame feat" id="f04">
       <div class="cap">
-        <div class="row"><img src="/assets/icons/icon128.png" alt="" /><span class="kicker">Pro market data</span></div>
-        <div class="title">9 market signals traders actually watch</div>
+        <div class="row"><img src="../icons/icon128.png" alt="" /><span class="kicker">Pro market data</span></div>
+        <div class="title"><b>9 market signals</b> traders actually watch</div>
       </div>
-      <div class="shot" style="background-image:url('/assets/mockups/raw/signals.png')"></div>
+      <div class="browser">
+        <div class="bar">
+          <span class="dots"><i></i><i></i><i></i></span>
+          <span class="tab"><img src="../icons/icon128.png" alt="" />New Tab</span>
+        </div>
+        <img class="shot" src="raw/signals.png" alt="" />
+      </div>
     </div>
   </div>
 
   <!-- 05 PRESETS -->
   <div>
-    <div class="hint">05-presets</div>
+    <div class="hint">05-presets — ?only=f05</div>
     <div class="frame feat" id="f05">
       <div class="cap">
-        <div class="row"><img src="/assets/icons/icon128.png" alt="" /><span class="kicker">One-click setup</span></div>
-        <div class="title">Holder or Trader — set up in a tap</div>
+        <div class="row"><img src="../icons/icon128.png" alt="" /><span class="kicker">One-click setup</span></div>
+        <div class="title"><b>Holder</b> or <b>Trader</b> — set up in a tap</div>
       </div>
-      <div class="shot" style="background-image:url('/assets/mockups/raw/presets.png')"></div>
+      <div class="browser">
+        <div class="bar">
+          <span class="dots"><i></i><i></i><i></i></span>
+          <span class="tab"><img src="../icons/icon128.png" alt="" />New Tab</span>
+        </div>
+        <img class="shot" src="raw/presets.png" alt="" />
+      </div>
     </div>
   </div>
 
   <!-- 06 THEMES -->
   <div>
-    <div class="hint">06-themes</div>
+    <div class="hint">06-themes — ?only=f06</div>
     <div class="frame feat" id="f06">
       <div class="cap">
-        <div class="row"><img src="/assets/icons/icon128.png" alt="" /><span class="kicker">Themes</span></div>
-        <div class="title">Dark, light, or auto — your call</div>
+        <div class="row"><img src="../icons/icon128.png" alt="" /><span class="kicker">Themes</span></div>
+        <div class="title"><b>Dark</b>, <b>light</b>, or auto — your call</div>
       </div>
-      <div class="shot" style="background-image:url('/assets/mockups/raw/light.png')"></div>
+      <div class="browser">
+        <div class="bar">
+          <span class="dots"><i></i><i></i><i></i></span>
+          <span class="tab"><img src="../icons/icon128.png" alt="" />New Tab</span>
+        </div>
+        <img class="shot" src="raw/light.png" alt="" />
+      </div>
     </div>
   </div>
 

@@ -23,11 +23,13 @@ The images are composed from a template + real app captures:
 - **Template:** `../mockups/store-frames.html` (caption bands + logo + brand styling)
 - **Raw app captures:** `../mockups/raw/*.png` (the live UI behind each frame)
 
-To rebuild: load `store-frames.html` in Chrome, then right-click each `.frame`
-→ "Capture node screenshot" (or re-run the headless render). Re-capture the raw
-UI first if features changed.
+To rebuild: run the headless render documented in `../mockups/README.md`
+(one command per image), or capture manually with "Capture node screenshot".
+Re-capture the raw UI first if features changed.
 
-## Promotional tiles (separate, unchanged)
+## Promotional tiles
 
-The store's promotional images live in `../promotional/`:
+The store's promotional images live in `../promotional/` and share the same
+design system (glow backdrop + browser-framed UI):
 `Small Tile.png` (440×280), `Large Tile.png` (920×680), `Marquee.png` (1400×560).
+Rebuild them with the same headless render via `../mockups/promo-tiles.html`.

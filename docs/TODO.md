@@ -125,9 +125,9 @@ Core functionality that has been implemented and tested.
 |------|--------|--------|-------|
 | Capture fresh screenshots (1.2.0, widgets/ticker visible) | [x] | Medium | 6 done → `assets/screenshots/01-06`; raw in `assets/mockups/raw/` |
 | Wrap screenshots in caption frames (1280×800) | [x] | Low | `assets/mockups/store-frames.html` |
-| Re-export Small Tile (440×280) | [ ] | Low | `assets/mockups/promo-tiles.html` (current tiles kept) |
-| Re-export Large Tile (920×680) | [ ] | Low | `assets/mockups/promo-tiles.html` (current tiles kept) |
-| Re-export Marquee (1400×560) | [ ] | Low | `assets/mockups/promo-tiles.html` (current tiles kept) |
+| Re-export Small Tile (440×280) | [x] | Low | `assets/mockups/promo-tiles.html` (redesigned + re-rendered) |
+| Re-export Large Tile (920×680) | [x] | Low | `assets/mockups/promo-tiles.html` (redesigned + re-rendered) |
+| Re-export Marquee (1400×560) | [x] | Low | `assets/mockups/promo-tiles.html` (redesigned + re-rendered) |
 | Mockup/template HTML created | [x] | Medium | `assets/mockups/store-frames.html` + `promo-tiles.html` |
 
 **Asset status:**

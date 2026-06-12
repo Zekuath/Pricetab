@@ -2,203 +2,182 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>PriceTab — Promo Tiles</title>
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@300;400;500;700;900&display=swap" rel="stylesheet" />
+<title>PriceTab — Promo Tiles (440×280 / 920×680 / 1400×560)</title>
+<link rel="stylesheet" href="../../vendor/roboto-mono.css" />
 <style>
-  :root {
-    --bg: #000000;
-    --bg2: #0a0a0a;
-    --text: #ffffff;
-    --muted: #8a8a8a;
-    --blue: #60a5fa;
-    --green: #34d399;
-    --red: #f87171;
-    --grid: rgba(255, 255, 255, 0.05);
-  }
   * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --green: #34d399;
+    --green-dim: rgba(52, 211, 153, 0.55);
+    --ink: #f4f6f5;
+    --muted: #aab3ae;
+    --base: #07090c;
+  }
   body {
-    background: #161616;
-    font-family: 'Roboto Mono', ui-monospace, monospace;
-    color: var(--text);
-    padding: 40px;
-    display: flex;
-    flex-direction: column;
-    gap: 48px;
-    align-items: flex-start;
+    background: #161616; padding: 40px;
+    font-family: "Roboto Mono", ui-monospace, monospace;
+    display: flex; flex-direction: column; gap: 44px; align-items: flex-start;
   }
-  .label {
-    color: #bbb;
-    font-size: 13px;
-    margin-bottom: 10px;
-    letter-spacing: 1px;
-  }
-  .tile {
-    position: relative;
-    overflow: hidden;
-    background: radial-gradient(120% 120% at 50% 0%, #0e0e0e 0%, #000 60%);
-    border: 1px solid rgba(255,255,255,0.04);
-  }
-  /* faint background chart that bleeds behind content */
-  .bg-chart {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    opacity: 0.18;
-    pointer-events: none;
-  }
-  .grid-bg {
-    position: absolute;
-    inset: 0;
-    background-image:
-      linear-gradient(var(--grid) 1px, transparent 1px),
-      linear-gradient(90deg, var(--grid) 1px, transparent 1px);
-    background-size: 48px 48px;
-    mask-image: radial-gradient(120% 100% at 50% 40%, #000 40%, transparent 80%);
-  }
+  .hint { color: #888; font-size: 12px; margin-bottom: 8px; letter-spacing: .4px; }
+  .tile { position: relative; overflow: hidden; background: var(--base); }
 
-  /* ---- Logo mark ---- */
-  .logo {
-    display: inline-flex;
-    align-items: center;
-    gap: 22px;
+  .tile::before {
+    content: ""; position: absolute; inset: 0; z-index: 0;
+    background:
+      radial-gradient(70% 90% at 16% -8%, rgba(52, 211, 153, 0.16), transparent 62%),
+      radial-gradient(64% 80% at 104% 110%, rgba(248, 113, 113, 0.10), transparent 58%),
+      radial-gradient(120% 120% at 50% 50%, rgba(20, 27, 34, 0.85), var(--base) 100%);
   }
-  .mark {
-    background: rgba(255,255,255,0.04);
+  .tile::after {
+    content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none;
+    background:
+      repeating-linear-gradient(to right, rgba(255,255,255,0.025) 0 1px, transparent 1px 56px),
+      repeating-linear-gradient(to bottom, rgba(255,255,255,0.025) 0 1px, transparent 1px 56px);
+    mask-image: radial-gradient(90% 90% at 45% 40%, #000 30%, transparent 100%);
+  }
+  .tile > * { position: relative; z-index: 2; }
+
+  .browser {
+    border-radius: 12px; overflow: hidden;
     border: 1px solid rgba(255,255,255,0.10);
-    border-radius: 22%;
-    display: grid;
-    place-items: center;
+    background: #0d1015;
+    box-shadow:
+      0 34px 80px -18px rgba(0, 0, 0, 0.85),
+      0 0 70px -22px rgba(52, 211, 153, 0.30);
   }
-  .wordmark {
-    font-weight: 700;
-    letter-spacing: -1px;
-    line-height: 1;
+  .browser .bar {
+    height: 36px; display: flex; align-items: center; gap: 12px; padding: 0 14px;
+    background: linear-gradient(#181c22, #14171d);
+    border-bottom: 1px solid rgba(255,255,255,0.07);
   }
-  .tagline {
-    color: var(--muted);
-    font-weight: 400;
+  .browser .dots { display: flex; gap: 7px; }
+  .browser .dots i { width: 10px; height: 10px; border-radius: 50%; display: block; }
+  .browser .dots i:nth-child(1) { background: #ff5f57; }
+  .browser .dots i:nth-child(2) { background: #febc2e; }
+  .browser .dots i:nth-child(3) { background: #28c840; }
+  .browser .tab {
+    display: flex; align-items: center; gap: 8px;
+    background: rgba(255,255,255,0.07); border-radius: 7px;
+    padding: 5px 13px; font-size: 11.5px; color: #cfd5d1; letter-spacing: .3px;
   }
+  .browser .tab img { width: 13px; height: 13px; border-radius: 3px; }
+  .browser .shot { display: block; width: 100%; }
 
-  /* ===== SMALL TILE 440x280 ===== */
-  #small { width: 440px; height: 280px; padding: 36px; display: flex; flex-direction: column; justify-content: center; }
-  #small .mark { width: 64px; height: 64px; }
-  #small .wordmark { font-size: 40px; }
-  #small .tagline { font-size: 15px; margin-top: 20px; max-width: 320px; line-height: 1.5; }
+  .wm { color: var(--ink); font-weight: 500; letter-spacing: -1px; }
+  .wm b { color: var(--green); font-weight: 500; }
 
-  /* ===== LARGE TILE 920x680 ===== */
-  #large { width: 920px; height: 680px; padding: 64px; display: flex; flex-direction: column; }
-  #large .mark { width: 96px; height: 96px; }
-  #large .wordmark { font-size: 64px; }
-  #large .headline { font-size: 46px; font-weight: 500; line-height: 1.25; margin-top: 56px; letter-spacing: -1px; }
-  #large .headline .accent { color: var(--green); }
-  #large .sub { color: var(--muted); font-size: 19px; margin-top: 22px; line-height: 1.6; max-width: 560px; }
-  #large .pills { display: flex; gap: 12px; margin-top: 40px; flex-wrap: wrap; }
-  #large .pill { border: 1px solid rgba(255,255,255,0.14); color: #ddd; font-size: 14px; padding: 9px 16px; border-radius: 999px; }
-  #large .priceTag {
-    position: absolute; right: 64px; top: 64px; text-align: right;
+  /* ---------- SMALL TILE 440×280 ---------- */
+  #small { width: 440px; height: 280px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; }
+  #small img.logo {
+    width: 72px; height: 72px; border-radius: 17px;
+    box-shadow: 0 12px 32px -6px rgba(0,0,0,.8), 0 0 36px -8px var(--green-dim);
   }
-  #large .priceTag .p { font-size: 34px; font-weight: 700; }
-  #large .priceTag .c { color: var(--green); font-size: 18px; margin-top: 6px; }
+  #small .wm { font-size: 44px; letter-spacing: -1.5px; }
+  #small .tag { color: var(--muted); font-size: 13.5px; font-weight: 300; }
 
-  /* ===== MARQUEE 1400x560 ===== */
-  #marquee { width: 1400px; height: 560px; padding: 0 96px; display: flex; align-items: center; gap: 72px; }
-  #marquee .mark { width: 120px; height: 120px; }
-  #marquee .left { flex: 0 0 auto; }
-  #marquee .wordmark { font-size: 92px; }
-  #marquee .tagline { font-size: 28px; margin-top: 24px; }
-  #marquee .right { flex: 1; position: relative; height: 320px; }
+  /* ---------- LARGE TILE 920×680 ---------- */
+  #large { width: 920px; height: 680px; display: flex; flex-direction: column; align-items: center; }
+  #large .brand { display: flex; align-items: center; gap: 18px; margin-top: 64px; }
+  #large .brand img {
+    width: 64px; height: 64px; border-radius: 15px;
+    box-shadow: 0 12px 36px -6px rgba(0,0,0,.8), 0 0 40px -8px var(--green-dim);
+  }
+  #large .wm { font-size: 54px; }
+  #large .tag { color: var(--muted); font-size: 18px; font-weight: 300; margin-top: 16px; }
+  #large .browser { width: 780px; margin-top: 44px; flex: none; }
 
-  svg.chart line, svg.chart path { vector-effect: non-scaling-stroke; }
+  /* ---------- MARQUEE 1400×560 ---------- */
+  #marquee { width: 1400px; height: 560px; }
+  #marquee .copy {
+    position: absolute; left: 84px; top: 50%; transform: translateY(-50%);
+    max-width: 560px;
+  }
+  #marquee .brand { display: flex; align-items: center; gap: 18px; }
+  #marquee .brand img {
+    width: 68px; height: 68px; border-radius: 16px;
+    box-shadow: 0 12px 36px -6px rgba(0,0,0,.8), 0 0 40px -8px var(--green-dim);
+  }
+  #marquee .wm { font-size: 58px; }
+  #marquee .tag { color: var(--ink); font-size: 23px; font-weight: 300; margin-top: 24px; line-height: 1.45; }
+  #marquee .tag b { color: var(--green); font-weight: 500; }
+  #marquee .pills { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 28px; max-width: 440px; }
+  #marquee .pill {
+    border: 1px solid rgba(52, 211, 153, 0.28); border-radius: 999px;
+    padding: 8px 16px; font-size: 14px; color: #e9eeec;
+    background: linear-gradient(rgba(52,211,153,0.08), rgba(52,211,153,0.03));
+  }
+  #marquee .pill b { color: var(--green); font-weight: 500; }
+  #marquee .browser { position: absolute; right: -64px; top: 64px; width: 760px; }
 </style>
+<script>
+  // ?only=small|large|marquee → show one tile at 0,0 for exact headless capture
+  addEventListener("DOMContentLoaded", () => {
+    const only = new URLSearchParams(location.search).get("only");
+    if (!only) return;
+    document.body.style.cssText = "padding:0;margin:0;background:#000;overflow:hidden;";
+    document.querySelectorAll("body > div").forEach((wrap) => {
+      const tile = wrap.querySelector(".tile");
+      if (!tile || tile.id !== only) { wrap.style.display = "none"; return; }
+      wrap.querySelector(".hint").style.display = "none";
+      tile.style.cssText += "position:fixed;top:0;left:0;";
+    });
+  });
+</script>
 </head>
 <body>
 
-  <!-- ================= SMALL TILE ================= -->
+  <!-- SMALL TILE -->
   <div>
-    <div class="label">SMALL TILE — 440 × 280 (right-click #small in DevTools → "Capture node screenshot")</div>
+    <div class="hint">Small Tile 440×280 — ?only=small</div>
     <div class="tile" id="small">
-      <div class="grid-bg"></div>
-      <svg class="bg-chart" viewBox="0 0 440 280" preserveAspectRatio="none">
-        <path d="M0,210 L40,200 L80,215 L120,180 L160,190 L200,150 L240,165 L280,120 L320,135 L360,90 L400,70 L440,40"
-              fill="none" stroke="#60a5fa" stroke-width="2.5"/>
-      </svg>
-      <div class="logo">
-        <div class="mark">
-          <svg width="60%" height="60%" viewBox="0 0 100 100" fill="none">
-            <path d="M10,78 L34,58 L52,66 L88,18" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M70,18 L88,18 L88,36" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
-            <circle cx="34" cy="58" r="5" fill="#fff"/>
-            <circle cx="52" cy="66" r="5" fill="#fff"/>
-          </svg>
-        </div>
-        <div class="wordmark">pricetab</div>
-      </div>
-      <div class="tagline">Live crypto charts on every new tab</div>
+      <img class="logo" src="../icons/icon128.png" alt="" />
+      <span class="wm">price<b>tab</b></span>
+      <span class="tag">Live crypto charts on every new tab</span>
     </div>
   </div>
 
-  <!-- ================= LARGE TILE ================= -->
+  <!-- LARGE TILE -->
   <div>
-    <div class="label">LARGE TILE — 920 × 680</div>
+    <div class="hint">Large Tile 920×680 — ?only=large</div>
     <div class="tile" id="large">
-      <div class="grid-bg"></div>
-      <svg class="bg-chart" viewBox="0 0 920 680" preserveAspectRatio="none">
-        <path d="M0,520 L90,500 L180,540 L270,440 L360,470 L450,360 L540,400 L630,280 L720,320 L810,180 L920,120"
-              fill="none" stroke="#34d399" stroke-width="3"/>
-      </svg>
-      <div class="priceTag">
-        <div class="p">$89,785.68</div>
-        <div class="c">BTC ▲ +2.41%</div>
+      <div class="brand">
+        <img src="../icons/icon128.png" alt="" />
+        <span class="wm">price<b>tab</b></span>
       </div>
-      <div class="logo">
-        <div class="mark">
-          <svg width="60%" height="60%" viewBox="0 0 100 100" fill="none">
-            <path d="M10,78 L34,58 L52,66 L88,18" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M70,18 L88,18 L88,36" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
-            <circle cx="34" cy="58" r="5" fill="#fff"/>
-            <circle cx="52" cy="66" r="5" fill="#fff"/>
-          </svg>
+      <div class="tag">Live crypto charts on every new tab.</div>
+      <div class="browser">
+        <div class="bar">
+          <span class="dots"><i></i><i></i><i></i></span>
+          <span class="tab"><img src="../icons/icon128.png" alt="" />New Tab</span>
         </div>
-        <div class="wordmark">pricetab</div>
-      </div>
-      <div class="headline">Every new tab becomes a<br><span class="accent">live crypto dashboard.</span></div>
-      <div class="sub">Real-time charts for 60+ coins, market widgets, and a live price right in your tab title. No account, no tracking.</div>
-      <div class="pills">
-        <div class="pill">Zero permissions</div>
-        <div class="pill">9 market widgets</div>
-        <div class="pill">37 currencies</div>
-        <div class="pill">100% free</div>
+        <img class="shot" src="raw/dashboard.png" alt="" />
       </div>
     </div>
   </div>
 
-  <!-- ================= MARQUEE ================= -->
+  <!-- MARQUEE -->
   <div>
-    <div class="label">MARQUEE — 1400 × 560</div>
+    <div class="hint">Marquee 1400×560 — ?only=marquee</div>
     <div class="tile" id="marquee">
-      <div class="grid-bg"></div>
-      <svg class="bg-chart" viewBox="0 0 1400 560" preserveAspectRatio="none" style="opacity:0.14">
-        <path d="M0,440 L140,410 L280,460 L420,360 L560,400 L700,300 L840,340 L980,220 L1120,260 L1260,120 L1400,80"
-              fill="none" stroke="#60a5fa" stroke-width="3"/>
-      </svg>
-      <div class="left">
-        <div class="logo">
-          <div class="mark">
-            <svg width="60%" height="60%" viewBox="0 0 100 100" fill="none">
-              <path d="M10,78 L34,58 L52,66 L88,18" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M70,18 L88,18 L88,36" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
-              <circle cx="34" cy="58" r="5" fill="#fff"/>
-              <circle cx="52" cy="66" r="5" fill="#fff"/>
-            </svg>
-          </div>
+      <div class="copy">
+        <div class="brand">
+          <img src="../icons/icon128.png" alt="" />
+          <span class="wm">price<b>tab</b></span>
+        </div>
+        <div class="tag">Your new tab is now a <b>live crypto dashboard</b>.</div>
+        <div class="pills">
+          <span class="pill"><b>60+</b> coins</span>
+          <span class="pill"><b>9</b> market signals</span>
+          <span class="pill"><b>Zero</b> permissions</span>
+          <span class="pill"><b>100%</b> free</span>
         </div>
       </div>
-      <div class="right" style="display:flex;flex-direction:column;justify-content:center;">
-        <div class="wordmark">pricetab</div>
-        <div class="tagline">Live crypto charts on every new tab — 60+ coins, market widgets, dark mode.</div>
+      <div class="browser">
+        <div class="bar">
+          <span class="dots"><i></i><i></i><i></i></span>
+          <span class="tab"><img src="../icons/icon128.png" alt="" />New Tab</span>
+        </div>
+        <img class="shot" src="raw/dashboard.png" alt="" />
       </div>
     </div>
   </div>
