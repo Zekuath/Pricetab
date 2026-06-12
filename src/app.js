@@ -130,6 +130,11 @@ class CryptoChart extends PureComponent {
     });
 
     _defineProperty(this, "fetchWidgets", async () => {
+      // Hidden tab → defer until handleVisibilityChange resumes us
+      if (document.hidden) {
+        this.pendingWidgetRefresh = true;
+        return;
+      }
       const { widgets, coinOptions, coinIndex } = this.state;
       const coin = coinOptions[coinIndex] || "BTC";
       // Drop late responses for a coin the user already switched away from
@@ -279,6 +284,13 @@ class CryptoChart extends PureComponent {
 
     _defineProperty(this, "fetchData", async () => {
       clearTimeout(this.fetchTimeout);
+
+      // Hidden tab → pause the polling loop instead of hitting the API.
+      // handleVisibilityChange restarts it the moment the tab is shown again.
+      if (document.hidden) {
+        this.pendingVisibilityRefresh = true;
+        return;
+      }
 
       // Cancel any ongoing requests
       if (this.abortController) {
@@ -656,6 +668,7 @@ class CryptoChart extends PureComponent {
       this.setState({ autoRotate: enabled }, () => {
         if (enabled) {
           this.startAutoRotate();
+          this.prefetchTopCoins(); // warm the rotation so cycling is smooth
         } else {
           this.stopAutoRotate();
         }
@@ -701,6 +714,7 @@ class CryptoChart extends PureComponent {
         if (enabled) {
           this.buildTickerText();
           this.startTickerInterval();
+          this.prefetchTopCoins(); // warm all rotation coins for the ticker
         } else {
           this.stopTickerInterval();
           // Reset to current coin title
@@ -782,6 +796,11 @@ class CryptoChart extends PureComponent {
     });
 
     _defineProperty(this, "fetchPageTickerData", async () => {
+      // Hidden tab → defer until handleVisibilityChange resumes us
+      if (document.hidden) {
+        this.pendingPageTickerRefresh = true;
+        return;
+      }
       if (this._pageTickerFetching) return;
       this._pageTickerFetching = true;
 
@@ -892,6 +911,20 @@ class CryptoChart extends PureComponent {
     });
 
     _defineProperty(this, "prefetchTopCoins", async () => {
+      // Re-entrancy guard: this can now also fire when the ticker or
+      // auto-rotate gets enabled from settings, not just once at mount
+      if (this._prefetching) {
+        return;
+      }
+      this._prefetching = true;
+      try {
+        await this.prefetchTopCoinsCore();
+      } finally {
+        this._prefetching = false;
+      }
+    });
+
+    _defineProperty(this, "prefetchTopCoinsCore", async () => {
       const { coinOptions, period, currency, coinIndex } = this.state;
       const topCoins = coinOptions.slice(0, MAX_CACHED_COINS);
 
@@ -1194,8 +1227,32 @@ class CryptoChart extends PureComponent {
     // Start cache cleanup interval (every 2 minutes, check for entries unused for 10+ minutes)
     this.cacheCleanupInterval = setInterval(cleanupCache, 120000); // 2 minutes
 
-    // Prefetch top 10 coins in background (after initial load)
-    this.prefetchTimer = setTimeout(() => this.prefetchTopCoins(), 2000);
+    // Prefetch only feeds the tab-title ticker and auto-rotate — manual coin
+    // switching paints instantly from the persisted cache, so when neither
+    // is on, skip the ~18 warm-up requests entirely
+    if (this.state.tickerEnabled || this.state.autoRotate) {
+      this.prefetchTimer = setTimeout(() => this.prefetchTopCoins(), 2000);
+    }
+
+    // Resume paused polling as soon as the tab becomes visible again
+    this.handleVisibilityChange = () => {
+      if (document.hidden) {
+        return;
+      }
+      if (this.pendingVisibilityRefresh) {
+        this.pendingVisibilityRefresh = false;
+        this.fetchData();
+      }
+      if (this.pendingWidgetRefresh) {
+        this.pendingWidgetRefresh = false;
+        this.fetchWidgets();
+      }
+      if (this.pendingPageTickerRefresh) {
+        this.pendingPageTickerRefresh = false;
+        this.fetchPageTickerData();
+      }
+    };
+    document.addEventListener("visibilitychange", this.handleVisibilityChange);
 
     // Start ticker interval if enabled (delay 3s for prices to load)
     if (this.state.tickerEnabled) {
@@ -1218,7 +1275,7 @@ class CryptoChart extends PureComponent {
 
     // Fetch widget data if any widgets are enabled
     this.fetchWidgets();
-    // Refresh widgets every 5 minutes
+    // Refresh widgets every 5 minutes (skipped while the tab is hidden)
     this.widgetRefreshInterval = setInterval(() => this.fetchWidgets(), 300000);
 
     // Auto-rotate through coins if enabled
@@ -1261,6 +1318,8 @@ class CryptoChart extends PureComponent {
     // Clean up online/offline listeners
     window.removeEventListener("online", this.handleOnline);
     window.removeEventListener("offline", this.handleOffline);
+
+    document.removeEventListener("visibilitychange", this.handleVisibilityChange);
   }
 
   componentDidUpdate(_prevProps, prevState) {

@@ -30,7 +30,7 @@ still run.
 | `test-cache.js` | Persistent price cache: hydrate/persist/caps, plus the Date-revival regression (JSON turns Date fields into ISO strings; hydration must revive them or scaleTime renders a NaN path) |
 | `test-bulk.js` | Coinlore bulk sweep: cache fill, currency conversion, duplicate-symbol dedupe, junk filtering, fallback signalling |
 | `test-d3.js` | `vendor/d3-custom.min.js` exposes every d3 API the app uses (line, scales, transitions, interpolatePath) |
-| `test-smoke-jsdom.js` | Boots the real page in jsdom with a fake network; asserts the chart renders valid (non-NaN) data in cold and hydrated-cache scenarios |
+| `test-smoke-jsdom.js` | Boots the real page in jsdom with a fake network; asserts the chart renders valid (non-NaN) data in cold and hydrated-cache scenarios, that the coin prefetch stays off while the tab ticker / auto-rotate are off, and that a hidden tab fires zero requests until it becomes visible |
 
 ## Conventions
 

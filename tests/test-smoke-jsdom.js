@@ -3,9 +3,12 @@
 //
 // Needs jsdom: run `npm install` inside tests/ first.
 // Covers two scenarios:
-//   cold     — empty localStorage (first run)
-//   hydrated — persisted price cache from a "previous tab", including the
-//              Date→ISO-string round trip that once produced NaN chart paths
+//   cold       — empty localStorage (first run); also asserts the coin
+//                prefetch stays off while the tab ticker / auto-rotate are off
+//   hydrated   — persisted price cache from a "previous tab", including the
+//                Date→ISO-string round trip that once produced NaN chart paths
+//   background — tab opens hidden: no price requests may fire until the tab
+//                becomes visible, then the chart must load normally
 const fs = require("fs");
 const path = require("path");
 const ROOT = path.join(__dirname, "..");
@@ -26,7 +29,7 @@ const scripts = [...indexHtml.matchAll(/<script src="\.\/([^"]+)"><\/script>/g)]
   (m) => m[1],
 );
 
-const runScenario = (hydrated) =>
+const runScenario = ({ hydrated = false, background = false } = {}) =>
   new Promise((resolve) => {
     const dom = new JSDOM("<!DOCTYPE html><html><body></body></html>", {
       pretendToBeVisual: true,
@@ -34,6 +37,12 @@ const runScenario = (hydrated) =>
       url: "https://localhost/index.html",
     });
     const w = dom.window;
+
+    let hiddenFlag = background;
+    Object.defineProperty(w.document, "hidden", {
+      configurable: true,
+      get: () => hiddenFlag,
+    });
 
     w.matchMedia = () => ({
       matches: false,
@@ -65,8 +74,10 @@ const runScenario = (hydrated) =>
       json: async () => body,
       text: async () => JSON.stringify(body),
     });
-    w.fetch = (url) =>
-      new Promise((res) =>
+    const requestLog = [];
+    w.fetch = (url) => {
+      requestLog.push(String(url));
+      return new Promise((res) =>
         setTimeout(() => {
           const u = String(url);
           if (u.includes("/spot")) res(json({ data: { amount: "50250.55", currency: "USD" } }));
@@ -90,6 +101,7 @@ const runScenario = (hydrated) =>
           else res(json({ data: [] }));
         }, NET_LATENCY),
       );
+    };
 
     let scriptError = null;
     w.addEventListener("error", (e) => {
@@ -103,7 +115,16 @@ const runScenario = (hydrated) =>
 
     let chartReadyAt = null;
     let nanSeenAt = null;
+    let requestsWhileHidden = null;
     const t0 = Date.now();
+    if (background) {
+      // Stay hidden for a while, then reveal the tab
+      setTimeout(() => {
+        requestsWhileHidden = requestLog.length;
+        hiddenFlag = false;
+        w.document.dispatchEvent(new w.Event("visibilitychange"));
+      }, 1500);
+    }
     const poll = setInterval(() => {
       const t = Date.now() - t0;
       for (const p of w.document.querySelectorAll("path[stroke]")) {
@@ -115,20 +136,36 @@ const runScenario = (hydrated) =>
       if ((chartReadyAt && t > 1500) || t > DEADLINE + 500) {
         clearInterval(poll);
         dom.window.close();
-        resolve({ scriptError, chartReadyAt, nanSeenAt });
+        resolve({ scriptError, chartReadyAt, nanSeenAt, requestLog, requestsWhileHidden });
       }
     }, 25);
   });
 
 (async () => {
   let failed = false;
-  for (const hydrated of [false, true]) {
-    const label = hydrated ? "hydrated" : "cold";
-    const r = await runScenario(hydrated);
+  for (const scenario of [
+    { label: "cold" },
+    { label: "hydrated", hydrated: true },
+    { label: "background", background: true },
+  ]) {
+    const { label } = scenario;
+    const r = await runScenario(scenario);
     const problems = [];
     if (r.scriptError) problems.push(`script error: ${r.scriptError}`);
     if (r.nanSeenAt !== null) problems.push(`NaN chart path at ${r.nanSeenAt}ms`);
     if (r.chartReadyAt === null) problems.push(`chart not ready within ${DEADLINE}ms`);
+    if (label === "cold") {
+      // Ticker + auto-rotate are off by default → prefetch must not run.
+      // Prefetch is recognizable: period=hour history for non-current coins
+      // (the background sweep only ever asks for period=day).
+      const prefetched = r.requestLog.filter(
+        (u) => u.includes("period=hour") && !u.includes("BTC-"),
+      );
+      if (prefetched.length) problems.push(`prefetch ran: ${prefetched[0]}`);
+    }
+    if (label === "background" && r.requestsWhileHidden > 0) {
+      problems.push(`${r.requestsWhileHidden} requests fired while hidden`);
+    }
     if (problems.length) {
       failed = true;
       console.error(`FAIL [${label}]: ${problems.join("; ")}`);
