@@ -8,21 +8,24 @@
 
 | Metric | Value |
 |--------|-------|
-| **Current Version** | 1.2.1 (staged — not yet uploaded) |
+| **Current Version** | 1.3.0 (staged — not yet uploaded) |
 | **Live Build** | 1.2.0 live on the Chrome Web Store (June 2026) |
-| **Status** | Published — post-launch polish shipped locally (settings UX, auto-rotate, news ticker, promo site) |
-| **Codebase Size** | ~7,700 lines |
-| **Next Milestone** | Ship 1.2.1 to the store (confirm version with user first) |
+| **Status** | Published — 1.2.1 polish + 1.3.0 performance work staged locally |
+| **Codebase Size** | ~7,800 lines across 12 script modules in `src/` |
+| **Next Milestone** | Ship 1.3.0 to the store (includes everything staged since 1.2.0) |
 | **Security Status** | Input validation complete |
 
 ---
 
 ## Active Focus
 
-> **Current priority: ship 1.2.1.** The 1.2.0 relaunch is DONE — the listing is live.
-> Staged since then (all verified locally, see CHANGELOG 1.2.1): settings panel
-> redesign (groups, ESC, close button, undo reset, name search, presets state),
-> auto-rotate, news ticker row, rating prompt + toolbar popup, promo website.
+> **Current priority: ship 1.3.0.** The 1.2.0 relaunch is DONE — the listing is live.
+> Staged since then (all verified locally, see CHANGELOG 1.2.1 + 1.3.0):
+> settings panel redesign, auto-rotate, news ticker row, rating prompt +
+> toolbar popup, promo website, and the 1.3.0 performance pass (instant
+> chart from persisted cache, modular src/, slim D3 bundle, polyfill
+> removed, hidden-tab polling pause, bulk ticker requests, error boundary,
+> regression test suite + CI).
 
 ### Bug Fixes (do first)
 | Issue | Status | Notes |
@@ -445,7 +448,7 @@ Core functionality that has been implemented and tested.
 
 | Task | Status | Effort | Priority |
 |------|--------|--------|----------|
-| Split app.js (currently ~7,700 lines, over threshold) | [~] | High | Medium |
+| Split app.js (currently ~7,700 lines, over threshold) | [x] | High | Medium |
 | Add ESLint configuration | [ ] | Low | Medium |
 | Add Prettier for formatting | [ ] | Low | Medium |
 | TypeScript migration | [ ] | Very High | Low |
@@ -456,11 +459,10 @@ Core functionality that has been implemented and tested.
 
 | Task | Status | Effort | Priority |
 |------|--------|--------|----------|
-| Jest setup | [ ] | Medium | Low |
-| React Testing Library setup | [ ] | Medium | Low |
+| Regression test suite (`tests/`, plain Node + jsdom smoke test) | [x] | Medium | Low |
+| API mocking layer (fake fetch in the jsdom smoke test) | [x] | Medium | Low |
+| CI/CD pipeline (GitHub Actions runs `tests/run-all.js` on push) | [x] | Medium | Low |
 | E2E tests with Playwright | [ ] | High | Low |
-| API mocking layer | [ ] | Medium | Low |
-| CI/CD pipeline | [ ] | Medium | Low |
 
 ### Build System (Optional)
 

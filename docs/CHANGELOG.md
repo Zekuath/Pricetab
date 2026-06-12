@@ -18,7 +18,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [1.2.1] - Settings Polish, Auto Rotate & News Ticker (staged)
+## [1.3.0] - Instant Charts & Performance (staged)
+
+### Added
+- **Instant chart on new tabs** - the last fetched prices are cached locally, so a new tab paints the chart immediately and refreshes it in the background instead of showing a loading skeleton
+- **Graceful error fallback** - if something unexpected crashes the page, a reload prompt appears instead of a blank tab; a broken widget now hides itself without taking the chart down
+
+### Changed
+- **~42% less JavaScript per new tab** - removed an unneeded compatibility polyfill and replaced the full D3 library with a custom bundle containing only the chart modules actually used (482 KB → 277 KB of vendor code)
+- **Background tabs stop polling** - price, widget and ticker updates pause while the tab is hidden and resume the moment it becomes visible, saving network and battery
+- **Far fewer ticker requests** - the price ticker bar, watchlist and top movers now share one bulk market-data request instead of two requests per coin
+- Coin prefetching only runs when the browser-tab title ticker or auto-rotate actually needs it
+
+### Internal
+- Split the single 7,700-line `app.js` into 12 focused script modules (no build step added)
+- Centralized all localStorage access behind shared, validated helpers
+- Added a regression test suite (`tests/`) and a CI workflow that runs it on every push
+
+---
+
+## [1.2.1] - Settings Polish, Auto Rotate & News Ticker
 
 ### Added
 - **Auto Rotate** (Preferences → Data) - the chart switches to the next coin on your list automatically; pick the interval (10s to 15m). Pauses while the tab is hidden or settings are open

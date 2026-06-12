@@ -108,10 +108,10 @@ PriceTab aims to be the go-to new tab experience for crypto enthusiasts — beau
 | Topic | Current | Future |
 |-------|---------|--------|
 | React | 16.5 (class components) | Consider React 18 + hooks when ready to refactor |
-| App size | ~5600 lines monolithic | Split into components when approaching 8000 lines |
-| Charts | D3.js v5 | Consider Lightweight Charts for bundle size |
-| Storage | localStorage | Consider chrome.storage.sync for multi-device |
-| Testing | None | Jest + Playwright for critical paths |
+| App size | ~7,800 lines across 12 script modules | Keep files under ~800 lines where practical |
+| Charts | Custom D3 v5 module bundle (only what the chart uses) | Revisit if chart needs outgrow it |
+| Storage | localStorage (+ persisted price cache for instant paint) | Consider chrome.storage.sync for multi-device |
+| Testing | Node regression suite + jsdom smoke test, CI on push | Playwright E2E for critical paths |
 
 ---
 
