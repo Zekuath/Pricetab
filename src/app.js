@@ -1,3 +1,25 @@
+/* ERROR BOUNDARY */
+// React unmounts the entire tree on an uncaught render error — without a
+// boundary one bad widget would blank the whole new tab page.
+// (componentDidCatch only: getDerivedStateFromError needs React 16.6+)
+class ErrorBoundary extends Component {
+  constructor(...args) {
+    super(...args);
+    this.state = { hasError: false };
+  }
+
+  componentDidCatch() {
+    this.setState({ hasError: true });
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return this.props.fallback || null;
+    }
+    return this.props.children;
+  }
+}
+
 /* CRYPTO CHART */
 class CryptoChart extends PureComponent {
   constructor(...args) {
@@ -1957,32 +1979,36 @@ class CryptoChart extends PureComponent {
           if (!visibleOrder.length) return null;
 
           return React.createElement(
-            WidgetPanel,
-            { visible: true, tickerTop },
-            ...visibleOrder.map((key) => {
-              const def = widgetDefs[key];
-              return React.createElement(
-                WidgetCard,
-                {
-                  key: key,
-                  dragging: dragWidget === key,
-                  draggable: true,
-                  onDragStart: () => this.onWidgetDragStart(key),
-                  onDragOver: (e) => {
-                    e.preventDefault();
-                    this.onWidgetDragOver(key);
+            ErrorBoundary,
+            { key: "widget-panel-boundary", fallback: null },
+            React.createElement(
+              WidgetPanel,
+              { visible: true, tickerTop },
+              ...visibleOrder.map((key) => {
+                const def = widgetDefs[key];
+                return React.createElement(
+                  WidgetCard,
+                  {
+                    key: key,
+                    dragging: dragWidget === key,
+                    draggable: true,
+                    onDragStart: () => this.onWidgetDragStart(key),
+                    onDragOver: (e) => {
+                      e.preventDefault();
+                      this.onWidgetDragOver(key);
+                    },
+                    onDragEnd: this.onWidgetDragEnd,
                   },
-                  onDragEnd: this.onWidgetDragEnd,
-                },
-                React.createElement(
-                  WidgetHideButton,
-                  { onClick: () => this.hideWidget(key), title: "Hide" },
-                  "\u00d7",
-                ),
-                React.createElement(WidgetLabel, null, def.label),
-                def.content,
-              );
-            }),
+                  React.createElement(
+                    WidgetHideButton,
+                    { onClick: () => this.hideWidget(key), title: "Hide" },
+                    "\u00d7",
+                  ),
+                  React.createElement(WidgetLabel, null, def.label),
+                  def.content,
+                );
+              }),
+            ),
           );
         })(),
         // Page Ticker (two scrolling rows, collapsible with a hover chevron)
@@ -2256,8 +2282,49 @@ injectGlobal`
 `;
 
 /* RENDER */
+// Plain elements + inline styles: if the app crashed, theme/styled state
+// can't be trusted (body colors still come from theme-init.js)
+const rootErrorFallback = React.createElement(
+  "div",
+  {
+    style: {
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: "16px",
+      height: "100vh",
+      fontFamily: "'Roboto Mono', monospace",
+    },
+  },
+  React.createElement("div", null, "Something went wrong."),
+  React.createElement(
+    "button",
+    {
+      onClick: () => location.reload(),
+      style: {
+        padding: "8px 20px",
+        font: "inherit",
+        color: "inherit",
+        background: "none",
+        border: "1px solid currentColor",
+        borderRadius: "4px",
+        cursor: "pointer",
+      },
+    },
+    "Reload",
+  ),
+);
+
 const app = document.createElement("div");
 app.setAttribute("id", "root");
 document.body.appendChild(app);
 
-ReactDOM.render(React.createElement(App, null), app);
+ReactDOM.render(
+  React.createElement(
+    ErrorBoundary,
+    { fallback: rootErrorFallback },
+    React.createElement(App, null),
+  ),
+  app,
+);
