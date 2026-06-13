@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>PriceTab — Raw Screenshot Scenes</title>
+<style>
+  html, body { margin: 0; padding: 0; overflow: hidden; background: #000; }
+  iframe { display: block; width: 1280px; height: 800px; border: 0; }
+</style>
+</head>
+<body>
+<script>
+  // Boots the real extension page (../../index.html) with a per-scene
+  // localStorage state, then performs the scene's clicks inside the iframe.
+  //
+  // Usage:  scenes.html?scene=dashboard|wl-movers|signals|presets|light&delay=12000
+  //
+  // Serve the repo over http (tests/… or any static server with a /__delay
+  // endpoint) and screenshot with plain real-time headless Chrome:
+  //   chrome --headless --window-size=1280,800 --timeout=60000
+  //          --screenshot=raw/<scene>.png
+  //          "http://localhost:8123/assets/mockups/scenes.html?scene=<scene>&delay=12000"
+  // The &delay=N img below stalls the page load event for N ms, so the
+  // screenshot fires only after live data + animations have settled.
+  const COINS = ["BTC", "ETH", "SOL", "XRP", "DOGE", "ADA", "AVAX", "LINK"];
+  const W = (on) => {
+    const all = ["watchlist","topMovers","fearGreed","marketOverview","halvingCountdown",
+                 "rsiWidget","fundingRate","longShortRatio","openInterest","liquidations","altcoinSeason"];
+    const out = {};
+    all.forEach((k) => { out[k] = on.includes(k) || on === "all"; });
+    return JSON.stringify(out);
+  };
+
+  const SCENES = {
+    dashboard: {
+      store: {
+        crypto_chart_widgets: W(["watchlist", "fearGreed", "marketOverview", "halvingCountdown"]),
+        crypto_chart_page_ticker_enabled: "true",
+      },
+      clicks: [{ at: 4000, button: "1W" }],
+    },
+    "wl-movers": {
+      store: {
+        crypto_chart_widgets: W(["watchlist", "topMovers", "fearGreed"]),
+        crypto_chart_page_ticker_enabled: "true",
+      },
+      clicks: [{ at: 4000, button: "1W" }],
+    },
+    signals: {
+      store: {
+        crypto_chart_widgets: W("all"),
+        crypto_chart_page_ticker_enabled: "true",
+      },
+      clicks: [],
+    },
+    presets: {
+      store: {
+        // Holder preset active → its button shows highlighted in the panel
+        crypto_chart_widgets: W(["watchlist", "topMovers", "fearGreed", "marketOverview", "altcoinSeason"]),
+        crypto_chart_page_ticker_enabled: "false",
+      },
+      clicks: [
+        { at: 3000, selector: '[aria-label="Open settings"]' },
+        { at: 4000, button: "Widgets" },
+      ],
+    },
+    light: {
+      store: {
+        crypto_chart_theme: "light",
+        crypto_chart_widgets: W([]),
+        crypto_chart_page_ticker_enabled: "false",
+      },
+      clicks: [{ at: 4000, button: "ALL" }],
+    },
+  };
+
+  const scene = SCENES[new URLSearchParams(location.search).get("scene")];
+  if (!scene) {
+    document.body.textContent = "unknown scene — use ?scene=" + Object.keys(SCENES).join("|");
+    throw new Error("unknown scene");
+  }
+
+  localStorage.clear();
+  const store = Object.assign(
+    {
+      crypto_chart_coin_options: JSON.stringify(COINS),
+      crypto_chart_theme: "dark",
+      crypto_chart_currency: "USD",
+      crypto_chart_rate_prompt_dismissed: "true",
+      // 5 min — no refresh fires between initial load and the screenshot,
+      // so the price count-up animation can't be caught mid-roll
+      crypto_chart_refresh_interval: "300000",
+      crypto_chart_news_ticker_enabled: "false",
+      crypto_chart_page_ticker_position: "top",
+    },
+    scene.store,
+  );
+  Object.entries(store).forEach(([k, v]) => localStorage.setItem(k, v));
+
+  const delayMs = new URLSearchParams(location.search).get("delay");
+  if (delayMs) {
+    const blocker = new Image(); // holds the load event until /__delay responds
+    blocker.src = "/__delay?ms=" + delayMs;
+    blocker.style.cssText = "position:absolute;width:1px;height:1px;opacity:0;";
+    document.body.appendChild(blocker);
+  }
+
+  const frame = document.createElement("iframe");
+  frame.src = "../../index.html";
+  frame.addEventListener("load", () => {
+    scene.clicks.forEach((click) => {
+      setTimeout(() => {
+        const doc = frame.contentDocument;
+        if (!doc) return;
+        const el = click.selector
+          ? doc.querySelector(click.selector)
+          : [...doc.querySelectorAll("button")].find(
+              (b) => b.textContent.trim() === click.button,
+            );
+        if (el) el.click();
+      }, click.at);
+    });
+  });
+  document.body.appendChild(frame);
+</script>
+</body>
+</html>

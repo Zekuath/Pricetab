@@ -23,9 +23,12 @@ The images are composed from a template + real app captures:
 - **Template:** `../mockups/store-frames.html` (caption bands + logo + brand styling)
 - **Raw app captures:** `../mockups/raw/*.png` (the live UI behind each frame)
 
-To rebuild: run the headless render documented in `../mockups/README.md`
-(one command per image), or capture manually with "Capture node screenshot".
-Re-capture the raw UI first if features changed.
+To rebuild: run the fully scripted pipeline documented in `../mockups/README.md`
+(captures the raw UI from the live extension, then renders the frames).
+
+The root `01…06` files are the **official upload set (Windows-style window
+frame)**. Alternate window-chrome sets live in `safari/`, `windows/` and
+`chromeos/` — same content, different OS framing.
 
 ## Promotional tiles
 

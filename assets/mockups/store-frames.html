@@ -65,6 +65,46 @@
   }
   .browser .tab img { width: 15px; height: 15px; border-radius: 4px; }
   .browser .shot { display: block; width: 100%; }
+  .browser .spacer { flex: 1; }
+  .browser .winctl { display: none; align-items: center; gap: 20px; padding-right: 6px; }
+  .browser .winctl i { position: relative; width: 12px; height: 12px; display: block; }
+
+  /* ---------- OS VARIANTS (?os=mac|win|cros — default mac) ---------- */
+  /* Windows: caption glyphs right (─ ▢ ✕), Win11 corner radius */
+  body[data-os="win"] .browser { border-radius: 8px; }
+  body[data-os="win"] .browser .dots { display: none; }
+  body[data-os="win"] .browser .winctl { display: flex; }
+  body[data-os="win"] .winctl .mi::before {
+    content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 1.5px; background: #aeb4bd;
+  }
+  body[data-os="win"] .winctl .mx::before {
+    content: ""; position: absolute; inset: 1px; border: 1.5px solid #aeb4bd; border-radius: 2px;
+  }
+  body[data-os="win"] .winctl .cl::before,
+  body[data-os="win"] .winctl .cl::after {
+    content: ""; position: absolute; left: -1px; right: -1px; top: 50%; height: 1.5px; background: #c2c8d0;
+  }
+  body[data-os="win"] .winctl .cl::before { transform: rotate(45deg); }
+  body[data-os="win"] .winctl .cl::after { transform: rotate(-45deg); }
+
+  /* ChromeOS: same right-side glyphs, rounder window + pill tab */
+  body[data-os="cros"] .browser { border-radius: 18px; }
+  body[data-os="cros"] .browser .bar { background: linear-gradient(#1b2026, #171b21); }
+  body[data-os="cros"] .browser .tab { border-radius: 999px; }
+  body[data-os="cros"] .browser .dots { display: none; }
+  body[data-os="cros"] .browser .winctl { display: flex; gap: 16px; }
+  body[data-os="cros"] .winctl .mi::before {
+    content: ""; position: absolute; left: 1px; right: 1px; top: 50%; height: 1.5px; background: #aeb4bd;
+  }
+  body[data-os="cros"] .winctl .mx::before {
+    content: ""; position: absolute; inset: 1px; border: 1.5px solid #aeb4bd; border-radius: 50%;
+  }
+  body[data-os="cros"] .winctl .cl::before,
+  body[data-os="cros"] .winctl .cl::after {
+    content: ""; position: absolute; left: -1px; right: -1px; top: 50%; height: 1.5px; background: #c2c8d0;
+  }
+  body[data-os="cros"] .winctl .cl::before { transform: rotate(45deg); }
+  body[data-os="cros"] .winctl .cl::after { transform: rotate(-45deg); }
 
   /* ---------- HERO (01) ---------- */
   .hero { display: flex; flex-direction: column; align-items: center; }
@@ -103,7 +143,10 @@
 </style>
 <script>
   // ?only=f01 → show a single frame at 0,0 for exact headless capture
+  // ?os=mac|win|cros → browser-window chrome style (default mac/Safari-like)
   addEventListener("DOMContentLoaded", () => {
+    const os = new URLSearchParams(location.search).get("os");
+    if (os) document.body.dataset.os = os;
     const only = new URLSearchParams(location.search).get("only");
     if (!only) return;
     document.body.style.cssText = "padding:0;margin:0;background:#000;overflow:hidden;";
@@ -140,6 +183,8 @@
         <div class="bar">
           <span class="dots"><i></i><i></i><i></i></span>
           <span class="tab"><img src="../icons/icon128.png" alt="" />New Tab</span>
+          <span class="spacer"></span>
+          <span class="winctl" aria-hidden="true"><i class="mi"></i><i class="mx"></i><i class="cl"></i></span>
         </div>
         <img class="shot" src="raw/dashboard.png" alt="" />
       </div>
@@ -158,6 +203,8 @@
         <div class="bar">
           <span class="dots"><i></i><i></i><i></i></span>
           <span class="tab"><img src="../icons/icon128.png" alt="" />New Tab</span>
+          <span class="spacer"></span>
+          <span class="winctl" aria-hidden="true"><i class="mi"></i><i class="mx"></i><i class="cl"></i></span>
         </div>
         <img class="shot" src="raw/dashboard.png" alt="" />
       </div>
@@ -176,6 +223,8 @@
         <div class="bar">
           <span class="dots"><i></i><i></i><i></i></span>
           <span class="tab"><img src="../icons/icon128.png" alt="" />New Tab</span>
+          <span class="spacer"></span>
+          <span class="winctl" aria-hidden="true"><i class="mi"></i><i class="mx"></i><i class="cl"></i></span>
         </div>
         <img class="shot" src="raw/wl-movers.png" alt="" />
       </div>
@@ -194,6 +243,8 @@
         <div class="bar">
           <span class="dots"><i></i><i></i><i></i></span>
           <span class="tab"><img src="../icons/icon128.png" alt="" />New Tab</span>
+          <span class="spacer"></span>
+          <span class="winctl" aria-hidden="true"><i class="mi"></i><i class="mx"></i><i class="cl"></i></span>
         </div>
         <img class="shot" src="raw/signals.png" alt="" />
       </div>
@@ -212,6 +263,8 @@
         <div class="bar">
           <span class="dots"><i></i><i></i><i></i></span>
           <span class="tab"><img src="../icons/icon128.png" alt="" />New Tab</span>
+          <span class="spacer"></span>
+          <span class="winctl" aria-hidden="true"><i class="mi"></i><i class="mx"></i><i class="cl"></i></span>
         </div>
         <img class="shot" src="raw/presets.png" alt="" />
       </div>
@@ -230,6 +283,8 @@
         <div class="bar">
           <span class="dots"><i></i><i></i><i></i></span>
           <span class="tab"><img src="../icons/icon128.png" alt="" />New Tab</span>
+          <span class="spacer"></span>
+          <span class="winctl" aria-hidden="true"><i class="mi"></i><i class="mx"></i><i class="cl"></i></span>
         </div>
         <img class="shot" src="raw/light.png" alt="" />
       </div>
