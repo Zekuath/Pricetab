@@ -12,6 +12,7 @@ Each image also carries an on-image caption describing what it shows.
 | 4 | `04-signals.png` | All 9 market widgets enabled (depth for traders) | "9 market signals traders actually watch" |
 | 5 | `05-presets.png` | Settings → Widgets tab with one-click Holder / Trader / Minimal presets | "Holder or Trader — set up in a tap" |
 | 6 | `06-themes.png` | Light theme, clean minimal view | "Dark, light, or auto — your call" |
+| 7 | `07-news.png` | News ticker row — live crypto headlines scrolling with prices | "Crypto headlines scroll with your prices" |
 
 > The first 3 images matter most — they appear in search results. `01-hero` is
 > the promotional/lead image, so it must be uploaded first.

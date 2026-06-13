@@ -13,7 +13,9 @@
   // Boots the real extension page (../../index.html) with a per-scene
   // localStorage state, then performs the scene's clicks inside the iframe.
   //
-  // Usage:  scenes.html?scene=dashboard|wl-movers|signals|presets|light&delay=12000
+  // Usage:  scenes.html?scene=<name>&theme=dark|light&delay=12000
+  // Scenes: dashboard, wl-movers, signals, news, presets,
+  //         settings-coins, settings-prefs, minimal
   //
   // Serve the repo over http (tests/… or any static server with a /__delay
   // endpoint) and screenshot with plain real-time headless Chrome:
@@ -53,6 +55,31 @@
       },
       clicks: [],
     },
+    news: {
+      store: {
+        crypto_chart_widgets: W(["watchlist", "fearGreed", "marketOverview"]),
+        crypto_chart_page_ticker_enabled: "true",
+        crypto_chart_news_ticker_enabled: "true",
+      },
+      clicks: [{ at: 4000, button: "1W" }],
+    },
+    "settings-coins": {
+      store: {
+        crypto_chart_widgets: W(["watchlist", "fearGreed", "marketOverview"]),
+        crypto_chart_page_ticker_enabled: "false",
+      },
+      clicks: [{ at: 3000, selector: '[aria-label="Open settings"]' }],
+    },
+    "settings-prefs": {
+      store: {
+        crypto_chart_widgets: W(["watchlist", "fearGreed", "marketOverview"]),
+        crypto_chart_page_ticker_enabled: "false",
+      },
+      clicks: [
+        { at: 3000, selector: '[aria-label="Open settings"]' },
+        { at: 4000, button: "Preferences" },
+      ],
+    },
     presets: {
       store: {
         // Holder preset active → its button shows highlighted in the panel
@@ -64,9 +91,8 @@
         { at: 4000, button: "Widgets" },
       ],
     },
-    light: {
+    minimal: {
       store: {
-        crypto_chart_theme: "light",
         crypto_chart_widgets: W([]),
         crypto_chart_page_ticker_enabled: "false",
       },
@@ -81,10 +107,11 @@
   }
 
   localStorage.clear();
+  const theme = new URLSearchParams(location.search).get("theme") || "dark";
   const store = Object.assign(
     {
       crypto_chart_coin_options: JSON.stringify(COINS),
-      crypto_chart_theme: "dark",
+      crypto_chart_theme: theme,
       crypto_chart_currency: "USD",
       crypto_chart_rate_prompt_dismissed: "true",
       // 5 min — no refresh fires between initial load and the screenshot,
