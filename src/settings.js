@@ -1,3 +1,47 @@
+// Collapsible group header for the Preferences tab. Owns its own open state
+// (defaults to open) — the panel unmounts when closed, so every open starts
+// with all groups expanded.
+class CollapsibleGroup extends PureComponent {
+  constructor(...args) {
+    super(...args);
+    this.state = { open: true };
+    this.toggle = this.toggle.bind(this);
+  }
+
+  toggle() {
+    this.setState((prev) => ({ open: !prev.open }));
+  }
+
+  render() {
+    const { open } = this.state;
+    return [
+      React.createElement(
+        SettingsGroupTitle,
+        {
+          key: "title",
+          onClick: this.toggle,
+          role: "button",
+          tabIndex: 0,
+          "aria-expanded": open,
+          onKeyDown: (e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              this.toggle();
+            }
+          },
+        },
+        this.props.title,
+        React.createElement(GroupChevron, { open }, "▾"),
+      ),
+      React.createElement(
+        GroupReveal,
+        { key: "reveal", open },
+        this.props.children,
+      ),
+    ];
+  }
+}
+
 class SettingsPanel extends PureComponent {
   constructor(...args) {
     super(...args);
@@ -619,7 +663,9 @@ class SettingsPanel extends PureComponent {
           React.createElement(
             TabContent,
             { key: "preferences-tab" },
-            React.createElement(SettingsGroupTitle, null, "Appearance"),
+            React.createElement(
+              CollapsibleGroup,
+              { title: "Appearance" },
 
             // Theme Section
             React.createElement(
@@ -690,7 +736,10 @@ class SettingsPanel extends PureComponent {
               ),
             ),
 
-            React.createElement(SettingsGroupTitle, null, "Display"),
+            ),
+            React.createElement(
+              CollapsibleGroup,
+              { title: "Display" },
 
             // Currency Section
             React.createElement(
@@ -786,7 +835,10 @@ class SettingsPanel extends PureComponent {
               ),
             ),
 
-            React.createElement(SettingsGroupTitle, null, "Data"),
+            ),
+            React.createElement(
+              CollapsibleGroup,
+              { title: "Data" },
 
             // Refresh Interval Section
             React.createElement(
@@ -875,7 +927,10 @@ class SettingsPanel extends PureComponent {
               ),
             ),
 
-            React.createElement(SettingsGroupTitle, null, "Tickers"),
+            ),
+            React.createElement(
+              CollapsibleGroup,
+              { title: "Tickers" },
 
             // Tab Ticker Section
             React.createElement(
@@ -1017,6 +1072,7 @@ class SettingsPanel extends PureComponent {
                 ),
               ),
               ),
+            ),
           ),
 
         // Widgets Tab Content

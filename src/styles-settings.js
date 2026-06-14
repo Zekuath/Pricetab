@@ -59,10 +59,30 @@ const SettingsGroupTitle = styled.h4`
   text-transform: uppercase;
   text-align: left;
   color: ${({ theme }) => theme.color.textSecondary};
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  user-select: none;
 
   &:first-child {
     margin-top: 0;
   }
+`;
+
+const GroupChevron = styled.span`
+  font-size: 0.6rem;
+  opacity: 0.7;
+  transition: transform 0.25s ease;
+  transform: rotate(${({ open }) => (open ? "0deg" : "-90deg")});
+`;
+
+const GroupReveal = styled.div`
+  overflow: hidden;
+  max-height: ${({ open }) => (open ? "60rem" : "0")};
+  opacity: ${({ open }) => (open ? 1 : 0)};
+  transition: max-height 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.28s ease;
 `;
 
 const SettingsTitle = styled.h2`

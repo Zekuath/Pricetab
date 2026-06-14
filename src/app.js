@@ -96,7 +96,7 @@ class CryptoChart extends PureComponent {
     this.newsRefreshInterval = null;
     this._newsFetching = false;
 
-    _defineProperty(this, "cycleCoinIndex", () => {
+    _defineProperty(this, "shiftCoin", (delta) => {
       this.tickerScrollPos = 0; // Reset ticker scroll on coin change
       this.setState(
         (prevState) => {
@@ -105,8 +105,9 @@ class CryptoChart extends PureComponent {
             return null;
           }
 
+          const len = coinOptions.length;
           return {
-            coinIndex: (prevState.coinIndex + 1) % coinOptions.length,
+            coinIndex: (prevState.coinIndex + delta + len) % len,
             isLoading: true, // Show loading when switching coins
             showSkeleton: false, // Reset skeleton
             invalidCoin: null, // Clear invalid coin warning
@@ -126,6 +127,9 @@ class CryptoChart extends PureComponent {
         },
       );
     });
+
+    // Arg-less wrapper: stays safe when wired to onClick (event arg ignored)
+    _defineProperty(this, "cycleCoinIndex", () => this.shiftCoin(1));
 
     _defineProperty(this, "setPeriod", (_e, period) => {
       this.setState(
@@ -549,6 +553,52 @@ class CryptoChart extends PureComponent {
         showSettings: !prevState.showSettings,
         pendingWidgetReveal: {},
       }));
+    });
+
+    _defineProperty(this, "handleKeyDown", (e) => {
+      // Ignore shortcuts with modifiers or while typing in a field
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      const t = e.target;
+      if (
+        t &&
+        (t.tagName === "INPUT" ||
+          t.tagName === "TEXTAREA" ||
+          t.isContentEditable)
+      ) {
+        return;
+      }
+
+      // Esc always closes settings; S toggles it. Both available anytime.
+      if (e.key === "Escape") {
+        if (this.state.showSettings) {
+          e.preventDefault();
+          this.toggleSettings();
+        }
+        return;
+      }
+      if (e.key === "s" || e.key === "S") {
+        e.preventDefault();
+        this.toggleSettings();
+        return;
+      }
+
+      // Remaining shortcuts are disabled while the settings panel is open
+      if (this.state.showSettings) return;
+
+      if (e.key === "ArrowRight") {
+        e.preventDefault();
+        this.shiftCoin(1);
+      } else if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        this.shiftCoin(-1);
+      } else if (e.key >= "1" && e.key <= "6") {
+        e.preventDefault();
+        const period = PERIOD_OPTIONS[Number(e.key) - 1];
+        if (period) this.setPeriod(null, period.value);
+      } else if (e.key === "r" || e.key === "R") {
+        e.preventDefault();
+        this.fetchData();
+      }
     });
 
     _defineProperty(this, "handleThemeChange", (newTheme) => {
@@ -1305,6 +1355,9 @@ class CryptoChart extends PureComponent {
 
     // News ticker row if enabled
     this.startNewsTicker();
+
+    // Keyboard shortcuts (←/→ coins, 1-6 periods, S/Esc settings, R refresh)
+    document.addEventListener("keydown", this.handleKeyDown);
   }
 
   componentWillUnmount() {
@@ -1342,6 +1395,8 @@ class CryptoChart extends PureComponent {
     window.removeEventListener("offline", this.handleOffline);
 
     document.removeEventListener("visibilitychange", this.handleVisibilityChange);
+
+    document.removeEventListener("keydown", this.handleKeyDown);
   }
 
   componentDidUpdate(_prevProps, prevState) {
