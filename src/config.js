@@ -236,11 +236,11 @@ const TICKER_FORMAT_STORAGE_KEY = "crypto_chart_ticker_format";
 const NEWS_TICKER_STORAGE_KEY = "crypto_chart_news_ticker_enabled";
 const NEWS_CACHE_KEY = "crypto_chart_news_cache";
 const NEWS_REFRESH_MS = 600000; // 10 minutes
-// News sources — both no-auth + CORS-enabled (verified); most other crypto
-// news APIs (CryptoCompare, CoinGecko, Messari, CryptoPanic) require keys,
-// and most RSS feeds (CoinDesk, Decrypt, ...) don't send CORS headers.
+// News source — no-auth + CORS-enabled (verified). Most other crypto news
+// APIs (CryptoCompare, CoinGecko, Messari, CryptoPanic) require keys, and RSS
+// feeds (CoinDesk, Decrypt, Cointelegraph, ...) don't send CORS headers, so
+// the browser blocks them — Blockchair is the only viable in-extension feed.
 const NEWS_API_URL = "https://api.blockchair.com/news?q=language(en)&limit=40";
-const COINTELEGRAPH_RSS_URL = "https://cointelegraph.com/rss";
 const MAX_NEWS_ITEMS = 50;
 const AUTO_ROTATE_STORAGE_KEY = "crypto_chart_auto_rotate";
 const AUTO_ROTATE_INTERVAL_STORAGE_KEY = "crypto_chart_auto_rotate_interval";
@@ -254,6 +254,10 @@ const AUTO_ROTATE_OPTIONS = [
   { value: 900000, label: "Every 15 minutes" },
 ];
 const RATE_PROMPT_DISMISSED_KEY = "crypto_chart_rate_prompt_dismissed";
+// First-run onboarding tour (shown once, then dismissed)
+const ONBOARDING_SEEN_KEY = "crypto_chart_onboarding_seen";
+// Tracking-only portfolio: [{ coin, amount }] manually entered, all local
+const PORTFOLIO_STORAGE_KEY = "crypto_chart_portfolio";
 const STORE_LISTING_URL =
   "https://chromewebstore.google.com/detail/pricetab/dobkidjmhpnniiipliollbaefpppalaf";
 

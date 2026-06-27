@@ -193,3 +193,29 @@ const loadChartColorFromStorage = () =>
 
 const saveChartColorToStorage = (enabled) =>
   saveSetting(CHART_COLOR_STORAGE_KEY, enabled);
+
+// Portfolio (tracking only): array of { coin, amount }. Coins are whitelisted
+// against SUGGESTED_COINS and amounts coerced to a finite, non-negative number;
+// anything malformed is dropped so a corrupted entry can't break the view.
+const loadPortfolioFromStorage = () => {
+  const saved = loadJsonSetting(PORTFOLIO_STORAGE_KEY);
+  if (!Array.isArray(saved)) return [];
+  const seen = new Set();
+  const clean = [];
+  for (const entry of saved) {
+    if (!entry || typeof entry !== "object") continue;
+    const coin = typeof entry.coin === "string" ? entry.coin.toUpperCase() : "";
+    const amount = Number(entry.amount);
+    if (!SUGGESTED_COINS.includes(coin) || seen.has(coin)) continue;
+    if (!isFinite(amount) || amount < 0) continue;
+    seen.add(coin);
+    clean.push({ coin, amount });
+  }
+  return clean;
+};
+
+const savePortfolioToStorage = (holdings) =>
+  saveJsonSetting(
+    PORTFOLIO_STORAGE_KEY,
+    Array.isArray(holdings) ? holdings : [],
+  );

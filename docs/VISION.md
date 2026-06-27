@@ -72,12 +72,12 @@ PriceTab aims to be the go-to new tab experience for crypto enthusiasts — beau
 - All stored locally, max 10 active alerts
 - No server required — alerts checked on each fetch
 
-**Mini Portfolio**
-- Manually enter coin holdings
-- Track total value and 24h profit/loss
-- No wallet address needed
-- JSON export/import
-- All data local, no cloud sync
+**Mini Portfolio** — *tracking view shipped (June 2026)* ✅
+- Manually enter coin holdings (any of the ~64 supported coins) ✅
+- Full-screen view: total value + 24h profit/loss ✅
+- No wallet address / connection needed — tracking only ✅
+- All data local (`crypto_chart_portfolio`), no cloud sync ✅
+- *Still planned:* JSON export/import, allocation breakdown, per-coin cost basis
 
 **Additional Widgets**
 - Ethereum Gas Tracker (Etherscan/Blocknative)
@@ -90,6 +90,17 @@ PriceTab aims to be the go-to new tab experience for crypto enthusiasts — beau
 - Safari Web Extension (Xcode required)
 - Chrome sync storage option
 - Internationalization (Turkish, Spanish, German)
+
+---
+
+## Monetization
+
+PriceTab stays **free with no paywall and no locked features**. Revenue comes
+only from optional, clearly-labeled, contextual surfaces — hardware-wallet &
+exchange affiliate links, optional donations / tip jar, and a single
+self-served (untracked, "Sponsored"-labeled) slot. No ad networks, no data
+sold. Full strategy, placement, CWS compliance and phasing live in
+**[MONETIZATION.md](MONETIZATION.md)**.
 
 ---
 

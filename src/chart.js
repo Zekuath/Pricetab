@@ -4,8 +4,8 @@ const LINE_DUMMY = Array(2)
   .map((_, i) => ({ price: 0, time: new Date(2010 + i) }));
 
 const PADDING = 24;
-const TRANSITION_DURATION = 500;
-const REVEAL_DURATION = 900;
+const TRANSITION_DURATION = 300;
+const REVEAL_DURATION = 600;
 
 const safePrices = (prices) =>
   Array.isArray(prices) && prices.length > 1 ? prices : LINE_DUMMY;
@@ -378,7 +378,7 @@ class PeriodSwitcher extends PureComponent {
 
     return React.createElement(
       PeriodSwitcherWrapper,
-      null,
+      { "data-tour": "period" },
       Array.isArray(options) &&
         options.map((o) =>
           React.createElement(
@@ -453,10 +453,10 @@ const Label = styled.div`
   color: ${({ theme }) => theme.color.textSecondary};
 `;
 
-const OverviewItem = ({ children, label, onClick, title }) =>
+const OverviewItem = ({ children, label, onClick, title, dataTour }) =>
   React.createElement(
     OverviewItemButton,
-    { onClick, title: title },
+    { onClick, title: title, "data-tour": dataTour },
     React.createElement(
       Value,
       null,
@@ -470,6 +470,7 @@ OverviewItem.defaultProps = {
   label: "",
   onClick: null,
   title: null,
+  dataTour: null,
 };
 
 const OverviewWrapper = styled.div`
@@ -586,6 +587,7 @@ class Overview extends PureComponent {
           onClick: this.props.cycleCoinIndex,
           label: `${coin} Price`,
           title: "Next coin",
+          dataTour: "price",
         },
         formatNumberString(
           displayValue,
@@ -602,6 +604,7 @@ class Overview extends PureComponent {
           onClick: this.togglePercentage,
           label: `${calcPercentage ? "Percent" : "Price"} Change`,
           title: calcPercentage ? "Switch to price change" : "Switch to percent change",
+          dataTour: "change",
         },
         delta,
       ),

@@ -28,6 +28,10 @@ class CryptoChart extends PureComponent {
     // AbortController for canceling ongoing requests
     this.abortController = null;
 
+    // Tracks which coin|currency pairs we've already background-prefetched all
+    // periods for, so period switches are instant instead of a cold fetch.
+    this.prefetchedKeys = new Set();
+
     _defineProperty(this, "state", {
       coinIndex: 0,
       currentValue: null,
@@ -35,6 +39,10 @@ class CryptoChart extends PureComponent {
       valueHistory: [],
       coinOptions: loadCoinOptionsFromStorage(),
       showSettings: false,
+      showPortfolio: false, // Full-screen tracking-only portfolio view
+      portfolio: loadPortfolioFromStorage(), // [{ coin, amount }]
+      portfolioPrices: {}, // { COIN: { price, change, up } } from pageTickerCache
+      portfolioReady: false, // true after first portfolio price fetch
       themePreference: loadThemeFromStorage(), // 'auto', 'light', or 'dark'
       activeTheme: getActiveTheme(loadThemeFromStorage()), // 'light' or 'dark'
       refreshInterval: loadRefreshIntervalFromStorage(), // milliseconds
@@ -89,6 +97,10 @@ class CryptoChart extends PureComponent {
     this.pageTickerRefreshInterval = null;
     this._pageTickerFetching = false;
 
+    // Portfolio price refresh timer (runs only while the view is open)
+    this.portfolioInterval = null;
+    this._portfolioFetching = false;
+
     // Auto-rotate timer
     this.autoRotateTimer = null;
 
@@ -139,6 +151,29 @@ class CryptoChart extends PureComponent {
         },
         this.fetchData,
       );
+    });
+
+    // Warm the cache for the other periods of the active coin in the
+    // background, so switching periods later is instant (no cold fetch / no
+    // skeleton). Runs once per coin|currency; failures are ignored silently.
+    _defineProperty(this, "prefetchPeriods", (coin, currency) => {
+      if (!coin || document.hidden) return;
+      const key = `${coin}|${currency}`;
+      if (this.prefetchedKeys.has(key)) return;
+      this.prefetchedKeys.add(key);
+
+      const others = PERIOD_OPTIONS.filter((p) => p.value !== this.state.period);
+      const coinOptions = this.state.coinOptions;
+      // Stagger requests so they don't compete with the initial render/widgets
+      others.forEach((p, i) => {
+        setTimeout(() => {
+          fetchValueHistory(coin, p.value, currency, null, true, coinOptions).catch(
+            () => {
+              // Prefetch is best-effort — let the real fetch report errors
+            },
+          );
+        }, 400 + i * 200);
+      });
     });
 
     _defineProperty(this, "startSkeletonTimer", () => {
@@ -487,6 +522,8 @@ class CryptoChart extends PureComponent {
             if (this.state.tickerEnabled && this.tickerInterval) {
               this.buildTickerText();
             }
+            // Warm the other periods so switching is instant
+            this.prefetchPeriods(activeCoin, currency);
           },
         );
       } catch (e) {
@@ -553,6 +590,102 @@ class CryptoChart extends PureComponent {
         showSettings: !prevState.showSettings,
         pendingWidgetReveal: {},
       }));
+    });
+
+    _defineProperty(this, "togglePortfolio", () => {
+      this.setState(
+        (prevState) => ({ showPortfolio: !prevState.showPortfolio }),
+        () => {
+          if (this.state.showPortfolio) {
+            this.fetchPortfolioPrices();
+            // Refresh prices while the view stays open
+            if (!this.portfolioInterval) {
+              this.portfolioInterval = setInterval(
+                () => this.fetchPortfolioPrices(),
+                60000,
+              );
+            }
+          } else if (this.portfolioInterval) {
+            clearInterval(this.portfolioInterval);
+            this.portfolioInterval = null;
+          }
+        },
+      );
+    });
+
+    _defineProperty(this, "handleAddHolding", (coin, amount) => {
+      const normalized = (coin || "").trim().toUpperCase();
+      if (!SUGGESTED_COINS.includes(normalized)) return;
+      this.setState((prevState) => {
+        if (prevState.portfolio.some((h) => h.coin === normalized)) {
+          return null; // already tracked
+        }
+        const amt = isFinite(Number(amount)) ? Math.max(0, Number(amount)) : 0;
+        const portfolio = [...prevState.portfolio, { coin: normalized, amount: amt }];
+        savePortfolioToStorage(portfolio);
+        return { portfolio };
+      }, this.fetchPortfolioPrices);
+    });
+
+    _defineProperty(this, "handleUpdateHoldingAmount", (coin, amount) => {
+      const amt = isFinite(Number(amount)) ? Math.max(0, Number(amount)) : 0;
+      this.setState((prevState) => {
+        const portfolio = prevState.portfolio.map((h) =>
+          h.coin === coin ? { ...h, amount: amt } : h,
+        );
+        savePortfolioToStorage(portfolio);
+        return { portfolio };
+      });
+    });
+
+    _defineProperty(this, "handleRemoveHolding", (coin) => {
+      this.setState((prevState) => {
+        const portfolio = prevState.portfolio.filter((h) => h.coin !== coin);
+        savePortfolioToStorage(portfolio);
+        return { portfolio };
+      });
+    });
+
+    // Ensure every held coin has a fresh price in the shared pageTickerCache,
+    // then publish a coin→price map into state for the Portfolio view.
+    _defineProperty(this, "fetchPortfolioPrices", async () => {
+      if (document.hidden || this._portfolioFetching) return;
+      const holdings = this.state.portfolio;
+      if (!holdings.length) {
+        this.setState({ portfolioPrices: {}, portfolioReady: true });
+        return;
+      }
+      this._portfolioFetching = true;
+      const curr = this.state.currency;
+      const coins = holdings.map((h) => h.coin);
+
+      try {
+        // Bulk path (Coinlore top-100) covers most coins in one request
+        await bulkRefreshPageTickerCache(coins, curr);
+
+        // Per-coin fallback for anything still missing/stale (Coinbase)
+        const stale = coins.filter((c) => {
+          const e = pageTickerCache.get(`${c}-${curr}`);
+          return !e || Date.now() - e.timestamp > PAGE_TICKER_TTL;
+        });
+        for (let i = 0; i < stale.length; i += 4) {
+          await Promise.all(
+            stale
+              .slice(i, i + 4)
+              .map((c) => refreshPageTickerCoin(c, curr, Date.now())),
+          );
+        }
+      } catch (e) {
+        // Best-effort — show whatever the cache already has
+      }
+
+      const prices = {};
+      coins.forEach((c) => {
+        const e = pageTickerCache.get(`${c}-${curr}`);
+        if (e) prices[c] = { price: e.price, change: e.change, up: e.up };
+      });
+      this._portfolioFetching = false;
+      this.setState({ portfolioPrices: prices, portfolioReady: true });
     });
 
     _defineProperty(this, "handleKeyDown", (e) => {
@@ -641,28 +774,11 @@ class CryptoChart extends PureComponent {
 
       this._newsFetching = true;
       try {
-        // Fetch both feeds; one failing must not sink the other
-        const [blockchairItems, cointelegraphItems] = await Promise.all([
-          fetchBlockchairNews().catch(() => []),
-          fetchCointelegraphNews().catch(() => []),
-        ]);
+        const blockchairItems = await fetchBlockchairNews().catch(() => []);
 
-        // Interleave so the bar alternates between sources, then dedupe
-        const merged = [];
-        const longest = Math.max(
-          blockchairItems.length,
-          cointelegraphItems.length,
-        );
-        for (let i = 0; i < longest; i++) {
-          if (cointelegraphItems[i]) {
-            merged.push(cointelegraphItems[i]);
-          }
-          if (blockchairItems[i]) {
-            merged.push(blockchairItems[i]);
-          }
-        }
+        // Dedupe by title
         const seen = new Set();
-        const items = merged
+        const items = blockchairItems
           .filter((item) => {
             const key = item.title.toLowerCase();
             if (seen.has(key)) {
@@ -776,6 +892,10 @@ class CryptoChart extends PureComponent {
       this.setState({ currency: newCurrency }, () => {
         // Refetch data with new currency
         this.fetchData();
+        // Portfolio values are currency-specific — refresh if it's open
+        if (this.state.showPortfolio) {
+          this.setState({ portfolioReady: false }, this.fetchPortfolioPrices);
+        }
       });
     });
 
@@ -1369,6 +1489,7 @@ class CryptoChart extends PureComponent {
     clearInterval(this.cacheCleanupInterval);
     clearInterval(this.widgetRefreshInterval);
     clearInterval(this.pageTickerRefreshInterval);
+    clearInterval(this.portfolioInterval);
     this.stopTickerInterval();
     this.stopAutoRotate();
     this.stopNewsTicker();
@@ -1400,8 +1521,12 @@ class CryptoChart extends PureComponent {
   }
 
   componentDidUpdate(_prevProps, prevState) {
-    if (prevState.showSettings !== this.state.showSettings) {
-      document.body.style.overflow = this.state.showSettings ? "hidden" : "";
+    if (
+      prevState.showSettings !== this.state.showSettings ||
+      prevState.showPortfolio !== this.state.showPortfolio
+    ) {
+      const lock = this.state.showSettings || this.state.showPortfolio;
+      document.body.style.overflow = lock ? "hidden" : "";
     }
 
     // Update body background and text color when theme changes
@@ -1421,6 +1546,10 @@ class CryptoChart extends PureComponent {
       period,
       valueHistory,
       showSettings,
+      showPortfolio,
+      portfolio,
+      portfolioPrices,
+      portfolioReady,
       themePreference,
       activeTheme,
       refreshInterval,
@@ -1511,18 +1640,35 @@ class CryptoChart extends PureComponent {
         React.createElement(
           AppShell,
           { tickerTop },
-          React.createElement(
-            SettingsToggleButton,
-            {
-              onClick: this.toggleSettings,
-              open: showSettings,
-              type: "button",
-              tickerTop,
-              "aria-label": showSettings ? "Close settings" : "Open settings",
-              title: showSettings ? "Close settings" : "Settings",
-            },
-            showSettings ? "×" : "⚙",
-          ),
+          !showPortfolio &&
+            React.createElement(
+              SettingsToggleButton,
+              {
+                onClick: this.toggleSettings,
+                open: showSettings,
+                type: "button",
+                tickerTop,
+                "data-tour": "settings",
+                "aria-label": showSettings ? "Close settings" : "Open settings",
+                title: showSettings ? "Close settings" : "Settings",
+              },
+              showSettings ? "×" : "⚙",
+            ),
+
+          // Portfolio toggle (left of the gear)
+          !showSettings &&
+            React.createElement(
+              PortfolioToggleButton,
+              {
+                onClick: this.togglePortfolio,
+                open: showPortfolio,
+                type: "button",
+                tickerTop,
+                "aria-label": showPortfolio ? "Close portfolio" : "Open portfolio",
+                title: showPortfolio ? "Close portfolio" : "Portfolio",
+              },
+              showPortfolio ? "×" : "💼",
+            ),
 
           React.createElement(
             ControlsStack,
@@ -1592,7 +1738,7 @@ class CryptoChart extends PureComponent {
         ),
         // Widget toggle button (fixed, above the panel)
         (() => {
-          if (showSettings) return null;
+          if (showSettings || showPortfolio) return null;
           const hidden = this.state.hiddenWidgets;
           const anyEnabled = Object.keys(widgets).some((k) => widgets[k]);
           if (!anyEnabled) return null;
@@ -1611,6 +1757,7 @@ class CryptoChart extends PureComponent {
         })(),
         // Widget Panel (drag-reorderable, widgets only)
         (() => {
+          if (showPortfolio) return null;
           const hidden = this.state.hiddenWidgets;
           const widgetDefs = {
             watchlist: {
@@ -2038,7 +2185,7 @@ class CryptoChart extends PureComponent {
             { key: "widget-panel-boundary", fallback: null },
             React.createElement(
               WidgetPanel,
-              { visible: true, tickerTop },
+              { visible: true, tickerTop, "data-tour": "widgets" },
               ...visibleOrder.map((key) => {
                 const def = widgetDefs[key];
                 return React.createElement(
@@ -2077,7 +2224,7 @@ class CryptoChart extends PureComponent {
             newsTicker,
             newsItems,
           } = this.state;
-          if (showSettings || !pageTicker || !pageTickerReady || !pageTickerItems || pageTickerItems.length === 0) return null;
+          if (showSettings || showPortfolio || !pageTicker || !pageTickerReady || !pageTickerItems || pageTickerItems.length === 0) return null;
 
           const position = pageTickerPosition || DEFAULT_PAGE_TICKER_POSITION;
 
@@ -2270,6 +2417,23 @@ class CryptoChart extends PureComponent {
             onWidgetToggle: this.handleWidgetToggle,
             onWidgetPreset: this.handleWidgetPreset,
           }),
+
+        // First-run spotlight tour (self-hides after it has been seen)
+        // Full-screen tracking-only portfolio
+        showPortfolio &&
+          React.createElement(Portfolio, {
+            holdings: portfolio,
+            prices: portfolioPrices,
+            ready: portfolioReady,
+            currency,
+            decimalPlaces,
+            separatorFormat,
+            onAdd: this.handleAddHolding,
+            onUpdateAmount: this.handleUpdateHoldingAmount,
+            onRemove: this.handleRemoveHolding,
+          }),
+
+        !showSettings && !showPortfolio && React.createElement(OnboardingTour, null),
       ),
     );
   }

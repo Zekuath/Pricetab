@@ -350,6 +350,52 @@ const SettingsToggleButton = styled.button`
   }
 `;
 
+// Sits just left of the settings gear, same vertical rhythm.
+const PortfolioToggleButton = styled.button`
+  position: absolute;
+  top: ${({ theme, tickerTop }) =>
+    tickerTop
+      ? `calc(${theme.spacing.large}rem + 3rem)`
+      : `${theme.spacing.large}rem`};
+  right: ${({ theme, open }) =>
+    open
+      ? `${theme.spacing.large}rem`
+      : `calc(${theme.spacing.large}rem + 2.5rem)`};
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: ${({ theme }) => theme.color.text};
+  font-size: ${({ open }) => (open ? "1.35rem" : "1.15rem")};
+  cursor: pointer;
+  line-height: 1;
+  width: 1.6rem;
+  height: 1.6rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.25s ease, top 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  z-index: 120;
+
+  &:hover {
+    transform: scale(1.1);
+  }
+
+  &:focus {
+    outline: none;
+  }
+
+  @media (max-width: ${({ theme }) => theme.breakpoint.down.sm}px) {
+    right: ${({ theme, open }) =>
+      open
+        ? `${theme.spacing.small}rem`
+        : `calc(${theme.spacing.small}rem + 2.5rem)`};
+    top: ${({ theme, tickerTop }) =>
+      tickerTop
+        ? `calc(${theme.spacing.small}rem + 3rem)`
+        : `${theme.spacing.small}rem`};
+  }
+`;
+
 const overlayBlur = keyframes`
   from { backdrop-filter: blur(0px); }
   to { backdrop-filter: blur(10px); }

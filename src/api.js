@@ -379,7 +379,7 @@ const fetchHalvingData = async () => {
 };
 
 
-/* NEWS FEED FETCHERS (Blockchair JSON + Cointelegraph RSS) */
+/* NEWS FEED FETCHER (Blockchair JSON — only CORS-enabled crypto feed) */
 const fetchBlockchairNews = async () => {
   const res = await fetch(NEWS_API_URL);
   if (!res.ok) {
@@ -402,33 +402,6 @@ const fetchBlockchairNews = async () => {
           ? article.link
           : null,
     }))
-    .filter((item) => item.title);
-};
-
-const fetchCointelegraphNews = async () => {
-  const res = await fetch(COINTELEGRAPH_RSS_URL);
-  if (!res.ok) {
-    throw new Error("Cointelegraph RSS request failed");
-  }
-  const xml = await res.text();
-  const doc = new DOMParser().parseFromString(xml, "text/xml");
-  return Array.from(doc.querySelectorAll("item"))
-    .slice(0, 20)
-    .map((node) => {
-      const titleNode = node.querySelector("title");
-      const linkNode = node.querySelector("link");
-      const url = linkNode && linkNode.textContent
-        ? linkNode.textContent.trim()
-        : "";
-      return {
-        source: "cointelegraph.com",
-        title:
-          titleNode && titleNode.textContent
-            ? titleNode.textContent.trim().slice(0, 140)
-            : "",
-        url: /^https:\/\//.test(url) ? url : null,
-      };
-    })
     .filter((item) => item.title);
 };
 
