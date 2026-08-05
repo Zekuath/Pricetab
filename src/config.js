@@ -258,6 +258,8 @@ const RATE_PROMPT_DISMISSED_KEY = "crypto_chart_rate_prompt_dismissed";
 const ONBOARDING_SEEN_KEY = "crypto_chart_onboarding_seen";
 // Tracking-only portfolio: [{ coin, amount }] manually entered, all local
 const PORTFOLIO_STORAGE_KEY = "crypto_chart_portfolio";
+// Selected time range for the portfolio background value chart
+const PORTFOLIO_PERIOD_KEY = "crypto_chart_portfolio_period";
 const STORE_LISTING_URL =
   "https://chromewebstore.google.com/detail/pricetab/dobkidjmhpnniiipliollbaefpppalaf";
 

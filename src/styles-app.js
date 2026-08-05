@@ -382,6 +382,7 @@ const PortfolioToggleButton = styled.button`
 
   &:focus {
     outline: none;
+    animation: ${settingsPulse} 1s ease;
   }
 
   @media (max-width: ${({ theme }) => theme.breakpoint.down.sm}px) {

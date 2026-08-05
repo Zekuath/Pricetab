@@ -18,6 +18,11 @@ const ONBOARDING_STEPS = [
     text: "Open Settings to add or remove coins, switch currency and theme, turn on widgets, the news headline ticker, the page ticker and more.",
   },
   {
+    selector: '[data-tour="portfolio"]',
+    title: "Portfolio",
+    text: "Track your holdings by amount — no wallet connection. Total value and 24h change update live, stored only on this device.",
+  },
+  {
     selector: '[data-tour="price"]',
     title: "Live price — click to switch coins",
     text: "This is your active coin and its live price. Click it to jump to the next coin in your list.",
@@ -44,12 +49,19 @@ const TIP_WIDTH = 300; // px, tooltip max width
 const TIP_GAP = 14; // px between cutout and tooltip
 const VIEWPORT_MARGIN = 12; // px, keep tooltip off the screen edges
 
+// Matches the panelLift / widgetAppear entrances used across the app
+const onbCardIn = keyframes`
+  from { opacity: 0; transform: translateY(12px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+`;
+
 // Transparent layer that swallows page clicks so the user drives the tour
 const OnbBackdrop = styled.div`
   position: fixed;
   inset: 0;
   z-index: 2147483000;
   background: ${({ dim }) => (dim ? "rgba(0, 0, 0, 0.72)" : "transparent")};
+  transition: background 0.35s ease;
 `;
 
 // The cutout: a box-shadow spread paints the dim everywhere except this hole
@@ -62,10 +74,10 @@ const OnbSpotlight = styled.div`
     0 0 0 9999px rgba(0, 0, 0, 0.72),
     0 0 0 2px ${({ theme }) => theme.color.borderHover};
   transition:
-    top 0.3s ease,
-    left 0.3s ease,
-    width 0.3s ease,
-    height 0.3s ease;
+    top 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+    left 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+    width 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+    height 0.35s cubic-bezier(0.22, 1, 0.36, 1);
 `;
 
 const OnbCard = styled.div`
@@ -81,9 +93,10 @@ const OnbCard = styled.div`
   border-radius: 12px;
   box-shadow: 0 10px 40px ${({ theme }) => theme.color.shadow};
   font-family: ${({ theme }) => theme.font.primary};
+  animation: ${onbCardIn} 0.4s cubic-bezier(0.22, 1, 0.36, 1);
   transition:
-    top 0.3s ease,
-    left 0.3s ease;
+    top 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+    left 0.35s cubic-bezier(0.22, 1, 0.36, 1);
 `;
 
 const OnbTitle = styled.div`
@@ -106,9 +119,24 @@ const OnbFooter = styled.div`
   gap: 0.5rem;
 `;
 
-const OnbCount = styled.div`
-  font-size: 0.72rem;
-  color: ${({ theme }) => theme.color.textSecondary};
+// Step progress as dots — quieter than "n / m" text, same visual language
+// as the widget/settings chrome (border → text color when active).
+const OnbDots = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.32rem;
+`;
+
+const OnbDot = styled.span`
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: ${({ theme, active }) =>
+    active ? theme.color.text : theme.color.border};
+  transform: scale(${({ active }) => (active ? 1.2 : 1)});
+  transition:
+    background 0.25s ease,
+    transform 0.25s ease;
 `;
 
 const OnbButtons = styled.div`
@@ -124,6 +152,7 @@ const OnbSkip = styled.button`
   font-size: 0.74rem;
   color: ${({ theme }) => theme.color.textSecondary};
   padding: 0.4rem 0.2rem;
+  transition: color 0.15s ease;
   &:hover {
     color: ${({ theme }) => theme.color.text};
   }
@@ -141,8 +170,18 @@ const OnbBtn = styled.button`
   background: ${({ theme, primary }) =>
     primary ? theme.color.text : "transparent"};
   color: ${({ theme, primary }) => (primary ? theme.color.bg : theme.color.text)};
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    transform 0.15s ease;
   &:hover {
     border-color: ${({ theme }) => theme.color.borderHover};
+    background: ${({ theme, primary }) =>
+      primary ? theme.color.text : theme.color.bg};
+    transform: translateY(-1px);
+  }
+  &:active {
+    transform: translateY(0);
   }
 `;
 
@@ -309,9 +348,11 @@ class OnboardingTour extends React.Component {
             "Skip",
           ),
           React.createElement(
-            OnbCount,
-            null,
-            `${step + 1} / ${ONBOARDING_STEPS.length}`,
+            OnbDots,
+            { "aria-label": `Step ${step + 1} of ${ONBOARDING_STEPS.length}` },
+            ONBOARDING_STEPS.map((_, i) =>
+              React.createElement(OnbDot, { key: i, active: i === step }),
+            ),
           ),
           React.createElement(
             OnbButtons,

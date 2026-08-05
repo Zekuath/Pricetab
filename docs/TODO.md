@@ -1,6 +1,9 @@
 # PriceTab - Development Roadmap
 
-> Comprehensive development roadmap aligned with [VISION.md](VISION.md). Tasks are organized by priority, with clear acceptance criteria and dependencies.
+> Development roadmap aligned with [VISION.md](VISION.md) and [MONETIZATION.md](MONETIZATION.md).
+> Tasks are organized by priority with clear status.
+>
+> **Last refreshed:** July 30, 2026 (post sector scan — see "Insights" section)
 
 ---
 
@@ -8,493 +11,242 @@
 
 | Metric | Value |
 |--------|-------|
-| **Current Version** | 1.3.0 (staged — not yet uploaded) |
-| **Live Build** | 1.2.0 live on the Chrome Web Store (June 2026) |
-| **Status** | Published — 1.2.1 polish + 1.3.0 performance work staged locally |
-| **Codebase Size** | ~7,800 lines across 12 script modules in `src/` |
-| **Next Milestone** | Ship 1.3.0 to the store (includes everything staged since 1.2.0) |
-| **Security Status** | Input validation complete |
+| **Live Build** | 1.2.0 on the Chrome Web Store (June 2026) |
+| **Staged Locally** | 1.3.0 (performance) **+ unreleased:** onboarding tour, portfolio tracking, collapsible settings groups |
+| **In Flight (uncommitted)** | Portfolio polish + onboarding refinements (~360 lines across 6 files) |
+| **Codebase Size** | ~8,100 lines across 15 script modules in `src/` |
+| **Testing** | Node regression suite + jsdom smoke test, CI on every push |
+| **Next Milestone** | Commit in-flight work → ship everything staged to the store → launch marketing |
 
 ---
 
-## Active Focus
+## Active Focus (ordered)
 
-> **Current priority: ship 1.3.0.** The 1.2.0 relaunch is DONE — the listing is live.
-> Staged since then (all verified locally, see CHANGELOG 1.2.1 + 1.3.0):
-> settings panel redesign, auto-rotate, news ticker row, rating prompt +
-> toolbar popup, promo website, and the 1.3.0 performance pass (instant
-> chart from persisted cache, modular src/, slim D3 bundle, polyfill
-> removed, hidden-tab polling pause, bulk ticker requests, error boundary,
-> regression test suite + CI).
+> **Everything below Phase 1 is secondary until the staged build is live.**
+> The July 2026 sector scan (see [MONETIZATION.md §2b](MONETIZATION.md)) confirmed:
+> installs are the bottleneck for every product and revenue goal — affiliate-style
+> extensions earn per active user, and we have ~0 installs on a listing that is
+> two versions behind the local build.
 
-### Bug Fixes (do first)
-| Issue | Status | Notes |
-|-------|--------|-------|
-| Page ticker bar still visible behind open settings | [x] | Added `showSettings` to ticker render guard (`src/app.js`) |
-| Settings panel resizes/jumps between tabs (click target moves) | [x] | `SettingsCard` now fixed height + flex column; `TabContent` scrolls internally |
-| Widgets popped in instantly when enabled — no entrance animation | [x] | Shared `widgetAppear` fade+rise on `WidgetCard`; widgets enabled in settings defer mounting (`pendingWidgetReveal`) so the animation plays on panel close |
-| Conditional sub-settings popped in/out instantly (e.g. Ticker Format, Page Ticker Position) | [x] | Shared `SettingReveal` with `open` prop — smooth fade + accordion expand AND collapse (always mounted, CSS transition) |
-| Collapsible/dropdown sections in settings (smooth expand) | [ ] | Enhancement — decide which items become dropdowns |
+1. **Finish & commit the in-flight portfolio/onboarding polish** (working tree)
+2. **Ship the staged build to the store** (1.3.0 perf + onboarding + portfolio → decide version: 1.4.0 recommended since it adds features)
+3. **Launch marketing Phase 0–1** (`MARKETING_LAUNCH.md`): privacy policy URL, support email, first reviews
+4. Then: Quick Wins (keyboard shortcuts, retry, spinner) → Price Alerts
 
 ---
 
-## Completed Features
+## Completed Features (summary)
 
-Core functionality that has been implemented and tested.
+<details>
+<summary>Core, widgets, performance and UX shipped through 1.3.0 + staged work (click to expand)</summary>
 
 ### Core Price Display
-- [x] Real-time price charts with D3.js animations
-- [x] Smooth path transitions between data updates
-- [x] 6 time periods (1H, 1D, 1W, 1M, 1Y, ALL)
+- [x] Real-time D3 charts, 6 periods, animated transitions, trend-tinted fill
+- [x] Instant chart on new tab (persisted price cache, background refresh)
 - [x] Dynamic browser tab title with live prices
-- [x] Price change percentage with color coding
+- [x] 60+ coins, coin search by name, drag-and-drop reordering, max 20 coins
+- [x] 37 currencies, decimal places, number formats, popular currencies grouped
 
-### Cryptocurrency Support
-- [x] 60+ cryptocurrencies available
-- [x] 4 default coins (BTC, ETH, XRP, LTC)
-- [x] Coin search functionality in settings
-- [x] Custom coin list per user
+### User Preferences & UI
+- [x] Dark / Light / Auto theme with system detection (no white flash)
+- [x] Configurable refresh interval; auto-rotate through coins (10s–15m)
+- [x] Scrolling price ticker bar (collapsible, position configurable) + opt-in news headlines row
+- [x] Settings panel: tabbed, grouped (Appearance/Display/Data/Tickers), collapsible groups, ESC/× close, undo reset
+- [x] Skeleton loading, responsive layout, themed scrollbar, hover tooltips
+- [x] **Onboarding tour** — first-run spotlight tour (staged, unreleased)
+- [x] **Portfolio tracking** — full-screen tracking-only holdings view, total value + 24h P/L, all local (staged, unreleased)
+- [x] One-time rating prompt + toolbar popup → store listing
 
-### Multi-Currency
-- [x] 37 fiat currency options
-- [x] Currency symbol display
-- [x] Configurable decimal places (2, 4, 6, 8)
-- [x] Number format options (US, EU, Space)
+### Widget System (11 widgets)
+- [x] Fear & Greed, Market Overview, BTC Halving, RSI, Funding Rate (OKX), Long/Short (Bybit), Open Interest (OKX), Liquidations (OKX), Altcoin Season, Watchlist heatmap, Top Movers
+- [x] Presets (Holder / Trader / Minimal), toggle, drag-reorder, hide-all, entrance animations
 
-### User Preferences
-- [x] Dark / Light / Auto theme modes
-- [x] System theme detection (`prefers-color-scheme`)
-- [x] Configurable refresh intervals (10s, 30s, 1m, 5m)
-- [x] Drag-and-drop coin reordering
-- [x] All settings persisted to localStorage
+### Performance & Reliability (1.3.0)
+- [x] ~42% less vendor JS (custom D3 bundle, polyfill removed), zero external requests (fonts/CSS bundled)
+- [x] Hidden tabs pause all polling; bulk ticker request (1 instead of 2/coin)
+- [x] Smart cache (30s TTL, cleanup, offline fallback), retry with backoff
+- [x] Error boundary — a crash shows a reload prompt, a broken widget hides itself
 
-### Performance & Reliability
-- [x] Smart caching with 30s TTL
-- [x] Cache cleanup every 10 minutes
-- [x] Maximum 10 coins cached
-- [x] Retry mechanism with exponential backoff
-- [x] Offline detection and handling
+### Security & Quality
+- [x] Input validation against whitelists, coins normalized, no console.log in production
+- [x] `app.js` split into 15 focused modules (script-tag pattern, no build step)
+- [x] Centralized validated localStorage helpers
+- [x] Regression test suite (`tests/`) + jsdom smoke test + CI on push
 
-### Security
-- [x] Input validation against SUGGESTED_COINS whitelist
-- [x] Maximum 20 coins limit enforced
-- [x] Coin symbols normalized to uppercase
-- [x] Debug console.log removed from production
-
-### User Interface
-- [x] Skeleton loading states
-- [x] Settings modal with tabs (Coins / Preferences)
-- [x] Responsive design
-- [x] Monospace typography (Roboto Mono)
-- [x] Hover tooltips on all interactive elements
-- [x] Scrolling price ticker bar (top/bottom, configurable)
-- [x] Settings and widget-toggle buttons aligned across screen sizes
-- [x] Bottom widget row horizontally scrollable on small screens
-- [x] Chart fills available space without overflowing the controls
-
-### Widget System
-- [x] Fear & Greed Index widget (Alternative.me)
-- [x] Market Overview widget (total MCap + volume)
-- [x] BTC Halving Countdown widget
-- [x] RSI Widget (14-period, coin-specific)
-- [x] Funding Rate widget (OKX)
-- [x] Long/Short Ratio widget (Bybit)
-- [x] Open Interest widget (OKX)
-- [x] Liquidations widget (OKX Public API)
-- [x] Altcoin Season Index widget (Coinlore)
-- [x] Watchlist heatmap widget
-- [x] Top Movers (24h) widget
-- [x] One-click widget presets (Holder / Trader / Minimal)
-- [x] Enable/disable widgets from settings
-- [x] Drag-and-drop widget reordering
-- [x] Hide-all / show-all widgets toggle button
+</details>
 
 ---
 
-## Phase 1: Chrome Web Store Launch
+## Phase 1: Ship & Launch
 
-**Priority:** `CRITICAL` | **Target:** Q1 2026 | **Status:** In Progress
+**Priority:** `CRITICAL` | **Status:** Store live at 1.2.0, local build far ahead
 
-### 1.1 Store Visual Assets
-
-> **Old screenshots are outdated** — they predate the 1.1.x widget panel + ticker bar.
-> Must be re-captured from the running 1.2.0 build before relaunch.
-> Mockup/templating tools live in `assets/mockups/` (see its `README.md` for export steps).
-
-| Task | Status | Effort | Notes |
-|------|--------|--------|-------|
-| Capture fresh screenshots (1.2.0, widgets/ticker visible) | [x] | Medium | 6 done → `assets/screenshots/01-06`; raw in `assets/mockups/raw/` |
-| Wrap screenshots in caption frames (1280×800) | [x] | Low | `assets/mockups/store-frames.html` |
-| Re-export Small Tile (440×280) | [x] | Low | `assets/mockups/promo-tiles.html` (redesigned + re-rendered) |
-| Re-export Large Tile (920×680) | [x] | Low | `assets/mockups/promo-tiles.html` (redesigned + re-rendered) |
-| Re-export Marquee (1400×560) | [x] | Low | `assets/mockups/promo-tiles.html` (redesigned + re-rendered) |
-| Mockup/template HTML created | [x] | Medium | `assets/mockups/store-frames.html` + `promo-tiles.html` |
-
-**Asset status:**
-- Screenshots: `assets/screenshots/01-hero … 06-themes.png` (fresh, 1.2.0)
-- Promo tiles: `assets/promotional/*.png` (kept)
-
-### 1.2 Store Listing Content
-
-| Task | Status | Effort | Notes |
-|------|--------|--------|-------|
-| Rewrite extension name (SEO: "new tab") | [x] | Low | `manifest.json` + `STORE_DESCRIPTION.md` |
-| Write 132-character summary | [x] | Low | 126 chars — `docs/STORE_DESCRIPTION.md` |
-| Rewrite detailed description (trust-first) | [x] | Medium | `docs/STORE_DESCRIPTION.md` |
-| Fix keyword spam (CWS policy compliance) | [x] | Low | No coin/currency lists |
-| Select category: Productivity | [x] | Low | Productivity |
-| Host privacy policy + add URL in CWS field | [~] | Low | `privacy.html` exists — needs GitHub Pages hosting |
-| Setup support email | [ ] | Low | Add in CWS dashboard |
-| Prepare FAQ responses | [ ] | Low | Common questions |
-
-**Store Description:** See `docs/STORE_DESCRIPTION.md` (single canonical source — never copy elsewhere).
-
-### 1.3 Pre-Launch Quality Assurance
-
-#### Browser Compatibility
-| Browser | Version | Status | Notes |
-|---------|---------|--------|-------|
-| Chrome | Latest 3 versions | [ ] | Primary target |
-| Chrome | Canary | [ ] | Future compatibility |
-| Edge | Latest | [ ] | Chromium-based |
-| Brave | Latest | [ ] | Chromium-based |
-| Opera | Latest | [ ] | Chromium-based |
-
-#### Functional Testing
-| Test Case | Status | Priority |
-|-----------|--------|----------|
-| All 60+ coins load correctly | [ ] | High |
-| All 6 time periods work | [ ] | High |
-| All 37 currencies display correctly | [ ] | High |
-| Theme switching (auto/light/dark) | [ ] | High |
-| Offline mode graceful handling | [ ] | High |
-| Settings persistence across sessions | [ ] | High |
-| Drag-and-drop coin reordering | [ ] | Medium |
-| Tab title updates with price | [ ] | Medium |
-| Cache invalidation works | [ ] | Medium |
-| Memory usage under 100MB | [ ] | Medium |
-
-#### Console & Errors
-| Task | Status | Priority |
-|------|--------|----------|
-| Clear all console errors | [x] | Critical |
-| Clear all console warnings | [x] | High |
-| No uncaught promise rejections | [ ] | High |
-| No memory leaks (1h runtime test) | [ ] | Medium |
-
-### 1.4 Manifest & Permissions Audit
+### 1.1 Pre-ship (working tree → store)
 
 | Task | Status | Notes |
 |------|--------|-------|
-| Verify minimal permissions | [x] | Zero permissions required |
-| Check CSP compliance | [x] | No inline scripts |
-| Validate icon sizes (16, 48, 128) | [x] | All present |
-| Test manifest.json validity | [x] | Chrome validates |
+| Commit in-flight portfolio/onboarding polish | [ ] | 6 files modified in working tree |
+| Add portfolio + onboarding coverage to the regression suite | [ ] | New features currently untested |
+| Update CHANGELOG (move shipped items out of Unreleased/Planned) | [x] | Done July 30, 2026 |
+| Self-test on a clean Chrome profile (all coins/periods/currencies/themes, offline, persistence) | [ ] | One pass before upload |
+| Decide version number (1.4.0 recommended — new features, not just perf) | [ ] | Update `manifest.json` |
+| Upload to CWS with fresh screenshots incl. portfolio + onboarding | [ ] | Asset pipeline ready in `assets/mockups/` |
 
-### 1.5 Marketing & Launch
+### 1.2 Store listing (mostly done)
 
-> Full step-by-step plan with copy-paste templates: **`docs/MARKETING_LAUNCH.md`**.
-> Goal: first real installs + first 10 reviews (4.5★+) for the ~0-install listing.
+| Task | Status | Notes |
+|------|--------|-------|
+| Name, 132-char summary, trust-first description, no keyword spam | [x] | `STORE_DESCRIPTION.md` (canonical) |
+| Screenshots + promo tiles (1.2.0 era) | [x] | Re-capture only if portfolio/onboarding should be featured |
+| Host privacy policy + URL in CWS Privacy field | [ ] | `privacy.html` exists — needs GitHub Pages URL in dashboard |
+| Support email in CWS dashboard | [ ] | Required before wide promotion |
+| FAQ responses prepared | [ ] | Common questions |
 
-#### Phase 0 — Store readiness (before telling anyone)
+### 1.3 Marketing launch
+
+> Full plan with templates: **`MARKETING_LAUNCH.md`**. Goal: first installs + 5–10 honest reviews at 4.5★+.
+
 | Task | Status | Priority |
 |------|--------|----------|
-| Upload 1.2.0 with new title + description | [ ] | Critical |
-| Host privacy policy + URL in CWS Privacy field | [ ] | Critical |
-| Add support email in dashboard | [ ] | High |
-| Replace screenshots (first 3 = one benefit each) | [ ] | High |
-| Self-test on a clean Chrome profile for a day | [ ] | Medium |
-
-#### Phase 1 — Seed first reviews (week 1)
-| Task | Status | Priority |
-|------|--------|----------|
-| Ask 8–12 contacts for honest reviews | [ ] | Critical |
-| Post in 2–3 communities you already belong to | [ ] | High |
-| Reach 5+ reviews, 4.5★+ before public launch | [ ] | High |
-
-#### Phase 2 — Owned channels (week 1–2)
-| Task | Status | Priority |
-|------|--------|----------|
-| Polish GitHub README (hero shot, pitch, install link) | [ ] | High |
-| Add repo topics for organic discovery | [ ] | Medium |
-| X/Twitter launch thread (template ready) | [ ] | Medium |
-
-#### Phase 3 — Launch pushes (week 2–3, spaced out)
-| Task | Status | Priority |
-|------|--------|----------|
-| Product Hunt launch (Tue–Thu, 12:01 AM PT) | [ ] | High |
-| Reddit value-first posts (r/SideProject, r/chrome_extensions) | [ ] | Medium |
-| Show HN post | [ ] | Medium |
-| Indie Hackers "I shipped this" | [ ] | Low |
-
-#### Phase 4 — Ongoing (week 3+)
-| Task | Status | Priority |
-|------|--------|----------|
-| Reply to every store review | [ ] | High |
-| Ship a small update every few weeks | [ ] | Medium |
-| Track installs weekly, double down on best channel | [ ] | Medium |
+| Phase 0: store readiness (above) + clean-profile self-test for a day | [ ] | Critical |
+| Phase 1: ask 8–12 contacts for reviews; post in 2–3 communities | [ ] | Critical |
+| Phase 2: GitHub README polish (hero shot, install link), repo topics, X thread | [ ] | High |
+| Phase 3: Product Hunt, r/SideProject, r/chrome_extensions, Show HN (spaced out) | [ ] | High |
+| Phase 4: reply to every review; ship small updates every few weeks | [ ] | Ongoing |
 
 ---
 
-## Phase 2: User Experience Polish
+## Phase 2: UX Quick Wins
 
-**Priority:** `HIGH` | **Target:** Q1 2026 | **Status:** Planned
+**Priority:** `HIGH` | **Target:** first post-launch update
 
-### 2.1 Error Handling & Feedback
-
-| Task | Status | Effort | Priority |
-|------|--------|--------|----------|
-| User-friendly API error messages | [ ] | Medium | High |
-| "Retry" button on fetch failures | [ ] | Low | High |
-| localStorage quota exceeded handling | [ ] | Medium | Medium |
-| Invalid/unsupported coin feedback | [ ] | Low | Medium |
-| Network timeout indication | [ ] | Low | Medium |
-| Rate limit warning display | [ ] | Low | Low |
-
-**Technical Notes:**
-- Error messages should be non-technical
-- Include actionable suggestions
-- Log technical details to console only
-
-### 2.2 Performance Optimization
-
-| Task | Status | Effort | Priority |
-|------|--------|--------|----------|
-| Add loading spinner for initial fetch | [ ] | Low | High |
-| Lighthouse audit (target: 90+ all categories) | [ ] | Medium | High |
-| Memory profiling and optimization | [ ] | Medium | Medium |
-| Bundle size analysis | [ ] | Low | Medium |
-| Reduce D3 import size | [ ] | High | Low |
-| Image lazy loading (if any) | [ ] | Low | Low |
-
-**Current Metrics to Improve:**
-- First Contentful Paint: Target < 500ms
-- Largest Contentful Paint: Target < 1s
-- Memory usage: Target < 50MB idle
-
-### 2.3 Keyboard Navigation
-
-| Shortcut | Action | Status | Priority |
-|----------|--------|--------|----------|
-| `←` / `→` | Previous / Next coin | [ ] | High |
-| `1` - `6` | Time period shortcuts | [ ] | High |
-| `S` or `Esc` | Toggle settings modal | [ ] | High |
-| `T` | Toggle theme | [ ] | Medium |
-| `/` | Focus coin search | [ ] | Medium |
-| `?` | Show shortcuts help | [ ] | Low |
-| `R` | Manual refresh | [ ] | Low |
-
-**Implementation Notes:**
-- Use `keydown` event on document
-- Prevent shortcuts when input is focused
-- Add visual indicator for current shortcuts
-
-### 2.4 Visual Enhancements
-
-| Task | Status | Effort | Priority |
-|------|--------|--------|----------|
-| Custom themed scrollbar for settings | [x] | Low | Medium |
-| Add coin logos/icons | [ ] | Medium | Medium |
-| Loading skeleton improvements | [ ] | Low | Low |
-| Subtle hover animations | [ ] | Low | Low |
-| Price change flash animation | [ ] | Medium | Low |
+| Task | Status | Effort | Why |
+|------|--------|--------|-----|
+| Keyboard shortcuts: `←`/`→` coins, `1`–`6` periods, `S`/`Esc` settings, `R` refresh | [ ] | Low | Most-cited power-user gap; cheap |
+| "Retry" button + friendly message on fetch failure | [ ] | Low | Reviews punish silent failures |
+| Loading spinner for initial fetch (when cache is cold) | [ ] | Low | First-run impression |
+| Coin logos/icons in coin list & chips | [ ] | Medium | Perceived quality → reviews |
+| Price change flash animation on update | [ ] | Low | Polish |
+| localStorage quota exceeded handling | [ ] | Medium | Rare but data-loss adjacent |
 
 ---
 
 ## Phase 3: Power User Features
 
-**Priority:** `MEDIUM` | **Target:** Q2 2026 | **Status:** Planned
+**Priority:** `HIGH` (alerts) / `MEDIUM` (rest) | **Target:** Q3–Q4 2026
 
-### 3.1 Price Alerts System
+### 3.1 Price Alerts — *elevated priority (July 2026)*
 
-| Task | Status | Effort | Dependencies |
-|------|--------|--------|--------------|
-| Alert data model design | [ ] | Low | - |
-| Price target UI (above/below) | [ ] | Medium | - |
-| Percentage change alerts | [ ] | Medium | - |
-| Browser notification integration | [ ] | Medium | Chrome Notifications API |
-| Sound alerts (optional, muted by default) | [ ] | Low | - |
-| Alert history with timestamps | [ ] | Medium | - |
-| Max 10 active alerts limit | [ ] | Low | - |
-| Alert persistence in localStorage | [ ] | Low | - |
+> Sector scan result: price alerts are the **single most requested feature**
+> across every competitor and portfolio tracker in 2026. They also drive
+> re-engagement (more sessions), which every monetization channel depends on.
 
-**Data Structure:**
+| Task | Status | Notes |
+|------|--------|-------|
+| Alert data model + localStorage persistence (max 10 active) | [ ] | See data structure below |
+| Price target UI (above/below) + percentage change alerts | [ ] | In settings or coin overview |
+| Browser notification integration | [ ] | ⚠ Requires adding the `notifications` permission — breaks "zero permissions". **Decide:** in-tab visual alerts only (badge/flash/title) keep zero permissions; push notifications need the permission + store copy update |
+| Alert checked on each fetch cycle (no server, no background worker if possible) | [ ] | MV3 constraint |
+| Alert history with timestamps | [ ] | Nice-to-have |
+
 ```javascript
-{
-  id: "uuid",
-  coin: "BTC",
-  type: "above" | "below" | "percent_change",
-  target: 50000,
-  currency: "USD",
-  created: timestamp,
-  triggered: timestamp | null,
-  active: boolean
-}
+{ id, coin, type: "above"|"below"|"percent_change", target, currency, created, triggered, active }
 ```
 
-### 3.2 Mini Portfolio Mode
+### 3.2 Portfolio v2 (tracking view shipped ✅)
 
-| Task | Status | Effort | Dependencies |
-|------|--------|--------|--------------|
-| Holdings data structure | [ ] | Low | - |
-| "Add holding" UI | [ ] | Medium | - |
-| Total portfolio value calculation | [ ] | Medium | - |
-| 24h profit/loss display | [ ] | Medium | - |
-| Portfolio toggle in settings | [ ] | Low | - |
-| JSON export functionality | [ ] | Low | - |
-| JSON import functionality | [ ] | Medium | - |
-| Portfolio view on main screen | [ ] | High | - |
+| Task | Status | Notes |
+|------|--------|-------|
+| Full-screen tracking view: total value + 24h P/L, all local | [x] | Shipped (staged) |
+| Allocation breakdown (% per coin) | [ ] | Top requested tracker feature (sector scan) |
+| Per-coin cost basis → total P/L since purchase | [ ] | Makes the view genuinely useful |
+| JSON export / import | [ ] | Data safety; pairs with privacy story |
+| Tax-season affiliate line (Jan–Apr, local date check) | [ ] | See `MONETIZATION.md` §3.5 — only after portfolio v2 ships |
 
-**Privacy Note:** All data local, no cloud sync in Phase 3.
+### 3.3 Coin Coverage Expansion — *new (July 2026)*
 
-### 3.3 Widget System Foundation ✅ COMPLETED
+> Our biggest competitive gap: ~64 Coinbase-served coins vs. 3,000–10,000+ at
+> competitors. We already fetch Coinlore's top-100 in one bulk request.
 
-| Widget | Status | API Source |
-|--------|--------|------------|
-| Fear & Greed Index | [x] Done | Alternative.me |
-| Market Overview (MCap + Volume + Dominance) | [x] Done | Coinlore |
-| BTC Halving Countdown | [x] Done | mempool.space |
-| RSI (14-period) | [x] Done | Coinbase history |
-| Funding Rate | [x] Done | OKX |
-| Long/Short Ratio | [x] Done | Bybit |
-| Open Interest | [x] Done | OKX |
-| Liquidations (24h) | [x] Done | OKX Public API |
-| Altcoin Season Index | [x] Done | Coinlore Global |
-| Watchlist heatmap | [x] Done | Coinbase (sweep) |
-| Top Movers (24h) | [x] Done | Coinbase (sweep) |
+| Task | Status | Notes |
+|------|--------|-------|
+| Design: "price-only" coin tier (Coinlore-priced, no Coinbase history) | [ ] | Ticker/watchlist/portfolio support; chart shows "no chart data" or sparkline from cached snapshots |
+| Whitelist + name map extension for Coinlore-only coins | [ ] | Keep validation pattern |
+| Settings UX: mark price-only coins in search | [ ] | No surprises |
 
-### 3.4 Additional Widgets (Planned)
+### 3.4 Additional Widgets
 
-| Widget | Status | Effort | API Source |
-|--------|--------|--------|------------|
-| Ethereum Gas Tracker | [ ] | Medium | Etherscan / Blocknative |
-| Whale Alert feed | [ ] | High | Whale Alert API |
-| Crypto news feed | [ ] | High | CryptoPanic |
+| Widget | Status | API | Notes |
+|--------|--------|-----|-------|
+| Ethereum Gas Tracker | [ ] | Etherscan / Blocknative / mempool.space | Verify CORS + no-key access first |
+| Whale Alert feed | [ ] | Whale Alert API | Likely needs key — probably not viable |
 
 ---
 
 ## Phase 4: Advanced Analytics
 
-**Priority:** `LOW` | **Target:** Q3-Q4 2026 | **Status:** Future
+**Priority:** `LOW` | **Target:** Q4 2026+
 
-### 4.1 Technical Indicators
-
-| Indicator | Status | Effort | Complexity |
-|-----------|--------|--------|------------|
-| RSI (Relative Strength Index) | [ ] | High | Medium |
-| Moving Averages (SMA, EMA) | [ ] | Medium | Low |
-| MACD indicator | [ ] | High | High |
-| Bollinger Bands | [ ] | High | Medium |
-| Volume bars on chart | [ ] | Medium | Low |
-| Support/Resistance lines | [ ] | High | High |
-
-**Prerequisites:**
-- More historical data points
-- Performance optimization for calculations
-
-### 4.2 Chart Enhancements
-
-| Feature | Status | Effort | Priority |
-|---------|--------|--------|----------|
-| Candlestick chart option | [ ] | High | Medium |
-| Comparison mode (2 coins overlay) | [ ] | High | Low |
-| Zoom and pan gestures | [ ] | High | Low |
-| Crosshair with price display | [ ] | Medium | Low |
-| Time axis improvements | [ ] | Medium | Low |
-
-### 4.3 External Integrations
-
-| Integration | Status | Effort | API |
-|-------------|--------|--------|-----|
-| Crypto news feed | [ ] | High | CryptoPanic |
-| Social sentiment indicator | [ ] | High | LunarCrush |
-| DeFi yields widget | [ ] | Medium | DeFiLlama |
-| On-chain metrics | [ ] | High | Glassnode |
+- [ ] Moving averages (SMA/EMA) overlay — cheapest meaningful indicator
+- [ ] Volume bars on chart
+- [ ] MACD / Bollinger Bands (needs more data points — verify API depth first)
+- [ ] Candlestick chart option
+- [ ] Crosshair with price display; comparison mode (2 coins)
 
 ---
 
 ## Phase 5: Platform Expansion
 
-**Priority:** `LOW` | **Target:** 2027 | **Status:** Future
+**Priority:** `LOW` | **Target:** 2027
 
-### 5.1 Multi-Browser Support
+- [ ] Firefox WebExtension port (minor API differences)
+- [ ] Safari Web Extension (Xcode required)
+- [ ] `chrome.storage.sync` option (multi-device settings)
+- [ ] i18n: Turkish first, then Spanish/German
 
-| Browser | Status | Effort | Notes |
-|---------|--------|--------|-------|
-| Firefox WebExtension | [ ] | Medium | Minor API differences |
-| Safari Web Extension | [ ] | High | Xcode required |
-| Chrome Sync storage | [ ] | Medium | Replace localStorage |
+---
 
-### 5.2 Internationalization (i18n)
+## Monetization Track
 
-| Language | Status | Priority | Translator |
-|----------|--------|----------|------------|
-| English (default) | [x] | - | Built-in |
-| Turkish | [ ] | High | Needed |
-| Spanish | [ ] | Medium | Needed |
-| German | [ ] | Low | Needed |
-| Portuguese | [ ] | Low | Needed |
+> Strategy, principles, compliance and phasing live in **[MONETIZATION.md](MONETIZATION.md)**.
+> Sequenced after launch traction — no channel matters at ~0 installs.
 
-**Implementation:**
-- i18n framework needed (e.g., i18next)
-- JSON translation files
-- Language picker in settings
+| Phase | Contents | Gate |
+|-------|----------|------|
+| M1 | Settings → Support & Partners + donations/tip jar + privacy disclosure | After store launch settles |
+| M2 | Hardware wallet + exchange affiliate, contextual "Trade" button | After M1 + affiliate approvals |
+| M3 | Self-served sponsor card (widget slot, labeled) | After M2, only with real traffic |
+| M4 | Alert/portfolio contextual surfaces incl. tax-season affiliate (§3.5) | After alerts + portfolio v2 ship |
 
 ---
 
 ## Technical Debt
 
-### Code Quality
-
-| Task | Status | Effort | Priority |
-|------|--------|--------|----------|
-| Split app.js (currently ~7,700 lines, over threshold) | [x] | High | Medium |
-| Add ESLint configuration | [ ] | Low | Medium |
-| Add Prettier for formatting | [ ] | Low | Medium |
-| TypeScript migration | [ ] | Very High | Low |
-| React 18 upgrade (hooks) | [ ] | Very High | Low |
-| Component documentation | [ ] | Medium | Low |
-
-### Testing Infrastructure
-
-| Task | Status | Effort | Priority |
-|------|--------|--------|----------|
-| Regression test suite (`tests/`, plain Node + jsdom smoke test) | [x] | Medium | Low |
-| API mocking layer (fake fetch in the jsdom smoke test) | [x] | Medium | Low |
-| CI/CD pipeline (GitHub Actions runs `tests/run-all.js` on push) | [x] | Medium | Low |
-| E2E tests with Playwright | [ ] | High | Low |
-
-### Build System (Optional)
-
-| Task | Status | Effort | Priority |
-|------|--------|--------|----------|
-| Vite bundler setup | [ ] | Medium | Low |
-| Source maps generation | [ ] | Low | Low |
-| Code minification | [ ] | Low | Low |
-| Tree-shaking optimization | [ ] | Medium | Low |
+| Task | Status | Priority | Notes |
+|------|--------|----------|-------|
+| Test coverage for portfolio + onboarding | [ ] | High | Newest, least-tested code |
+| ESLint + Prettier config | [ ] | Medium | Cheap consistency win |
+| Keep files < 800 lines (watch `portfolio.js` growth) | [~] | Medium | In-flight diff adds ~300 lines |
+| Playwright E2E for critical paths | [ ] | Low | After launch |
+| React 18 + hooks migration | [ ] | Low | Only with a real driver |
+| TypeScript migration | [ ] | Low | Not worth it under no-build constraint |
 
 ---
 
-## Quick Wins Backlog
+## Insights — July 2026 Sector Scan
 
-High-impact, low-effort tasks for immediate value.
+Foresights that should shape prioritization (full data in `MONETIZATION.md` §2b):
 
-| Task | Effort | Impact | Phase | Status |
-|------|--------|--------|-------|--------|
-| Take store screenshots | Low | Critical | 1 | [x] Done |
-| Write store description | Low | Critical | 1 | [x] Done |
-| Create promotional tiles | Low | Critical | 1 | [x] Done |
-| Clear console errors/warnings | Low | High | 1 | [x] Done |
-| Add keyboard shortcut: ←/→ | Low | High | 2 | [ ] |
-| Add keyboard shortcut: 1-6 | Low | High | 2 | [ ] |
-| Add "retry" button on error | Low | Medium | 2 | [ ] |
-| Loading spinner | Low | Medium | 2 | [ ] |
+1. **Installs are the bottleneck.** Every goal (revenue, reviews, motivation) scales with users; the local build is two versions ahead of the store. Shipping beats building right now.
+2. **Price alerts are the sector's #1 requested feature** — and our sharpest retention lever. But push notifications cost our "zero permissions" claim; the in-tab-only alert variant preserves it. This trade-off deserves an explicit decision, not a default.
+3. **Coin coverage is our visible weakness** (~64 vs. thousands). The Coinlore price-only tier closes most of the perceived gap for one bulk request we already make.
+4. **Portfolio tools are converging on "wealth management"** (allocation, cost basis, tax). Our tracking-only + local-only stance is a differentiator — portfolio v2 + a seasonal tax-affiliate line captures the trend without breaking privacy.
+5. **Privacy is a moat, not a constraint.** No major competitor leads with zero permissions/no tracking. Every store asset, review reply and README line should say it first.
+6. **Ratings compound.** Small frequent updates + replying to every review is the highest-ROI ongoing marketing; it's free and no competitor in the minimal-clone tier does it.
 
 ---
 
 ## Known Issues & Bugs
-
-Track and prioritize bug fixes.
 
 | Issue | Severity | Status | Notes |
 |-------|----------|--------|-------|
@@ -504,41 +256,11 @@ Track and prioritize bug fixes.
 
 ## Success Metrics & Goals
 
-### Launch Goals (Month 1)
-- [ ] 1,000+ users
-- [ ] 4.5+ star rating
-- [ ] < 0.1% crash rate
-- [ ] < 1s load time
-- [ ] Zero critical bugs
+### Launch Goals (Month 1 after re-launch)
+- [ ] 1,000+ users · 4.5★+ rating · <0.1% crash rate · <1s load · zero critical bugs
 
 ### Growth Goals
-- [ ] 10,000 users by Month 3
-- [ ] 50,000 users by Month 6
-- [ ] 100,000 users by Year 1
-- [ ] Featured in Chrome Web Store
-
----
-
-## Current Strengths
-
-What's working well:
-- Clean, minimal UI design
-- Fast loading (no build process)
-- Privacy-first architecture
-- Excellent drag-and-drop UX
-- Responsive across screen sizes
-- Comprehensive caching system
-- Robust error recovery (retry mechanism)
-
-## Areas for Improvement
-
-What needs attention:
-- No loading spinner for initial fetch
-- Limited error messages (too technical)
-- No keyboard navigation
-- Single large source file
-- No automated tests
-- No coin logos/icons
+- [ ] 10,000 users by Month 3 · 50,000 by Month 6 · 100,000 by Year 1 · CWS featured
 
 ---
 
@@ -547,27 +269,15 @@ What needs attention:
 | Document | Purpose |
 |----------|---------|
 | [VISION.md](VISION.md) | Long-term feature vision |
+| [MONETIZATION.md](MONETIZATION.md) | Revenue strategy + market/competitor research |
 | [CHANGELOG.md](CHANGELOG.md) | Version history |
-| [PRIVACY.md](PRIVACY.md) | Privacy policy |
+| [MARKETING_LAUNCH.md](MARKETING_LAUNCH.md) | Launch checklist + copy templates |
 | [STORE_DESCRIPTION.md](STORE_DESCRIPTION.md) | Web Store listing content (canonical) |
 | [STORE_ASSETS.md](STORE_ASSETS.md) | Web Store asset specs |
-| [MARKETING_LAUNCH.md](MARKETING_LAUNCH.md) | Launch checklist + copy templates |
 | [../assets/mockups/README.md](../assets/mockups/README.md) | Promo tile + screenshot export tools |
 
 ---
 
-## Contributing
+**Status Legend:** `[ ]` not started · `[x]` completed · `[~]` in progress · `[-]` blocked
 
-When picking up a task:
-1. Check dependencies are completed
-2. Update status in this file
-3. Follow existing code patterns
-4. Test on Chrome, Edge, Brave minimum
-5. Update CHANGELOG.md with changes
-
-**Status Legend:**
-- `[ ]` - Not started
-- `[x]` - Completed
-- `[~]` - In progress
-- `[-]` - Blocked/On hold
-
+When picking up a task: check dependencies → update status here → follow existing code patterns → test on Chrome/Edge/Brave → update CHANGELOG.

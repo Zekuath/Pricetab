@@ -1,6 +1,6 @@
 # PriceTab Vision & Feature Roadmap
 
-> **Last Updated:** May 2026
+> **Last Updated:** July 30, 2026
 
 PriceTab aims to be the go-to new tab experience for crypto enthusiasts — beautiful design, real-time data, and useful widgets while staying fast and privacy-first.
 
@@ -45,7 +45,9 @@ PriceTab aims to be the go-to new tab experience for crypto enthusiasts — beau
 - Drag-and-drop widget reordering
 - Hide-all / show-all widget toggle
 
-### Phase 3: User Experience (Q2 2026)
+### Phase 3: User Experience (Q2–Q3 2026)
+
+**Onboarding** — *first-run spotlight tour shipped (staged, July 2026)* ✅
 
 **Keyboard shortcuts** — navigate without a mouse
 - `←` / `→`: previous / next coin
@@ -65,12 +67,20 @@ PriceTab aims to be the go-to new tab experience for crypto enthusiasts — beau
 
 ### Phase 4: Power User Features (Q3 2026)
 
-**Price Alerts**
+**Price Alerts** — *elevated priority (July 2026): #1 requested feature across the sector*
 - Set price targets (above/below) per coin
 - Percentage change alerts
-- Browser push notifications (Chrome Notifications API)
 - All stored locally, max 10 active alerts
 - No server required — alerts checked on each fetch
+- **Open decision:** browser push notifications require the `notifications`
+  permission, which breaks the "zero permissions" promise. Default plan is
+  in-tab alerts (title/badge/flash) first; add the permission only if users ask
+
+**Coin Coverage Expansion** — *new (July 2026)*
+- "Price-only" coin tier priced from the Coinlore bulk feed we already fetch
+- Closes the visible gap vs. competitors (~64 coins vs. thousands) for
+  ticker / watchlist / portfolio without new requests or permissions
+- Chart remains Coinbase-only; price-only coins are marked as such in search
 
 **Mini Portfolio** — *tracking view shipped (June 2026)* ✅
 - Manually enter coin holdings (any of the ~64 supported coins) ✅

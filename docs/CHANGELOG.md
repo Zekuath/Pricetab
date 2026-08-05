@@ -9,12 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (staged locally, not yet in a store build)
+- **Portfolio tracking** - full-screen, tracking-only holdings view (total value + change over a selectable period); manually entered amounts, all data local, no wallet connection
+- **Portfolio value chart** - full-bleed background chart of total portfolio value over time, with a persisted period switcher (day/week/month/year/all)
+- **Onboarding tour** - first-run spotlight tour of the main controls (shown once, skippable)
+- **Collapsible settings groups** - settings sections expand/collapse for faster scanning
+- Viewport meta tag for responsive rendering; Google site verification file (promo site)
+
 ### Planned
-- Price alerts with browser notifications
+- Price alerts (in-tab first; browser notifications only if we accept the `notifications` permission — see TODO 3.1)
 - Keyboard shortcuts (←/→ coins, 1-6 periods, S settings)
-- Portfolio tracking (optional, local only)
+- Portfolio v2: allocation breakdown, per-coin cost basis, JSON export/import
+- Price-only coin tier via Coinlore (expand coverage beyond Coinbase-served coins)
 - Ethereum gas tracker widget
-- Whale alert feed widget
 
 ---
 

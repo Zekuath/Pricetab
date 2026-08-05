@@ -219,3 +219,15 @@ const savePortfolioToStorage = (holdings) =>
     PORTFOLIO_STORAGE_KEY,
     Array.isArray(holdings) ? holdings : [],
   );
+
+// Portfolio background chart period ("hour" excluded — it's a value trend,
+// not a tick chart). Defaults to a week, the most portfolio-shaped range.
+const loadPortfolioPeriodFromStorage = () =>
+  loadEnumSetting(
+    PORTFOLIO_PERIOD_KEY,
+    ["day", "week", "month", "year", "all"],
+    "week",
+  );
+
+const savePortfolioPeriodToStorage = (period) =>
+  saveSetting(PORTFOLIO_PERIOD_KEY, period);

@@ -701,22 +701,26 @@ class CryptoChart extends PureComponent {
         return;
       }
 
-      // Esc always closes settings; S toggles it. Both available anytime.
+      // Esc always closes the open overlay (settings or portfolio)
       if (e.key === "Escape") {
         if (this.state.showSettings) {
           e.preventDefault();
           this.toggleSettings();
+        } else if (this.state.showPortfolio) {
+          e.preventDefault();
+          this.togglePortfolio();
         }
         return;
       }
-      if (e.key === "s" || e.key === "S") {
+      // S toggles settings — but not underneath the portfolio view
+      if ((e.key === "s" || e.key === "S") && !this.state.showPortfolio) {
         e.preventDefault();
         this.toggleSettings();
         return;
       }
 
-      // Remaining shortcuts are disabled while the settings panel is open
-      if (this.state.showSettings) return;
+      // Remaining shortcuts act on the chart — disabled while an overlay covers it
+      if (this.state.showSettings || this.state.showPortfolio) return;
 
       if (e.key === "ArrowRight") {
         e.preventDefault();
@@ -1664,6 +1668,7 @@ class CryptoChart extends PureComponent {
                 open: showPortfolio,
                 type: "button",
                 tickerTop,
+                "data-tour": "portfolio",
                 "aria-label": showPortfolio ? "Close portfolio" : "Open portfolio",
                 title: showPortfolio ? "Close portfolio" : "Portfolio",
               },
@@ -2428,6 +2433,7 @@ class CryptoChart extends PureComponent {
             currency,
             decimalPlaces,
             separatorFormat,
+            chartColorize: this.state.chartColor,
             onAdd: this.handleAddHolding,
             onUpdateAmount: this.handleUpdateHoldingAmount,
             onRemove: this.handleRemoveHolding,
