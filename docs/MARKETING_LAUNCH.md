@@ -8,10 +8,10 @@ A concrete, step-by-step plan to get the first real users for a zero-install, fr
 
 ## Phase 0 — Before you tell anyone (store readiness)
 
-- [ ] Upload 1.2.0 with the new title + description (`docs/STORE_DESCRIPTION.md`).
+- [x] Upload the new build with the new title + description (`docs/STORE_DESCRIPTION.md`) — 1.3.0 live since August 2026.
 - [ ] Host the privacy policy and put the URL in the **Privacy** field (not the description). GitHub Pages from `privacy.html` works.
 - [ ] Add a support email in the dashboard (a plain Gmail is fine).
-- [ ] Replace outdated screenshots with fresh 1.2.0 captions (see `assets/mockups/`).
+- [ ] Replace outdated screenshots with fresh captures (asset pipeline in `assets/mockups/`).
 - [ ] First 3 screenshots must each show **one clear benefit** — they appear in search results.
 - [ ] Confirm category = **Productivity**, language set.
 - [ ] Install it yourself on a clean profile and use it for a day — catch anything embarrassing.

@@ -1,6 +1,6 @@
 # Privacy Policy for PriceTab
 
-**Last Updated:** June 11, 2026
+**Last Updated:** August 6, 2026
 **Effective Date:** January 23, 2026
 
 ## Introduction
@@ -79,13 +79,13 @@ All APIs used by PriceTab are **public** — no authentication or accounts requi
 - **Data Sent**: No user data — plain GET request
 - **Privacy**: See [mempool.space Privacy Policy](https://mempool.space/privacy-policy)
 
-### News sources (optional ticker row, off by default)
+### News source (optional ticker row, off by default)
 
-- **Endpoints**: `https://api.blockchair.com/news` and `https://cointelegraph.com/rss`
+- **Endpoint**: `https://api.blockchair.com/news`
 - **Purpose**: Crypto news headlines in the optional ticker bar
 - **Data Sent**: No user data — plain GET requests
 - **Outbound links**: Clicking a headline opens the news site in a new tab. The link carries no referrer information (`rel="noreferrer"`), so the site cannot tell the visit came from PriceTab. From that point the news site's own privacy policy applies.
-- **Privacy**: See [Blockchair Privacy Policy](https://blockchair.com/privacy) and [Cointelegraph Privacy Policy](https://cointelegraph.com/privacy-policy)
+- **Privacy**: See [Blockchair Privacy Policy](https://blockchair.com/privacy)
 
 ### Local Vendor Files
 
@@ -203,7 +203,7 @@ This extension is provided "as is" without warranty. We are not responsible for:
 ✅ **What we store**: Only your coin preferences, locally on your device
 ✅ **What we collect**: Nothing
 ✅ **What we share**: Nothing
-✅ **Third parties**: Only public, no-auth APIs — Coinbase (prices), OKX/Bybit/Coinlore/Alternative.me/mempool.space (optional widgets), Blockchair/Cointelegraph (optional news headlines)
+✅ **Third parties**: Only public, no-auth APIs — Coinbase (prices), OKX/Bybit/Coinlore/Alternative.me/mempool.space (optional widgets), Blockchair (optional news headlines)
 ✅ **Your control**: Delete data anytime by clearing localStorage or uninstalling
 
 **We respect your privacy because we simply don't collect any data.**
@@ -211,4 +211,4 @@ This extension is provided "as is" without warranty. We are not responsible for:
 ---
 
 **PriceTab Privacy Policy v1.0.0**
-Last Updated: June 8, 2026
+Last Updated: August 6, 2026

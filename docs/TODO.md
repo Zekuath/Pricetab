@@ -11,12 +11,12 @@
 
 | Metric | Value |
 |--------|-------|
-| **Live Build** | 1.2.0 on the Chrome Web Store (June 2026) |
-| **Staged Locally** | 1.3.0 (performance) **+ unreleased:** onboarding tour, portfolio tracking, collapsible settings groups |
-| **In Flight (uncommitted)** | Portfolio polish + onboarding refinements (~360 lines across 6 files) |
+| **Live Build** | 1.3.0 on the Chrome Web Store (August 2026) |
+| **Staged Locally** | 1.4.0 — onboarding tour, portfolio tracking, collapsible settings groups |
+| **In Flight (uncommitted)** | None — working tree clean |
 | **Codebase Size** | ~8,100 lines across 15 script modules in `src/` |
 | **Testing** | Node regression suite + jsdom smoke test, CI on every push |
-| **Next Milestone** | Commit in-flight work → ship everything staged to the store → launch marketing |
+| **Next Milestone** | Ship 1.4.0 (portfolio + onboarding) to the store → launch marketing |
 
 ---
 
@@ -26,12 +26,13 @@
 > The July 2026 sector scan (see [MONETIZATION.md §2b](MONETIZATION.md)) confirmed:
 > installs are the bottleneck for every product and revenue goal — affiliate-style
 > extensions earn per active user, and we have ~0 installs on a listing that is
-> two versions behind the local build.
+> one version behind the local build.
 
-1. **Finish & commit the in-flight portfolio/onboarding polish** (working tree)
-2. **Ship the staged build to the store** (1.3.0 perf + onboarding + portfolio → decide version: 1.4.0 recommended since it adds features)
-3. **Launch marketing Phase 0–1** (`MARKETING_LAUNCH.md`): privacy policy URL, support email, first reviews
-4. Then: Quick Wins (keyboard shortcuts, retry, spinner) → Price Alerts
+1. ~~Finish & commit the in-flight portfolio/onboarding polish~~ — done (committed August 2026)
+2. ~~Ship 1.3.0 to the store~~ — done (live August 2026)
+3. **Ship 1.4.0** (onboarding + portfolio + collapsible settings; `manifest.json` already bumped)
+4. **Launch marketing Phase 0–1** (`MARKETING_LAUNCH.md`): privacy policy URL, support email, first reviews
+5. Then: Quick Wins (keyboard shortcuts, retry, spinner) → Price Alerts
 
 ---
 
@@ -79,17 +80,17 @@
 
 ## Phase 1: Ship & Launch
 
-**Priority:** `CRITICAL` | **Status:** Store live at 1.2.0, local build far ahead
+**Priority:** `CRITICAL` | **Status:** Store live at 1.3.0 (Aug 2026), 1.4.0 staged locally
 
 ### 1.1 Pre-ship (working tree → store)
 
 | Task | Status | Notes |
 |------|--------|-------|
-| Commit in-flight portfolio/onboarding polish | [ ] | 6 files modified in working tree |
-| Add portfolio + onboarding coverage to the regression suite | [ ] | New features currently untested |
+| Commit in-flight portfolio/onboarding polish | [x] | Committed August 2026, working tree clean |
+| Add portfolio + onboarding coverage to the regression suite | [x] | `tests/test-portfolio.js` + `tests/test-onboarding.js` (Aug 2026) |
 | Update CHANGELOG (move shipped items out of Unreleased/Planned) | [x] | Done July 30, 2026 |
 | Self-test on a clean Chrome profile (all coins/periods/currencies/themes, offline, persistence) | [ ] | One pass before upload |
-| Decide version number (1.4.0 recommended — new features, not just perf) | [ ] | Update `manifest.json` |
+| Decide version number (1.4.0 — new features, not just perf) | [x] | `manifest.json` bumped to 1.4.0 (Aug 2026) |
 | Upload to CWS with fresh screenshots incl. portfolio + onboarding | [ ] | Asset pipeline ready in `assets/mockups/` |
 
 ### 1.2 Store listing (mostly done)
@@ -97,7 +98,7 @@
 | Task | Status | Notes |
 |------|--------|-------|
 | Name, 132-char summary, trust-first description, no keyword spam | [x] | `STORE_DESCRIPTION.md` (canonical) |
-| Screenshots + promo tiles (1.2.0 era) | [x] | Re-capture only if portfolio/onboarding should be featured |
+| Screenshots + promo tiles (refreshed for 1.3.0) | [x] | Re-capture only if portfolio/onboarding should be featured |
 | Host privacy policy + URL in CWS Privacy field | [ ] | `privacy.html` exists — needs GitHub Pages URL in dashboard |
 | Support email in CWS dashboard | [ ] | Required before wide promotion |
 | FAQ responses prepared | [ ] | Common questions |

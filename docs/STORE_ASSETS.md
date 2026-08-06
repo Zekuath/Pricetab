@@ -26,10 +26,11 @@ This document explains how to create all required assets for publishing PriceTab
 
 ## 📸 Screenshot Guide
 
-> ✅ **Current screenshots are fresh (1.2.0)** — composed from the live UI via
-> `assets/mockups/store-frames.html` + `assets/mockups/raw/`. Re-capture from there if features change.
+> ✅ **Current screenshots are fresh (1.3.0)** — composed from the live UI via
+> `assets/mockups/store-frames.html` + `assets/mockups/raw/`. Re-capture from there if features change
+> (portfolio + onboarding are staged for 1.4.0 and not yet featured).
 
-### What to Capture (v1.2.0)
+### What to Capture
 
 Take 5 screenshots at **1280x800**. Minimum 1, recommended 5.
 
@@ -40,8 +41,8 @@ Take 5 screenshots at **1280x800**. Minimum 1, recommended 5.
 - Shows the full new feature set
 
 **2. Widget panel close-up**
-- BTC chart with ALL 9 widgets enabled and visible
-- Shows Fear & Greed, Market Overview, Halving, RSI, Funding Rate, Long/Short, OI, Liquidations, Altcoin Season
+- BTC chart with ALL 11 widgets enabled and visible
+- Shows Watchlist, Top Movers, Fear & Greed, Market Overview, Halving, RSI, Funding Rate, Long/Short, OI, Liquidations, Altcoin Season
 - Demonstrates the depth of market data
 
 **3. Settings — Widgets tab**

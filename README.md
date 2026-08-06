@@ -16,13 +16,14 @@ A lightweight, privacy-focused Chrome extension that transforms your new tab int
 
 - **Live Price Charts** - Real-time charts with smooth animations on every new tab
 - **60+ Cryptocurrencies** - Bitcoin, Ethereum, Solana, and many more
-- **Market Widget Panel** - 9 optional signals: Fear & Greed, Market Overview, BTC Halving, RSI, funding rate, long/short ratio, open interest, liquidations, altcoin season
+- **Market Widget Panel** - 11 optional signals: Watchlist, Top Movers, Fear & Greed, Market Overview, BTC Halving, RSI, funding rate, long/short ratio, open interest, liquidations, altcoin season
+- **Portfolio Tracking** - full-screen holdings view (total value + P/L); manually entered amounts, all local, no wallet connection
 - **Watchlist Heatmap** - Your coins as a colour-coded grid (green up / red down)
 - **Top Movers** - The day's biggest gainers and losers at a glance
 - **One-Click Presets** - "Holder", "Trader" or "Minimal" widget bundles
 - **Auto Rotate** - Switch to the next coin automatically at your chosen interval (10s–15m)
 - **Scrolling Ticker** - Optional live price bar across the top or bottom
-- **News Headlines** - Optional crypto news row in the ticker (Blockchair + Cointelegraph)
+- **News Headlines** - Optional crypto news row in the ticker (Blockchair)
 - **Live Tab Title** - Current price + 24h change right in the tab (`BTC $43,250 (+5.2%)`)
 - **6 Time Periods** - 1H, 1D, 1W, 1M, 1Y, ALL
 - **Dark / Light / Auto Themes** - Follows your system preference
@@ -150,7 +151,7 @@ Network requests are made only to:
 - Bybit Public API (long/short ratio)
 - Coinlore Public API (market overview, altcoin season / BTC dominance)
 - mempool.space (BTC halving block height)
-- Blockchair Public API and Cointelegraph RSS (crypto news headlines, optional ticker row)
+- Blockchair Public API (crypto news headlines, optional ticker row)
 
 All of these are public APIs requiring no authentication or account.
 
