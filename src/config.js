@@ -272,7 +272,8 @@ const RATE_PROMPT_SHOWN_KEY = "crypto_chart_rate_prompt_shown";
 const RATE_PROMPT_DELAY_MS = 2 * 24 * 60 * 60 * 1000;
 // First-run onboarding tour (shown once, then dismissed)
 const ONBOARDING_SEEN_KEY = "crypto_chart_onboarding_seen";
-// Tracking-only portfolio: [{ coin, amount }] manually entered, all local
+// Tracking-only portfolio: [{ coin, amount, cost }] manually entered, all
+// local (cost = optional average buy price per unit, 0 = not set)
 const PORTFOLIO_STORAGE_KEY = "crypto_chart_portfolio";
 // Selected time range for the portfolio background value chart
 const PORTFOLIO_PERIOD_KEY = "crypto_chart_portfolio_period";

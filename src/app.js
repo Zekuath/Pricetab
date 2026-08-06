@@ -41,7 +41,7 @@ class CryptoChart extends PureComponent {
       showSettings: false,
       showPortfolio: false, // Full-screen tracking-only portfolio view
       showRateAsk: false, // One-time rating ask (eligibility checked on mount)
-      portfolio: loadPortfolioFromStorage(), // [{ coin, amount }]
+      portfolio: loadPortfolioFromStorage(), // [{ coin, amount, cost }]
       portfolioPrices: {}, // { COIN: { price, change, up } } from pageTickerCache
       portfolioReady: false, // true after first portfolio price fetch
       themePreference: loadThemeFromStorage(), // 'auto', 'light', or 'dark'
@@ -622,7 +622,10 @@ class CryptoChart extends PureComponent {
           return null; // already tracked
         }
         const amt = isFinite(Number(amount)) ? Math.max(0, Number(amount)) : 0;
-        const portfolio = [...prevState.portfolio, { coin: normalized, amount: amt }];
+        const portfolio = [
+          ...prevState.portfolio,
+          { coin: normalized, amount: amt, cost: 0 },
+        ];
         savePortfolioToStorage(portfolio);
         return { portfolio };
       }, this.fetchPortfolioPrices);
@@ -637,6 +640,29 @@ class CryptoChart extends PureComponent {
         savePortfolioToStorage(portfolio);
         return { portfolio };
       });
+    });
+
+    // Average buy price per unit (0 clears it → row falls back to 24h change)
+    _defineProperty(this, "handleUpdateHoldingCost", (coin, cost) => {
+      const c = isFinite(Number(cost)) ? Math.max(0, Number(cost)) : 0;
+      this.setState((prevState) => {
+        const portfolio = prevState.portfolio.map((h) =>
+          h.coin === coin ? { ...h, cost: c } : h,
+        );
+        savePortfolioToStorage(portfolio);
+        return { portfolio };
+      });
+    });
+
+    // JSON restore: replaces current holdings. Runs through the same
+    // whitelist validation as storage, so a hand-edited file can't inject
+    // junk. Returns false when nothing valid survives (caller shows an error).
+    _defineProperty(this, "handleImportPortfolio", (list) => {
+      const portfolio = sanitizePortfolio(list).slice(0, PORTFOLIO_MAX_HOLDINGS);
+      if (!portfolio.length) return false;
+      savePortfolioToStorage(portfolio);
+      this.setState({ portfolio }, this.fetchPortfolioPrices);
+      return true;
     });
 
     _defineProperty(this, "handleRemoveHolding", (coin) => {
@@ -2487,7 +2513,9 @@ class CryptoChart extends PureComponent {
             chartColorize: this.state.chartColor,
             onAdd: this.handleAddHolding,
             onUpdateAmount: this.handleUpdateHoldingAmount,
+            onUpdateCost: this.handleUpdateHoldingCost,
             onRemove: this.handleRemoveHolding,
+            onImport: this.handleImportPortfolio,
           }),
 
         !showSettings && !showPortfolio && React.createElement(OnboardingTour, null),

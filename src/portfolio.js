@@ -70,6 +70,68 @@ const buildPortfolioSeries = (histories, holdings) => {
   return series;
 };
 
+/* ── export helpers ────────────────────────────────────────────────────────
+ * JSON backup/restore + a spreadsheet-friendly CSV report (a small tax aid:
+ * cost basis and unrealized P/L per coin). Raw numbers with dot decimals so
+ * spreadsheet apps parse them regardless of the display format setting.
+ */
+const csvField = (value) => {
+  const s = String(value == null ? "" : value);
+  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+};
+
+// rows = computeTotals().rows: [{ coin, amount, cost, price, value }]
+const buildPortfolioCsv = (rows, currency) => {
+  const lines = [
+    `# PriceTab portfolio report — ${new Date().toISOString().slice(0, 10)} — prices in ${currency}`,
+    "Coin,Name,Amount,Avg cost,Cost basis,Current price,Current value,Unrealized P/L,P/L %",
+  ];
+  let totalBasis = 0;
+  let totalValue = 0;
+  for (const r of rows) {
+    const basis = r.cost > 0 ? r.cost * r.amount : null;
+    const pl = basis != null && r.value != null ? r.value - basis : null;
+    const plPct = pl != null && basis > 0 ? (pl / basis) * 100 : null;
+    if (basis != null && r.value != null) {
+      totalBasis += basis;
+      totalValue += r.value;
+    }
+    lines.push(
+      [
+        r.coin,
+        csvField(COIN_NAMES[r.coin] || r.coin),
+        r.amount,
+        r.cost > 0 ? r.cost : "",
+        basis != null ? basis : "",
+        r.price != null ? r.price : "",
+        r.value != null ? r.value : "",
+        pl != null ? pl : "",
+        plPct != null ? plPct.toFixed(2) : "",
+      ].join(","),
+    );
+  }
+  if (totalBasis > 0) {
+    const totalPl = totalValue - totalBasis;
+    lines.push(
+      `Total,,,,${totalBasis},,${totalValue},${totalPl},${((totalPl / totalBasis) * 100).toFixed(2)}`,
+    );
+  }
+  lines.push(
+    "# Informational only — not tax advice. Unrealized figures compare current prices to your entered average costs.",
+  );
+  return lines.join("\n");
+};
+
+const downloadTextFile = (filename, text, mime) => {
+  const blob = new Blob([text], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+};
+
 /* ── styled components ─────────────────────────────────────────────────── */
 // Same entrance family as SettingsCard's panelLift / WidgetCard's widgetAppear
 const portfolioFadeIn = keyframes`
@@ -212,7 +274,7 @@ const HoldingRow = styled.div`
   position: relative;
   overflow: hidden;
   display: grid;
-  grid-template-columns: 1fr 7.5rem 1fr auto;
+  grid-template-columns: 1fr 6.5rem 6.5rem 1fr auto;
   align-items: center;
   gap: 0.75rem;
   padding: 0.7rem 0.85rem;
@@ -226,7 +288,30 @@ const HoldingRow = styled.div`
   }
 
   @media (max-width: 560px) {
-    grid-template-columns: 1fr 6rem auto;
+    grid-template-columns: 1fr 6rem 1fr auto;
+  }
+`;
+
+// Column labels above the list (matches HoldingRow's grid; the coin and
+// remove columns stay unlabeled). Hidden on narrow screens with the cost
+// column.
+const HoldingsHead = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 6.5rem 6.5rem 1fr auto;
+  gap: 0.75rem;
+  padding: 0 0.85rem;
+  margin-bottom: 0.4rem;
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: ${({ theme }) => theme.color.textSecondary};
+
+  & > span {
+    text-align: right;
+  }
+
+  @media (max-width: 560px) {
+    display: none;
   }
 `;
 
@@ -279,6 +364,13 @@ const AmountInput = styled.input`
   &:focus {
     outline: none;
     border-color: ${({ theme }) => theme.color.borderHover};
+  }
+`;
+
+// Avg-cost input: same field, hidden on narrow screens (amount wins the space)
+const CostInput = styled(AmountInput)`
+  @media (max-width: 560px) {
+    display: none;
   }
 `;
 
@@ -417,6 +509,39 @@ const EmptyHint = styled.div`
   font-size: 0.75rem;
 `;
 
+// Backup / restore / report actions — quiet text buttons in the eyebrow voice
+const ToolsRow = styled.div`
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.5rem;
+  margin-top: 1.5rem;
+`;
+
+const ToolBtn = styled.button.attrs(() => ({ type: "button" }))`
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-family: ${({ theme }) => theme.font.primary};
+  font-size: 0.66rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: ${({ theme }) => theme.color.textSecondary};
+  transition: color 0.15s ease;
+
+  &:hover {
+    color: ${({ theme }) => theme.color.text};
+  }
+`;
+
+const ImportError = styled.div`
+  margin-top: 0.5rem;
+  font-size: 0.72rem;
+  text-align: center;
+  color: ${({ theme }) => theme.color.chartLineRed};
+`;
+
 const PrivacyNote = styled.div`
   margin-top: 1.5rem;
   font-size: 0.72rem;
@@ -428,17 +553,21 @@ const PrivacyNote = styled.div`
 class Portfolio extends PureComponent {
   constructor(props) {
     super(props);
-    // `drafts` holds in-progress amount text so typing "0." / "" never fights
-    // the canonical numeric value coming back from the parent.
+    // `drafts` holds in-progress input text (keyed "COIN:amount" /
+    // "COIN:cost") so typing "0." / "" never fights the canonical numeric
+    // value coming back from the parent.
     this.state = {
       query: "",
       drafts: {},
+      importError: false,
       chartPeriod: loadPortfolioPeriodFromStorage(),
       histories: {}, // { COIN: [{ price, time }] } for the background chart
     };
     this._chartToken = 0; // invalidates in-flight history loads
     this._chartSig = null; // last loaded coins|currency|period signature
     this._seriesMemo = null; // keeps the summed series referentially stable
+    this._importErrTimer = null;
+    this.fileInput = createRef();
   }
 
   componentDidMount() {
@@ -451,6 +580,7 @@ class Portfolio extends PureComponent {
 
   componentWillUnmount() {
     this._chartToken++; // drop any in-flight load's setState
+    if (this._importErrTimer) clearTimeout(this._importErrTimer);
   }
 
   // The biggest holdings by current value, capped so a period switch never
@@ -547,6 +677,8 @@ class Portfolio extends PureComponent {
     let totalNow = 0;
     let totalAgo = 0;
     let anyPriced = false;
+    let costBasis = 0; // Σ cost × amount over rows with a cost and a price
+    let costValueNow = 0; // current value of those same rows
     const rows = holdings.map((h) => {
       const p = prices[h.coin];
       const price = p && isFinite(p.price) ? p.price : null;
@@ -560,12 +692,20 @@ class Portfolio extends PureComponent {
         } else {
           totalAgo += value;
         }
+        if (h.cost > 0) {
+          costBasis += h.cost * h.amount;
+          costValueNow += value;
+        }
       }
       return { ...h, price, value, change: p ? p.change : null, up: p ? p.up : null };
     });
     const pnl = anyPriced ? totalNow - totalAgo : null;
     const pnlPct = pnl != null && totalAgo > 0 ? (pnl / totalAgo) * 100 : null;
-    return { rows, totalNow, pnl, pnlPct, anyPriced };
+    // Unrealized P/L vs entered average costs (only rows that have both)
+    const unrealized = costBasis > 0 ? costValueNow - costBasis : null;
+    const unrealizedPct =
+      unrealized != null ? (unrealized / costBasis) * 100 : null;
+    return { rows, totalNow, pnl, pnlPct, anyPriced, unrealized, unrealizedPct };
   }
 
   handleSearchChange = (e) => this.setState({ query: e.target.value });
@@ -575,26 +715,82 @@ class Portfolio extends PureComponent {
     this.props.onAdd(coin, 0);
   };
 
-  handleAmountChange = (coin, raw) => {
-    this.setState((s) => ({ drafts: { ...s.drafts, [coin]: raw } }));
+  // Shared draft handling for the amount and avg-cost inputs
+  commitField(coin, field, num) {
+    if (field === "amount") this.props.onUpdateAmount(coin, num);
+    else this.props.onUpdateCost(coin, num);
+  }
+
+  handleFieldChange = (coin, field, raw) => {
+    const key = `${coin}:${field}`;
+    this.setState((s) => ({ drafts: { ...s.drafts, [key]: raw } }));
     const num = Number(raw);
     if (raw !== "" && isFinite(num) && num >= 0) {
-      this.props.onUpdateAmount(coin, num);
+      this.commitField(coin, field, num);
     }
   };
 
-  handleAmountBlur = (coin) => {
+  handleFieldBlur = (coin, field) => {
     // Read the draft before clearing it — setState is async, but don't rely on it
-    const raw = this.state.drafts[coin];
+    const key = `${coin}:${field}`;
+    const raw = this.state.drafts[key];
     this.setState((s) => {
       const drafts = { ...s.drafts };
-      delete drafts[coin];
+      delete drafts[key];
       return { drafts };
     });
     // Commit a clean value (empty/invalid → 0)
     if (raw !== undefined) {
       const num = Number(raw);
-      this.props.onUpdateAmount(coin, isFinite(num) && num >= 0 ? num : 0);
+      this.commitField(coin, field, isFinite(num) && num >= 0 ? num : 0);
+    }
+  };
+
+  /* ── backup / restore / report ── */
+
+  handleExportJson = () => {
+    const data = this.props.holdings.map(({ coin, amount, cost }) => ({
+      coin,
+      amount,
+      cost,
+    }));
+    downloadTextFile(
+      `pricetab-portfolio-${new Date().toISOString().slice(0, 10)}.json`,
+      JSON.stringify(data, null, 2),
+      "application/json",
+    );
+  };
+
+  handleExportCsv = () => {
+    const { rows } = this.computeTotals();
+    downloadTextFile(
+      `pricetab-tax-report-${new Date().toISOString().slice(0, 10)}.csv`,
+      buildPortfolioCsv(rows, this.props.currency),
+      "text/csv",
+    );
+  };
+
+  handleImportClick = () => {
+    if (this.fileInput.current) this.fileInput.current.click();
+  };
+
+  handleImportFile = async (e) => {
+    const file = e.target.files && e.target.files[0];
+    e.target.value = ""; // allow re-picking the same file
+    if (!file) return;
+    let ok = false;
+    try {
+      ok = this.props.onImport(JSON.parse(await file.text())) === true;
+    } catch (err) {
+      ok = false; // unreadable / invalid JSON
+    }
+    this.setState({ importError: !ok });
+    if (!ok) {
+      if (this._importErrTimer) clearTimeout(this._importErrTimer);
+      this._importErrTimer = setTimeout(
+        () => this.setState({ importError: false }),
+        4000,
+      );
     }
   };
 
@@ -613,7 +809,8 @@ class Portfolio extends PureComponent {
   render() {
     const { holdings, ready } = this.props;
     const { query, drafts, chartPeriod } = this.state;
-    const { rows, totalNow, pnl, pnlPct, anyPriced } = this.computeTotals();
+    const { rows, totalNow, pnl, pnlPct, anyPriced, unrealized, unrealizedPct } =
+      this.computeTotals();
     const suggestions = this.matches();
     const atCap = holdings.length >= PORTFOLIO_MAX_HOLDINGS;
 
@@ -695,10 +892,24 @@ class Portfolio extends PureComponent {
                       ? ` (${pnlPct >= 0 ? "+" : ""}${pnlPct.toFixed(2)}%) 24h`
                       : " 24h"),
                 ),
-          (show24h || best) &&
+          (show24h || best || unrealized != null) &&
             React.createElement(
               PortfolioStats,
               null,
+              unrealized != null &&
+                React.createElement(
+                  StatItem,
+                  { title: "Unrealized P/L vs your entered average costs" },
+                  React.createElement(StatLabel, null, "P/L"),
+                  React.createElement(
+                    StatValue,
+                    { up: unrealized === 0 ? null : unrealized > 0 },
+                    this.fmtMoney(unrealized, true) +
+                      (unrealizedPct != null
+                        ? ` (${fmtPct(unrealizedPct)})`
+                        : ""),
+                  ),
+                ),
               show24h &&
                 React.createElement(
                   StatItem,
@@ -770,12 +981,33 @@ class Portfolio extends PureComponent {
                 `Holdings · ${holdings.length}`,
               ),
               React.createElement(
+                HoldingsHead,
+                { "aria-hidden": true },
+                React.createElement("span", null, ""),
+                React.createElement("span", null, "Amount"),
+                React.createElement("span", null, "Avg cost"),
+                React.createElement("span", null, "Value"),
+                React.createElement("span", null, ""),
+              ),
+              React.createElement(
                 HoldingsList,
                 null,
                 rows.map((r) => {
-                  const draft = drafts[r.coin];
+                  const amountDraft = drafts[`${r.coin}:amount`];
                   const amountVal =
-                    draft !== undefined ? draft : String(r.amount);
+                    amountDraft !== undefined ? amountDraft : String(r.amount);
+                  const costDraft = drafts[`${r.coin}:cost`];
+                  const costVal =
+                    costDraft !== undefined
+                      ? costDraft
+                      : r.cost > 0
+                        ? String(r.cost)
+                        : "";
+                  // Unrealized P/L for this row (needs both a cost and a price)
+                  const rowPl =
+                    r.cost > 0 && r.price != null
+                      ? (r.price - r.cost) * r.amount
+                      : null;
                   const share =
                     r.value != null && totalNow > 0
                       ? (r.value / totalNow) * 100
@@ -808,8 +1040,19 @@ class Portfolio extends PureComponent {
                       value: amountVal,
                       "aria-label": `${r.coin} amount`,
                       onChange: (e) =>
-                        this.handleAmountChange(r.coin, e.target.value),
-                      onBlur: () => this.handleAmountBlur(r.coin),
+                        this.handleFieldChange(r.coin, "amount", e.target.value),
+                      onBlur: () => this.handleFieldBlur(r.coin, "amount"),
+                    }),
+                    React.createElement(CostInput, {
+                      type: "text",
+                      inputMode: "decimal",
+                      value: costVal,
+                      placeholder: "avg cost",
+                      title: `Average buy price per ${r.coin} (optional — unlocks P/L)`,
+                      "aria-label": `${r.coin} average cost`,
+                      onChange: (e) =>
+                        this.handleFieldChange(r.coin, "cost", e.target.value),
+                      onBlur: () => this.handleFieldBlur(r.coin, "cost"),
                     }),
                     React.createElement(
                       HoldingValue,
@@ -823,13 +1066,24 @@ class Portfolio extends PureComponent {
                             ? "—"
                             : "…",
                       ),
-                      React.createElement(
-                        HoldingValueSub,
-                        { up: r.change == null ? null : r.up },
-                        r.change != null
-                          ? `${r.change >= 0 ? "+" : ""}${r.change.toFixed(2)}%`
-                          : "",
-                      ),
+                      // With a cost set the sub-line shows unrealized P/L
+                      // (the day's move already lives in the header stats)
+                      rowPl != null
+                        ? React.createElement(
+                            HoldingValueSub,
+                            {
+                              up: rowPl === 0 ? null : rowPl > 0,
+                              title: "Unrealized P/L vs avg cost",
+                            },
+                            this.fmtMoney(rowPl, true),
+                          )
+                        : React.createElement(
+                            HoldingValueSub,
+                            { up: r.change == null ? null : r.up },
+                            r.change != null
+                              ? `${r.change >= 0 ? "+" : ""}${r.change.toFixed(2)}%`
+                              : "",
+                          ),
                     ),
                     React.createElement(
                       RemoveBtn,
@@ -886,6 +1140,53 @@ class Portfolio extends PureComponent {
               ),
             ),
         ),
+
+        // Backup / restore / tax report. Import is always available (restore
+        // on a fresh device); exports need something to export.
+        React.createElement(
+          ToolsRow,
+          null,
+          holdings.length > 0 &&
+            React.createElement(
+              ToolBtn,
+              {
+                onClick: this.handleExportJson,
+                title: "Download holdings as a JSON backup",
+              },
+              "Export JSON",
+            ),
+          React.createElement(
+            ToolBtn,
+            {
+              onClick: this.handleImportClick,
+              title: "Restore holdings from a JSON backup (replaces the current list)",
+            },
+            "Import JSON",
+          ),
+          holdings.length > 0 &&
+            React.createElement(
+              ToolBtn,
+              {
+                onClick: this.handleExportCsv,
+                title:
+                  "Download a CSV with cost basis and unrealized P/L per coin — informational only, not tax advice",
+              },
+              "Tax report (CSV)",
+            ),
+        ),
+        React.createElement("input", {
+          type: "file",
+          accept: ".json,application/json",
+          style: { display: "none" },
+          ref: this.fileInput,
+          onChange: this.handleImportFile,
+        }),
+        this.state.importError &&
+          React.createElement(
+            ImportError,
+            null,
+            "Import failed — the file is not a valid PriceTab portfolio backup.",
+          ),
 
         React.createElement(
           PrivacyNote,

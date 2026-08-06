@@ -159,10 +159,11 @@
 | Task | Status | Notes |
 |------|--------|-------|
 | Full-screen tracking view: total value + 24h P/L, all local | [x] | Shipped (staged) |
-| Allocation breakdown (% per coin) | [ ] | Top requested tracker feature (sector scan) |
-| Per-coin cost basis → total P/L since purchase | [ ] | Makes the view genuinely useful |
-| JSON export / import | [ ] | Data safety; pairs with privacy story |
-| Tax-season affiliate line (Jan–Apr, local date check) | [ ] | See `MONETIZATION.md` §3.5 — only after portfolio v2 ships |
+| Allocation breakdown (% per coin) | [x] | Share meter + % per row (Aug 2026) |
+| Per-coin cost basis → total P/L since purchase | [x] | Optional avg-cost input; row + headline unrealized P/L (Aug 2026) |
+| JSON export / import | [x] | Backup/restore, import validated via `sanitizePortfolio` (Aug 2026) |
+| Tax report CSV (cost basis + unrealized P/L, "not tax advice") | [x] | Foundation for the seasonal affiliate line (Aug 2026) |
+| Tax-season affiliate line (Jan–Apr, local date check) | [ ] | See `MONETIZATION.md` §3.5 — portfolio v2 now shipped |
 
 ### 3.3 Coin Coverage Expansion — *new (July 2026)*
 

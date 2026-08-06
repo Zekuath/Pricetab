@@ -12,7 +12,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Planned
 - Price alerts (in-tab first; browser notifications only if we accept the `notifications` permission — see TODO 3.1)
 - Keyboard shortcuts (←/→ coins, 1-6 periods, S settings)
-- Portfolio v2: allocation breakdown, per-coin cost basis, JSON export/import
 - Price-only coin tier via Coinlore (expand coverage beyond Coinbase-served coins)
 - Ethereum gas tracker widget
 
@@ -29,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **One-time rating ask** - after two days of use, a small dismissible card in the corner of the new tab asks for a store rating; it appears exactly once and never returns after dismissing or rating
 - **Hacker News in the news ticker** - well-upvoted crypto stories from the past week (via Algolia, CORS-enabled, no key) join Blockchair's headlines
 - **News quality filter** - SEO/promo spam ("price prediction", presales, casinos, airdrops…) is dropped and the same story from multiple outlets is collapsed into one headline
+- **Portfolio v2** - optional average-cost input per holding unlocks real unrealized P/L (per row and as a headline stat); allocation share per holding; JSON backup/restore (validated against the coin whitelist on import); "Tax report" CSV export with cost basis and unrealized P/L per coin (informational only, not tax advice)
 - Viewport meta tag for responsive rendering; Google site verification file (promo site)
 
 ---

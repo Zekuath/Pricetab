@@ -67,11 +67,14 @@ const json = (code) => JSON.parse(JSON.stringify(run(code)));
 
 assert.deepStrictEqual(json("loadPortfolioFromStorage()"), [], "empty default");
 
-run('savePortfolioToStorage([{ coin: "BTC", amount: 0.5 }, { coin: "ETH", amount: 2 }])');
+run('savePortfolioToStorage([{ coin: "BTC", amount: 0.5, cost: 30000 }, { coin: "ETH", amount: 2 }])');
 assert.deepStrictEqual(
   json("loadPortfolioFromStorage()"),
-  [{ coin: "BTC", amount: 0.5 }, { coin: "ETH", amount: 2 }],
-  "roundtrip",
+  [
+    { coin: "BTC", amount: 0.5, cost: 30000 },
+    { coin: "ETH", amount: 2, cost: 0 },
+  ],
+  "roundtrip (cost kept, missing cost → 0)",
 );
 
 store["crypto_chart_portfolio"] = "{not json";
@@ -82,22 +85,34 @@ assert.deepStrictEqual(json("loadPortfolioFromStorage()"), [], "non-array → []
 
 // malformed entries are dropped, valid ones survive
 store["crypto_chart_portfolio"] = JSON.stringify([
-  { coin: "eth", amount: "2" },        // lowercase coin + string amount → normalized
-  { coin: "BTC", amount: 1 },
-  { coin: "BTC", amount: 3 },          // duplicate → dropped
-  { coin: "NOTACOIN", amount: 1 },     // not in SUGGESTED_COINS → dropped
-  { coin: "LTC", amount: -5 },         // negative → dropped
-  { coin: "XRP", amount: "abc" },      // NaN → dropped
-  { coin: "SOL" },                     // missing amount → dropped
-  null,                                // junk → dropped
-  "BTC",                               // junk → dropped
-  { coin: "ADA", amount: 0 },          // zero is allowed (placeholder row)
+  { coin: "eth", amount: "2", cost: "1500" }, // lowercase + string numbers → normalized
+  { coin: "BTC", amount: 1, cost: -50 },      // negative cost → cleared to 0
+  { coin: "BTC", amount: 3 },                 // duplicate → dropped
+  { coin: "NOTACOIN", amount: 1 },            // not in SUGGESTED_COINS → dropped
+  { coin: "LTC", amount: -5 },                // negative amount → dropped
+  { coin: "XRP", amount: "abc" },             // NaN → dropped
+  { coin: "SOL" },                            // missing amount → dropped
+  null,                                       // junk → dropped
+  "BTC",                                      // junk → dropped
+  { coin: "ADA", amount: 0, cost: "junk" },   // zero amount ok; junk cost → 0
 ]);
 assert.deepStrictEqual(
   json("loadPortfolioFromStorage()"),
-  [{ coin: "ETH", amount: 2 }, { coin: "BTC", amount: 1 }, { coin: "ADA", amount: 0 }],
-  "malformed entries dropped, coins normalized/deduped",
+  [
+    { coin: "ETH", amount: 2, cost: 1500 },
+    { coin: "BTC", amount: 1, cost: 0 },
+    { coin: "ADA", amount: 0, cost: 0 },
+  ],
+  "malformed entries dropped, coins normalized/deduped, costs coerced",
 );
+
+// sanitizePortfolio is what JSON import runs through — same rules apply
+assert.deepStrictEqual(
+  json('sanitizePortfolio([{ coin: "sol", amount: "3", cost: 100 }, { coin: "SCAM", amount: 1 }])'),
+  [{ coin: "SOL", amount: 3, cost: 100 }],
+  "import sanitizer: whitelist + coercion",
+);
+assert.deepStrictEqual(json('sanitizePortfolio("junk")'), [], "import sanitizer: non-array → []");
 
 run("savePortfolioToStorage('garbage')");
 assert.deepStrictEqual(json("loadPortfolioFromStorage()"), [], "non-array save writes []");
@@ -167,6 +182,47 @@ assert.strictEqual(
   "single point → null (nothing to draw)",
 );
 assert.strictEqual(series({ BTC: [[1, 2]] }, []), null, "no holdings → null");
+
+/* ── buildPortfolioCsv (tax report) ─────────────────────────────────────── */
+
+sandbox.__csvRows = [
+  { coin: "BTC", amount: 0.5, cost: 30000, price: 40000, value: 20000 },
+  { coin: "ETH", amount: 2, cost: 0, price: 1500, value: 3000 }, // no cost → no P/L cells
+  { coin: "SOL", amount: 1, cost: 50, price: null, value: null }, // unpriced → skipped in totals
+];
+const csv = run('buildPortfolioCsv(__csvRows, "USD")');
+const csvLines = csv.split("\n");
+assert.ok(csvLines[0].includes("prices in USD"), "csv: currency in header comment");
+assert.strictEqual(
+  csvLines[1],
+  "Coin,Name,Amount,Avg cost,Cost basis,Current price,Current value,Unrealized P/L,P/L %",
+  "csv: column header",
+);
+assert.strictEqual(
+  csvLines[2],
+  "BTC,Bitcoin,0.5,30000,15000,40000,20000,5000,33.33",
+  "csv: full row with cost basis and P/L",
+);
+assert.strictEqual(
+  csvLines[3],
+  "ETH,Ethereum,2,,,1500,3000,,",
+  "csv: cost-less row leaves P/L cells empty",
+);
+assert.strictEqual(
+  csvLines[5],
+  "Total,,,,15000,,20000,5000,33.33",
+  "csv: totals only over rows with cost + price",
+);
+assert.ok(csvLines[6].includes("not tax advice"), "csv: disclaimer present");
+
+// commas/quotes in names can't break the format
+sandbox.__csvEsc = [{ coin: "BTC", amount: 1, cost: 0, price: 1, value: 1 }];
+run('COIN_NAMES.BTC = \'Bit"coin, the first\'');
+assert.ok(
+  run('buildPortfolioCsv(__csvEsc, "USD")').includes('"Bit""coin, the first"'),
+  "csv: names with commas/quotes escaped",
+);
+run('COIN_NAMES.BTC = "Bitcoin"');
 
 /* ── getPortfolioHistory cache ──────────────────────────────────────────── */
 

@@ -219,25 +219,31 @@ const loadChartColorFromStorage = () =>
 const saveChartColorToStorage = (enabled) =>
   saveSetting(CHART_COLOR_STORAGE_KEY, enabled);
 
-// Portfolio (tracking only): array of { coin, amount }. Coins are whitelisted
-// against SUGGESTED_COINS and amounts coerced to a finite, non-negative number;
-// anything malformed is dropped so a corrupted entry can't break the view.
-const loadPortfolioFromStorage = () => {
-  const saved = loadJsonSetting(PORTFOLIO_STORAGE_KEY);
-  if (!Array.isArray(saved)) return [];
+// Portfolio (tracking only): array of { coin, amount, cost } where cost is
+// the average buy price per unit (0 = not set). Shared by storage load and
+// JSON import: coins whitelisted against SUGGESTED_COINS, numbers coerced to
+// finite non-negatives; anything malformed is dropped so a corrupted entry
+// (or a hand-edited import file) can't break the view.
+const sanitizePortfolio = (list) => {
+  if (!Array.isArray(list)) return [];
   const seen = new Set();
   const clean = [];
-  for (const entry of saved) {
+  for (const entry of list) {
     if (!entry || typeof entry !== "object") continue;
     const coin = typeof entry.coin === "string" ? entry.coin.toUpperCase() : "";
     const amount = Number(entry.amount);
     if (!SUGGESTED_COINS.includes(coin) || seen.has(coin)) continue;
     if (!isFinite(amount) || amount < 0) continue;
+    const costNum = Number(entry.cost);
+    const cost = isFinite(costNum) && costNum > 0 ? costNum : 0;
     seen.add(coin);
-    clean.push({ coin, amount });
+    clean.push({ coin, amount, cost });
   }
   return clean;
 };
+
+const loadPortfolioFromStorage = () =>
+  sanitizePortfolio(loadJsonSetting(PORTFOLIO_STORAGE_KEY));
 
 const savePortfolioToStorage = (holdings) =>
   saveJsonSetting(
