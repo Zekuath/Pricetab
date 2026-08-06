@@ -31,6 +31,8 @@ const suites = [
   "test-api.js",
   "test-cache.js",
   "test-bulk.js",
+  "test-portfolio.js",
+  "test-onboarding.js",
   "test-d3.js",
   "test-smoke-jsdom.js",
 ];

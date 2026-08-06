@@ -29,6 +29,8 @@ still run.
 | `test-api.js` | News fetchers (parsing, clamping, filtering) and per-coin page ticker snapshot (24h change math, TTL skip) |
 | `test-cache.js` | Persistent price cache: hydrate/persist/caps, plus the Date-revival regression (JSON turns Date fields into ISO strings; hydration must revive them or scaleTime renders a NaN path) |
 | `test-bulk.js` | Coinlore bulk sweep: cache fill, currency conversion, duplicate-symbol dedupe, junk filtering, fallback signalling |
+| `test-portfolio.js` | Portfolio: holdings persistence (whitelist, dedupe, amount coercion, corrupt-JSON fallback), chart period setting ("hour" excluded), total-value series builder (amount × price sums, end-alignment, shortest-history trim) and the history cache (TTL, stale-on-failure fallback) |
+| `test-onboarding.js` | Onboarding tour: step definitions stay well-formed and every `data-tour` selector anchors to a real element in the app source; show-once localStorage gate; navigation clamps and keyboard handling (arrows/Enter/Escape); a missing target skips its step instead of blocking |
 | `test-d3.js` | `vendor/d3-custom.min.js` exposes every d3 API the app uses (line, scales, transitions, interpolatePath) |
 | `test-smoke-jsdom.js` | Boots the real page in jsdom with a fake network; asserts the chart renders valid (non-NaN) data in cold and hydrated-cache scenarios, that the coin prefetch stays off while the tab ticker / auto-rotate are off, and that a hidden tab fires zero requests until it becomes visible |
 
