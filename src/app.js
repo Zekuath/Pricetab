@@ -40,6 +40,7 @@ class CryptoChart extends PureComponent {
       coinOptions: loadCoinOptionsFromStorage(),
       showSettings: false,
       showPortfolio: false, // Full-screen tracking-only portfolio view
+      showRateAsk: false, // One-time rating ask (eligibility checked on mount)
       portfolio: loadPortfolioFromStorage(), // [{ coin, amount }]
       portfolioPrices: {}, // { COIN: { price, change, up } } from pageTickerCache
       portfolioReady: false, // true after first portfolio price fetch
@@ -778,20 +779,15 @@ class CryptoChart extends PureComponent {
 
       this._newsFetching = true;
       try {
-        const blockchairItems = await fetchBlockchairNews().catch(() => []);
+        // Either source failing alone must not empty the row
+        const [blockchairItems, hnItems] = await Promise.all([
+          fetchBlockchairNews().catch(() => []),
+          fetchHackerNewsStories().catch(() => []),
+        ]);
 
-        // Dedupe by title
-        const seen = new Set();
-        const items = blockchairItems
-          .filter((item) => {
-            const key = item.title.toLowerCase();
-            if (seen.has(key)) {
-              return false;
-            }
-            seen.add(key);
-            return true;
-          })
-          .slice(0, MAX_NEWS_ITEMS);
+        // Fresh headlines first, HN's weekly best appended; spam + cross-source
+        // duplicates dropped inside the merge
+        const items = mergeNewsItems(blockchairItems, hnItems);
 
         if (items.length) {
           this.setState({ newsItems: items });
@@ -1104,6 +1100,13 @@ class CryptoChart extends PureComponent {
       this.setState({ invalidCoin: null });
       // Cycle to next coin
       this.cycleCoinIndex();
+    });
+
+    // Dismiss also covers the "Rate" click — either way, never ask again
+    // (shares the dismissed flag with the settings-panel reminder bar)
+    _defineProperty(this, "handleRateAskDismiss", () => {
+      saveRatePromptDismissed();
+      this.setState({ showRateAsk: false });
     });
 
     _defineProperty(this, "prefetchTopCoins", async () => {
@@ -1430,6 +1433,18 @@ class CryptoChart extends PureComponent {
       this.prefetchTimer = setTimeout(() => this.prefetchTopCoins(), 2000);
     }
 
+    // One-time rating ask: only after RATE_PROMPT_DELAY_MS of use, and this
+    // tab is the only one that ever shows it (the shown flag is persisted
+    // immediately, so an ignored card doesn't reappear on every new tab)
+    if (
+      !loadRatePromptShown() &&
+      !loadRatePromptDismissed() &&
+      Date.now() - getOrInitFirstUse() >= RATE_PROMPT_DELAY_MS
+    ) {
+      saveRatePromptShown();
+      this.setState({ showRateAsk: true });
+    }
+
     // Resume paused polling as soon as the tab becomes visible again
     this.handleVisibilityChange = () => {
       if (document.hidden) {
@@ -1551,6 +1566,7 @@ class CryptoChart extends PureComponent {
       valueHistory,
       showSettings,
       showPortfolio,
+      showRateAsk,
       portfolio,
       portfolioPrices,
       portfolioReady,
@@ -1586,11 +1602,14 @@ class CryptoChart extends PureComponent {
     const fgNeedleX = (50 + 30 * Math.cos(fgAngle)).toFixed(1);
     const fgNeedleY = (50 - 30 * Math.sin(fgAngle)).toFixed(1);
     const activeCoin = coinOptions[coinIndex] || coinOptions[0] || "BTC";
-    const tickerTop =
+    const tickerVisible =
       this.state.pageTicker &&
       this.state.pageTickerReady &&
-      !this.state.pageTickerCollapsed &&
-      (this.state.pageTickerPosition || DEFAULT_PAGE_TICKER_POSITION) === "top";
+      !this.state.pageTickerCollapsed;
+    const tickerPosition =
+      this.state.pageTickerPosition || DEFAULT_PAGE_TICKER_POSITION;
+    const tickerTop = tickerVisible && tickerPosition === "top";
+    const tickerBottom = tickerVisible && tickerPosition === "bottom";
 
     // Select color palette based on active theme
     const colors = activeTheme === "light" ? lightColors : darkColors;
@@ -1639,6 +1658,38 @@ class CryptoChart extends PureComponent {
               InvalidCoinButton,
               { onClick: this.handleDismissInvalidCoin },
               "Skip",
+            ),
+          ),
+
+        // One-time rating ask (hidden behind full-screen views; the settings
+        // overlay stacks above it)
+        showRateAsk &&
+          !showPortfolio &&
+          React.createElement(
+            RateAskCard,
+            { tickerBottom },
+            React.createElement(
+              RateAskText,
+              null,
+              "Enjoying PriceTab? A quick rating helps others find it.",
+            ),
+            React.createElement(
+              RatePromptLink,
+              {
+                href: STORE_LISTING_URL,
+                target: "_blank",
+                rel: "noreferrer",
+                onClick: this.handleRateAskDismiss,
+              },
+              "Rate",
+            ),
+            React.createElement(
+              RatePromptClose,
+              {
+                onClick: this.handleRateAskDismiss,
+                "aria-label": "Dismiss rating request",
+              },
+              "×",
             ),
           ),
         React.createElement(

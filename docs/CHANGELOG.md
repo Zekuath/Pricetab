@@ -23,8 +23,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - **Portfolio tracking** - full-screen, tracking-only holdings view (total value + change over a selectable period); manually entered amounts, all data local, no wallet connection
 - **Portfolio value chart** - full-bleed background chart of total portfolio value over time, with a persisted period switcher (day/week/month/year/all)
+- **Portfolio design polish** - per-holding allocation share (thin accent meter under each row + % next to the coin name), a quiet stats row under the total (24h P/L, best/worst 24h mover), unified uppercase section labels and a friendlier empty state
 - **Onboarding tour** - first-run spotlight tour of the main controls (shown once, skippable)
 - **Collapsible settings groups** - settings sections expand/collapse for faster scanning
+- **One-time rating ask** - after two days of use, a small dismissible card in the corner of the new tab asks for a store rating; it appears exactly once and never returns after dismissing or rating
+- **Hacker News in the news ticker** - well-upvoted crypto stories from the past week (via Algolia, CORS-enabled, no key) join Blockchair's headlines
+- **News quality filter** - SEO/promo spam ("price prediction", presales, casinos, airdrops…) is dropped and the same story from multiple outlets is collapsed into one headline
 - Viewport meta tag for responsive rendering; Google site verification file (promo site)
 
 ---

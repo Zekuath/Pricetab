@@ -68,6 +68,31 @@ const loadRatePromptDismissed = () => {
 const saveRatePromptDismissed = () =>
   saveSetting(RATE_PROMPT_DISMISSED_KEY, "true");
 
+// First-use timestamp for the delayed rating ask. Initialized on the first
+// load where it's missing, so existing installs start the clock at the
+// update, not retroactively. A corrupt or future value is reset the same way.
+const getOrInitFirstUse = () => {
+  try {
+    const raw = parseInt(localStorage.getItem(FIRST_USE_KEY), 10);
+    if (isFinite(raw) && raw > 0 && raw <= Date.now()) return raw;
+    const now = Date.now();
+    localStorage.setItem(FIRST_USE_KEY, String(now));
+    return now;
+  } catch (error) {
+    return Date.now(); // Broken storage → clock never elapses, never nag
+  }
+};
+
+const loadRatePromptShown = () => {
+  try {
+    return localStorage.getItem(RATE_PROMPT_SHOWN_KEY) === "true";
+  } catch (error) {
+    return true; // Broken storage → treat as shown, never nag
+  }
+};
+
+const saveRatePromptShown = () => saveSetting(RATE_PROMPT_SHOWN_KEY, "true");
+
 const loadNewsTickerFromStorage = () =>
   loadBoolSetting(NEWS_TICKER_STORAGE_KEY, false);
 

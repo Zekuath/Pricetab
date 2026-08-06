@@ -405,6 +405,77 @@ const fetchBlockchairNews = async () => {
     .filter((item) => item.title);
 };
 
+/* Hacker News crypto stories (Algolia API — CORS-enabled, no key).
+ * One request per term (Algolia ANDs multi-word queries); merged by story id,
+ * ranked by points. Only well-upvoted stories from the past week make it. */
+const fetchHackerNewsStories = async () => {
+  const cutoff = Math.floor(Date.now() / 1000) - HN_NEWS_MAX_AGE_S;
+  const results = await Promise.allSettled(
+    HN_NEWS_TERMS.map(async (term) => {
+      const url =
+        `${HN_NEWS_API}?query=${encodeURIComponent(term)}&tags=story` +
+        `&hitsPerPage=${HN_NEWS_MAX_ITEMS}` +
+        `&numericFilters=${encodeURIComponent(
+          `points>${HN_NEWS_MIN_POINTS},created_at_i>${cutoff}`,
+        )}`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("HN news request failed");
+      const json = await res.json();
+      return json && Array.isArray(json.hits) ? json.hits : [];
+    }),
+  );
+  const seen = new Set();
+  const stories = [];
+  for (const r of results) {
+    if (r.status !== "fulfilled") continue;
+    for (const hit of r.value) {
+      if (!hit || !hit.objectID || seen.has(hit.objectID)) continue;
+      seen.add(hit.objectID);
+      const title =
+        typeof hit.title === "string" ? hit.title.slice(0, 140) : "";
+      if (!title) continue;
+      stories.push({
+        source: "Hacker News",
+        title,
+        // Text posts (Ask/Show HN) have no external URL — link the discussion
+        url:
+          typeof hit.url === "string" && /^https:\/\//.test(hit.url)
+            ? hit.url
+            : `https://news.ycombinator.com/item?id=${hit.objectID}`,
+        points: Number(hit.points) || 0,
+      });
+    }
+  }
+  stories.sort((a, b) => b.points - a.points);
+  return stories
+    .slice(0, HN_NEWS_MAX_ITEMS)
+    .map(({ source, title, url }) => ({ source, title, url }));
+};
+
+/* Merge news lists in priority order: spam filtered everywhere, duplicate
+ * stories collapsed across sources by normalized title (aggregators often
+ * carry the same story from several outlets), capped at MAX_NEWS_ITEMS. */
+const mergeNewsItems = (...lists) => {
+  const seen = new Set();
+  const items = [];
+  for (const list of lists) {
+    if (!Array.isArray(list)) continue;
+    for (const item of list) {
+      if (!item || !item.title || NEWS_SPAM_RE.test(item.title)) continue;
+      const key = item.title
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, " ")
+        .trim()
+        .slice(0, 60);
+      if (!key || seen.has(key)) continue;
+      seen.add(key);
+      items.push(item);
+      if (items.length >= MAX_NEWS_ITEMS) return items;
+    }
+  }
+  return items;
+};
+
 /* BULK COIN SNAPSHOTS (Coinlore) ─────────────────────────────────────────
  * One request covers the whole sweep: Coinlore's tickers endpoint returns
  * price + 24h change for the top 100 coins by market cap, so the page

@@ -95,6 +95,43 @@ const OfflineMessage = styled.div`
   }
 `;
 
+// One-time rating ask: small card in the bottom-right corner of the main
+// view, lifted above the page ticker when the ticker sits at the bottom.
+// Text/link/close children reuse the RatePrompt* pieces from styles-settings.
+const rateAskIn = keyframes`
+  from { transform: translateY(10px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+`;
+
+const RateAskCard = styled.div`
+  position: fixed;
+  right: ${({ theme }) => theme.spacing.medium}rem;
+  bottom: ${({ tickerBottom, theme }) =>
+    tickerBottom
+      ? `calc(${theme.spacing.medium}rem + 3rem)`
+      : `${theme.spacing.medium}rem`};
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing.small}rem;
+  max-width: 22rem;
+  padding: ${({ theme }) => theme.spacing.small}rem
+    ${({ theme }) => theme.spacing.medium}rem;
+  background: ${({ theme }) => theme.color.bgSecondary};
+  border: 1px solid ${({ theme }) => theme.color.border};
+  border-radius: ${({ theme }) => theme.scale * 4}rem;
+  font-size: 0.8125rem;
+  color: ${({ theme }) => theme.color.textSecondary};
+  text-align: left;
+  box-shadow: 0 ${({ theme }) => theme.scale * 2}rem
+    ${({ theme }) => theme.scale * 4}rem ${({ theme }) => theme.color.shadow};
+  animation: ${rateAskIn} 0.4s ease 0.8s backwards;
+  z-index: 40;
+`;
+
+const RateAskText = styled.span`
+  flex: 1;
+`;
+
 const ApiErrorMessage = styled.div`
   position: fixed;
   top: ${({ theme }) => theme.spacing.medium}rem;

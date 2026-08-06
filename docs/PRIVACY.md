@@ -79,13 +79,13 @@ All APIs used by PriceTab are **public** — no authentication or accounts requi
 - **Data Sent**: No user data — plain GET request
 - **Privacy**: See [mempool.space Privacy Policy](https://mempool.space/privacy-policy)
 
-### News source (optional ticker row, off by default)
+### News sources (optional ticker row, off by default)
 
-- **Endpoint**: `https://api.blockchair.com/news`
+- **Endpoints**: `https://api.blockchair.com/news` and `https://hn.algolia.com/api/v1/search` (Hacker News stories)
 - **Purpose**: Crypto news headlines in the optional ticker bar
 - **Data Sent**: No user data — plain GET requests
 - **Outbound links**: Clicking a headline opens the news site in a new tab. The link carries no referrer information (`rel="noreferrer"`), so the site cannot tell the visit came from PriceTab. From that point the news site's own privacy policy applies.
-- **Privacy**: See [Blockchair Privacy Policy](https://blockchair.com/privacy)
+- **Privacy**: See [Blockchair Privacy Policy](https://blockchair.com/privacy) and [Algolia Privacy Policy](https://www.algolia.com/policies/privacy/)
 
 ### Local Vendor Files
 
@@ -203,7 +203,7 @@ This extension is provided "as is" without warranty. We are not responsible for:
 ✅ **What we store**: Only your coin preferences, locally on your device
 ✅ **What we collect**: Nothing
 ✅ **What we share**: Nothing
-✅ **Third parties**: Only public, no-auth APIs — Coinbase (prices), OKX/Bybit/Coinlore/Alternative.me/mempool.space (optional widgets), Blockchair (optional news headlines)
+✅ **Third parties**: Only public, no-auth APIs — Coinbase (prices), OKX/Bybit/Coinlore/Alternative.me/mempool.space (optional widgets), Blockchair + Hacker News/Algolia (optional news headlines)
 ✅ **Your control**: Delete data anytime by clearing localStorage or uninstalling
 
 **We respect your privacy because we simply don't collect any data.**

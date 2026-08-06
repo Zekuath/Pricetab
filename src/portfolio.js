@@ -98,14 +98,21 @@ const PortfolioShell = styled.section`
 `;
 
 // Full-bleed total-value chart behind the content. Fixed so the list scrolls
-// over it; muted opacity keeps the header/rows readable on top.
+// over it; muted opacity keeps the header/rows readable on top. The entrance
+// must end at the same opacity the element rests at — fading to 1 would flash
+// bright, then visibly dim when the animation hands back to the static style.
+const portfolioChartIn = keyframes`
+  from { opacity: 0; }
+  to { opacity: 0.45; }
+`;
+
 const PortfolioChartBg = styled.div`
   position: fixed;
   inset: 0;
   z-index: 0;
   pointer-events: none;
   opacity: 0.45;
-  animation: ${portfolioFadeIn} 0.6s ease;
+  animation: ${portfolioChartIn} 0.6s ease;
 `;
 
 const PortfolioInner = styled.div`
@@ -147,9 +154,52 @@ const PortfolioDelta = styled.div`
         : theme.color.chartLineRed};
 `;
 
+// Quiet secondary stats under the headline (24h P/L, best/worst mover).
+// Values wear the trend colors; labels stay in the eyebrow's quiet voice.
+const PortfolioStats = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem 1.2rem;
+  margin-top: 0.6rem;
+  font-size: 0.72rem;
+  color: ${({ theme }) => theme.color.textSecondary};
+`;
+
+const StatItem = styled.span`
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  white-space: nowrap;
+`;
+
+const StatLabel = styled.span`
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-size: 0.62rem;
+`;
+
+const StatValue = styled.span`
+  font-weight: 600;
+  color: ${({ theme, up }) =>
+    up == null
+      ? theme.color.text
+      : up
+        ? theme.color.chartLineGreen
+        : theme.color.chartLineRed};
+`;
+
 // Pulls the (generously padded) PeriodSwitcher into the portfolio's rhythm
 const PortfolioPeriodRow = styled.div`
   margin: -1.25rem 0 -0.75rem;
+`;
+
+// Section labels between the header and the lists — same voice as the eyebrow
+const PortfolioSectionLabel = styled.div`
+  font-size: 0.66rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: ${({ theme }) => theme.color.textSecondary};
+  margin: 1.5rem 0 0.6rem;
 `;
 
 const HoldingsList = styled.div`
@@ -159,6 +209,8 @@ const HoldingsList = styled.div`
 `;
 
 const HoldingRow = styled.div`
+  position: relative;
+  overflow: hidden;
   display: grid;
   grid-template-columns: 1fr 7.5rem 1fr auto;
   align-items: center;
@@ -176,6 +228,21 @@ const HoldingRow = styled.div`
   @media (max-width: 560px) {
     grid-template-columns: 1fr 6rem auto;
   }
+`;
+
+// Allocation meter: a thin accent underline whose width is this holding's
+// share of the portfolio. Single neutral accent (the chart-line blue) so the
+// palette stays monochrome + trend colors; the exact share is printed next to
+// the coin name.
+const HoldingShareBar = styled.div`
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 2px;
+  border-radius: 0 1px 0 0;
+  background: ${({ theme }) => theme.color.chartLine};
+  opacity: 0.55;
+  transition: width 0.3s ease;
 `;
 
 const HoldingCoin = styled.div`
@@ -267,11 +334,13 @@ const AddSection = styled.div`
   position: relative;
 `;
 
+// Same eyebrow voice as the section labels (AddSection provides the margin)
 const AddLabel = styled.div`
-  font-size: 0.78rem;
-  font-weight: 600;
+  font-size: 0.66rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
   color: ${({ theme }) => theme.color.textSecondary};
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.6rem;
 `;
 
 const SearchInput = styled.input`
@@ -331,11 +400,21 @@ const SuggestionName = styled.span`
 
 const EmptyState = styled.div`
   text-align: center;
-  padding: 2.5rem 1rem;
+  padding: 2.75rem 1.5rem;
   color: ${({ theme }) => theme.color.textSecondary};
   border: 1px dashed ${({ theme }) => theme.color.border};
   border-radius: 12px;
   font-size: 0.9rem;
+`;
+
+const EmptyIcon = styled.div`
+  font-size: 1.6rem;
+  margin-bottom: 0.75rem;
+`;
+
+const EmptyHint = styled.div`
+  margin-top: 0.4rem;
+  font-size: 0.75rem;
 `;
 
 const PrivacyNote = styled.div`
@@ -553,6 +632,19 @@ class Portfolio extends PureComponent {
     );
     const periodLabel = periodOption ? periodOption.label : "";
 
+    // Secondary stats: 24h P/L (only when the headline shows the chart-period
+    // change instead) and the day's best/worst mover (needs ≥ 2 priced coins)
+    const show24h = seriesDelta != null && pnl != null;
+    const priced = rows.filter((r) => r.change != null && isFinite(r.change));
+    let best = null;
+    let worst = null;
+    if (priced.length >= 2) {
+      best = priced.reduce((a, b) => (b.change > a.change ? b : a));
+      worst = priced.reduce((a, b) => (b.change < a.change ? b : a));
+      if (best.coin === worst.coin) best = worst = null;
+    }
+    const fmtPct = (v) => `${v >= 0 ? "+" : ""}${v.toFixed(2)}%`;
+
     return React.createElement(
       PortfolioShell,
       null,
@@ -603,6 +695,45 @@ class Portfolio extends PureComponent {
                       ? ` (${pnlPct >= 0 ? "+" : ""}${pnlPct.toFixed(2)}%) 24h`
                       : " 24h"),
                 ),
+          (show24h || best) &&
+            React.createElement(
+              PortfolioStats,
+              null,
+              show24h &&
+                React.createElement(
+                  StatItem,
+                  null,
+                  React.createElement(StatLabel, null, "24h"),
+                  React.createElement(
+                    StatValue,
+                    { up: pnl === 0 ? null : pnl > 0 },
+                    this.fmtMoney(pnl, true) +
+                      (pnlPct != null ? ` (${fmtPct(pnlPct)})` : ""),
+                  ),
+                ),
+              best &&
+                React.createElement(
+                  StatItem,
+                  null,
+                  React.createElement(StatLabel, null, "Best 24h"),
+                  React.createElement(
+                    StatValue,
+                    { up: best.change === 0 ? null : best.change > 0 },
+                    `${best.coin} ${fmtPct(best.change)}`,
+                  ),
+                ),
+              worst &&
+                React.createElement(
+                  StatItem,
+                  null,
+                  React.createElement(StatLabel, null, "Worst 24h"),
+                  React.createElement(
+                    StatValue,
+                    { up: worst.change === 0 ? null : worst.change > 0 },
+                    `${worst.coin} ${fmtPct(worst.change)}`,
+                  ),
+                ),
+            ),
         ),
 
         // Chart range switcher (persisted; drives the background chart)
@@ -622,69 +753,97 @@ class Portfolio extends PureComponent {
           ? React.createElement(
               EmptyState,
               null,
-              "No holdings yet. Search a coin below to start tracking — amounts only, no wallet needed.",
+              React.createElement(EmptyIcon, null, "💼"),
+              "No holdings yet. Search a coin below to start tracking.",
+              React.createElement(
+                EmptyHint,
+                null,
+                "Amounts only — no wallet, no account, nothing leaves this device.",
+              ),
             )
           : React.createElement(
-              HoldingsList,
+              Fragment,
               null,
-              rows.map((r) => {
-                const draft = drafts[r.coin];
-                const amountVal =
-                  draft !== undefined ? draft : String(r.amount);
-                return React.createElement(
-                  HoldingRow,
-                  { key: r.coin },
-                  React.createElement(
-                    HoldingCoin,
-                    null,
-                    React.createElement(HoldingSym, null, r.coin),
+              React.createElement(
+                PortfolioSectionLabel,
+                null,
+                `Holdings · ${holdings.length}`,
+              ),
+              React.createElement(
+                HoldingsList,
+                null,
+                rows.map((r) => {
+                  const draft = drafts[r.coin];
+                  const amountVal =
+                    draft !== undefined ? draft : String(r.amount);
+                  const share =
+                    r.value != null && totalNow > 0
+                      ? (r.value / totalNow) * 100
+                      : null;
+                  return React.createElement(
+                    HoldingRow,
+                    { key: r.coin },
+                    share != null &&
+                      share > 0 &&
+                      React.createElement(HoldingShareBar, {
+                        "aria-hidden": true,
+                        style: { width: `${share}%` },
+                      }),
                     React.createElement(
-                      HoldingName,
+                      HoldingCoin,
                       null,
-                      COIN_NAMES[r.coin] || r.coin,
+                      React.createElement(HoldingSym, null, r.coin),
+                      React.createElement(
+                        HoldingName,
+                        null,
+                        (COIN_NAMES[r.coin] || r.coin) +
+                          (share != null && share >= 0.1
+                            ? ` · ${share >= 9.95 ? share.toFixed(0) : share.toFixed(1)}%`
+                            : ""),
+                      ),
                     ),
-                  ),
-                  React.createElement(AmountInput, {
-                    type: "text",
-                    inputMode: "decimal",
-                    value: amountVal,
-                    "aria-label": `${r.coin} amount`,
-                    onChange: (e) =>
-                      this.handleAmountChange(r.coin, e.target.value),
-                    onBlur: () => this.handleAmountBlur(r.coin),
-                  }),
-                  React.createElement(
-                    HoldingValue,
-                    null,
+                    React.createElement(AmountInput, {
+                      type: "text",
+                      inputMode: "decimal",
+                      value: amountVal,
+                      "aria-label": `${r.coin} amount`,
+                      onChange: (e) =>
+                        this.handleAmountChange(r.coin, e.target.value),
+                      onBlur: () => this.handleAmountBlur(r.coin),
+                    }),
                     React.createElement(
-                      HoldingValueMain,
+                      HoldingValue,
                       null,
-                      r.value != null
-                        ? this.fmtMoney(r.value, false)
-                        : ready
-                          ? "—"
-                          : "…",
+                      React.createElement(
+                        HoldingValueMain,
+                        null,
+                        r.value != null
+                          ? this.fmtMoney(r.value, false)
+                          : ready
+                            ? "—"
+                            : "…",
+                      ),
+                      React.createElement(
+                        HoldingValueSub,
+                        { up: r.change == null ? null : r.up },
+                        r.change != null
+                          ? `${r.change >= 0 ? "+" : ""}${r.change.toFixed(2)}%`
+                          : "",
+                      ),
                     ),
                     React.createElement(
-                      HoldingValueSub,
-                      { up: r.change == null ? null : r.up },
-                      r.change != null
-                        ? `${r.change >= 0 ? "+" : ""}${r.change.toFixed(2)}%`
-                        : "",
+                      RemoveBtn,
+                      {
+                        type: "button",
+                        "aria-label": `Remove ${r.coin}`,
+                        title: "Remove",
+                        onClick: () => this.props.onRemove(r.coin),
+                      },
+                      "×",
                     ),
-                  ),
-                  React.createElement(
-                    RemoveBtn,
-                    {
-                      type: "button",
-                      "aria-label": `Remove ${r.coin}`,
-                      title: "Remove",
-                      onClick: () => this.props.onRemove(r.coin),
-                    },
-                    "×",
-                  ),
-                );
-              }),
+                  );
+                }),
+              ),
             ),
 
         // Add holding

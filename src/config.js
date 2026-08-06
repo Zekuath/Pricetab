@@ -236,12 +236,24 @@ const TICKER_FORMAT_STORAGE_KEY = "crypto_chart_ticker_format";
 const NEWS_TICKER_STORAGE_KEY = "crypto_chart_news_ticker_enabled";
 const NEWS_CACHE_KEY = "crypto_chart_news_cache";
 const NEWS_REFRESH_MS = 600000; // 10 minutes
-// News source — no-auth + CORS-enabled (verified). Most other crypto news
+// News sources — no-auth + CORS-enabled (verified). Most other crypto news
 // APIs (CryptoCompare, CoinGecko, Messari, CryptoPanic) require keys, and RSS
 // feeds (CoinDesk, Decrypt, Cointelegraph, ...) don't send CORS headers, so
-// the browser blocks them — Blockchair is the only viable in-extension feed.
+// the browser blocks them — Blockchair + Hacker News (below) are the only
+// viable in-extension feeds.
 const NEWS_API_URL = "https://api.blockchair.com/news?q=language(en)&limit=40";
 const MAX_NEWS_ITEMS = 50;
+// Hacker News via Algolia — the only other CORS-enabled, no-key news source
+// found (X/Twitter, Reddit, Nitter, Stacker News all block extension origins).
+// Algolia ANDs multi-word queries, so each term is queried separately.
+const HN_NEWS_API = "https://hn.algolia.com/api/v1/search";
+const HN_NEWS_TERMS = ["bitcoin", "ethereum", "crypto"];
+const HN_NEWS_MIN_POINTS = 30; // well-upvoted stories only
+const HN_NEWS_MAX_AGE_S = 7 * 86400; // past week
+const HN_NEWS_MAX_ITEMS = 8;
+// Low-signal SEO/promo headlines dropped from the ticker regardless of source
+const NEWS_SPAM_RE =
+  /price (prediction|analysis)|presale|pre-sale|best (coins?|cryptos?) to buy|casino|airdrop|giveaway|sponsored/i;
 const AUTO_ROTATE_STORAGE_KEY = "crypto_chart_auto_rotate";
 const AUTO_ROTATE_INTERVAL_STORAGE_KEY = "crypto_chart_auto_rotate_interval";
 const DEFAULT_AUTO_ROTATE = false;
@@ -254,6 +266,10 @@ const AUTO_ROTATE_OPTIONS = [
   { value: 900000, label: "Every 15 minutes" },
 ];
 const RATE_PROMPT_DISMISSED_KEY = "crypto_chart_rate_prompt_dismissed";
+// Main-screen rating ask: shown once after ~2 days of use, then never again
+const FIRST_USE_KEY = "crypto_chart_first_use";
+const RATE_PROMPT_SHOWN_KEY = "crypto_chart_rate_prompt_shown";
+const RATE_PROMPT_DELAY_MS = 2 * 24 * 60 * 60 * 1000;
 // First-run onboarding tour (shown once, then dismissed)
 const ONBOARDING_SEEN_KEY = "crypto_chart_onboarding_seen";
 // Tracking-only portfolio: [{ coin, amount }] manually entered, all local

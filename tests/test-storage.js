@@ -143,4 +143,16 @@ assert.strictEqual(JSON.stringify(run("loadCoinOptionsFromStorage()")), JSON.str
 store["crypto_chart_coin_options"] = "not json{";
 assert.strictEqual(JSON.stringify(run("loadCoinOptionsFromStorage()")), JSON.stringify(["BTC", "ETH", "XRP", "LTC"]), "coins: corrupt JSON falls back");
 
+// --- rating ask: first-use clock + one-time shown flag ---
+assert.strictEqual(run("loadRatePromptShown()"), false, "rate shown default");
+const t1 = run("getOrInitFirstUse()");
+assert.ok(typeof t1 === "number" && t1 <= Date.now(), "first use initialized");
+assert.strictEqual(run("getOrInitFirstUse()"), t1, "first use is stable across loads");
+store["crypto_chart_first_use"] = String(Date.now() + 86400000); // future → reset
+assert.ok(run("getOrInitFirstUse()") <= Date.now(), "future timestamp reset");
+store["crypto_chart_first_use"] = "garbage";
+assert.ok(run("getOrInitFirstUse()") <= Date.now(), "corrupt timestamp reset");
+run("saveRatePromptShown()");
+assert.strictEqual(run("loadRatePromptShown()"), true, "rate shown roundtrip");
+
 console.log("ALL STORAGE TESTS PASSED");
