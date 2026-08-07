@@ -242,14 +242,36 @@ const sanitizeLots = (list) => {
   return lots;
 };
 
-// Portfolio (tracking only): array of { coin, amount, address, lots } where
-// lots are the purchase records the P/L math runs on and address is an
-// optional watched on-chain address ("" = none, only for WATCH_CHAINS coins).
-// Shared by storage load and JSON import: coins whitelisted against
-// SUGGESTED_COINS, numbers coerced to finite non-negatives; anything
-// malformed is dropped so a corrupted entry (or a hand-edited import file)
-// can't break the view. A legacy/handwritten `paid` total converts to a
-// single lot.
+// Watched addresses of one holding: [{ address, amount, lots }] — each entry
+// is one address whose on-chain balance (and inferred lots) is tracked
+// separately from the manually entered part, so the row can break down
+// "what came from where". Addresses must be valid for the holding's chain.
+const sanitizeWatches = (list, coin) => {
+  if (!Array.isArray(list) || !WATCH_CHAINS[coin]) return [];
+  const seen = new Set();
+  const clean = [];
+  for (const entry of list) {
+    if (!entry || typeof entry !== "object") continue;
+    const address =
+      typeof entry.address === "string" ? entry.address.trim() : "";
+    if (!WATCH_ADDRESS_RE.test(address) || seen.has(address)) continue;
+    const amount = Number(entry.amount);
+    if (!isFinite(amount) || amount < 0) continue;
+    seen.add(address);
+    clean.push({ address, amount, lots: sanitizeLots(entry.lots) });
+    if (clean.length >= MAX_WATCHES_PER_HOLDING) break;
+  }
+  return clean;
+};
+
+// Portfolio (tracking only): array of { coin, amount, lots, watches } where
+// `amount`/`lots` are the manually entered part and `watches` are watched
+// addresses tracked separately (see sanitizeWatches). Shared by storage load
+// and JSON import: coins whitelisted against SUGGESTED_COINS, numbers
+// coerced to finite non-negatives; anything malformed is dropped so a
+// corrupted entry (or a hand-edited import file) can't break the view.
+// Legacy shapes migrate: a `paid` total becomes one lot, and a single
+// top-level `address` becomes the holding's first watch entry.
 const sanitizePortfolio = (list) => {
   if (!Array.isArray(list)) return [];
   const seen = new Set();
@@ -257,13 +279,9 @@ const sanitizePortfolio = (list) => {
   for (const entry of list) {
     if (!entry || typeof entry !== "object") continue;
     const coin = typeof entry.coin === "string" ? entry.coin.toUpperCase() : "";
-    const amount = Number(entry.amount);
+    let amount = Number(entry.amount);
     if (!SUGGESTED_COINS.includes(coin) || seen.has(coin)) continue;
     if (!isFinite(amount) || amount < 0) continue;
-    const addrRaw =
-      typeof entry.address === "string" ? entry.address.trim() : "";
-    const address =
-      WATCH_CHAINS[coin] && WATCH_ADDRESS_RE.test(addrRaw) ? addrRaw : "";
     let lots = sanitizeLots(entry.lots);
     if (!lots.length) {
       const paidNum = Number(entry.paid);
@@ -271,8 +289,21 @@ const sanitizePortfolio = (list) => {
         lots = [{ amount, paid: paidNum, time: 0, source: "manual" }];
       }
     }
+    let watches = sanitizeWatches(entry.watches, coin);
+    // Legacy single-address holding: the whole amount came from that address
+    const legacyAddr =
+      typeof entry.address === "string" ? entry.address.trim() : "";
+    if (
+      !watches.length &&
+      WATCH_CHAINS[coin] &&
+      WATCH_ADDRESS_RE.test(legacyAddr)
+    ) {
+      watches = [{ address: legacyAddr, amount, lots }];
+      amount = 0;
+      lots = [];
+    }
     seen.add(coin);
-    clean.push({ coin, amount, address, lots });
+    clean.push({ coin, amount, lots, watches });
   }
   return clean;
 };

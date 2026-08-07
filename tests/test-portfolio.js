@@ -67,8 +67,15 @@ const json = (code) => JSON.parse(JSON.stringify(run(code)));
 
 assert.deepStrictEqual(json("loadPortfolioFromStorage()"), [], "empty default");
 
+const BTC_ADDR = "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa";
+const BTC_ADDR2 = "bc1qar0srrr7xfkvy5l643lydnw9re59gtzzwf5mdq";
+
+// A holding is the manual part plus one entry per watched address
 run(
-  'savePortfolioToStorage([{ coin: "BTC", amount: 0.5, address: "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa", lots: [{ amount: 0.3, paid: 9000, time: 1700000000, source: "chain" }, { amount: 0.2, paid: 7000 }] }, { coin: "ETH", amount: 2 }])',
+  `savePortfolioToStorage([{ coin: "BTC", amount: 0.5, lots: [{ amount: 0.5, paid: 7000 }], watches: [` +
+    `{ address: "${BTC_ADDR}", amount: 1.25, lots: [{ amount: 1.25, paid: 9000, time: 1700000000, source: "chain" }] },` +
+    `{ address: "${BTC_ADDR2}", amount: 0.1, lots: [] }` +
+    `] }, { coin: "ETH", amount: 2 }])`,
 );
 assert.deepStrictEqual(
   json("loadPortfolioFromStorage()"),
@@ -76,16 +83,80 @@ assert.deepStrictEqual(
     {
       coin: "BTC",
       amount: 0.5,
-      address: "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa",
-      lots: [
-        { amount: 0.3, paid: 9000, time: 1700000000, source: "chain" },
-        { amount: 0.2, paid: 7000, time: 0, source: "manual" },
+      lots: [{ amount: 0.5, paid: 7000, time: 0, source: "manual" }],
+      watches: [
+        {
+          address: BTC_ADDR,
+          amount: 1.25,
+          lots: [{ amount: 1.25, paid: 9000, time: 1700000000, source: "chain" }],
+        },
+        { address: BTC_ADDR2, amount: 0.1, lots: [] },
       ],
     },
-    { coin: "ETH", amount: 2, address: "", lots: [] },
+    { coin: "ETH", amount: 2, lots: [], watches: [] },
   ],
-  "roundtrip (lots + watched address kept, missing fields default)",
+  "roundtrip (manual part + several watched addresses)",
 );
+
+// Legacy single-address holding migrates into one watch entry
+store["crypto_chart_portfolio"] = JSON.stringify([
+  { coin: "BTC", amount: 0.5, address: BTC_ADDR, lots: [{ amount: 0.5, paid: 9000, time: 5, source: "chain" }] },
+]);
+assert.deepStrictEqual(
+  json("loadPortfolioFromStorage()"),
+  [
+    {
+      coin: "BTC",
+      amount: 0,
+      lots: [],
+      watches: [
+        {
+          address: BTC_ADDR,
+          amount: 0.5,
+          lots: [{ amount: 0.5, paid: 9000, time: 5, source: "chain" }],
+        },
+      ],
+    },
+  ],
+  "legacy address holding migrates to a watch entry",
+);
+
+// Bad watch entries are dropped without harming the holding
+assert.deepStrictEqual(
+  json(
+    'sanitizePortfolio([{ coin: "BTC", amount: 1, watches: [' +
+      `{ address: "${BTC_ADDR}", amount: 2 },` +
+      `{ address: "${BTC_ADDR}", amount: 3 },` + // duplicate address → dropped
+      '{ address: "junk!!", amount: 1 },' + // bad shape → dropped
+      `{ address: "${BTC_ADDR2}", amount: -1 },` + // negative → dropped
+      "] }," +
+      `{ coin: "SOL", amount: 1, watches: [{ address: "${BTC_ADDR}", amount: 1 }] }` + // unsupported chain → no watches
+      "])",
+  ),
+  [
+    {
+      coin: "BTC",
+      amount: 1,
+      lots: [],
+      watches: [{ address: BTC_ADDR, amount: 2, lots: [] }],
+    },
+    { coin: "SOL", amount: 1, lots: [], watches: [] },
+  ],
+  "watch entries validated per chain, duplicates and junk dropped",
+);
+
+// Totals combine every source
+sandbox.__multi = {
+  coin: "BTC",
+  amount: 0.5,
+  lots: [{ amount: 0.5, paid: 7000, time: 0, source: "manual" }],
+  watches: [
+    { address: BTC_ADDR, amount: 1.25, lots: [{ amount: 1.25, paid: 9000, time: 1, source: "chain" }] },
+  ],
+};
+assert.strictEqual(run("holdingAmount(__multi)"), 1.75, "holding amount = manual + watches");
+assert.strictEqual(run("holdingLots(__multi).length"), 2, "holding lots = manual + watch lots");
+assert.strictEqual(run("lotsBasis(holdingLots(__multi))"), 16000, "combined basis");
 
 store["crypto_chart_portfolio"] = "{not json";
 assert.deepStrictEqual(json("loadPortfolioFromStorage()"), [], "corrupt JSON → []");
@@ -110,9 +181,9 @@ store["crypto_chart_portfolio"] = JSON.stringify([
 assert.deepStrictEqual(
   json("loadPortfolioFromStorage()"),
   [
-    { coin: "ETH", amount: 2, address: "", lots: [{ amount: 2, paid: 1500, time: 0, source: "manual" }] },
-    { coin: "BTC", amount: 1, address: "", lots: [] },
-    { coin: "ADA", amount: 0, address: "", lots: [] },
+    { coin: "ETH", amount: 2, lots: [{ amount: 2, paid: 1500, time: 0, source: "manual" }], watches: [] },
+    { coin: "BTC", amount: 1, lots: [], watches: [] },
+    { coin: "ADA", amount: 0, lots: [], watches: [] },
   ],
   "malformed entries dropped, coins normalized/deduped, legacy paid migrated",
 );
@@ -132,8 +203,8 @@ assert.deepStrictEqual(
     {
       coin: "SOL",
       amount: 3,
-      address: "",
       lots: [{ amount: 1, paid: 50, time: 1700000000, source: "manual" }],
+      watches: [],
     },
   ],
   "import sanitizer: bad lots dropped, holding kept",
@@ -150,11 +221,11 @@ assert.deepStrictEqual(
       "])",
   ),
   [
-    { coin: "ETH", amount: 1, address: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045", lots: [] },
-    { coin: "SOL", amount: 1, address: "", lots: [] },
-    { coin: "BTC", amount: 1, address: "", lots: [] },
+    { coin: "ETH", amount: 0, lots: [], watches: [{ address: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045", amount: 1, lots: [] }] },
+    { coin: "SOL", amount: 1, lots: [], watches: [] },
+    { coin: "BTC", amount: 1, lots: [], watches: [] },
   ],
-  "addresses whitelisted per chain, junk cleared",
+  "legacy addresses migrate per chain; junk cleared",
 );
 
 /* ── lot math: FIFO reduction + chain-delta replay ──────────────────────── */

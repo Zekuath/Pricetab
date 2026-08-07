@@ -49,10 +49,11 @@ const getPortfolioHistory = async (coin, period, currency) => {
 const buildPortfolioSeries = (histories, holdings) => {
   const parts = [];
   for (const h of holdings) {
-    if (!(h.amount > 0)) continue;
+    const amount = holdingAmount(h);
+    if (!(amount > 0)) continue;
     const prices = histories[h.coin];
     if (Array.isArray(prices) && prices.length > 1) {
-      parts.push({ amount: h.amount, prices });
+      parts.push({ amount, prices });
     }
   }
   if (!parts.length) return null;
@@ -80,6 +81,19 @@ const lotsAmount = (lots) =>
   (lots || []).reduce((sum, l) => sum + l.amount, 0);
 
 const lotsBasis = (lots) => (lots || []).reduce((sum, l) => sum + l.paid, 0);
+
+/* A holding is the sum of its parts: the manually entered amount plus one
+ * entry per watched address. These two helpers are the only places that
+ * knowledge lives — everything else asks for the total. */
+const holdingAmount = (h) =>
+  (h.amount || 0) +
+  (h.watches || []).reduce((sum, w) => sum + (w.amount || 0), 0);
+
+const holdingLots = (h) => {
+  const lots = [...(h.lots || [])];
+  for (const w of h.watches || []) lots.push(...(w.lots || []));
+  return lots;
+};
 
 // Remove `amount` from the oldest lots first (FIFO), shrinking a partially
 // consumed lot's paid proportionally. Returns a new array.
@@ -591,52 +605,105 @@ const WatchedBadge = styled.button.attrs(() => ({ type: "button" }))`
   }
 `;
 
-/* Standing list of every watched address, so you can always see what's
- * being synced without opening a row. */
-const WatchedList = styled.div`
+/* Compact chips summarising every watched address, so what's being synced
+ * is visible at a glance; clicking one opens that coin's breakdown. */
+const WatchChips = styled.div`
   display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 0.6rem;
 `;
 
-const WatchedItem = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  padding: 0.5rem 0.7rem;
-  border: 1px solid ${({ theme }) => theme.color.border};
-  border-radius: 8px;
-  background: ${({ theme }) => theme.color.bgSecondary};
-`;
-
-const WatchedItemCoin = styled.span`
-  flex: 0 0 auto;
-  font-size: 0.78rem;
-  font-weight: 700;
-`;
-
-const WatchedItemAddr = styled.span`
-  flex: 1;
-  min-width: 0;
-  font-size: 0.7rem;
+const WatchChip = styled.button.attrs(() => ({ type: "button" }))`
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  padding: 0.25rem 0.5rem;
+  font-family: ${({ theme }) => theme.font.primary};
+  font-size: 0.66rem;
   color: ${({ theme }) => theme.color.textSecondary};
-  word-break: break-all;
-  user-select: all;
+  background: ${({ theme }) => theme.color.bgSecondary};
+  border: 1px solid ${({ theme }) => theme.color.border};
+  border-radius: 999px;
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease;
+
+  &:hover {
+    color: ${({ theme }) => theme.color.text};
+    border-color: ${({ theme }) => theme.color.borderHover};
+  }
 `;
 
-// Full watched address inside the row panel + the explicit stop action
-const WatchedAddrRow = styled.div`
+const WatchChipCoin = styled.span`
+  font-weight: 700;
+  color: ${({ theme }) => theme.color.text};
+`;
+
+/* Source breakdown inside the expanded row: one block per source (the
+ * manual part first, then each watched address) so it's obvious which
+ * coins came from where. */
+const SourceBlock = styled.div`
+  padding: 0.5rem 0;
+  border-top: 1px solid ${({ theme }) => theme.color.border};
+
+  &:first-child {
+    border-top: none;
+    padding-top: 0;
+  }
+`;
+
+const SourceHead = styled.div`
   display: flex;
-  align-items: center;
+  align-items: baseline;
   justify-content: space-between;
   gap: 0.75rem;
-  margin-bottom: 0.5rem;
 `;
 
-const WatchedAddr = styled.div`
+const SourceTitle = styled.div`
   min-width: 0;
-  font-size: 0.72rem;
+  font-size: 0.74rem;
+  font-weight: 600;
+`;
+
+const SourceAmount = styled.div`
+  flex: 0 0 auto;
+  font-size: 0.74rem;
+  color: ${({ theme }) => theme.color.textSecondary};
+`;
+
+// Amount cell for rows fed by watched addresses: the column keeps showing
+// the coin's total, and clicking opens the breakdown (the hand-entered part
+// is edited inside the accordion).
+const AmountTotalBtn = styled.button.attrs(() => ({ type: "button" }))`
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.4rem 0.5rem;
+  font-family: ${({ theme }) => theme.font.primary};
+  font-size: 0.85rem;
+  text-align: right;
+  color: ${({ theme }) => theme.color.text};
+  background: ${({ theme }) => theme.color.bg};
+  border: 1px dashed ${({ theme }) => theme.color.border};
+  border-radius: 7px;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+
+  &:hover {
+    border-color: ${({ theme }) => theme.color.borderHover};
+  }
+`;
+
+// Manual-amount field inside the accordion (only shown when the row also
+// has watched sources — otherwise the row's own input handles it)
+const SourceAmountInput = styled(AmountInput)`
+  flex: 0 0 7rem;
+`;
+
+const SourceAddr = styled.div`
+  margin-top: 0.15rem;
+  font-size: 0.66rem;
   color: ${({ theme }) => theme.color.textSecondary};
   word-break: break-all;
   user-select: all;
@@ -935,10 +1002,10 @@ class Portfolio extends PureComponent {
     const { holdings, prices } = this.props;
     const value = (h) => {
       const p = prices[h.coin];
-      return p && isFinite(p.price) ? p.price * h.amount : 0;
+      return p && isFinite(p.price) ? p.price * holdingAmount(h) : 0;
     };
     return holdings
-      .filter((h) => h.amount > 0)
+      .filter((h) => holdingAmount(h) > 0)
       .sort((a, b) => value(b) - value(a))
       .slice(0, PORTFOLIO_CHART_MAX_COINS)
       .map((h) => h.coin);
@@ -1028,7 +1095,9 @@ class Portfolio extends PureComponent {
     const rows = holdings.map((h) => {
       const p = prices[h.coin];
       const price = p && isFinite(p.price) ? p.price : null;
-      const value = price != null ? price * h.amount : null;
+      const amount = holdingAmount(h); // manual + every watched address
+      const lots = holdingLots(h);
+      const value = price != null ? price * amount : null;
       if (value != null) {
         anyPriced = true;
         totalNow += value;
@@ -1038,14 +1107,24 @@ class Portfolio extends PureComponent {
         } else {
           totalAgo += value;
         }
-        const basis = lotsBasis(h.lots);
-        if (basis > 0 && price != null) {
+        const basis = lotsBasis(lots);
+        if (basis > 0) {
           costBasis += basis;
           // P/L covers the lotted amount, which may differ from the holding
-          costValueNow += price * lotsAmount(h.lots);
+          costValueNow += price * lotsAmount(lots);
         }
       }
-      return { ...h, price, value, change: p ? p.change : null, up: p ? p.up : null };
+      return {
+        ...h,
+        amount, // total across sources (h.amount stays the manual part)
+        manualAmount: h.amount,
+        lots, // combined; h.lots stays the manual part
+        manualLots: h.lots,
+        price,
+        value,
+        change: p ? p.change : null,
+        up: p ? p.up : null,
+      };
     });
     const pnl = anyPriced ? totalNow - totalAgo : null;
     const pnlPct = pnl != null && totalAgo > 0 ? (pnl / totalAgo) * 100 : null;
@@ -1093,6 +1172,41 @@ class Portfolio extends PureComponent {
   handleLotKeyDown = (coin, e) => {
     if (e.key === "Enter") this.handleLotAdd(coin);
   };
+
+  // One source's purchase lines. Only hand-entered lots are removable —
+  // watched ones are the chain's record, not ours to edit.
+  renderLotLines(coin, lots, editable, emptyText) {
+    if (!lots.length) return React.createElement(LotMeta, null, emptyText);
+    return lots.map((lot, i) =>
+      React.createElement(
+        LotLine,
+        { key: `${lot.time}-${i}` },
+        React.createElement(
+          "span",
+          null,
+          `${lot.amount} ${coin} — ${this.fmtMoney(lot.paid, false)}`,
+        ),
+        React.createElement(
+          LotMeta,
+          null,
+          (lot.time > 0
+            ? new Date(lot.time * 1000).toLocaleDateString()
+            : "date unknown") + (lot.source === "chain" ? " · ~on-chain" : ""),
+        ),
+        editable &&
+          React.createElement(
+            RemoveBtn,
+            {
+              type: "button",
+              "aria-label": `Remove this ${coin} lot`,
+              title: "Remove lot",
+              onClick: () => this.props.onRemoveLot(coin, i),
+            },
+            "×",
+          ),
+      ),
+    );
+  }
 
   /* ── address watching ── */
 
@@ -1145,11 +1259,11 @@ class Portfolio extends PureComponent {
   /* ── backup / restore / report ── */
 
   handleExportJson = () => {
-    const data = this.props.holdings.map(({ coin, amount, address, lots }) => ({
+    const data = this.props.holdings.map(({ coin, amount, lots, watches }) => ({
       coin,
       amount,
-      address,
       lots,
+      watches,
     }));
     downloadTextFile(
       `pricetab-portfolio-${new Date().toISOString().slice(0, 10)}.json`,
@@ -1238,7 +1352,13 @@ class Portfolio extends PureComponent {
       if (best.coin === worst.coin) best = worst = null;
     }
     const fmtPct = (v) => `${v >= 0 ? "+" : ""}${v.toFixed(2)}%`;
-    const watchedRows = rows.filter((r) => r.address);
+    // Flat list of every watched address across holdings, for the chips
+    const watchedChips = [];
+    for (const r of rows) {
+      for (const w of r.watches) {
+        watchedChips.push({ coin: r.coin, address: w.address });
+      }
+    }
 
     return React.createElement(
       PortfolioShell,
@@ -1391,10 +1511,12 @@ class Portfolio extends PureComponent {
                 HoldingsList,
                 null,
                 rows.map((r) => {
-                  const watched = Boolean(r.address);
+                  const watched = r.watches.length > 0;
                   const amountDraft = drafts[`${r.coin}:amount`];
                   const amountVal =
-                    amountDraft !== undefined ? amountDraft : String(r.amount);
+                    amountDraft !== undefined
+                      ? amountDraft
+                      : String(r.manualAmount);
                   const basis = lotsBasis(r.lots);
                   const lotAmt = lotsAmount(r.lots);
                   const expanded = this.state.expandedCoin === r.coin;
@@ -1427,11 +1549,13 @@ class Portfolio extends PureComponent {
                           React.createElement(
                             WatchedBadge,
                             {
-                              title: `Watching ${r.address.slice(0, 8)}…${r.address.slice(-6)} — click to view the address`,
-                              "aria-label": `Show watched ${r.coin} address`,
+                              title: `${r.watches.length} watched address${r.watches.length > 1 ? "es" : ""} — click for the breakdown`,
+                              "aria-label": `Show watched ${r.coin} addresses`,
                               onClick: () => this.handleToggleLots(r.coin),
                             },
-                            "⛓",
+                            r.watches.length > 1
+                              ? `⛓${r.watches.length}`
+                              : "⛓",
                           ),
                       ),
                       React.createElement(
@@ -1443,19 +1567,30 @@ class Portfolio extends PureComponent {
                             : ""),
                       ),
                     ),
-                    React.createElement(AmountInput, {
-                      type: "text",
-                      inputMode: "decimal",
-                      value: amountVal,
-                      disabled: watched,
-                      title: watched
-                        ? "Amount is synced from the watched address"
-                        : undefined,
-                      "aria-label": `${r.coin} amount`,
-                      onChange: (e) =>
-                        this.handleFieldChange(r.coin, "amount", e.target.value),
-                      onBlur: () => this.handleFieldBlur(r.coin, "amount"),
-                    }),
+                    watched
+                      ? React.createElement(
+                          AmountTotalBtn,
+                          {
+                            title:
+                              "Total across the hand-entered part and every watched address — click for the breakdown",
+                            "aria-label": `${r.coin} total amount`,
+                            onClick: () => this.handleToggleLots(r.coin),
+                          },
+                          String(r.amount),
+                        )
+                      : React.createElement(AmountInput, {
+                          type: "text",
+                          inputMode: "decimal",
+                          value: amountVal,
+                          "aria-label": `${r.coin} amount`,
+                          onChange: (e) =>
+                            this.handleFieldChange(
+                              r.coin,
+                              "amount",
+                              e.target.value,
+                            ),
+                          onBlur: () => this.handleFieldBlur(r.coin, "amount"),
+                        }),
                     React.createElement(
                       LotsBtn,
                       {
@@ -1513,71 +1648,53 @@ class Portfolio extends PureComponent {
                       "×",
                     ),
 
-                    // Purchase-lot editor (spans the full row when open)
+                    // Accordion: where this coin's amount comes from —
+                    // the hand-entered part first, then one block per
+                    // watched address, each with its own purchases
                     expanded &&
                       React.createElement(
                         LotsPanel,
                         null,
-                        // Which address feeds this row + the explicit stop action
-                        watched &&
+                        React.createElement(
+                          SourceBlock,
+                          null,
                           React.createElement(
-                            WatchedAddrRow,
+                            SourceHead,
                             null,
                             React.createElement(
-                              WatchedAddr,
-                              { title: "Watched address (click to select)" },
-                              `⛓ ${r.address}`,
+                              SourceTitle,
+                              null,
+                              "Added by hand",
                             ),
-                            React.createElement(
-                              StopWatchBtn,
-                              {
-                                title:
-                                  "Stop syncing from this address (keeps the row, its amount and its lots)",
-                                onClick: () => this.props.onUnwatch(r.coin),
-                              },
-                              "Stop watching",
-                            ),
-                          ),
-                        r.lots.length === 0 &&
-                          React.createElement(
-                            LotMeta,
-                            null,
+                            // Editable here only when the row's own amount
+                            // cell is showing the multi-source total
                             watched
-                              ? "No incoming transfers detected yet."
-                              : "No purchases logged yet — add one below.",
+                              ? React.createElement(SourceAmountInput, {
+                                  type: "text",
+                                  inputMode: "decimal",
+                                  value: amountVal,
+                                  "aria-label": `${r.coin} hand-entered amount`,
+                                  onChange: (e) =>
+                                    this.handleFieldChange(
+                                      r.coin,
+                                      "amount",
+                                      e.target.value,
+                                    ),
+                                  onBlur: () =>
+                                    this.handleFieldBlur(r.coin, "amount"),
+                                })
+                              : React.createElement(
+                                  SourceAmount,
+                                  null,
+                                  `${r.manualAmount} ${r.coin}`,
+                                ),
                           ),
-                        r.lots.map((lot, i) =>
-                          React.createElement(
-                            LotLine,
-                            { key: `${lot.time}-${i}` },
-                            React.createElement(
-                              "span",
-                              null,
-                              `${lot.amount} ${r.coin} — ${this.fmtMoney(lot.paid, false)}`,
-                            ),
-                            React.createElement(
-                              LotMeta,
-                              null,
-                              (lot.time > 0
-                                ? new Date(lot.time * 1000).toLocaleDateString()
-                                : "date unknown") +
-                                (lot.source === "chain" ? " · ~on-chain" : ""),
-                            ),
-                            !watched &&
-                              React.createElement(
-                                RemoveBtn,
-                                {
-                                  type: "button",
-                                  "aria-label": `Remove this ${r.coin} lot`,
-                                  title: "Remove lot",
-                                  onClick: () =>
-                                    this.props.onRemoveLot(r.coin, i),
-                                },
-                                "×",
-                              ),
+                          this.renderLotLines(
+                            r.coin,
+                            r.manualLots,
+                            true,
+                            "No purchases logged yet — add one below.",
                           ),
-                        ),
-                        !watched &&
                           React.createElement(
                             LotForm,
                             null,
@@ -1605,11 +1722,56 @@ class Portfolio extends PureComponent {
                               "Add",
                             ),
                           ),
+                        ),
+
+                        r.watches.map((w) =>
+                          React.createElement(
+                            SourceBlock,
+                            { key: w.address },
+                            React.createElement(
+                              SourceHead,
+                              null,
+                              React.createElement(
+                                SourceTitle,
+                                null,
+                                "⛓ Watched address",
+                              ),
+                              React.createElement(
+                                SourceAmount,
+                                null,
+                                `${w.amount} ${r.coin}`,
+                              ),
+                              React.createElement(
+                                StopWatchBtn,
+                                {
+                                  title:
+                                    "Stop syncing this address (its coins and purchases move to the hand-entered part)",
+                                  "aria-label": `Stop watching this ${r.coin} address`,
+                                  onClick: () =>
+                                    this.props.onUnwatch(r.coin, w.address),
+                                },
+                                "Stop",
+                              ),
+                            ),
+                            React.createElement(
+                              SourceAddr,
+                              { title: "Watched address (click to select)" },
+                              w.address,
+                            ),
+                            this.renderLotLines(
+                              r.coin,
+                              w.lots,
+                              false,
+                              "No incoming transfers detected yet.",
+                            ),
+                          ),
+                        ),
+
                         watched
                           ? React.createElement(
                               LotNote,
                               null,
-                              "Inferred from the address's transfer history: incoming transfers count as buys at that date's estimated price, outgoing transfers consume the oldest lots first.",
+                              "Watched purchases are inferred from each address's transfer history: incoming transfers count as buys at that date's estimated price, outgoing transfers consume the oldest lots first.",
                             )
                           : lotAmt > 0 &&
                               Math.abs(lotAmt - r.amount) > 1e-9 &&
@@ -1674,34 +1836,26 @@ class Portfolio extends PureComponent {
           React.createElement(
             AddLabel,
             null,
-            watchedRows.length
-              ? `Watched addresses · ${watchedRows.length}`
+            watchedChips.length
+              ? `Watching · ${watchedChips.length}`
               : "Watch an address",
           ),
-          // Always-visible list of what's being synced right now
-          watchedRows.length > 0 &&
+          // Small standing summary of what's being synced; click a chip to
+          // open that coin's breakdown
+          watchedChips.length > 0 &&
             React.createElement(
-              WatchedList,
+              WatchChips,
               null,
-              watchedRows.map((r) =>
+              watchedChips.map((c) =>
                 React.createElement(
-                  WatchedItem,
-                  { key: r.coin },
-                  React.createElement(WatchedItemCoin, null, r.coin),
-                  React.createElement(
-                    WatchedItemAddr,
-                    { title: "Watched address (click to select)" },
-                    r.address,
-                  ),
-                  React.createElement(
-                    StopWatchBtn,
-                    {
-                      title: `Stop syncing ${r.coin} from this address (keeps the holding)`,
-                      "aria-label": `Stop watching ${r.coin} address`,
-                      onClick: () => this.props.onUnwatch(r.coin),
-                    },
-                    "Stop",
-                  ),
+                  WatchChip,
+                  {
+                    key: `${c.coin}-${c.address}`,
+                    title: `${c.coin} · ${c.address} — click for the breakdown`,
+                    onClick: () => this.handleToggleLots(c.coin),
+                  },
+                  React.createElement(WatchChipCoin, null, c.coin),
+                  `⛓ ${c.address.slice(0, 6)}…${c.address.slice(-4)}`,
                 ),
               ),
             ),

@@ -41,7 +41,7 @@ class CryptoChart extends PureComponent {
       showSettings: false,
       showPortfolio: false, // Full-screen tracking-only portfolio view
       showRateAsk: false, // One-time rating ask (eligibility checked on mount)
-      portfolio: loadPortfolioFromStorage(), // [{ coin, amount, address, lots }]
+      portfolio: loadPortfolioFromStorage(), // [{ coin, amount, lots, watches }]
       portfolioPrices: {}, // { COIN: { price, change, up } } from pageTickerCache
       portfolioReady: false, // true after first portfolio price fetch
       themePreference: loadThemeFromStorage(), // 'auto', 'light', or 'dark'
@@ -624,7 +624,7 @@ class CryptoChart extends PureComponent {
         const amt = isFinite(Number(amount)) ? Math.max(0, Number(amount)) : 0;
         const portfolio = [
           ...prevState.portfolio,
-          { coin: normalized, amount: amt, address: "", lots: [] },
+          { coin: normalized, amount: amt, lots: [], watches: [] },
         ];
         savePortfolioToStorage(portfolio);
         return { portfolio };
@@ -729,32 +729,48 @@ class CryptoChart extends PureComponent {
       if (!WATCH_CHAINS[normalized] || !WATCH_ADDRESS_RE.test(addr)) {
         return false;
       }
-      const exists = this.state.portfolio.some((h) => h.coin === normalized);
-      if (!exists && this.state.portfolio.length >= PORTFOLIO_MAX_HOLDINGS) {
+      const existing = this.state.portfolio.find((h) => h.coin === normalized);
+      if (!existing && this.state.portfolio.length >= PORTFOLIO_MAX_HOLDINGS) {
+        return false;
+      }
+      if (
+        existing &&
+        existing.watches.length >= MAX_WATCHES_PER_HOLDING &&
+        !existing.watches.some((w) => w.address === addr)
+      ) {
         return false;
       }
       const balance = await fetchAddressBalance(normalized, addr);
       if (balance == null) return false;
-      // Watching replaces any manual lots — the chain history is the record
+      // Each address is its own source: chain history is its lot record
       let lots = [];
       try {
         lots = await this.buildChainLots(normalized, addr, balance);
       } catch (e) {
         lots = [];
       }
+      const watch = { address: addr, amount: balance, lots };
       this.setState(
         (prevState) => {
-          const portfolio = prevState.portfolio.some(
+          const holding = prevState.portfolio.find(
             (h) => h.coin === normalized,
-          )
+          );
+          const portfolio = holding
             ? prevState.portfolio.map((h) =>
                 h.coin === normalized
-                  ? { ...h, amount: balance, address: addr, lots }
+                  ? {
+                      ...h,
+                      watches: h.watches.some((w) => w.address === addr)
+                        ? h.watches.map((w) =>
+                            w.address === addr ? watch : w,
+                          )
+                        : [...h.watches, watch],
+                    }
                   : h,
               )
             : [
                 ...prevState.portfolio,
-                { coin: normalized, amount: balance, address: addr, lots },
+                { coin: normalized, amount: 0, lots: [], watches: [watch] },
               ];
           savePortfolioToStorage(portfolio);
           return { portfolio };
@@ -764,12 +780,21 @@ class CryptoChart extends PureComponent {
       return true;
     });
 
-    // Stop watching (keeps the row and its last synced amount)
-    _defineProperty(this, "handleUnwatchAddress", (coin) => {
+    // Stop watching one address. What it contributed folds into the manual
+    // part, so the totals and P/L stay exactly as they were.
+    _defineProperty(this, "handleUnwatchAddress", (coin, address) => {
       this.setState((prevState) => {
-        const portfolio = prevState.portfolio.map((h) =>
-          h.coin === coin ? { ...h, address: "" } : h,
-        );
+        const portfolio = prevState.portfolio.map((h) => {
+          if (h.coin !== coin) return h;
+          const gone = h.watches.find((w) => w.address === address);
+          if (!gone) return h;
+          return {
+            ...h,
+            amount: h.amount + gone.amount,
+            lots: [...h.lots, ...gone.lots].slice(0, MAX_LOTS_PER_HOLDING),
+            watches: h.watches.filter((w) => w.address !== address),
+          };
+        });
         savePortfolioToStorage(portfolio);
         return { portfolio };
       });
@@ -807,48 +832,57 @@ class CryptoChart extends PureComponent {
       const curr = this.state.currency;
       const coins = holdings.map((h) => h.coin);
 
-      // Re-sync watched addresses first so values use fresh balances.
+      // Re-sync every watched address so values use fresh balances.
       // fetchAddressBalance caches per address (10 min), so this is usually
       // free; failures keep the last synced amount. On a change the lots
       // update too: BTC replays the real transfer history, other chains log
       // the delta as a buy at today's price (or FIFO-consume on a decrease).
       for (const h of holdings) {
-        if (!h.address || !WATCH_CHAINS[h.coin]) continue;
-        const balance = await fetchAddressBalance(h.coin, h.address);
-        if (balance == null || balance === h.amount) continue;
-        let lots = h.lots;
-        try {
-          if (h.coin === "BTC") {
-            lots = await this.buildChainLots(h.coin, h.address, balance);
-          } else if (balance > h.amount) {
-            const priceAt = await makePortfolioPriceAt(h.coin, curr);
-            const nowSec = Math.floor(Date.now() / 1000);
-            const price = priceAt(nowSec);
-            const delta = balance - h.amount;
-            lots = [
-              ...h.lots,
-              {
-                amount: delta,
-                paid: price != null ? price * delta : 0,
-                time: nowSec,
-                source: "chain",
-              },
-            ].slice(0, MAX_LOTS_PER_HOLDING);
-          } else {
-            lots = reduceLotsFifo(h.lots, h.amount - balance);
+        if (!WATCH_CHAINS[h.coin]) continue;
+        for (const w of h.watches) {
+          const balance = await fetchAddressBalance(h.coin, w.address);
+          if (balance == null || balance === w.amount) continue;
+          let lots = w.lots;
+          try {
+            if (h.coin === "BTC") {
+              lots = await this.buildChainLots(h.coin, w.address, balance);
+            } else if (balance > w.amount) {
+              const priceAt = await makePortfolioPriceAt(h.coin, curr);
+              const nowSec = Math.floor(Date.now() / 1000);
+              const price = priceAt(nowSec);
+              const delta = balance - w.amount;
+              lots = [
+                ...w.lots,
+                {
+                  amount: delta,
+                  paid: price != null ? price * delta : 0,
+                  time: nowSec,
+                  source: "chain",
+                },
+              ].slice(0, MAX_LOTS_PER_HOLDING);
+            } else {
+              lots = reduceLotsFifo(w.lots, w.amount - balance);
+            }
+          } catch (e) {
+            // keep the existing lots — the amount still updates below
           }
-        } catch (e) {
-          // keep the existing lots — the amount still updates below
+          this.setState((prevState) => {
+            const portfolio = prevState.portfolio.map((p) =>
+              p.coin === h.coin
+                ? {
+                    ...p,
+                    watches: p.watches.map((pw) =>
+                      pw.address === w.address
+                        ? { ...pw, amount: balance, lots }
+                        : pw,
+                    ),
+                  }
+                : p,
+            );
+            savePortfolioToStorage(portfolio);
+            return { portfolio };
+          });
         }
-        this.setState((prevState) => {
-          const portfolio = prevState.portfolio.map((p) =>
-            p.coin === h.coin && p.address === h.address
-              ? { ...p, amount: balance, lots }
-              : p,
-          );
-          savePortfolioToStorage(portfolio);
-          return { portfolio };
-        });
       }
 
       try {

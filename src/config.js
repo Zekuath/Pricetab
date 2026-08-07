@@ -294,6 +294,8 @@ const WATCH_BALANCE_TTL = 600000; // 10 min per address — be kind to providers
 // is "manual" (typed in) or "chain" (inferred from a watched address, with
 // prices estimated from the historical series at each transfer's date)
 const MAX_LOTS_PER_HOLDING = 100;
+// A holding can track several addresses side by side (plus its manual part)
+const MAX_WATCHES_PER_HOLDING = 10;
 // Selected time range for the portfolio background value chart
 const PORTFOLIO_PERIOD_KEY = "crypto_chart_portfolio_period";
 const STORE_LISTING_URL =
