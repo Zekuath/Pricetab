@@ -14,7 +14,7 @@
 | **Live Build** | 1.3.0 on the Chrome Web Store (August 2026) |
 | **Staged Locally** | 1.4.0 — onboarding tour, portfolio tracking, collapsible settings groups |
 | **In Flight (uncommitted)** | None — working tree clean |
-| **Codebase Size** | ~8,100 lines across 15 script modules in `src/` |
+| **Codebase Size** | ~11,000 lines across 18 script modules in `src/` |
 | **Testing** | Node regression suite + jsdom smoke test, CI on every push |
 | **Next Milestone** | Ship 1.4.0 (portfolio + onboarding) to the store → launch marketing |
 
@@ -32,7 +32,7 @@
 2. ~~Ship 1.3.0 to the store~~ — done (live August 2026)
 3. **Ship 1.4.0** (onboarding + portfolio + collapsible settings; `manifest.json` already bumped)
 4. **Launch marketing Phase 0–1** (`MARKETING_LAUNCH.md`): privacy policy URL, support email, first reviews
-5. Then: Quick Wins (keyboard shortcuts, retry, spinner) → Price Alerts
+5. ~~Quick Wins + Price Alerts~~ — shipped Aug 2026 (crosshair, since-last-visit, retry, flash, `/` jumper, alerts, coin badges)
 
 ---
 
