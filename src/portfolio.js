@@ -80,16 +80,18 @@ const csvField = (value) => {
   return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 };
 
-// rows = computeTotals().rows: [{ coin, amount, cost, price, value }]
+// rows = computeTotals().rows: [{ coin, amount, paid, price, value }]
+// paid = total spent on the position; avg cost is derived from it
 const buildPortfolioCsv = (rows, currency) => {
   const lines = [
     `# PriceTab portfolio report — ${new Date().toISOString().slice(0, 10)} — prices in ${currency}`,
-    "Coin,Name,Amount,Avg cost,Cost basis,Current price,Current value,Unrealized P/L,P/L %",
+    "Coin,Name,Amount,Total paid,Avg cost,Current price,Current value,Unrealized P/L,P/L %",
   ];
   let totalBasis = 0;
   let totalValue = 0;
   for (const r of rows) {
-    const basis = r.cost > 0 ? r.cost * r.amount : null;
+    const basis = r.paid > 0 ? r.paid : null;
+    const avgCost = basis != null && r.amount > 0 ? basis / r.amount : null;
     const pl = basis != null && r.value != null ? r.value - basis : null;
     const plPct = pl != null && basis > 0 ? (pl / basis) * 100 : null;
     if (basis != null && r.value != null) {
@@ -101,8 +103,8 @@ const buildPortfolioCsv = (rows, currency) => {
         r.coin,
         csvField(COIN_NAMES[r.coin] || r.coin),
         r.amount,
-        r.cost > 0 ? r.cost : "",
         basis != null ? basis : "",
+        avgCost != null ? avgCost : "",
         r.price != null ? r.price : "",
         r.value != null ? r.value : "",
         pl != null ? pl : "",
@@ -113,7 +115,7 @@ const buildPortfolioCsv = (rows, currency) => {
   if (totalBasis > 0) {
     const totalPl = totalValue - totalBasis;
     lines.push(
-      `Total,,,,${totalBasis},,${totalValue},${totalPl},${((totalPl / totalBasis) * 100).toFixed(2)}`,
+      `Total,,,${totalBasis},,,${totalValue},${totalPl},${((totalPl / totalBasis) * 100).toFixed(2)}`,
     );
   }
   lines.push(
@@ -365,12 +367,33 @@ const AmountInput = styled.input`
     outline: none;
     border-color: ${({ theme }) => theme.color.borderHover};
   }
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
 `;
 
-// Avg-cost input: same field, hidden on narrow screens (amount wins the space)
-const CostInput = styled(AmountInput)`
+// Total-paid input: same field, hidden on narrow screens (amount wins the space)
+const PaidInput = styled(AmountInput)`
   @media (max-width: 560px) {
     display: none;
+  }
+`;
+
+// "Stop watching" affordance next to the coin symbol on synced rows
+const UnwatchBtn = styled.button.attrs(() => ({ type: "button" }))`
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin-left: 0.35rem;
+  cursor: pointer;
+  font-size: 0.75rem;
+  line-height: 1;
+  color: ${({ theme }) => theme.color.textSecondary};
+  transition: color 0.15s ease;
+
+  &:hover {
+    color: ${({ theme }) => theme.color.chartLineRed};
   }
 `;
 
@@ -449,6 +472,55 @@ const SearchInput = styled.input`
   &:focus {
     outline: none;
     border-color: ${({ theme }) => theme.color.borderHover};
+  }
+`;
+
+/* Address watching: coin picker + address field + submit, one row */
+const WatchRow = styled.div`
+  display: flex;
+  gap: 0.5rem;
+`;
+
+const WatchSelect = styled.select`
+  padding: 0.7rem 0.6rem;
+  font-family: ${({ theme }) => theme.font.primary};
+  font-size: 0.85rem;
+  color: ${({ theme }) => theme.color.text};
+  background: ${({ theme }) => theme.color.bgSecondary};
+  border: 1px solid ${({ theme }) => theme.color.border};
+  border-radius: 10px;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+  &:focus {
+    outline: none;
+    border-color: ${({ theme }) => theme.color.borderHover};
+  }
+`;
+
+const WatchInput = styled(SearchInput)`
+  width: auto;
+  flex: 1;
+`;
+
+const WatchBtn = styled.button.attrs(() => ({ type: "button" }))`
+  padding: 0 1rem;
+  font-family: ${({ theme }) => theme.font.primary};
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: ${({ theme }) => theme.color.text};
+  background: ${({ theme }) => theme.color.bgSecondary};
+  border: 1px solid ${({ theme }) => theme.color.border};
+  border-radius: 10px;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+
+  &:hover {
+    border-color: ${({ theme }) => theme.color.borderHover};
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
   }
 `;
 
@@ -560,6 +632,10 @@ class Portfolio extends PureComponent {
       query: "",
       drafts: {},
       importError: false,
+      watchCoin: "BTC",
+      watchAddress: "",
+      watchBusy: false,
+      watchError: false,
       chartPeriod: loadPortfolioPeriodFromStorage(),
       histories: {}, // { COIN: [{ price, time }] } for the background chart
     };
@@ -692,8 +768,8 @@ class Portfolio extends PureComponent {
         } else {
           totalAgo += value;
         }
-        if (h.cost > 0) {
-          costBasis += h.cost * h.amount;
+        if (h.paid > 0) {
+          costBasis += h.paid;
           costValueNow += value;
         }
       }
@@ -715,11 +791,34 @@ class Portfolio extends PureComponent {
     this.props.onAdd(coin, 0);
   };
 
-  // Shared draft handling for the amount and avg-cost inputs
+  // Shared draft handling for the amount and total-paid inputs
   commitField(coin, field, num) {
     if (field === "amount") this.props.onUpdateAmount(coin, num);
-    else this.props.onUpdateCost(coin, num);
+    else this.props.onUpdatePaid(coin, num);
   }
+
+  /* ── address watching ── */
+
+  handleWatchCoinChange = (e) => this.setState({ watchCoin: e.target.value });
+
+  handleWatchAddressChange = (e) =>
+    this.setState({ watchAddress: e.target.value, watchError: false });
+
+  handleWatchKeyDown = (e) => {
+    if (e.key === "Enter") this.handleWatchSubmit();
+  };
+
+  handleWatchSubmit = async () => {
+    const { watchCoin, watchAddress, watchBusy } = this.state;
+    if (watchBusy || !watchAddress.trim()) return;
+    this.setState({ watchBusy: true, watchError: false });
+    const ok = await this.props.onWatch(watchCoin, watchAddress);
+    this.setState({
+      watchBusy: false,
+      watchError: !ok,
+      watchAddress: ok ? "" : watchAddress,
+    });
+  };
 
   handleFieldChange = (coin, field, raw) => {
     const key = `${coin}:${field}`;
@@ -985,7 +1084,7 @@ class Portfolio extends PureComponent {
                 { "aria-hidden": true },
                 React.createElement("span", null, ""),
                 React.createElement("span", null, "Amount"),
-                React.createElement("span", null, "Avg cost"),
+                React.createElement("span", null, "Paid (total)"),
                 React.createElement("span", null, "Value"),
                 React.createElement("span", null, ""),
               ),
@@ -993,21 +1092,20 @@ class Portfolio extends PureComponent {
                 HoldingsList,
                 null,
                 rows.map((r) => {
+                  const watched = Boolean(r.address);
                   const amountDraft = drafts[`${r.coin}:amount`];
                   const amountVal =
                     amountDraft !== undefined ? amountDraft : String(r.amount);
-                  const costDraft = drafts[`${r.coin}:cost`];
-                  const costVal =
-                    costDraft !== undefined
-                      ? costDraft
-                      : r.cost > 0
-                        ? String(r.cost)
+                  const paidDraft = drafts[`${r.coin}:paid`];
+                  const paidVal =
+                    paidDraft !== undefined
+                      ? paidDraft
+                      : r.paid > 0
+                        ? String(r.paid)
                         : "";
-                  // Unrealized P/L for this row (needs both a cost and a price)
+                  // Unrealized P/L for this row (needs a paid total + a price)
                   const rowPl =
-                    r.cost > 0 && r.price != null
-                      ? (r.price - r.cost) * r.amount
-                      : null;
+                    r.paid > 0 && r.value != null ? r.value - r.paid : null;
                   const share =
                     r.value != null && totalNow > 0
                       ? (r.value / totalNow) * 100
@@ -1024,7 +1122,21 @@ class Portfolio extends PureComponent {
                     React.createElement(
                       HoldingCoin,
                       null,
-                      React.createElement(HoldingSym, null, r.coin),
+                      React.createElement(
+                        HoldingSym,
+                        null,
+                        r.coin,
+                        watched &&
+                          React.createElement(
+                            UnwatchBtn,
+                            {
+                              title: `Amount synced from ${r.address.slice(0, 8)}…${r.address.slice(-6)} — click to stop watching`,
+                              "aria-label": `Stop watching ${r.coin} address`,
+                              onClick: () => this.props.onUnwatch(r.coin),
+                            },
+                            "⛓",
+                          ),
+                      ),
                       React.createElement(
                         HoldingName,
                         null,
@@ -1038,21 +1150,25 @@ class Portfolio extends PureComponent {
                       type: "text",
                       inputMode: "decimal",
                       value: amountVal,
+                      disabled: watched,
+                      title: watched
+                        ? "Amount is synced from the watched address"
+                        : undefined,
                       "aria-label": `${r.coin} amount`,
                       onChange: (e) =>
                         this.handleFieldChange(r.coin, "amount", e.target.value),
                       onBlur: () => this.handleFieldBlur(r.coin, "amount"),
                     }),
-                    React.createElement(CostInput, {
+                    React.createElement(PaidInput, {
                       type: "text",
                       inputMode: "decimal",
-                      value: costVal,
-                      placeholder: "avg cost",
-                      title: `Average buy price per ${r.coin} (optional — unlocks P/L)`,
-                      "aria-label": `${r.coin} average cost`,
+                      value: paidVal,
+                      placeholder: "paid",
+                      title: `Total you spent on ${r.coin} (optional — unlocks P/L)`,
+                      "aria-label": `${r.coin} total paid`,
                       onChange: (e) =>
-                        this.handleFieldChange(r.coin, "cost", e.target.value),
-                      onBlur: () => this.handleFieldBlur(r.coin, "cost"),
+                        this.handleFieldChange(r.coin, "paid", e.target.value),
+                      onBlur: () => this.handleFieldBlur(r.coin, "paid"),
                     }),
                     React.createElement(
                       HoldingValue,
@@ -1073,7 +1189,7 @@ class Portfolio extends PureComponent {
                             HoldingValueSub,
                             {
                               up: rowPl === 0 ? null : rowPl > 0,
-                              title: "Unrealized P/L vs avg cost",
+                              title: "Unrealized P/L vs what you paid",
                             },
                             this.fmtMoney(rowPl, true),
                           )
@@ -1141,6 +1257,54 @@ class Portfolio extends PureComponent {
             ),
         ),
 
+        // Watch an on-chain address (BTC/ETH/LTC/DOGE): the amount stays
+        // synced to the address's public balance. Address goes only to the
+        // balance provider, stored locally like everything else.
+        React.createElement(
+          AddSection,
+          null,
+          React.createElement(AddLabel, null, "Watch an address"),
+          React.createElement(
+            WatchRow,
+            null,
+            React.createElement(
+              WatchSelect,
+              {
+                value: this.state.watchCoin,
+                onChange: this.handleWatchCoinChange,
+                "aria-label": "Coin for the watched address",
+              },
+              Object.keys(WATCH_CHAINS).map((sym) =>
+                React.createElement("option", { key: sym, value: sym }, sym),
+              ),
+            ),
+            React.createElement(WatchInput, {
+              type: "text",
+              value: this.state.watchAddress,
+              placeholder: "Public address (read-only balance lookup)…",
+              "aria-label": "Address to watch",
+              onChange: this.handleWatchAddressChange,
+              onKeyDown: this.handleWatchKeyDown,
+            }),
+            React.createElement(
+              WatchBtn,
+              {
+                onClick: this.handleWatchSubmit,
+                disabled: this.state.watchBusy,
+                title:
+                  "Reads the address's public balance and keeps the holding's amount synced (checked every 10 minutes while the portfolio is open)",
+              },
+              this.state.watchBusy ? "…" : "Watch",
+            ),
+          ),
+          this.state.watchError &&
+            React.createElement(
+              ImportError,
+              null,
+              "Couldn't read that address — check the coin and the address, then try again.",
+            ),
+        ),
+
         // Backup / restore / tax report. Import is always available (restore
         // on a fresh device); exports need something to export.
         React.createElement(
@@ -1191,7 +1355,7 @@ class Portfolio extends PureComponent {
         React.createElement(
           PrivacyNote,
           null,
-          "Tracking only · no wallet connection · stored locally on this device.",
+          "Tracking only · no wallet connection · stored locally on this device. Watched addresses are used solely for public balance lookups.",
         ),
       ),
     );

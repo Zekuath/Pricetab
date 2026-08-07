@@ -4,6 +4,7 @@ const vm = require("vm");
 const assert = require("assert");
 
 let fetchCalls = [];
+let chainFail = false; // simulates the balance providers going down
 const sandbox = {
   console, Date, JSON, Math, Array, Object, Set, Map, Promise, Number,
   parseInt, parseFloat, isFinite, isNaN, setTimeout, clearTimeout, Error, AbortController,
@@ -16,6 +17,20 @@ const sandbox = {
       return { ok: true, status: 200, json: async () => ({ data: { prices: [
         { price: "80", time: 1 }, { price: "90", time: 2 },
       ] } }) };
+    }
+    if (url.includes("mempool.space/api/address/")) {
+      if (chainFail) return { ok: false, status: 500, json: async () => ({}) };
+      // 1.5 funded − 0.5 spent = 1 BTC
+      return { ok: true, status: 200, json: async () => ({
+        chain_stats: { funded_txo_sum: 150000000, spent_txo_sum: 50000000 },
+      }) };
+    }
+    if (url.includes("dashboards/address")) {
+      if (chainFail) return { ok: false, status: 430, json: async () => ({}) };
+      // 2 ETH in wei, keyed by a re-cased address (provider quirk)
+      return { ok: true, status: 200, json: async () => ({
+        data: { RECASED: { address: { balance: "2000000000000000000" } } },
+      }) };
     }
     if (url.includes("blockchair")) {
       return { ok: true, status: 200, json: async () => ({ data: [
@@ -44,6 +59,12 @@ const sandbox = {
   NEWS_SPAM_RE:
     /price (prediction|analysis)|presale|pre-sale|best (coins?|cryptos?) to buy|casino|airdrop|giveaway|sponsored/i,
   encodeURIComponent,
+  WATCH_CHAINS: {
+    BTC: { provider: "mempool", decimals: 8 },
+    ETH: { provider: "blockchair", chain: "ethereum", decimals: 18 },
+  },
+  WATCH_ADDRESS_RE: /^[A-Za-z0-9]{20,100}$/,
+  WATCH_BALANCE_TTL: 600000,
 };
 vm.createContext(sandbox);
 vm.runInContext(fs.readFileSync(path.join(__dirname, "..", "src", "api.js"), "utf8"), sandbox, { filename: "api.js" });
@@ -102,6 +123,49 @@ const run = (c) => vm.runInContext(c, sandbox);
   assert.strictEqual(merged.length, 2, "spam + duplicate + junk dropped");
   assert.strictEqual(merged[0].url, "https://a", "first source wins the duplicate");
   assert.strictEqual(merged[1].title, "Fresh story", "second source appended");
+
+  // fetchAddressBalance: provider parsing, unit conversion, caching, guards
+  const btcAddr = "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa";
+  const ethAddr = "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045";
+  fetchCalls = [];
+  assert.strictEqual(
+    await run(`fetchAddressBalance("BTC", "${btcAddr}")`),
+    1,
+    "BTC: (funded − spent) satoshi → coins",
+  );
+  await run(`fetchAddressBalance("BTC", "${btcAddr}")`);
+  assert.strictEqual(fetchCalls.length, 1, "second lookup within TTL is cached");
+  assert.strictEqual(
+    await run(`fetchAddressBalance("ETH", "${ethAddr}")`),
+    2,
+    "ETH: wei → coins, re-cased response key handled",
+  );
+  assert.strictEqual(
+    await run(`fetchAddressBalance("SOL", "${ethAddr}")`),
+    null,
+    "unsupported chain → null (no request)",
+  );
+  assert.strictEqual(
+    await run('fetchAddressBalance("BTC", "not a valid address!")'),
+    null,
+    "junk address shape → null (no request)",
+  );
+  assert.strictEqual(fetchCalls.length, 2, "guarded lookups never hit the network");
+
+  // provider failure → stale cache wins; no cache → null
+  chainFail = true;
+  run(`addressBalanceCache.get("ETH:${ethAddr}").timestamp = Date.now() - WATCH_BALANCE_TTL - 1`);
+  assert.strictEqual(
+    await run(`fetchAddressBalance("ETH", "${ethAddr}")`),
+    2,
+    "provider failure serves the last known balance",
+  );
+  assert.strictEqual(
+    await run(`fetchAddressBalance("BTC", "${ethAddr.slice(2)}00")`),
+    null,
+    "failure with no cached balance → null",
+  );
+  chainFail = false;
 
   console.log("ALL API TESTS PASSED");
 })().catch((e) => { console.error(e); process.exit(1); });

@@ -219,11 +219,13 @@ const loadChartColorFromStorage = () =>
 const saveChartColorToStorage = (enabled) =>
   saveSetting(CHART_COLOR_STORAGE_KEY, enabled);
 
-// Portfolio (tracking only): array of { coin, amount, cost } where cost is
-// the average buy price per unit (0 = not set). Shared by storage load and
-// JSON import: coins whitelisted against SUGGESTED_COINS, numbers coerced to
-// finite non-negatives; anything malformed is dropped so a corrupted entry
-// (or a hand-edited import file) can't break the view.
+// Portfolio (tracking only): array of { coin, amount, paid, address } where
+// paid is the total spent on the position (0 = not set) and address is an
+// optional watched on-chain address ("" = none, only for WATCH_CHAINS coins).
+// Shared by storage load and JSON import: coins whitelisted against
+// SUGGESTED_COINS, numbers coerced to finite non-negatives; anything
+// malformed is dropped so a corrupted entry (or a hand-edited import file)
+// can't break the view.
 const sanitizePortfolio = (list) => {
   if (!Array.isArray(list)) return [];
   const seen = new Set();
@@ -234,10 +236,14 @@ const sanitizePortfolio = (list) => {
     const amount = Number(entry.amount);
     if (!SUGGESTED_COINS.includes(coin) || seen.has(coin)) continue;
     if (!isFinite(amount) || amount < 0) continue;
-    const costNum = Number(entry.cost);
-    const cost = isFinite(costNum) && costNum > 0 ? costNum : 0;
+    const paidNum = Number(entry.paid);
+    const paid = isFinite(paidNum) && paidNum > 0 ? paidNum : 0;
+    const addrRaw =
+      typeof entry.address === "string" ? entry.address.trim() : "";
+    const address =
+      WATCH_CHAINS[coin] && WATCH_ADDRESS_RE.test(addrRaw) ? addrRaw : "";
     seen.add(coin);
-    clean.push({ coin, amount, cost });
+    clean.push({ coin, amount, paid, address });
   }
   return clean;
 };

@@ -272,9 +272,23 @@ const RATE_PROMPT_SHOWN_KEY = "crypto_chart_rate_prompt_shown";
 const RATE_PROMPT_DELAY_MS = 2 * 24 * 60 * 60 * 1000;
 // First-run onboarding tour (shown once, then dismissed)
 const ONBOARDING_SEEN_KEY = "crypto_chart_onboarding_seen";
-// Tracking-only portfolio: [{ coin, amount, cost }] manually entered, all
-// local (cost = optional average buy price per unit, 0 = not set)
+// Tracking-only portfolio: [{ coin, amount, paid, address }] manually
+// entered, all local (paid = optional total spent on the position, 0 = not
+// set; address = optional watched on-chain address, "" = none)
 const PORTFOLIO_STORAGE_KEY = "crypto_chart_portfolio";
+// On-chain balance watching (optional): the address is only ever sent to the
+// balance provider below, and only for coins listed here. mempool.space and
+// Blockchair are both already-trusted PriceTab data sources (CORS, no key).
+const WATCH_CHAINS = {
+  BTC: { provider: "mempool", decimals: 8 },
+  ETH: { provider: "blockchair", chain: "ethereum", decimals: 18 },
+  LTC: { provider: "blockchair", chain: "litecoin", decimals: 8 },
+  DOGE: { provider: "blockchair", chain: "dogecoin", decimals: 8 },
+};
+// Loose shape check only (base58 / bech32 / 0x-hex are all alphanumeric);
+// the provider is the real validator — bad addresses just return no balance
+const WATCH_ADDRESS_RE = /^[A-Za-z0-9]{20,100}$/;
+const WATCH_BALANCE_TTL = 600000; // 10 min per address — be kind to providers
 // Selected time range for the portfolio background value chart
 const PORTFOLIO_PERIOD_KEY = "crypto_chart_portfolio_period";
 const STORE_LISTING_URL =

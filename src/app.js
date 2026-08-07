@@ -41,7 +41,7 @@ class CryptoChart extends PureComponent {
       showSettings: false,
       showPortfolio: false, // Full-screen tracking-only portfolio view
       showRateAsk: false, // One-time rating ask (eligibility checked on mount)
-      portfolio: loadPortfolioFromStorage(), // [{ coin, amount, cost }]
+      portfolio: loadPortfolioFromStorage(), // [{ coin, amount, paid, address }]
       portfolioPrices: {}, // { COIN: { price, change, up } } from pageTickerCache
       portfolioReady: false, // true after first portfolio price fetch
       themePreference: loadThemeFromStorage(), // 'auto', 'light', or 'dark'
@@ -624,7 +624,7 @@ class CryptoChart extends PureComponent {
         const amt = isFinite(Number(amount)) ? Math.max(0, Number(amount)) : 0;
         const portfolio = [
           ...prevState.portfolio,
-          { coin: normalized, amount: amt, cost: 0 },
+          { coin: normalized, amount: amt, paid: 0, address: "" },
         ];
         savePortfolioToStorage(portfolio);
         return { portfolio };
@@ -642,12 +642,60 @@ class CryptoChart extends PureComponent {
       });
     });
 
-    // Average buy price per unit (0 clears it → row falls back to 24h change)
-    _defineProperty(this, "handleUpdateHoldingCost", (coin, cost) => {
-      const c = isFinite(Number(cost)) ? Math.max(0, Number(cost)) : 0;
+    // Total spent on the position (0 clears it → row falls back to 24h change)
+    _defineProperty(this, "handleUpdateHoldingPaid", (coin, paid) => {
+      const p = isFinite(Number(paid)) ? Math.max(0, Number(paid)) : 0;
       this.setState((prevState) => {
         const portfolio = prevState.portfolio.map((h) =>
-          h.coin === coin ? { ...h, cost: c } : h,
+          h.coin === coin ? { ...h, paid: p } : h,
+        );
+        savePortfolioToStorage(portfolio);
+        return { portfolio };
+      });
+    });
+
+    // Watch an on-chain address: reads its public balance and keeps the
+    // holding's amount synced to it. Returns false when the coin/address is
+    // unsupported or the provider can't resolve it (caller shows an error).
+    _defineProperty(this, "handleWatchAddress", async (coin, address) => {
+      const normalized = (coin || "").trim().toUpperCase();
+      const addr = (address || "").trim();
+      if (!WATCH_CHAINS[normalized] || !WATCH_ADDRESS_RE.test(addr)) {
+        return false;
+      }
+      const exists = this.state.portfolio.some((h) => h.coin === normalized);
+      if (!exists && this.state.portfolio.length >= PORTFOLIO_MAX_HOLDINGS) {
+        return false;
+      }
+      const balance = await fetchAddressBalance(normalized, addr);
+      if (balance == null) return false;
+      this.setState(
+        (prevState) => {
+          const portfolio = prevState.portfolio.some(
+            (h) => h.coin === normalized,
+          )
+            ? prevState.portfolio.map((h) =>
+                h.coin === normalized
+                  ? { ...h, amount: balance, address: addr }
+                  : h,
+              )
+            : [
+                ...prevState.portfolio,
+                { coin: normalized, amount: balance, paid: 0, address: addr },
+              ];
+          savePortfolioToStorage(portfolio);
+          return { portfolio };
+        },
+        this.fetchPortfolioPrices,
+      );
+      return true;
+    });
+
+    // Stop watching (keeps the row and its last synced amount)
+    _defineProperty(this, "handleUnwatchAddress", (coin) => {
+      this.setState((prevState) => {
+        const portfolio = prevState.portfolio.map((h) =>
+          h.coin === coin ? { ...h, address: "" } : h,
         );
         savePortfolioToStorage(portfolio);
         return { portfolio };
@@ -685,6 +733,25 @@ class CryptoChart extends PureComponent {
       this._portfolioFetching = true;
       const curr = this.state.currency;
       const coins = holdings.map((h) => h.coin);
+
+      // Re-sync watched addresses first so values use fresh balances.
+      // fetchAddressBalance caches per address (10 min), so this is usually
+      // free; failures keep the last synced amount.
+      for (const h of holdings) {
+        if (!h.address || !WATCH_CHAINS[h.coin]) continue;
+        const balance = await fetchAddressBalance(h.coin, h.address);
+        if (balance != null && balance !== h.amount) {
+          this.setState((prevState) => {
+            const portfolio = prevState.portfolio.map((p) =>
+              p.coin === h.coin && p.address === h.address
+                ? { ...p, amount: balance }
+                : p,
+            );
+            savePortfolioToStorage(portfolio);
+            return { portfolio };
+          });
+        }
+      }
 
       try {
         // Bulk path (Coinlore top-100) covers most coins in one request
@@ -2513,9 +2580,11 @@ class CryptoChart extends PureComponent {
             chartColorize: this.state.chartColor,
             onAdd: this.handleAddHolding,
             onUpdateAmount: this.handleUpdateHoldingAmount,
-            onUpdateCost: this.handleUpdateHoldingCost,
+            onUpdatePaid: this.handleUpdateHoldingPaid,
             onRemove: this.handleRemoveHolding,
             onImport: this.handleImportPortfolio,
+            onWatch: this.handleWatchAddress,
+            onUnwatch: this.handleUnwatchAddress,
           }),
 
         !showSettings && !showPortfolio && React.createElement(OnboardingTour, null),

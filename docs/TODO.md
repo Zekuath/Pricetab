@@ -163,6 +163,7 @@
 | Per-coin cost basis → total P/L since purchase | [x] | Optional avg-cost input; row + headline unrealized P/L (Aug 2026) |
 | JSON export / import | [x] | Backup/restore, import validated via `sanitizePortfolio` (Aug 2026) |
 | Tax report CSV (cost basis + unrealized P/L, "not tax advice") | [x] | Foundation for the seasonal affiliate line (Aug 2026) |
+| Address watching (BTC/ETH/LTC/DOGE, read-only balance sync) | [x] | mempool.space + Blockchair, 10-min cache, opt-in (Aug 2026) |
 | Tax-season affiliate line (Jan–Apr, local date check) | [ ] | See `MONETIZATION.md` §3.5 — portfolio v2 now shipped |
 
 ### 3.3 Coin Coverage Expansion — *new (July 2026)*

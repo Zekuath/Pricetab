@@ -452,6 +452,60 @@ const fetchHackerNewsStories = async () => {
     .map(({ source, title, url }) => ({ source, title, url }));
 };
 
+/* ON-CHAIN ADDRESS BALANCES (optional portfolio watching) ─────────────────
+ * The user's address is sent only to the balance provider for that coin:
+ * BTC → mempool.space (already a data source), ETH/LTC/DOGE → Blockchair
+ * (already a data source). 10-minute cache per address; on failure the last
+ * known balance is served so a flaky provider can't zero a holding.
+ */
+const MEMPOOL_ADDRESS_API = "https://mempool.space/api/address/";
+const BLOCKCHAIR_DASHBOARD_API = "https://api.blockchair.com/";
+
+const addressBalanceCache = new Map(); // "COIN:address" → { balance, timestamp }
+
+const fetchAddressBalance = async (coin, address) => {
+  const spec = WATCH_CHAINS[coin];
+  if (!spec || typeof address !== "string" || !WATCH_ADDRESS_RE.test(address)) {
+    return null;
+  }
+  const key = `${coin}:${address}`;
+  const hit = addressBalanceCache.get(key);
+  if (hit && Date.now() - hit.timestamp < WATCH_BALANCE_TTL) {
+    return hit.balance;
+  }
+  try {
+    let raw = null;
+    if (spec.provider === "mempool") {
+      const res = await fetch(MEMPOOL_ADDRESS_API + encodeURIComponent(address));
+      if (!res.ok) throw new Error("mempool address request failed");
+      const json = await res.json();
+      const chain = json && json.chain_stats;
+      if (chain) {
+        raw = Number(chain.funded_txo_sum) - Number(chain.spent_txo_sum);
+      }
+    } else {
+      const res = await fetch(
+        `${BLOCKCHAIR_DASHBOARD_API}${spec.chain}/dashboards/address/` +
+          `${encodeURIComponent(address)}?limit=0`,
+      );
+      if (!res.ok) throw new Error("blockchair address request failed");
+      const json = await res.json();
+      // Response is keyed by the address (provider may re-case it)
+      const entry =
+        json && json.data && json.data[Object.keys(json.data)[0] || ""];
+      if (entry && entry.address) raw = Number(entry.address.balance);
+    }
+    if (raw == null || !isFinite(raw) || raw < 0) {
+      return hit ? hit.balance : null;
+    }
+    const balance = raw / Math.pow(10, spec.decimals);
+    addressBalanceCache.set(key, { balance, timestamp: Date.now() });
+    return balance;
+  } catch (error) {
+    return hit ? hit.balance : null; // stale beats blank
+  }
+};
+
 /* Merge news lists in priority order: spam filtered everywhere, duplicate
  * stories collapsed across sources by normalized title (aggregators often
  * carry the same story from several outlets), capped at MAX_NEWS_ITEMS. */

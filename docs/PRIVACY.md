@@ -79,6 +79,14 @@ All APIs used by PriceTab are **public** — no authentication or accounts requi
 - **Data Sent**: No user data — plain GET request
 - **Privacy**: See [mempool.space Privacy Policy](https://mempool.space/privacy-policy)
 
+### Address balance lookup (optional portfolio watching)
+
+- **Endpoints**: `https://mempool.space/api/address/…` (BTC) and `https://api.blockchair.com/{chain}/dashboards/address/…` (ETH, LTC, DOGE)
+- **Purpose**: If you choose to watch one of your own addresses in the portfolio, its public on-chain balance is read so the holding's amount stays in sync
+- **Data Sent**: Only the address you enter, only to the balance provider for that coin — never anywhere else. Read-only lookup of public blockchain data; no keys, no signing, no wallet connection
+- **Storage**: Watched addresses are stored locally like every other setting and can be removed at any time
+- **Privacy**: See [mempool.space Privacy Policy](https://mempool.space/privacy-policy) and [Blockchair Privacy Policy](https://blockchair.com/privacy)
+
 ### News sources (optional ticker row, off by default)
 
 - **Endpoints**: `https://api.blockchair.com/news` and `https://hn.algolia.com/api/v1/search` (Hacker News stories)
@@ -203,7 +211,7 @@ This extension is provided "as is" without warranty. We are not responsible for:
 ✅ **What we store**: Only your coin preferences, locally on your device
 ✅ **What we collect**: Nothing
 ✅ **What we share**: Nothing
-✅ **Third parties**: Only public, no-auth APIs — Coinbase (prices), OKX/Bybit/Coinlore/Alternative.me/mempool.space (optional widgets), Blockchair + Hacker News/Algolia (optional news headlines)
+✅ **Third parties**: Only public, no-auth APIs — Coinbase (prices), OKX/Bybit/Coinlore/Alternative.me/mempool.space (optional widgets), Blockchair + Hacker News/Algolia (optional news headlines), mempool.space/Blockchair (optional watched-address balances)
 ✅ **Your control**: Delete data anytime by clearing localStorage or uninstalling
 
 **We respect your privacy because we simply don't collect any data.**
