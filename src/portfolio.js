@@ -591,6 +591,40 @@ const WatchedBadge = styled.button.attrs(() => ({ type: "button" }))`
   }
 `;
 
+/* Standing list of every watched address, so you can always see what's
+ * being synced without opening a row. */
+const WatchedList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-bottom: 0.75rem;
+`;
+
+const WatchedItem = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid ${({ theme }) => theme.color.border};
+  border-radius: 8px;
+  background: ${({ theme }) => theme.color.bgSecondary};
+`;
+
+const WatchedItemCoin = styled.span`
+  flex: 0 0 auto;
+  font-size: 0.78rem;
+  font-weight: 700;
+`;
+
+const WatchedItemAddr = styled.span`
+  flex: 1;
+  min-width: 0;
+  font-size: 0.7rem;
+  color: ${({ theme }) => theme.color.textSecondary};
+  word-break: break-all;
+  user-select: all;
+`;
+
 // Full watched address inside the row panel + the explicit stop action
 const WatchedAddrRow = styled.div`
   display: flex;
@@ -1204,6 +1238,7 @@ class Portfolio extends PureComponent {
       if (best.coin === worst.coin) best = worst = null;
     }
     const fmtPct = (v) => `${v >= 0 ? "+" : ""}${v.toFixed(2)}%`;
+    const watchedRows = rows.filter((r) => r.address);
 
     return React.createElement(
       PortfolioShell,
@@ -1636,7 +1671,40 @@ class Portfolio extends PureComponent {
         React.createElement(
           AddSection,
           null,
-          React.createElement(AddLabel, null, "Watch an address"),
+          React.createElement(
+            AddLabel,
+            null,
+            watchedRows.length
+              ? `Watched addresses · ${watchedRows.length}`
+              : "Watch an address",
+          ),
+          // Always-visible list of what's being synced right now
+          watchedRows.length > 0 &&
+            React.createElement(
+              WatchedList,
+              null,
+              watchedRows.map((r) =>
+                React.createElement(
+                  WatchedItem,
+                  { key: r.coin },
+                  React.createElement(WatchedItemCoin, null, r.coin),
+                  React.createElement(
+                    WatchedItemAddr,
+                    { title: "Watched address (click to select)" },
+                    r.address,
+                  ),
+                  React.createElement(
+                    StopWatchBtn,
+                    {
+                      title: `Stop syncing ${r.coin} from this address (keeps the holding)`,
+                      "aria-label": `Stop watching ${r.coin} address`,
+                      onClick: () => this.props.onUnwatch(r.coin),
+                    },
+                    "Stop",
+                  ),
+                ),
+              ),
+            ),
           React.createElement(
             WatchRow,
             null,
