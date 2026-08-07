@@ -573,8 +573,9 @@ const LotNote = styled.div`
   color: ${({ theme }) => theme.color.textSecondary};
 `;
 
-// "Stop watching" affordance next to the coin symbol on synced rows
-const UnwatchBtn = styled.button.attrs(() => ({ type: "button" }))`
+// Watched-row marker next to the coin symbol — opens the row panel where
+// the full address (and the stop-watching action) lives
+const WatchedBadge = styled.button.attrs(() => ({ type: "button" }))`
   background: transparent;
   border: none;
   padding: 0;
@@ -586,7 +587,46 @@ const UnwatchBtn = styled.button.attrs(() => ({ type: "button" }))`
   transition: color 0.15s ease;
 
   &:hover {
+    color: ${({ theme }) => theme.color.text};
+  }
+`;
+
+// Full watched address inside the row panel + the explicit stop action
+const WatchedAddrRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+`;
+
+const WatchedAddr = styled.div`
+  min-width: 0;
+  font-size: 0.72rem;
+  color: ${({ theme }) => theme.color.textSecondary};
+  word-break: break-all;
+  user-select: all;
+`;
+
+const StopWatchBtn = styled.button.attrs(() => ({ type: "button" }))`
+  flex: 0 0 auto;
+  padding: 0.3rem 0.7rem;
+  font-family: ${({ theme }) => theme.font.primary};
+  font-size: 0.7rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: ${({ theme }) => theme.color.textSecondary};
+  background: transparent;
+  border: 1px solid ${({ theme }) => theme.color.border};
+  border-radius: 7px;
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease;
+
+  &:hover {
     color: ${({ theme }) => theme.color.chartLineRed};
+    border-color: ${({ theme }) => theme.color.chartLineRed};
   }
 `;
 
@@ -1350,11 +1390,11 @@ class Portfolio extends PureComponent {
                         r.coin,
                         watched &&
                           React.createElement(
-                            UnwatchBtn,
+                            WatchedBadge,
                             {
-                              title: `Amount synced from ${r.address.slice(0, 8)}…${r.address.slice(-6)} — click to stop watching`,
-                              "aria-label": `Stop watching ${r.coin} address`,
-                              onClick: () => this.props.onUnwatch(r.coin),
+                              title: `Watching ${r.address.slice(0, 8)}…${r.address.slice(-6)} — click to view the address`,
+                              "aria-label": `Show watched ${r.coin} address`,
+                              onClick: () => this.handleToggleLots(r.coin),
                             },
                             "⛓",
                           ),
@@ -1443,6 +1483,26 @@ class Portfolio extends PureComponent {
                       React.createElement(
                         LotsPanel,
                         null,
+                        // Which address feeds this row + the explicit stop action
+                        watched &&
+                          React.createElement(
+                            WatchedAddrRow,
+                            null,
+                            React.createElement(
+                              WatchedAddr,
+                              { title: "Watched address (click to select)" },
+                              `⛓ ${r.address}`,
+                            ),
+                            React.createElement(
+                              StopWatchBtn,
+                              {
+                                title:
+                                  "Stop syncing from this address (keeps the row, its amount and its lots)",
+                                onClick: () => this.props.onUnwatch(r.coin),
+                              },
+                              "Stop watching",
+                            ),
+                          ),
                         r.lots.length === 0 &&
                           React.createElement(
                             LotMeta,
