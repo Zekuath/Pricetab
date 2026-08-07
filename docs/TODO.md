@@ -127,10 +127,10 @@
 | "Retry" button + friendly message on fetch failure | [x] | Low | Shipped Aug 2026 |
 | Chart crosshair with price + date readout | [x] | Medium | Shipped Aug 2026 — biggest perceived-quality gap |
 | "Since your last visit" price delta | [x] | Low | Shipped Aug 2026 — unique to the new-tab format |
-| Loading spinner for initial fetch (when cache is cold) | [ ] | Low | First-run impression |
-| Coin logos/icons in coin list & chips | [ ] | Medium | Perceived quality → reviews |
+| Loading spinner for initial fetch (when cache is cold) | [x] | Low | Shipped Aug 2026 — skeleton says "Fetching prices…" after 2.5s |
+| Coin logos/icons in coin list & chips | [x] | Medium | Shipped Aug 2026 as monogram badges (`src/coinmark.js`) — real brand logos rejected: ~64 trademark files or external requests |
 | Price change flash animation on update | [x] | Low | Shipped Aug 2026 |
-| Seed price data so the very first open paints a chart | [ ] | Medium | New users still see the skeleton |
+| Seed price data so the very first open paints a chart | [ ] (declined) | Medium | Would ship fabricated prices that read as real for a moment, and go stale — the honest cold-start note was shipped instead |
 | Quick coin switcher (`/` to search) | [x] | Low | Shipped Aug 2026 — `src/quickswitch.js` |
 | localStorage quota exceeded handling | [ ] | Medium | Rare but data-loss adjacent |
 

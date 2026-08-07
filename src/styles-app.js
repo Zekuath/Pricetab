@@ -335,6 +335,17 @@ const SkeletonPeriodSwitcher = styled.div`
   padding: ${({ theme }) => theme.spacing.small}rem 0;
 `;
 
+// Shown inside the skeleton when the first fetch is slow — an honest word
+// beats a chart that looks frozen (we don't fabricate placeholder prices)
+const SkeletonNote = styled.div`
+  position: relative;
+  z-index: 1;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: ${({ theme }) => theme.color.textSecondary};
+`;
+
 const SkeletonChart = styled.div`
   width: 100%;
   height: 100%;

@@ -90,7 +90,7 @@ const QuickList = styled.div`
 
 const QuickRow = styled.button.attrs(() => ({ type: "button" }))`
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 0.6rem;
   width: 100%;
   text-align: left;
@@ -229,6 +229,7 @@ class QuickSwitch extends PureComponent {
                     onMouseEnter: () => this.setState({ index: i }),
                     onClick: () => this.props.onPick(r.coin, r.owned),
                   },
+                  coinMark(r.coin, 1.4),
                   React.createElement(QuickSym, null, r.coin),
                   React.createElement(
                     QuickName,

@@ -304,6 +304,7 @@ class AlertsPanel extends PureComponent {
           React.createElement(
             AlertRow,
             { key: a.id },
+            coinMark(a.coin, 1.4),
             React.createElement(
               AlertText,
               { muted: Boolean(a.triggeredAt) },

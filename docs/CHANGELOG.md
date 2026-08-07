@@ -10,8 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Planned
-- Price alerts (in-tab first; browser notifications only if we accept the `notifications` permission — see TODO 3.1)
-- Keyboard shortcuts (←/→ coins, 1-6 periods, S settings)
+- Percentage-change alerts (price-target alerts shipped in 1.4.0)
 - Price-only coin tier via Coinlore (expand coverage beyond Coinbase-served coins)
 - Ethereum gas tracker widget
 
@@ -25,6 +24,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Portfolio design polish** - per-holding allocation share (thin accent meter under each row + % next to the coin name), a quiet stats row under the total (24h P/L, best/worst 24h mover), unified uppercase section labels and a friendlier empty state
 - **Onboarding tour** - first-run spotlight tour of the main controls (shown once, skippable)
 - **Collapsible settings groups** - settings sections expand/collapse for faster scanning
+- **Coin badges** - coins now carry a small monogram badge with a colour derived from the symbol, in the quick jumper, the alert list and the portfolio. No brand logo files and no external requests — the extension still makes zero third-party asset calls
+- **Clearer cold start** - if the very first fetch is slow the loading placeholder now says so ("Fetching prices…", or that you're offline) instead of shimmering silently
 - **Price alerts** - set "BTC rises above X" / "ETH drops below Y" targets (press `A` or the bell). Alerts are checked while a PriceTab tab is open and appear as a dismissible banner — no `notifications` permission, so the extension stays zero-permission and nothing leaves your device. Up to 10 alerts; targets set in a different display currency are shown as paused rather than compared against the wrong number
 - **Quick coin jumper** - press `/` on the new tab, type a symbol or name and hit Enter. Your own coins rank first; picking a coin you don't track yet adds it and switches to it
 - **Retry on failure** - when prices can't be fetched the banner now says so plainly and offers a Retry button instead of silently sitting on cached data

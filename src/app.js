@@ -60,6 +60,7 @@ class CryptoChart extends PureComponent {
       invalidCoin: null, // Invalid coin warning
       apiError: false, // API failure state
       retrying: false, // Manual retry in flight (from the error banner)
+      slowLoad: false, // First fetch is taking a while — say so in the skeleton
       showQuickSwitch: false, // "/" coin jumper
       alerts: loadAlerts(), // Price alerts (in-tab, zero permissions)
       firedAlerts: [], // Alerts that just triggered → toast stack
@@ -221,6 +222,8 @@ class CryptoChart extends PureComponent {
       if (this.skeletonTimer) {
         clearTimeout(this.skeletonTimer);
       }
+      clearTimeout(this.slowLoadTimer);
+      if (this.state.slowLoad) this.setState({ slowLoad: false });
 
       // Show skeleton after 300ms if still loading
       this.skeletonTimer = setTimeout(() => {
@@ -228,6 +231,13 @@ class CryptoChart extends PureComponent {
           this.setState({ showSkeleton: true });
         }
       }, 300);
+
+      // A cold, slow first load looks broken without a word of explanation
+      this.slowLoadTimer = setTimeout(() => {
+        if (this.state.isLoading) {
+          this.setState({ slowLoad: true });
+        }
+      }, 2500);
     });
 
     _defineProperty(this, "fetchWidgets", async () => {
@@ -473,6 +483,7 @@ class CryptoChart extends PureComponent {
             ohlcData: [],
             isLoading: false,
             showSkeleton: false,
+            slowLoad: false,
           });
         }
 
@@ -507,6 +518,7 @@ class CryptoChart extends PureComponent {
           rsiValue: calculateRSI(cachedHistory.data),
           isLoading: false,
           showSkeleton: false,
+          slowLoad: false,
         });
       }
 
@@ -546,6 +558,7 @@ class CryptoChart extends PureComponent {
             rsiValue: calculateRSI(valueHistory),
             isLoading: false,
             showSkeleton: false,
+            slowLoad: false,
             invalidCoin: null,
             apiError: false,
           },
@@ -592,6 +605,7 @@ class CryptoChart extends PureComponent {
             invalidCoin: activeCoin,
             isLoading: false,
             showSkeleton: false,
+            slowLoad: false,
             apiError: false, // Invalid coin has its own warning, don't show API error
           });
           return;
@@ -602,6 +616,7 @@ class CryptoChart extends PureComponent {
         const newState = {
           isLoading: false,
           showSkeleton: false,
+          slowLoad: false,
           apiError: true, // Show API error banner
         };
 
@@ -1939,6 +1954,7 @@ class CryptoChart extends PureComponent {
     clearTimeout(this.skeletonTimer);
     clearTimeout(this.prefetchTimer);
     clearTimeout(this.retryTimer);
+    clearTimeout(this.slowLoadTimer);
     clearTimeout(this.priceFlashTimer);
     clearTimeout(this.tickerStartTimer);
     clearTimeout(this.pageTickerStartTimer);
@@ -2283,7 +2299,18 @@ class CryptoChart extends PureComponent {
               null,
               // Show skeleton or actual chart
               showSkeleton
-                ? React.createElement(SkeletonChart, null)
+                ? React.createElement(
+                    SkeletonChart,
+                    null,
+                    this.state.slowLoad &&
+                      React.createElement(
+                        SkeletonNote,
+                        null,
+                        this.state.isOffline
+                          ? "Offline — waiting for a connection"
+                          : "Fetching prices…",
+                      ),
+                  )
                 : React.createElement(Line, {
                     prices: valueHistory,
                     colorize: this.state.chartColor,
