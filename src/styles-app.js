@@ -478,6 +478,61 @@ const PortfolioToggleButton = styled.button`
   }
 `;
 
+// Alerts bell — sits left of the portfolio button, same treatment.
+// A dot marks alerts that have fired but not been cleared.
+const AlertsToggleButton = styled.button`
+  position: absolute;
+  top: ${({ theme, tickerTop }) =>
+    tickerTop
+      ? `calc(${theme.spacing.large}rem + 3rem)`
+      : `${theme.spacing.large}rem`};
+  right: calc(${({ theme }) => theme.spacing.large}rem + 5rem);
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: ${({ theme }) => theme.color.text};
+  font-size: 1.05rem;
+  cursor: pointer;
+  line-height: 1;
+  width: 1.6rem;
+  height: 1.6rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.25s ease, top 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  z-index: 120;
+
+  &:hover {
+    transform: scale(1.1);
+  }
+
+  &:focus {
+    outline: none;
+    animation: ${settingsPulse} 1s ease;
+  }
+
+  &::after {
+    content: "";
+    display: ${({ hasFired }) => (hasFired ? "block" : "none")};
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 0.4rem;
+    height: 0.4rem;
+    border-radius: 50%;
+    background: ${({ theme }) => theme.color.chartLineGreen};
+  }
+
+  @media (max-width: ${({ theme }) => theme.breakpoint.down.sm}px) {
+    right: calc(${({ theme }) => theme.spacing.small}rem + 5rem);
+    top: ${({ theme, tickerTop }) =>
+      tickerTop
+        ? `calc(${theme.spacing.small}rem + 3rem)`
+        : `${theme.spacing.small}rem`};
+  }
+`;
+
+
 const overlayBlur = keyframes`
   from { backdrop-filter: blur(0px); }
   to { backdrop-filter: blur(10px); }

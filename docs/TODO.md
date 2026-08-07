@@ -148,10 +148,10 @@
 
 | Task | Status | Notes |
 |------|--------|-------|
-| Alert data model + localStorage persistence (max 10 active) | [ ] | See data structure below |
-| Price target UI (above/below) + percentage change alerts | [ ] | In settings or coin overview |
-| Browser notification integration | [ ] | ⚠ Requires adding the `notifications` permission — breaks "zero permissions". **Decide:** in-tab visual alerts only (badge/flash/title) keep zero permissions; push notifications need the permission + store copy update |
-| Alert checked on each fetch cycle (no server, no background worker if possible) | [ ] | MV3 constraint |
+| Alert data model + localStorage persistence (max 10 active) | [x] | Shipped Aug 2026 — `src/alerts.js`, validated in storage |
+| Price target UI (above/below) | [x] | Shipped Aug 2026 — bell button / `A` key panel. Percentage-change alerts still open |
+| Browser notification integration | [ ] (declined) | ⚠ Requires adding the `notifications` permission — breaks "zero permissions". **Decide:** in-tab visual alerts only (badge/flash/title) keep zero permissions; push notifications need the permission + store copy update |
+| Alert checked on each fetch cycle (no server, no background worker if possible) | [x] | Rides the normal fetch; one bulk request only when non-active coins have alerts |
 | Alert history with timestamps | [ ] | Nice-to-have |
 
 ```javascript

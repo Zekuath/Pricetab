@@ -33,6 +33,7 @@ still run.
 | `test-onboarding.js` | Onboarding tour: step definitions stay well-formed and every `data-tour` selector anchors to a real element in the app source; show-once localStorage gate; navigation clamps and keyboard handling (arrows/Enter/Escape); a missing target skips its step instead of blocking |
 | `test-chart.js` | Chart crosshair: the nearest-point binary search on the pointer-move hot path (cross-checked against a brute-force scan across the full width, plus edge/clamp/tie cases) and the date label (intraday clock vs. plain date vs. year, ISO strings, junk dates) |
 | `test-quickswitch.js` | The "/" coin jumper's match/ranking: empty query lists your coins, exact > prefix > substring, name search, owned coins outrank unowned, result cap, and the owned flag that decides switch-vs-add |
+| `test-alerts.js` | Price alerts: storage validation (coin/currency whitelists, target and direction checks, cap, corrupt-JSON fallback) and the trigger rules — above/below at and past the target, no re-firing, alerts set in another currency stay paused, junk/missing prices skipped, and which coins need a price fetched |
 | `test-d3.js` | `vendor/d3-custom.min.js` exposes every d3 API the app uses (line, scales, transitions, interpolatePath) |
 | `test-smoke-jsdom.js` | Boots the real page in jsdom with a fake network; asserts the chart renders valid (non-NaN) data in cold and hydrated-cache scenarios, that the coin prefetch stays off while the tab ticker / auto-rotate are off, and that a hidden tab fires zero requests until it becomes visible |
 

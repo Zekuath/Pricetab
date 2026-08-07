@@ -270,6 +270,12 @@ const RATE_PROMPT_DISMISSED_KEY = "crypto_chart_rate_prompt_dismissed";
 const FIRST_USE_KEY = "crypto_chart_first_use";
 const RATE_PROMPT_SHOWN_KEY = "crypto_chart_rate_prompt_shown";
 const RATE_PROMPT_DELAY_MS = 2 * 24 * 60 * 60 * 1000;
+// Price alerts (in-tab only — no `notifications` permission, so PriceTab
+// stays a zero-permission extension). [{ id, coin, direction, target,
+// currency, created, triggeredAt }]
+const ALERTS_STORAGE_KEY = "crypto_chart_alerts";
+const MAX_ALERTS = 10;
+
 // "Since your last visit": per-coin snapshot of the price when this tab
 // series was last opened. { COIN: { price, time } }
 const LAST_SEEN_KEY = "crypto_chart_last_seen";

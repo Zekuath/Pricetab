@@ -61,6 +61,9 @@ class CryptoChart extends PureComponent {
       apiError: false, // API failure state
       retrying: false, // Manual retry in flight (from the error banner)
       showQuickSwitch: false, // "/" coin jumper
+      alerts: loadAlerts(), // Price alerts (in-tab, zero permissions)
+      firedAlerts: [], // Alerts that just triggered → toast stack
+      showAlerts: false, // Alerts panel visibility
       tickerEnabled: loadTickerFromStorage(), // Tab ticker mode
       tickerFormat: loadTickerFormatFromStorage(), // 'compact' or 'full'
       autoRotate: loadAutoRotateFromStorage(), // Auto-cycle through coins
@@ -561,6 +564,9 @@ class CryptoChart extends PureComponent {
             }
             // Leave a baseline for the next visit's comparison
             this.recordLastSeen(activeCoin, Number(currentValue));
+            // Alerts ride the normal fetch cycle — no extra timers
+            this.checkAlerts();
+            this.refreshAlertPrices();
             // Warm the other periods so switching is instant
             this.prefetchPeriods(activeCoin, currency);
           },
@@ -970,6 +976,12 @@ class CryptoChart extends PureComponent {
         if (this.state.showQuickSwitch) {
           e.preventDefault();
           this.setState({ showQuickSwitch: false });
+        } else if (this.state.showAlerts) {
+          e.preventDefault();
+          this.setState({ showAlerts: false });
+        } else if (this.state.firedAlerts.length) {
+          e.preventDefault();
+          this.setState({ firedAlerts: [] });
         } else if (this.state.showSettings) {
           e.preventDefault();
           this.toggleSettings();
@@ -990,8 +1002,16 @@ class CryptoChart extends PureComponent {
       if (
         this.state.showSettings ||
         this.state.showPortfolio ||
-        this.state.showQuickSwitch
+        this.state.showQuickSwitch ||
+        this.state.showAlerts
       ) {
+        return;
+      }
+
+      // "A" opens the price alerts panel
+      if (e.key === "a" || e.key === "A") {
+        e.preventDefault();
+        this.setState({ showAlerts: true });
         return;
       }
 
@@ -1017,6 +1037,88 @@ class CryptoChart extends PureComponent {
         e.preventDefault();
         this.fetchData();
       }
+    });
+
+    /* ── price alerts (in-tab) ── */
+
+    _defineProperty(this, "handleAddAlert", (coin, direction, target) => {
+      this.setState((prev) => {
+        if (prev.alerts.length >= MAX_ALERTS) return null;
+        const alerts = [
+          ...prev.alerts,
+          {
+            id: `${coin}-${direction}-${Date.now()}`,
+            coin,
+            direction,
+            target,
+            currency: prev.currency,
+            created: Date.now(),
+            triggeredAt: null,
+          },
+        ];
+        saveAlerts(alerts);
+        return { alerts };
+      }, this.checkAlerts);
+    });
+
+    _defineProperty(this, "handleRemoveAlert", (id) => {
+      this.setState((prev) => {
+        const alerts = prev.alerts.filter((a) => a.id !== id);
+        saveAlerts(alerts);
+        return { alerts, firedAlerts: prev.firedAlerts.filter((a) => a.id !== id) };
+      });
+    });
+
+    _defineProperty(this, "dismissFiredAlert", (id) => {
+      this.setState((prev) => ({
+        firedAlerts: prev.firedAlerts.filter((a) => a.id !== id),
+      }));
+    });
+
+    // Check every armed alert against the freshest prices we have. Runs
+    // after each fetch; the active coin's price comes from state, the rest
+    // from the shared ticker cache (filled by the bulk sweep below).
+    _defineProperty(this, "checkAlerts", () => {
+      const { alerts, currency } = this.state;
+      if (!alerts.some((a) => !a.triggeredAt)) return;
+      const prices = {};
+      const activeCoin = this.state.coinOptions[this.state.coinIndex];
+      if (activeCoin && isFinite(Number(this.state.currentValue))) {
+        prices[activeCoin] = Number(this.state.currentValue);
+      }
+      for (const coin of alertCoinsToWatch(alerts, currency)) {
+        if (prices[coin] != null) continue;
+        const entry = pageTickerCache.get(`${coin}-${currency}`);
+        if (entry && isFinite(entry.price)) prices[coin] = entry.price;
+      }
+      const fired = findTriggeredAlerts(alerts, prices, currency);
+      if (!fired.length) return;
+      const firedIds = new Set(fired.map((a) => a.id));
+      this.setState((prev) => {
+        const now = Date.now();
+        const updated = prev.alerts.map((a) =>
+          firedIds.has(a.id) ? { ...a, triggeredAt: now } : a,
+        );
+        saveAlerts(updated);
+        return { alerts: updated, firedAlerts: [...prev.firedAlerts, ...fired] };
+      });
+    });
+
+    // Alerts on coins other than the active one need prices too — one bulk
+    // request covers them all, and only runs when such alerts exist.
+    _defineProperty(this, "refreshAlertPrices", async () => {
+      const { alerts, currency, coinOptions, coinIndex } = this.state;
+      const activeCoin = coinOptions[coinIndex];
+      const coins = alertCoinsToWatch(alerts, currency).filter(
+        (c) => c !== activeCoin,
+      );
+      if (!coins.length) return;
+      try {
+        await bulkRefreshPageTickerCache(coins, currency);
+      } catch (e) {
+        // Best effort — the next cycle tries again
+      }
+      this.checkAlerts();
     });
 
     // Quick switch pick: jump to a coin already on the list, or add it
@@ -2060,6 +2162,22 @@ class CryptoChart extends PureComponent {
               showSettings ? "×" : "⚙",
             ),
 
+          // Alerts bell (left of the portfolio button)
+          !showSettings &&
+            !showPortfolio &&
+            React.createElement(
+              AlertsToggleButton,
+              {
+                onClick: () => this.setState({ showAlerts: true }),
+                type: "button",
+                tickerTop,
+                hasFired: this.state.alerts.some((a) => a.triggeredAt),
+                "aria-label": "Price alerts",
+                title: "Price alerts (A)",
+              },
+              "🔔",
+            ),
+
           // Portfolio toggle (left of the gear)
           !showSettings &&
             React.createElement(
@@ -2877,6 +2995,61 @@ class CryptoChart extends PureComponent {
             onImport: this.handleImportPortfolio,
             onWatch: this.handleWatchAddress,
             onUnwatch: this.handleUnwatchAddress,
+          }),
+
+        // Fired alerts — one dismissible toast each
+        this.state.firedAlerts.length > 0 &&
+          React.createElement(
+            AlertToastStack,
+            null,
+            this.state.firedAlerts.map((a) =>
+              React.createElement(
+                AlertToast,
+                { key: a.id, up: a.direction === "above" },
+                React.createElement(
+                  "span",
+                  null,
+                  `${a.coin} ${a.direction === "above" ? "rose above" : "dropped below"} ` +
+                    formatNumberString(
+                      a.target,
+                      getCurrencySymbol(a.currency),
+                      true,
+                      false,
+                      decimalPlaces,
+                      separatorFormat,
+                    ),
+                ),
+                React.createElement(
+                  AlertToastClose,
+                  {
+                    "aria-label": "Dismiss alert",
+                    onClick: () => this.dismissFiredAlert(a.id),
+                  },
+                  "×",
+                ),
+              ),
+            ),
+          ),
+
+        // Alerts panel ("a")
+        this.state.showAlerts &&
+          React.createElement(AlertsPanel, {
+            alerts: this.state.alerts,
+            coinOptions,
+            activeCoin,
+            currency,
+            formatPrice: (value, curr) =>
+              formatNumberString(
+                value,
+                getCurrencySymbol(curr || currency),
+                true,
+                false,
+                decimalPlaces,
+                separatorFormat,
+              ),
+            onAdd: this.handleAddAlert,
+            onRemove: this.handleRemoveAlert,
+            onClose: () => this.setState({ showAlerts: false }),
           }),
 
         // Quick coin jumper ("/")

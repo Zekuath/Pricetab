@@ -219,6 +219,43 @@ const loadChartColorFromStorage = () =>
 const saveChartColorToStorage = (enabled) =>
   saveSetting(CHART_COLOR_STORAGE_KEY, enabled);
 
+/* Price alerts: [{ id, coin, direction, target, currency, created,
+ * triggeredAt }]. Coins and currencies are whitelist-checked and targets
+ * must be finite positives, so a corrupted entry can't fire a bogus alert. */
+const sanitizeAlerts = (list) => {
+  if (!Array.isArray(list)) return [];
+  const clean = [];
+  for (const a of list) {
+    if (!a || typeof a !== "object") continue;
+    const coin = typeof a.coin === "string" ? a.coin.toUpperCase() : "";
+    const currency =
+      typeof a.currency === "string" ? a.currency.toUpperCase() : "";
+    const target = Number(a.target);
+    if (!SUGGESTED_COINS.includes(coin)) continue;
+    if (!CURRENCY_OPTIONS.some((c) => c.value === currency)) continue;
+    if (!isFinite(target) || target <= 0) continue;
+    if (a.direction !== "above" && a.direction !== "below") continue;
+    const created = Number(a.created);
+    const triggeredAt = Number(a.triggeredAt);
+    clean.push({
+      id: typeof a.id === "string" && a.id ? a.id : `${coin}-${Date.now()}-${clean.length}`,
+      coin,
+      direction: a.direction,
+      target,
+      currency,
+      created: isFinite(created) && created > 0 ? created : Date.now(),
+      triggeredAt: isFinite(triggeredAt) && triggeredAt > 0 ? triggeredAt : null,
+    });
+    if (clean.length >= MAX_ALERTS) break;
+  }
+  return clean;
+};
+
+const loadAlerts = () => sanitizeAlerts(loadJsonSetting(ALERTS_STORAGE_KEY));
+
+const saveAlerts = (alerts) =>
+  saveJsonSetting(ALERTS_STORAGE_KEY, Array.isArray(alerts) ? alerts : []);
+
 /* "Since your last visit" baselines: { COIN: { price, time } }. Entries are
  * validated on read (junk or expired ones dropped) so a corrupted store can
  * never show a nonsense comparison. */
