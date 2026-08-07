@@ -131,7 +131,7 @@
 | Coin logos/icons in coin list & chips | [ ] | Medium | Perceived quality → reviews |
 | Price change flash animation on update | [x] | Low | Shipped Aug 2026 |
 | Seed price data so the very first open paints a chart | [ ] | Medium | New users still see the skeleton |
-| Quick coin switcher (`/` to search) | [ ] | Low | Reuses the settings search |
+| Quick coin switcher (`/` to search) | [x] | Low | Shipped Aug 2026 — `src/quickswitch.js` |
 | localStorage quota exceeded handling | [ ] | Medium | Rare but data-loss adjacent |
 
 ---

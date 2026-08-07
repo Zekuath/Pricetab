@@ -60,6 +60,7 @@ class CryptoChart extends PureComponent {
       invalidCoin: null, // Invalid coin warning
       apiError: false, // API failure state
       retrying: false, // Manual retry in flight (from the error banner)
+      showQuickSwitch: false, // "/" coin jumper
       tickerEnabled: loadTickerFromStorage(), // Tab ticker mode
       tickerFormat: loadTickerFormatFromStorage(), // 'compact' or 'full'
       autoRotate: loadAutoRotateFromStorage(), // Auto-cycle through coins
@@ -148,6 +149,36 @@ class CryptoChart extends PureComponent {
 
     // Arg-less wrapper: stays safe when wired to onClick (event arg ignored)
     _defineProperty(this, "cycleCoinIndex", () => this.shiftCoin(1));
+
+    // Jump straight to a position in the list (quick switch). Same reset
+    // work as shiftCoin, expressed as an absolute move.
+    _defineProperty(this, "setCoinIndex", (index) => {
+      this.tickerScrollPos = 0;
+      this.setState(
+        (prevState) => {
+          const len = prevState.coinOptions.length;
+          if (!len) return null;
+          const next = Math.min(Math.max(index, 0), len - 1);
+          if (next === prevState.coinIndex) return null;
+          return {
+            coinIndex: next,
+            isLoading: true,
+            showSkeleton: false,
+            invalidCoin: null,
+            apiError: false,
+            fundingRateData: null,
+            longShortData: null,
+            openInterestData: null,
+            liquidationsData: null,
+          };
+        },
+        () => {
+          this.startSkeletonTimer();
+          this.fetchData();
+          this.fetchWidgets();
+        },
+      );
+    });
 
     _defineProperty(this, "setPeriod", (_e, period) => {
       this.setState(
@@ -936,7 +967,10 @@ class CryptoChart extends PureComponent {
 
       // Esc always closes the open overlay (settings or portfolio)
       if (e.key === "Escape") {
-        if (this.state.showSettings) {
+        if (this.state.showQuickSwitch) {
+          e.preventDefault();
+          this.setState({ showQuickSwitch: false });
+        } else if (this.state.showSettings) {
           e.preventDefault();
           this.toggleSettings();
         } else if (this.state.showPortfolio) {
@@ -953,7 +987,21 @@ class CryptoChart extends PureComponent {
       }
 
       // Remaining shortcuts act on the chart — disabled while an overlay covers it
-      if (this.state.showSettings || this.state.showPortfolio) return;
+      if (
+        this.state.showSettings ||
+        this.state.showPortfolio ||
+        this.state.showQuickSwitch
+      ) {
+        return;
+      }
+
+      // "/" opens the coin jumper (the same key browsers use for find-in-page
+      // on some platforms, so claim it explicitly)
+      if (e.key === "/") {
+        e.preventDefault();
+        this.setState({ showQuickSwitch: true });
+        return;
+      }
 
       if (e.key === "ArrowRight") {
         e.preventDefault();
@@ -969,6 +1017,21 @@ class CryptoChart extends PureComponent {
         e.preventDefault();
         this.fetchData();
       }
+    });
+
+    // Quick switch pick: jump to a coin already on the list, or add it
+    // first when the search reached beyond the user's own coins.
+    _defineProperty(this, "handleQuickSwitchPick", (coin, owned) => {
+      this.setState({ showQuickSwitch: false });
+      if (!owned) {
+        const result = this.handleAddCoinOption(coin);
+        if (!result || result.success === false) return;
+      }
+      const index = this.state.coinOptions.indexOf(coin);
+      // Adding appends to the end of the list
+      const target =
+        index >= 0 ? index : Math.max(0, this.state.coinOptions.length - 1);
+      this.setCoinIndex(target);
     });
 
     // Manual retry from the error banner. Shows a "retrying" state long
@@ -2814,6 +2877,14 @@ class CryptoChart extends PureComponent {
             onImport: this.handleImportPortfolio,
             onWatch: this.handleWatchAddress,
             onUnwatch: this.handleUnwatchAddress,
+          }),
+
+        // Quick coin jumper ("/")
+        this.state.showQuickSwitch &&
+          React.createElement(QuickSwitch, {
+            coinOptions,
+            onPick: this.handleQuickSwitchPick,
+            onClose: () => this.setState({ showQuickSwitch: false }),
           }),
 
         !showSettings && !showPortfolio && React.createElement(OnboardingTour, null),

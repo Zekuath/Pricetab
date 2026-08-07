@@ -34,6 +34,7 @@ const suites = [
   "test-portfolio.js",
   "test-onboarding.js",
   "test-chart.js",
+  "test-quickswitch.js",
   "test-d3.js",
   "test-smoke-jsdom.js",
 ];

@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Portfolio design polish** - per-holding allocation share (thin accent meter under each row + % next to the coin name), a quiet stats row under the total (24h P/L, best/worst 24h mover), unified uppercase section labels and a friendlier empty state
 - **Onboarding tour** - first-run spotlight tour of the main controls (shown once, skippable)
 - **Collapsible settings groups** - settings sections expand/collapse for faster scanning
+- **Quick coin jumper** - press `/` on the new tab, type a symbol or name and hit Enter. Your own coins rank first; picking a coin you don't track yet adds it and switches to it
 - **Retry on failure** - when prices can't be fetched the banner now says so plainly and offers a Retry button instead of silently sitting on cached data
 - **Price flash** - the price tints green or red for a moment whenever it moves, so a tab left open visibly reacts (colour only, no layout shift; coin switches don't flash)
 - **Since your last visit** - a quiet line under the price shows how the coin moved since you last looked ("Since your last visit (3h ago) +1.24% · $512"). The baseline only refreshes after 20 minutes, so opening a burst of tabs keeps comparing against the same earlier visit instead of resetting to "just now"
