@@ -406,7 +406,7 @@ const HoldingRow = styled.div`
   position: relative;
   overflow: hidden;
   display: grid;
-  grid-template-columns: auto 1fr 6.5rem 6.5rem 1fr auto;
+  grid-template-columns: 1fr 6.5rem 6.5rem 1fr auto;
   align-items: center;
   gap: 0.75rem;
   padding: 0.7rem 0.85rem;
@@ -420,16 +420,16 @@ const HoldingRow = styled.div`
   }
 
   @media (max-width: 560px) {
-    grid-template-columns: auto 1fr 6rem 1fr auto;
+    grid-template-columns: 1fr 6rem 1fr auto;
   }
 `;
 
-// Column labels above the list (matches HoldingRow's grid; the mark, coin
-// and remove columns stay unlabeled). Hidden on narrow screens with the
-// cost column.
+// Column labels above the list (matches HoldingRow's grid; the coin and
+// remove columns stay unlabeled). Hidden on narrow screens with the cost
+// column.
 const HoldingsHead = styled.div`
   display: grid;
-  grid-template-columns: auto 1fr 6.5rem 6.5rem 1fr auto;
+  grid-template-columns: 1fr 6.5rem 6.5rem 1fr auto;
   gap: 0.75rem;
   padding: 0 0.85rem;
   margin-bottom: 0.4rem;
@@ -1510,7 +1510,6 @@ class Portfolio extends PureComponent {
                 HoldingsHead,
                 { "aria-hidden": true },
                 React.createElement("span", null, ""),
-                React.createElement("span", null, ""),
                 React.createElement("span", null, "Amount"),
                 React.createElement("span", null, "Cost basis"),
                 React.createElement("span", null, "Value"),
@@ -1547,7 +1546,6 @@ class Portfolio extends PureComponent {
                         "aria-hidden": true,
                         style: { width: `${share}%` },
                       }),
-                    coinMark(r.coin, 1.6),
                     React.createElement(
                       HoldingCoin,
                       {
