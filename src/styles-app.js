@@ -465,7 +465,14 @@ const PortfolioToggleButton = styled.button`
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.25s ease, top 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  /* The vertical slide is for the page ticker appearing on the main view.
+     While the portfolio is open the button also moves horizontally
+     (untransitioned), so animating only the vertical half would read as a
+     stray drift. */
+  transition: ${({ open }) =>
+    open
+      ? "transform 0.25s ease"
+      : "transform 0.25s ease, top 0.4s cubic-bezier(0.22, 1, 0.36, 1)"};
   z-index: 120;
 
   &:hover {

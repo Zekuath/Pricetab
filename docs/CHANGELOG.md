@@ -18,6 +18,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.4.0] - Portfolio, Onboarding & Settings Polish (staged locally, not yet in a store build)
 
+### Fixed
+- **Portfolio close button no longer jumps** - opening the portfolio before the top price ticker had loaded made the × slide down once the ticker arrived behind the panel, even though the ticker is hidden by the portfolio
+
 ### Added
 - **Portfolio tracking** - full-screen, tracking-only holdings view (total value + change over a selectable period); manually entered amounts, all data local, no wallet connection
 - **Portfolio value chart** - full-bleed background chart of total portfolio value over time, with a persisted period switcher (day/week/month/year/all)

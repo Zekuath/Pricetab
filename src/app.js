@@ -2202,7 +2202,11 @@ class CryptoChart extends PureComponent {
                 onClick: this.togglePortfolio,
                 open: showPortfolio,
                 type: "button",
-                tickerTop,
+                // The portfolio covers the page ticker, so its × must not
+                // follow it — otherwise a ticker that finishes loading in
+                // the background shifts the close button for no visible
+                // reason (it was the only button still mounted).
+                tickerTop: tickerTop && !showPortfolio,
                 "data-tour": "portfolio",
                 "aria-label": showPortfolio ? "Close portfolio" : "Open portfolio",
                 title: showPortfolio ? "Close portfolio" : "Portfolio",
