@@ -123,11 +123,15 @@
 
 | Task | Status | Effort | Why |
 |------|--------|--------|-----|
-| Keyboard shortcuts: `←`/`→` coins, `1`–`6` periods, `S`/`Esc` settings, `R` refresh | [ ] | Low | Most-cited power-user gap; cheap |
-| "Retry" button + friendly message on fetch failure | [ ] | Low | Reviews punish silent failures |
+| Keyboard shortcuts: `←`/`→` coins, `1`–`6` periods, `S`/`Esc` settings, `R` refresh | [x] | Low | Shipped (was already implemented; TODO was stale) |
+| "Retry" button + friendly message on fetch failure | [x] | Low | Shipped Aug 2026 |
+| Chart crosshair with price + date readout | [x] | Medium | Shipped Aug 2026 — biggest perceived-quality gap |
+| "Since your last visit" price delta | [x] | Low | Shipped Aug 2026 — unique to the new-tab format |
 | Loading spinner for initial fetch (when cache is cold) | [ ] | Low | First-run impression |
 | Coin logos/icons in coin list & chips | [ ] | Medium | Perceived quality → reviews |
-| Price change flash animation on update | [ ] | Low | Polish |
+| Price change flash animation on update | [x] | Low | Shipped Aug 2026 |
+| Seed price data so the very first open paints a chart | [ ] | Medium | New users still see the skeleton |
+| Quick coin switcher (`/` to search) | [ ] | Low | Reuses the settings search |
 | localStorage quota exceeded handling | [ ] | Medium | Rare but data-loss adjacent |
 
 ---

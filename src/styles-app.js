@@ -194,6 +194,28 @@ const ApiErrorMessage = styled.div`
   }
 `;
 
+// Retry action inside the API-error banner — silent failures read as bugs
+const RetryButton = styled.button.attrs(() => ({ type: "button" }))`
+  flex: 0 0 auto;
+  background: transparent;
+  border: none;
+  padding: 0;
+  font-family: ${({ theme }) => theme.font.primary};
+  font-size: 0.75rem;
+  font-weight: ${({ theme }) => theme.fontWeight.medium};
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  text-decoration: underline;
+  color: ${({ theme }) => theme.color.text};
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+    text-decoration: none;
+  }
+`;
+
 const InvalidCoinWarning = styled.div`
   position: fixed;
   top: ${({ theme }) => theme.spacing.medium}rem;

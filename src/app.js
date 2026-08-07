@@ -59,6 +59,7 @@ class CryptoChart extends PureComponent {
       showSkeleton: false, // Delayed skeleton (shows after 300ms)
       invalidCoin: null, // Invalid coin warning
       apiError: false, // API failure state
+      retrying: false, // Manual retry in flight (from the error banner)
       tickerEnabled: loadTickerFromStorage(), // Tab ticker mode
       tickerFormat: loadTickerFormatFromStorage(), // 'compact' or 'full'
       autoRotate: loadAutoRotateFromStorage(), // Auto-cycle through coins
@@ -970,6 +971,19 @@ class CryptoChart extends PureComponent {
       }
     });
 
+    // Manual retry from the error banner. Shows a "retrying" state long
+    // enough to register, then lets fetchData settle apiError either way.
+    _defineProperty(this, "handleRetry", () => {
+      if (this.state.retrying) return;
+      this.setState({ retrying: true });
+      Promise.resolve(this.fetchData()).then(() => {
+        this.retryTimer = setTimeout(
+          () => this.setState({ retrying: false }),
+          400,
+        );
+      });
+    });
+
     // Record what the active coin costs now, so the next visit can compare
     // against it. Rate-limited: opening a burst of tabs keeps the earlier
     // baseline instead of resetting it to "a second ago".
@@ -1759,6 +1773,8 @@ class CryptoChart extends PureComponent {
     clearTimeout(this.fetchTimeout);
     clearTimeout(this.skeletonTimer);
     clearTimeout(this.prefetchTimer);
+    clearTimeout(this.retryTimer);
+    clearTimeout(this.priceFlashTimer);
     clearTimeout(this.tickerStartTimer);
     clearTimeout(this.pageTickerStartTimer);
     clearInterval(this.cacheCleanupInterval);
@@ -1893,7 +1909,22 @@ class CryptoChart extends PureComponent {
           React.createElement(
             ApiErrorMessage,
             null,
-            "Unable to fetch latest data. Showing cached prices.",
+            React.createElement(
+              "span",
+              null,
+              this.state.retrying
+                ? "Retrying…"
+                : "Couldn't reach the price service. Showing the last prices we have.",
+            ),
+            React.createElement(
+              RetryButton,
+              {
+                onClick: this.handleRetry,
+                disabled: this.state.retrying,
+                title: "Fetch the latest prices again",
+              },
+              "Retry",
+            ),
           ),
         // Invalid coin warning
         invalidCoin &&

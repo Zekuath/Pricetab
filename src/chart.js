@@ -637,12 +637,35 @@ const OverviewItemButton = styled.button`
   }
 `;
 
+// A refreshed price tints green/red for a moment, so a tab left open
+// visibly reacts when the number moves. Colour only — no layout shift.
+const priceFlashUp = keyframes`
+  0%   { color: inherit; }
+  15%  { color: var(--pt-flash-up); }
+  100% { color: inherit; }
+`;
+
+const priceFlashDown = keyframes`
+  0%   { color: inherit; }
+  15%  { color: var(--pt-flash-down); }
+  100% { color: inherit; }
+`;
+
 const Value = styled.div`
   margin-bottom: ${({ theme }) => theme.spacing.small}rem;
   font-size: 1.5rem;
   font-weight: ${({ theme }) => theme.fontWeight.medium};
   line-height: 1.5;
   color: ${({ theme }) => theme.color.text};
+  --pt-flash-up: ${({ theme }) => theme.color.chartLineGreen};
+  --pt-flash-down: ${({ theme }) => theme.color.chartLineRed};
+  animation: ${({ flash }) =>
+      flash === "up"
+        ? priceFlashUp
+        : flash === "down"
+          ? priceFlashDown
+          : "none"}
+    1.1s ease-out;
 `;
 
 const Label = styled.div`
@@ -654,13 +677,15 @@ const Label = styled.div`
   color: ${({ theme }) => theme.color.textSecondary};
 `;
 
-const OverviewItem = ({ children, label, onClick, title, dataTour }) =>
+const OverviewItem = ({ children, label, onClick, title, dataTour, flash }) =>
   React.createElement(
     OverviewItemButton,
     { onClick, title: title, "data-tour": dataTour },
     React.createElement(
       Value,
-      null,
+      // Remounting on each flash restarts the CSS animation; without the
+      // key a second move in the same direction wouldn't re-trigger it
+      { flash, key: flash ? `${flash}-${children}` : "static" },
       children || React.createElement(Fragment, null, "\u00A0"),
     ),
     React.createElement(Label, null, label),
@@ -672,6 +697,7 @@ OverviewItem.defaultProps = {
   onClick: null,
   title: null,
   dataTour: null,
+  flash: null,
 };
 
 const OverviewWrapper = styled.div`
@@ -704,6 +730,7 @@ class Overview extends PureComponent {
     _defineProperty(this, "state", {
       calcPercentage: false,
       countValue: null, // non-null only while the intro count-up is running
+      flash: null, // 'up' | 'down' for ~1s after the price moves
     });
 
     _defineProperty(this, "togglePercentage", () => {
@@ -738,12 +765,29 @@ class Overview extends PureComponent {
     this.maybeCountUp();
   }
 
-  componentDidUpdate() {
+  componentDidUpdate(prevProps) {
     this.maybeCountUp();
+    // Flash on a real price move of the same coin — not on coin switches
+    // (that's a different number, not a change) and not on the first value
+    if (
+      prevProps.coin === this.props.coin &&
+      typeof prevProps.currentValue === "number" &&
+      typeof this.props.currentValue === "number" &&
+      this.props.currentValue !== prevProps.currentValue
+    ) {
+      const dir = this.props.currentValue > prevProps.currentValue ? "up" : "down";
+      clearTimeout(this._flashTimer);
+      this.setState({ flash: dir });
+      this._flashTimer = setTimeout(
+        () => this.setState({ flash: null }),
+        1100,
+      );
+    }
   }
 
   componentWillUnmount() {
     if (this._rafId) cancelAnimationFrame(this._rafId);
+    clearTimeout(this._flashTimer);
   }
 
   render() {
@@ -789,6 +833,7 @@ class Overview extends PureComponent {
           label: `${coin} Price`,
           title: "Next coin",
           dataTour: "price",
+          flash: this.state.flash,
         },
         formatNumberString(
           displayValue,
