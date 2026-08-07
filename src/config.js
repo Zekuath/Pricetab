@@ -289,6 +289,11 @@ const WATCH_CHAINS = {
 // the provider is the real validator — bad addresses just return no balance
 const WATCH_ADDRESS_RE = /^[A-Za-z0-9]{20,100}$/;
 const WATCH_BALANCE_TTL = 600000; // 10 min per address — be kind to providers
+// Purchase lots per holding: [{ amount, paid, time, source }] where paid is
+// the total spent on that lot, time is unix seconds (0 = unknown) and source
+// is "manual" (typed in) or "chain" (inferred from a watched address, with
+// prices estimated from the historical series at each transfer's date)
+const MAX_LOTS_PER_HOLDING = 100;
 // Selected time range for the portfolio background value chart
 const PORTFOLIO_PERIOD_KEY = "crypto_chart_portfolio_period";
 const STORE_LISTING_URL =

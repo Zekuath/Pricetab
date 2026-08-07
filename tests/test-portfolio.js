@@ -67,14 +67,24 @@ const json = (code) => JSON.parse(JSON.stringify(run(code)));
 
 assert.deepStrictEqual(json("loadPortfolioFromStorage()"), [], "empty default");
 
-run('savePortfolioToStorage([{ coin: "BTC", amount: 0.5, paid: 15000, address: "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa" }, { coin: "ETH", amount: 2 }])');
+run(
+  'savePortfolioToStorage([{ coin: "BTC", amount: 0.5, address: "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa", lots: [{ amount: 0.3, paid: 9000, time: 1700000000, source: "chain" }, { amount: 0.2, paid: 7000 }] }, { coin: "ETH", amount: 2 }])',
+);
 assert.deepStrictEqual(
   json("loadPortfolioFromStorage()"),
   [
-    { coin: "BTC", amount: 0.5, paid: 15000, address: "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa" },
-    { coin: "ETH", amount: 2, paid: 0, address: "" },
+    {
+      coin: "BTC",
+      amount: 0.5,
+      address: "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa",
+      lots: [
+        { amount: 0.3, paid: 9000, time: 1700000000, source: "chain" },
+        { amount: 0.2, paid: 7000, time: 0, source: "manual" },
+      ],
+    },
+    { coin: "ETH", amount: 2, address: "", lots: [] },
   ],
-  "roundtrip (paid + watched address kept, missing fields default)",
+  "roundtrip (lots + watched address kept, missing fields default)",
 );
 
 store["crypto_chart_portfolio"] = "{not json";
@@ -83,10 +93,11 @@ assert.deepStrictEqual(json("loadPortfolioFromStorage()"), [], "corrupt JSON →
 store["crypto_chart_portfolio"] = JSON.stringify({ coin: "BTC", amount: 1 });
 assert.deepStrictEqual(json("loadPortfolioFromStorage()"), [], "non-array → []");
 
-// malformed entries are dropped, valid ones survive
+// malformed entries are dropped, valid ones survive; a legacy `paid` total
+// converts into a single manual lot
 store["crypto_chart_portfolio"] = JSON.stringify([
-  { coin: "eth", amount: "2", paid: "1500" }, // lowercase + string numbers → normalized
-  { coin: "BTC", amount: 1, paid: -50 },      // negative paid → cleared to 0
+  { coin: "eth", amount: "2", paid: "1500" }, // legacy paid → one lot
+  { coin: "BTC", amount: 1, paid: -50 },      // negative paid → no lots
   { coin: "BTC", amount: 3 },                 // duplicate → dropped
   { coin: "NOTACOIN", amount: 1 },            // not in SUGGESTED_COINS → dropped
   { coin: "LTC", amount: -5 },                // negative amount → dropped
@@ -94,23 +105,38 @@ store["crypto_chart_portfolio"] = JSON.stringify([
   { coin: "SOL" },                            // missing amount → dropped
   null,                                       // junk → dropped
   "BTC",                                      // junk → dropped
-  { coin: "ADA", amount: 0, paid: "junk" },   // zero amount ok; junk paid → 0
+  { coin: "ADA", amount: 0, paid: "junk" },   // zero amount ok; junk paid → no lots
 ]);
 assert.deepStrictEqual(
   json("loadPortfolioFromStorage()"),
   [
-    { coin: "ETH", amount: 2, paid: 1500, address: "" },
-    { coin: "BTC", amount: 1, paid: 0, address: "" },
-    { coin: "ADA", amount: 0, paid: 0, address: "" },
+    { coin: "ETH", amount: 2, address: "", lots: [{ amount: 2, paid: 1500, time: 0, source: "manual" }] },
+    { coin: "BTC", amount: 1, address: "", lots: [] },
+    { coin: "ADA", amount: 0, address: "", lots: [] },
   ],
-  "malformed entries dropped, coins normalized/deduped, paid coerced",
+  "malformed entries dropped, coins normalized/deduped, legacy paid migrated",
 );
 
-// sanitizePortfolio is what JSON import runs through — same rules apply
+// lot-level junk is dropped without killing the holding
 assert.deepStrictEqual(
-  json('sanitizePortfolio([{ coin: "sol", amount: "3", paid: 100 }, { coin: "SCAM", amount: 1 }])'),
-  [{ coin: "SOL", amount: 3, paid: 100, address: "" }],
-  "import sanitizer: whitelist + coercion",
+  json(
+    'sanitizePortfolio([{ coin: "SOL", amount: 3, lots: [' +
+      '{ amount: 1, paid: 50, time: 1700000000 },' +
+      '{ amount: 0, paid: 50 },' + // zero amount → dropped
+      '{ amount: 1, paid: -5 },' + // negative paid → dropped
+      '{ amount: "x", paid: 5 },' + // NaN → dropped
+      "null" +
+      "] }])",
+  ),
+  [
+    {
+      coin: "SOL",
+      amount: 3,
+      address: "",
+      lots: [{ amount: 1, paid: 50, time: 1700000000, source: "manual" }],
+    },
+  ],
+  "import sanitizer: bad lots dropped, holding kept",
 );
 assert.deepStrictEqual(json('sanitizePortfolio("junk")'), [], "import sanitizer: non-array → []");
 
@@ -124,11 +150,48 @@ assert.deepStrictEqual(
       "])",
   ),
   [
-    { coin: "ETH", amount: 1, paid: 0, address: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045" },
-    { coin: "SOL", amount: 1, paid: 0, address: "" },
-    { coin: "BTC", amount: 1, paid: 0, address: "" },
+    { coin: "ETH", amount: 1, address: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045", lots: [] },
+    { coin: "SOL", amount: 1, address: "", lots: [] },
+    { coin: "BTC", amount: 1, address: "", lots: [] },
   ],
   "addresses whitelisted per chain, junk cleared",
+);
+
+/* ── lot math: FIFO reduction + chain-delta replay ──────────────────────── */
+
+sandbox.__lots = [
+  { amount: 1, paid: 100, time: 1, source: "chain" },
+  { amount: 2, paid: 400, time: 2, source: "chain" },
+];
+assert.deepStrictEqual(
+  json("reduceLotsFifo(__lots, 1.5)"),
+  [{ amount: 1.5, paid: 300, time: 2, source: "chain" }],
+  "FIFO: oldest lot consumed, next shrunk proportionally",
+);
+assert.deepStrictEqual(json("reduceLotsFifo(__lots, 5)"), [], "FIFO: over-consumption empties");
+assert.strictEqual(run("lotsBasis(__lots)"), 500, "basis = Σ paid");
+assert.strictEqual(run("lotsAmount(__lots)"), 3, "lot amount = Σ amount");
+
+// replay: two buys at their dates' prices, then a spend consuming the oldest
+sandbox.__deltas = [
+  { time: 100, delta: 1 },
+  { time: 200, delta: 1 },
+  { time: 300, delta: -0.5 },
+];
+sandbox.__priceAt = (t) => (t === 100 ? 10 : t === 200 ? 20 : 999);
+assert.deepStrictEqual(
+  json("buildLotsFromDeltas(__deltas, __priceAt)"),
+  [
+    { amount: 0.5, paid: 5, time: 100, source: "chain" },
+    { amount: 1, paid: 20, time: 200, source: "chain" },
+  ],
+  "chain replay: buys priced at their dates, spend consumes oldest first",
+);
+sandbox.__noPrices = (t) => null;
+assert.deepStrictEqual(
+  json("buildLotsFromDeltas([{ time: 5, delta: 2 }], __noPrices)"),
+  [{ amount: 2, paid: 0, time: 5, source: "chain" }],
+  "chain replay: unknown price → 0-paid lot, amount still tracked",
 );
 
 run("savePortfolioToStorage('garbage')");
@@ -203,37 +266,57 @@ assert.strictEqual(series({ BTC: [[1, 2]] }, []), null, "no holdings → null");
 /* ── buildPortfolioCsv (tax report) ─────────────────────────────────────── */
 
 sandbox.__csvRows = [
-  { coin: "BTC", amount: 0.5, paid: 15000, price: 40000, value: 20000 },
-  { coin: "ETH", amount: 2, paid: 0, price: 1500, value: 3000 }, // no paid → no P/L cells
-  { coin: "SOL", amount: 1, paid: 50, price: null, value: null }, // unpriced → skipped in totals
+  {
+    coin: "BTC",
+    amount: 0.5,
+    lots: [
+      { amount: 0.25, paid: 7000, time: 1709596800, source: "manual" }, // 2024-03-05
+      { amount: 0.25, paid: 8000, time: 0, source: "chain" },
+    ],
+    price: 40000,
+    value: 20000,
+  },
+  { coin: "ETH", amount: 2, lots: [], price: 1500, value: 3000 }, // no lots → no P/L cells
+  { coin: "SOL", amount: 1, lots: [{ amount: 1, paid: 50, time: 0, source: "manual" }], price: null, value: null }, // unpriced → skipped in totals
 ];
 const csv = run('buildPortfolioCsv(__csvRows, "USD")');
 const csvLines = csv.split("\n");
 assert.ok(csvLines[0].includes("prices in USD"), "csv: currency in header comment");
 assert.strictEqual(
   csvLines[1],
-  "Coin,Name,Amount,Total paid,Avg cost,Current price,Current value,Unrealized P/L,P/L %",
+  "Coin,Name,Amount,Cost basis,Avg cost,Current price,Current value,Unrealized P/L,P/L %",
   "csv: column header",
 );
 assert.strictEqual(
   csvLines[2],
   "BTC,Bitcoin,0.5,15000,30000,40000,20000,5000,33.33",
-  "csv: full row with derived avg cost and P/L",
+  "csv: summary row from lots (basis, derived avg cost, P/L)",
 );
 assert.strictEqual(
   csvLines[3],
   "ETH,Ethereum,2,,,1500,3000,,",
-  "csv: paid-less row leaves P/L cells empty",
+  "csv: lot-less row leaves P/L cells empty",
 );
 assert.strictEqual(
   csvLines[5],
   "Total,,,15000,,,20000,5000,33.33",
-  "csv: totals only over rows with paid + price",
+  "csv: totals only over rows with lots + price",
 );
-assert.ok(csvLines[6].includes("not tax advice"), "csv: disclaimer present");
+assert.strictEqual(csvLines[7], "Purchase lots", "csv: lots section present");
+assert.strictEqual(
+  csvLines[9],
+  "BTC,0.25,7000,2024-03-05,manual",
+  "csv: dated manual lot line",
+);
+assert.strictEqual(
+  csvLines[10],
+  "BTC,0.25,8000,,chain (estimated)",
+  "csv: chain lot labeled estimated, unknown date empty",
+);
+assert.ok(csv.includes("not tax advice"), "csv: disclaimer present");
 
 // commas/quotes in names can't break the format
-sandbox.__csvEsc = [{ coin: "BTC", amount: 1, paid: 0, price: 1, value: 1 }];
+sandbox.__csvEsc = [{ coin: "BTC", amount: 1, lots: [], price: 1, value: 1 }];
 run('COIN_NAMES.BTC = \'Bit"coin, the first\'');
 assert.ok(
   run('buildPortfolioCsv(__csvEsc, "USD")').includes('"Bit""coin, the first"'),

@@ -160,7 +160,7 @@
 |------|--------|-------|
 | Full-screen tracking view: total value + 24h P/L, all local | [x] | Shipped (staged) |
 | Allocation breakdown (% per coin) | [x] | Share meter + % per row (Aug 2026) |
-| Per-coin cost basis → total P/L since purchase | [x] | Optional avg-cost input; row + headline unrealized P/L (Aug 2026) |
+| Per-coin cost basis → total P/L since purchase | [x] | Dated purchase lots ("bought X for Y"); row + headline unrealized P/L; BTC lots inferred from watched-address history (Aug 2026) |
 | JSON export / import | [x] | Backup/restore, import validated via `sanitizePortfolio` (Aug 2026) |
 | Tax report CSV (cost basis + unrealized P/L, "not tax advice") | [x] | Foundation for the seasonal affiliate line (Aug 2026) |
 | Address watching (BTC/ETH/LTC/DOGE, read-only balance sync) | [x] | mempool.space + Blockchair, 10-min cache, opt-in (Aug 2026) |

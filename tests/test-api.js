@@ -18,6 +18,20 @@ const sandbox = {
         { price: "80", time: 1 }, { price: "90", time: 2 },
       ] } }) };
     }
+    if (url.includes("mempool.space") && url.includes("/txs")) {
+      if (chainFail) return { ok: false, status: 500, json: async () => ({}) };
+      // Newest first, like the real API: a 0.25 spend after a 1 BTC receive
+      const A = "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa";
+      return { ok: true, status: 200, json: async () => ([
+        { status: { block_time: 200 },
+          vin: [{ prevout: { scriptpubkey_address: A, value: 25000000 } }],
+          vout: [{ scriptpubkey_address: "other", value: 24000000 }] },
+        { status: { block_time: 100 },
+          vin: [],
+          vout: [{ scriptpubkey_address: A, value: 100000000 },
+                 { scriptpubkey_address: "other", value: 5 }] },
+      ]) };
+    }
     if (url.includes("mempool.space/api/address/")) {
       if (chainFail) return { ok: false, status: 500, json: async () => ({}) };
       // 1.5 funded − 0.5 spent = 1 BTC
@@ -151,6 +165,22 @@ const run = (c) => vm.runInContext(c, sandbox);
     "junk address shape → null (no request)",
   );
   assert.strictEqual(fetchCalls.length, 2, "guarded lookups never hit the network");
+
+  // BTC tx history → chronological net deltas (receive +1 at t=100, then
+  // the 0.25 spend at t=200); second call served from cache
+  fetchCalls = [];
+  assert.strictEqual(
+    JSON.stringify(await run(`fetchBtcAddressDeltas("${btcAddr}")`)),
+    JSON.stringify([{ time: 100, delta: 1 }, { time: 200, delta: -0.25 }]),
+    "tx history reduced to chronological deltas",
+  );
+  await run(`fetchBtcAddressDeltas("${btcAddr}")`);
+  assert.strictEqual(fetchCalls.length, 1, "tx history cached within TTL");
+  assert.strictEqual(
+    await run('fetchBtcAddressDeltas("junk!!")'),
+    null,
+    "junk address → null without a request",
+  );
 
   // provider failure → stale cache wins; no cache → null
   chainFail = true;

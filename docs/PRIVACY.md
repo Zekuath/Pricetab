@@ -81,8 +81,8 @@ All APIs used by PriceTab are **public** — no authentication or accounts requi
 
 ### Address balance lookup (optional portfolio watching)
 
-- **Endpoints**: `https://mempool.space/api/address/…` (BTC) and `https://api.blockchair.com/{chain}/dashboards/address/…` (ETH, LTC, DOGE)
-- **Purpose**: If you choose to watch one of your own addresses in the portfolio, its public on-chain balance is read so the holding's amount stays in sync
+- **Endpoints**: `https://mempool.space/api/address/…` (BTC balance and transaction history) and `https://api.blockchair.com/{chain}/dashboards/address/…` (ETH, LTC, DOGE balances)
+- **Purpose**: If you choose to watch one of your own addresses in the portfolio, its public on-chain balance is read so the holding's amount stays in sync; for BTC the public transfer history is also read to estimate dated purchase lots for the cost-basis view
 - **Data Sent**: Only the address you enter, only to the balance provider for that coin — never anywhere else. Read-only lookup of public blockchain data; no keys, no signing, no wallet connection
 - **Storage**: Watched addresses are stored locally like every other setting and can be removed at any time
 - **Privacy**: See [mempool.space Privacy Policy](https://mempool.space/privacy-policy) and [Blockchair Privacy Policy](https://blockchair.com/privacy)

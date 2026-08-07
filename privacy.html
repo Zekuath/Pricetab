@@ -199,8 +199,8 @@
 
     <h3>Address balance lookup (optional portfolio watching)</h3>
     <ul>
-      <li><strong>Endpoints:</strong> <code>https://mempool.space/api/address/…</code> (BTC) and <code>https://api.blockchair.com/{chain}/dashboards/address/…</code> (ETH, LTC, DOGE)</li>
-      <li><strong>Purpose:</strong> If you choose to watch one of your own addresses in the portfolio, its public on-chain balance is read so the holding's amount stays in sync</li>
+      <li><strong>Endpoints:</strong> <code>https://mempool.space/api/address/…</code> (BTC balance and transaction history) and <code>https://api.blockchair.com/{chain}/dashboards/address/…</code> (ETH, LTC, DOGE balances)</li>
+      <li><strong>Purpose:</strong> If you choose to watch one of your own addresses in the portfolio, its public on-chain balance is read so the holding's amount stays in sync; for BTC the public transfer history is also read to estimate dated purchase lots for the cost-basis view</li>
       <li><strong>Data Sent:</strong> Only the address you enter, only to the balance provider for that coin, and only while the portfolio feature is used — PriceTab never sends it anywhere else. This is a read-only lookup of public blockchain data; no keys, no signing, no wallet connection</li>
       <li><strong>Storage:</strong> Watched addresses are stored locally in your browser like every other setting and can be removed at any time (⛓ icon on the holding)</li>
       <li><strong>Privacy:</strong> <a href="https://mempool.space/privacy-policy" target="_blank" rel="noopener">mempool.space Privacy Policy</a>, <a href="https://blockchair.com/privacy" target="_blank" rel="noopener">Blockchair Privacy Policy</a></li>

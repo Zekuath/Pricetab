@@ -506,6 +506,57 @@ const fetchAddressBalance = async (coin, address) => {
   }
 };
 
+/* BTC address history (for chain-inferred purchase lots): one request gives
+ * the ~50 most recent transactions with full in/out detail. Reduced here to
+ * chronological net deltas per tx — positive = received, negative = spent —
+ * which the lot builder turns into dated purchases. Same TTL as balances. */
+const addressTxCache = new Map(); // address → { deltas, timestamp }
+
+const fetchBtcAddressDeltas = async (address) => {
+  if (typeof address !== "string" || !WATCH_ADDRESS_RE.test(address)) {
+    return null;
+  }
+  const hit = addressTxCache.get(address);
+  if (hit && Date.now() - hit.timestamp < WATCH_BALANCE_TTL) {
+    return hit.deltas;
+  }
+  try {
+    const res = await fetch(
+      `${MEMPOOL_ADDRESS_API}${encodeURIComponent(address)}/txs`,
+    );
+    if (!res.ok) throw new Error("mempool txs request failed");
+    const txs = await res.json();
+    if (!Array.isArray(txs)) throw new Error("unexpected txs shape");
+    const deltas = [];
+    for (const tx of txs) {
+      let sats = 0;
+      for (const out of tx.vout || []) {
+        if (out && out.scriptpubkey_address === address) {
+          sats += Number(out.value) || 0;
+        }
+      }
+      for (const inp of tx.vin || []) {
+        const prev = inp && inp.prevout;
+        if (prev && prev.scriptpubkey_address === address) {
+          sats -= Number(prev.value) || 0;
+        }
+      }
+      if (!sats) continue;
+      // Unconfirmed txs have no block_time yet — treat as "now"
+      const time =
+        tx.status && tx.status.block_time
+          ? Number(tx.status.block_time)
+          : Math.floor(Date.now() / 1000);
+      deltas.push({ time, delta: sats / 1e8 });
+    }
+    deltas.reverse(); // newest-first from the API → chronological
+    addressTxCache.set(address, { deltas, timestamp: Date.now() });
+    return deltas;
+  } catch (error) {
+    return hit ? hit.deltas : null; // stale beats blank
+  }
+};
+
 /* Merge news lists in priority order: spam filtered everywhere, duplicate
  * stories collapsed across sources by normalized title (aggregators often
  * carry the same story from several outlets), capped at MAX_NEWS_ITEMS. */

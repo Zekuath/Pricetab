@@ -41,7 +41,7 @@ class CryptoChart extends PureComponent {
       showSettings: false,
       showPortfolio: false, // Full-screen tracking-only portfolio view
       showRateAsk: false, // One-time rating ask (eligibility checked on mount)
-      portfolio: loadPortfolioFromStorage(), // [{ coin, amount, paid, address }]
+      portfolio: loadPortfolioFromStorage(), // [{ coin, amount, address, lots }]
       portfolioPrices: {}, // { COIN: { price, change, up } } from pageTickerCache
       portfolioReady: false, // true after first portfolio price fetch
       themePreference: loadThemeFromStorage(), // 'auto', 'light', or 'dark'
@@ -624,7 +624,7 @@ class CryptoChart extends PureComponent {
         const amt = isFinite(Number(amount)) ? Math.max(0, Number(amount)) : 0;
         const portfolio = [
           ...prevState.portfolio,
-          { coin: normalized, amount: amt, paid: 0, address: "" },
+          { coin: normalized, amount: amt, address: "", lots: [] },
         ];
         savePortfolioToStorage(portfolio);
         return { portfolio };
@@ -642,16 +642,82 @@ class CryptoChart extends PureComponent {
       });
     });
 
-    // Total spent on the position (0 clears it → row falls back to 24h change)
-    _defineProperty(this, "handleUpdateHoldingPaid", (coin, paid) => {
-      const p = isFinite(Number(paid)) ? Math.max(0, Number(paid)) : 0;
+    // Log a purchase lot: "bought `amount` for `paid` in total" (dated now —
+    // the date only matters for chain-inferred lots and the tax report)
+    _defineProperty(this, "handleAddLot", (coin, amount, paid) => {
+      const amt = Number(amount);
+      const cost = Number(paid);
+      if (!isFinite(amt) || amt <= 0 || !isFinite(cost) || cost < 0) return;
+      this.setState((prevState) => {
+        const portfolio = prevState.portfolio.map((h) => {
+          if (h.coin !== coin || h.lots.length >= MAX_LOTS_PER_HOLDING) {
+            return h;
+          }
+          return {
+            ...h,
+            lots: [
+              ...h.lots,
+              {
+                amount: amt,
+                paid: cost,
+                time: Math.floor(Date.now() / 1000),
+                source: "manual",
+              },
+            ],
+          };
+        });
+        savePortfolioToStorage(portfolio);
+        return { portfolio };
+      });
+    });
+
+    _defineProperty(this, "handleRemoveLot", (coin, index) => {
       this.setState((prevState) => {
         const portfolio = prevState.portfolio.map((h) =>
-          h.coin === coin ? { ...h, paid: p } : h,
+          h.coin === coin
+            ? { ...h, lots: h.lots.filter((_, i) => i !== index) }
+            : h,
         );
         savePortfolioToStorage(portfolio);
         return { portfolio };
       });
+    });
+
+    // Chain lots for a watched address. BTC: replay the real transfer
+    // history (plus a synthetic opening lot when the 50-tx page doesn't
+    // reach back to the full balance). Other chains expose no cheap history,
+    // so the whole balance becomes one lot priced at the watch date.
+    _defineProperty(this, "buildChainLots", async (coin, address, balance) => {
+      const priceAt = await makePortfolioPriceAt(coin, this.state.currency);
+      const nowSec = Math.floor(Date.now() / 1000);
+      if (coin === "BTC") {
+        const deltas = await fetchBtcAddressDeltas(address);
+        if (deltas) {
+          const seen = deltas.reduce((sum, d) => sum + d.delta, 0);
+          const opening = balance - seen;
+          const all =
+            opening > 1e-8
+              ? [
+                  {
+                    time: deltas.length ? deltas[0].time : nowSec,
+                    delta: opening,
+                  },
+                  ...deltas,
+                ]
+              : deltas;
+          return buildLotsFromDeltas(all, priceAt);
+        }
+      }
+      if (!(balance > 0)) return [];
+      const price = priceAt(nowSec);
+      return [
+        {
+          amount: balance,
+          paid: price != null ? price * balance : 0,
+          time: nowSec,
+          source: "chain",
+        },
+      ];
     });
 
     // Watch an on-chain address: reads its public balance and keeps the
@@ -669,6 +735,13 @@ class CryptoChart extends PureComponent {
       }
       const balance = await fetchAddressBalance(normalized, addr);
       if (balance == null) return false;
+      // Watching replaces any manual lots — the chain history is the record
+      let lots = [];
+      try {
+        lots = await this.buildChainLots(normalized, addr, balance);
+      } catch (e) {
+        lots = [];
+      }
       this.setState(
         (prevState) => {
           const portfolio = prevState.portfolio.some(
@@ -676,12 +749,12 @@ class CryptoChart extends PureComponent {
           )
             ? prevState.portfolio.map((h) =>
                 h.coin === normalized
-                  ? { ...h, amount: balance, address: addr }
+                  ? { ...h, amount: balance, address: addr, lots }
                   : h,
               )
             : [
                 ...prevState.portfolio,
-                { coin: normalized, amount: balance, paid: 0, address: addr },
+                { coin: normalized, amount: balance, address: addr, lots },
               ];
           savePortfolioToStorage(portfolio);
           return { portfolio };
@@ -736,21 +809,46 @@ class CryptoChart extends PureComponent {
 
       // Re-sync watched addresses first so values use fresh balances.
       // fetchAddressBalance caches per address (10 min), so this is usually
-      // free; failures keep the last synced amount.
+      // free; failures keep the last synced amount. On a change the lots
+      // update too: BTC replays the real transfer history, other chains log
+      // the delta as a buy at today's price (or FIFO-consume on a decrease).
       for (const h of holdings) {
         if (!h.address || !WATCH_CHAINS[h.coin]) continue;
         const balance = await fetchAddressBalance(h.coin, h.address);
-        if (balance != null && balance !== h.amount) {
-          this.setState((prevState) => {
-            const portfolio = prevState.portfolio.map((p) =>
-              p.coin === h.coin && p.address === h.address
-                ? { ...p, amount: balance }
-                : p,
-            );
-            savePortfolioToStorage(portfolio);
-            return { portfolio };
-          });
+        if (balance == null || balance === h.amount) continue;
+        let lots = h.lots;
+        try {
+          if (h.coin === "BTC") {
+            lots = await this.buildChainLots(h.coin, h.address, balance);
+          } else if (balance > h.amount) {
+            const priceAt = await makePortfolioPriceAt(h.coin, curr);
+            const nowSec = Math.floor(Date.now() / 1000);
+            const price = priceAt(nowSec);
+            const delta = balance - h.amount;
+            lots = [
+              ...h.lots,
+              {
+                amount: delta,
+                paid: price != null ? price * delta : 0,
+                time: nowSec,
+                source: "chain",
+              },
+            ].slice(0, MAX_LOTS_PER_HOLDING);
+          } else {
+            lots = reduceLotsFifo(h.lots, h.amount - balance);
+          }
+        } catch (e) {
+          // keep the existing lots — the amount still updates below
         }
+        this.setState((prevState) => {
+          const portfolio = prevState.portfolio.map((p) =>
+            p.coin === h.coin && p.address === h.address
+              ? { ...p, amount: balance, lots }
+              : p,
+          );
+          savePortfolioToStorage(portfolio);
+          return { portfolio };
+        });
       }
 
       try {
@@ -2580,7 +2678,8 @@ class CryptoChart extends PureComponent {
             chartColorize: this.state.chartColor,
             onAdd: this.handleAddHolding,
             onUpdateAmount: this.handleUpdateHoldingAmount,
-            onUpdatePaid: this.handleUpdateHoldingPaid,
+            onAddLot: this.handleAddLot,
+            onRemoveLot: this.handleRemoveLot,
             onRemove: this.handleRemoveHolding,
             onImport: this.handleImportPortfolio,
             onWatch: this.handleWatchAddress,

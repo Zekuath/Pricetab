@@ -70,6 +70,99 @@ const buildPortfolioSeries = (histories, holdings) => {
   return series;
 };
 
+/* ── purchase lots ─────────────────────────────────────────────────────────
+ * A lot is one purchase: { amount, paid, time, source }. Cost basis and P/L
+ * come from lots; a holding without lots simply shows no P/L. Watched
+ * addresses generate "chain" lots: every incoming transfer counts as a buy
+ * at that date's price, outgoing transfers consume the oldest lots first.
+ */
+const lotsAmount = (lots) =>
+  (lots || []).reduce((sum, l) => sum + l.amount, 0);
+
+const lotsBasis = (lots) => (lots || []).reduce((sum, l) => sum + l.paid, 0);
+
+// Remove `amount` from the oldest lots first (FIFO), shrinking a partially
+// consumed lot's paid proportionally. Returns a new array.
+const reduceLotsFifo = (lots, amount) => {
+  let left = amount;
+  const out = [];
+  for (const lot of lots) {
+    if (left <= 0) {
+      out.push(lot);
+      continue;
+    }
+    if (lot.amount <= left) {
+      left -= lot.amount; // fully consumed
+      continue;
+    }
+    const keep = lot.amount - left;
+    out.push({
+      ...lot,
+      amount: keep,
+      paid: lot.paid * (keep / lot.amount),
+    });
+    left = 0;
+  }
+  return out;
+};
+
+// Replay chronological balance deltas into lots: buys become lots priced by
+// priceAt(timeSec) (0 paid when the price is unknown), spends reduce FIFO.
+const buildLotsFromDeltas = (deltas, priceAt) => {
+  let lots = [];
+  for (const { time, delta } of deltas || []) {
+    if (delta > 0) {
+      const price = priceAt(time);
+      lots.push({
+        amount: delta,
+        paid: price != null ? price * delta : 0,
+        time,
+        source: "chain",
+      });
+    } else if (delta < 0) {
+      lots = reduceLotsFifo(lots, -delta);
+    }
+  }
+  return lots.slice(0, MAX_LOTS_PER_HOLDING);
+};
+
+// price-at-date lookup for chain lots: nearest point of the cached year
+// series, falling back to the all-time series for older dates. Estimation —
+// good enough for an inferred cost basis, and labeled as such in the UI.
+const makePortfolioPriceAt = async (coin, currency) => {
+  const year = await getPortfolioHistory(coin, "year", currency);
+  const all = await getPortfolioHistory(coin, "all", currency);
+  const toSec = (t) => {
+    const ms = Number(new Date(t));
+    return isFinite(ms) ? ms / 1000 : null;
+  };
+  const nearest = (series, timeSec) => {
+    if (!Array.isArray(series) || !series.length) return null;
+    let best = null;
+    let bestDist = Infinity;
+    for (const point of series) {
+      const sec = toSec(point.time);
+      if (sec == null) continue;
+      const dist = Math.abs(sec - timeSec);
+      if (dist < bestDist) {
+        bestDist = dist;
+        best = point.price;
+      }
+    }
+    return isFinite(best) ? best : null;
+  };
+  return (timeSec) => {
+    const yearFirst =
+      Array.isArray(year) && year.length ? toSec(year[0].time) : null;
+    if (yearFirst != null && timeSec >= yearFirst) {
+      const p = nearest(year, timeSec);
+      if (p != null) return p;
+    }
+    const p = nearest(all, timeSec);
+    return p != null ? p : nearest(year, timeSec);
+  };
+};
+
 /* ── export helpers ────────────────────────────────────────────────────────
  * JSON backup/restore + a spreadsheet-friendly CSV report (a small tax aid:
  * cost basis and unrealized P/L per coin). Raw numbers with dot decimals so
@@ -80,23 +173,26 @@ const csvField = (value) => {
   return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 };
 
-// rows = computeTotals().rows: [{ coin, amount, paid, price, value }]
-// paid = total spent on the position; avg cost is derived from it
+// rows = computeTotals().rows: [{ coin, amount, lots, price, value }].
+// Summary per coin from its lots, then every lot as its own line — the part
+// a tax return actually needs (dated purchases with what was paid).
 const buildPortfolioCsv = (rows, currency) => {
   const lines = [
     `# PriceTab portfolio report — ${new Date().toISOString().slice(0, 10)} — prices in ${currency}`,
-    "Coin,Name,Amount,Total paid,Avg cost,Current price,Current value,Unrealized P/L,P/L %",
+    "Coin,Name,Amount,Cost basis,Avg cost,Current price,Current value,Unrealized P/L,P/L %",
   ];
   let totalBasis = 0;
   let totalValue = 0;
   for (const r of rows) {
-    const basis = r.paid > 0 ? r.paid : null;
-    const avgCost = basis != null && r.amount > 0 ? basis / r.amount : null;
-    const pl = basis != null && r.value != null ? r.value - basis : null;
+    const lotAmt = lotsAmount(r.lots);
+    const basis = lotAmt > 0 ? lotsBasis(r.lots) : null;
+    const avgCost = basis != null && lotAmt > 0 ? basis / lotAmt : null;
+    // P/L covers the lotted amount (you may hold more than you've logged)
+    const pl = basis != null && r.price != null ? r.price * lotAmt - basis : null;
     const plPct = pl != null && basis > 0 ? (pl / basis) * 100 : null;
-    if (basis != null && r.value != null) {
+    if (basis != null && r.price != null) {
       totalBasis += basis;
-      totalValue += r.value;
+      totalValue += r.price * lotAmt;
     }
     lines.push(
       [
@@ -118,8 +214,28 @@ const buildPortfolioCsv = (rows, currency) => {
       `Total,,,${totalBasis},,,${totalValue},${totalPl},${((totalPl / totalBasis) * 100).toFixed(2)}`,
     );
   }
+  const lotLines = [];
+  for (const r of rows) {
+    for (const lot of r.lots || []) {
+      lotLines.push(
+        [
+          r.coin,
+          lot.amount,
+          lot.paid,
+          lot.time > 0
+            ? new Date(lot.time * 1000).toISOString().slice(0, 10)
+            : "",
+          lot.source === "chain" ? "chain (estimated)" : "manual",
+        ].join(","),
+      );
+    }
+  }
+  if (lotLines.length) {
+    lines.push("", "Purchase lots", "Coin,Amount,Paid,Date,Source");
+    lines.push(...lotLines);
+  }
   lines.push(
-    "# Informational only — not tax advice. Unrealized figures compare current prices to your entered average costs.",
+    "# Informational only — not tax advice. Chain-sourced lots use estimated historical prices.",
   );
   return lines.join("\n");
 };
@@ -373,11 +489,88 @@ const AmountInput = styled.input`
   }
 `;
 
-// Total-paid input: same field, hidden on narrow screens (amount wins the space)
-const PaidInput = styled(AmountInput)`
+// Cost-basis cell: a button that opens the row's purchase-lot editor.
+// Styled like the inputs so the grid reads as one family; hidden on narrow
+// screens (amount wins the space).
+const LotsBtn = styled.button.attrs(() => ({ type: "button" }))`
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.4rem 0.5rem;
+  font-family: ${({ theme }) => theme.font.primary};
+  font-size: 0.85rem;
+  text-align: right;
+  color: ${({ theme, empty }) =>
+    empty ? theme.color.textSecondary : theme.color.text};
+  background: ${({ theme }) => theme.color.bg};
+  border: 1px solid
+    ${({ theme, open }) => (open ? theme.color.borderHover : theme.color.border)};
+  border-radius: 7px;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+
+  &:hover {
+    border-color: ${({ theme }) => theme.color.borderHover};
+  }
+
   @media (max-width: 560px) {
     display: none;
   }
+`;
+
+// Expanded lot editor: spans the whole row under the grid columns
+const LotsPanel = styled.div`
+  grid-column: 1 / -1;
+  border-top: 1px solid ${({ theme }) => theme.color.border};
+  margin-top: 0.25rem;
+  padding-top: 0.6rem;
+`;
+
+const LotLine = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.2rem 0;
+  font-size: 0.78rem;
+`;
+
+const LotMeta = styled.span`
+  color: ${({ theme }) => theme.color.textSecondary};
+  font-size: 0.7rem;
+`;
+
+const LotForm = styled.div`
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+`;
+
+const LotFormInput = styled(AmountInput)`
+  flex: 1;
+  text-align: left;
+`;
+
+const LotAddBtn = styled.button.attrs(() => ({ type: "button" }))`
+  padding: 0 0.9rem;
+  font-family: ${({ theme }) => theme.font.primary};
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: ${({ theme }) => theme.color.text};
+  background: ${({ theme }) => theme.color.bg};
+  border: 1px solid ${({ theme }) => theme.color.border};
+  border-radius: 7px;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+
+  &:hover {
+    border-color: ${({ theme }) => theme.color.borderHover};
+  }
+`;
+
+const LotNote = styled.div`
+  margin-top: 0.45rem;
+  font-size: 0.68rem;
+  color: ${({ theme }) => theme.color.textSecondary};
 `;
 
 // "Stop watching" affordance next to the coin symbol on synced rows
@@ -636,6 +829,9 @@ class Portfolio extends PureComponent {
       watchAddress: "",
       watchBusy: false,
       watchError: false,
+      expandedCoin: null, // coin whose lot editor is open
+      lotAmount: "", // lot form drafts (one editor open at a time)
+      lotPaid: "",
       chartPeriod: loadPortfolioPeriodFromStorage(),
       histories: {}, // { COIN: [{ price, time }] } for the background chart
     };
@@ -768,9 +964,11 @@ class Portfolio extends PureComponent {
         } else {
           totalAgo += value;
         }
-        if (h.paid > 0) {
-          costBasis += h.paid;
-          costValueNow += value;
+        const basis = lotsBasis(h.lots);
+        if (basis > 0 && price != null) {
+          costBasis += basis;
+          // P/L covers the lotted amount, which may differ from the holding
+          costValueNow += price * lotsAmount(h.lots);
         }
       }
       return { ...h, price, value, change: p ? p.change : null, up: p ? p.up : null };
@@ -791,11 +989,36 @@ class Portfolio extends PureComponent {
     this.props.onAdd(coin, 0);
   };
 
-  // Shared draft handling for the amount and total-paid inputs
+  // Draft handling for the amount input
   commitField(coin, field, num) {
     if (field === "amount") this.props.onUpdateAmount(coin, num);
-    else this.props.onUpdatePaid(coin, num);
   }
+
+  /* ── purchase lots editor ── */
+
+  handleToggleLots = (coin) =>
+    this.setState((s) => ({
+      expandedCoin: s.expandedCoin === coin ? null : coin,
+      lotAmount: "",
+      lotPaid: "",
+    }));
+
+  handleLotAmountChange = (e) => this.setState({ lotAmount: e.target.value });
+
+  handleLotPaidChange = (e) => this.setState({ lotPaid: e.target.value });
+
+  handleLotAdd = (coin) => {
+    const amount = Number(this.state.lotAmount);
+    const paid = Number(this.state.lotPaid);
+    if (!isFinite(amount) || amount <= 0) return;
+    if (!isFinite(paid) || paid < 0) return;
+    this.props.onAddLot(coin, amount, paid);
+    this.setState({ lotAmount: "", lotPaid: "" });
+  };
+
+  handleLotKeyDown = (coin, e) => {
+    if (e.key === "Enter") this.handleLotAdd(coin);
+  };
 
   /* ── address watching ── */
 
@@ -848,10 +1071,11 @@ class Portfolio extends PureComponent {
   /* ── backup / restore / report ── */
 
   handleExportJson = () => {
-    const data = this.props.holdings.map(({ coin, amount, cost }) => ({
+    const data = this.props.holdings.map(({ coin, amount, address, lots }) => ({
       coin,
       amount,
-      cost,
+      address,
+      lots,
     }));
     downloadTextFile(
       `pricetab-portfolio-${new Date().toISOString().slice(0, 10)}.json`,
@@ -1084,7 +1308,7 @@ class Portfolio extends PureComponent {
                 { "aria-hidden": true },
                 React.createElement("span", null, ""),
                 React.createElement("span", null, "Amount"),
-                React.createElement("span", null, "Paid (total)"),
+                React.createElement("span", null, "Cost basis"),
                 React.createElement("span", null, "Value"),
                 React.createElement("span", null, ""),
               ),
@@ -1096,16 +1320,14 @@ class Portfolio extends PureComponent {
                   const amountDraft = drafts[`${r.coin}:amount`];
                   const amountVal =
                     amountDraft !== undefined ? amountDraft : String(r.amount);
-                  const paidDraft = drafts[`${r.coin}:paid`];
-                  const paidVal =
-                    paidDraft !== undefined
-                      ? paidDraft
-                      : r.paid > 0
-                        ? String(r.paid)
-                        : "";
-                  // Unrealized P/L for this row (needs a paid total + a price)
+                  const basis = lotsBasis(r.lots);
+                  const lotAmt = lotsAmount(r.lots);
+                  const expanded = this.state.expandedCoin === r.coin;
+                  // Unrealized P/L over the lotted amount (needs a price)
                   const rowPl =
-                    r.paid > 0 && r.value != null ? r.value - r.paid : null;
+                    basis > 0 && r.price != null
+                      ? r.price * lotAmt - basis
+                      : null;
                   const share =
                     r.value != null && totalNow > 0
                       ? (r.value / totalNow) * 100
@@ -1159,17 +1381,21 @@ class Portfolio extends PureComponent {
                         this.handleFieldChange(r.coin, "amount", e.target.value),
                       onBlur: () => this.handleFieldBlur(r.coin, "amount"),
                     }),
-                    React.createElement(PaidInput, {
-                      type: "text",
-                      inputMode: "decimal",
-                      value: paidVal,
-                      placeholder: "paid",
-                      title: `Total you spent on ${r.coin} (optional — unlocks P/L)`,
-                      "aria-label": `${r.coin} total paid`,
-                      onChange: (e) =>
-                        this.handleFieldChange(r.coin, "paid", e.target.value),
-                      onBlur: () => this.handleFieldBlur(r.coin, "paid"),
-                    }),
+                    React.createElement(
+                      LotsBtn,
+                      {
+                        empty: basis <= 0,
+                        open: expanded,
+                        title: watched
+                          ? "Purchases inferred from the watched address — click to view"
+                          : "Your purchases for this coin — click to view or add ('bought 0.5 for 15000')",
+                        "aria-label": `${r.coin} purchase lots`,
+                        onClick: () => this.handleToggleLots(r.coin),
+                      },
+                      basis > 0
+                        ? this.fmtMoney(basis, false)
+                        : `+ ${r.lots.length ? "lots" : "lot"}`,
+                    ),
                     React.createElement(
                       HoldingValue,
                       null,
@@ -1211,6 +1437,93 @@ class Portfolio extends PureComponent {
                       },
                       "×",
                     ),
+
+                    // Purchase-lot editor (spans the full row when open)
+                    expanded &&
+                      React.createElement(
+                        LotsPanel,
+                        null,
+                        r.lots.length === 0 &&
+                          React.createElement(
+                            LotMeta,
+                            null,
+                            watched
+                              ? "No incoming transfers detected yet."
+                              : "No purchases logged yet — add one below.",
+                          ),
+                        r.lots.map((lot, i) =>
+                          React.createElement(
+                            LotLine,
+                            { key: `${lot.time}-${i}` },
+                            React.createElement(
+                              "span",
+                              null,
+                              `${lot.amount} ${r.coin} — ${this.fmtMoney(lot.paid, false)}`,
+                            ),
+                            React.createElement(
+                              LotMeta,
+                              null,
+                              (lot.time > 0
+                                ? new Date(lot.time * 1000).toLocaleDateString()
+                                : "date unknown") +
+                                (lot.source === "chain" ? " · ~on-chain" : ""),
+                            ),
+                            !watched &&
+                              React.createElement(
+                                RemoveBtn,
+                                {
+                                  type: "button",
+                                  "aria-label": `Remove this ${r.coin} lot`,
+                                  title: "Remove lot",
+                                  onClick: () =>
+                                    this.props.onRemoveLot(r.coin, i),
+                                },
+                                "×",
+                              ),
+                          ),
+                        ),
+                        !watched &&
+                          React.createElement(
+                            LotForm,
+                            null,
+                            React.createElement(LotFormInput, {
+                              type: "text",
+                              inputMode: "decimal",
+                              value: this.state.lotAmount,
+                              placeholder: `amount (e.g. 0.5 ${r.coin})`,
+                              "aria-label": "Lot amount",
+                              onChange: this.handleLotAmountChange,
+                              onKeyDown: (e) => this.handleLotKeyDown(r.coin, e),
+                            }),
+                            React.createElement(LotFormInput, {
+                              type: "text",
+                              inputMode: "decimal",
+                              value: this.state.lotPaid,
+                              placeholder: "paid in total (e.g. 15000)",
+                              "aria-label": "Lot total paid",
+                              onChange: this.handleLotPaidChange,
+                              onKeyDown: (e) => this.handleLotKeyDown(r.coin, e),
+                            }),
+                            React.createElement(
+                              LotAddBtn,
+                              { onClick: () => this.handleLotAdd(r.coin) },
+                              "Add",
+                            ),
+                          ),
+                        watched
+                          ? React.createElement(
+                              LotNote,
+                              null,
+                              "Inferred from the address's transfer history: incoming transfers count as buys at that date's estimated price, outgoing transfers consume the oldest lots first.",
+                            )
+                          : lotAmt > 0 &&
+                              Math.abs(lotAmt - r.amount) > 1e-9 &&
+                              React.createElement(
+                                LotNote,
+                                null,
+                                `Lots cover ${lotAmt} of ${r.amount} ${r.coin} — P/L is computed on the logged part.`,
+                              ),
+                      ),
                   );
                 }),
               ),

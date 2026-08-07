@@ -219,13 +219,37 @@ const loadChartColorFromStorage = () =>
 const saveChartColorToStorage = (enabled) =>
   saveSetting(CHART_COLOR_STORAGE_KEY, enabled);
 
-// Portfolio (tracking only): array of { coin, amount, paid, address } where
-// paid is the total spent on the position (0 = not set) and address is an
+// One purchase lot: amount bought, total paid for it, unix-seconds date
+// (0 = unknown) and whether it was typed in or inferred from a watched chain
+const sanitizeLots = (list) => {
+  if (!Array.isArray(list)) return [];
+  const lots = [];
+  for (const lot of list) {
+    if (!lot || typeof lot !== "object") continue;
+    const amount = Number(lot.amount);
+    const paid = Number(lot.paid);
+    const time = Number(lot.time);
+    if (!isFinite(amount) || amount <= 0) continue;
+    if (!isFinite(paid) || paid < 0) continue;
+    lots.push({
+      amount,
+      paid,
+      time: isFinite(time) && time > 0 ? Math.floor(time) : 0,
+      source: lot.source === "chain" ? "chain" : "manual",
+    });
+    if (lots.length >= MAX_LOTS_PER_HOLDING) break;
+  }
+  return lots;
+};
+
+// Portfolio (tracking only): array of { coin, amount, address, lots } where
+// lots are the purchase records the P/L math runs on and address is an
 // optional watched on-chain address ("" = none, only for WATCH_CHAINS coins).
 // Shared by storage load and JSON import: coins whitelisted against
 // SUGGESTED_COINS, numbers coerced to finite non-negatives; anything
 // malformed is dropped so a corrupted entry (or a hand-edited import file)
-// can't break the view.
+// can't break the view. A legacy/handwritten `paid` total converts to a
+// single lot.
 const sanitizePortfolio = (list) => {
   if (!Array.isArray(list)) return [];
   const seen = new Set();
@@ -236,14 +260,19 @@ const sanitizePortfolio = (list) => {
     const amount = Number(entry.amount);
     if (!SUGGESTED_COINS.includes(coin) || seen.has(coin)) continue;
     if (!isFinite(amount) || amount < 0) continue;
-    const paidNum = Number(entry.paid);
-    const paid = isFinite(paidNum) && paidNum > 0 ? paidNum : 0;
     const addrRaw =
       typeof entry.address === "string" ? entry.address.trim() : "";
     const address =
       WATCH_CHAINS[coin] && WATCH_ADDRESS_RE.test(addrRaw) ? addrRaw : "";
+    let lots = sanitizeLots(entry.lots);
+    if (!lots.length) {
+      const paidNum = Number(entry.paid);
+      if (isFinite(paidNum) && paidNum > 0 && amount > 0) {
+        lots = [{ amount, paid: paidNum, time: 0, source: "manual" }];
+      }
+    }
     seen.add(coin);
-    clean.push({ coin, amount, paid, address });
+    clean.push({ coin, amount, address, lots });
   }
   return clean;
 };
