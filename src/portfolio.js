@@ -462,10 +462,27 @@ const HoldingShareBar = styled.div`
   transition: width 0.3s ease;
 `;
 
+// Clicking the coin opens/closes the row's source + purchases breakdown
 const HoldingCoin = styled.div`
   display: flex;
   flex-direction: column;
   min-width: 0;
+  cursor: pointer;
+  user-select: none;
+
+  /* HoldingSym inherits this; HoldingName sets its own colour */
+  &:hover {
+    color: ${({ theme }) => theme.color.chartLine};
+  }
+`;
+
+const Chevron = styled.span`
+  display: inline-block;
+  margin-right: 0.35rem;
+  font-size: 0.6rem;
+  color: ${({ theme }) => theme.color.textSecondary};
+  transform: rotate(${({ open }) => (open ? "90deg" : "0deg")});
+  transition: transform 0.15s ease;
 `;
 
 const HoldingSym = styled.div`
@@ -587,22 +604,13 @@ const LotNote = styled.div`
   color: ${({ theme }) => theme.color.textSecondary};
 `;
 
-// Watched-row marker next to the coin symbol — opens the row panel where
-// the full address (and the stop-watching action) lives
-const WatchedBadge = styled.button.attrs(() => ({ type: "button" }))`
-  background: transparent;
-  border: none;
-  padding: 0;
+// Marker next to the coin symbol showing the row is fed by watched
+// addresses (the whole coin cell opens the breakdown, so this is inert)
+const WatchedBadge = styled.span`
   margin-left: 0.35rem;
-  cursor: pointer;
   font-size: 0.75rem;
   line-height: 1;
   color: ${({ theme }) => theme.color.textSecondary};
-  transition: color 0.15s ease;
-
-  &:hover {
-    color: ${({ theme }) => theme.color.text};
-  }
 `;
 
 /* Compact chips summarising every watched address, so what's being synced
@@ -1540,18 +1548,31 @@ class Portfolio extends PureComponent {
                       }),
                     React.createElement(
                       HoldingCoin,
-                      null,
+                      {
+                        role: "button",
+                        tabIndex: 0,
+                        "aria-expanded": expanded,
+                        title: watched
+                          ? "Show where these coins came from and what you paid"
+                          : "Show your purchases for this coin",
+                        onClick: () => this.handleToggleLots(r.coin),
+                        onKeyDown: (e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            this.handleToggleLots(r.coin);
+                          }
+                        },
+                      },
                       React.createElement(
                         HoldingSym,
                         null,
+                        React.createElement(Chevron, { open: expanded }, "▶"),
                         r.coin,
                         watched &&
                           React.createElement(
                             WatchedBadge,
                             {
-                              title: `${r.watches.length} watched address${r.watches.length > 1 ? "es" : ""} — click for the breakdown`,
-                              "aria-label": `Show watched ${r.coin} addresses`,
-                              onClick: () => this.handleToggleLots(r.coin),
+                              title: `${r.watches.length} watched address${r.watches.length > 1 ? "es" : ""}`,
                             },
                             r.watches.length > 1
                               ? `⛓${r.watches.length}`
