@@ -175,6 +175,17 @@ assert.strictEqual(
 store["crypto_chart_last_seen"] = "not json{";
 assert.strictEqual(JSON.stringify(run("loadLastSeen()")), "{}", "last seen: corrupt JSON falls back");
 
+// --- since-last-visit toggle ---
+assert.strictEqual(run("loadLastSeenEnabled()"), true, "since-last-visit on by default");
+run("saveLastSeenEnabled(false)");
+assert.strictEqual(run("loadLastSeenEnabled()"), false, "toggle roundtrip");
+// Project-wide bool convention: only the literal "true" is on; anything
+// else stored is off. The default applies when the key is absent.
+store["crypto_chart_last_seen_enabled"] = "maybe";
+assert.strictEqual(run("loadLastSeenEnabled()"), false, "non-'true' value reads as off");
+delete store["crypto_chart_last_seen_enabled"];
+assert.strictEqual(run("loadLastSeenEnabled()"), true, "missing key falls back to the default");
+
 // --- elapsed wording ---
 assert.strictEqual(run("describeElapsed(5 * 60000)"), "5 min ago", "minutes");
 assert.strictEqual(run("describeElapsed(3 * 3600000)"), "3h ago", "hours");

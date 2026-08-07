@@ -423,6 +423,8 @@ class SettingsPanel extends PureComponent {
       newsTicker,
       onNewsTickerChange,
       chartColor,
+      lastSeenEnabled,
+      onLastSeenChange,
       onChartColorChange,
       widgets,
       onWidgetToggle,
@@ -732,6 +734,33 @@ class SettingsPanel extends PureComponent {
                   onClick: () =>
                     onChartColorChange && onChartColorChange(chartColor === false),
                   "aria-label": "Toggle chart color",
+                }),
+              ),
+            ),
+
+            // "Since your last visit" line under the price
+            React.createElement(
+              ToggleSection,
+              null,
+              React.createElement(ToggleSectionTitle, null, "Since Your Last Visit"),
+              React.createElement(
+                ToggleSectionDesc,
+                null,
+                "Show how the coin moved since you last opened a tab",
+              ),
+              React.createElement(
+                ToggleRow,
+                null,
+                React.createElement(
+                  ToggleLabel,
+                  null,
+                  lastSeenEnabled === false ? "Off" : "On",
+                ),
+                React.createElement(ToggleSwitch, {
+                  active: lastSeenEnabled !== false,
+                  onClick: () =>
+                    onLastSeenChange && onLastSeenChange(lastSeenEnabled === false),
+                  "aria-label": "Toggle since your last visit line",
                 }),
               ),
             ),

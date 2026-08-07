@@ -45,6 +45,7 @@ class CryptoChart extends PureComponent {
       // visit" line: { price, time } or null. Frozen at mount so the line
       // never moves while the tab is open.
       lastSeen: loadLastSeen(),
+      lastSeenEnabled: loadLastSeenEnabled(), // settings toggle
       portfolio: loadPortfolioFromStorage(), // [{ coin, amount, lots, watches }]
       portfolioPrices: {}, // { COIN: { price, change, up } } from pageTickerCache
       portfolioReady: false, // true after first portfolio price fetch
@@ -1337,6 +1338,13 @@ class CryptoChart extends PureComponent {
       this.setState({ chartColor: enabled });
     });
 
+    // Hiding the line keeps recording baselines, so switching it back on
+    // still has a previous visit to compare against
+    _defineProperty(this, "handleLastSeenChange", (enabled) => {
+      saveLastSeenEnabled(enabled);
+      this.setState({ lastSeenEnabled: enabled });
+    });
+
     _defineProperty(this, "handleCurrencyChange", (newCurrency) => {
       saveCurrencyToStorage(newCurrency);
       this.setState({ currency: newCurrency }, () => {
@@ -2247,6 +2255,7 @@ class CryptoChart extends PureComponent {
                   // "Since your last visit" — only when there's a baseline
                   // from a previous session and the move is worth mentioning
                   (() => {
+                    if (this.state.lastSeenEnabled === false) return null;
                     const seen = this.state.lastSeen[activeCoin];
                     const now = Number(currentValue);
                     if (!seen || !isFinite(now) || now <= 0) return null;
@@ -3002,6 +3011,8 @@ class CryptoChart extends PureComponent {
             onNewsTickerChange: this.handleNewsTickerChange,
             chartColor: this.state.chartColor,
             onChartColorChange: this.handleChartColorChange,
+            lastSeenEnabled: this.state.lastSeenEnabled,
+            onLastSeenChange: this.handleLastSeenChange,
             widgets: widgets,
             onWidgetToggle: this.handleWidgetToggle,
             onWidgetPreset: this.handleWidgetPreset,

@@ -279,6 +279,12 @@ const loadLastSeen = () => {
 
 const saveLastSeen = (map) => saveJsonSetting(LAST_SEEN_KEY, map);
 
+const loadLastSeenEnabled = () =>
+  loadBoolSetting(LAST_SEEN_ENABLED_KEY, DEFAULT_LAST_SEEN_ENABLED);
+
+const saveLastSeenEnabled = (enabled) =>
+  saveSetting(LAST_SEEN_ENABLED_KEY, enabled);
+
 // One purchase lot: amount bought, total paid for it, unix-seconds date
 // (0 = unknown) and whether it was typed in or inferred from a watched chain
 const sanitizeLots = (list) => {

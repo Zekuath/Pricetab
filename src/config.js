@@ -279,6 +279,10 @@ const MAX_ALERTS = 10;
 // "Since your last visit": per-coin snapshot of the price when this tab
 // series was last opened. { COIN: { price, time } }
 const LAST_SEEN_KEY = "crypto_chart_last_seen";
+// Whether the comparison line is shown under the price (the snapshots are
+// kept either way, so turning it back on still has history to compare to)
+const LAST_SEEN_ENABLED_KEY = "crypto_chart_last_seen_enabled";
+const DEFAULT_LAST_SEEN_ENABLED = true;
 // A fresh baseline is only taken after this long, so opening ten tabs in a
 // row keeps comparing against the same earlier visit instead of "just now"
 const LAST_SEEN_REFRESH_MS = 20 * 60 * 1000; // 20 minutes
