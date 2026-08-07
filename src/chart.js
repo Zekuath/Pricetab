@@ -27,9 +27,49 @@ const isTrendUp = (prices) => {
 const Svg = styled.svg`
   height: 100%;
   width: 100%;
-  pointer-events: none;
+  /* Only the interactive (main-view) chart takes pointer events; the
+     portfolio's background chart stays click-through. */
+  pointer-events: ${({ interactive }) => (interactive ? "auto" : "none")};
   flex: 1 0 ${({ theme }) => theme.scale * 40}rem;
+  touch-action: pan-y;
 `;
+
+/* ── crosshair ─────────────────────────────────────────────────────────────
+ * Reads the price/date under the pointer. Everything here is imperative:
+ * the hover never touches React state (a setState per mousemove would
+ * re-render the whole page), the nearest point is found by binary search
+ * over the already-scaled pixel positions, and DOM writes are batched into
+ * one rAF per frame. Cost per move: one binary search + a handful of
+ * attribute writes.
+ */
+const CROSSHAIR_LABEL_PAD = 6;
+const CROSSHAIR_LABEL_GAP = 10;
+
+// Nearest index to pixel x in an ascending list of scaled points
+const nearestIndex = (scaled, x) => {
+  let lo = 0;
+  let hi = scaled.length - 1;
+  while (hi - lo > 1) {
+    const mid = (lo + hi) >> 1;
+    if (scaled[mid].time < x) lo = mid;
+    else hi = mid;
+  }
+  return x - scaled[lo].time <= scaled[hi].time - x ? lo : hi;
+};
+
+const crosshairDate = (time, period) => {
+  const d = time instanceof Date ? time : new Date(time);
+  if (isNaN(d)) return "";
+  // Intraday ranges need the clock; longer ones read better as plain dates
+  const withTime = period === "hour" || period === "day";
+  return d.toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: period === "year" || period === "all" ? "numeric" : undefined,
+    hour: withTime ? "2-digit" : undefined,
+    minute: withTime ? "2-digit" : undefined,
+  });
+};
 
 class LineBase extends PureComponent {
   constructor(...args) {
@@ -39,6 +79,18 @@ class LineBase extends PureComponent {
     _defineProperty(this, "areaRef", createRef());
     _defineProperty(this, "svgRef", createRef());
     _defineProperty(this, "clipRectRef", createRef());
+
+    // Crosshair nodes — written to directly, never through React
+    _defineProperty(this, "hoverRef", createRef());
+    _defineProperty(this, "hoverLineRef", createRef());
+    _defineProperty(this, "hoverDotRef", createRef());
+    _defineProperty(this, "hoverBoxRef", createRef());
+    _defineProperty(this, "hoverPriceRef", createRef());
+    _defineProperty(this, "hoverDateRef", createRef());
+    this.scaled = null; // pixel-space points, index-aligned with props.prices
+    this.hoverRaf = 0;
+    this.hoverX = 0;
+    this.hoverIndex = -1;
 
     // Unique ids so the gradient/clip defs never collide in the DOM
     const uid = Math.random().toString(36).slice(2, 9);
@@ -63,6 +115,84 @@ class LineBase extends PureComponent {
       }, 150),
     );
 
+    /* Pointer handling: record the position, do the work once per frame */
+    _defineProperty(this, "handlePointerMove", (e) => {
+      this.hoverX = e.offsetX;
+      if (this.hoverRaf) return;
+      this.hoverRaf = requestAnimationFrame(this.drawCrosshair);
+    });
+
+    _defineProperty(this, "handlePointerLeave", () => {
+      if (this.hoverRaf) {
+        cancelAnimationFrame(this.hoverRaf);
+        this.hoverRaf = 0;
+      }
+      this.hoverIndex = -1;
+      if (this.hoverRef.current) {
+        this.hoverRef.current.setAttribute("visibility", "hidden");
+      }
+    });
+
+    _defineProperty(this, "drawCrosshair", () => {
+      this.hoverRaf = 0;
+      const g = this.hoverRef.current;
+      const scaled = this.scaled;
+      const raw = safePrices(this.props.prices);
+      if (!g || !scaled || scaled.length < 2 || raw.length !== scaled.length) {
+        return;
+      }
+      const i = nearestIndex(scaled, this.hoverX);
+      const point = scaled[i];
+      const source = raw[i];
+      g.setAttribute("visibility", "visible");
+      // Skip the text work when the pointer is still on the same point
+      if (i === this.hoverIndex) {
+        return;
+      }
+      this.hoverIndex = i;
+
+      const { color } = this.props.theme;
+      this.hoverLineRef.current.setAttribute("x1", point.time);
+      this.hoverLineRef.current.setAttribute("x2", point.time);
+      this.hoverDotRef.current.setAttribute("cx", point.time);
+      this.hoverDotRef.current.setAttribute("cy", point.price);
+
+      const priceText = this.props.formatPrice
+        ? this.props.formatPrice(Number(source.price))
+        : String(source.price);
+      const dateText = crosshairDate(source.time, this.props.period);
+      this.hoverPriceRef.current.textContent = priceText;
+      this.hoverDateRef.current.textContent = dateText;
+
+      // Size the label to its text, then keep it inside the chart box
+      const textWidth = Math.max(
+        this.hoverPriceRef.current.getComputedTextLength(),
+        this.hoverDateRef.current.getComputedTextLength(),
+      );
+      const boxW = textWidth + CROSSHAIR_LABEL_PAD * 2;
+      const boxH = 34;
+      let boxX = point.time + CROSSHAIR_LABEL_GAP;
+      if (boxX + boxW > this.width) {
+        boxX = point.time - CROSSHAIR_LABEL_GAP - boxW;
+      }
+      boxX = Math.max(0, boxX);
+      const boxY = Math.min(
+        Math.max(point.price - boxH / 2, 0),
+        Math.max(this.height - boxH, 0),
+      );
+      const box = this.hoverBoxRef.current;
+      box.setAttribute("x", boxX);
+      box.setAttribute("y", boxY);
+      box.setAttribute("width", boxW);
+      box.setAttribute("height", boxH);
+      box.setAttribute("fill", color.bgSecondary);
+      box.setAttribute("stroke", color.border);
+      this.hoverPriceRef.current.setAttribute("x", boxX + CROSSHAIR_LABEL_PAD);
+      this.hoverPriceRef.current.setAttribute("y", boxY + 14);
+      this.hoverDateRef.current.setAttribute("x", boxX + CROSSHAIR_LABEL_PAD);
+      this.hoverDateRef.current.setAttribute("y", boxY + 27);
+    });
+
     _defineProperty(this, "updatePath", () => {
       const { prices } = this.props;
 
@@ -73,6 +203,8 @@ class LineBase extends PureComponent {
         PADDING,
         PADDING,
       );
+      this.scaled = scaled;
+      this.hoverIndex = -1;
       const d = lineFromPrices(scaled);
       const areaD = buildAreaD(d, scaled, this.height);
 
@@ -116,6 +248,7 @@ class LineBase extends PureComponent {
         PADDING,
         PADDING,
       );
+      this.scaled = scaled;
       const d = lineFromPrices(scaled);
       const areaD = buildAreaD(d, scaled, height);
       this.path.attr("d", d);
@@ -163,6 +296,20 @@ class LineBase extends PureComponent {
       } else {
         window.addEventListener("resize", this.handleResize);
       }
+
+      if (this.props.interactive) {
+        const svg = this.svgRef.current;
+        svg.addEventListener("pointermove", this.handlePointerMove, {
+          passive: true,
+        });
+        svg.addEventListener("pointerleave", this.handlePointerLeave, {
+          passive: true,
+        });
+        // A touch drag reads the chart too; lift = done
+        svg.addEventListener("pointercancel", this.handlePointerLeave, {
+          passive: true,
+        });
+      }
     }
   }
 
@@ -170,6 +317,7 @@ class LineBase extends PureComponent {
     // Only update path if prices actually changed
     if (prevProps.prices !== this.props.prices) {
       this.updatePath();
+      this.handlePointerLeave(); // stale readout would point at old data
     }
   }
 
@@ -179,6 +327,13 @@ class LineBase extends PureComponent {
       this.resizeObserver = null;
     }
     window.removeEventListener("resize", this.handleResize);
+    if (this.hoverRaf) cancelAnimationFrame(this.hoverRaf);
+    const svg = this.svgRef.current;
+    if (svg && this.props.interactive) {
+      svg.removeEventListener("pointermove", this.handlePointerMove);
+      svg.removeEventListener("pointerleave", this.handlePointerLeave);
+      svg.removeEventListener("pointercancel", this.handlePointerLeave);
+    }
   }
 
   render() {
@@ -189,7 +344,7 @@ class LineBase extends PureComponent {
 
     return React.createElement(
       Svg,
-      { innerRef: this.svgRef },
+      { innerRef: this.svgRef, interactive: this.props.interactive },
       React.createElement(
         "defs",
         null,
@@ -231,6 +386,52 @@ class LineBase extends PureComponent {
           strokeWidth: "1.5",
         }),
       ),
+
+      // Crosshair layer — positions/text are written imperatively on hover
+      this.props.interactive &&
+        React.createElement(
+          "g",
+          {
+            ref: this.hoverRef,
+            visibility: "hidden",
+            pointerEvents: "none",
+            "aria-hidden": "true",
+          },
+          React.createElement("line", {
+            ref: this.hoverLineRef,
+            y1: 0,
+            y2: "100%",
+            stroke: color.textSecondary,
+            strokeWidth: "1",
+            strokeDasharray: "3 3",
+            opacity: "0.7",
+          }),
+          React.createElement("circle", {
+            ref: this.hoverDotRef,
+            r: "3.5",
+            fill: color.bg,
+            stroke: color.text,
+            strokeWidth: "1.5",
+          }),
+          React.createElement("rect", {
+            ref: this.hoverBoxRef,
+            rx: "6",
+            strokeWidth: "1",
+          }),
+          React.createElement("text", {
+            ref: this.hoverPriceRef,
+            fill: color.text,
+            fontSize: "12",
+            fontWeight: "600",
+            fontFamily: this.props.theme.font.primary,
+          }),
+          React.createElement("text", {
+            ref: this.hoverDateRef,
+            fill: color.textSecondary,
+            fontSize: "10",
+            fontFamily: this.props.theme.font.primary,
+          }),
+        ),
     );
   }
 }

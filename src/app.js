@@ -964,6 +964,19 @@ class CryptoChart extends PureComponent {
       }
     });
 
+    // Price formatter handed to the chart's crosshair (bound once so the
+    // memoized Line never sees a new prop identity per render)
+    _defineProperty(this, "formatChartPrice", (value) =>
+      formatNumberString(
+        value,
+        getCurrencySymbol(this.state.currency),
+        true,
+        false,
+        this.state.decimalPlaces,
+        this.state.separatorFormat,
+      ),
+    );
+
     _defineProperty(this, "handleThemeChange", (newTheme) => {
       saveThemeToStorage(newTheme);
       const activeTheme = getActiveTheme(newTheme);
@@ -2013,6 +2026,9 @@ class CryptoChart extends PureComponent {
                 : React.createElement(Line, {
                     prices: valueHistory,
                     colorize: this.state.chartColor,
+                    interactive: true, // crosshair with price + date
+                    period,
+                    formatPrice: this.formatChartPrice,
                   }),
             ),
           ),
