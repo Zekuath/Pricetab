@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Portfolio design polish** - per-holding allocation share (thin accent meter under each row + % next to the coin name), a quiet stats row under the total (24h P/L, best/worst 24h mover), unified uppercase section labels and a friendlier empty state
 - **Onboarding tour** - first-run spotlight tour of the main controls (shown once, skippable)
 - **Collapsible settings groups** - settings sections expand/collapse for faster scanning
+- **Since your last visit** - a quiet line under the price shows how the coin moved since you last looked ("Since your last visit (3h ago) +1.24% · $512"). The baseline only refreshes after 20 minutes, so opening a burst of tabs keeps comparing against the same earlier visit instead of resetting to "just now"
 - **Chart crosshair** - hovering the chart reads out the price and date at that point (clock times on 1H/1D, plain dates on longer ranges); the readout follows the nearest data point, flips sides at the edges and stays inside the chart. Built to stay cheap: no React re-render per pointer move, a binary search over pre-scaled points, and DOM writes batched into one animation frame
 - **One-time rating ask** - after two days of use, a small dismissible card in the corner of the new tab asks for a store rating; it appears exactly once and never returns after dismissing or rating
 - **Hacker News in the news ticker** - well-upvoted crypto stories from the past week (via Algolia, CORS-enabled, no key) join Blockchair's headlines

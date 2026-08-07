@@ -219,6 +219,29 @@ const loadChartColorFromStorage = () =>
 const saveChartColorToStorage = (enabled) =>
   saveSetting(CHART_COLOR_STORAGE_KEY, enabled);
 
+/* "Since your last visit" baselines: { COIN: { price, time } }. Entries are
+ * validated on read (junk or expired ones dropped) so a corrupted store can
+ * never show a nonsense comparison. */
+const loadLastSeen = () => {
+  const saved = loadJsonSetting(LAST_SEEN_KEY);
+  if (!saved || typeof saved !== "object" || Array.isArray(saved)) return {};
+  const clean = {};
+  const now = Date.now();
+  for (const coin of Object.keys(saved)) {
+    const entry = saved[coin];
+    if (!entry || typeof entry !== "object") continue;
+    const price = Number(entry.price);
+    const time = Number(entry.time);
+    if (!isFinite(price) || price <= 0) continue;
+    if (!isFinite(time) || time <= 0 || time > now) continue;
+    if (now - time > LAST_SEEN_MAX_AGE_MS) continue;
+    clean[coin] = { price, time };
+  }
+  return clean;
+};
+
+const saveLastSeen = (map) => saveJsonSetting(LAST_SEEN_KEY, map);
+
 // One purchase lot: amount bought, total paid for it, unix-seconds date
 // (0 = unknown) and whether it was typed in or inferred from a watched chain
 const sanitizeLots = (list) => {

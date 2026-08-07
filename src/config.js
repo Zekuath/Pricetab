@@ -270,6 +270,17 @@ const RATE_PROMPT_DISMISSED_KEY = "crypto_chart_rate_prompt_dismissed";
 const FIRST_USE_KEY = "crypto_chart_first_use";
 const RATE_PROMPT_SHOWN_KEY = "crypto_chart_rate_prompt_shown";
 const RATE_PROMPT_DELAY_MS = 2 * 24 * 60 * 60 * 1000;
+// "Since your last visit": per-coin snapshot of the price when this tab
+// series was last opened. { COIN: { price, time } }
+const LAST_SEEN_KEY = "crypto_chart_last_seen";
+// A fresh baseline is only taken after this long, so opening ten tabs in a
+// row keeps comparing against the same earlier visit instead of "just now"
+const LAST_SEEN_REFRESH_MS = 20 * 60 * 1000; // 20 minutes
+// Older than this and the comparison stops being interesting
+const LAST_SEEN_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
+// Below this the line would just be noise
+const LAST_SEEN_MIN_PCT = 0.05;
+
 // First-run onboarding tour (shown once, then dismissed)
 const ONBOARDING_SEEN_KEY = "crypto_chart_onboarding_seen";
 // Tracking-only portfolio: [{ coin, amount, paid, address }] manually

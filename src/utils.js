@@ -166,6 +166,19 @@ const lineFromPrices = line()
   .x((d) => d.time)
   .y((d) => d.price);
 
+// Coarse "how long ago" for the since-last-visit line. Deliberately vague —
+// the point is orientation ("this morning"), not a stopwatch.
+const describeElapsed = (ms) => {
+  const mins = Math.round(ms / 60000);
+  if (mins < 60) return `${mins} min ago`;
+  const hours = Math.round(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.round(hours / 24);
+  if (days === 1) return "yesterday";
+  if (days < 30) return `${days} days ago`;
+  return "a month ago";
+};
+
 const NUMBER_REG = /\B(?=(\d{3})+(?!\d))/g;
 
 const getSign = (price, hidePlus) => {

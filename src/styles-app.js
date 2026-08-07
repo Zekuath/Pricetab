@@ -95,6 +95,28 @@ const OfflineMessage = styled.div`
   }
 `;
 
+// "Since your last visit" — a quiet line under the price/change overview.
+// Deliberately small: it's context, not a headline.
+const SinceLastVisit = styled.div`
+  margin-top: ${({ theme }) => theme.spacing.small}rem;
+  font-size: 0.72rem;
+  color: ${({ theme }) => theme.color.textSecondary};
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+`;
+
+const SinceValue = styled.span`
+  font-weight: ${({ theme }) => theme.fontWeight.semibold};
+  color: ${({ theme, up }) =>
+    up == null
+      ? theme.color.textSecondary
+      : up
+        ? theme.color.chartLineGreen
+        : theme.color.chartLineRed};
+`;
+
 // One-time rating ask: small card in the bottom-right corner of the main
 // view, lifted above the page ticker when the ticker sits at the bottom.
 // Text/link/close children reuse the RatePrompt* pieces from styles-settings.

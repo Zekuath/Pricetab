@@ -155,4 +155,31 @@ assert.ok(run("getOrInitFirstUse()") <= Date.now(), "corrupt timestamp reset");
 run("saveRatePromptShown()");
 assert.strictEqual(run("loadRatePromptShown()"), true, "rate shown roundtrip");
 
+// --- since-last-visit baselines ---
+assert.strictEqual(JSON.stringify(run("loadLastSeen()")), "{}", "last seen default");
+run('saveLastSeen({ BTC: { price: 100, time: Date.now() - 1000 } })');
+assert.strictEqual(run("loadLastSeen().BTC.price"), 100, "last seen roundtrip");
+// junk, impossible and expired entries are dropped on read
+store["crypto_chart_last_seen"] = JSON.stringify({
+  BTC: { price: 100, time: Date.now() - 1000 },
+  ETH: { price: 0, time: Date.now() },
+  XRP: { price: 5, time: Date.now() + 60000 },
+  LTC: { price: 5, time: Date.now() - 40 * 24 * 60 * 60 * 1000 },
+  SOL: "junk",
+});
+assert.strictEqual(
+  JSON.stringify(Object.keys(run("loadLastSeen()"))),
+  JSON.stringify(["BTC"]),
+  "last seen: zero price, future and expired entries dropped",
+);
+store["crypto_chart_last_seen"] = "not json{";
+assert.strictEqual(JSON.stringify(run("loadLastSeen()")), "{}", "last seen: corrupt JSON falls back");
+
+// --- elapsed wording ---
+assert.strictEqual(run("describeElapsed(5 * 60000)"), "5 min ago", "minutes");
+assert.strictEqual(run("describeElapsed(3 * 3600000)"), "3h ago", "hours");
+assert.strictEqual(run("describeElapsed(24 * 3600000)"), "yesterday", "one day");
+assert.strictEqual(run("describeElapsed(5 * 24 * 3600000)"), "5 days ago", "days");
+assert.strictEqual(run("describeElapsed(60 * 24 * 3600000)"), "a month ago", "long ago");
+
 console.log("ALL STORAGE TESTS PASSED");

@@ -41,6 +41,10 @@ class CryptoChart extends PureComponent {
       showSettings: false,
       showPortfolio: false, // Full-screen tracking-only portfolio view
       showRateAsk: false, // One-time rating ask (eligibility checked on mount)
+      // Price when this coin was last looked at, for the "since your last
+      // visit" line: { price, time } or null. Frozen at mount so the line
+      // never moves while the tab is open.
+      lastSeen: loadLastSeen(),
       portfolio: loadPortfolioFromStorage(), // [{ coin, amount, lots, watches }]
       portfolioPrices: {}, // { COIN: { price, change, up } } from pageTickerCache
       portfolioReady: false, // true after first portfolio price fetch
@@ -523,6 +527,8 @@ class CryptoChart extends PureComponent {
             if (this.state.tickerEnabled && this.tickerInterval) {
               this.buildTickerText();
             }
+            // Leave a baseline for the next visit's comparison
+            this.recordLastSeen(activeCoin, Number(currentValue));
             // Warm the other periods so switching is instant
             this.prefetchPeriods(activeCoin, currency);
           },
@@ -962,6 +968,18 @@ class CryptoChart extends PureComponent {
         e.preventDefault();
         this.fetchData();
       }
+    });
+
+    // Record what the active coin costs now, so the next visit can compare
+    // against it. Rate-limited: opening a burst of tabs keeps the earlier
+    // baseline instead of resetting it to "a second ago".
+    _defineProperty(this, "recordLastSeen", (coin, price) => {
+      if (!coin || !isFinite(price) || price <= 0) return;
+      const stored = loadLastSeen();
+      const prev = stored[coin];
+      if (prev && Date.now() - prev.time < LAST_SEEN_REFRESH_MS) return;
+      stored[coin] = { price, time: Date.now() };
+      saveLastSeen(stored);
     });
 
     // Price formatter handed to the chart's crosshair (bound once so the
@@ -1982,15 +2000,46 @@ class CryptoChart extends PureComponent {
                     height: "1rem",
                   }),
                 )
-              : React.createElement(Overview, {
-                  coin: activeCoin,
-                  cycleCoinIndex: this.cycleCoinIndex,
-                  currentValue,
-                  valueHistory,
-                  decimalPlaces,
-                  separatorFormat,
-                  currency,
-                }),
+              : React.createElement(
+                  Fragment,
+                  null,
+                  React.createElement(Overview, {
+                    coin: activeCoin,
+                    cycleCoinIndex: this.cycleCoinIndex,
+                    currentValue,
+                    valueHistory,
+                    decimalPlaces,
+                    separatorFormat,
+                    currency,
+                  }),
+                  // "Since your last visit" — only when there's a baseline
+                  // from a previous session and the move is worth mentioning
+                  (() => {
+                    const seen = this.state.lastSeen[activeCoin];
+                    const now = Number(currentValue);
+                    if (!seen || !isFinite(now) || now <= 0) return null;
+                    const pct = ((now - seen.price) / seen.price) * 100;
+                    if (Math.abs(pct) < LAST_SEEN_MIN_PCT) return null;
+                    const delta = now - seen.price;
+                    return React.createElement(
+                      SinceLastVisit,
+                      null,
+                      `Since your last visit (${describeElapsed(Date.now() - seen.time)})`,
+                      React.createElement(
+                        SinceValue,
+                        { up: delta === 0 ? null : delta > 0 },
+                        `${pct >= 0 ? "+" : ""}${pct.toFixed(2)}% · ${formatNumberString(
+                          delta,
+                          getCurrencySymbol(currency),
+                          false,
+                          false,
+                          decimalPlaces,
+                          separatorFormat,
+                        )}`,
+                      ),
+                    );
+                  })(),
+                ),
 
             // Show skeleton or actual period switcher
             showSkeleton
