@@ -259,6 +259,11 @@ const saveAlerts = (alerts) =>
 /* "Since your last visit" baselines: { COIN: { price, time } }. Entries are
  * validated on read (junk or expired ones dropped) so a corrupted store can
  * never show a nonsense comparison. */
+/* Each entry holds two things: the anchor the line compares against
+ * (`price`/`time` — what you last saw before a break) and the running
+ * latest view (`lastPrice`/`lastTime`), which becomes the next anchor once
+ * a break happens. Entries written before this split only have the anchor,
+ * so the latest view falls back to it. */
 const loadLastSeen = () => {
   const saved = loadJsonSetting(LAST_SEEN_KEY);
   if (!saved || typeof saved !== "object" || Array.isArray(saved)) return {};
@@ -272,12 +277,39 @@ const loadLastSeen = () => {
     if (!isFinite(price) || price <= 0) continue;
     if (!isFinite(time) || time <= 0 || time > now) continue;
     if (now - time > LAST_SEEN_MAX_AGE_MS) continue;
-    clean[coin] = { price, time };
+    const lastPriceNum = Number(entry.lastPrice);
+    const lastTimeNum = Number(entry.lastTime);
+    const lastPrice =
+      isFinite(lastPriceNum) && lastPriceNum > 0 ? lastPriceNum : price;
+    const lastTime =
+      isFinite(lastTimeNum) && lastTimeNum > 0 && lastTimeNum <= now
+        ? lastTimeNum
+        : time;
+    clean[coin] = { price, time, lastPrice, lastTime };
   }
   return clean;
 };
 
 const saveLastSeen = (map) => saveJsonSetting(LAST_SEEN_KEY, map);
+
+/* Where a coin's "since your last visit" anchor goes on this visit.
+ * Pure so the rule can be tested without a page:
+ *   no history      → this visit becomes the record, nothing to show yet
+ *   back from a gap → the price you last saw becomes the anchor
+ *   same visit      → anchor stays put, only the running view moves
+ * Keeping the anchor still is the whole point: refreshing it constantly
+ * meant the comparison was always against a few minutes ago, so the delta
+ * sat below the noise threshold and the line never appeared. */
+const nextLastSeen = (prev, price, now) => {
+  if (!prev) return { price, time: now, lastPrice: price, lastTime: now };
+  const returning = now - prev.lastTime > LAST_SEEN_GAP_MS;
+  return {
+    price: returning ? prev.lastPrice : prev.price,
+    time: returning ? prev.lastTime : prev.time,
+    lastPrice: price,
+    lastTime: now,
+  };
+};
 
 const loadLastSeenEnabled = () =>
   loadBoolSetting(LAST_SEEN_ENABLED_KEY, DEFAULT_LAST_SEEN_ENABLED);

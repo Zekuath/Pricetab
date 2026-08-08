@@ -25,7 +25,7 @@ still run.
 | File | Covers |
 |------|--------|
 | `test-load.js` | All `src/*.js` files execute cleanly in `index.html` script order (catches TDZ violations, duplicate declarations, load-order mistakes) |
-| `test-storage.js` | localStorage helpers: defaults, round trips, whitelist rejection, corrupt-JSON fallbacks for every setting |
+| `test-storage.js` | localStorage helpers: defaults, round trips, whitelist rejection, corrupt-JSON fallbacks for every setting; plus the "since your last visit" anchor rule (held still across a session, re-anchored to the pre-break price after a gap) |
 | `test-api.js` | News fetchers (Blockchair + Hacker News parsing, clamping, filtering), the cross-source news merge (spam filter, title dedupe), on-chain address lookups — balances (provider parsing, unit conversion, cache, stale-on-failure, junk guards) and BTC tx history → chronological deltas — and per-coin page ticker snapshot (24h change math, TTL skip) |
 | `test-cache.js` | Persistent price cache: hydrate/persist/caps, plus the Date-revival regression (JSON turns Date fields into ISO strings; hydration must revive them or scaleTime renders a NaN path) |
 | `test-bulk.js` | Coinlore bulk sweep: cache fill, currency conversion, duplicate-symbol dedupe, junk filtering, fallback signalling |

@@ -175,6 +175,47 @@ assert.strictEqual(
 store["crypto_chart_last_seen"] = "not json{";
 assert.strictEqual(JSON.stringify(run("loadLastSeen()")), "{}", "last seen: corrupt JSON falls back");
 
+// --- since-last-visit anchor rule ---
+// The anchor is what the line measures from. It must stay still during a
+// browsing session, otherwise the comparison is always "vs. a minute ago"
+// and the delta never clears the noise threshold (the line never showed).
+const T0 = 1700000000000;
+const MIN = 60000;
+const step = (prev, price, at) => {
+  sandbox.__prev = prev;
+  return JSON.parse(JSON.stringify(run(`nextLastSeen(__prev, ${price}, ${at})`)));
+};
+
+const first = step(null, 100, T0);
+assert.deepStrictEqual(
+  first,
+  { price: 100, time: T0, lastPrice: 100, lastTime: T0 },
+  "first ever visit records itself (delta 0 → nothing to show)",
+);
+
+// Tabs opened minutes apart are one visit: the anchor must not move
+const soon = step(first, 101, T0 + 5 * MIN);
+assert.strictEqual(soon.price, 100, "anchor held during the same visit");
+assert.strictEqual(soon.time, T0, "anchor timestamp held");
+assert.strictEqual(soon.lastPrice, 101, "running view follows the price");
+const later = step(soon, 102, T0 + 10 * MIN);
+assert.strictEqual(later.price, 100, "anchor still held after another tab");
+assert.strictEqual(later.lastPrice, 102, "running view keeps up");
+
+// After a break, the price last seen before the break becomes the anchor
+const back = step(later, 130, T0 + 90 * MIN);
+assert.strictEqual(back.price, 102, "anchor = the last price seen before the gap");
+assert.strictEqual(back.time, T0 + 10 * MIN, "anchor time = when that was");
+assert.strictEqual(back.lastPrice, 130, "running view is the current price");
+
+// ...and it holds again for the whole new visit
+const back2 = step(back, 131, T0 + 95 * MIN);
+assert.strictEqual(back2.price, 102, "new anchor held through the new visit");
+
+// A gap exactly at the threshold is still the same visit (strictly greater)
+const edge = step(first, 105, T0 + 20 * MIN);
+assert.strictEqual(edge.price, 100, "20 min exactly does not start a new visit");
+
 // --- since-last-visit toggle ---
 assert.strictEqual(run("loadLastSeenEnabled()"), true, "since-last-visit on by default");
 run("saveLastSeenEnabled(false)");

@@ -303,9 +303,11 @@ const LAST_SEEN_KEY = "crypto_chart_last_seen";
 // kept either way, so turning it back on still has history to compare to)
 const LAST_SEEN_ENABLED_KEY = "crypto_chart_last_seen_enabled";
 const DEFAULT_LAST_SEEN_ENABLED = true;
-// A fresh baseline is only taken after this long, so opening ten tabs in a
-// row keeps comparing against the same earlier visit instead of "just now"
-const LAST_SEEN_REFRESH_MS = 20 * 60 * 1000; // 20 minutes
+// A break this long ends a "visit": the price you last saw before it becomes
+// the thing the next visit compares against. Without a gap the anchor stays
+// put, so a burst of tabs keeps measuring from the same moment instead of
+// resetting to "just now" (which always looked like nothing had happened).
+const LAST_SEEN_GAP_MS = 20 * 60 * 1000; // 20 minutes
 // Older than this and the comparison stops being interesting
 const LAST_SEEN_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 // Below this the line would just be noise

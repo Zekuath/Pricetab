@@ -1158,10 +1158,12 @@ class CryptoChart extends PureComponent {
     _defineProperty(this, "recordLastSeen", (coin, price) => {
       if (!coin || !isFinite(price) || price <= 0) return;
       const stored = loadLastSeen();
-      const prev = stored[coin];
-      if (prev && Date.now() - prev.time < LAST_SEEN_REFRESH_MS) return;
-      stored[coin] = { price, time: Date.now() };
+      const next = nextLastSeen(stored[coin], price, Date.now());
+      stored[coin] = next;
       saveLastSeen(stored);
+      // Render from the anchor computed for *this* visit, not the one that
+      // was in storage when the tab mounted
+      this.setState((s) => ({ lastSeen: { ...s.lastSeen, [coin]: next } }));
     });
 
     // Candles for the crosshair readout. Called the first time the pointer
