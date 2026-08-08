@@ -156,6 +156,14 @@ class LineBase extends PureComponent {
       if (this.hoverRef.current) {
         this.hoverRef.current.setAttribute("visibility", "hidden");
       }
+      // Belt and braces: hide the rows outright as well, so no future edit
+      // that marks a child "visible" can resurrect the readout.
+      for (let r = 0; r < CROSSHAIR_ROWS.length; r++) {
+        const labelNode = this.rowLabelRefs[r].current;
+        const valueNode = this.rowValueRefs[r].current;
+        if (labelNode) labelNode.setAttribute("visibility", "hidden");
+        if (valueNode) valueNode.setAttribute("visibility", "hidden");
+      }
     });
 
     _defineProperty(this, "drawCrosshair", () => {
@@ -216,8 +224,11 @@ class LineBase extends PureComponent {
         if (values) {
           labelNode.textContent = CROSSHAIR_ROWS[r];
           valueNode.textContent = values[r];
-          labelNode.setAttribute("visibility", "visible");
-          valueNode.setAttribute("visibility", "visible");
+          // "inherit", never "visible": visibility is an inherited property,
+          // so a child marked visible stays on screen even after the parent
+          // group is hidden — which left the readout stuck on the chart.
+          labelNode.setAttribute("visibility", "inherit");
+          valueNode.setAttribute("visibility", "inherit");
           labelW = Math.max(labelW, labelNode.getComputedTextLength());
           valueW = Math.max(valueW, valueNode.getComputedTextLength());
         } else {

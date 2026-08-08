@@ -62,6 +62,15 @@ const sandbox = {
     obj[key] = value;
     return obj;
   },
+  // api.js provides this at runtime; chart.js only calls it
+  candleAt: () => ({
+    time: 1000,
+    open: 10,
+    high: 12,
+    low: 9,
+    close: 11,
+    volume: 1234,
+  }),
 };
 vm.createContext(sandbox);
 vm.runInContext(
@@ -139,5 +148,94 @@ assert.strictEqual(run("formatVolume(0.0123)"), "0.0123", "sub-1 values keep 4 d
 assert.strictEqual(run("formatVolume(-2500)"), "-2.50K", "negatives keep their sign");
 assert.strictEqual(run("formatVolume('abc')"), "—", "junk shows a dash, not NaN");
 assert.strictEqual(run("formatVolume()"), "—", "missing volume shows a dash");
+
+/* ── the readout must fully disappear on leave ──────────────────────────────
+ * Regression: the OHLC rows were marked visibility="visible". Because
+ * visibility is an inherited property, a visible child stays on screen even
+ * when its parent group is hidden — so the table lingered on the chart after
+ * the cursor left. Nothing may be left visible after a leave.
+ */
+
+const fakeNode = () => ({
+  attrs: {},
+  textContent: "",
+  setAttribute(k, v) {
+    this.attrs[k] = String(v);
+  },
+  getComputedTextLength() {
+    return String(this.textContent).length * 6;
+  },
+});
+
+const chart = run("new LineBase({})");
+chart.props = {
+  prices: [
+    { price: 10, time: new Date(1000) },
+    { price: 20, time: new Date(2000) },
+  ],
+  theme: {
+    color: { text: "#fff", textSecondary: "#aaa", bg: "#000", bgSecondary: "#111", border: "#333" },
+    font: { primary: "mono" },
+  },
+  period: "day",
+  coin: "BTC",
+  formatPrice: (v) => `$${v}`,
+  ohlc: [{ time: 1000, open: 10, high: 12, low: 9, close: 11, volume: 1234 }],
+};
+chart.scaled = [
+  { time: 0, price: 10 },
+  { time: 100, price: 20 },
+];
+chart.width = 200;
+chart.height = 100;
+chart.hoverX = 100;
+
+const nodes = [];
+const attach = (ref) => {
+  ref.current = fakeNode();
+  nodes.push(ref.current);
+  return ref.current;
+};
+const g = attach(chart.hoverRef);
+attach(chart.hoverLineRef);
+attach(chart.hoverDotRef);
+attach(chart.hoverBoxRef);
+attach(chart.hoverPriceRef);
+attach(chart.hoverDateRef);
+chart.rowLabelRefs.forEach(attach);
+chart.rowValueRefs.forEach(attach);
+
+chart.drawCrosshair();
+assert.strictEqual(g.attrs.visibility, "visible", "hovering shows the readout");
+assert.strictEqual(
+  chart.rowValueRefs[0].current.textContent,
+  "$10",
+  "open row filled from the candle",
+);
+assert.strictEqual(
+  chart.rowValueRefs[4].current.textContent,
+  "1.23K BTC",
+  "volume row is compact and labelled with the coin",
+);
+// No descendant may claim visibility:visible — that is what defeated hiding
+// (the group itself, nodes[0], is the thing being shown)
+for (const n of nodes.slice(1)) {
+  assert.notStrictEqual(
+    n.attrs.visibility,
+    "visible",
+    "no row overrides the group's visibility while shown",
+  );
+}
+
+chart.handlePointerLeave();
+assert.strictEqual(g.attrs.visibility, "hidden", "leaving hides the group");
+for (const n of nodes.slice(1)) {
+  assert.ok(
+    n.attrs.visibility === undefined ||
+      n.attrs.visibility === "hidden" ||
+      n.attrs.visibility === "inherit",
+    "nothing is left explicitly visible after the pointer leaves",
+  );
+}
 
 console.log("CHART TESTS OK");
