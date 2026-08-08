@@ -397,6 +397,13 @@ const GaugeNeedle = styled.line`
   stroke: ${({ theme }) => theme.color.text};
   stroke-width: 1.5;
   stroke-linecap: round;
+  /* Drawn pointing at 0 and rotated into place: SVG line endpoints are
+     attributes, not animatable CSS properties, but a transform is — and a
+     swinging needle is what a gauge should do anyway. */
+  transform: rotate(${({ angle }) => angle}deg);
+  transform-box: view-box;
+  transform-origin: 50px 50px;
+  transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
 `;
 
 const GaugeCenterDot = styled.circle`
@@ -500,6 +507,7 @@ const RsiMarker = styled.div`
   top: 50%;
   left: ${({ value }) => value}%;
   transform: translate(-50%, -50%);
+  transition: left 0.4s ease;
   width: 8px;
   height: 8px;
   border-radius: 50%;

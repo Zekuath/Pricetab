@@ -96,8 +96,10 @@ class LineBase extends PureComponent {
     _defineProperty(this, "clipRectRef", createRef());
 
     // Candle layer: one path per direction, whatever the candle count
+    _defineProperty(this, "candleGroupRef", createRef());
     _defineProperty(this, "upCandlesRef", createRef());
     _defineProperty(this, "downCandlesRef", createRef());
+    _defineProperty(this, "lineGroupRef", createRef());
 
     // Crosshair nodes — written to directly, never through React
     _defineProperty(this, "hoverRef", createRef());
@@ -134,7 +136,7 @@ class LineBase extends PureComponent {
             this.clipRect.attr("width", width).attr("height", height);
           }
           this.updatePath();
-          this.updateCandles();
+          this.updateCandles(false);
         }
       }, 150),
     );
@@ -171,17 +173,57 @@ class LineBase extends PureComponent {
       }
     });
 
+    /* Which candle the pointer is over. Bars are evenly spaced, so the slot
+     * is arithmetic — and using the slot rather than the nearest centre
+     * means the whole bar is hoverable, not just the half nearest its axis. */
+    _defineProperty(this, "candleIndexAt", (x) => {
+      const bars = this.candleScale && this.candleScale.bars;
+      if (!bars || !bars.length) return -1;
+      const step = (this.width - PADDING * 2) / bars.length;
+      if (!(step > 0)) return -1;
+      const i = Math.floor((x - PADDING) / step);
+      return Math.min(Math.max(i, 0), bars.length - 1);
+    });
+
     _defineProperty(this, "drawCrosshair", () => {
       this.hoverRaf = 0;
       const g = this.hoverRef.current;
-      const scaled = this.scaled;
       const raw = safePrices(this.props.prices);
-      if (!g || !scaled || scaled.length < 2 || raw.length !== scaled.length) {
-        return;
+      const scaled = this.scaled;
+
+      /* In candle mode the crosshair follows the bars, not the line's
+       * points: the two use different x spacing (a line spreads n points
+       * across the full width, candles sit in n slots), so reading from the
+       * line left the guide between bars instead of through one. The
+       * readout also has to describe the bar actually on screen, which
+       * after aggregation is a merge of several source candles. */
+      const candleMode = Boolean(
+        this.props.showCandles && this.candleScale && this.candleBars,
+      );
+
+      let i;
+      let px;
+      let py;
+      let source;
+      let candle = null;
+      if (candleMode) {
+        i = this.candleIndexAt(this.hoverX);
+        if (i < 0) return;
+        const bar = this.candleScale.bars[i];
+        candle = this.candleBars[i];
+        px = bar.x;
+        py = bar.yClose;
+        source = { price: candle.close, time: candle.time };
+      } else {
+        if (!scaled || scaled.length < 2 || raw.length !== scaled.length) {
+          return;
+        }
+        i = nearestIndex(scaled, this.hoverX);
+        px = scaled[i].time;
+        py = scaled[i].price;
+        source = raw[i];
       }
-      const i = nearestIndex(scaled, this.hoverX);
-      const point = scaled[i];
-      const source = raw[i];
+      if (!g) return;
       g.setAttribute("visibility", "visible");
       // Skip the text work when the pointer is still on the same point
       if (i === this.hoverIndex) {
@@ -190,10 +232,10 @@ class LineBase extends PureComponent {
       this.hoverIndex = i;
 
       const { color } = this.props.theme;
-      this.hoverLineRef.current.setAttribute("x1", point.time);
-      this.hoverLineRef.current.setAttribute("x2", point.time);
-      this.hoverDotRef.current.setAttribute("cx", point.time);
-      this.hoverDotRef.current.setAttribute("cy", point.price);
+      this.hoverLineRef.current.setAttribute("x1", px);
+      this.hoverLineRef.current.setAttribute("x2", px);
+      this.hoverDotRef.current.setAttribute("cx", px);
+      this.hoverDotRef.current.setAttribute("cy", py);
 
       const fmt = this.props.formatPrice
         ? (v) => this.props.formatPrice(Number(v))
@@ -205,9 +247,9 @@ class LineBase extends PureComponent {
       // no candle (unsupported range/currency, or still loading) it stays
       // the plain price line rather than showing blanks.
       const timeMs = Number(new Date(source.time));
-      const candle = this.props.ohlc
-        ? candleAt(this.props.ohlc, timeMs)
-        : null;
+      if (!candleMode) {
+        candle = this.props.ohlc ? candleAt(this.props.ohlc, timeMs) : null;
+      }
       this.hoverPriceRef.current.textContent = candle ? "" : fmt(source.price);
 
       const values = candle
@@ -251,13 +293,13 @@ class LineBase extends PureComponent {
       const boxH = values
         ? CROSSHAIR_LABEL_PAD * 2 + 12 + CROSSHAIR_ROWS.length * CROSSHAIR_ROW_H
         : 34;
-      let boxX = point.time + CROSSHAIR_LABEL_GAP;
+      let boxX = px + CROSSHAIR_LABEL_GAP;
       if (boxX + boxW > this.width) {
-        boxX = point.time - CROSSHAIR_LABEL_GAP - boxW;
+        boxX = px - CROSSHAIR_LABEL_GAP - boxW;
       }
       boxX = Math.max(0, boxX);
       const boxY = Math.min(
-        Math.max(point.price - boxH / 2, 0),
+        Math.max(py - boxH / 2, 0),
         Math.max(this.height - boxH, 0),
       );
       const box = this.hoverBoxRef.current;
@@ -296,25 +338,71 @@ class LineBase extends PureComponent {
     });
 
     /* Candles are laid out for the current width, so this reruns on resize
-     * and on new data. Aggregation keeps the bar count sane for the space. */
-    _defineProperty(this, "updateCandles", () => {
+     * and on new data. Aggregation keeps the bar count sane for the space.
+     * `animate` is set for data and mode changes but not for resizes — a
+     * window drag would otherwise strobe the chart.
+     *
+     * The line morphs between periods because its shape survives the change;
+     * a candle set doesn't (60 one-minute bars become 120 six-hour ones), so
+     * this cross-fades instead of trying to tween one into the other. */
+    _defineProperty(this, "updateCandles", (animate) => {
       const up = this.upCandlesRef.current;
       const down = this.downCandlesRef.current;
-      if (!up || !down) return;
+      const group = this.candleGroupRef.current;
+      if (!up || !down || !group) return;
       const candles = this.props.candles;
-      if (!this.props.showCandles || !candles || !candles.length) {
-        up.setAttribute("d", "");
-        down.setAttribute("d", "");
+      const showing = Boolean(
+        this.props.showCandles && candles && candles.length,
+      );
+
+      if (!showing) {
         this.candleScale = null;
+        this.candleBars = null;
+        this.fadeTo(group, 0, animate, () => {
+          up.setAttribute("d", "");
+          down.setAttribute("d", "");
+        });
         return;
       }
+
       // One bar per ~3px of width, so bars never collapse into a smear
       const maxBars = Math.max(20, Math.floor(this.width / 3));
       const bars = aggregateCandles(candles, maxBars);
       const scaled = scaleCandles(bars, this.height, this.width, PADDING);
       this.candleScale = scaled;
-      up.setAttribute("d", candlePathData(scaled, true));
-      down.setAttribute("d", candlePathData(scaled, false));
+      this.candleBars = bars; // what the crosshair reports, post-aggregation
+      const draw = () => {
+        up.setAttribute("d", candlePathData(scaled, true));
+        down.setAttribute("d", candlePathData(scaled, false));
+      };
+
+      if (!animate) {
+        draw();
+        group.setAttribute("opacity", "1");
+        return;
+      }
+      // Fade the old set out, swap, fade the new one in
+      this.fadeTo(group, 0, true, () => {
+        draw();
+        this.fadeTo(group, 1, true);
+      });
+    });
+
+    // Opacity tween with an optional callback once it lands
+    _defineProperty(this, "fadeTo", (node, value, animate, done) => {
+      if (!animate) {
+        node.setAttribute("opacity", String(value));
+        if (done) done();
+        return;
+      }
+      select(node)
+        .transition()
+        .duration(TRANSITION_DURATION / 2)
+        .ease(easeCubicOut)
+        .attr("opacity", value)
+        .on("end", () => {
+          if (done) done();
+        });
     });
 
     _defineProperty(this, "updatePath", () => {
@@ -421,7 +509,13 @@ class LineBase extends PureComponent {
         window.addEventListener("resize", this.handleResize);
       }
 
-      this.updateCandles();
+      this.updateCandles(false);
+      if (this.lineGroupRef.current) {
+        this.lineGroupRef.current.setAttribute(
+          "opacity",
+          this.props.showCandles ? "0" : "1",
+        );
+      }
 
       if (this.props.interactive) {
         const svg = this.svgRef.current;
@@ -456,11 +550,14 @@ class LineBase extends PureComponent {
       // New series → the candles that go with it haven't been asked for yet
       this._askedForOhlc = false;
     }
-    if (
-      prevProps.candles !== this.props.candles ||
-      prevProps.showCandles !== this.props.showCandles
-    ) {
-      this.updateCandles();
+    const modeChanged = prevProps.showCandles !== this.props.showCandles;
+    if (modeChanged || prevProps.candles !== this.props.candles) {
+      this.updateCandles(true);
+    }
+    // Line and candles trade places on a mode switch — cross-fade so one
+    // doesn't blink out before the other arrives
+    if (modeChanged && this.lineGroupRef.current) {
+      this.fadeTo(this.lineGroupRef.current, this.props.showCandles ? 0 : 1, true);
     }
     // An overlay opened over the chart. Opening it from the keyboard moves
     // no pointer, so no pointerleave fires and the readout would linger
@@ -524,37 +621,44 @@ class LineBase extends PureComponent {
       React.createElement(
         "g",
         { clipPath: `url(#${this.clipId})` },
-        React.createElement("path", {
-          // colorize off → no fill, just the line (the "colourless" chart)
-          fill:
-            this.props.colorize === false || this.props.showCandles
-              ? "none"
-              : `url(#${this.gradId})`,
-          stroke: "none",
-          ref: this.areaRef,
-        }),
-        React.createElement("path", {
-          fill: "none",
-          ref: this.pathRef,
-          stroke: color.text,
-          strokeWidth: "1.5",
-          // The line hides rather than unmounts, so switching modes never
-          // rebuilds the layer or restarts its transition
-          visibility: this.props.showCandles ? "hidden" : "inherit",
-        }),
+        // Line layer — faded rather than unmounted on a mode switch, so the
+        // two chart types cross over instead of blinking
+        React.createElement(
+          "g",
+          { ref: this.lineGroupRef },
+          React.createElement("path", {
+            // colorize off → no fill, just the line (the "colourless" chart)
+            fill:
+              this.props.colorize === false || this.props.showCandles
+                ? "none"
+                : `url(#${this.gradId})`,
+            stroke: "none",
+            ref: this.areaRef,
+          }),
+          React.createElement("path", {
+            fill: "none",
+            ref: this.pathRef,
+            stroke: color.text,
+            strokeWidth: "1.5",
+          }),
+        ),
         // Candles: one path per direction, filled bodies with stroked wicks
-        React.createElement("path", {
-          ref: this.upCandlesRef,
-          fill: color.chartLineGreen,
-          stroke: color.chartLineGreen,
-          strokeWidth: "1",
-        }),
-        React.createElement("path", {
-          ref: this.downCandlesRef,
-          fill: color.chartLineRed,
-          stroke: color.chartLineRed,
-          strokeWidth: "1",
-        }),
+        React.createElement(
+          "g",
+          { ref: this.candleGroupRef, opacity: 0 },
+          React.createElement("path", {
+            ref: this.upCandlesRef,
+            fill: color.chartLineGreen,
+            stroke: color.chartLineGreen,
+            strokeWidth: "1",
+          }),
+          React.createElement("path", {
+            ref: this.downCandlesRef,
+            fill: color.chartLineRed,
+            stroke: color.chartLineRed,
+            strokeWidth: "1",
+          }),
+        ),
       ),
 
       // Crosshair layer — positions/text are written imperatively on hover

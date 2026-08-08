@@ -338,4 +338,94 @@ assert.strictEqual(coinbaseSpecs.hour.points, 60, "1H is 60 candles");
 assert.strictEqual(coinbaseSpecs.hour.granularity, 60, "each 1H candle is a minute");
 assert.strictEqual(krakenSpecs.hour.points, 60, "1H is 60 candles on Kraken too");
 
+/* ── the crosshair lands on candles, not between them ───────────────────────
+ * The line spreads n points across the full width while candles sit in n
+ * slots, so reading candle-mode positions off the line's scale put the guide
+ * between bars. The guide must sit on the bar's own centre, and the readout
+ * must describe the bar on screen (which, after aggregation, is a merge).
+ */
+
+const candleChart = run("new LineBase({})");
+candleChart.props = {
+  prices: [
+    { price: 10, time: new Date(1000) },
+    { price: 20, time: new Date(2000) },
+  ],
+  theme: {
+    color: { text: "#fff", textSecondary: "#aaa", bg: "#000", bgSecondary: "#111", border: "#333" },
+    font: { primary: "mono" },
+  },
+  period: "day",
+  coin: "BTC",
+  formatPrice: (v) => `$${v}`,
+  showCandles: true,
+  candles: [
+    { time: 1000, open: 10, high: 12, low: 9, close: 11, volume: 5 },
+    { time: 2000, open: 11, high: 18, low: 10, close: 17, volume: 6 },
+    { time: 3000, open: 17, high: 19, low: 7, close: 8, volume: 7 },
+    { time: 4000, open: 8, high: 9, low: 6, close: 7, volume: 8 },
+  ],
+};
+candleChart.width = 400;
+candleChart.height = 200;
+
+const cNodes = [];
+const cAttach = (ref) => {
+  ref.current = fakeNode();
+  cNodes.push(ref.current);
+  return ref.current;
+};
+cAttach(candleChart.hoverRef);
+const guide = cAttach(candleChart.hoverLineRef);
+const dot = cAttach(candleChart.hoverDotRef);
+cAttach(candleChart.hoverBoxRef);
+cAttach(candleChart.hoverPriceRef);
+cAttach(candleChart.hoverDateRef);
+candleChart.rowLabelRefs.forEach(cAttach);
+candleChart.rowValueRefs.forEach(cAttach);
+cAttach(candleChart.candleGroupRef);
+cAttach(candleChart.upCandlesRef);
+cAttach(candleChart.downCandlesRef);
+
+candleChart.updateCandles(false);
+assert.strictEqual(candleChart.candleBars.length, 4, "no aggregation needed at this width");
+
+// Hovering anywhere inside a bar's slot selects that bar and centres on it
+const barX = (i) => candleChart.candleScale.bars[i].x;
+for (const i of [0, 1, 2, 3]) {
+  assert.strictEqual(candleChart.candleIndexAt(barX(i)), i, `centre of bar ${i}`);
+}
+const step = (400 - 24 * 2) / 4;
+assert.strictEqual(candleChart.candleIndexAt(barX(1) - step * 0.4), 1, "left edge of a slot still selects it");
+assert.strictEqual(candleChart.candleIndexAt(barX(1) + step * 0.4), 1, "right edge too");
+assert.strictEqual(candleChart.candleIndexAt(-500), 0, "left of the plot clamps to the first bar");
+assert.strictEqual(candleChart.candleIndexAt(99999), 3, "right of the plot clamps to the last");
+
+candleChart.hoverX = barX(2);
+candleChart.hoverIndex = -1;
+candleChart.drawCrosshair();
+assert.strictEqual(
+  Number(guide.attrs.x1),
+  barX(2),
+  "guide sits on the bar's centre, not the line's point",
+);
+assert.strictEqual(Number(dot.attrs.cy), candleChart.candleScale.bars[2].yClose, "dot marks that bar's close");
+assert.strictEqual(
+  candleChart.rowValueRefs[3].current.textContent,
+  "$8",
+  "readout describes the hovered bar (close)",
+);
+assert.strictEqual(
+  candleChart.rowValueRefs[1].current.textContent,
+  "$19",
+  "and its high",
+);
+
+// After aggregation the readout must describe the merged bar, not a source one
+candleChart.width = 30; // forces maxBars to the floor of 20 → still 4 here
+candleChart.props = { ...candleChart.props, candles: [] };
+candleChart.updateCandles(false);
+assert.strictEqual(candleChart.candleBars, null, "no candles → no bar geometry");
+assert.strictEqual(candleChart.candleIndexAt(10), -1, "and nothing to hover");
+
 console.log("CHART TESTS OK");

@@ -2160,11 +2160,10 @@ class CryptoChart extends PureComponent {
       widgetOrder,
       dragWidget,
     } = this.state;
-    const fgAngle = fearGreedData
-      ? (180 - fearGreedData.value * 1.8) * (Math.PI / 180)
-      : Math.PI / 2;
-    const fgNeedleX = (50 + 30 * Math.cos(fgAngle)).toFixed(1);
-    const fgNeedleY = (50 - 30 * Math.sin(fgAngle)).toFixed(1);
+    // 0 → needle left, 100 → needle right; 1.8° per point of the index
+    const fgNeedleAngle = fearGreedData
+      ? (Math.min(Math.max(fearGreedData.value, 0), 100) * 1.8).toFixed(1)
+      : 90;
     const activeCoin = coinOptions[coinIndex] || coinOptions[0] || "BTC";
     const periodOption = PERIOD_OPTIONS.find((o) => o.value === period);
     const periodLabel = periodOption ? periodOption.label : "";
@@ -2562,8 +2561,11 @@ class CryptoChart extends PureComponent {
                       React.createElement(GaugeNeedle, {
                         x1: "50",
                         y1: "50",
-                        x2: fgNeedleX,
-                        y2: fgNeedleY,
+                        // Fixed endpoint at the 0 position; the angle does
+                        // the work so the needle can swing to it
+                        x2: "20",
+                        y2: "50",
+                        angle: fgNeedleAngle,
                       }),
                       React.createElement(GaugeCenterDot, {
                         cx: "50",
