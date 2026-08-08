@@ -95,6 +95,10 @@ class LineBase extends PureComponent {
     _defineProperty(this, "svgRef", createRef());
     _defineProperty(this, "clipRectRef", createRef());
 
+    // Candle layer: one path per direction, whatever the candle count
+    _defineProperty(this, "upCandlesRef", createRef());
+    _defineProperty(this, "downCandlesRef", createRef());
+
     // Crosshair nodes — written to directly, never through React
     _defineProperty(this, "hoverRef", createRef());
     _defineProperty(this, "hoverLineRef", createRef());
@@ -130,6 +134,7 @@ class LineBase extends PureComponent {
             this.clipRect.attr("width", width).attr("height", height);
           }
           this.updatePath();
+          this.updateCandles();
         }
       }, 150),
     );
@@ -290,6 +295,28 @@ class LineBase extends PureComponent {
       }
     });
 
+    /* Candles are laid out for the current width, so this reruns on resize
+     * and on new data. Aggregation keeps the bar count sane for the space. */
+    _defineProperty(this, "updateCandles", () => {
+      const up = this.upCandlesRef.current;
+      const down = this.downCandlesRef.current;
+      if (!up || !down) return;
+      const candles = this.props.candles;
+      if (!this.props.showCandles || !candles || !candles.length) {
+        up.setAttribute("d", "");
+        down.setAttribute("d", "");
+        this.candleScale = null;
+        return;
+      }
+      // One bar per ~3px of width, so bars never collapse into a smear
+      const maxBars = Math.max(20, Math.floor(this.width / 3));
+      const bars = aggregateCandles(candles, maxBars);
+      const scaled = scaleCandles(bars, this.height, this.width, PADDING);
+      this.candleScale = scaled;
+      up.setAttribute("d", candlePathData(scaled, true));
+      down.setAttribute("d", candlePathData(scaled, false));
+    });
+
     _defineProperty(this, "updatePath", () => {
       const { prices } = this.props;
 
@@ -394,6 +421,8 @@ class LineBase extends PureComponent {
         window.addEventListener("resize", this.handleResize);
       }
 
+      this.updateCandles();
+
       if (this.props.interactive) {
         const svg = this.svgRef.current;
         svg.addEventListener("pointermove", this.handlePointerMove, {
@@ -426,6 +455,12 @@ class LineBase extends PureComponent {
       this.handlePointerLeave(); // stale readout would point at old data
       // New series → the candles that go with it haven't been asked for yet
       this._askedForOhlc = false;
+    }
+    if (
+      prevProps.candles !== this.props.candles ||
+      prevProps.showCandles !== this.props.showCandles
+    ) {
+      this.updateCandles();
     }
     // An overlay opened over the chart. Opening it from the keyboard moves
     // no pointer, so no pointerleave fires and the readout would linger
@@ -491,7 +526,10 @@ class LineBase extends PureComponent {
         { clipPath: `url(#${this.clipId})` },
         React.createElement("path", {
           // colorize off → no fill, just the line (the "colourless" chart)
-          fill: this.props.colorize === false ? "none" : `url(#${this.gradId})`,
+          fill:
+            this.props.colorize === false || this.props.showCandles
+              ? "none"
+              : `url(#${this.gradId})`,
           stroke: "none",
           ref: this.areaRef,
         }),
@@ -500,6 +538,22 @@ class LineBase extends PureComponent {
           ref: this.pathRef,
           stroke: color.text,
           strokeWidth: "1.5",
+          // The line hides rather than unmounts, so switching modes never
+          // rebuilds the layer or restarts its transition
+          visibility: this.props.showCandles ? "hidden" : "inherit",
+        }),
+        // Candles: one path per direction, filled bodies with stroked wicks
+        React.createElement("path", {
+          ref: this.upCandlesRef,
+          fill: color.chartLineGreen,
+          stroke: color.chartLineGreen,
+          strokeWidth: "1",
+        }),
+        React.createElement("path", {
+          ref: this.downCandlesRef,
+          fill: color.chartLineRed,
+          stroke: color.chartLineRed,
+          strokeWidth: "1",
         }),
       ),
 

@@ -427,6 +427,8 @@ class SettingsPanel extends PureComponent {
       onLastSeenChange,
       ohlcEnabled,
       onOhlcChange,
+      chartType,
+      onChartTypeChange,
       onChartColorChange,
       widgets,
       onWidgetToggle,
@@ -740,6 +742,34 @@ class SettingsPanel extends PureComponent {
                   onClick: () =>
                     onChartColorChange && onChartColorChange(chartColor === false),
                   "aria-label": "Toggle chart color",
+                }),
+              ),
+            ),
+
+            // Line vs candlesticks
+            React.createElement(
+              ToggleSection,
+              null,
+              React.createElement(ToggleSectionTitle, null, "Candlesticks"),
+              React.createElement(
+                ToggleSectionDesc,
+                null,
+                "Draw open/high/low/close bars instead of a price line. Ranges without candle data stay on the line",
+              ),
+              React.createElement(
+                ToggleRow,
+                null,
+                React.createElement(
+                  ToggleLabel,
+                  null,
+                  chartType === "candles" ? "On" : "Off",
+                ),
+                React.createElement(ToggleSwitch, {
+                  active: chartType === "candles",
+                  onClick: () =>
+                    onChartTypeChange &&
+                    onChartTypeChange(chartType === "candles" ? "line" : "candles"),
+                  "aria-label": "Toggle candlestick chart",
                 }),
               ),
             ),

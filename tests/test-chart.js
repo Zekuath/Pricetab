@@ -73,12 +73,13 @@ const sandbox = {
   }),
 };
 vm.createContext(sandbox);
-vm.runInContext(
-  fs.readFileSync(path.join(__dirname, "..", "src", "chart.js"), "utf8"),
-  sandbox,
-  { filename: "chart.js" },
-);
+for (const f of ["utils.js", "chart.js"]) {
+  vm.runInContext(fs.readFileSync(path.join(__dirname, "..", "src", f), "utf8"), sandbox, {
+    filename: f,
+  });
+}
 const run = (code) => vm.runInContext(code, sandbox);
+const json = (code) => JSON.parse(JSON.stringify(run(code)));
 
 /* ── nearestIndex ───────────────────────────────────────────────────────── */
 
@@ -237,5 +238,58 @@ for (const n of nodes.slice(1)) {
     "nothing is left explicitly visible after the pointer leaves",
   );
 }
+
+/* ── candlestick geometry ───────────────────────────────────────────────── */
+
+const mkCandles = (rows) =>
+  rows.map(([time, open, high, low, close, volume]) => ({
+    time, open, high, low, close, volume,
+  }));
+
+// Aggregation: first open, last close, extreme high/low, summed volume
+sandbox.__agg = mkCandles([
+  [1, 10, 15, 8, 12, 100],
+  [2, 12, 20, 11, 18, 200],
+  [3, 18, 19, 5, 7, 300],
+  [4, 7, 9, 6, 8, 400],
+]);
+assert.strictEqual(run("aggregateCandles(__agg, 10).length"), 4, "under the cap: untouched");
+const agg = json("aggregateCandles(__agg, 2)");
+assert.strictEqual(agg.length, 2, "reduced to the cap");
+assert.deepStrictEqual(
+  agg[0],
+  { time: 1, open: 10, close: 18, high: 20, low: 8, volume: 300 },
+  "bucket keeps first open, last close, extremes and summed volume",
+);
+assert.deepStrictEqual(json("aggregateCandles([], 5)"), [], "no candles → none");
+assert.deepStrictEqual(json("aggregateCandles(null, 5)"), [], "missing candles → none");
+
+// Scaling: y spans highs and lows so wicks stay inside the plot
+sandbox.__sc = mkCandles([
+  [1, 10, 20, 0, 15, 1],
+  [2, 15, 30, 10, 12, 1],
+]);
+const sc = json("scaleCandles(__sc, 100, 200, 10)");
+assert.strictEqual(sc.bars.length, 2, "one bar per candle");
+assert.strictEqual(sc.bars[0].yLow, 90, "series low sits at the bottom of the plot");
+assert.strictEqual(sc.bars[1].yHigh, 10, "series high sits at the top");
+assert.ok(sc.bars[0].yHigh > 10 && sc.bars[0].yLow <= 90, "wicks stay within the plot");
+assert.strictEqual(sc.bars[0].up, true, "close above open is an up bar");
+assert.strictEqual(sc.bars[1].up, false, "close below open is a down bar");
+assert.ok(sc.barW >= 1, "bars never thinner than a visible line");
+assert.strictEqual(run("scaleCandles([], 100, 200, 10)"), null, "no candles → no geometry");
+
+// A flat series must not divide by zero
+const flat = json("scaleCandles([{ time: 1, open: 5, high: 5, low: 5, close: 5 }], 100, 200, 10)");
+assert.ok(isFinite(flat.bars[0].yOpen), "flat range still produces finite geometry");
+
+// Path data: one moveto pair per bar, and only that direction's bars
+sandbox.__pd = json("scaleCandles(__sc, 100, 200, 10)");
+const upD = run("candlePathData(__pd, true)");
+const downD = run("candlePathData(__pd, false)");
+assert.strictEqual((upD.match(/M/g) || []).length, 2, "up path: wick + body for its one bar");
+assert.strictEqual((downD.match(/M/g) || []).length, 2, "down path: wick + body for its one bar");
+assert.ok(!upD.includes("NaN") && !downD.includes("NaN"), "no NaN leaks into the path");
+assert.strictEqual(run("candlePathData(null, true)"), "", "no geometry → empty path");
 
 console.log("CHART TESTS OK");

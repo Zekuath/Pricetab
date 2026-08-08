@@ -316,6 +316,11 @@ const loadOhlcEnabled = () =>
 
 const saveOhlcEnabled = (enabled) => saveSetting(OHLC_ENABLED_KEY, enabled);
 
+const loadChartType = () =>
+  loadEnumSetting(CHART_TYPE_KEY, ["line", "candles"], DEFAULT_CHART_TYPE);
+
+const saveChartType = (type) => saveSetting(CHART_TYPE_KEY, type);
+
 const loadLastSeenEnabled = () =>
   loadBoolSetting(LAST_SEEN_ENABLED_KEY, DEFAULT_LAST_SEEN_ENABLED);
 

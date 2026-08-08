@@ -47,6 +47,7 @@ class CryptoChart extends PureComponent {
       lastSeen: loadLastSeen(),
       lastSeenEnabled: loadLastSeenEnabled(), // settings toggle
       ohlcEnabled: loadOhlcEnabled(), // crosshair OHLC + volume readout
+      chartType: loadChartType(), // 'line' | 'candles'
       portfolio: loadPortfolioFromStorage(), // [{ coin, amount, lots, watches }]
       portfolioPrices: {}, // { COIN: { price, change, up } } from pageTickerCache
       portfolioReady: false, // true after first portfolio price fetch
@@ -528,10 +529,20 @@ class CryptoChart extends PureComponent {
 
       // Fetch fresh data (will use cache if fresh, or make API call if stale/missing)
       try {
+        // In candle mode the candles are the only history request needed —
+        // the line series is derived from their closes. When candles aren't
+        // available for this range/currency, fall through to the line fetch.
+        let candles = null;
+        if (this.state.chartType === "candles") {
+          candles = await fetchOhlcCandles(activeCoin, period, currency);
+        }
+
         // Spot price and history are independent endpoints — fetch in parallel
         const [currentValue, valueHistory] = await Promise.all([
           fetchCurrentValue(activeCoin, currency, signal, true, coinOptions),
-          fetchValueHistory(activeCoin, period, currency, signal, true, coinOptions),
+          candles
+            ? candles.map((c) => ({ price: c.close, time: new Date(c.time) }))
+            : fetchValueHistory(activeCoin, period, currency, signal, true, coinOptions),
         ]);
 
         // Clear skeleton timer
@@ -545,6 +556,9 @@ class CryptoChart extends PureComponent {
             currentValue,
             valueHistory,
             rsiValue: calculateRSI(valueHistory),
+            // Candles fetched here also feed the crosshair, so hovering
+            // costs nothing extra in this mode
+            ohlcData: candles || this.state.ohlcData,
             isLoading: false,
             showSkeleton: false,
             slowLoad: false,
@@ -1402,6 +1416,13 @@ class CryptoChart extends PureComponent {
       this.setState({ chartColor: enabled });
     });
 
+    // Switching to candles refetches through the candle path, which also
+    // supplies the line series — so the mode change costs one request, not two
+    _defineProperty(this, "handleChartTypeChange", (type) => {
+      saveChartType(type);
+      this.setState({ chartType: type }, this.fetchData);
+    });
+
     // Turning the readout off also stops the on-hover candle request;
     // price targets keep their own candle lookback either way
     _defineProperty(this, "handleOhlcChange", (enabled) => {
@@ -1418,7 +1439,11 @@ class CryptoChart extends PureComponent {
 
     _defineProperty(this, "handleCurrencyChange", (newCurrency) => {
       saveCurrencyToStorage(newCurrency);
-      this.setState({ currency: newCurrency }, () => {
+      // Candles are priced in the old currency — drop them so the chart
+      // can't keep drawing them, and so the refetch decides availability
+      // for the new one (Coinbase only quotes a few)
+      this._ohlcKey = null;
+      this.setState({ currency: newCurrency, ohlcData: null }, () => {
         // Refetch data with new currency
         this.fetchData();
         // Portfolio values are currency-specific — refresh if it's open
@@ -2428,6 +2453,10 @@ class CryptoChart extends PureComponent {
                     ohlc: this.state.ohlcEnabled === false ? null : this.state.ohlcData,
                     onNeedOhlc:
                       this.state.ohlcEnabled === false ? null : this.loadOhlc,
+                    showCandles:
+                      this.state.chartType === "candles" &&
+                      Boolean(this.state.ohlcData),
+                    candles: this.state.ohlcData,
                     // Any overlay covering the chart clears the readout
                     paused:
                       showSettings ||
@@ -3102,6 +3131,8 @@ class CryptoChart extends PureComponent {
             onLastSeenChange: this.handleLastSeenChange,
             ohlcEnabled: this.state.ohlcEnabled,
             onOhlcChange: this.handleOhlcChange,
+            chartType: this.state.chartType,
+            onChartTypeChange: this.handleChartTypeChange,
             widgets: widgets,
             onWidgetToggle: this.handleWidgetToggle,
             onWidgetPreset: this.handleWidgetPreset,

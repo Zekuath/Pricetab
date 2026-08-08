@@ -136,6 +136,100 @@ const formatValueHistory = (prices) =>
     }))
     .sort((a, b) => a.time - b.time);
 
+/* CANDLESTICKS ─────────────────────────────────────────────────────────────
+ * Two pure steps so the drawing code stays dumb and both are testable:
+ * aggregate to a bar count the width can actually show, then scale to pixels.
+ */
+
+// Merge candles into `maxBars` buckets: first open, last close, extreme
+// high/low, summed volume — the standard reduction, so a bucket is still a
+// truthful candle rather than a sample. Drawing 700 slivers on a 1400px
+// chart costs the same as drawing 200 and reads worse.
+const aggregateCandles = (candles, maxBars) => {
+  if (!Array.isArray(candles) || !candles.length) return [];
+  if (!(maxBars > 0) || candles.length <= maxBars) return candles;
+  const size = Math.ceil(candles.length / maxBars);
+  const out = [];
+  for (let i = 0; i < candles.length; i += size) {
+    const chunk = candles.slice(i, i + size);
+    let high = -Infinity;
+    let low = Infinity;
+    let volume = 0;
+    for (const c of chunk) {
+      if (c.high > high) high = c.high;
+      if (c.low < low) low = c.low;
+      volume += Number(c.volume) || 0;
+    }
+    out.push({
+      time: chunk[0].time,
+      open: chunk[0].open,
+      close: chunk[chunk.length - 1].close,
+      high,
+      low,
+      volume,
+    });
+  }
+  return out;
+};
+
+// Pixel geometry for each bar. The y scale spans highs and lows (not just
+// closes) so wicks can't run off the top or bottom of the plot.
+const scaleCandles = (candles, height, width, padding = 0) => {
+  if (!Array.isArray(candles) || candles.length < 1) return null;
+  let min = Infinity;
+  let max = -Infinity;
+  for (const c of candles) {
+    if (c.low < min) min = c.low;
+    if (c.high > max) max = c.high;
+  }
+  if (!isFinite(min) || !isFinite(max)) return null;
+  if (min === max) {
+    // A flat range would divide by zero; give it a nominal band
+    min -= 1;
+    max += 1;
+  }
+  const plotH = Math.max(1, height - padding * 2);
+  const plotW = Math.max(1, width - padding * 2);
+  const y = (v) => padding + (1 - (v - min) / (max - min)) * plotH;
+  const step = plotW / candles.length;
+  // Leave a hairline gap between bars; never thinner than a visible line
+  const barW = Math.max(1, Math.min(step * 0.7, 18));
+  return {
+    barW,
+    bars: candles.map((c, i) => ({
+      x: padding + step * (i + 0.5),
+      yOpen: y(c.open),
+      yClose: y(c.close),
+      yHigh: y(c.high),
+      yLow: y(c.low),
+      up: c.close >= c.open,
+    })),
+  };
+};
+
+/* Path data for one direction's bars: a wick line plus a body rectangle per
+ * candle, concatenated. Two paths draw the whole chart no matter how many
+ * candles there are — 700 separate nodes would cost far more to build and
+ * to reconcile than the pixels are worth. */
+const candlePathData = (scaled, up) => {
+  if (!scaled) return "";
+  const half = scaled.barW / 2;
+  let d = "";
+  for (const b of scaled.bars) {
+    if (b.up !== up) continue;
+    const top = Math.min(b.yOpen, b.yClose);
+    const bottom = Math.max(b.yOpen, b.yClose);
+    // A doji would be a zero-height rect and vanish — floor it to a line
+    const bodyH = Math.max(bottom - top, 1);
+    d += `M${b.x.toFixed(2)} ${b.yHigh.toFixed(2)}V${b.yLow.toFixed(2)}`;
+    d +=
+      `M${(b.x - half).toFixed(2)} ${top.toFixed(2)}` +
+      `h${scaled.barW.toFixed(2)}v${bodyH.toFixed(2)}` +
+      `h${(-scaled.barW).toFixed(2)}Z`;
+  }
+  return d;
+};
+
 const scalePricesCore = (
   data,
   height,

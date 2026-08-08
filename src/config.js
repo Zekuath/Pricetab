@@ -325,6 +325,12 @@ const OHLC_CACHE_TTL = 300000; // 5 min — candles are not tick data
 // candles when one is armed — that lookback is the feature, not a detail.
 const OHLC_ENABLED_KEY = "crypto_chart_ohlc_enabled";
 const DEFAULT_OHLC_ENABLED = true;
+// Candlestick mode. Where candles exist they are the *only* request the
+// chart needs — the line series is derived from their closes — so this is
+// cheaper than the line chart, not more expensive. Ranges without candles
+// (Coinbase's ALL, currencies it doesn't quote) fall back to the line.
+const CHART_TYPE_KEY = "crypto_chart_chart_type";
+const DEFAULT_CHART_TYPE = "line";
 
 // Price alerts (in-tab only — no `notifications` permission, so PriceTab
 // stays a zero-permission extension). [{ id, coin, direction, target,

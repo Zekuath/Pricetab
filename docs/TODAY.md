@@ -59,23 +59,7 @@ unusual move, surface the headlines from that window.
 
 ---
 
-## 4. Candlestick chart option
-
-**Effort:** Medium · **New requests:** none
-
-The data is already there; it's a rendering mode plus a toggle.
-
-- [ ] Line / candles switch next to the period buttons
-- [ ] Only offer it where candles exist (not ALL, not unquoted currencies)
-- [ ] Thin candles — 300+ bars on a new tab is noise; consider capping the
-      count or only offering candles on 1H/1D/1W
-
-**Priority note:** lower than it looks. A new tab is a glance surface; the line
-chart is the better default and candles mostly serve traders.
-
----
-
-## 5. Comparison mode (two coins)
+## 4. Comparison mode (two coins)
 
 **Effort:** Medium–High · **New requests:** one extra history fetch
 
@@ -87,7 +71,7 @@ chart is the better default and candles mostly serve traders.
 
 ---
 
-## 6. Widget request fan-out
+## 5. Widget request fan-out
 
 **Effort:** Medium · **Saves:** up to 8 requests per 5 min → fewer
 
@@ -108,7 +92,7 @@ extension, and bigger than anything the coin-coverage work adds.
 
 ---
 
-## 7. Prediction markets widget (Polymarket)
+## 6. Prediction markets widget (Polymarket)
 
 **Effort:** Unknown · **New requests:** yes · **Status:** research first
 
@@ -128,6 +112,12 @@ extension, and bigger than anything the coin-coverage work adds.
   even one that reverted before morning — is still reported, with when it
   happened. Closes the one real hole in the feature without touching the
   zero-permission stance.
+- **Candlestick mode** (Settings → Appearance) — item 4 below, shipped. Ended up
+  *cheaper* than the line chart rather than equal: in candle mode the candles are
+  the only history request, because the line series is derived from their closes.
+  Drawn as two SVG paths (one per direction) regardless of candle count, and
+  aggregated to roughly one bar per 3px so a 350-candle range doesn't become a
+  smear. Ranges without candles fall back to the line.
 - **Monero (XMR) support via a second price provider** — Coinbase 404s on all
   three of its endpoints, so `COIN_PROVIDERS` now routes per coin and a Kraken
   adapter serves XMR. One Kraken request carries the line series, the crosshair

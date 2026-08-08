@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.4.0] - Portfolio, Onboarding & Settings Polish (staged locally, not yet in a store build)
 
 ### Added
+- **Candlestick charts** - switch the chart to open/high/low/close bars from Settings → Appearance → Candlesticks. Where candle data exists this is actually the *cheaper* mode: the candles are the only request the chart makes, since the price line is derived from their closes. Ranges without candle data (the ALL range on Coinbase, currencies it doesn't quote) stay on the line
 - **Monero (XMR)** - charts, prices and everything else, served by Kraken because Coinbase doesn't list it. Coins can now come from different price providers, which is the groundwork for covering more of the market
 
 ### Changed
