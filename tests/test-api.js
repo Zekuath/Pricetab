@@ -113,7 +113,11 @@ const sandbox = {
   },
   WATCH_ADDRESS_RE: /^[A-Za-z0-9]{20,100}$/,
   WATCH_BALANCE_TTL: 600000,
-  OHLC_GRANULARITY: { hour: 60, day: 300, week: 3600, month: 21600, year: 86400 },
+  OHLC_GRANULARITY: {
+    hour: { granularity: 60, points: 60 },
+    day: { granularity: 900, points: 2 }, // small, so the window slice shows
+    week: { granularity: 3600, points: 168 },
+  },
   OHLC_CURRENCIES: ["USD", "EUR", "GBP"],
   OHLC_CACHE_TTL: 300000,
   providerFor: (coin) => (coin === "XMR" ? "kraken" : "coinbase"),
@@ -228,12 +232,16 @@ const run = (c) => vm.runInContext(c, sandbox);
   // OHLC candles: parsed, unit-converted to ms, sorted oldest-first, cached
   fetchCalls = [];
   const candles = await run('fetchOhlcCandles("BTC", "day", "USD")');
-  assert.strictEqual(candles.length, 3, "usable rows kept, short row dropped");
+  // The API ignores our window and always returns its own batch, so the
+  // fetcher keeps only the newest `points` candles — otherwise a 1H chart
+  // draws six hours of one-minute candles
+  assert.strictEqual(candles.length, 2, "trimmed to the period's candle count");
+  assert.strictEqual(candles[1].time, 3000000, "keeps the newest, not the oldest");
   assert.ok(
-    candles[0].time < candles[1].time && candles[1].time < candles[2].time,
+    candles[0].time < candles[1].time,
     "candles sorted oldest first (API returns newest first)",
   );
-  assert.strictEqual(candles[0].time, 1000000, "seconds converted to ms");
+  assert.strictEqual(candles[0].time, 2000000, "seconds converted to ms");
   assert.strictEqual(candles[0].open, 3, "open mapped from column 3");
   assert.strictEqual(candles[0].high, 2, "high mapped from column 2");
   assert.strictEqual(candles[0].low, 1, "low mapped from column 1");
@@ -245,6 +253,7 @@ const run = (c) => vm.runInContext(c, sandbox);
   // Unsupported period/currency never hits the network — those charts keep
   // the price-only readout instead of borrowing wrong candles
   assert.strictEqual(await run('fetchOhlcCandles("BTC", "all", "USD")'), null, "ALL has no granularity");
+  assert.strictEqual(await run('fetchOhlcCandles("BTC", "month", "USD")'), null, "period without a spec");
   assert.strictEqual(await run('fetchOhlcCandles("BTC", "day", "TRY")'), null, "unquoted currency");
   assert.strictEqual(fetchCalls.length, 1, "guarded cases make no request");
 

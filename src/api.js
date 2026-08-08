@@ -609,15 +609,15 @@ const fetchOhlcCandles = async (coin, period, currency) => {
   if (providerFor(coin) === "kraken") {
     return fetchKrakenCandles(coin, period, currency);
   }
-  const granularity = OHLC_GRANULARITY[period];
-  if (!granularity || !OHLC_CURRENCIES.includes(currency)) return null;
+  const spec = OHLC_GRANULARITY[period];
+  if (!spec || !OHLC_CURRENCIES.includes(currency)) return null;
   const key = `${coin}-${period}-${currency}`;
   const hit = ohlcCache.get(key);
   if (hit && Date.now() - hit.timestamp < OHLC_CACHE_TTL) return hit.data;
   try {
     const res = await fetch(
       `${CANDLES_API}${encodeURIComponent(`${coin}-${currency}`)}` +
-        `/candles?granularity=${granularity}`,
+        `/candles?granularity=${spec.granularity}`,
     );
     if (!res.ok) throw new Error("candles request failed");
     const rows = await res.json();
@@ -631,8 +631,11 @@ const fetchOhlcCandles = async (coin, period, currency) => {
     }
     if (!data.length) throw new Error("no usable candles");
     data.sort((a, b) => a.time - b.time); // API returns newest first
-    ohlcCache.set(key, { data, timestamp: Date.now() });
-    return data;
+    // The response ignores our window, so keep only the newest candles that
+    // belong to this period — otherwise a 1H chart shows ~6 hours
+    const windowed = data.slice(-spec.points);
+    ohlcCache.set(key, { data: windowed, timestamp: Date.now() });
+    return windowed;
   } catch (error) {
     return hit ? hit.data : null; // stale beats nothing; null = price-only
   }

@@ -73,7 +73,7 @@ const sandbox = {
   }),
 };
 vm.createContext(sandbox);
-for (const f of ["utils.js", "chart.js"]) {
+for (const f of ["config.js", "utils.js", "chart.js"]) {
   vm.runInContext(fs.readFileSync(path.join(__dirname, "..", "src", f), "utf8"), sandbox, {
     filename: f,
   });
@@ -291,5 +291,51 @@ assert.strictEqual((upD.match(/M/g) || []).length, 2, "up path: wick + body for 
 assert.strictEqual((downD.match(/M/g) || []).length, 2, "down path: wick + body for its one bar");
 assert.ok(!upD.includes("NaN") && !downD.includes("NaN"), "no NaN leaks into the path");
 assert.strictEqual(run("candlePathData(null, true)"), "", "no geometry → empty path");
+
+/* ── candle windows line up with their periods ──────────────────────────────
+ * Each period must be divided into even candles that cover exactly that
+ * window. The regression this locks in: Coinbase returns a fixed batch
+ * regardless of what we ask, so a 1H chart drew ~6 hours of one-minute
+ * candles until the fetcher started trimming to `points`.
+ */
+
+const WINDOW_SECONDS = {
+  hour: 3600,
+  day: 86400,
+  week: 7 * 86400,
+  month: 30 * 86400,
+  year: 365 * 86400,
+};
+
+const coinbaseSpecs = json("OHLC_GRANULARITY");
+for (const period of Object.keys(coinbaseSpecs)) {
+  const { granularity, points } = coinbaseSpecs[period];
+  const covered = granularity * points;
+  const target = WINDOW_SECONDS[period];
+  assert.ok(target, `${period} is a real period`);
+  // Coinbase caps its response at ~350 candles, so a full year is as close
+  // as the provider goes; everything else must land on the window
+  const tolerance = period === "year" ? 0.05 : 0.005;
+  assert.ok(
+    Math.abs(covered - target) / target <= tolerance,
+    `coinbase ${period}: ${points} × ${granularity}s = ${covered}s, expected ~${target}s`,
+  );
+}
+
+const krakenSpecs = json("KRAKEN_PERIODS");
+for (const period of Object.keys(WINDOW_SECONDS)) {
+  const spec = krakenSpecs[period];
+  assert.ok(spec, `kraken covers ${period}`);
+  const covered = spec.interval * 60 * spec.points;
+  assert.ok(
+    Math.abs(covered - WINDOW_SECONDS[period]) / WINDOW_SECONDS[period] <= 0.005,
+    `kraken ${period}: ${spec.points} × ${spec.interval}m = ${covered}s, expected ${WINDOW_SECONDS[period]}s`,
+  );
+}
+
+// The hour is the one the eye checks: exactly 60 one-minute candles
+assert.strictEqual(coinbaseSpecs.hour.points, 60, "1H is 60 candles");
+assert.strictEqual(coinbaseSpecs.hour.granularity, 60, "each 1H candle is a minute");
+assert.strictEqual(krakenSpecs.hour.points, 60, "1H is 60 candles on Kraken too");
 
 console.log("CHART TESTS OK");

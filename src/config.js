@@ -293,28 +293,32 @@ const KRAKEN_API = "https://api.kraken.com/0/public/";
 // Kraken returns at most 720 candles; the interval per period is chosen so
 // one request covers the whole window, and the tail is sliced to size.
 const KRAKEN_PERIODS = {
-  hour: { interval: 1, points: 60 },
-  day: { interval: 5, points: 288 },
-  week: { interval: 60, points: 168 },
-  month: { interval: 240, points: 180 },
-  year: { interval: 1440, points: 365 },
-  all: { interval: 21600, points: 720 },
+  hour: { interval: 1, points: 60 }, // 60 × 1m = 1h
+  day: { interval: 15, points: 96 }, // 96 × 15m = 24h
+  week: { interval: 60, points: 168 }, // 168 × 1h = 7d
+  month: { interval: 240, points: 180 }, // 180 × 4h = 30d
+  year: { interval: 1440, points: 365 }, // 365 × 1d = 1y
+  all: { interval: 21600, points: 720 }, // 15d candles, as far back as it goes
 };
 
-/* OHLC candles for the chart crosshair (open/high/low/close/volume).
- * Coinbase Exchange serves 350 candles per request, CORS-enabled and
- * keyless. Granularity is picked so one request covers the period:
- *   1H → 1m (60), 1D → 5m (288), 1W → 1h (168), 1M → 6h (120),
- *   1Y → 1d (350 of 365 days — the first ~2 weeks fall outside)
+/* OHLC candles for the crosshair readout and the candlestick chart.
+ * Coinbase Exchange serves 350 candles per request regardless of what we
+ * ask for, so each period declares both the granularity and how many of
+ * those candles actually belong to it — granularity × points is exactly
+ * the period's window, and the tail is sliced to size. Without the slice a
+ * 1H chart drew ~6 hours of one-minute candles.
+ *
  * ALL spans years, so no granularity covers it: those charts keep the
- * price-only readout instead of showing candles for a fraction of the range.
+ * price-only readout and the line chart instead.
  */
 const OHLC_GRANULARITY = {
-  hour: 60,
-  day: 300,
-  week: 3600,
-  month: 21600,
-  year: 86400,
+  hour: { granularity: 60, points: 60 }, // 60 × 1m = 1h
+  day: { granularity: 900, points: 96 }, // 96 × 15m = 24h
+  week: { granularity: 3600, points: 168 }, // 168 × 1h = 7d
+  month: { granularity: 21600, points: 120 }, // 120 × 6h = 30d
+  // A full year needs 365 daily candles but Coinbase caps the response at
+  // ~350, so this is as close as the provider goes
+  year: { granularity: 86400, points: 350 },
 };
 // Coinbase Exchange only quotes a handful of fiat currencies; everything
 // else degrades to the price-only crosshair rather than guessing.
