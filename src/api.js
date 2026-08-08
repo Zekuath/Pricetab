@@ -506,6 +506,65 @@ const fetchAddressBalance = async (coin, address) => {
   }
 };
 
+/* OHLC CANDLES (crosshair readout) ─────────────────────────────────────────
+ * Fetched lazily — only once the user actually hovers a chart — so the
+ * common "open a tab, glance, close it" path costs nothing extra.
+ * Rows arrive as [time, low, high, open, close, volume], newest first.
+ */
+const CANDLES_API = "https://api.exchange.coinbase.com/products/";
+const ohlcCache = new Map(); // "COIN-period-currency" → { data, timestamp }
+
+const fetchOhlcCandles = async (coin, period, currency) => {
+  const granularity = OHLC_GRANULARITY[period];
+  if (!granularity || !OHLC_CURRENCIES.includes(currency)) return null;
+  const key = `${coin}-${period}-${currency}`;
+  const hit = ohlcCache.get(key);
+  if (hit && Date.now() - hit.timestamp < OHLC_CACHE_TTL) return hit.data;
+  try {
+    const res = await fetch(
+      `${CANDLES_API}${encodeURIComponent(`${coin}-${currency}`)}` +
+        `/candles?granularity=${granularity}`,
+    );
+    if (!res.ok) throw new Error("candles request failed");
+    const rows = await res.json();
+    if (!Array.isArray(rows) || !rows.length) throw new Error("no candles");
+    const data = [];
+    for (const r of rows) {
+      if (!Array.isArray(r) || r.length < 6) continue;
+      const [time, low, high, open, close, volume] = r.map(Number);
+      if (!isFinite(time) || !isFinite(close)) continue;
+      data.push({ time: time * 1000, low, high, open, close, volume });
+    }
+    if (!data.length) throw new Error("no usable candles");
+    data.sort((a, b) => a.time - b.time); // API returns newest first
+    ohlcCache.set(key, { data, timestamp: Date.now() });
+    return data;
+  } catch (error) {
+    return hit ? hit.data : null; // stale beats nothing; null = price-only
+  }
+};
+
+// Nearest candle to a timestamp, but only when it's actually close: a
+// point outside the candle range must not borrow a far-away candle's
+// numbers. Tolerance is half a step, derived from the series itself.
+const candleAt = (candles, timeMs) => {
+  if (!Array.isArray(candles) || !candles.length) return null;
+  let lo = 0;
+  let hi = candles.length - 1;
+  while (hi - lo > 1) {
+    const mid = (lo + hi) >> 1;
+    if (candles[mid].time < timeMs) lo = mid;
+    else hi = mid;
+  }
+  const best =
+    Math.abs(candles[lo].time - timeMs) <= Math.abs(candles[hi].time - timeMs)
+      ? candles[lo]
+      : candles[hi];
+  const step =
+    candles.length > 1 ? candles[1].time - candles[0].time : Infinity;
+  return Math.abs(best.time - timeMs) <= step ? best : null;
+};
+
 /* BTC address history (for chain-inferred purchase lots): one request gives
  * the ~50 most recent transactions with full in/out detail. Reduced here to
  * chronological net deltas per tx — positive = received, negative = spent —

@@ -270,6 +270,26 @@ const RATE_PROMPT_DISMISSED_KEY = "crypto_chart_rate_prompt_dismissed";
 const FIRST_USE_KEY = "crypto_chart_first_use";
 const RATE_PROMPT_SHOWN_KEY = "crypto_chart_rate_prompt_shown";
 const RATE_PROMPT_DELAY_MS = 2 * 24 * 60 * 60 * 1000;
+/* OHLC candles for the chart crosshair (open/high/low/close/volume).
+ * Coinbase Exchange serves 350 candles per request, CORS-enabled and
+ * keyless. Granularity is picked so one request covers the period:
+ *   1H → 1m (60), 1D → 5m (288), 1W → 1h (168), 1M → 6h (120),
+ *   1Y → 1d (350 of 365 days — the first ~2 weeks fall outside)
+ * ALL spans years, so no granularity covers it: those charts keep the
+ * price-only readout instead of showing candles for a fraction of the range.
+ */
+const OHLC_GRANULARITY = {
+  hour: 60,
+  day: 300,
+  week: 3600,
+  month: 21600,
+  year: 86400,
+};
+// Coinbase Exchange only quotes a handful of fiat currencies; everything
+// else degrades to the price-only crosshair rather than guessing.
+const OHLC_CURRENCIES = ["USD", "EUR", "GBP"];
+const OHLC_CACHE_TTL = 300000; // 5 min — candles are not tick data
+
 // Price alerts (in-tab only — no `notifications` permission, so PriceTab
 // stays a zero-permission extension). [{ id, coin, direction, target,
 // currency, created, triggeredAt }]

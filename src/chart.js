@@ -42,8 +42,23 @@ const Svg = styled.svg`
  * one rAF per frame. Cost per move: one binary search + a handful of
  * attribute writes.
  */
-const CROSSHAIR_LABEL_PAD = 6;
+const CROSSHAIR_LABEL_PAD = 8;
 const CROSSHAIR_LABEL_GAP = 10;
+const CROSSHAIR_ROW_H = 13; // px between readout rows
+const CROSSHAIR_COL_GAP = 14; // px between a row's label and its value
+// Rows shown when candle data is available for the hovered point
+const CROSSHAIR_ROWS = ["Open", "High", "Low", "Close", "Volume"];
+
+// Compact volume: 1.57K, 42.4M — full digits would dominate the readout
+const formatVolume = (value) => {
+  const v = Number(value);
+  if (!isFinite(v)) return "—";
+  const abs = Math.abs(v);
+  if (abs >= 1e9) return `${(v / 1e9).toFixed(2)}B`;
+  if (abs >= 1e6) return `${(v / 1e6).toFixed(2)}M`;
+  if (abs >= 1e3) return `${(v / 1e3).toFixed(2)}K`;
+  return v.toFixed(abs >= 1 ? 2 : 4);
+};
 
 // Nearest index to pixel x in an ascending list of scaled points
 const nearestIndex = (scaled, x) => {
@@ -87,6 +102,10 @@ class LineBase extends PureComponent {
     _defineProperty(this, "hoverBoxRef", createRef());
     _defineProperty(this, "hoverPriceRef", createRef());
     _defineProperty(this, "hoverDateRef", createRef());
+    // One label + one value node per OHLC row, written to imperatively
+    this.rowLabelRefs = CROSSHAIR_ROWS.map(() => createRef());
+    this.rowValueRefs = CROSSHAIR_ROWS.map(() => createRef());
+    this._askedForOhlc = false;
     this.scaled = null; // pixel-space points, index-aligned with props.prices
     this.hoverRaf = 0;
     this.hoverX = 0;
@@ -118,6 +137,12 @@ class LineBase extends PureComponent {
     /* Pointer handling: record the position, do the work once per frame */
     _defineProperty(this, "handlePointerMove", (e) => {
       this.hoverX = e.offsetX;
+      // Candles are only worth fetching once someone actually reads the
+      // chart — most tabs are opened, glanced at and closed
+      if (!this._askedForOhlc && this.props.onNeedOhlc) {
+        this._askedForOhlc = true;
+        this.props.onNeedOhlc();
+      }
       if (this.hoverRaf) return;
       this.hoverRaf = requestAnimationFrame(this.drawCrosshair);
     });
@@ -157,20 +182,59 @@ class LineBase extends PureComponent {
       this.hoverDotRef.current.setAttribute("cx", point.time);
       this.hoverDotRef.current.setAttribute("cy", point.price);
 
-      const priceText = this.props.formatPrice
-        ? this.props.formatPrice(Number(source.price))
-        : String(source.price);
+      const fmt = this.props.formatPrice
+        ? (v) => this.props.formatPrice(Number(v))
+        : (v) => String(v);
       const dateText = crosshairDate(source.time, this.props.period);
-      this.hoverPriceRef.current.textContent = priceText;
       this.hoverDateRef.current.textContent = dateText;
 
-      // Size the label to its text, then keep it inside the chart box
-      const textWidth = Math.max(
-        this.hoverPriceRef.current.getComputedTextLength(),
-        this.hoverDateRef.current.getComputedTextLength(),
-      );
-      const boxW = textWidth + CROSSHAIR_LABEL_PAD * 2;
-      const boxH = 34;
+      // A candle for this point turns the readout into an OHLC table; with
+      // no candle (unsupported range/currency, or still loading) it stays
+      // the plain price line rather than showing blanks.
+      const timeMs = Number(new Date(source.time));
+      const candle = this.props.ohlc
+        ? candleAt(this.props.ohlc, timeMs)
+        : null;
+      this.hoverPriceRef.current.textContent = candle ? "" : fmt(source.price);
+
+      const values = candle
+        ? [
+            fmt(candle.open),
+            fmt(candle.high),
+            fmt(candle.low),
+            fmt(candle.close),
+            `${formatVolume(candle.volume)} ${this.props.coin || ""}`.trim(),
+          ]
+        : null;
+
+      let labelW = 0;
+      let valueW = 0;
+      for (let r = 0; r < CROSSHAIR_ROWS.length; r++) {
+        const labelNode = this.rowLabelRefs[r].current;
+        const valueNode = this.rowValueRefs[r].current;
+        if (!labelNode || !valueNode) continue;
+        if (values) {
+          labelNode.textContent = CROSSHAIR_ROWS[r];
+          valueNode.textContent = values[r];
+          labelNode.setAttribute("visibility", "visible");
+          valueNode.setAttribute("visibility", "visible");
+          labelW = Math.max(labelW, labelNode.getComputedTextLength());
+          valueW = Math.max(valueW, valueNode.getComputedTextLength());
+        } else {
+          labelNode.setAttribute("visibility", "hidden");
+          valueNode.setAttribute("visibility", "hidden");
+        }
+      }
+
+      // Size the box to its widest line, then keep it inside the chart
+      const dateW = this.hoverDateRef.current.getComputedTextLength();
+      const bodyW = values
+        ? labelW + CROSSHAIR_COL_GAP + valueW
+        : this.hoverPriceRef.current.getComputedTextLength();
+      const boxW = Math.max(dateW, bodyW) + CROSSHAIR_LABEL_PAD * 2;
+      const boxH = values
+        ? CROSSHAIR_LABEL_PAD * 2 + 12 + CROSSHAIR_ROWS.length * CROSSHAIR_ROW_H
+        : 34;
       let boxX = point.time + CROSSHAIR_LABEL_GAP;
       if (boxX + boxW > this.width) {
         boxX = point.time - CROSSHAIR_LABEL_GAP - boxW;
@@ -187,10 +251,32 @@ class LineBase extends PureComponent {
       box.setAttribute("height", boxH);
       box.setAttribute("fill", color.bgSecondary);
       box.setAttribute("stroke", color.border);
+
+      // Date heads the readout; the price line only exists without candles
+      this.hoverDateRef.current.setAttribute("x", boxX + CROSSHAIR_LABEL_PAD);
+      this.hoverDateRef.current.setAttribute(
+        "y",
+        boxY + (values ? CROSSHAIR_LABEL_PAD + 8 : 27),
+      );
       this.hoverPriceRef.current.setAttribute("x", boxX + CROSSHAIR_LABEL_PAD);
       this.hoverPriceRef.current.setAttribute("y", boxY + 14);
-      this.hoverDateRef.current.setAttribute("x", boxX + CROSSHAIR_LABEL_PAD);
-      this.hoverDateRef.current.setAttribute("y", boxY + 27);
+
+      if (values) {
+        const rowsTop = boxY + CROSSHAIR_LABEL_PAD + 12 + CROSSHAIR_ROW_H;
+        for (let r = 0; r < CROSSHAIR_ROWS.length; r++) {
+          const y = rowsTop + r * CROSSHAIR_ROW_H;
+          this.rowLabelRefs[r].current.setAttribute(
+            "x",
+            boxX + CROSSHAIR_LABEL_PAD,
+          );
+          this.rowLabelRefs[r].current.setAttribute("y", y);
+          this.rowValueRefs[r].current.setAttribute(
+            "x",
+            boxX + boxW - CROSSHAIR_LABEL_PAD,
+          );
+          this.rowValueRefs[r].current.setAttribute("y", y);
+        }
+      }
     });
 
     _defineProperty(this, "updatePath", () => {
@@ -318,6 +404,8 @@ class LineBase extends PureComponent {
     if (prevProps.prices !== this.props.prices) {
       this.updatePath();
       this.handlePointerLeave(); // stale readout would point at old data
+      // New series → the candles that go with it haven't been asked for yet
+      this._askedForOhlc = false;
     }
   }
 
@@ -431,6 +519,29 @@ class LineBase extends PureComponent {
             fontSize: "10",
             fontFamily: this.props.theme.font.primary,
           }),
+          // OHLC rows: label column left, value column right-aligned
+          CROSSHAIR_ROWS.map((row, i) =>
+            React.createElement(
+              Fragment,
+              { key: row },
+              React.createElement("text", {
+                ref: this.rowLabelRefs[i],
+                visibility: "hidden",
+                fill: color.textSecondary,
+                fontSize: "10",
+                fontFamily: this.props.theme.font.primary,
+              }),
+              React.createElement("text", {
+                ref: this.rowValueRefs[i],
+                visibility: "hidden",
+                textAnchor: "end",
+                fill: color.text,
+                fontSize: "10",
+                fontWeight: "600",
+                fontFamily: this.props.theme.font.primary,
+              }),
+            ),
+          ),
         ),
     );
   }

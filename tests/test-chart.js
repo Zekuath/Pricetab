@@ -129,4 +129,15 @@ assert.strictEqual(
 );
 assert.strictEqual(run('crosshairDate("not a date", "day")'), "", "junk date → empty label");
 
+/* ── volume formatting ──────────────────────────────────────────────────── */
+
+assert.strictEqual(run("formatVolume(1570.6)"), "1.57K", "thousands");
+assert.strictEqual(run("formatVolume(42444631703)"), "42.44B", "billions");
+assert.strictEqual(run("formatVolume(2500000)"), "2.50M", "millions");
+assert.strictEqual(run("formatVolume(12.5)"), "12.50", "small values keep 2 decimals");
+assert.strictEqual(run("formatVolume(0.0123)"), "0.0123", "sub-1 values keep 4 decimals");
+assert.strictEqual(run("formatVolume(-2500)"), "-2.50K", "negatives keep their sign");
+assert.strictEqual(run("formatVolume('abc')"), "—", "junk shows a dash, not NaN");
+assert.strictEqual(run("formatVolume()"), "—", "missing volume shows a dash");
+
 console.log("CHART TESTS OK");

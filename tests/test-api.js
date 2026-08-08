@@ -18,6 +18,15 @@ const sandbox = {
         { price: "80", time: 1 }, { price: "90", time: 2 },
       ] } }) };
     }
+    if (url.includes("api.exchange.coinbase.com")) {
+      // [time, low, high, open, close, volume], newest first + a junk row
+      return { ok: true, status: 200, json: async () => ([
+        [3000, 1, 2, 3, 4, 5],
+        [2000, 1, 2, 3, 4, 5],
+        [1, 2, 3],
+        [1000, 1, 2, 3, 4, 5],
+      ]) };
+    }
     if (url.includes("mempool.space") && url.includes("/txs")) {
       if (chainFail) return { ok: false, status: 500, json: async () => ({}) };
       // Newest first, like the real API: a 0.25 spend after a 1 BTC receive
@@ -79,6 +88,9 @@ const sandbox = {
   },
   WATCH_ADDRESS_RE: /^[A-Za-z0-9]{20,100}$/,
   WATCH_BALANCE_TTL: 600000,
+  OHLC_GRANULARITY: { hour: 60, day: 300, week: 3600, month: 21600, year: 86400 },
+  OHLC_CURRENCIES: ["USD", "EUR", "GBP"],
+  OHLC_CACHE_TTL: 300000,
 };
 vm.createContext(sandbox);
 vm.runInContext(fs.readFileSync(path.join(__dirname, "..", "src", "api.js"), "utf8"), sandbox, { filename: "api.js" });
@@ -181,6 +193,44 @@ const run = (c) => vm.runInContext(c, sandbox);
     null,
     "junk address → null without a request",
   );
+
+  // OHLC candles: parsed, unit-converted to ms, sorted oldest-first, cached
+  fetchCalls = [];
+  const candles = await run('fetchOhlcCandles("BTC", "day", "USD")');
+  assert.strictEqual(candles.length, 3, "usable rows kept, short row dropped");
+  assert.ok(
+    candles[0].time < candles[1].time && candles[1].time < candles[2].time,
+    "candles sorted oldest first (API returns newest first)",
+  );
+  assert.strictEqual(candles[0].time, 1000000, "seconds converted to ms");
+  assert.strictEqual(candles[0].open, 3, "open mapped from column 3");
+  assert.strictEqual(candles[0].high, 2, "high mapped from column 2");
+  assert.strictEqual(candles[0].low, 1, "low mapped from column 1");
+  assert.strictEqual(candles[0].close, 4, "close mapped from column 4");
+  assert.strictEqual(candles[0].volume, 5, "volume mapped from column 5");
+  await run('fetchOhlcCandles("BTC", "day", "USD")');
+  assert.strictEqual(fetchCalls.length, 1, "second call served from cache");
+
+  // Unsupported period/currency never hits the network — those charts keep
+  // the price-only readout instead of borrowing wrong candles
+  assert.strictEqual(await run('fetchOhlcCandles("BTC", "all", "USD")'), null, "ALL has no granularity");
+  assert.strictEqual(await run('fetchOhlcCandles("BTC", "day", "TRY")'), null, "unquoted currency");
+  assert.strictEqual(fetchCalls.length, 1, "guarded cases make no request");
+
+  // candleAt: nearest candle, but only within one step of the point
+  sandbox.__candles = [
+    { time: 1000, open: 1, high: 2, low: 0, close: 1.5, volume: 10 },
+    { time: 2000, open: 2, high: 3, low: 1, close: 2.5, volume: 20 },
+    { time: 3000, open: 3, high: 4, low: 2, close: 3.5, volume: 30 },
+  ];
+  assert.strictEqual(run("candleAt(__candles, 2000).close"), 2.5, "exact match");
+  assert.strictEqual(run("candleAt(__candles, 2400).close"), 2.5, "nearest below");
+  assert.strictEqual(run("candleAt(__candles, 2600).close"), 3.5, "nearest above");
+  assert.strictEqual(run("candleAt(__candles, 3900).close"), 3.5, "within one step of the last");
+  assert.strictEqual(run("candleAt(__candles, 9000)"), null, "far outside the range → null");
+  assert.strictEqual(run("candleAt(__candles, -9000)"), null, "far before the range → null");
+  assert.strictEqual(run("candleAt([], 1000)"), null, "no candles → null");
+  assert.strictEqual(run("candleAt(null, 1000)"), null, "missing candles → null");
 
   // provider failure → stale cache wins; no cache → null
   chainFail = true;

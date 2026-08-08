@@ -40,8 +40,8 @@ All APIs used by PriceTab are **public** — no authentication or accounts requi
 
 ### Coinbase Public API
 
-- **Endpoint**: `https://www.coinbase.com/api/v2/prices/`
-- **Purpose**: Real-time cryptocurrency prices and historical charts
+- **Endpoints**: `https://www.coinbase.com/api/v2/prices/` and `https://api.exchange.coinbase.com/products/…/candles`
+- **Purpose**: Real-time cryptocurrency prices, historical charts, and the chart's open/high/low/close/volume readout
 - **Data Sent**: Coin symbol (e.g., "BTC-USD") and time period
 - **Privacy**: See [Coinbase's Privacy Policy](https://www.coinbase.com/legal/privacy)
 

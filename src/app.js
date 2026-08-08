@@ -83,6 +83,7 @@ class CryptoChart extends PureComponent {
       marketOverviewData: null, // { totalMarketCap, totalVolume, btcDominance, ... }
       halvingData: null, // { days, hours, minutes, blocksLeft, nextHalvingBlock }
       rsiValue: null, // RSI calculated from current valueHistory (0-100)
+      ohlcData: null, // Candles for the crosshair; fetched on first hover
       fundingRateData: null, // { rate, percent, annualized }
       longShortData: null, // { longPct, shortPct }
       openInterestData: null, // { oiUsd, formatted }
@@ -136,6 +137,7 @@ class CryptoChart extends PureComponent {
             showSkeleton: false, // Reset skeleton
             invalidCoin: null, // Clear invalid coin warning
             apiError: false, // Clear API error when switching coins
+            ohlcData: null, // Candles belong to the previous coin
             // Clear coin-specific widget data so we never show the previous
             // coin's numbers under the new coin's label
             fundingRateData: null,
@@ -171,6 +173,7 @@ class CryptoChart extends PureComponent {
             showSkeleton: false,
             invalidCoin: null,
             apiError: false,
+            ohlcData: null, // Candles belong to the previous coin
             fundingRateData: null,
             longShortData: null,
             openInterestData: null,
@@ -190,6 +193,7 @@ class CryptoChart extends PureComponent {
         {
           period,
           apiError: false, // Clear API error when changing period
+          ohlcData: null, // Candles are per-period (granularity differs)
         },
         this.fetchData,
       );
@@ -444,8 +448,6 @@ class CryptoChart extends PureComponent {
           currency,
           "spot",
         );
-        const cachedOHLC = getCachedData(activeCoin, period, currency, "ohlc");
-
         // Clear skeleton timer
         if (this.skeletonTimer) {
           clearTimeout(this.skeletonTimer);
@@ -454,8 +456,7 @@ class CryptoChart extends PureComponent {
         // If we have cache for this coin, show it
         if (
           (cachedHistory && cachedHistory.data) ||
-          (cachedSpot && cachedSpot.data) ||
-          (cachedOHLC && cachedOHLC.data)
+          (cachedSpot && cachedSpot.data)
         ) {
           const newState = { isLoading: false, showSkeleton: false };
           if (cachedHistory && cachedHistory.data) {
@@ -464,9 +465,6 @@ class CryptoChart extends PureComponent {
           }
           if (cachedSpot && cachedSpot.data) {
             newState.currentValue = cachedSpot.data;
-          }
-          if (cachedOHLC && cachedOHLC.data) {
-            newState.ohlcData = cachedOHLC.data;
           }
           this.setState(newState, () => {
             updateTabTitle(
@@ -481,7 +479,7 @@ class CryptoChart extends PureComponent {
           this.setState({
             currentValue: null,
             valueHistory: [],
-            ohlcData: [],
+            ohlcData: null,
             isLoading: false,
             showSkeleton: false,
             slowLoad: false,
@@ -500,13 +498,6 @@ class CryptoChart extends PureComponent {
         "history",
       );
       const cachedSpot = getCachedData(activeCoin, "current", currency, "spot");
-      const cachedOHLCStale = getCachedData(
-        activeCoin,
-        period,
-        currency,
-        "ohlc",
-      );
-
       // If we have stale data, show it immediately while fetching fresh data
       if (cachedHistory && cachedHistory.isStale && cachedHistory.data) {
         // Cached chart paints right away — cancel the skeleton so it doesn't
@@ -532,10 +523,6 @@ class CryptoChart extends PureComponent {
             this.state.valueHistory,
           );
         });
-      }
-
-      if (cachedOHLCStale && cachedOHLCStale.isStale && cachedOHLCStale.data) {
-        this.setState({ ohlcData: cachedOHLCStale.data });
       }
 
       // Fetch fresh data (will use cache if fresh, or make API call if stale/missing)
@@ -1175,6 +1162,21 @@ class CryptoChart extends PureComponent {
       if (prev && Date.now() - prev.time < LAST_SEEN_REFRESH_MS) return;
       stored[coin] = { price, time: Date.now() };
       saveLastSeen(stored);
+    });
+
+    // Candles for the crosshair readout. Called the first time the pointer
+    // touches a chart, so tabs that are never hovered cost no request.
+    // Re-runs per coin/period/currency; the fetcher caches for 5 minutes.
+    _defineProperty(this, "loadOhlc", async () => {
+      const coin = this.state.coinOptions[this.state.coinIndex];
+      const { period, currency } = this.state;
+      const key = `${coin}-${period}-${currency}`;
+      if (!coin || this._ohlcKey === key) return;
+      this._ohlcKey = key;
+      const data = await fetchOhlcCandles(coin, period, currency);
+      // A slow response must not land on a chart the user has moved past
+      if (this._ohlcKey !== key) return;
+      this.setState({ ohlcData: data });
     });
 
     // Price formatter handed to the chart's crosshair (bound once so the
@@ -2327,8 +2329,11 @@ class CryptoChart extends PureComponent {
                 : React.createElement(Line, {
                     prices: valueHistory,
                     colorize: this.state.chartColor,
-                    interactive: true, // crosshair with price + date
+                    interactive: true, // crosshair with OHLC + volume
                     period,
+                    coin: activeCoin,
+                    ohlc: this.state.ohlcData,
+                    onNeedOhlc: this.loadOhlc,
                     formatPrice: this.formatChartPrice,
                   }),
             ),
