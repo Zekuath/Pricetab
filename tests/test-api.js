@@ -123,8 +123,9 @@ const sandbox = {
   providerFor: (coin) => (coin === "XMR" ? "kraken" : "coinbase"),
   KRAKEN_API: "https://api.kraken.com/0/public/",
   KRAKEN_PERIODS: {
-    day: { interval: 5, points: 3 },
+    day: { interval: 5, points: 3 }, // small, so the tail slice shows
     week: { interval: 60, points: 168 },
+    all: { interval: 21600, points: 720 },
   },
 };
 vm.createContext(sandbox);
@@ -331,6 +332,45 @@ const run = (c) => vm.runInContext(c, sandbox);
     null,
     "candle failure degrades to the price-only readout",
   );
+  krakenError = false;
+
+  /* The ALL range has no Coinbase candles — its coarsest is a day and it
+   * returns ~350 of them, which is under a year. In candlestick mode the
+   * range borrows Kraken's 15-day candles instead; in line mode it stays
+   * empty, because mixing one exchange's candles with another's line would
+   * put two slightly different prices on the same chart. */
+  fetchCalls = [];
+  assert.strictEqual(
+    await run('fetchOhlcCandles("BTC", "all", "USD")'),
+    null,
+    "ALL stays candle-less without the cross-provider opt-in",
+  );
+  assert.strictEqual(fetchCalls.length, 0, "and makes no request");
+
+  const allCandles = await run('fetchOhlcCandles("BTC", "all", "USD", true)');
+  assert.ok(allCandles && allCandles.length, "ALL gets candles from the other provider");
+  assert.ok(
+    fetchCalls.some((u) => u.includes("kraken.com")),
+    "which is where they come from",
+  );
+
+  // A coin the other provider doesn't list falls back to no candles, and is
+  // remembered so the miss isn't repeated on every visit to the range
+  krakenError = true;
+  fetchCalls = [];
+  assert.strictEqual(
+    await run('fetchOhlcCandles("ADA", "all", "USD", true)'),
+    null,
+    "unlisted pair → no candles",
+  );
+  const firstTry = fetchCalls.length;
+  assert.ok(firstTry > 0, "it did try once");
+  assert.strictEqual(
+    await run('fetchOhlcCandles("ADA", "all", "USD", true)'),
+    null,
+    "still no candles on the second visit",
+  );
+  assert.strictEqual(fetchCalls.length, firstTry, "and it doesn't ask again");
   krakenError = false;
 
   // Routing: a Kraken coin never reaches the Coinbase candles endpoint

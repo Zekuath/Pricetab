@@ -19,7 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.4.0] - Portfolio, Onboarding & Settings Polish (staged locally, not yet in a store build)
 
 ### Added
-- **Candlestick charts** - switch the chart to open/high/low/close bars from Settings → Appearance → Candlesticks. Every range is split into even candles that cover exactly that range: 1H is 60 one-minute candles, 1D is 96 quarter-hours, 1W is 168 hours, 1M is 120 six-hour bars. Where candle data exists this is actually the *cheaper* mode: the candles are the only request the chart makes, since the price line is derived from their closes. Ranges without candle data (the ALL range on Coinbase, currencies it doesn't quote) stay on the line
+- **Candlestick charts** - switch the chart to open/high/low/close bars from Settings → Appearance → Candlesticks. Every range is split into even candles that cover exactly that range: 1H is 60 one-minute candles, 1D is 96 quarter-hours, 1W is 168 hours, 1M is 120 six-hour bars. Where candle data exists this is actually the *cheaper* mode: the candles are the only request the chart makes, since the price line is derived from their closes. The ALL range draws candles too, sourced from Kraken since no Coinbase request covers a multi-year window — BTC goes back to 2013. Ranges still without candle data (a currency Coinbase doesn't quote, or one of the four coins Kraken doesn't list) stay on the line
 - **Monero (XMR)** - charts, prices and everything else, served by Kraken because Coinbase doesn't list it. Coins can now come from different price providers, which is the groundwork for covering more of the market
 
 ### Changed

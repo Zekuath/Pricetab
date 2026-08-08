@@ -545,7 +545,10 @@ class CryptoChart extends PureComponent {
         // available for this range/currency, fall through to the line fetch.
         let candles = null;
         if (this.state.chartType === "candles") {
-          candles = await fetchOhlcCandles(activeCoin, period, currency);
+          // `true` lets the ALL range borrow candles from the other provider;
+          // in this mode the line is drawn from the candles, so the chart
+          // stays internally consistent
+          candles = await fetchOhlcCandles(activeCoin, period, currency, true);
         }
 
         // Spot price and history are independent endpoints — fetch in parallel

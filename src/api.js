@@ -604,11 +604,29 @@ const fetchKrakenCandles = async (coin, period, currency) => {
 const CANDLES_API = "https://api.exchange.coinbase.com/products/";
 const ohlcCache = new Map(); // "COIN-period-currency" → { data, timestamp }
 
-const fetchOhlcCandles = async (coin, period, currency) => {
+// Coins Kraken turned out not to list. Populated on the first miss so an
+// unlisted pair isn't re-requested every time the range is selected.
+const krakenUnsupported = new Set();
+
+const fetchOhlcCandles = async (coin, period, currency, crossProvider) => {
   // Kraken coins already have candles from their history request
   if (providerFor(coin) === "kraken") {
     return fetchKrakenCandles(coin, period, currency);
   }
+
+  /* Coinbase's coarsest candle is a day and it returns ~350 of them, so no
+   * request covers the ALL range — that is why it had no candles. Kraken's
+   * 15-day candles reach back a decade or more, so the whole ALL chart is
+   * sourced from there instead. Only in candlestick mode, where the line is
+   * derived from these same candles: overlaying one exchange's candles on
+   * another's line would put two slightly different prices on one chart. */
+  if (period === "all" && crossProvider && !krakenUnsupported.has(coin)) {
+    const candles = await fetchKrakenCandles(coin, "all", currency);
+    if (candles && candles.length) return candles;
+    krakenUnsupported.add(coin);
+    return null;
+  }
+
   const spec = OHLC_GRANULARITY[period];
   if (!spec || !OHLC_CURRENCIES.includes(currency)) return null;
   const key = `${coin}-${period}-${currency}`;
