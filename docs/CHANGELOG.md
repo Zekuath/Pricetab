@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.4.0] - Portfolio, Onboarding & Settings Polish (staged locally, not yet in a store build)
 
 ### Fixed
+- **Crosshair readout no longer lingers** - moving the cursor off the screen in one motion, switching to another app, or opening a panel with the keyboard now clears the chart readout instead of leaving it frozen over the chart
 - **Portfolio close button no longer jumps** - opening the portfolio before the top price ticker had loaded made the × slide down once the ticker arrived behind the panel, even though the ticker is hidden by the portfolio
 
 ### Added

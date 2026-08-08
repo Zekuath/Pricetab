@@ -395,6 +395,15 @@ class LineBase extends PureComponent {
         svg.addEventListener("pointercancel", this.handlePointerLeave, {
           passive: true,
         });
+        // The element's own pointerleave doesn't fire when the cursor exits
+        // the window/screen in one motion, or when focus jumps to another
+        // app — the readout would sit there pointing at nothing.
+        document.addEventListener("mouseleave", this.handlePointerLeave, {
+          passive: true,
+        });
+        window.addEventListener("blur", this.handlePointerLeave, {
+          passive: true,
+        });
       }
     }
   }
@@ -406,6 +415,12 @@ class LineBase extends PureComponent {
       this.handlePointerLeave(); // stale readout would point at old data
       // New series → the candles that go with it haven't been asked for yet
       this._askedForOhlc = false;
+    }
+    // An overlay opened over the chart. Opening it from the keyboard moves
+    // no pointer, so no pointerleave fires and the readout would linger
+    // under the panel.
+    if (this.props.paused && !prevProps.paused) {
+      this.handlePointerLeave();
     }
   }
 
@@ -421,6 +436,8 @@ class LineBase extends PureComponent {
       svg.removeEventListener("pointermove", this.handlePointerMove);
       svg.removeEventListener("pointerleave", this.handlePointerLeave);
       svg.removeEventListener("pointercancel", this.handlePointerLeave);
+      document.removeEventListener("mouseleave", this.handlePointerLeave);
+      window.removeEventListener("blur", this.handlePointerLeave);
     }
   }
 

@@ -2334,6 +2334,12 @@ class CryptoChart extends PureComponent {
                     coin: activeCoin,
                     ohlc: this.state.ohlcData,
                     onNeedOhlc: this.loadOhlc,
+                    // Any overlay covering the chart clears the readout
+                    paused:
+                      showSettings ||
+                      showPortfolio ||
+                      this.state.showAlerts ||
+                      this.state.showQuickSwitch,
                     formatPrice: this.formatChartPrice,
                   }),
             ),
