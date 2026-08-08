@@ -2220,7 +2220,9 @@ class CryptoChart extends PureComponent {
                 onClick: this.toggleSettings,
                 open: showSettings,
                 type: "button",
-                tickerTop,
+                // While open this is the panel's × — the panel covers the
+                // ticker, so the corner is where it belongs
+                tickerTop: tickerTop && !showSettings,
                 "data-tour": "settings",
                 "aria-label": showSettings ? "Close settings" : "Open settings",
                 title: showSettings ? "Close settings" : "Settings",
@@ -2238,7 +2240,7 @@ class CryptoChart extends PureComponent {
                 onClick: () =>
                   this.setState((prev) => ({ showAlerts: !prev.showAlerts })),
                 type: "button",
-                tickerTop,
+                tickerTop: tickerTop && !this.state.showAlerts,
                 open: this.state.showAlerts,
                 hasFired:
                   !this.state.showAlerts &&

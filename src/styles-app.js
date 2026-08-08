@@ -517,7 +517,11 @@ const AlertsToggleButton = styled.button`
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.25s ease, top 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  /* Pinned to the corner while open — see SettingsToggleButton */
+  transition: ${({ open }) =>
+    open
+      ? "transform 0.25s ease"
+      : "transform 0.25s ease, top 0.4s cubic-bezier(0.22, 1, 0.36, 1)"};
   z-index: 120;
 
   &:hover {
@@ -570,7 +574,9 @@ const SettingsOverlay = styled.div`
   pointer-events: ${({ visible }) => (visible ? "auto" : "none")};
   transition: opacity 0.35s ease;
   animation: ${overlayBlur} 0.45s ease forwards;
-  z-index: 50;
+  /* Above the page ticker (90): a modal covers the page chrome, which also
+     lets its × stay pinned to the corner instead of dodging the ticker */
+  z-index: 100;
   padding: ${({ theme }) => theme.spacing.medium}rem;
 `;
 

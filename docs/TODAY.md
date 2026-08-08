@@ -114,6 +114,11 @@ chart is the better default and candles mostly serve traders.
   text selection that ended outside the card). The `A` key now toggles targets
   the way `S` toggles settings. The onboarding tour is deliberately excluded —
   a one-time flow shouldn't be dismissable by a stray click.
+- **Close button pinned to the corner** — the × took its position from the page
+  ticker, so it slid down 3rem whenever the ticker finished loading. Every panel
+  covers the ticker (settings was the exception at z-index 50 and now sits at
+  100 with the rest), so the close control ignores the ticker offset and snaps
+  rather than sliding.
 - **Chart Details toggle** (Settings → Appearance) — turns the crosshair's
   OHLC + volume readout off, which also stops the on-hover candle request for
   anyone who wants the leanest possible tab.
