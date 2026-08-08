@@ -425,6 +425,8 @@ class SettingsPanel extends PureComponent {
       chartColor,
       lastSeenEnabled,
       onLastSeenChange,
+      ohlcEnabled,
+      onOhlcChange,
       onChartColorChange,
       widgets,
       onWidgetToggle,
@@ -734,6 +736,32 @@ class SettingsPanel extends PureComponent {
                   onClick: () =>
                     onChartColorChange && onChartColorChange(chartColor === false),
                   "aria-label": "Toggle chart color",
+                }),
+              ),
+            ),
+
+            // Chart detail (OHLC + volume in the crosshair)
+            React.createElement(
+              ToggleSection,
+              null,
+              React.createElement(ToggleSectionTitle, null, "Chart Details"),
+              React.createElement(
+                ToggleSectionDesc,
+                null,
+                "Show open/high/low/close and volume when you hover the chart (one extra request per chart, only on hover)",
+              ),
+              React.createElement(
+                ToggleRow,
+                null,
+                React.createElement(
+                  ToggleLabel,
+                  null,
+                  ohlcEnabled === false ? "Off" : "On",
+                ),
+                React.createElement(ToggleSwitch, {
+                  active: ohlcEnabled !== false,
+                  onClick: () => onOhlcChange && onOhlcChange(ohlcEnabled === false),
+                  "aria-label": "Toggle chart detail readout",
                 }),
               ),
             ),

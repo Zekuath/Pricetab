@@ -133,6 +133,66 @@ assert.strictEqual(
   "fired alert reports the observed price",
 );
 
+/* ── targets hit while nothing was watching ─────────────────────────────── */
+
+// The whole point: a move that happened and reverted overnight is missed by
+// a spot-price check, but the candle high/low still records it.
+const armed = {
+  id: "over", coin: "BTC", direction: "above", target: 100,
+  currency: "USD", created: 5000, triggeredAt: null,
+};
+const under = {
+  id: "under", coin: "BTC", direction: "below", target: 50,
+  currency: "USD", created: 5000, triggeredAt: null,
+};
+const withCandles = (target, candles, price) => {
+  sandbox.__t = [target];
+  sandbox.__c = candles ? { BTC: candles } : null;
+  sandbox.__p = price == null ? {} : { BTC: price };
+  return json('findTriggeredAlerts(__t, __p, "USD", __c)');
+};
+
+// Spiked to 120 overnight, back to 80 by morning: spot says nothing happened
+assert.deepStrictEqual(withCandles(armed, null, 80), [], "spot check alone misses the spike");
+const caught = withCandles(
+  armed,
+  [
+    { time: 6000, high: 90, low: 80, close: 85 },
+    { time: 7000, high: 120, low: 88, close: 95 },
+    { time: 8000, high: 96, low: 79, close: 80 },
+  ],
+  80,
+);
+assert.strictEqual(caught.length, 1, "candle high catches the overnight spike");
+assert.strictEqual(caught[0].hitAt, 7000, "reports when it was hit, not when noticed");
+
+// Downside targets read the candle low
+const caughtLow = withCandles(
+  under,
+  [
+    { time: 6000, high: 90, low: 60, close: 85 },
+    { time: 7000, high: 88, low: 45, close: 70 },
+  ],
+  70,
+);
+assert.strictEqual(caughtLow[0].hitAt, 7000, "candle low catches the dip");
+
+// Candles from before the target was set must not fire it
+assert.deepStrictEqual(
+  withCandles(armed, [{ time: 1000, high: 500, low: 400, close: 450 }], 80),
+  [],
+  "a spike before the target existed does not count",
+);
+
+// A live crossing (no candle yet) still fires, flagged as happening now
+const live = withCandles(armed, [{ time: 6000, high: 90, low: 80, close: 85 }], 150);
+assert.strictEqual(live.length, 1, "spot crossing still fires");
+assert.strictEqual(live[0].hitAt, null, "no candle time → reported as current");
+
+// Missing/short candle data degrades to the spot check rather than throwing
+assert.deepStrictEqual(withCandles(armed, [], 80), [], "empty candles → spot check");
+assert.strictEqual(withCandles(armed, [], 150).length, 1, "empty candles still allow a live fire");
+
 /* ── which coins need prices ────────────────────────────────────────────── */
 
 assert.deepStrictEqual(

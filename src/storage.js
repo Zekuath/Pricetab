@@ -311,6 +311,11 @@ const nextLastSeen = (prev, price, now) => {
   };
 };
 
+const loadOhlcEnabled = () =>
+  loadBoolSetting(OHLC_ENABLED_KEY, DEFAULT_OHLC_ENABLED);
+
+const saveOhlcEnabled = (enabled) => saveSetting(OHLC_ENABLED_KEY, enabled);
+
 const loadLastSeenEnabled = () =>
   loadBoolSetting(LAST_SEEN_ENABLED_KEY, DEFAULT_LAST_SEEN_ENABLED);
 

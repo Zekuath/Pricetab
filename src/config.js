@@ -289,6 +289,11 @@ const OHLC_GRANULARITY = {
 // else degrades to the price-only crosshair rather than guessing.
 const OHLC_CURRENCIES = ["USD", "EUR", "GBP"];
 const OHLC_CACHE_TTL = 300000; // 5 min — candles are not tick data
+// Chart detail toggle: off means the crosshair stays price + date and no
+// candle request is ever made from hovering. Price targets still check
+// candles when one is armed — that lookback is the feature, not a detail.
+const OHLC_ENABLED_KEY = "crypto_chart_ohlc_enabled";
+const DEFAULT_OHLC_ENABLED = true;
 
 // Price alerts (in-tab only — no `notifications` permission, so PriceTab
 // stays a zero-permission extension). [{ id, coin, direction, target,

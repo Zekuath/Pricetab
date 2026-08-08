@@ -175,6 +175,13 @@ assert.strictEqual(
 store["crypto_chart_last_seen"] = "not json{";
 assert.strictEqual(JSON.stringify(run("loadLastSeen()")), "{}", "last seen: corrupt JSON falls back");
 
+// --- chart detail (OHLC) toggle ---
+assert.strictEqual(run("loadOhlcEnabled()"), true, "chart details on by default");
+run("saveOhlcEnabled(false)");
+assert.strictEqual(run("loadOhlcEnabled()"), false, "chart details toggle roundtrip");
+delete store["crypto_chart_ohlc_enabled"];
+assert.strictEqual(run("loadOhlcEnabled()"), true, "missing key falls back to the default");
+
 // --- since-last-visit anchor rule ---
 // The anchor is what the line measures from. It must stay still during a
 // browsing session, otherwise the comparison is always "vs. a minute ago"

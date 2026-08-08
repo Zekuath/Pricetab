@@ -1,25 +1,58 @@
-/* PRICE ALERTS (in-tab)
- * Alerts fire while a PriceTab tab is open — no `notifications` permission,
- * so the extension stays zero-permission. That fits the product: a new tab
- * is opened dozens of times a day, which is exactly when an alert is seen.
+/* PRICE TARGETS (in-tab)
+ * Deliberately not called "alerts": nothing is pushed. You set a target and
+ * PriceTab tells you it was hit the next time you open a tab — which, for a
+ * new-tab page, is many times a day. Keeping it in-tab is what lets the
+ * extension stay zero-permission (no `notifications`).
  *
- * An alert is { id, coin, direction: "above"|"below", target, currency,
- * created, triggeredAt }. Targets are meaningful only in the currency they
- * were set in, so alerts are evaluated only while that currency is the
- * display currency; others are shown as paused rather than silently wrong.
+ * Detection does look backwards, though: candle highs/lows are checked, so
+ * a target hit overnight is still reported even though nothing was watching.
+ *
+ * A target is { id, coin, direction: "above"|"below", target, currency,
+ * created, triggeredAt }. The number only means something in the currency it
+ * was set in, so targets are evaluated only while that currency is on
+ * display; others are shown as paused rather than silently compared wrong.
  */
 
-// Evaluate alerts against a { COIN: price } map. Pure: returns the alerts to
-// mark as triggered, leaving persistence and UI to the caller.
-const findTriggeredAlerts = (alerts, prices, currency) => {
+/* Was the target hit inside the candle window, after the target was set?
+ * Checking the current price alone only answers "is it past the target right
+ * now" — a move that happened and reverted overnight would be missed
+ * entirely. Candle highs/lows record the extremes, so a target hit while no
+ * tab was open is still found the next time one opens. Returns when it was
+ * first hit, or null. */
+const targetHitInCandles = (target, candles) => {
+  if (!Array.isArray(candles) || !candles.length) return null;
+  for (const c of candles) {
+    if (c.time < target.created) continue; // before it was set
+    const hit =
+      target.direction === "above"
+        ? Number(c.high) >= target.target
+        : Number(c.low) <= target.target;
+    if (hit) return c.time;
+  }
+  return null;
+};
+
+/* Evaluate targets against the freshest prices and, where available, the
+ * candle history. Pure: returns the ones to mark as hit, leaving
+ * persistence and UI to the caller. Each result carries `hitAt` (when the
+ * candles say it happened) or null for "it is past the target right now". */
+const findTriggeredAlerts = (alerts, prices, currency, candlesByCoin) => {
   const fired = [];
   for (const a of alerts || []) {
     if (a.triggeredAt) continue;
     if (a.currency !== currency) continue; // paused in another currency
+    const hitAt = targetHitInCandles(
+      a,
+      candlesByCoin ? candlesByCoin[a.coin] : null,
+    );
+    if (hitAt) {
+      fired.push({ ...a, price: a.target, hitAt });
+      continue;
+    }
     const price = prices ? Number(prices[a.coin]) : NaN;
     if (!isFinite(price) || price <= 0) continue;
     if (a.direction === "above" ? price >= a.target : price <= a.target) {
-      fired.push({ ...a, price });
+      fired.push({ ...a, price, hitAt: null });
     }
   }
   return fired;
@@ -292,13 +325,13 @@ class AlertsPanel extends PureComponent {
         React.createElement(
           AlertsTitle,
           null,
-          `Price alerts · ${alerts.length}/${MAX_ALERTS}`,
+          `Price targets · ${alerts.length}/${MAX_ALERTS}`,
         ),
         alerts.length === 0 &&
           React.createElement(
             AlertsEmpty,
             null,
-            "No alerts yet. Set one below and PriceTab will tell you the next time you open a tab.",
+            "No targets yet. Set one below and PriceTab will tell you when it is hit — the next time you open a tab.",
           ),
         alerts.map((a) =>
           React.createElement(
@@ -318,8 +351,8 @@ class AlertsPanel extends PureComponent {
             React.createElement(
               AlertRemove,
               {
-                title: "Remove alert",
-                "aria-label": `Remove ${a.coin} alert`,
+                title: "Remove target",
+                "aria-label": `Remove ${a.coin} target`,
                 onClick: () => onRemove(a.id),
               },
               "×",
@@ -333,7 +366,7 @@ class AlertsPanel extends PureComponent {
             AlertSelect,
             {
               value: this.state.coin,
-              "aria-label": "Alert coin",
+              "aria-label": "Target coin",
               onChange: (e) => this.setState({ coin: e.target.value }),
             },
             coinOptions.map((c) =>
@@ -344,7 +377,7 @@ class AlertsPanel extends PureComponent {
             AlertSelect,
             {
               value: this.state.direction,
-              "aria-label": "Alert direction",
+              "aria-label": "Target direction",
               onChange: (e) => this.setState({ direction: e.target.value }),
             },
             React.createElement("option", { value: "above" }, "rises above"),
@@ -355,7 +388,7 @@ class AlertsPanel extends PureComponent {
             inputMode: "decimal",
             value: this.state.target,
             placeholder: `target in ${currency}`,
-            "aria-label": "Alert target price",
+            "aria-label": "Target price",
             onChange: (e) => this.setState({ target: e.target.value }),
             onKeyDown: this.handleKeyDown,
           }),
@@ -369,8 +402,8 @@ class AlertsPanel extends PureComponent {
           AlertsNote,
           null,
           atCap
-            ? `Alert limit reached (${MAX_ALERTS}). Remove one to add another.`
-            : "Alerts are checked while a PriceTab tab is open — no notification permission, nothing leaves your device.",
+            ? `Target limit reached (${MAX_ALERTS}). Remove one to add another.`
+            : "Checked when you open a tab, including targets hit while you were away. No notification permission, nothing leaves your device.",
         ),
       ),
     );

@@ -99,6 +99,20 @@ chart is the better default and candles mostly serve traders.
 
 ---
 
+## Done today
+
+- **Price targets** (was "alerts") — renamed, because nothing is pushed and the
+  old name promised more than it delivered. Detection now scans candle
+  highs/lows since the target was set, so a target hit while no tab was open —
+  even one that reverted before morning — is still reported, with when it
+  happened. Closes the one real hole in the feature without touching the
+  zero-permission stance.
+- **Chart Details toggle** (Settings → Appearance) — turns the crosshair's
+  OHLC + volume readout off, which also stops the on-hover candle request for
+  anyone who wants the leanest possible tab.
+
+---
+
 ## Not doing (and why)
 
 - **Seeded first-paint chart data** — would ship fabricated prices that read as
@@ -107,5 +121,8 @@ chart is the better default and candles mostly serve traders.
 - **Real brand coin logos** — either ~64 third-party trademark files in the
   bundle or runtime requests to an icon CDN; both break the zero-external-request
   guarantee. Monogram badges shipped instead.
-- **Browser notifications for alerts** — needs the `notifications` permission and
-  breaks the zero-permission story that keeps store review fast.
+- **Browser notifications for price targets** — needs the `notifications`
+  permission and breaks the zero-permission story that keeps store review fast.
+- **Background service worker + `chrome.alarms` for targets** — would catch
+  crossings with no tab open, but the candle lookback already does that from
+  the foreground, and `alarms` is still a permission we'd have to declare.

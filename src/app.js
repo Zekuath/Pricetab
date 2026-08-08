@@ -46,6 +46,7 @@ class CryptoChart extends PureComponent {
       // never moves while the tab is open.
       lastSeen: loadLastSeen(),
       lastSeenEnabled: loadLastSeenEnabled(), // settings toggle
+      ohlcEnabled: loadOhlcEnabled(), // crosshair OHLC + volume readout
       portfolio: loadPortfolioFromStorage(), // [{ coin, amount, lots, watches }]
       portfolioPrices: {}, // { COIN: { price, change, up } } from pageTickerCache
       portfolioReady: false, // true after first portfolio price fetch
@@ -63,9 +64,9 @@ class CryptoChart extends PureComponent {
       retrying: false, // Manual retry in flight (from the error banner)
       slowLoad: false, // First fetch is taking a while — say so in the skeleton
       showQuickSwitch: false, // "/" coin jumper
-      alerts: loadAlerts(), // Price alerts (in-tab, zero permissions)
-      firedAlerts: [], // Alerts that just triggered → toast stack
-      showAlerts: false, // Alerts panel visibility
+      alerts: loadAlerts(), // Price targets (in-tab, zero permissions)
+      firedAlerts: [], // Targets just hit → toast stack
+      showAlerts: false, // Targets panel visibility
       tickerEnabled: loadTickerFromStorage(), // Tab ticker mode
       tickerFormat: loadTickerFormatFromStorage(), // 'compact' or 'full'
       autoRotate: loadAutoRotateFromStorage(), // Auto-cycle through coins
@@ -1011,7 +1012,7 @@ class CryptoChart extends PureComponent {
         return;
       }
 
-      // "A" opens the price alerts panel
+      // "A" opens the price targets panel
       if (e.key === "a" || e.key === "A") {
         e.preventDefault();
         this.setState({ showAlerts: true });
@@ -1042,7 +1043,7 @@ class CryptoChart extends PureComponent {
       }
     });
 
-    /* ── price alerts (in-tab) ── */
+    /* ── price targets (in-tab) ── */
 
     _defineProperty(this, "handleAddAlert", (coin, direction, target) => {
       this.setState((prev) => {
@@ -1081,7 +1082,7 @@ class CryptoChart extends PureComponent {
     // Check every armed alert against the freshest prices we have. Runs
     // after each fetch; the active coin's price comes from state, the rest
     // from the shared ticker cache (filled by the bulk sweep below).
-    _defineProperty(this, "checkAlerts", () => {
+    _defineProperty(this, "checkAlerts", async () => {
       const { alerts, currency } = this.state;
       if (!alerts.some((a) => !a.triggeredAt)) return;
       const prices = {};
@@ -1089,18 +1090,36 @@ class CryptoChart extends PureComponent {
       if (activeCoin && isFinite(Number(this.state.currentValue))) {
         prices[activeCoin] = Number(this.state.currentValue);
       }
-      for (const coin of alertCoinsToWatch(alerts, currency)) {
+      const watched = alertCoinsToWatch(alerts, currency);
+      for (const coin of watched) {
         if (prices[coin] != null) continue;
         const entry = pageTickerCache.get(`${coin}-${currency}`);
         if (entry && isFinite(entry.price)) prices[coin] = entry.price;
       }
-      const fired = findTriggeredAlerts(alerts, prices, currency);
+      // Candle history catches targets hit while no tab was open. Cached
+      // for 5 minutes and only fetched for coins with an armed target.
+      const candlesByCoin = {};
+      await Promise.all(
+        watched.map(async (coin) => {
+          const candles = await fetchTargetCandles(coin, currency);
+          if (candles) candlesByCoin[coin] = candles;
+        }),
+      );
+      const fired = findTriggeredAlerts(
+        alerts,
+        prices,
+        currency,
+        candlesByCoin,
+      );
       if (!fired.length) return;
-      const firedIds = new Set(fired.map((a) => a.id));
+      // Record when it was actually hit, not when we noticed
+      const hitTimes = new Map(fired.map((a) => [a.id, a.hitAt]));
       this.setState((prev) => {
         const now = Date.now();
         const updated = prev.alerts.map((a) =>
-          firedIds.has(a.id) ? { ...a, triggeredAt: now } : a,
+          hitTimes.has(a.id)
+            ? { ...a, triggeredAt: hitTimes.get(a.id) || now }
+            : a,
         );
         saveAlerts(updated);
         return { alerts: updated, firedAlerts: [...prev.firedAlerts, ...fired] };
@@ -1340,6 +1359,13 @@ class CryptoChart extends PureComponent {
     _defineProperty(this, "handleChartColorChange", (enabled) => {
       saveChartColorToStorage(enabled);
       this.setState({ chartColor: enabled });
+    });
+
+    // Turning the readout off also stops the on-hover candle request;
+    // price targets keep their own candle lookback either way
+    _defineProperty(this, "handleOhlcChange", (enabled) => {
+      saveOhlcEnabled(enabled);
+      this.setState({ ohlcEnabled: enabled, ohlcData: enabled ? this.state.ohlcData : null });
     });
 
     // Hiding the line keeps recording baselines, so switching it back on
@@ -2190,7 +2216,7 @@ class CryptoChart extends PureComponent {
               showSettings ? "×" : "⚙",
             ),
 
-          // Alerts bell (left of the portfolio button)
+          // Targets bell (left of the portfolio button)
           !showSettings &&
             !showPortfolio &&
             React.createElement(
@@ -2200,8 +2226,8 @@ class CryptoChart extends PureComponent {
                 type: "button",
                 tickerTop,
                 hasFired: this.state.alerts.some((a) => a.triggeredAt),
-                "aria-label": "Price alerts",
-                title: "Price alerts (A)",
+                "aria-label": "Price targets",
+                title: "Price targets (A)",
               },
               "🔔",
             ),
@@ -2334,8 +2360,9 @@ class CryptoChart extends PureComponent {
                     interactive: true, // crosshair with OHLC + volume
                     period,
                     coin: activeCoin,
-                    ohlc: this.state.ohlcData,
-                    onNeedOhlc: this.loadOhlc,
+                    ohlc: this.state.ohlcEnabled === false ? null : this.state.ohlcData,
+                    onNeedOhlc:
+                      this.state.ohlcEnabled === false ? null : this.loadOhlc,
                     // Any overlay covering the chart clears the readout
                     paused:
                       showSettings ||
@@ -3026,6 +3053,8 @@ class CryptoChart extends PureComponent {
             onChartColorChange: this.handleChartColorChange,
             lastSeenEnabled: this.state.lastSeenEnabled,
             onLastSeenChange: this.handleLastSeenChange,
+            ohlcEnabled: this.state.ohlcEnabled,
+            onOhlcChange: this.handleOhlcChange,
             widgets: widgets,
             onWidgetToggle: this.handleWidgetToggle,
             onWidgetPreset: this.handleWidgetPreset,
@@ -3052,7 +3081,7 @@ class CryptoChart extends PureComponent {
             onUnwatch: this.handleUnwatchAddress,
           }),
 
-        // Fired alerts — one dismissible toast each
+        // Targets that were hit — one dismissible toast each
         this.state.firedAlerts.length > 0 &&
           React.createElement(
             AlertToastStack,
@@ -3064,7 +3093,7 @@ class CryptoChart extends PureComponent {
                 React.createElement(
                   "span",
                   null,
-                  `${a.coin} ${a.direction === "above" ? "rose above" : "dropped below"} ` +
+                  `${a.coin} hit ` +
                     formatNumberString(
                       a.target,
                       getCurrencySymbol(a.currency),
@@ -3072,12 +3101,17 @@ class CryptoChart extends PureComponent {
                       false,
                       decimalPlaces,
                       separatorFormat,
-                    ),
+                    ) +
+                    // Candles can say when it happened; a live crossing is
+                    // happening right now, so it says so
+                    (a.hitAt
+                      ? ` · ${describeElapsed(Date.now() - a.hitAt)}`
+                      : " · just now"),
                 ),
                 React.createElement(
                   AlertToastClose,
                   {
-                    "aria-label": "Dismiss alert",
+                    "aria-label": "Dismiss",
                     onClick: () => this.dismissFiredAlert(a.id),
                   },
                   "×",
@@ -3086,7 +3120,7 @@ class CryptoChart extends PureComponent {
             ),
           ),
 
-        // Alerts panel ("a")
+        // Price targets panel ("a")
         this.state.showAlerts &&
           React.createElement(AlertsPanel, {
             alerts: this.state.alerts,

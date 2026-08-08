@@ -544,6 +544,13 @@ const fetchOhlcCandles = async (coin, period, currency) => {
   }
 };
 
+/* Candles for target checking. Hourly granularity covers ~14 days in one
+ * request, which is the window we can look back over to catch a target that
+ * was hit while no tab was open. Shares the cache with the crosshair's 1W
+ * candles, so a user on the weekly chart pays for this twice over. */
+const fetchTargetCandles = (coin, currency) =>
+  fetchOhlcCandles(coin, "week", currency);
+
 // Nearest candle to a timestamp, but only when it's actually close: a
 // point outside the candle range must not borrow a far-away candle's
 // numbers. Tolerance is half a step, derived from the series itself.
