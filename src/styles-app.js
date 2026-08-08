@@ -504,7 +504,10 @@ const AlertsToggleButton = styled.button`
     tickerTop
       ? `calc(${theme.spacing.large}rem + 3rem)`
       : `${theme.spacing.large}rem`};
-  right: calc(${({ theme }) => theme.spacing.large}rem + 5rem);
+  right: ${({ theme, open }) =>
+    open
+      ? `${theme.spacing.large}rem`
+      : `calc(${theme.spacing.large}rem + 5rem)`};
   padding: 0;
   border: none;
   background: transparent;
@@ -546,7 +549,10 @@ const AlertsToggleButton = styled.button`
   }
 
   @media (max-width: ${({ theme }) => theme.breakpoint.down.sm}px) {
-    right: calc(${({ theme }) => theme.spacing.small}rem + 5rem);
+    right: ${({ theme, open }) =>
+      open
+        ? `${theme.spacing.small}rem`
+        : `calc(${theme.spacing.small}rem + 5rem)`};
     top: ${({ theme, tickerTop }) =>
       tickerTop
         ? `calc(${theme.spacing.small}rem + 3rem)`
