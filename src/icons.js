@@ -7,11 +7,16 @@
  *
  * Drawn here rather than pulled from an icon set: no third-party licence or
  * attribution to carry, and the geometry follows the same rules as the rest
- * of the UI — 24px grid, thin round-capped strokes echoing the chart line,
- * and `currentColor` so every icon inherits the theme and any hover state.
+ * of the UI — 24px grid, round-capped strokes weighted to match the bold ×
+ * beside them, and `currentColor` so every icon inherits the theme and any
+ * hover state.
  */
 
-const ICON_STROKE = 1.75;
+/* Weight is set to sit level with the bold × these buttons use for their
+ * close state: at button size (≈17px) 2.4 on the 24 grid lands on the same
+ * stem width. Going heavier starts to close the gear's valleys and the
+ * link's interlock, so this is the top of the usable range. */
+const ICON_STROKE = 2.4;
 
 /* Gear outline: 8 teeth, flat tops at r 9.3 dropping to valleys at r 6.6.
  * An earlier version drew the teeth as thin radial spokes around a hub —
@@ -100,8 +105,10 @@ const ICON_SHAPES = {
 };
 
 /* Renders one icon at `size` rem. Inherits colour from the parent, so
- * hover/focus states need no icon-specific styling. */
-const icon = (name, size) => {
+ * hover/focus states need no icon-specific styling. `stroke` exists for the
+ * few large decorative uses, where the default weight would out-bold the
+ * text around it. */
+const icon = (name, size, stroke) => {
   const shapes = ICON_SHAPES[name];
   if (!shapes) return null;
   const rem = `${size || 1.05}rem`;
@@ -113,7 +120,7 @@ const icon = (name, size) => {
       height: rem,
       fill: "none",
       stroke: "currentColor",
-      strokeWidth: ICON_STROKE,
+      strokeWidth: stroke || ICON_STROKE,
       strokeLinecap: "round",
       strokeLinejoin: "round",
       "aria-hidden": "true",

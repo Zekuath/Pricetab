@@ -1507,7 +1507,7 @@ class Portfolio extends PureComponent {
           ? React.createElement(
               EmptyState,
               null,
-              React.createElement(EmptyIcon, null, icon("portfolio", 1.8)),
+              React.createElement(EmptyIcon, null, icon("portfolio", 1.8, 1.7)),
               "No holdings yet. Search a coin below to start tracking.",
               React.createElement(
                 EmptyHint,
