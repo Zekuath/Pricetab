@@ -995,10 +995,27 @@ class CryptoChart extends PureComponent {
         }
         return;
       }
-      // S toggles settings — but not underneath the portfolio view
-      if ((e.key === "s" || e.key === "S") && !this.state.showPortfolio) {
+      // S toggles settings — but not underneath another overlay
+      if (
+        (e.key === "s" || e.key === "S") &&
+        !this.state.showPortfolio &&
+        !this.state.showAlerts &&
+        !this.state.showQuickSwitch
+      ) {
         e.preventDefault();
         this.toggleSettings();
+        return;
+      }
+
+      // A toggles price targets, mirroring S
+      if (
+        (e.key === "a" || e.key === "A") &&
+        !this.state.showPortfolio &&
+        !this.state.showSettings &&
+        !this.state.showQuickSwitch
+      ) {
+        e.preventDefault();
+        this.setState((prev) => ({ showAlerts: !prev.showAlerts }));
         return;
       }
 
@@ -1009,13 +1026,6 @@ class CryptoChart extends PureComponent {
         this.state.showQuickSwitch ||
         this.state.showAlerts
       ) {
-        return;
-      }
-
-      // "A" opens the price targets panel
-      if (e.key === "a" || e.key === "A") {
-        e.preventDefault();
-        this.setState({ showAlerts: true });
         return;
       }
 
@@ -2202,6 +2212,8 @@ class CryptoChart extends PureComponent {
           AppShell,
           { tickerTop },
           !showPortfolio &&
+            !this.state.showAlerts &&
+            !this.state.showQuickSwitch &&
             React.createElement(
               SettingsToggleButton,
               {
@@ -2219,21 +2231,32 @@ class CryptoChart extends PureComponent {
           // Targets bell (left of the portfolio button)
           !showSettings &&
             !showPortfolio &&
+            !this.state.showQuickSwitch &&
             React.createElement(
               AlertsToggleButton,
               {
-                onClick: () => this.setState({ showAlerts: true }),
+                onClick: () =>
+                  this.setState((prev) => ({ showAlerts: !prev.showAlerts })),
                 type: "button",
                 tickerTop,
-                hasFired: this.state.alerts.some((a) => a.triggeredAt),
-                "aria-label": "Price targets",
-                title: "Price targets (A)",
+                open: this.state.showAlerts,
+                hasFired:
+                  !this.state.showAlerts &&
+                  this.state.alerts.some((a) => a.triggeredAt),
+                "aria-label": this.state.showAlerts
+                  ? "Close price targets"
+                  : "Price targets",
+                title: this.state.showAlerts
+                  ? "Close price targets"
+                  : "Price targets (A)",
               },
-              "🔔",
+              this.state.showAlerts ? "×" : "🔔",
             ),
 
           // Portfolio toggle (left of the gear)
           !showSettings &&
+            !this.state.showAlerts &&
+            !this.state.showQuickSwitch &&
             React.createElement(
               PortfolioToggleButton,
               {
@@ -2376,7 +2399,14 @@ class CryptoChart extends PureComponent {
         ),
         // Widget toggle button (fixed, above the panel)
         (() => {
-          if (showSettings || showPortfolio) return null;
+          if (
+            showSettings ||
+            showPortfolio ||
+            this.state.showAlerts ||
+            this.state.showQuickSwitch
+          ) {
+            return null;
+          }
           const hidden = this.state.hiddenWidgets;
           const anyEnabled = Object.keys(widgets).some((k) => widgets[k]);
           if (!anyEnabled) return null;
@@ -3079,6 +3109,7 @@ class CryptoChart extends PureComponent {
             onImport: this.handleImportPortfolio,
             onWatch: this.handleWatchAddress,
             onUnwatch: this.handleUnwatchAddress,
+            onClose: this.togglePortfolio,
           }),
 
         // Targets that were hit — one dismissible toast each

@@ -449,13 +449,17 @@ class SettingsPanel extends PureComponent {
 
     return React.createElement(
       SettingsOverlay,
-      { visible: visible, onClick: onClose },
+      {
+        visible: visible,
+        // mousedown + target check, not click: releasing a text selection
+        // outside the card would otherwise close the panel mid-drag
+        onMouseDown: (e) => {
+          if (e.target === e.currentTarget && onClose) onClose();
+        },
+      },
       React.createElement(
         SettingsCard,
-        {
-          visible: visible,
-          onClick: (e) => e.stopPropagation(),
-        },
+        { visible: visible },
         React.createElement(SettingsTitle, null, "Settings"),
         React.createElement(
           SettingsClose,

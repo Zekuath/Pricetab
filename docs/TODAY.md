@@ -107,6 +107,13 @@ chart is the better default and candles mostly serve traders.
   even one that reverted before morning — is still reported, with when it
   happened. Closes the one real hole in the feature without touching the
   zero-permission stance.
+- **Overlay consistency pass** — audited every panel for two rules: only the
+  panel's own close control is visible while it is open, and clicking outside
+  closes it. Fixed price targets (main-view buttons showed through, bell now
+  becomes ×), the portfolio (no click-outside at all) and settings (closed on a
+  text selection that ended outside the card). The `A` key now toggles targets
+  the way `S` toggles settings. The onboarding tour is deliberately excluded —
+  a one-time flow shouldn't be dismissable by a stray click.
 - **Chart Details toggle** (Settings → Appearance) — turns the crosshair's
   OHLC + volume readout off, which also stops the on-hover candle request for
   anyone who wants the leanest possible tab.

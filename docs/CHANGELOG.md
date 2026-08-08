@@ -19,6 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.4.0] - Portfolio, Onboarding & Settings Polish (staged locally, not yet in a store build)
 
 ### Fixed
+- **Panels no longer show the main view's buttons** - opening price targets left the settings, portfolio and widget buttons floating on top of it; every panel now shows only its own close control
+- **Click outside to close, everywhere** - the portfolio can be dismissed by clicking beside it like the other panels, and settings no longer closes when a text selection happens to end outside the card
 - **Crosshair readout no longer lingers** - the open/high/low/close table stayed on the chart after the cursor left. Moving off the screen in one motion, switching to another app, or opening a panel with the keyboard now clears it too
 - **Portfolio close button no longer jumps** - opening the portfolio before the top price ticker had loaded made the × slide down once the ticker arrived behind the panel, even though the ticker is hidden by the portfolio
 

@@ -1370,7 +1370,17 @@ class Portfolio extends PureComponent {
 
     return React.createElement(
       PortfolioShell,
-      null,
+      {
+        // Clicking the empty space beside the content closes the view, the
+        // same as the × — mousedown + target check so a drag that ends out
+        // here (text selection, dismissing the coin suggestions) doesn't
+        // count as clicking outside
+        onMouseDown: (e) => {
+          if (e.target === e.currentTarget && this.props.onClose) {
+            this.props.onClose();
+          }
+        },
+      },
       // Total-value chart, full-bleed behind everything (decorative)
       series &&
         React.createElement(

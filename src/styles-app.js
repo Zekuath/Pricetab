@@ -509,7 +509,7 @@ const AlertsToggleButton = styled.button`
   border: none;
   background: transparent;
   color: ${({ theme }) => theme.color.text};
-  font-size: 1.05rem;
+  font-size: ${({ open }) => (open ? "1.35rem" : "1.05rem")};
   cursor: pointer;
   line-height: 1;
   width: 1.6rem;
