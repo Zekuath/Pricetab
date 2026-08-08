@@ -430,52 +430,76 @@ candleChart.updateCandles(false);
 assert.strictEqual(candleChart.candleBars, null, "no candles → no bar geometry");
 assert.strictEqual(candleChart.candleIndexAt(10), -1, "and nothing to hover");
 
-/* ── a range change never empties the chart ─────────────────────────────────
- * Fading one layer out and back in passes through zero opacity, and what
- * shows through is the empty chart — the change read as a blackout. The new
- * bars must be drawn into the spare layer while the old ones are still up.
+/* ── a range change reshapes rather than blinking ──────────────────────────
+ * The transition used to fade a single layer out and back in, so opacity
+ * passed through zero and the empty chart showed through. Now both layers
+ * travel the same geometry while their opacities cross, so the old bars
+ * visibly flow into the new ones.
+ *
+ * The property that makes that work is here: the morph must sit exactly on
+ * the source at the start and exactly on the destination at the end, in both
+ * directions — otherwise the shape pops at one end of the transition.
  */
 
-const layerD = (i) => ({
-  up: candleChart.candleLayers[i].up.current.attrs.d || "",
-  down: candleChart.candleLayers[i].down.current.attrs.d || "",
-});
-
-candleChart.props = {
-  ...candleChart.props,
-  candles: [
-    { time: 1000, open: 10, high: 12, low: 9, close: 11, volume: 5 },
-    { time: 2000, open: 11, high: 18, low: 10, close: 17, volume: 6 },
+const geom = (bars, w) => json(`scaleCandles(${JSON.stringify(bars)}, 200, ${w}, 24)`);
+const oldGeom = geom(
+  [
+    { time: 1000, open: 10, high: 12, low: 9, close: 11 },
+    { time: 2000, open: 11, high: 18, low: 10, close: 17 },
   ],
-};
-candleChart.width = 400;
-candleChart.updateCandles(false);
-const firstActive = candleChart.activeLayer;
-assert.ok(layerD(firstActive).up || layerD(firstActive).down, "first draw fills the active layer");
-
-// Now a range change, animated
-candleChart.props = {
-  ...candleChart.props,
-  candles: [
-    { time: 5000, open: 20, high: 25, low: 19, close: 24, volume: 1 },
-    { time: 6000, open: 24, high: 26, low: 15, close: 16, volume: 2 },
-    { time: 7000, open: 16, high: 17, low: 12, close: 13, volume: 3 },
+  400,
+);
+const newGeom = geom(
+  [
+    { time: 5000, open: 20, high: 25, low: 19, close: 24 },
+    { time: 6000, open: 24, high: 26, low: 15, close: 16 },
+    { time: 7000, open: 16, high: 17, low: 12, close: 13 },
   ],
-};
-candleChart.updateCandles(true);
+  400,
+);
+sandbox.__old = oldGeom;
+sandbox.__new = newGeom;
 
-assert.notStrictEqual(candleChart.activeLayer, firstActive, "the layers swap roles");
-const incoming = layerD(candleChart.activeLayer);
-const outgoing = layerD(firstActive);
-assert.ok(incoming.up || incoming.down, "new bars are drawn into the spare layer");
+// End of the journey: exactly the destination, bar for bar
+const atEnd = json("interpolateCandleScale(__old, __new, 1)");
+assert.deepStrictEqual(atEnd.bars, newGeom.bars, "t=1 lands exactly on the new set");
+assert.strictEqual(atEnd.barW, newGeom.barW, "and on its bar width");
+
+// Start of the journey: the destination's bar count, but sitting on the
+// source's shape — so the first frame matches what was already on screen
+const atStart = json("interpolateCandleScale(__old, __new, 0)");
+assert.strictEqual(atStart.bars.length, newGeom.bars.length, "count comes from the destination");
+assert.strictEqual(atStart.barW, oldGeom.barW, "width starts at the source's");
+assert.strictEqual(atStart.bars[0].x, oldGeom.bars[0].x, "first bar starts on the source");
+assert.strictEqual(
+  atStart.bars[atStart.bars.length - 1].x,
+  oldGeom.bars[oldGeom.bars.length - 1].x,
+  "last bar starts on the source's last",
+);
+
+// The outgoing layer runs the same call mirrored, so it starts on its own
+// bars — neither end of the transition jumps
+const outgoingStart = json("interpolateCandleScale(__new, __old, 1)");
+assert.deepStrictEqual(outgoingStart.bars, oldGeom.bars, "outgoing starts exactly on the old set");
+
+// Halfway is between the two, not at either end
+const mid = json("interpolateCandleScale(__old, __new, 0.5)");
+const between = (v, a, b) => v > Math.min(a, b) && v < Math.max(a, b);
 assert.ok(
-  outgoing.up || outgoing.down,
-  "old bars are still on screen while the new ones fade in",
+  between(mid.bars[0].yClose, oldGeom.bars[0].yClose, newGeom.bars[0].yClose),
+  "midpoint is genuinely in transit",
 );
-assert.notStrictEqual(
-  incoming.up + incoming.down,
-  outgoing.up + outgoing.down,
-  "the two layers hold different sets during the dissolve",
-);
+
+// Colour follows the set being drawn, so each layer keeps its own directions
+assert.strictEqual(mid.bars[1].up, newGeom.bars[1].up, "direction comes from the destination");
+
+// Degenerate inputs can't break the tween
+assert.strictEqual(run("interpolateCandleScale(null, __new, 0.5)"), sandbox.__new, "no source → destination");
+assert.strictEqual(run("interpolateCandleScale(__old, null, 0.5)"), null, "no destination → nothing");
+const single = json("interpolateCandleScale(__old, { barW: 4, bars: [__new.bars[0]] }, 0.5)");
+assert.strictEqual(single.bars.length, 1, "a single destination bar still interpolates");
+
+// Both layers stay mounted so the crossfade has something to fade between
+assert.strictEqual(candleChart.candleLayers.length, 2, "two candle layers exist");
 
 console.log("CHART TESTS OK");

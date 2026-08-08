@@ -362,10 +362,10 @@ class LineBase extends PureComponent {
       const spare = layers[1 - this.activeLayer];
 
       if (!showing) {
-        this.candleScale = null;
-        this.candleBars = null;
         this.fadeTo(active.group.current, 0, animate);
         this.fadeTo(spare.group.current, 0, false);
+        this.candleScale = null;
+        this.candleBars = null;
         return;
       }
 
@@ -373,25 +373,55 @@ class LineBase extends PureComponent {
       const maxBars = Math.max(20, Math.floor(this.width / 3));
       const bars = aggregateCandles(candles, maxBars);
       const scaled = scaleCandles(bars, this.height, this.width, PADDING);
+      const previous = this.candleScale;
       this.candleScale = scaled;
       this.candleBars = bars; // what the crosshair reports, post-aggregation
 
-      // A resize is a re-layout of the same data — redraw in place
-      const target = animate ? spare : active;
-      target.up.current.setAttribute("d", candlePathData(scaled, true));
-      target.down.current.setAttribute("d", candlePathData(scaled, false));
+      const drawInto = (layer, geometry) => {
+        layer.up.current.setAttribute("d", candlePathData(geometry, true));
+        layer.down.current.setAttribute("d", candlePathData(geometry, false));
+      };
 
-      if (!animate) {
-        this.fadeTo(target.group.current, 1, false);
+      // Resize, first draw, or a mode switch with nothing to morph from
+      if (!animate || !previous) {
+        drawInto(active, scaled);
+        this.fadeTo(active.group.current, 1, Boolean(animate));
+        this.fadeTo(spare.group.current, 0, false);
         return;
       }
-      // Both tweens run together, so the chart is never empty mid-change
+
+      /* Both layers travel the same geometric path so the shapes stay
+       * aligned, while the opacity crossfade carries the colours over —
+       * a bar that flips green to red doesn't pop, it dissolves in place.
+       * The incoming layer ends exactly on the new set; the outgoing one
+       * starts exactly on the old, so neither end of the transition jumps. */
+      this.morph(spare, previous, scaled, false);
+      this.morph(active, scaled, previous, true);
       this.fadeTo(spare.group.current, 1, true);
-      this.fadeTo(active.group.current, 0, true, () => {
-        active.up.current.setAttribute("d", "");
-        active.down.current.setAttribute("d", "");
-      });
+      this.fadeTo(active.group.current, 0, true);
       this.activeLayer = 1 - this.activeLayer;
+    });
+
+    /* Tween one layer's paths between two candle geometries. `reverse`
+     * draws the outgoing set: same journey, mirrored, so it keeps its own
+     * bars and colours while sliding onto the new layout. */
+    _defineProperty(this, "morph", (layer, from, to, reverse) => {
+      const build = (upward) => () => (t) => {
+        const geometry = reverse
+          ? interpolateCandleScale(from, to, 1 - t)
+          : interpolateCandleScale(from, to, t);
+        return candlePathData(geometry, upward);
+      };
+      select(layer.up.current)
+        .transition()
+        .duration(TRANSITION_DURATION)
+        .ease(easeCubicOut)
+        .attrTween("d", build(true));
+      select(layer.down.current)
+        .transition()
+        .duration(TRANSITION_DURATION)
+        .ease(easeCubicOut)
+        .attrTween("d", build(false));
     });
 
     // Opacity tween with an optional callback once it lands

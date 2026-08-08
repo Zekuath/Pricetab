@@ -207,6 +207,60 @@ const scaleCandles = (candles, height, width, padding = 0) => {
   };
 };
 
+/* Morphing one candle set into another.
+ *
+ * Bar counts differ between ranges (60 one-minute bars become 120 six-hour
+ * ones), so there is no bar-to-bar pairing to tween. Instead each bar reads
+ * the other set at its own relative position along the chart, which stretches
+ * the old shape into the new one: bars slide and grow rather than the whole
+ * chart blinking out and back.
+ *
+ * `to` decides the bar count and the up/down split, so the result always ends
+ * exactly on the destination. Running it with the arguments swapped and
+ * `1 - t` gives the mirror image — the old set morphing toward the new one
+ * while keeping its own colours, which is what the outgoing layer draws.
+ */
+const lerp = (a, b, t) => a + (b - a) * t;
+
+// The bar `bars` would have at normalized position `pos` (0-1)
+const sampleBarAt = (bars, pos) => {
+  if (bars.length === 1) return bars[0];
+  const f = Math.min(Math.max(pos, 0), 1) * (bars.length - 1);
+  const i = Math.floor(f);
+  const j = Math.min(i + 1, bars.length - 1);
+  const u = f - i;
+  const a = bars[i];
+  const b = bars[j];
+  return {
+    x: lerp(a.x, b.x, u),
+    yOpen: lerp(a.yOpen, b.yOpen, u),
+    yClose: lerp(a.yClose, b.yClose, u),
+    yHigh: lerp(a.yHigh, b.yHigh, u),
+    yLow: lerp(a.yLow, b.yLow, u),
+    up: b.up,
+  };
+};
+
+const interpolateCandleScale = (from, to, t) => {
+  if (!to || !to.bars || !to.bars.length) return to;
+  if (!from || !from.bars || !from.bars.length || t >= 1) return to;
+  const n = to.bars.length;
+  return {
+    barW: lerp(from.barW, to.barW, t),
+    bars: to.bars.map((target, i) => {
+      const src = sampleBarAt(from.bars, n === 1 ? 0 : i / (n - 1));
+      return {
+        x: lerp(src.x, target.x, t),
+        yOpen: lerp(src.yOpen, target.yOpen, t),
+        yClose: lerp(src.yClose, target.yClose, t),
+        yHigh: lerp(src.yHigh, target.yHigh, t),
+        yLow: lerp(src.yLow, target.yLow, t),
+        up: target.up, // colour belongs to the set being drawn
+      };
+    }),
+  };
+};
+
 /* Path data for one direction's bars: a wick line plus a body rectangle per
  * candle, concatenated. Two paths draw the whole chart no matter how many
  * candles there are — 700 separate nodes would cost far more to build and
