@@ -141,6 +141,33 @@ const formatValueHistory = (prices) =>
  * aggregate to a bar count the width can actually show, then scale to pixels.
  */
 
+/* How many bars this data can actually fill.
+ *
+ * A thin market doesn't trade every interval: XMR's one-minute candles are
+ * two thirds empty, and an empty candle has open = high = low = close, which
+ * draws as a dash with no body or wick. Sixty of those read as a broken
+ * chart rather than a quiet hour. Merging them until most buckets contain a
+ * trade gives real bodies again, and since it is the same aggregation the
+ * width uses, the bars stay truthful — a merged candle is still first open,
+ * last close, extreme high/low.
+ *
+ * Returns Infinity when the data is dense enough to leave alone, or when no
+ * volume is reported at all (some ranges don't carry it, and guessing from
+ * flat candles would merge a genuinely calm market).
+ */
+const candleDensityCap = (candles, minBars = 12) => {
+  if (!Array.isArray(candles) || !candles.length) return Infinity;
+  let traded = 0;
+  for (const c of candles) if (Number(c.volume) > 0) traded++;
+  if (!traded) return Infinity;
+  if (traded >= candles.length * 0.66) return Infinity;
+  // Aim for about two trading intervals per bar. Measured on XMR's hour:
+  // one interval per bar still left 37% of bars flat because the quiet
+  // minutes cluster, two brought it to 7%, and merging further gained
+  // nothing while costing detail.
+  return Math.max(minBars, Math.round(traded / 2));
+};
+
 // Merge candles into `maxBars` buckets: first open, last close, extreme
 // high/low, summed volume — the standard reduction, so a bucket is still a
 // truthful candle rather than a sample. Drawing 700 slivers on a 1400px

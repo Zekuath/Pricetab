@@ -264,6 +264,46 @@ assert.deepStrictEqual(
 assert.deepStrictEqual(json("aggregateCandles([], 5)"), [], "no candles → none");
 assert.deepStrictEqual(json("aggregateCandles(null, 5)"), [], "missing candles → none");
 
+/* Density cap: a thin market doesn't trade every interval, and an empty
+ * candle (open = high = low = close) draws as a dash. XMR's hour was two
+ * thirds of those, which read as a broken chart rather than a quiet hour. */
+const withVol = (rows) =>
+  rows.map(([time, o, h, l, c, v]) => ({ time, open: o, high: h, low: l, close: c, volume: v }));
+
+// Dense data is left alone
+sandbox.__dense = withVol(
+  Array.from({ length: 30 }, (_, i) => [i, 10, 12, 9, 11, 5]),
+);
+assert.strictEqual(run("candleDensityCap(__dense)"), Infinity, "every interval traded → untouched");
+
+// Two thirds empty → merge toward roughly two traded intervals per bar
+sandbox.__thin = withVol(
+  Array.from({ length: 60 }, (_, i) => [i, 10, 12, 9, 11, i % 3 === 0 ? 4 : 0]),
+);
+assert.strictEqual(run("candleDensityCap(__thin)"), 12, "20 traded of 60 → 10, floored at the minimum");
+sandbox.__thin2 = withVol(
+  Array.from({ length: 120 }, (_, i) => [i, 10, 12, 9, 11, i % 3 === 0 ? 4 : 0]),
+);
+assert.strictEqual(run("candleDensityCap(__thin2)"), 20, "40 traded of 120 → 20 bars");
+
+// No volume reported at all: don't guess from flat candles, since a calm
+// market is not the same as an untraded one
+sandbox.__novol = withVol(
+  Array.from({ length: 30 }, (_, i) => [i, 10, 10, 10, 10, 0]),
+);
+assert.strictEqual(run("candleDensityCap(__novol)"), Infinity, "no volume data → no second-guessing");
+assert.strictEqual(run("candleDensityCap([])"), Infinity, "no candles → no cap");
+assert.strictEqual(run("candleDensityCap(null)"), Infinity, "missing candles → no cap");
+
+// The cap feeds the same aggregation the width uses, so merged bars gain
+// real bodies instead of staying dashes
+const thinBars = json("aggregateCandles(__thin2, candleDensityCap(__thin2))");
+assert.strictEqual(thinBars.length, 20, "merged to the cap");
+assert.ok(
+  thinBars.every((b) => b.volume > 0),
+  "every merged bar now contains a trade",
+);
+
 // Scaling: y spans highs and lows so wicks stay inside the plot
 sandbox.__sc = mkCandles([
   [1, 10, 20, 0, 15, 1],

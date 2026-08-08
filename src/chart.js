@@ -369,8 +369,13 @@ class LineBase extends PureComponent {
         return;
       }
 
-      // One bar per ~3px of width, so bars never collapse into a smear
-      const maxBars = Math.max(20, Math.floor(this.width / 3));
+      // One bar per ~3px of width, so bars never collapse into a smear —
+      // and no more bars than the data can actually fill, so a thin market's
+      // empty intervals merge into candles with real bodies
+      const maxBars = Math.min(
+        Math.max(20, Math.floor(this.width / 3)),
+        candleDensityCap(candles),
+      );
       const bars = aggregateCandles(candles, maxBars);
       const scaled = scaleCandles(bars, this.height, this.width, PADDING);
       const previous = this.candleScale;
