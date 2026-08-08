@@ -2267,7 +2267,7 @@ class CryptoChart extends PureComponent {
                 "aria-label": showSettings ? "Close settings" : "Open settings",
                 title: showSettings ? "Close settings" : "Settings",
               },
-              showSettings ? "×" : "⚙",
+              showSettings ? "×" : icon("settings", 1.15),
             ),
 
           // Targets bell (left of the portfolio button)
@@ -2292,7 +2292,7 @@ class CryptoChart extends PureComponent {
                   ? "Close price targets"
                   : "Price targets (A)",
               },
-              this.state.showAlerts ? "×" : "🔔",
+              this.state.showAlerts ? "×" : icon("target", 1.1),
             ),
 
           // Portfolio toggle (left of the gear)
@@ -2314,7 +2314,7 @@ class CryptoChart extends PureComponent {
                 "aria-label": showPortfolio ? "Close portfolio" : "Open portfolio",
                 title: showPortfolio ? "Close portfolio" : "Portfolio",
               },
-              showPortfolio ? "×" : "💼",
+              showPortfolio ? "×" : icon("portfolio", 1.1),
             ),
 
           React.createElement(
@@ -2462,7 +2462,7 @@ class CryptoChart extends PureComponent {
               "aria-label": anyVisible ? "Hide all widgets" : "Show hidden widgets",
               title: anyVisible ? "Hide all widgets" : "Show hidden widgets",
             },
-            anyVisible ? "\u00d7" : "\uD83D\uDC41",
+            anyVisible ? "\u00d7" : icon("eye", 1.15),
           );
         })(),
         // Widget Panel (drag-reorderable, widgets only)

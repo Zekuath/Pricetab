@@ -607,10 +607,17 @@ const LotNote = styled.div`
 // Marker next to the coin symbol showing the row is fed by watched
 // addresses (the whole coin cell opens the breakdown, so this is inert)
 const WatchedBadge = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.1rem;
   margin-left: 0.35rem;
-  font-size: 0.75rem;
   line-height: 1;
   color: ${({ theme }) => theme.color.textSecondary};
+`;
+
+const WatchedBadgeCount = styled.span`
+  font-size: 0.6rem;
+  font-weight: ${({ theme }) => theme.fontWeight.bold};
 `;
 
 /* Compact chips summarising every watched address, so what's being synced
@@ -1500,7 +1507,7 @@ class Portfolio extends PureComponent {
           ? React.createElement(
               EmptyState,
               null,
-              React.createElement(EmptyIcon, null, "💼"),
+              React.createElement(EmptyIcon, null, icon("portfolio", 1.8)),
               "No holdings yet. Search a coin below to start tracking.",
               React.createElement(
                 EmptyHint,
@@ -1584,9 +1591,14 @@ class Portfolio extends PureComponent {
                             {
                               title: `${r.watches.length} watched address${r.watches.length > 1 ? "es" : ""}`,
                             },
+                            icon("link", 0.85),
                             r.watches.length > 1
-                              ? `⛓${r.watches.length}`
-                              : "⛓",
+                              ? React.createElement(
+                                  WatchedBadgeCount,
+                                  null,
+                                  r.watches.length,
+                                )
+                              : null,
                           ),
                       ),
                       React.createElement(
@@ -1765,7 +1777,7 @@ class Portfolio extends PureComponent {
                               React.createElement(
                                 SourceTitle,
                                 null,
-                                "⛓ Watched address",
+                                "Watched address",
                               ),
                               React.createElement(
                                 SourceAmount,
@@ -1885,8 +1897,9 @@ class Portfolio extends PureComponent {
                     title: `${c.coin} · ${c.address} — click for the breakdown`,
                     onClick: () => this.handleToggleLots(c.coin),
                   },
+                  icon("link", 0.72),
                   React.createElement(WatchChipCoin, null, c.coin),
-                  `⛓ ${c.address.slice(0, 6)}…${c.address.slice(-4)}`,
+                  `${c.address.slice(0, 6)}…${c.address.slice(-4)}`,
                 ),
               ),
             ),
