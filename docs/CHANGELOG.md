@@ -18,7 +18,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.4.0] - Portfolio, Onboarding & Settings Polish (staged locally, not yet in a store build)
 
+### Changed
+- **Watchlist and Top Movers now list prices** - both widgets show symbol, current price and 24h change on one row, and read the same way. The watchlist keeps its heat wash behind the rows, so the colour still tells you the shape of your list at a glance without hiding the numbers
+
 ### Fixed
+- **RSI widget says what it is measuring** - the value is computed from the chart's current coin and range, so the label now names both ("BTC RSI · 1D"); before, the same number silently meant something different after switching period
 - **Panels no longer show the main view's buttons** - opening price targets left the settings, portfolio and widget buttons floating on top of it; every panel now shows only its own close control
 - **Close button stays in the corner** - the × no longer slides down when the top price ticker loads; a panel covers the ticker, so there was nothing to dodge (settings now covers it too, like the other panels already did)
 - **Click outside to close, everywhere** - the portfolio can be dismissed by clicking beside it like the other panels, and settings no longer closes when a text selection happens to end outside the card

@@ -1210,6 +1210,37 @@ class CryptoChart extends PureComponent {
       this.setState({ ohlcData: data });
     });
 
+    // One row of the Watchlist / Top Movers lists: symbol, price, 24h change.
+    // `tint` washes the row by how big the move is — the watchlist used to be
+    // a heatmap and this keeps that reading without losing the numbers.
+    _defineProperty(this, "renderCoinRow", (c, tint) =>
+      React.createElement(
+        WidgetCoinRow,
+        {
+          key: c.coin,
+          up: c.up,
+          intensity: tint
+            ? Math.min(0.3, 0.05 + Math.abs(c.change) / 55)
+            : 0,
+        },
+        React.createElement(WidgetCoinSym, null, c.coin),
+        React.createElement(
+          WidgetCoinPrice,
+          null,
+          formatWidgetPrice(
+            c.price,
+            getCurrencySymbol(this.state.currency),
+            this.state.separatorFormat,
+          ),
+        ),
+        React.createElement(
+          WidgetCoinChg,
+          { up: c.up },
+          `${c.up ? "+" : ""}${c.change.toFixed(2)}%`,
+        ),
+      ),
+    );
+
     // Price formatter handed to the chart's crosshair (bound once so the
     // memoized Line never sees a new prop identity per render)
     _defineProperty(this, "formatChartPrice", (value) =>
@@ -1456,15 +1487,22 @@ class CryptoChart extends PureComponent {
           : null;
 
         items.push({ coin, price: priceStr, change: changeStr, up: cached.up });
-        if (hasChange) moverPool.push({ coin, change: cached.change, up: cached.up });
+        if (hasChange) {
+          moverPool.push({
+            coin,
+            change: cached.change,
+            up: cached.up,
+            price: cached.price,
+          });
+        }
       }
 
-      // Watchlist heatmap — the user's coins, in their own order
+      // Watchlist — the user's coins, in their own order
       const watchlist = (coinOptions || [])
         .map((coin) => {
           const c = pageTickerCache.get(`${coin}-${curr}`);
           if (!c || c.change === null || c.change === undefined) return null;
-          return { coin, change: c.change, up: c.up };
+          return { coin, change: c.change, up: c.up, price: c.price };
         })
         .filter(Boolean);
 
@@ -2103,6 +2141,8 @@ class CryptoChart extends PureComponent {
     const fgNeedleX = (50 + 30 * Math.cos(fgAngle)).toFixed(1);
     const fgNeedleY = (50 - 30 * Math.sin(fgAngle)).toFixed(1);
     const activeCoin = coinOptions[coinIndex] || coinOptions[0] || "BTC";
+    const periodOption = PERIOD_OPTIONS.find((o) => o.value === period);
+    const periodLabel = periodOption ? periodOption.label : "";
     const tickerVisible =
       this.state.pageTicker &&
       this.state.pageTickerReady &&
@@ -2436,27 +2476,11 @@ class CryptoChart extends PureComponent {
               content:
                 watchlistData && watchlistData.length
                   ? React.createElement(
-                      WatchlistGrid,
+                      WidgetCoinList,
                       null,
-                      watchlistData.slice(0, 12).map((c) =>
-                        React.createElement(
-                          WatchlistCell,
-                          {
-                            key: c.coin,
-                            up: c.up,
-                            intensity: Math.min(
-                              0.34,
-                              0.07 + Math.abs(c.change) / 45,
-                            ),
-                          },
-                          React.createElement(WatchlistSym, null, c.coin),
-                          React.createElement(
-                            WatchlistChg,
-                            null,
-                            `${c.up ? "+" : ""}${c.change.toFixed(1)}%`,
-                          ),
-                        ),
-                      ),
+                      watchlistData
+                        .slice(0, 12)
+                        .map((c) => this.renderCoinRow(c, true)),
                     )
                   : React.createElement(WidgetSubtext, null, "Loading..."),
             },
@@ -2465,23 +2489,11 @@ class CryptoChart extends PureComponent {
               visible: widgets.topMovers && !hidden.topMovers,
               content: topMoversData
                 ? React.createElement(
-                    MoversWrap,
+                    WidgetCoinList,
                     null,
-                    [
-                      ...topMoversData.gainers,
-                      ...topMoversData.losers,
-                    ].map((m, i) =>
-                      React.createElement(
-                        MoverRow,
-                        { key: m.coin + "-" + i },
-                        React.createElement(MoverSym, null, m.coin),
-                        React.createElement(
-                          MoverChg,
-                          { up: m.up },
-                          `${m.up ? "+" : ""}${m.change.toFixed(1)}%`,
-                        ),
-                      ),
-                    ),
+                    topMoversData.gainers.map((m) => this.renderCoinRow(m)),
+                    React.createElement(WidgetListDivider, { key: "split" }),
+                    topMoversData.losers.map((m) => this.renderCoinRow(m)),
                   )
                 : React.createElement(WidgetSubtext, null, "Loading..."),
             },
@@ -2658,7 +2670,10 @@ class CryptoChart extends PureComponent {
                 : React.createElement(WidgetSubtext, null, "Loading..."),
             },
             rsiWidget: {
-              label: "RSI",
+              // RSI is computed from the chart's current series, so the same
+              // number means something different per coin and per range —
+              // both belong in the label, like the other coin-specific widgets
+              label: `${activeCoin} RSI · ${periodLabel}`,
               visible: widgets.rsiWidget && !hidden.rsiWidget,
               content:
                 rsiValue !== null

@@ -166,6 +166,18 @@ const lineFromPrices = line()
   .x((d) => d.time)
   .y((d) => d.price);
 
+/* Prices for the widget list rows. The panel is narrow, so the decimals
+ * adapt to the magnitude instead of using the display setting: a $65,014.68
+ * would crowd out the change column, while a $0.0000 would say nothing.
+ * The separator format is still respected. */
+const formatWidgetPrice = (value, symbol, separatorFormat) => {
+  const v = Number(value);
+  if (!isFinite(v)) return "—";
+  const abs = Math.abs(v);
+  const decimals = abs >= 1000 ? 0 : abs >= 1 ? 2 : abs >= 0.01 ? 4 : 6;
+  return formatNumberString(v, symbol, true, false, decimals, separatorFormat);
+};
+
 // Coarse "how long ago" for the since-last-visit line. Deliberately vague —
 // the point is orientation ("this morning"), not a stopwatch.
 const describeElapsed = (ms) => {

@@ -287,59 +287,61 @@ const WidgetValue = styled.div`
   }
 `;
 
-/* Watchlist heatmap + Top movers widgets */
-const WatchlistGrid = styled.div`
+/* Watchlist + Top movers: both are coin rows now — symbol, price, 24h
+ * change — so the two widgets read the same way. The row keeps a faint
+ * up/down wash, which is what the old heatmap grid was for; the change
+ * value carries the direction, so the tint is decoration, not the message. */
+const WidgetCoinList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  min-width: 9.5rem;
+  margin-top: 3px;
+`;
+const WidgetCoinRow = styled.div`
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 4px;
-  width: 100%;
-  margin-top: 2px;
-`;
-const WatchlistCell = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1px;
-  padding: 5px 2px;
-  border-radius: 5px;
+  grid-template-columns: 2.6rem 1fr auto;
+  align-items: baseline;
+  gap: 0.4rem;
+  padding: 3px 5px;
+  border-radius: 4px;
+  font-size: 0.64rem;
+  line-height: 1.35;
   background: ${({ up, intensity }) =>
-    up
-      ? `rgba(52, 211, 153, ${intensity})`
-      : `rgba(248, 113, 113, ${intensity})`};
+    intensity
+      ? up
+        ? `rgba(52, 211, 153, ${intensity})`
+        : `rgba(248, 113, 113, ${intensity})`
+      : "transparent"};
 `;
-const WatchlistSym = styled.span`
-  font-size: 0.62rem;
+const WidgetCoinSym = styled.span`
   font-weight: ${({ theme }) => theme.fontWeight.bold};
   color: ${({ theme }) => theme.color.text};
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
 `;
-const WatchlistChg = styled.span`
-  font-size: 0.55rem;
+const WidgetCoinPrice = styled.span`
   color: ${({ theme }) => theme.color.text};
-  opacity: 0.85;
+  opacity: 0.75;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 `;
-
-const MoversWrap = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  width: 100%;
-  margin-top: 2px;
-`;
-const MoverRow = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 0.66rem;
-  line-height: 1.3;
-`;
-const MoverSym = styled.span`
-  font-weight: ${({ theme }) => theme.fontWeight.bold};
-  color: ${({ theme }) => theme.color.text};
-  opacity: 0.9;
-`;
-const MoverChg = styled.span`
+const WidgetCoinChg = styled.span`
+  min-width: 3.1rem;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
   color: ${({ up, theme }) =>
     up ? theme.color.chartLineGreen : theme.color.chartLineRed};
+`;
+// Separates gainers from losers in Top Movers
+const WidgetListDivider = styled.div`
+  height: 1px;
+  margin: 3px 2px;
+  background: ${({ theme }) => theme.color.border};
 `;
 
 const WidgetSubtext = styled.div`
