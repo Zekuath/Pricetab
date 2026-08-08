@@ -383,9 +383,11 @@ cAttach(candleChart.hoverPriceRef);
 cAttach(candleChart.hoverDateRef);
 candleChart.rowLabelRefs.forEach(cAttach);
 candleChart.rowValueRefs.forEach(cAttach);
-cAttach(candleChart.candleGroupRef);
-cAttach(candleChart.upCandlesRef);
-cAttach(candleChart.downCandlesRef);
+candleChart.candleLayers.forEach((layer) => {
+  cAttach(layer.group);
+  cAttach(layer.up);
+  cAttach(layer.down);
+});
 
 candleChart.updateCandles(false);
 assert.strictEqual(candleChart.candleBars.length, 4, "no aggregation needed at this width");
@@ -427,5 +429,53 @@ candleChart.props = { ...candleChart.props, candles: [] };
 candleChart.updateCandles(false);
 assert.strictEqual(candleChart.candleBars, null, "no candles → no bar geometry");
 assert.strictEqual(candleChart.candleIndexAt(10), -1, "and nothing to hover");
+
+/* ── a range change never empties the chart ─────────────────────────────────
+ * Fading one layer out and back in passes through zero opacity, and what
+ * shows through is the empty chart — the change read as a blackout. The new
+ * bars must be drawn into the spare layer while the old ones are still up.
+ */
+
+const layerD = (i) => ({
+  up: candleChart.candleLayers[i].up.current.attrs.d || "",
+  down: candleChart.candleLayers[i].down.current.attrs.d || "",
+});
+
+candleChart.props = {
+  ...candleChart.props,
+  candles: [
+    { time: 1000, open: 10, high: 12, low: 9, close: 11, volume: 5 },
+    { time: 2000, open: 11, high: 18, low: 10, close: 17, volume: 6 },
+  ],
+};
+candleChart.width = 400;
+candleChart.updateCandles(false);
+const firstActive = candleChart.activeLayer;
+assert.ok(layerD(firstActive).up || layerD(firstActive).down, "first draw fills the active layer");
+
+// Now a range change, animated
+candleChart.props = {
+  ...candleChart.props,
+  candles: [
+    { time: 5000, open: 20, high: 25, low: 19, close: 24, volume: 1 },
+    { time: 6000, open: 24, high: 26, low: 15, close: 16, volume: 2 },
+    { time: 7000, open: 16, high: 17, low: 12, close: 13, volume: 3 },
+  ],
+};
+candleChart.updateCandles(true);
+
+assert.notStrictEqual(candleChart.activeLayer, firstActive, "the layers swap roles");
+const incoming = layerD(candleChart.activeLayer);
+const outgoing = layerD(firstActive);
+assert.ok(incoming.up || incoming.down, "new bars are drawn into the spare layer");
+assert.ok(
+  outgoing.up || outgoing.down,
+  "old bars are still on screen while the new ones fade in",
+);
+assert.notStrictEqual(
+  incoming.up + incoming.down,
+  outgoing.up + outgoing.down,
+  "the two layers hold different sets during the dissolve",
+);
 
 console.log("CHART TESTS OK");

@@ -95,10 +95,16 @@ class LineBase extends PureComponent {
     _defineProperty(this, "svgRef", createRef());
     _defineProperty(this, "clipRectRef", createRef());
 
-    // Candle layer: one path per direction, whatever the candle count
-    _defineProperty(this, "candleGroupRef", createRef());
-    _defineProperty(this, "upCandlesRef", createRef());
-    _defineProperty(this, "downCandlesRef", createRef());
+    /* Two candle layers, cross-dissolved. One layer faded out and back in
+     * would pass through zero opacity, and what shows through the gap is the
+     * empty chart — the transition read as a blackout rather than a change
+     * of range. Drawing the new set into the spare layer and fading the two
+     * past each other keeps candles on screen the whole way. */
+    this.candleLayers = [
+      { group: createRef(), up: createRef(), down: createRef() },
+      { group: createRef(), up: createRef(), down: createRef() },
+    ];
+    this.activeLayer = 0;
     _defineProperty(this, "lineGroupRef", createRef());
 
     // Crosshair nodes — written to directly, never through React
@@ -346,22 +352,20 @@ class LineBase extends PureComponent {
      * a candle set doesn't (60 one-minute bars become 120 six-hour ones), so
      * this cross-fades instead of trying to tween one into the other. */
     _defineProperty(this, "updateCandles", (animate) => {
-      const up = this.upCandlesRef.current;
-      const down = this.downCandlesRef.current;
-      const group = this.candleGroupRef.current;
-      if (!up || !down || !group) return;
+      const layers = this.candleLayers;
+      if (!layers[0].group.current || !layers[1].group.current) return;
       const candles = this.props.candles;
       const showing = Boolean(
         this.props.showCandles && candles && candles.length,
       );
+      const active = layers[this.activeLayer];
+      const spare = layers[1 - this.activeLayer];
 
       if (!showing) {
         this.candleScale = null;
         this.candleBars = null;
-        this.fadeTo(group, 0, animate, () => {
-          up.setAttribute("d", "");
-          down.setAttribute("d", "");
-        });
+        this.fadeTo(active.group.current, 0, animate);
+        this.fadeTo(spare.group.current, 0, false);
         return;
       }
 
@@ -371,21 +375,23 @@ class LineBase extends PureComponent {
       const scaled = scaleCandles(bars, this.height, this.width, PADDING);
       this.candleScale = scaled;
       this.candleBars = bars; // what the crosshair reports, post-aggregation
-      const draw = () => {
-        up.setAttribute("d", candlePathData(scaled, true));
-        down.setAttribute("d", candlePathData(scaled, false));
-      };
+
+      // A resize is a re-layout of the same data — redraw in place
+      const target = animate ? spare : active;
+      target.up.current.setAttribute("d", candlePathData(scaled, true));
+      target.down.current.setAttribute("d", candlePathData(scaled, false));
 
       if (!animate) {
-        draw();
-        group.setAttribute("opacity", "1");
+        this.fadeTo(target.group.current, 1, false);
         return;
       }
-      // Fade the old set out, swap, fade the new one in
-      this.fadeTo(group, 0, true, () => {
-        draw();
-        this.fadeTo(group, 1, true);
+      // Both tweens run together, so the chart is never empty mid-change
+      this.fadeTo(spare.group.current, 1, true);
+      this.fadeTo(active.group.current, 0, true, () => {
+        active.up.current.setAttribute("d", "");
+        active.down.current.setAttribute("d", "");
       });
+      this.activeLayer = 1 - this.activeLayer;
     });
 
     // Opacity tween with an optional callback once it lands
@@ -397,7 +403,7 @@ class LineBase extends PureComponent {
       }
       select(node)
         .transition()
-        .duration(TRANSITION_DURATION / 2)
+        .duration(TRANSITION_DURATION)
         .ease(easeCubicOut)
         .attr("opacity", value)
         .on("end", () => {
@@ -642,22 +648,25 @@ class LineBase extends PureComponent {
             strokeWidth: "1.5",
           }),
         ),
-        // Candles: one path per direction, filled bodies with stroked wicks
-        React.createElement(
-          "g",
-          { ref: this.candleGroupRef, opacity: 0 },
-          React.createElement("path", {
-            ref: this.upCandlesRef,
-            fill: color.chartLineGreen,
-            stroke: color.chartLineGreen,
-            strokeWidth: "1",
-          }),
-          React.createElement("path", {
-            ref: this.downCandlesRef,
-            fill: color.chartLineRed,
-            stroke: color.chartLineRed,
-            strokeWidth: "1",
-          }),
+        // Candles: two identical layers so a range change can dissolve from
+        // the old bars into the new ones instead of through an empty chart
+        this.candleLayers.map((layer, i) =>
+          React.createElement(
+            "g",
+            { key: `candles-${i}`, ref: layer.group, opacity: 0 },
+            React.createElement("path", {
+              ref: layer.up,
+              fill: color.chartLineGreen,
+              stroke: color.chartLineGreen,
+              strokeWidth: "1",
+            }),
+            React.createElement("path", {
+              ref: layer.down,
+              fill: color.chartLineRed,
+              stroke: color.chartLineRed,
+              strokeWidth: "1",
+            }),
+          ),
         ),
       ),
 
