@@ -9,6 +9,8 @@
 //                Date→ISO-string round trip that once produced NaN chart paths
 //   background — tab opens hidden: no price requests may fire until the tab
 //                becomes visible, then the chart must load normally
+//   candles    — candlestick mode: switching coins must reshape the bars,
+//                never leaving the chart without visible candles
 const fs = require("fs");
 const path = require("path");
 const ROOT = path.join(__dirname, "..");
@@ -29,7 +31,7 @@ const scripts = [...indexHtml.matchAll(/<script src="\.\/([^"]+)"><\/script>/g)]
   (m) => m[1],
 );
 
-const runScenario = ({ hydrated = false, background = false } = {}) =>
+const runScenario = ({ hydrated = false, background = false, candles = false } = {}) =>
   new Promise((resolve) => {
     const dom = new JSDOM("<!DOCTYPE html><html><body></body></html>", {
       pretendToBeVisual: true,
@@ -52,6 +54,9 @@ const runScenario = ({ hydrated = false, background = false } = {}) =>
       removeListener: () => {},
     });
 
+    if (candles) {
+      w.localStorage.setItem("crypto_chart_chart_type", "candles");
+    }
     if (hydrated) {
       // Persisted exactly as the app writes it: JSON turns the Date "time"
       // fields into ISO strings — hydration must revive them
@@ -86,6 +91,15 @@ const runScenario = ({ hydrated = false, background = false } = {}) =>
               price: String(50000 + i * 10),
               time: Math.floor(Date.now() / 1000) - (24 - i) * 3600,
             })) } }));
+          else if (u.includes("exchange.coinbase.com") && u.includes("candles"))
+            // [time, low, high, open, close, volume], newest first
+            res(json(Array.from({ length: 120 }, (_, i) => {
+              const base = 50000 + (i % 17) * 40;
+              return [
+                Math.floor(Date.now() / 1000) - i * 900,
+                base - 60, base + 80, base, base + (i % 2 ? 30 : -30), 12 + i,
+              ];
+            })));
           else if (u.includes("exchange-rates"))
             res(json({ data: { currency: "USD", rates: { EUR: "0.9", TRY: "30" } } }));
           else if (u.includes("coinlore") && u.includes("tickers"))
@@ -116,6 +130,12 @@ const runScenario = ({ hydrated = false, background = false } = {}) =>
     let chartReadyAt = null;
     let nanSeenAt = null;
     let requestsWhileHidden = null;
+    // Candle scenario: once bars are drawn, switch coins and make sure they
+    // never disappear — the old set has to stay on screen and reshape into
+    // the new one rather than blanking to the line and back
+    let candlesDrawn = false;
+    let coinSwitchedAt = null;
+    let candlesEmptyAfterSwitch = false;
     const t0 = Date.now();
     if (background) {
       // Stay hidden for a while, then reveal the tab
@@ -127,6 +147,30 @@ const runScenario = ({ hydrated = false, background = false } = {}) =>
     }
     const poll = setInterval(() => {
       const t = Date.now() - t0;
+      if (candles) {
+        // How visible the candle layers are right now. Path data alone isn't
+        // enough: the regression is the bars going *invisible* mid-switch
+        // while the line takes over, and the paths keep their d through that.
+        let visible = 0;
+        for (const g of w.document.querySelectorAll("[data-candles]")) {
+          const opacity = Number(g.getAttribute("opacity"));
+          const drawn = [...g.querySelectorAll("path")].some(
+            (p) => (p.getAttribute("d") || "").length > 10,
+          );
+          if (drawn && isFinite(opacity)) visible = Math.max(visible, opacity);
+        }
+        if (visible > 0.5) candlesDrawn = true;
+        if (candlesDrawn && !coinSwitchedAt && t > 900) {
+          coinSwitchedAt = t;
+          w.document.dispatchEvent(
+            new w.KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }),
+          );
+        }
+        // Give the switch a frame to start, then the bars must stay on screen
+        if (coinSwitchedAt && t > coinSwitchedAt + 40) {
+          if (visible < 0.05) candlesEmptyAfterSwitch = true;
+        }
+      }
       for (const p of w.document.querySelectorAll("path[stroke]")) {
         const d = p.getAttribute("d");
         if (!d) continue;
@@ -136,7 +180,15 @@ const runScenario = ({ hydrated = false, background = false } = {}) =>
       if ((chartReadyAt && t > 1500) || t > DEADLINE + 500) {
         clearInterval(poll);
         dom.window.close();
-        resolve({ scriptError, chartReadyAt, nanSeenAt, requestLog, requestsWhileHidden });
+        resolve({
+          scriptError,
+          chartReadyAt,
+          nanSeenAt,
+          requestLog,
+          requestsWhileHidden,
+          candlesDrawn,
+          candlesEmptyAfterSwitch,
+        });
       }
     }, 25);
   });
@@ -147,6 +199,7 @@ const runScenario = ({ hydrated = false, background = false } = {}) =>
     { label: "cold" },
     { label: "hydrated", hydrated: true },
     { label: "background", background: true },
+    { label: "candles", candles: true },
   ]) {
     const { label } = scenario;
     const r = await runScenario(scenario);
@@ -162,6 +215,12 @@ const runScenario = ({ hydrated = false, background = false } = {}) =>
         (u) => u.includes("period=hour") && !u.includes("BTC-"),
       );
       if (prefetched.length) problems.push(`prefetch ran: ${prefetched[0]}`);
+    }
+    if (label === "candles") {
+      if (!r.candlesDrawn) problems.push("candlestick chart never drew any bars");
+      if (r.candlesEmptyAfterSwitch) {
+        problems.push("candles vanished after switching coins");
+      }
     }
     if (label === "background" && r.requestsWhileHidden > 0) {
       problems.push(`${r.requestsWhileHidden} requests fired while hidden`);

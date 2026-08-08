@@ -683,7 +683,12 @@ class LineBase extends PureComponent {
         this.candleLayers.map((layer, i) =>
           React.createElement(
             "g",
-            { key: `candles-${i}`, ref: layer.group, opacity: 0 },
+            {
+              key: `candles-${i}`,
+              ref: layer.group,
+              opacity: 0,
+              "data-candles": i,
+            },
             React.createElement("path", {
               ref: layer.up,
               fill: color.chartLineGreen,

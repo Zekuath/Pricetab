@@ -35,7 +35,7 @@ still run.
 | `test-quickswitch.js` | The "/" coin jumper's match/ranking: empty query lists your coins, exact > prefix > substring, name search, owned coins outrank unowned, result cap, and the owned flag that decides switch-vs-add; plus coin marks (stable case-insensitive hue per symbol, clipped labels) |
 | `test-alerts.js` | Price targets: storage validation (coin/currency whitelists, target and direction checks, cap, corrupt-JSON fallback), the hit rules (above/below at and past the target, no re-firing, other-currency targets stay paused, junk/missing prices skipped) and the candle lookback that catches a target hit — and reverted — while no tab was open, including that pre-target candles don't count |
 | `test-d3.js` | `vendor/d3-custom.min.js` exposes every d3 API the app uses (line, scales, transitions, interpolatePath) |
-| `test-smoke-jsdom.js` | Boots the real page in jsdom with a fake network; asserts the chart renders valid (non-NaN) data in cold and hydrated-cache scenarios, that the coin prefetch stays off while the tab ticker / auto-rotate are off, and that a hidden tab fires zero requests until it becomes visible |
+| `test-smoke-jsdom.js` | Boots the real page in jsdom with a fake network; asserts the chart renders valid (non-NaN) data in cold and hydrated-cache scenarios, that the coin prefetch stays off while the tab ticker / auto-rotate are off, that a hidden tab fires zero requests until it becomes visible, and that switching coins in candlestick mode never leaves the chart without visible bars (the transition has to reshape, not blink) |
 
 ## Conventions
 

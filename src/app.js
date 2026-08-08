@@ -139,7 +139,14 @@ class CryptoChart extends PureComponent {
             showSkeleton: false, // Reset skeleton
             invalidCoin: null, // Clear invalid coin warning
             apiError: false, // Clear API error when switching coins
-            ohlcData: null, // Candles belong to the previous coin
+            // In candle mode the old bars stay on screen until the new
+            // ones land, so the chart can reshape into them instead of
+            // blanking to the line and back. The fetch always overwrites
+            // them, so nothing stale survives. In line mode they only feed
+            // the crosshair, where the previous coin's numbers would be
+            // wrong, so they go now.
+            ohlcData:
+              prevState.chartType === "candles" ? prevState.ohlcData : null,
             // Clear coin-specific widget data so we never show the previous
             // coin's numbers under the new coin's label
             fundingRateData: null,
@@ -175,7 +182,9 @@ class CryptoChart extends PureComponent {
             showSkeleton: false,
             invalidCoin: null,
             apiError: false,
-            ohlcData: null, // Candles belong to the previous coin
+            // Kept in candle mode so the new range can reshape from them
+            ohlcData:
+              prevState.chartType === "candles" ? prevState.ohlcData : null,
             fundingRateData: null,
             longShortData: null,
             openInterestData: null,
@@ -195,7 +204,9 @@ class CryptoChart extends PureComponent {
         {
           period,
           apiError: false, // Clear API error when changing period
-          ohlcData: null, // Candles are per-period (granularity differs)
+          // Held in candle mode so the new period reshapes from the old one
+          ohlcData:
+            this.state.chartType === "candles" ? this.state.ohlcData : null,
         },
         this.fetchData,
       );
@@ -556,9 +567,15 @@ class CryptoChart extends PureComponent {
             currentValue,
             valueHistory,
             rsiValue: calculateRSI(valueHistory),
-            // Candles fetched here also feed the crosshair, so hovering
-            // costs nothing extra in this mode
-            ohlcData: candles || this.state.ohlcData,
+            /* In candle mode the result always wins, null included: a coin
+             * or range without candle data must drop to the line rather
+             * than keep drawing the previous coin's bars. In line mode the
+             * candles are the crosshair's, fetched lazily on hover, so this
+             * fetch leaves them alone. */
+            ohlcData:
+              this.state.chartType === "candles"
+                ? candles
+                : this.state.ohlcData,
             isLoading: false,
             showSkeleton: false,
             slowLoad: false,
@@ -1443,14 +1460,21 @@ class CryptoChart extends PureComponent {
       // can't keep drawing them, and so the refetch decides availability
       // for the new one (Coinbase only quotes a few)
       this._ohlcKey = null;
-      this.setState({ currency: newCurrency, ohlcData: null }, () => {
-        // Refetch data with new currency
-        this.fetchData();
-        // Portfolio values are currency-specific — refresh if it's open
-        if (this.state.showPortfolio) {
-          this.setState({ portfolioReady: false }, this.fetchPortfolioPrices);
-        }
-      });
+      this.setState(
+        {
+          currency: newCurrency,
+          ohlcData:
+            this.state.chartType === "candles" ? this.state.ohlcData : null,
+        },
+        () => {
+          // Refetch data with new currency
+          this.fetchData();
+          // Portfolio values are currency-specific — refresh if it's open
+          if (this.state.showPortfolio) {
+            this.setState({ portfolioReady: false }, this.fetchPortfolioPrices);
+          }
+        },
+      );
     });
 
     _defineProperty(this, "handleTickerChange", (enabled) => {
