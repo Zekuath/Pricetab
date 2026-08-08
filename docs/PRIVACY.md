@@ -45,6 +45,13 @@ All APIs used by PriceTab are **public** — no authentication or accounts requi
 - **Data Sent**: Coin symbol (e.g., "BTC-USD") and time period
 - **Privacy**: See [Coinbase's Privacy Policy](https://www.coinbase.com/legal/privacy)
 
+### Kraken Public API
+
+- **Endpoints**: `https://api.kraken.com/0/public/OHLC` and `https://api.kraken.com/0/public/Ticker`
+- **Purpose**: Prices and charts for coins Coinbase does not list (currently Monero)
+- **Data Sent**: Coin pair (e.g. "XMRUSD") and interval — no user data
+- **Privacy**: See [Kraken Privacy Policy](https://www.kraken.com/legal/privacy)
+
 ### Alternative.me (Fear & Greed Index)
 
 - **Endpoint**: `https://api.alternative.me/fng/`

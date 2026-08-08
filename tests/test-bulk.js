@@ -20,6 +20,11 @@ const makeSandbox = (opts = {}) => {
     console, Date, JSON, Math, Array, Object, Set, Map, Promise, Number,
     parseInt, parseFloat, isFinite, isNaN, setTimeout, clearTimeout, Error, AbortController,
     localStorage: { getItem: () => null, setItem: () => {} },
+    // config.js supplies this at runtime; the sweep only cares that most
+    // coins are Coinbase-served
+    providerFor: (coin) => (opts.krakenCoins || []).includes(coin) ? "kraken" : "coinbase",
+    KRAKEN_API: "https://api.kraken.com/0/public/",
+    KRAKEN_PERIODS: { day: { interval: 5, points: 288 } },
     fetch: async (url) => {
       calls.push(url);
       if (url.includes("coinlore")) {
@@ -27,6 +32,16 @@ const makeSandbox = (opts = {}) => {
         return { ok: true, json: async () => coinloreBody };
       }
       if (url.includes("exchange-rates")) return { ok: true, json: async () => ratesBody };
+      if (url.includes("kraken.com")) {
+        // [time, o, h, l, c, vwap, volume, count]
+        return { ok: true, json: async () => ({ error: [], result: {
+          XXMRZUSD: [
+            [1000, "300", "310", "295", "300", "302", "10", 5],
+            [2000, "300", "340", "299", "330", "320", "12", 7],
+          ],
+          last: 2000,
+        } }) };
+      }
       if (url.includes("/spot")) return { ok: true, status: 200, json: async () => ({ data: { amount: "60500", currency: "USD" } }) };
       if (url.includes("historic")) return { ok: true, status: 200, json: async () => ({ data: { prices: [{ price: "60000", time: 1 }] } }) };
       return { ok: false, status: 404, json: async () => ({}) };
@@ -75,6 +90,20 @@ const makeSandbox = (opts = {}) => {
   const down = await t3.run('bulkRefreshPageTickerCache(["BTC"], "USD")');
   assert.strictEqual(down, false, "failure reported so caller falls back");
   assert.strictEqual(t3.run("pageTickerCache.size"), 0, "nothing cached on failure");
+
+  // --- non-Coinbase coin never hits Coinbase in the fallback ---
+  // XMR 404s on every Coinbase endpoint, so the per-coin fallback has to
+  // route to its own provider instead of hammering a dead pair
+  const t4 = makeSandbox({ krakenCoins: ["XMR"] });
+  await t4.run('refreshPageTickerCoin("XMR", "USD", Date.now())');
+  assert.ok(
+    t4.calls.every((u) => !u.includes("coinbase.com")),
+    "Kraken-served coin makes no Coinbase request",
+  );
+  assert.ok(
+    t4.calls.some((u) => u.includes("kraken.com")),
+    "it asks its own provider instead",
+  );
 
   console.log("ALL BULK SWEEP TESTS PASSED");
 })().catch((e) => { console.error(e.message); process.exit(1); });

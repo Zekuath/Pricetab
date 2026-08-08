@@ -506,6 +506,96 @@ const fetchAddressBalance = async (coin, address) => {
   }
 };
 
+/* KRAKEN (coins Coinbase doesn't list) ─────────────────────────────────────
+ * One OHLC request carries the whole chart: the line series, the crosshair
+ * candles and the latest close all come out of it. Kraken names the result
+ * key itself (XMRUSD comes back as XXMRZUSD), so the first non-"last" key
+ * is the series rather than a name we try to predict.
+ */
+const krakenOhlcCache = new Map(); // "COIN-period" → { rows, timestamp }
+
+const fetchKrakenRows = async (coin, period, signal) => {
+  const spec = KRAKEN_PERIODS[period];
+  if (!spec) throw new Error(`no Kraken interval for ${period}`);
+  const key = `${coin}-${period}`;
+  const hit = krakenOhlcCache.get(key);
+  if (hit && Date.now() - hit.timestamp < CACHE_TTL) return hit.rows;
+
+  const res = await fetchWithRetry(
+    `${KRAKEN_API}OHLC?pair=${encodeURIComponent(coin)}USD&interval=${spec.interval}`,
+    signal ? { signal } : {},
+  ).then((r) => r.json());
+  if (res && Array.isArray(res.error) && res.error.length) {
+    throw new Error(res.error.join(", "));
+  }
+  const result = res && res.result;
+  const seriesKey =
+    result && Object.keys(result).find((k) => k !== "last");
+  const rows = seriesKey ? result[seriesKey] : null;
+  if (!Array.isArray(rows) || !rows.length) {
+    throw new Error("invalid Kraken data returned");
+  }
+  // Only the tail matters — the interval is sized to overshoot the window
+  const trimmed = rows.slice(-spec.points);
+  krakenOhlcCache.set(key, { rows: trimmed, timestamp: Date.now() });
+  return trimmed;
+};
+
+// Same shape fetchValueHistory returns: [{ price, time: Date }] ascending
+const fetchKrakenHistory = async (coin, period, currency, signal) => {
+  const [rows, rate] = await Promise.all([
+    fetchKrakenRows(coin, period, signal),
+    fetchUsdRate(currency),
+  ]);
+  if (rate === null) throw new Error("no exchange rate for " + currency);
+  return rows.map((r) => ({
+    price: Number(r[4]) * rate, // close
+    time: new Date(Number(r[0]) * 1000),
+  }));
+};
+
+// Latest trade price. Kraken's Ticker is one request, like Coinbase's spot.
+const fetchKrakenSpot = async (coin, currency, signal) => {
+  const [res, rate] = await Promise.all([
+    fetchWithRetry(
+      `${KRAKEN_API}Ticker?pair=${encodeURIComponent(coin)}USD`,
+      signal ? { signal } : {},
+    ).then((r) => r.json()),
+    fetchUsdRate(currency),
+  ]);
+  if (res && Array.isArray(res.error) && res.error.length) {
+    throw new Error(res.error.join(", "));
+  }
+  if (rate === null) throw new Error("no exchange rate for " + currency);
+  const result = res && res.result;
+  const seriesKey = result && Object.keys(result)[0];
+  const last =
+    seriesKey && result[seriesKey].c ? Number(result[seriesKey].c[0]) : NaN;
+  if (!isFinite(last) || last <= 0) throw new Error("invalid Kraken spot");
+  return last * rate;
+};
+
+// Crosshair candles, straight out of the same OHLC rows
+const fetchKrakenCandles = async (coin, period, currency) => {
+  try {
+    const [rows, rate] = await Promise.all([
+      fetchKrakenRows(coin, period),
+      fetchUsdRate(currency),
+    ]);
+    if (rate === null) return null;
+    return rows.map((r) => ({
+      time: Number(r[0]) * 1000,
+      open: Number(r[1]) * rate,
+      high: Number(r[2]) * rate,
+      low: Number(r[3]) * rate,
+      close: Number(r[4]) * rate,
+      volume: Number(r[6]), // base-asset volume, not currency-scaled
+    }));
+  } catch (error) {
+    return null; // price-only readout, same as an unsupported Coinbase range
+  }
+};
+
 /* OHLC CANDLES (crosshair readout) ─────────────────────────────────────────
  * Fetched lazily — only once the user actually hovers a chart — so the
  * common "open a tab, glance, close it" path costs nothing extra.
@@ -515,6 +605,10 @@ const CANDLES_API = "https://api.exchange.coinbase.com/products/";
 const ohlcCache = new Map(); // "COIN-period-currency" → { data, timestamp }
 
 const fetchOhlcCandles = async (coin, period, currency) => {
+  // Kraken coins already have candles from their history request
+  if (providerFor(coin) === "kraken") {
+    return fetchKrakenCandles(coin, period, currency);
+  }
   const granularity = OHLC_GRANULARITY[period];
   if (!granularity || !OHLC_CURRENCIES.includes(currency)) return null;
   const key = `${coin}-${period}-${currency}`;
@@ -722,6 +816,29 @@ const refreshPageTickerCoin = async (coin, currency, now) => {
   const key = `${coin}-${currency}`;
   const cached = pageTickerCache.get(key);
   if (cached && now - cached.timestamp < PAGE_TICKER_TTL) return;
+
+  // Non-Coinbase coins would 404 here. The bulk Coinlore sweep normally
+  // covers them; this fallback derives the same numbers from their own
+  // provider's daily candles rather than leaving a hole in the ticker.
+  if (providerFor(coin) === "kraken") {
+    try {
+      const candles = await fetchKrakenCandles(coin, "day", currency);
+      if (!candles || candles.length < 2) return;
+      const last = candles[candles.length - 1];
+      const first = candles[0];
+      const change =
+        first.close > 0 ? ((last.close - first.close) / first.close) * 100 : null;
+      pageTickerCache.set(key, {
+        price: last.close,
+        change,
+        up: change === null ? null : change >= 0,
+        timestamp: Date.now(),
+      });
+    } catch (error) {
+      // Leave the cache alone — the next sweep tries again
+    }
+    return;
+  }
 
   try {
     // maxRetries = 0: this is the bulk background ticker, so a rate

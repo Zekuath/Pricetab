@@ -1,8 +1,10 @@
 const DEFAULT_COIN_OPTIONS = ["BTC", "ETH", "XRP", "LTC"];
 
-// Only coins Coinbase actually serves at {COIN}-USD via the public price API.
-// Pairs that 404 (TRX, OKB, THETA, FTM, DYDX, KAS, GMX, XDC, NEO, FXS, RUNE,
-// CELO, AGIX, WOO, CFX, ORDI) were removed — they only produced console errors.
+// Coins we can actually chart. Most are served by Coinbase at {COIN}-USD;
+// a few come from another provider (see COIN_PROVIDERS below) because
+// Coinbase doesn't list them. Pairs that 404 everywhere (TRX, OKB, THETA,
+// FTM, DYDX, KAS, GMX, XDC, NEO, FXS, RUNE, CELO, AGIX, WOO, CFX, ORDI)
+// were removed — they only produced console errors.
 const SUGGESTED_COINS = [
   "BTC",
   "ETH",
@@ -50,6 +52,7 @@ const SUGGESTED_COINS = [
   "INJ",
   "ENS",
   "ZEC",
+  "XMR",
   "KSM",
   "CHZ",
   "CAKE",
@@ -118,6 +121,7 @@ const COIN_NAMES = {
   INJ: "Injective",
   ENS: "Ethereum Name Service",
   ZEC: "Zcash",
+  XMR: "Monero",
   KSM: "Kusama",
   CHZ: "Chiliz",
   CAKE: "PancakeSwap",
@@ -270,6 +274,33 @@ const RATE_PROMPT_DISMISSED_KEY = "crypto_chart_rate_prompt_dismissed";
 const FIRST_USE_KEY = "crypto_chart_first_use";
 const RATE_PROMPT_SHOWN_KEY = "crypto_chart_rate_prompt_shown";
 const RATE_PROMPT_DELAY_MS = 2 * 24 * 60 * 60 * 1000;
+/* PRICE PROVIDERS
+ * Coinbase serves everything by default. Coins it doesn't list are routed
+ * to Kraken, whose public OHLC endpoint is keyless and CORS-enabled and
+ * covers every period we offer (its 15-day candles even reach further back
+ * than Coinbase for the ALL range).
+ *
+ * Kraken is always queried in USD and converted with the exchange rate the
+ * ticker already fetches: it only quotes a couple of fiats directly, and one
+ * code path beats juggling per-pair currency support.
+ */
+const COIN_PROVIDERS = {
+  XMR: "kraken", // delisted from Coinbase — all three endpoints 404
+};
+const providerFor = (coin) => COIN_PROVIDERS[coin] || "coinbase";
+
+const KRAKEN_API = "https://api.kraken.com/0/public/";
+// Kraken returns at most 720 candles; the interval per period is chosen so
+// one request covers the whole window, and the tail is sliced to size.
+const KRAKEN_PERIODS = {
+  hour: { interval: 1, points: 60 },
+  day: { interval: 5, points: 288 },
+  week: { interval: 60, points: 168 },
+  month: { interval: 240, points: 180 },
+  year: { interval: 1440, points: 365 },
+  all: { interval: 21600, points: 720 },
+};
+
 /* OHLC candles for the chart crosshair (open/high/low/close/volume).
  * Coinbase Exchange serves 350 candles per request, CORS-enabled and
  * keyless. Granularity is picked so one request covers the period:

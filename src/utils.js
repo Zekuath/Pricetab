@@ -326,6 +326,14 @@ const fetchValueHistory = async (
     }
   }
 
+  // Coins Coinbase doesn't list come from their own provider, in the same
+  // shape, and go through the same cache
+  if (providerFor(coin) === "kraken") {
+    const data = await fetchKrakenHistory(coin, period, currency, signal);
+    setCachedData(coin, period, currency, "history", data, allowedCoins);
+    return data;
+  }
+
   // Fetch fresh data
   const options = signal ? { signal } : {};
   const d = await fetchWithRetry(
@@ -365,6 +373,12 @@ const fetchCurrentValue = async (
       // Fresh cache, return immediately
       return cached.data;
     }
+  }
+
+  if (providerFor(coin) === "kraken") {
+    const value = await fetchKrakenSpot(coin, currency, signal);
+    setCachedData(coin, "current", currency, "spot", value, allowedCoins);
+    return value;
   }
 
   // Fetch fresh data

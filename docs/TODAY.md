@@ -87,7 +87,28 @@ chart is the better default and candles mostly serve traders.
 
 ---
 
-## 6. Prediction markets widget (Polymarket)
+## 6. Widget request fan-out
+
+**Effort:** Medium · **Saves:** up to 8 requests per 5 min → fewer
+
+With every widget on, each refresh cycle fires 8 separate endpoints (Fear &
+Greed, market overview, halving, altcoin season, funding, long/short, open
+interest, liquidations) every 5 minutes, on top of the chart's own polling and
+the bulk ticker sweep. Hidden tabs already pause and the cadence is slow, so
+this is not urgent — but it is the largest remaining request count in the
+extension, and bigger than anything the coin-coverage work adds.
+
+- [ ] Market overview and altcoin season both derive from Coinlore data we
+      already pull for the ticker — check whether the bulk sweep can feed them
+- [ ] Funding / open interest / liquidations all hit OKX for the same coin;
+      see whether one request can serve more than one widget
+- [ ] Skip fetches for widgets that are enabled but currently hidden
+- [ ] Consider a longer interval for the slow-moving ones (halving moves once
+      per block; the Fear & Greed index updates daily)
+
+---
+
+## 7. Prediction markets widget (Polymarket)
 
 **Effort:** Unknown · **New requests:** yes · **Status:** research first
 
@@ -107,6 +128,12 @@ chart is the better default and candles mostly serve traders.
   even one that reverted before morning — is still reported, with when it
   happened. Closes the one real hole in the feature without touching the
   zero-permission stance.
+- **Monero (XMR) support via a second price provider** — Coinbase 404s on all
+  three of its endpoints, so `COIN_PROVIDERS` now routes per coin and a Kraken
+  adapter serves XMR. One Kraken request carries the line series, the crosshair
+  candles and the spot price, making an XMR tab cheaper than a Coinbase one
+  (which needs spot + history, plus candles on hover). Verified live across all
+  six periods. Opens the door to the rest of the coins Coinbase doesn't list.
 - **Overlay consistency pass** — audited every panel for two rules: only the
   panel's own close control is visible while it is open, and clicking outside
   closes it. Fixed price targets (main-view buttons showed through, bell now

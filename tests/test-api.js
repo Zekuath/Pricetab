@@ -5,6 +5,7 @@ const assert = require("assert");
 
 let fetchCalls = [];
 let chainFail = false; // simulates the balance providers going down
+let krakenError = false; // Kraken reports failures in a 200 response body
 const sandbox = {
   console, Date, JSON, Math, Array, Object, Set, Map, Promise, Number,
   parseInt, parseFloat, isFinite, isNaN, setTimeout, clearTimeout, Error, AbortController,
@@ -17,6 +18,30 @@ const sandbox = {
       return { ok: true, status: 200, json: async () => ({ data: { prices: [
         { price: "80", time: 1 }, { price: "90", time: 2 },
       ] } }) };
+    }
+    if (url.includes("exchange-rates")) {
+      return { ok: true, status: 200, json: async () => ({ data: { rates: { TRY: "30" } } }) };
+    }
+    if (url.includes("kraken.com") && krakenError) {
+      return { ok: true, status: 200, json: async () => ({ error: ["EQuery:Unknown asset pair"] }) };
+    }
+    if (url.includes("kraken.com/0/public/OHLC")) {
+      // Kraken names the result key itself and returns strings; 4 rows so
+      // the tail slice (points: 3) is exercised
+      return { ok: true, status: 200, json: async () => ({ error: [], result: {
+        XXMRZUSD: [
+          [1000, "10", "12", "9", "11", "10.5", "100", 3],
+          [2000, "11", "13", "10", "12", "11.5", "110", 4],
+          [3000, "12", "14", "11", "13", "12.5", "120", 5],
+          [4000, "13", "15", "12", "14", "13.5", "130", 6],
+        ],
+        last: 4000,
+      } }) };
+    }
+    if (url.includes("kraken.com/0/public/Ticker")) {
+      return { ok: true, status: 200, json: async () => ({ error: [], result: {
+        XXMRZUSD: { c: ["380.5", "1.0"] },
+      } }) };
     }
     if (url.includes("api.exchange.coinbase.com")) {
       // [time, low, high, open, close, volume], newest first + a junk row
@@ -91,6 +116,12 @@ const sandbox = {
   OHLC_GRANULARITY: { hour: 60, day: 300, week: 3600, month: 21600, year: 86400 },
   OHLC_CURRENCIES: ["USD", "EUR", "GBP"],
   OHLC_CACHE_TTL: 300000,
+  providerFor: (coin) => (coin === "XMR" ? "kraken" : "coinbase"),
+  KRAKEN_API: "https://api.kraken.com/0/public/",
+  KRAKEN_PERIODS: {
+    day: { interval: 5, points: 3 },
+    week: { interval: 60, points: 168 },
+  },
 };
 vm.createContext(sandbox);
 vm.runInContext(fs.readFileSync(path.join(__dirname, "..", "src", "api.js"), "utf8"), sandbox, { filename: "api.js" });
@@ -246,6 +277,60 @@ const run = (c) => vm.runInContext(c, sandbox);
     "failure with no cached balance → null",
   );
   chainFail = false;
+
+  /* ── Kraken adapter (coins Coinbase doesn't list) ────────────────────── */
+
+  fetchCalls = [];
+  const kh = await run('fetchKrakenHistory("XMR", "day", "USD")');
+  assert.strictEqual(kh.length, 3, "tail sliced to the period's point count");
+  assert.strictEqual(kh[0].price, 12, "close column used for the line series");
+  assert.ok(kh[0].time instanceof Date || Number(kh[0].time) > 0, "seconds became a Date");
+  assert.strictEqual(Number(kh[2].time), 4000 * 1000, "timestamps in ms, ascending");
+
+  // Kraken quotes USD; other currencies convert with the rate the ticker
+  // already fetches, so every display currency works
+  const khTry = await run('fetchKrakenHistory("XMR", "day", "TRY")');
+  assert.strictEqual(khTry[0].price, 12 * 30, "converted with the USD rate");
+
+  // Same rows serve the crosshair — no second request
+  fetchCalls = [];
+  const kc = await run('fetchKrakenCandles("XMR", "day", "USD")');
+  assert.strictEqual(kc.length, 3, "candles come from the cached rows");
+  assert.deepStrictEqual(
+    { o: kc[0].open, h: kc[0].high, l: kc[0].low, c: kc[0].close, v: kc[0].volume },
+    { o: 11, h: 13, l: 10, c: 12, v: 110 },
+    "OHLC columns mapped, volume left in base units",
+  );
+  assert.strictEqual(
+    fetchCalls.filter((u) => u.includes("OHLC")).length,
+    0,
+    "history and candles share one request",
+  );
+
+  // Spot comes from the ticker's last trade
+  assert.strictEqual(await run('fetchKrakenSpot("XMR", "USD")'), 380.5, "last trade price");
+
+  // An error array is a failure even with HTTP 200 — Kraken reports that way
+  krakenError = true;
+  await assert.rejects(
+    () => run('fetchKrakenSpot("XMR", "USD")'),
+    /Unknown asset pair/,
+    "Kraken's error array is treated as a failure",
+  );
+  assert.strictEqual(
+    await run('fetchKrakenCandles("XMR", "week", "USD")'),
+    null,
+    "candle failure degrades to the price-only readout",
+  );
+  krakenError = false;
+
+  // Routing: a Kraken coin never reaches the Coinbase candles endpoint
+  fetchCalls = [];
+  await run('fetchOhlcCandles("XMR", "day", "USD")');
+  assert.ok(
+    fetchCalls.every((u) => !u.includes("exchange.coinbase.com")),
+    "fetchOhlcCandles routes Kraken coins away from Coinbase",
+  );
 
   console.log("ALL API TESTS PASSED");
 })().catch((e) => { console.error(e); process.exit(1); });
