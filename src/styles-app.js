@@ -421,7 +421,12 @@ const SettingsToggleButton = styled.button`
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.25s ease, top 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  /* Travels to the corner on open, on the same 0.4s ease as the panel's
+     own entrance, so the close control and the panel move together */
+  transition:
+    transform 0.25s ease,
+    top 0.4s ease,
+    right 0.4s ease;
   z-index: 120;
 
   &:hover {
@@ -465,14 +470,11 @@ const PortfolioToggleButton = styled.button`
   display: flex;
   align-items: center;
   justify-content: center;
-  /* The vertical slide is for the page ticker appearing on the main view.
-     While the portfolio is open the button also moves horizontally
-     (untransitioned), so animating only the vertical half would read as a
-     stray drift. */
-  transition: ${({ open }) =>
-    open
-      ? "transform 0.25s ease"
-      : "transform 0.25s ease, top 0.4s cubic-bezier(0.22, 1, 0.36, 1)"};
+  /* Same corner travel as the settings control */
+  transition:
+    transform 0.25s ease,
+    top 0.4s ease,
+    right 0.4s ease;
   z-index: 120;
 
   &:hover {
@@ -520,11 +522,11 @@ const AlertsToggleButton = styled.button`
   display: flex;
   align-items: center;
   justify-content: center;
-  /* Pinned to the corner while open — see SettingsToggleButton */
-  transition: ${({ open }) =>
-    open
-      ? "transform 0.25s ease"
-      : "transform 0.25s ease, top 0.4s cubic-bezier(0.22, 1, 0.36, 1)"};
+  /* Same corner travel as the settings control */
+  transition:
+    transform 0.25s ease,
+    top 0.4s ease,
+    right 0.4s ease;
   z-index: 120;
 
   &:hover {
