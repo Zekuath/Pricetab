@@ -830,21 +830,6 @@ const WatchRow = styled.div`
   gap: 0.5rem;
 `;
 
-const WatchSelect = styled.select`
-  padding: 0.7rem 0.6rem;
-  font-family: ${({ theme }) => theme.font.primary};
-  font-size: 0.85rem;
-  color: ${({ theme }) => theme.color.text};
-  background: ${({ theme }) => theme.color.bgSecondary};
-  border: 1px solid ${({ theme }) => theme.color.border};
-  border-radius: 10px;
-  cursor: pointer;
-  transition: border-color 0.15s ease;
-  &:focus {
-    outline: none;
-    border-color: ${({ theme }) => theme.color.borderHover};
-  }
-`;
 
 const WatchInput = styled(SearchInput)`
   width: auto;
@@ -981,7 +966,6 @@ class Portfolio extends PureComponent {
       query: "",
       drafts: {},
       importError: false,
-      watchCoin: "BTC",
       watchAddress: "",
       watchBusy: false,
       watchError: false,
@@ -1225,8 +1209,6 @@ class Portfolio extends PureComponent {
 
   /* ── address watching ── */
 
-  handleWatchCoinChange = (e) => this.setState({ watchCoin: e.target.value });
-
   handleWatchAddressChange = (e) =>
     this.setState({ watchAddress: e.target.value, watchError: false });
 
@@ -1235,10 +1217,11 @@ class Portfolio extends PureComponent {
   };
 
   handleWatchSubmit = async () => {
-    const { watchCoin, watchAddress, watchBusy } = this.state;
+    const { watchAddress, watchBusy } = this.state;
     if (watchBusy || !watchAddress.trim()) return;
     this.setState({ watchBusy: true, watchError: false });
-    const ok = await this.props.onWatch(watchCoin, watchAddress);
+    // The address identifies its own chain — nothing to choose
+    const ok = await this.props.onWatch(watchAddress);
     this.setState({
       watchBusy: false,
       watchError: !ok,
@@ -1906,25 +1889,10 @@ class Portfolio extends PureComponent {
           React.createElement(
             WatchRow,
             null,
-            React.createElement(
-              WatchSelect,
-              {
-                value: this.state.watchCoin,
-                onChange: this.handleWatchCoinChange,
-                "aria-label": "Coin for the watched address",
-              },
-              [...Object.keys(WATCH_CHAINS), ...Object.keys(ERC20_TOKENS)].map(
-                (sym) =>
-                  React.createElement("option", { key: sym, value: sym }, sym),
-              ),
-            ),
             React.createElement(WatchInput, {
               type: "text",
               value: this.state.watchAddress,
-              placeholder:
-                this.state.watchCoin === "ETH"
-                  ? "Ethereum address — also finds your tokens"
-                  : "Public address (read-only balance lookup)…",
+              placeholder: "Paste any BTC, ETH, LTC, DOGE, BCH or ZEC address…",
               "aria-label": "Address to watch",
               onChange: this.handleWatchAddressChange,
               onKeyDown: this.handleWatchKeyDown,
@@ -1935,7 +1903,7 @@ class Portfolio extends PureComponent {
                 onClick: this.handleWatchSubmit,
                 disabled: this.state.watchBusy,
                 title:
-                  "Reads the address's public balance and keeps the holding's amount synced (checked every 10 minutes while the portfolio is open)",
+                  "Reads the address's public balances and keeps the holdings synced (checked every 10 minutes while the portfolio is open)",
               },
               this.state.watchBusy ? "…" : "Watch",
             ),
@@ -1944,7 +1912,7 @@ class Portfolio extends PureComponent {
             React.createElement(
               ImportError,
               null,
-              "Couldn't read that address — check the coin and the address, then try again.",
+              "Nothing found for that address — check it, or it may hold no balance we can read.",
             ),
         ),
 

@@ -426,6 +426,36 @@ const ERC20_BALANCE_SELECTOR = "0x70a08231"; // balanceOf(address)
 // Watchable when the coin is its own chain, or a token on a watched one
 const isWatchableCoin = (coin) =>
   Boolean(WATCH_CHAINS[coin] || ERC20_TOKENS[coin]);
+
+/* Which chain an address belongs to, from its own shape — so pasting one is
+ * all it takes; there is nothing for the user to tell us that the address
+ * doesn't already say.
+ *
+ * Order matters where prefixes overlap. Bitcoin Cash's modern cashaddr form
+ * is checked before base58, and "3…" is read as Bitcoin: it is valid P2SH on
+ * both Bitcoin and Litecoin, but Litecoin has long since moved to "M…", so
+ * Bitcoin is the safe reading. A legacy Bitcoin Cash address is genuinely
+ * indistinguishable from a Bitcoin one — same format, same checksum — and is
+ * treated as Bitcoin for the same reason.
+ */
+const ADDRESS_PATTERNS = [
+  { coin: "ETH", re: /^0[xX][0-9a-fA-F]{40}$/ },
+  { coin: "BTC", re: /^bc1[02-9ac-hj-np-z]{11,71}$/i },
+  { coin: "LTC", re: /^ltc1[02-9ac-hj-np-z]{11,71}$/i },
+  { coin: "BCH", re: /^(bitcoincash:)?[qp][02-9ac-hj-np-z]{41}$/i },
+  { coin: "ZEC", re: /^t[13][1-9A-HJ-NP-Za-km-z]{33}$/ },
+  { coin: "DOGE", re: /^[DA9][1-9A-HJ-NP-Za-km-z]{25,34}$/ },
+  { coin: "LTC", re: /^[LM][1-9A-HJ-NP-Za-km-z]{25,34}$/ },
+  { coin: "BTC", re: /^[13][1-9A-HJ-NP-Za-km-z]{25,34}$/ },
+];
+
+const detectAddressChain = (address) => {
+  const value = String(address || "").trim();
+  for (const { coin, re } of ADDRESS_PATTERNS) {
+    if (re.test(value)) return coin;
+  }
+  return null;
+};
 // Loose shape check only (base58 / bech32 / 0x-hex are all alphanumeric);
 // the provider is the real validator — bad addresses just return no balance
 const WATCH_ADDRESS_RE = /^[A-Za-z0-9]{20,100}$/;

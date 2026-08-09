@@ -805,82 +805,52 @@ class CryptoChart extends PureComponent {
     // Watch an on-chain address: reads its public balance and keeps the
     // holding's amount synced to it. Returns false when the coin/address is
     // unsupported or the provider can't resolve it (caller shows an error).
-    _defineProperty(this, "handleWatchAddress", async (coin, address) => {
-      const normalized = (coin || "").trim().toUpperCase();
+    /* Watch an address. The address says which chain it is on, so there is
+     * nothing to pick: paste it and every positive balance it holds becomes
+     * a holding — the native coin plus, on Ethereum, its tokens. Returns
+     * false when nothing could be read, so the panel can say so. */
+    _defineProperty(this, "handleWatchAddress", async (address) => {
       const addr = (address || "").trim();
-      if (!WATCH_CHAINS[normalized] || !WATCH_ADDRESS_RE.test(addr)) {
-        return false;
-      }
-      const existing = this.state.portfolio.find((h) => h.coin === normalized);
-      if (!existing && this.state.portfolio.length >= PORTFOLIO_MAX_HOLDINGS) {
-        return false;
-      }
-      if (
-        existing &&
-        existing.watches.length >= MAX_WATCHES_PER_HOLDING &&
-        !existing.watches.some((w) => w.address === addr)
-      ) {
-        return false;
-      }
-      const balance = await fetchAddressBalance(normalized, addr);
-      if (balance == null) return false;
-      // Each address is its own source: chain history is its lot record
-      let lots = [];
-      try {
-        lots = await this.buildChainLots(normalized, addr, balance);
-      } catch (e) {
-        lots = [];
-      }
-      const watch = { address: addr, amount: balance, lots };
+      const chain = detectAddressChain(addr);
+      if (!chain || !WATCH_ADDRESS_RE.test(addr)) return false;
 
-      /* An Ethereum address usually holds more than ether. One batched
-       * call covers every token we support, so the tokens actually held
-       * become holdings of their own rather than something to add by hand. */
-      if (normalized === "ETH") {
-        this.adoptTokenBalances(addr);
+      // The native balance, and on Ethereum every token in one batched call
+      const [native, tokens] = await Promise.all([
+        fetchAddressBalance(chain, addr),
+        chain === "ETH"
+          ? fetchErc20Balances(addr, Object.keys(ERC20_TOKENS))
+          : Promise.resolve({}),
+      ]);
+
+      const found = [];
+      if (native != null && native > 0) found.push({ coin: chain, amount: native });
+      for (const coin of Object.keys(tokens)) {
+        if (tokens[coin] > 0) found.push({ coin, amount: tokens[coin] });
       }
-      this.setState(
-        (prevState) => {
-          const holding = prevState.portfolio.find(
-            (h) => h.coin === normalized,
+      // An address we can't read, or one holding nothing, isn't worth adding
+      if (!found.length) return false;
+
+      /* The native coin's lots come from its transfer history where the
+       * chain exposes one; tokens start without lots, so their cost basis
+       * is the user's to fill in. */
+      const lotsByCoin = {};
+      const nativeEntry = found.find((f) => f.coin === chain);
+      if (nativeEntry) {
+        try {
+          lotsByCoin[chain] = await this.buildChainLots(
+            chain,
+            addr,
+            nativeEntry.amount,
           );
-          const portfolio = holding
-            ? prevState.portfolio.map((h) =>
-                h.coin === normalized
-                  ? {
-                      ...h,
-                      watches: h.watches.some((w) => w.address === addr)
-                        ? h.watches.map((w) =>
-                            w.address === addr ? watch : w,
-                          )
-                        : [...h.watches, watch],
-                    }
-                  : h,
-              )
-            : [
-                ...prevState.portfolio,
-                { coin: normalized, amount: 0, lots: [], watches: [watch] },
-              ];
-          savePortfolioToStorage(portfolio);
-          return { portfolio };
-        },
-        this.fetchPortfolioPrices,
-      );
-      return true;
-    });
+        } catch (e) {
+          lotsByCoin[chain] = [];
+        }
+      }
 
-    /* Turn the tokens an address holds into watched holdings. Anything
-     * already tracked is refreshed rather than duplicated; a token that
-     * has since been sold keeps its holding but stops being watched, since
-     * deleting someone's row on a zero balance would lose their lots. */
-    _defineProperty(this, "adoptTokenBalances", async (addr) => {
-      const balances = await fetchErc20Balances(addr, Object.keys(ERC20_TOKENS));
-      const held = Object.keys(balances).filter((c) => balances[c] > 0);
-      if (!held.length) return;
       this.setState((prevState) => {
         let portfolio = prevState.portfolio;
-        for (const coin of held) {
-          const watch = { address: addr, amount: balances[coin], lots: [] };
+        for (const { coin, amount } of found) {
+          const watch = { address: addr, amount, lots: lotsByCoin[coin] || [] };
           const existing = portfolio.find((h) => h.coin === coin);
           if (!existing) {
             if (portfolio.length >= PORTFOLIO_MAX_HOLDINGS) break;
@@ -890,13 +860,19 @@ class CryptoChart extends PureComponent {
             ];
             continue;
           }
+          if (
+            !existing.watches.some((w) => w.address === addr) &&
+            existing.watches.length >= MAX_WATCHES_PER_HOLDING
+          ) {
+            continue;
+          }
           portfolio = portfolio.map((h) =>
             h.coin === coin
               ? {
                   ...h,
                   watches: h.watches.some((w) => w.address === addr)
                     ? h.watches.map((w) =>
-                        w.address === addr ? { ...w, amount: watch.amount } : w,
+                        w.address === addr ? watch : w,
                       )
                     : [...h.watches, watch],
                 }
@@ -906,6 +882,7 @@ class CryptoChart extends PureComponent {
         savePortfolioToStorage(portfolio);
         return { portfolio };
       }, this.fetchPortfolioPrices);
+      return true;
     });
 
     // Stop watching one address. What it contributed folds into the manual

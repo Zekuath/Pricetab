@@ -247,6 +247,50 @@ assert.deepStrictEqual(
   "legacy addresses migrate per chain; junk cleared",
 );
 
+/* ── an address says which chain it is on ───────────────────────────────────
+ * The watch flow takes an address and nothing else, so this is what decides
+ * where to look. Real addresses from each chain, including the shapes that
+ * overlap between them.
+ */
+const detects = (addr) => run(`detectAddressChain(${JSON.stringify(addr)})`);
+
+assert.strictEqual(detects("0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"), "ETH", "ethereum");
+assert.strictEqual(detects("0XD8DA6BF26964AF9D7EED9E03E53415D37AA96045"), "ETH", "case-insensitive hex");
+assert.strictEqual(detects(BTC_ADDR), "BTC", "bitcoin legacy");
+assert.strictEqual(detects(BTC_ADDR2), "BTC", "bitcoin bech32");
+assert.strictEqual(detects("3J98t1WpEZ73CNmQviecrnyiWrnqRhWNLy"), "BTC", "P2SH reads as bitcoin");
+assert.strictEqual(detects("LQTpS3VaYTjCr4s9Y1t5zbeY26zevf7Fb3"), "LTC", "litecoin legacy");
+assert.strictEqual(detects("MQMcJhpWHYVeQArcZR3sBgyPZxxRtnH441"), "LTC", "litecoin P2SH");
+assert.strictEqual(detects("ltc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4"), "LTC", "litecoin bech32");
+assert.strictEqual(detects("DH5yaieqoZN36fDVciNyRueRGvGLR3mr7L"), "DOGE", "dogecoin");
+assert.strictEqual(
+  detects("qr95sy3j9xwd2ap32xkykttr4cvcu7as4y0qverfuy"),
+  "BCH",
+  "bitcoin cash cashaddr",
+);
+assert.strictEqual(
+  detects("bitcoincash:qr95sy3j9xwd2ap32xkykttr4cvcu7as4y0qverfuy"),
+  "BCH",
+  "cashaddr with its prefix",
+);
+assert.strictEqual(detects("t1RwbKsv8dcVZTiKt5AzdWzWpqBJ9MRSJVt"), "ZEC", "zcash transparent");
+
+// Whitespace is a paste artefact, not an error
+assert.strictEqual(detects("  " + BTC_ADDR + "  "), "BTC", "surrounding whitespace ignored");
+
+// Anything we can't place is refused rather than guessed at
+assert.strictEqual(detects("0xnothex"), null, "malformed hex");
+assert.strictEqual(detects("0xd8dA6BF26964aF9D7eEd9e03E53415D37aA960"), null, "short ethereum address");
+assert.strictEqual(detects("not an address"), null, "prose");
+assert.strictEqual(detects(""), null, "empty");
+assert.strictEqual(detects(null), null, "missing");
+// A Monero address is watchable nowhere — its balances aren't public
+assert.strictEqual(
+  detects("48jewbtxe4jU2owyGLtsgr1Jbn6xGnPTFPtYPS8bpDdiVJMqgKQPHtNAsUnGqbGnQhrDDMhqLpDCC1QMTUYWG1VXTMEyGKF"),
+  null,
+  "monero address not claimed by any watchable chain",
+);
+
 /* ── lot math: FIFO reduction + chain-delta replay ──────────────────────── */
 
 sandbox.__lots = [
