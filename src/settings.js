@@ -88,12 +88,18 @@ class SettingsPanel extends PureComponent {
       this.setState({ activeTab: tab });
     });
 
-    // Renders a setting unless the search has filtered it out. The tally
-    // lets the panel tell the difference between "no results" and a screen
-    // that happens to look empty.
-    _defineProperty(this, "section", (title, keywords, node) => {
+    /* Renders a setting unless the search has filtered it out. The tally
+     * lets the panel tell the difference between "no results" and a screen
+     * that happens to look empty.
+     *
+     * `applies` is for settings that depend on another one being on. They
+     * stay mounted so they can animate open when the parent is switched on,
+     * but they don't count as a search hit while they're collapsed — a
+     * search that only matched hidden settings would otherwise look like a
+     * blank panel rather than "nothing matches". */
+    _defineProperty(this, "section", (title, keywords, node, applies = true) => {
       if (!matchesSetting(this.state.query, title, keywords)) return null;
-      this._matched += 1;
+      if (applies) this._matched += 1;
       return node;
     });
 

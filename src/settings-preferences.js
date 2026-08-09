@@ -195,31 +195,44 @@ const renderPreferencesTab = (panel) => {
             panel.section(
               'Volume Bars',
               'volume band bars traded activity',
+              // Only means anything on the candlestick chart, so it stays
+              // out of the way until that is on — mounted either way, so it
+              // eases open rather than appearing from nowhere
               React.createElement(
-                ToggleSection,
-                null,
-                React.createElement(ToggleSectionTitle, null, "Volume Bars"),
+                SettingReveal,
+                {
+                  key: 'volume-bars',
+                  open: chartType === 'candles',
+                  maxHeight: "14rem", // a full section, not a single row
+                },
                 React.createElement(
-                  ToggleSectionDesc,
+                  ToggleSection,
                   null,
-                  "Show traded volume as a band along the bottom of the candlestick chart",
-                ),
-                React.createElement(
-                  ToggleRow,
-                  null,
+                  React.createElement(ToggleSectionTitle, null, "Volume Bars"),
                   React.createElement(
-                    ToggleLabel,
+                    ToggleSectionDesc,
                     null,
-                    volumeBars === false ? "Off" : "On",
+                    "Show traded volume as a band along the bottom of the chart",
                   ),
-                  React.createElement(ToggleSwitch, {
-                    active: volumeBars !== false,
-                    onClick: () =>
-                      onVolumeBarsChange && onVolumeBarsChange(volumeBars === false),
-                    "aria-label": "Toggle volume bars",
-                  }),
+                  React.createElement(
+                    ToggleRow,
+                    null,
+                    React.createElement(
+                      ToggleLabel,
+                      null,
+                      volumeBars === false ? "Off" : "On",
+                    ),
+                    React.createElement(ToggleSwitch, {
+                      active: volumeBars !== false,
+                      onClick: () =>
+                        onVolumeBarsChange &&
+                        onVolumeBarsChange(volumeBars === false),
+                      "aria-label": "Toggle volume bars",
+                    }),
+                  ),
                 ),
               ),
+              chartType === 'candles',
             ),
 
             panel.section(

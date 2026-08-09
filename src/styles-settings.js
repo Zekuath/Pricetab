@@ -228,10 +228,12 @@ const TabContent = styled.div`
   }
 `;
 
-// Wraps a conditional sub-setting so it expands/collapses smoothly with its parent toggle.
+/* A setting that only applies while another one is on. Kept mounted so it
+ * eases open instead of appearing from nowhere; `maxHeight` covers the cases
+ * taller than a single row, since an unset max-height can't be transitioned. */
 const SettingReveal = styled.div`
   overflow: hidden;
-  max-height: ${({ open }) => (open ? "8rem" : "0")};
+  max-height: ${({ open, maxHeight }) => (open ? maxHeight || "8rem" : "0")};
   opacity: ${({ open }) => (open ? 1 : 0)};
   transform: translateY(${({ open }) => (open ? "0" : "-6px")});
   transition: max-height 0.32s cubic-bezier(0.22, 1, 0.36, 1),
