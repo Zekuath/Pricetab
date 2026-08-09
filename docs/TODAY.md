@@ -22,13 +22,27 @@ and for coins Coinbase doesn't list.
 
 ## 2. Prediction markets widget (Polymarket)
 
-**Effort:** Unknown · **New requests:** yes · **Status:** research first
+**Effort:** Low–Medium · **New requests:** yes, a heavy one · **Status:**
+researched, decision pending
 
-- [ ] Check whether Polymarket's public API sends CORS headers and works
-      without a key (same bar every other source had to clear)
-- [ ] Decide against it if it muddies the store's single-purpose story —
-      "crypto price charts" is what the listing promises, and Yellow Argon
-      rejections come from feature sprawl as much as keyword spam
+- [x] **CORS and keys: clears the bar.** `gamma-api.polymarket.com` answers
+      `access-control-allow-origin: *` with no key, and
+      `/events?tag_slug=bitcoin&order=volume24hr` returns exactly the markets
+      you'd want ("Bitcoin above ___ on August 9?" with a price per strike).
+      Technically this is the easiest source we've added.
+- [x] **The cost is the problem.** There is no field selection: one event
+      carries its 11–25 nested markets at 91 fields each. The *smallest useful
+      response is 40 KB* — more than the 37 KB Coinlore sweep that currently
+      feeds the ticker, watchlist, top movers and market stats combined. One
+      widget would weigh as much as everything else on the page.
+- [ ] **Decide.** Two things to weigh beyond the payload:
+      - *Single purpose.* The listing promises crypto price charts. "Will BTC
+        be above $120k on Friday" is at least price-shaped, which is more than
+        most feature sprawl can say — but it is a different product category.
+      - *Gambling.* Polymarket is a betting venue. We would be displaying odds,
+        not taking bets, but CWS reviews gambling-adjacent content more
+        closely, and it is available in some jurisdictions and not others. This
+        is a bigger risk than the 40 KB.
 
 ---
 
