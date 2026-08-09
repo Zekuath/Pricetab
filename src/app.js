@@ -49,6 +49,7 @@ class CryptoChart extends PureComponent {
       ohlcEnabled: loadOhlcEnabled(), // crosshair OHLC + volume readout
       chartType: loadChartType(), // 'line' | 'candles'
       volumeBars: loadVolumeBars(), // volume band under the chart
+      marketStats: loadMarketStats(), // stats line under the price
       portfolio: loadPortfolioFromStorage(), // [{ coin, amount, lots, watches }]
       portfolioPrices: {}, // { COIN: { price, change, up } } from pageTickerCache
       portfolioReady: false, // true after first portfolio price fetch
@@ -1489,6 +1490,11 @@ class CryptoChart extends PureComponent {
 
     // Switching to candles refetches through the candle path, which also
     // supplies the line series — so the mode change costs one request, not two
+    _defineProperty(this, "handleMarketStatsChange", (enabled) => {
+      saveMarketStats(enabled);
+      this.setState({ marketStats: enabled });
+    });
+
     _defineProperty(this, "handleVolumeBarsChange", (enabled) => {
       saveVolumeBars(enabled);
       this.setState({ volumeBars: enabled });
@@ -2454,6 +2460,55 @@ class CryptoChart extends PureComponent {
                     separatorFormat,
                     currency,
                   }),
+                  /* Stats under the price. Each one is shown only when its
+                   * source happens to be loaded — the market figures arrive
+                   * with the ticker's bulk sweep, which is off unless the
+                   * ticker or a coin widget is on — so the row never
+                   * triggers a fetch of its own. */
+                  (() => {
+                    if (this.state.marketStats === false) return null;
+                    const symbol = getCurrencySymbol(currency);
+                    const money = (v) =>
+                      formatNumberString(
+                        v,
+                        symbol,
+                        true,
+                        false,
+                        decimalPlaces,
+                        separatorFormat,
+                      );
+                    const range = deriveRangeStats(valueHistory);
+                    const ticker = pageTickerCache.get(
+                      `${activeCoin}-${currency}`,
+                    );
+                    const stats = [];
+                    if (range) {
+                      stats.push([`${periodLabel} High`, money(range.high)]);
+                      stats.push([`${periodLabel} Low`, money(range.low)]);
+                    }
+                    const cap = ticker
+                      ? formatCompactAmount(ticker.marketCap, symbol)
+                      : null;
+                    if (cap) stats.push(["Mkt Cap", cap]);
+                    const vol = ticker
+                      ? formatCompactAmount(ticker.volume24, symbol)
+                      : null;
+                    if (vol) stats.push(["24h Vol", vol]);
+                    if (!stats.length) return null;
+                    return React.createElement(
+                      PriceStatsRow,
+                      null,
+                      stats.map(([key, value]) =>
+                        React.createElement(
+                          PriceStatItem,
+                          { key },
+                          React.createElement(PriceStatKey, null, key),
+                          React.createElement(PriceStatValue, null, value),
+                        ),
+                      ),
+                    );
+                  })(),
+
                   // "Since your last visit" — only when there's a baseline
                   // from a previous session and the move is worth mentioning
                   (() => {
@@ -3224,6 +3279,8 @@ class CryptoChart extends PureComponent {
             onChartTypeChange: this.handleChartTypeChange,
             volumeBars: this.state.volumeBars,
             onVolumeBarsChange: this.handleVolumeBarsChange,
+            marketStats: this.state.marketStats,
+            onMarketStatsChange: this.handleMarketStatsChange,
             onShowShortcuts: () =>
               this.setState({ showSettings: false, showShortcuts: true }),
             widgets: widgets,

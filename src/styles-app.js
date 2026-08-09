@@ -117,6 +117,39 @@ const SinceValue = styled.span`
         : theme.color.chartLineRed};
 `;
 
+/* Stats under the price: range high/low plus market cap and 24h volume.
+ * Every value here is already on hand — the range comes off the series the
+ * chart is drawing, the market figures ride along in the ticker's bulk
+ * response — so the row costs no request of its own. */
+const PriceStatsRow = styled.div`
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.3rem 1.4rem;
+  margin-top: ${({ theme }) => theme.spacing.small}rem;
+  font-size: 0.7rem;
+  color: ${({ theme }) => theme.color.textSecondary};
+`;
+
+const PriceStatItem = styled.span`
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  white-space: nowrap;
+`;
+
+const PriceStatKey = styled.span`
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+`;
+
+const PriceStatValue = styled.span`
+  font-weight: ${({ theme }) => theme.fontWeight.semibold};
+  color: ${({ theme }) => theme.color.text};
+  font-variant-numeric: tabular-nums;
+`;
+
 // One-time rating ask: small card in the bottom-right corner of the main
 // view, lifted above the page ticker when the ticker sits at the bottom.
 // Text/link/close children reuse the RatePrompt* pieces from styles-settings.

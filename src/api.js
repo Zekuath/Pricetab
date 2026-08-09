@@ -904,10 +904,16 @@ const bulkRefreshPageTickerCache = async (coins, currency) => {
 
       const change = parseFloat(ticker.percent_change_24h);
       const hasChange = isFinite(change);
+      // Market cap and volume ride along in the same response — keeping
+      // them costs nothing and saves the stats row its own request
+      const cap = parseFloat(ticker.market_cap_usd);
+      const vol = parseFloat(ticker.volume24);
       pageTickerCache.set(`${symbol}-${currency}`, {
         price: usd * rate,
         change: hasChange ? change : null,
         up: hasChange ? change >= 0 : null,
+        marketCap: isFinite(cap) && cap > 0 ? cap * rate : null,
+        volume24: isFinite(vol) && vol > 0 ? vol * rate : null,
         timestamp: now,
       });
       filled++;

@@ -316,6 +316,11 @@ const loadOhlcEnabled = () =>
 
 const saveOhlcEnabled = (enabled) => saveSetting(OHLC_ENABLED_KEY, enabled);
 
+const loadMarketStats = () =>
+  loadBoolSetting(MARKET_STATS_KEY, DEFAULT_MARKET_STATS);
+
+const saveMarketStats = (enabled) => saveSetting(MARKET_STATS_KEY, enabled);
+
 const loadVolumeBars = () =>
   loadBoolSetting(VOLUME_BARS_KEY, DEFAULT_VOLUME_BARS);
 

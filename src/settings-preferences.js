@@ -13,6 +13,7 @@ const renderPreferencesTab = (panel) => {
   chartColor, onChartColorChange,
   chartType, onChartTypeChange,
   volumeBars, onVolumeBarsChange,
+  marketStats, onMarketStatsChange,
   ohlcEnabled, onOhlcChange,
   lastSeenEnabled, onLastSeenChange,
   currency, onCurrencyChange,
@@ -97,6 +98,37 @@ const renderPreferencesTab = (panel) => {
             
 
             // "Since your last visit" line under the price
+            panel.section(
+              'Market Stats',
+              'stats high low market cap volume range',
+              React.createElement(
+                ToggleSection,
+                null,
+                React.createElement(ToggleSectionTitle, null, "Market Stats"),
+                React.createElement(
+                  ToggleSectionDesc,
+                  null,
+                  "Show the range high and low, market cap and 24h volume under the price",
+                ),
+                React.createElement(
+                  ToggleRow,
+                  null,
+                  React.createElement(
+                    ToggleLabel,
+                    null,
+                    marketStats === false ? "Off" : "On",
+                  ),
+                  React.createElement(ToggleSwitch, {
+                    active: marketStats !== false,
+                    onClick: () =>
+                      onMarketStatsChange &&
+                      onMarketStatsChange(marketStats === false),
+                    "aria-label": "Toggle market stats",
+                  }),
+                ),
+              ),
+            ),
+
             panel.section(
               'Since Your Last Visit',
               'delta change visit last seen',

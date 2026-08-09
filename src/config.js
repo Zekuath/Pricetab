@@ -339,6 +339,10 @@ const DEFAULT_CHART_TYPE = "line";
 // so it costs nothing extra — but it is a busier look, hence the switch.
 const VOLUME_BARS_KEY = "crypto_chart_volume_bars";
 const DEFAULT_VOLUME_BARS = true;
+// Stats line under the price (range high/low, market cap, 24h volume).
+// Every figure is already fetched for something else.
+const MARKET_STATS_KEY = "crypto_chart_market_stats";
+const DEFAULT_MARKET_STATS = true;
 
 // Price alerts (in-tab only — no `notifications` permission, so PriceTab
 // stays a zero-permission extension). [{ id, coin, direction, target,

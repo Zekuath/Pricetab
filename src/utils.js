@@ -387,6 +387,40 @@ const lineFromPrices = line()
   .x((d) => d.time)
   .y((d) => d.price);
 
+/* High and low of whatever range the chart is showing. Read off the series
+ * already on screen, so it stays true to the chart rather than to a fixed
+ * window the user can't see. */
+const deriveRangeStats = (valueHistory) => {
+  if (!Array.isArray(valueHistory) || valueHistory.length < 2) return null;
+  let high = -Infinity;
+  let low = Infinity;
+  for (const point of valueHistory) {
+    const price = Number(point.price);
+    if (!isFinite(price)) continue;
+    if (price > high) high = price;
+    if (price < low) low = price;
+  }
+  if (!isFinite(high) || !isFinite(low)) return null;
+  return { high, low };
+};
+
+/* Big numbers for the stats row: market caps run to twelve digits, which
+ * would swamp the line they sit on. */
+const formatCompactAmount = (value, symbol) => {
+  const v = Number(value);
+  if (!isFinite(v) || v <= 0) return null;
+  const units = [
+    { at: 1e12, suffix: "T" },
+    { at: 1e9, suffix: "B" },
+    { at: 1e6, suffix: "M" },
+    { at: 1e3, suffix: "K" },
+  ];
+  for (const { at, suffix } of units) {
+    if (v >= at) return `${symbol}${(v / at).toFixed(2)}${suffix}`;
+  }
+  return `${symbol}${v.toFixed(2)}`;
+};
+
 /* Prices for the widget list rows. The panel is narrow, so the decimals
  * adapt to the magnitude instead of using the display setting: a $65,014.68
  * would crowd out the change column, while a $0.0000 would say nothing.

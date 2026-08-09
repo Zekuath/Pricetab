@@ -613,4 +613,46 @@ assert.strictEqual(
   "bars and geometry must line up, or the band would mislabel volumes",
 );
 
+/* ── stats row helpers ──────────────────────────────────────────────────── */
+
+// Range high/low is read off the series the chart is drawing, so it always
+// describes what is actually on screen
+sandbox.__series = [
+  { price: 100, time: 1 },
+  { price: 140, time: 2 },
+  { price: 90, time: 3 },
+  { price: 120, time: 4 },
+];
+assert.deepStrictEqual(
+  json("deriveRangeStats(__series)"),
+  { high: 140, low: 90 },
+  "extremes of the displayed range",
+);
+
+// Junk points are skipped rather than poisoning the result with NaN
+sandbox.__messy = [
+  { price: 100, time: 1 },
+  { price: "abc", time: 2 },
+  { price: 150, time: 3 },
+];
+assert.deepStrictEqual(
+  json("deriveRangeStats(__messy)"),
+  { high: 150, low: 100 },
+  "unusable points ignored",
+);
+assert.strictEqual(run("deriveRangeStats([{ price: 1, time: 1 }])"), null, "one point is not a range");
+assert.strictEqual(run("deriveRangeStats([])"), null, "no series → no range");
+assert.strictEqual(run("deriveRangeStats(null)"), null, "missing series → no range");
+
+// Market caps run to twelve digits; the row compacts them
+assert.strictEqual(run('formatCompactAmount(1.3e12, "$")'), "$1.30T", "trillions");
+assert.strictEqual(run('formatCompactAmount(4.5e9, "$")'), "$4.50B", "billions");
+assert.strictEqual(run('formatCompactAmount(2.5e6, "€")'), "€2.50M", "millions keep the currency");
+assert.strictEqual(run('formatCompactAmount(1500, "$")'), "$1.50K", "thousands");
+assert.strictEqual(run('formatCompactAmount(12.5, "$")'), "$12.50", "small values stay plain");
+// A missing figure must not render as "$0" or "$NaN" — the row hides instead
+assert.strictEqual(run('formatCompactAmount(0, "$")'), null, "zero is treated as missing");
+assert.strictEqual(run('formatCompactAmount(null, "$")'), null, "missing → null");
+assert.strictEqual(run('formatCompactAmount("junk", "$")'), null, "junk → null");
+
 console.log("CHART TESTS OK");

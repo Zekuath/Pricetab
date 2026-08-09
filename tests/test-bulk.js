@@ -5,7 +5,7 @@ const vm = require("vm");
 const assert = require("assert");
 
 const coinloreBody = { data: [
-  { symbol: "BTC", price_usd: "60000", percent_change_24h: "1.5" },
+  { symbol: "BTC", price_usd: "60000", percent_change_24h: "1.5", market_cap_usd: "1200000000000", volume24: "35000000000" },
   { symbol: "ETH", price_usd: "1700", percent_change_24h: "-2.25" },
   { symbol: "ETH", price_usd: "999", percent_change_24h: "50" },   // dup, lower rank → ignored
   { symbol: "DOGE", price_usd: "junk", percent_change_24h: "1" },  // bad price → skipped
@@ -104,6 +104,31 @@ const makeSandbox = (opts = {}) => {
     t4.calls.some((u) => u.includes("kraken.com")),
     "it asks its own provider instead",
   );
+
+  // Market cap and volume come free in the same response — the stats row
+  // reads them from here rather than making its own request
+  const t5 = makeSandbox();
+  await t5.run('bulkRefreshPageTickerCache(["BTC"], "USD")');
+  const btcStats = t5.run('pageTickerCache.get("BTC-USD")');
+  assert.strictEqual(btcStats.marketCap, 1200000000000, "market cap kept");
+  assert.strictEqual(btcStats.volume24, 35000000000, "24h volume kept");
+  assert.strictEqual(t5.calls.length, 1, "and still only one request");
+
+  // They convert with the price, so a non-USD row isn't quoting dollars
+  const t6 = makeSandbox();
+  await t6.run('bulkRefreshPageTickerCache(["BTC"], "TRY")');
+  assert.strictEqual(
+    t6.run('pageTickerCache.get("BTC-TRY")').marketCap,
+    1200000000000 * 30,
+    "market cap converted with the same rate as the price",
+  );
+
+  // A ticker without those fields must not produce zeroes or NaN
+  const t7 = makeSandbox();
+  await t7.run('bulkRefreshPageTickerCache(["ETH"], "USD")');
+  const ethStats = t7.run('pageTickerCache.get("ETH-USD")');
+  assert.strictEqual(ethStats.marketCap, null, "missing market cap → null, not 0");
+  assert.strictEqual(ethStats.volume24, null, "missing volume → null");
 
   console.log("ALL BULK SWEEP TESTS PASSED");
 })().catch((e) => { console.error(e.message); process.exit(1); });

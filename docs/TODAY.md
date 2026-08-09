@@ -10,23 +10,7 @@ and for coins Coinbase doesn't list.
 
 ---
 
-## 1. Stats row under the price
-
-**Effort:** Low–Medium · **New requests:** none
-
-The screenshot's stat grid (24H Volume, Market Cap, Open, 52W High/Low) is the
-context a glance actually wants. We can source all of it from data already in
-hand:
-
-- [ ] Market cap + 24h volume — already in the Coinlore bulk sweep
-- [ ] Day's open / high / low — from the candles
-- [ ] 52-week high/low — computed from the cached yearly series
-- [ ] One quiet row under the price; hide any stat whose data is missing
-- [ ] Settings toggle (same pattern as "Since Your Last Visit")
-
----
-
-## 2. Big-move headlines
+## 1. Big-move headlines
 
 **Effort:** Medium · **New requests:** none (the news feed already exists)
 
@@ -40,7 +24,7 @@ unusual move, surface the headlines from that window.
 
 ---
 
-## 3. Comparison mode (two coins)
+## 2. Comparison mode (two coins)
 
 **Effort:** Medium–High · **New requests:** one extra history fetch
 
@@ -52,7 +36,7 @@ unusual move, surface the headlines from that window.
 
 ---
 
-## 4. Widget request fan-out
+## 3. Widget request fan-out
 
 **Effort:** Medium · **Saves:** up to 8 requests per 5 min → fewer
 
@@ -73,7 +57,7 @@ extension, and bigger than anything the coin-coverage work adds.
 
 ---
 
-## 5. Prediction markets widget (Polymarket)
+## 4. Prediction markets widget (Polymarket)
 
 **Effort:** Unknown · **New requests:** yes · **Status:** research first
 
@@ -105,6 +89,11 @@ extension, and bigger than anything the coin-coverage work adds.
   candles and the spot price, making an XMR tab cheaper than a Coinbase one
   (which needs spot + history, plus candles on hover). Verified live across all
   six periods. Opens the door to the rest of the coins Coinbase doesn't list.
+- **Stats row under the price** — range high/low for whatever period is shown,
+  plus market cap and 24h volume. No new request: the range comes off the series
+  already drawn, and the market figures were already arriving in the ticker's
+  bulk response and being thrown away. Each stat hides itself when its source
+  isn't loaded. Switchable from Settings → Chart.
 - **Volume bars** — a band along the bottom of the candlestick chart, drawn from
   the candles already fetched, so no extra request. Scaled against the 95th
   percentile of volume rather than the maximum: one spike would otherwise flatten
