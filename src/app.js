@@ -268,63 +268,46 @@ class CryptoChart extends PureComponent {
         this.pendingWidgetRefresh = true;
         return;
       }
-      const { widgets, coinOptions, coinIndex } = this.state;
+      const { widgets, hiddenWidgets, coinOptions, coinIndex } = this.state;
       const coin = coinOptions[coinIndex] || "BTC";
       // Drop late responses for a coin the user already switched away from
       const isStillCurrent = () =>
         (this.state.coinOptions[this.state.coinIndex] || "BTC") === coin;
 
-      // Market-wide widgets
-      if (widgets.fearGreed) {
-        try {
-          const data = await fetchFearGreedIndex();
-          if (data) this.setState({ fearGreedData: data });
-        } catch (e) { /* silent fail – widget shows stale data */ }
-      }
-      if (widgets.marketOverview) {
-        try {
-          const data = await fetchMarketOverview();
-          if (data) this.setState({ marketOverviewData: data });
-        } catch (e) { /* silent fail */ }
-      }
-      if (widgets.halvingCountdown) {
-        try {
-          const data = await fetchHalvingData();
-          if (data) this.setState({ halvingData: data });
-        } catch (e) { /* silent fail */ }
-      }
-      if (widgets.altcoinSeason) {
-        try {
-          const data = await fetchAltcoinSeason();
-          if (data) this.setState({ altcoinSeasonData: data });
-        } catch (e) { /* silent fail */ }
-      }
+      /* A widget the user has hidden is still "enabled" — it keeps its place
+       * in the panel and comes back with the eye button — but nothing shows
+       * its data, so fetching it is pure waste. */
+      const wanted = (key) => widgets[key] && !hiddenWidgets[key];
 
-      // Coin-specific widgets
-      if (widgets.fundingRate) {
-        try {
-          const data = await fetchFundingRate(coin);
-          if (isStillCurrent()) this.setState({ fundingRateData: data });
-        } catch (e) { /* silent fail */ }
-      }
-      if (widgets.longShortRatio) {
-        try {
-          const data = await fetchLongShortRatio(coin);
-          if (isStillCurrent()) this.setState({ longShortData: data });
-        } catch (e) { /* silent fail */ }
-      }
-      if (widgets.openInterest) {
-        try {
-          const data = await fetchOpenInterest(coin);
-          if (isStillCurrent()) this.setState({ openInterestData: data });
-        } catch (e) { /* silent fail */ }
-      }
-      if (widgets.liquidations) {
-        try {
-          const data = await fetchLiquidations(coin);
-          if (isStillCurrent()) this.setState({ liquidationsData: data });
-        } catch (e) { /* silent fail */ }
-      }
+      /* One entry per widget: what to fetch and where the answer goes. The
+       * requests run together rather than one after another — with every
+       * widget on, awaiting them in sequence left the panel filling in for
+       * seconds even though the requests are independent. */
+      const jobs = [
+        ["fearGreed", fetchFearGreedIndex, "fearGreedData", false],
+        ["marketOverview", fetchMarketOverview, "marketOverviewData", false],
+        ["halvingCountdown", fetchHalvingData, "halvingData", false],
+        ["altcoinSeason", fetchAltcoinSeason, "altcoinSeasonData", false],
+        ["fundingRate", fetchFundingRate, "fundingRateData", true],
+        ["longShortRatio", fetchLongShortRatio, "longShortData", true],
+        ["openInterest", fetchOpenInterest, "openInterestData", true],
+        ["liquidations", fetchLiquidations, "liquidationsData", true],
+      ];
+
+      await Promise.all(
+        jobs.map(async ([key, fetcher, field, perCoin]) => {
+          if (!wanted(key)) return;
+          try {
+            const data = await (perCoin ? fetcher(coin) : fetcher());
+            // Coin-specific answers are dropped if the coin moved on
+            if (data && (!perCoin || isStillCurrent())) {
+              this.setState({ [field]: data });
+            }
+          } catch (e) {
+            /* silent fail — the widget keeps whatever it last had */
+          }
+        }),
+      );
     });
 
     _defineProperty(this, "hideWidget", (widgetName) => {

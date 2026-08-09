@@ -20,28 +20,7 @@ and for coins Coinbase doesn't list.
 
 ---
 
-## 2. Widget request fan-out
-
-**Effort:** Medium · **Saves:** up to 8 requests per 5 min → fewer
-
-With every widget on, each refresh cycle fires 8 separate endpoints (Fear &
-Greed, market overview, halving, altcoin season, funding, long/short, open
-interest, liquidations) every 5 minutes, on top of the chart's own polling and
-the bulk ticker sweep. Hidden tabs already pause and the cadence is slow, so
-this is not urgent — but it is the largest remaining request count in the
-extension, and bigger than anything the coin-coverage work adds.
-
-- [ ] Market overview and altcoin season both derive from Coinlore data we
-      already pull for the ticker — check whether the bulk sweep can feed them
-- [ ] Funding / open interest / liquidations all hit OKX for the same coin;
-      see whether one request can serve more than one widget
-- [ ] Skip fetches for widgets that are enabled but currently hidden
-- [ ] Consider a longer interval for the slow-moving ones (halving moves once
-      per block; the Fear & Greed index updates daily)
-
----
-
-## 3. Prediction markets widget (Polymarket)
+## 2. Prediction markets widget (Polymarket)
 
 **Effort:** Unknown · **New requests:** yes · **Status:** research first
 
@@ -55,6 +34,17 @@ extension, and bigger than anything the coin-coverage work adds.
 
 ## Done today
 
+- **Widget request fan-out** — the widget row was the largest remaining request
+  count in the extension. Four things were wrong, in rising order of cost:
+  market overview and altcoin season each fetched the *same* Coinlore URL (and
+  altcoin season cached nothing), so both on meant two identical round trips
+  every cycle; widgets the user had hidden were still being fetched; the eight
+  requests ran one after another instead of together; and the four per-coin
+  derivatives fetchers had no cache at all, which auto-rotate turned into a
+  request every few seconds, re-paying for coins visited a minute earlier. Now:
+  one shared, in-flight-deduped Coinlore fetch, hidden widgets skipped, all
+  fetches in parallel, and per-coin caching under a `name:COIN` key (funding at
+  15 min since it settles three times a day; the rest at the 5-minute cycle).
 - **Price targets** (was "alerts") — renamed, because nothing is pushed and the
   old name promised more than it delivered. Detection now scans candle
   highs/lows since the target was set, so a target hit while no tab was open —
@@ -123,6 +113,9 @@ extension, and bigger than anything the coin-coverage work adds.
   guarantee. Monogram badges shipped instead.
 - **Browser notifications for price targets** — needs the `notifications`
   permission and breaks the zero-permission story that keeps store review fast.
+- **One OKX request serving several widgets** — funding rate, open interest and
+  liquidations are three different resources on three different paths; there is
+  no combined endpoint. Per-coin caching was the win available here instead.
 - **Background service worker + `chrome.alarms` for targets** — would catch
   crossings with no tab open, but the candle lookback already does that from
   the foreground, and `alarms` is still a permission we'd have to declare.

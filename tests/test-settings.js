@@ -122,4 +122,37 @@ for (const key of advertised) {
   );
 }
 
+/* ── widgets don't fetch what they don't show ────────────────────────────
+ * Two easy regressions to reintroduce: fetching a widget the user has
+ * hidden, and re-adding a second request for data another widget already
+ * pulls. Both are invisible at runtime — the panel looks identical — so
+ * they're asserted against the source.
+ */
+const appWidgets = appSrc.slice(
+  appSrc.indexOf('_defineProperty(this, "fetchWidgets"'),
+  appSrc.indexOf('_defineProperty(this, "hideWidget"'),
+);
+assert.ok(
+  appWidgets.includes("hiddenWidgets"),
+  "widget fetching must skip widgets the user has hidden",
+);
+assert.ok(
+  appWidgets.includes("Promise.all"),
+  "widget requests are independent and should run together, not in sequence",
+);
+
+const widgetsSrc = fs.readFileSync(`${base}/widgets-data.js`, "utf8");
+const altSeason = widgetsSrc.slice(
+  widgetsSrc.indexOf("const fetchAltcoinSeason"),
+  widgetsSrc.indexOf("const fetchAltcoinSeason") + 900,
+);
+assert.ok(
+  altSeason.includes("fetchCoinloreGlobal"),
+  "altcoin season must reuse the shared global fetch",
+);
+assert.ok(
+  !altSeason.includes("COINLORE_GLOBAL_API"),
+  "and must not request that endpoint a second time itself",
+);
+
 console.log("SETTINGS TESTS OK");

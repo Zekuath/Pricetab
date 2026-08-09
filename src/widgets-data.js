@@ -168,6 +168,9 @@ const formatWidgetUsd = (n) => {
 };
 
 const fetchFundingRate = async (coin) => {
+  const key = coinWidgetKey("fundingRate", coin);
+  const cached = getWidgetCache(key);
+  if (cached) return cached;
   try {
     const res = await fetch(
       `${OKX_API}/public/funding-rate?instId=${coin}-USDT-SWAP`,
@@ -178,17 +181,22 @@ const fetchFundingRate = async (coin) => {
     if (!d || d.fundingRate === "" || d.fundingRate == null) return null;
     const rate = parseFloat(d.fundingRate);
     if (!isFinite(rate)) return null;
-    return {
+    const data = {
       rate,
       percent: (rate * 100).toFixed(4),
       annualized: (rate * 3 * 365 * 100).toFixed(2), // funding settles 3x/day
     };
+    setWidgetCache(key, data);
+    return data;
   } catch (e) {
     return null;
   }
 };
 
 const fetchLongShortRatio = async (coin) => {
+  const key = coinWidgetKey("longShortRatio", coin);
+  const cached = getWidgetCache(key);
+  if (cached) return cached;
   try {
     const res = await fetch(
       `${BYBIT_API}/v5/market/account-ratio?category=linear&symbol=${coin}USDT&period=5min&limit=1`,
@@ -201,13 +209,21 @@ const fetchLongShortRatio = async (coin) => {
     const long = parseFloat(d.buyRatio);
     const short = parseFloat(d.sellRatio);
     if (!isFinite(long) || !isFinite(short)) return null;
-    return { longPct: (long * 100).toFixed(1), shortPct: (short * 100).toFixed(1) };
+    const data = {
+      longPct: (long * 100).toFixed(1),
+      shortPct: (short * 100).toFixed(1),
+    };
+    setWidgetCache(key, data);
+    return data;
   } catch (e) {
     return null;
   }
 };
 
 const fetchOpenInterest = async (coin) => {
+  const key = coinWidgetKey("openInterest", coin);
+  const cached = getWidgetCache(key);
+  if (cached) return cached;
   try {
     const res = await fetch(
       `${OKX_API}/public/open-interest?instType=SWAP&instId=${coin}-USDT-SWAP`,
@@ -218,13 +234,18 @@ const fetchOpenInterest = async (coin) => {
     if (!d) return null;
     const oiUsd = parseFloat(d.oiUsd); // OKX returns USD value directly
     if (!isFinite(oiUsd) || oiUsd <= 0) return null;
-    return { oiUsd, formatted: formatWidgetUsd(oiUsd) };
+    const data = { oiUsd, formatted: formatWidgetUsd(oiUsd) };
+    setWidgetCache(key, data);
+    return data;
   } catch (e) {
     return null;
   }
 };
 
 const fetchLiquidations = async (coin) => {
+  const key = coinWidgetKey("liquidations", coin);
+  const cached = getWidgetCache(key);
+  if (cached) return cached;
   try {
     // OKX public liquidation endpoint — no auth required
     const uly = coin + "-USDT";
@@ -247,7 +268,7 @@ const fetchLiquidations = async (coin) => {
     });
     const total = longLiq + shortLiq;
     if (total === 0) return null;
-    return {
+    const data = {
       total,
       longLiq,
       shortLiq,
@@ -256,6 +277,8 @@ const fetchLiquidations = async (coin) => {
       shortFormatted: formatWidgetUsd(shortLiq),
       longPct: Math.round((longLiq / total) * 100),
     };
+    setWidgetCache(key, data);
+    return data;
   } catch (e) {
     return null;
   }
@@ -267,11 +290,9 @@ const STABLE_SYMBOLS = new Set([
 
 const fetchAltcoinSeason = async () => {
   try {
-    // Coinlore global endpoint — free, CORS-enabled, no auth needed
-    const res = await fetch(COINLORE_GLOBAL_API);
-    if (!res.ok) return null;
-    const json = await res.json();
-    const g = Array.isArray(json) ? json[0] : null;
+    // Same global figures Market Overview reads — one shared, cached fetch
+    // rather than a second identical request every cycle
+    const g = await fetchCoinloreGlobal();
     const dom = g ? parseFloat(g.btc_d) : NaN;
     if (!isFinite(dom)) return null;
     // Map BTC dominance to 0-100 alt season index

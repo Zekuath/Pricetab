@@ -26,6 +26,11 @@ const sandbox = {
         { jsonrpc: "2.0", id: 1, result: "0x2625a0" },
       ]) };
     }
+    if (url.includes("coinlore.com/api/global")) {
+      return { ok: true, status: 200, json: async () => ([
+        { total_mcap: 2e12, total_volume: 1e11, btc_d: "55.5", eth_d: "17.2", mcap_change: "1.1" },
+      ]) };
+    }
     if (url.includes("exchange-rates")) {
       return { ok: true, status: 200, json: async () => ({ data: { rates: { TRY: "30" } } }) };
     }
@@ -102,6 +107,12 @@ const sandbox = {
         { objectID: "3", title: "", url: "https://example.com/c", points: 300 },
       ] }) };
     }
+    if (url.includes("okx.com/api/v5/public/funding-rate")) {
+      return { ok: true, status: 200, json: async () => ({ data: [{ fundingRate: "0.0001" }] }) };
+    }
+    if (url.includes("okx.com/api/v5/public/open-interest")) {
+      return { ok: true, status: 200, json: async () => ({ data: [{ oiUsd: "1000000" }] }) };
+    }
     return { ok: false, status: 404, json: async () => ({}) };
   },
   NEWS_API_URL: "https://api.blockchair.com/news",
@@ -144,7 +155,9 @@ const sandbox = {
   },
 };
 vm.createContext(sandbox);
-vm.runInContext(fs.readFileSync(path.join(__dirname, "..", "src", "api.js"), "utf8"), sandbox, { filename: "api.js" });
+for (const f of ["api.js", "widgets-data.js"]) {
+  vm.runInContext(fs.readFileSync(path.join(__dirname, "..", "src", f), "utf8"), sandbox, { filename: f });
+}
 const run = (c) => vm.runInContext(c, sandbox);
 // vm-created objects need stringify comparison (see tests/README)
 const json = (c) => JSON.parse(JSON.stringify(run(c)));
@@ -496,6 +509,65 @@ const json = (c) => JSON.parse(JSON.stringify(run(c)));
   assert.ok(
     fetchCalls.every((u) => !u.includes("exchange.coinbase.com")),
     "fetchOhlcCandles routes Kraken coins away from Coinbase",
+  );
+
+  /* Coinlore's global figures feed two widgets. They each used to request
+   * the same URL, so turning both on cost two identical round trips every
+   * cycle — and one of them cached nothing, so it paid again on every
+   * refresh. One shared, cached fetch now serves both. */
+  fetchCalls = [];
+  const [g1, g2] = await Promise.all([
+    run("fetchCoinloreGlobal()"),
+    run("fetchCoinloreGlobal()"),
+  ]);
+  assert.strictEqual(
+    fetchCalls.filter((u) => u.includes("global")).length,
+    1,
+    "parallel callers share one in-flight request",
+  );
+  assert.ok(g1 && g2, "both callers get the data");
+
+  fetchCalls = [];
+  const overview = await run("fetchMarketOverview()");
+  assert.strictEqual(overview.btcDominance, 55.5, "market overview reads the shared payload");
+  assert.strictEqual(
+    fetchCalls.filter((u) => u.includes("global")).length,
+    0,
+    "and takes it from cache rather than asking again",
+  );
+
+  /* The derivatives widgets are fetched per coin, and widgets are refetched
+   * whenever the coin changes — so with auto-rotate on, an uncached fetcher
+   * fires every few seconds and pays again for coins visited a minute ago.
+   * They share the widget cache under a "name:COIN" key. */
+  fetchCalls = [];
+  const funding = await run('fetchFundingRate("BTC")');
+  assert.strictEqual(funding.percent, "0.0100", "funding rate is read from the response");
+  assert.strictEqual(fetchCalls.length, 1, "the first visit fetches");
+
+  await run('fetchOpenInterest("ETH")');
+  await run('fetchFundingRate("BTC")'); // rotated back round
+  assert.strictEqual(
+    fetchCalls.filter((u) => u.includes("funding-rate")).length,
+    1,
+    "returning to a coin serves funding from cache",
+  );
+
+  // Different coins are cached apart — one coin's data must never stand in
+  // for another's
+  await run('fetchFundingRate("SOL")');
+  assert.strictEqual(
+    fetchCalls.filter((u) => u.includes("funding-rate")).length,
+    2,
+    "a coin not seen before still fetches",
+  );
+
+  // TTLs are keyed on the widget name, not the whole "name:COIN" key, or every
+  // per-coin entry would silently fall back to the default
+  assert.strictEqual(
+    run('WIDGET_CACHE_TTL[widgetCacheName("fundingRate:BTC")]'),
+    900000,
+    "per-coin keys resolve to their widget's TTL",
   );
 
   console.log("ALL API TESTS PASSED");

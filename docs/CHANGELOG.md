@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Monero (XMR)** - charts, prices and everything else, served by Kraken because Coinbase doesn't list it. Coins can now come from different price providers, which is the groundwork for covering more of the market
 
 ### Changed
+- **Widgets ask for less** - the widget row now makes noticeably fewer network requests without changing what it shows. Market overview and altcoin season share one fetch instead of requesting the same data twice; widgets you have hidden are no longer fetched; the remaining requests go out together rather than in a queue; and the funding, open-interest, long/short and liquidation figures are cached per coin, so auto-rotating through your list no longer re-asks for a coin it visited a minute ago
 - **Settings search** - a filter at the top of Preferences finds a setting by name or by what you'd call it ("colour", "ohlc", "decimals"); matching groups open automatically
 - **Chart settings grouped together** - the chart colour, candlestick and detail switches moved out of Appearance into their own Chart group, instead of sitting beside the theme picker
 - **Keyboard shortcuts are discoverable** - press `?` (or open it from Settings) for the full list; they were previously mentioned nowhere after the first-run tour

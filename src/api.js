@@ -26,6 +26,10 @@ const WIDGET_CACHE_TTL = {
   fearGreed: 3600000, // 1 hour (updates every 12h, so 1h cache is fine)
   marketOverview: 300000, // 5 minutes
   halvingCountdown: 3600000, // 1 hour (block height changes slowly)
+  coinloreGlobal: 300000, // 5 minutes — shared by market overview + alt season
+  fundingRate: 900000, // 15 min (funding settles 3x/day; the rate barely drifts)
+  // openInterest / longShortRatio / liquidations track live positioning and
+  // fall through to the 5-minute default, matching the widget refresh cycle.
 };
 
 /* RETRY MECHANISM WITH CANCELLATION SUPPORT */
@@ -245,11 +249,18 @@ const fetchWithRetry = async (url, options = {}, maxRetries = 3) => {
 /* WIDGET DATA FETCHERS */
 const widgetCache = new Map();
 
+/* Per-coin widget data (funding, open interest, …) shares this cache with the
+ * coin appended to the key, so the TTL is looked up on the name alone. Without
+ * a cache these refetch on every coin change, which auto-rotate turns into a
+ * request every few seconds — including for coins visited a minute ago. */
+const coinWidgetKey = (name, coin) => name + ":" + coin;
+const widgetCacheName = (key) => key.split(":")[0];
+
 const getWidgetCache = (key) => {
   const cached = widgetCache.get(key);
   if (!cached) return null;
 
-  const ttl = WIDGET_CACHE_TTL[key] || 300000;
+  const ttl = WIDGET_CACHE_TTL[widgetCacheName(key)] || 300000;
   if (Date.now() - cached.timestamp > ttl) {
     return null; // Expired
   }
@@ -282,16 +293,46 @@ const fetchFearGreedIndex = async () => {
   }
 };
 
+/* One fetch of Coinlore's global figures, shared by every widget that reads
+ * them. Market Overview and Altcoin Season were each requesting this exact
+ * URL, so turning both widgets on cost two identical round trips per cycle —
+ * and Altcoin Season cached nothing, so it paid again on every refresh.
+ *
+ * The in-flight promise is shared as well as the result: the widget fetches
+ * run in parallel now, so without it two callers would still open two
+ * connections before either finished.
+ */
+let coinloreGlobalInFlight = null;
+
+const fetchCoinloreGlobal = async () => {
+  const cached = getWidgetCache("coinloreGlobal");
+  if (cached) return cached;
+  if (coinloreGlobalInFlight) return coinloreGlobalInFlight;
+
+  coinloreGlobalInFlight = (async () => {
+    try {
+      const response = await fetch(COINLORE_GLOBAL_API);
+      if (!response.ok) throw new Error("Coinlore API error");
+      const json = await response.json();
+      const g = Array.isArray(json) ? json[0] : null;
+      if (!g) return null;
+      setWidgetCache("coinloreGlobal", g);
+      return g;
+    } catch (e) {
+      return null;
+    } finally {
+      coinloreGlobalInFlight = null;
+    }
+  })();
+  return coinloreGlobalInFlight;
+};
+
 const fetchMarketOverview = async () => {
   const cached = getWidgetCache("marketOverview");
   if (cached) return cached;
 
   try {
-    const response = await fetch(COINLORE_GLOBAL_API);
-    if (!response.ok) throw new Error("Coinlore API error");
-
-    const json = await response.json();
-    const g = Array.isArray(json) ? json[0] : null;
+    const g = await fetchCoinloreGlobal();
     if (!g) return null;
     const data = {
       totalMarketCap: g.total_mcap,
