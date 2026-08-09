@@ -396,6 +396,11 @@ const fetchBlockchairNews = async () => {
         typeof article.title === "string"
           ? article.title.slice(0, 140)
           : "",
+      // Kept for the move-headlines line: when it was published, and the
+      // coins the feed itself tagged it with — a better signal than
+      // guessing from the wording
+      time: parseNewsTime(article.time),
+      tags: typeof article.tags === "string" ? article.tags : "",
       url:
         typeof article.link === "string" &&
         /^https:\/\//.test(article.link)
@@ -403,6 +408,14 @@ const fetchBlockchairNews = async () => {
           : null,
     }))
     .filter((item) => item.title);
+};
+
+// Blockchair stamps news in UTC as "YYYY-MM-DD HH:MM:SS", which is not a
+// format Date parses consistently across engines without the marker
+const parseNewsTime = (value) => {
+  if (typeof value !== "string") return null;
+  const ms = Date.parse(value.replace(" ", "T") + "Z");
+  return isFinite(ms) ? ms : null;
 };
 
 /* Hacker News crypto stories (Algolia API — CORS-enabled, no key).
@@ -437,6 +450,10 @@ const fetchHackerNewsStories = async () => {
       stories.push({
         source: "Hacker News",
         title,
+        time: isFinite(Number(hit.created_at_i))
+          ? Number(hit.created_at_i) * 1000
+          : null,
+        tags: "",
         // Text posts (Ask/Show HN) have no external URL — link the discussion
         url:
           typeof hit.url === "string" && /^https:\/\//.test(hit.url)
@@ -449,7 +466,13 @@ const fetchHackerNewsStories = async () => {
   stories.sort((a, b) => b.points - a.points);
   return stories
     .slice(0, HN_NEWS_MAX_ITEMS)
-    .map(({ source, title, url }) => ({ source, title, url }));
+    .map(({ source, title, url, time, tags }) => ({
+      source,
+      title,
+      url,
+      time,
+      tags,
+    }));
 };
 
 /* ON-CHAIN ADDRESS BALANCES (optional portfolio watching) ─────────────────
@@ -824,6 +847,36 @@ const fetchBtcAddressDeltas = async (address) => {
   } catch (error) {
     return hit ? hit.deltas : null; // stale beats blank
   }
+};
+
+/* Headlines that actually mention a coin, from inside a time window.
+ *
+ * Deliberately narrow. A general crypto feed next to a falling BTC chart
+ * would mostly show stories about other coins, and proximity alone reads as
+ * explanation — so a headline has to name the coin, and if none do, nothing
+ * is shown rather than filler.
+ *
+ * Symbols are matched case-sensitively because crypto headlines write
+ * tickers in caps: lowercase matching would make OP, BAT, TON and SAND fire
+ * on ordinary English. The full name is matched case-insensitively, and the
+ * feed's own coin tags count too.
+ */
+const headlinesForCoin = (items, coin, sinceMs, limit = 2) => {
+  if (!Array.isArray(items) || !coin) return [];
+  const name = String((typeof COIN_NAMES !== "undefined" && COIN_NAMES[coin]) || "").toLowerCase();
+  const symbolRe = new RegExp(`\\b${coin}\\b`);
+  const out = [];
+  for (const item of items) {
+    if (!item || typeof item.title !== "string") continue;
+    if (sinceMs && !(item.time >= sinceMs)) continue;
+    const raw = `${item.title} ${item.tags || ""}`;
+    const mentions =
+      symbolRe.test(raw) || (name.length > 2 && raw.toLowerCase().includes(name));
+    if (!mentions) continue;
+    out.push(item);
+    if (out.length >= limit) break;
+  }
+  return out;
 };
 
 /* Merge news lists in priority order: spam filtered everywhere, duplicate

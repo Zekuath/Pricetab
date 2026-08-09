@@ -117,6 +117,43 @@ const SinceValue = styled.span`
         : theme.color.chartLineRed};
 `;
 
+/* Headlines shown beside an unusual move. The wording and the styling both
+ * keep their distance: these are stories that mention the coin from the same
+ * window, not an explanation of the move. */
+const MoveHeadlines = styled.div`
+  margin-top: ${({ theme }) => theme.spacing.small}rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  max-width: 34rem;
+  margin-left: auto;
+  margin-right: auto;
+`;
+
+const MoveHeadlinesLabel = styled.div`
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: ${({ theme }) => theme.color.textSecondary};
+`;
+
+const MoveHeadlineLink = styled.a`
+  font-size: 0.72rem;
+  color: ${({ theme }) => theme.color.textSecondary};
+  text-decoration: none;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+
+  &:hover {
+    color: ${({ theme }) => theme.color.text};
+    text-decoration: underline;
+  }
+`;
+
 /* Stats under the price: range high/low plus market cap and 24h volume.
  * Every value here is already on hand — the range comes off the series the
  * chart is drawing, the market figures ride along in the ticker's bulk

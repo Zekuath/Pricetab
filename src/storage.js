@@ -316,6 +316,12 @@ const loadOhlcEnabled = () =>
 
 const saveOhlcEnabled = (enabled) => saveSetting(OHLC_ENABLED_KEY, enabled);
 
+const loadMoveHeadlines = () =>
+  loadBoolSetting(MOVE_HEADLINES_KEY, DEFAULT_MOVE_HEADLINES);
+
+const saveMoveHeadlines = (enabled) =>
+  saveSetting(MOVE_HEADLINES_KEY, enabled);
+
 const loadMarketStats = () =>
   loadBoolSetting(MARKET_STATS_KEY, DEFAULT_MARKET_STATS);
 

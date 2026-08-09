@@ -111,6 +111,7 @@ const sandbox = {
   HN_NEWS_MAX_AGE_S: 7 * 86400,
   HN_NEWS_MAX_ITEMS: 8,
   MAX_NEWS_ITEMS: 50,
+  COIN_NAMES: { BTC: "Bitcoin", ETH: "Ethereum", SOL: "Solana", OP: "Optimism", BAT: "Basic Attention Token", TON: "Toncoin" },
   NEWS_SPAM_RE:
     /price (prediction|analysis)|presale|pre-sale|best (coins?|cryptos?) to buy|casino|airdrop|giveaway|sponsored/i,
   encodeURIComponent,
@@ -145,6 +146,8 @@ const sandbox = {
 vm.createContext(sandbox);
 vm.runInContext(fs.readFileSync(path.join(__dirname, "..", "src", "api.js"), "utf8"), sandbox, { filename: "api.js" });
 const run = (c) => vm.runInContext(c, sandbox);
+// vm-created objects need stringify comparison (see tests/README)
+const json = (c) => JSON.parse(JSON.stringify(run(c)));
 
 (async () => {
   // refreshPageTickerCoin: fetches, computes 24h change vs oldest price, caches
@@ -183,6 +186,55 @@ const run = (c) => vm.runInContext(c, sandbox);
     "https://news.ycombinator.com/item?id=2",
     "text post links to the HN discussion",
   );
+
+  /* Headlines for a coin: a general crypto feed beside a falling chart
+   * would mostly show other coins' news, and proximity alone reads as
+   * explanation — so a story has to name the coin, and an empty result is
+   * the right answer rather than filler. */
+  const now = Date.now();
+  sandbox.__news = [
+    { title: "BTC breaks $70,000", tags: "", time: now - 1000, url: "a" },
+    { title: "Ethereum staking update", tags: "", time: now - 2000, url: "b" },
+    { title: "Analysts weigh in on Bitcoin", tags: "", time: now - 3000, url: "c" },
+    { title: "Something about markets", tags: "Bitcoin (BTC)", time: now - 4000, url: "d" },
+    { title: "BTC rally continues", tags: "", time: now - 999999999, url: "old" },
+  ];
+  const forCoin = (coin, since, limit) =>
+    json(`headlinesForCoin(__news, ${JSON.stringify(coin)}, ${since}, ${limit || 2})`).map(
+      (i) => i.url,
+    );
+
+  assert.deepStrictEqual(forCoin("BTC", now - 10000), ["a", "c"], "symbol and full name both match");
+  assert.deepStrictEqual(forCoin("BTC", now - 10000, 4), ["a", "c", "d"], "the feed's own tag counts too");
+  assert.deepStrictEqual(forCoin("ETH", now - 10000), ["b"], "matches by name for another coin");
+  assert.deepStrictEqual(forCoin("SOL", now - 10000), [], "no mention → nothing, not filler");
+
+  // Outside the window is out, however well it matches
+  assert.ok(!forCoin("BTC", now - 10000, 5).includes("old"), "older than the window is excluded");
+  assert.strictEqual(forCoin("BTC", now - 10000, 1).length, 1, "limit respected");
+
+  // Tickers are written in caps; lowercase matching would make OP, BAT and
+  // TON fire on ordinary English
+  sandbox.__prose = [
+    { title: "The op-ed on bats and tons of trading", tags: "", time: now, url: "prose" },
+  ];
+  for (const coin of ["OP", "BAT", "TON"]) {
+    assert.deepStrictEqual(
+      json(`headlinesForCoin(__prose, ${JSON.stringify(coin)}, 0, 2)`),
+      [],
+      `"${coin}" does not match lowercase prose`,
+    );
+  }
+  // A word-boundary check, so a ticker inside a longer token doesn't match
+  sandbox.__partial = [{ title: "BTCUSD pair listed", tags: "", time: now, url: "p" }];
+  assert.deepStrictEqual(
+    json('headlinesForCoin(__partial, "BTC", 0, 2)'),
+    [],
+    "a ticker inside a longer token is not a mention",
+  );
+
+  assert.deepStrictEqual(json('headlinesForCoin(null, "BTC", 0, 2)'), [], "no feed → nothing");
+  assert.deepStrictEqual(json("headlinesForCoin(__news, null, 0, 2)"), [], "no coin → nothing");
 
   // mergeNewsItems: priority order kept, spam filtered, near-duplicate
   // titles collapsed across sources, cap respected

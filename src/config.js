@@ -344,6 +344,24 @@ const DEFAULT_VOLUME_BARS = true;
 const MARKET_STATS_KEY = "crypto_chart_market_stats";
 const DEFAULT_MARKET_STATS = true;
 
+/* Headlines shown when the active coin has made an unusual move for the
+ * period on screen. A 2% hour is remarkable; a 2% year is nothing, so the
+ * threshold scales with the window. ALL is left out — every coin's all-time
+ * chart is a big move, so it would always be "notable" and mean nothing.
+ *
+ * Off by default: it reads the news feed, which the ticker also uses but
+ * which isn't fetched unless something asks for it.
+ */
+const NOTABLE_MOVE_PCT = {
+  hour: 2,
+  day: 5,
+  week: 10,
+  month: 20,
+  year: 50,
+};
+const MOVE_HEADLINES_KEY = "crypto_chart_move_headlines";
+const DEFAULT_MOVE_HEADLINES = false;
+
 // Price alerts (in-tab only — no `notifications` permission, so PriceTab
 // stays a zero-permission extension). [{ id, coin, direction, target,
 // currency, created, triggeredAt }]

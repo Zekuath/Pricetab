@@ -50,6 +50,7 @@ class CryptoChart extends PureComponent {
       chartType: loadChartType(), // 'line' | 'candles'
       volumeBars: loadVolumeBars(), // volume band under the chart
       marketStats: loadMarketStats(), // stats line under the price
+      moveHeadlines: loadMoveHeadlines(), // headlines beside an unusual move
       portfolio: loadPortfolioFromStorage(), // [{ coin, amount, lots, watches }]
       portfolioPrices: {}, // { COIN: { price, change, up } } from pageTickerCache
       portfolioReady: false, // true after first portfolio price fetch
@@ -1362,7 +1363,7 @@ class CryptoChart extends PureComponent {
     });
 
     _defineProperty(this, "fetchNewsData", async () => {
-      if (!this.state.newsTicker || this._newsFetching) {
+      if ((!this.state.newsTicker && !this.state.moveHeadlines) || this._newsFetching) {
         return;
       }
 
@@ -1490,6 +1491,14 @@ class CryptoChart extends PureComponent {
 
     // Switching to candles refetches through the candle path, which also
     // supplies the line series — so the mode change costs one request, not two
+    _defineProperty(this, "handleMoveHeadlinesChange", (enabled) => {
+      saveMoveHeadlines(enabled);
+      this.setState({ moveHeadlines: enabled }, () => {
+        // It reads the same feed as the ticker; fetch it if nothing has yet
+        if (enabled) this.fetchNewsData();
+      });
+    });
+
     _defineProperty(this, "handleMarketStatsChange", (enabled) => {
       saveMarketStats(enabled);
       this.setState({ marketStats: enabled });
@@ -2460,6 +2469,55 @@ class CryptoChart extends PureComponent {
                     separatorFormat,
                     currency,
                   }),
+                  /* Headlines beside an unusual move. Shown only when the
+                   * coin has moved more than the period's threshold *and*
+                   * the feed has stories that name that coin from inside the
+                   * window — no filler, and no claim that the two are
+                   * related, which is why the label says where they came
+                   * from rather than why the price moved. */
+                  (() => {
+                    if (!this.state.moveHeadlines) return null;
+                    const threshold = NOTABLE_MOVE_PCT[period];
+                    if (!threshold) return null;
+                    const move = derivePercentDelta(currentValue, valueHistory);
+                    if (typeof move !== "number" || Math.abs(move) < threshold) {
+                      return null;
+                    }
+                    const windowStart =
+                      valueHistory && valueHistory.length
+                        ? Number(new Date(valueHistory[0].time))
+                        : 0;
+                    const stories = headlinesForCoin(
+                      this.state.newsItems,
+                      activeCoin,
+                      windowStart,
+                      2,
+                    );
+                    if (!stories.length) return null;
+                    return React.createElement(
+                      MoveHeadlines,
+                      null,
+                      React.createElement(
+                        MoveHeadlinesLabel,
+                        null,
+                        `${activeCoin} headlines from this ${periodOption ? periodOption.title.toLowerCase() : "window"}`,
+                      ),
+                      stories.map((story) =>
+                        React.createElement(
+                          MoveHeadlineLink,
+                          {
+                            key: story.url || story.title,
+                            href: story.url || undefined,
+                            target: "_blank",
+                            rel: "noreferrer",
+                            title: story.title,
+                          },
+                          story.title,
+                        ),
+                      ),
+                    );
+                  })(),
+
                   /* Stats under the price. Each one is shown only when its
                    * source happens to be loaded — the market figures arrive
                    * with the ticker's bulk sweep, which is off unless the
@@ -3281,6 +3339,8 @@ class CryptoChart extends PureComponent {
             onVolumeBarsChange: this.handleVolumeBarsChange,
             marketStats: this.state.marketStats,
             onMarketStatsChange: this.handleMarketStatsChange,
+            moveHeadlines: this.state.moveHeadlines,
+            onMoveHeadlinesChange: this.handleMoveHeadlinesChange,
             onShowShortcuts: () =>
               this.setState({ showSettings: false, showShortcuts: true }),
             widgets: widgets,

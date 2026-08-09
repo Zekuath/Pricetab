@@ -14,6 +14,7 @@ const renderPreferencesTab = (panel) => {
   chartType, onChartTypeChange,
   volumeBars, onVolumeBarsChange,
   marketStats, onMarketStatsChange,
+  moveHeadlines, onMoveHeadlinesChange,
   ohlcEnabled, onOhlcChange,
   lastSeenEnabled, onLastSeenChange,
   currency, onCurrencyChange,
@@ -124,6 +125,37 @@ const renderPreferencesTab = (panel) => {
                       onMarketStatsChange &&
                       onMarketStatsChange(marketStats === false),
                     "aria-label": "Toggle market stats",
+                  }),
+                ),
+              ),
+            ),
+
+            panel.section(
+              'Move Headlines',
+              'news headlines big move story context',
+              React.createElement(
+                ToggleSection,
+                null,
+                React.createElement(ToggleSectionTitle, null, "Move Headlines"),
+                React.createElement(
+                  ToggleSectionDesc,
+                  null,
+                  "When a coin makes an unusual move, show headlines that mention it from the same window. Uses the same news feed as the ticker",
+                ),
+                React.createElement(
+                  ToggleRow,
+                  null,
+                  React.createElement(
+                    ToggleLabel,
+                    null,
+                    moveHeadlines ? "On" : "Off",
+                  ),
+                  React.createElement(ToggleSwitch, {
+                    active: Boolean(moveHeadlines),
+                    onClick: () =>
+                      onMoveHeadlinesChange &&
+                      onMoveHeadlinesChange(!moveHeadlines),
+                    "aria-label": "Toggle move headlines",
                   }),
                 ),
               ),

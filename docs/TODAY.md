@@ -8,23 +8,7 @@ Context: candlesticks, the crosshair's OHLC readout and the volume band all
 run off the same candles — Coinbase for most coins, Kraken for the ALL range
 and for coins Coinbase doesn't list.
 
----
-
-## 1. Big-move headlines
-
-**Effort:** Medium · **New requests:** none (the news feed already exists)
-
-Perplexity's "Notable Price Movement" is LLM-written prose; we can't and
-shouldn't fake that. The cheap, honest version: when the active coin makes an
-unusual move, surface the headlines from that window.
-
-- [ ] Detect a notable move (e.g. |change| over a threshold for the period)
-- [ ] Match Blockchair/HN headlines by timestamp, show 1–2 under the price
-- [ ] Never imply causation — label it "headlines from this window"
-
----
-
-## 2. Comparison mode (two coins)
+## 1. Comparison mode (two coins)
 
 **Effort:** Medium–High · **New requests:** one extra history fetch
 
@@ -36,7 +20,7 @@ unusual move, surface the headlines from that window.
 
 ---
 
-## 3. Widget request fan-out
+## 2. Widget request fan-out
 
 **Effort:** Medium · **Saves:** up to 8 requests per 5 min → fewer
 
@@ -57,7 +41,7 @@ extension, and bigger than anything the coin-coverage work adds.
 
 ---
 
-## 4. Prediction markets widget (Polymarket)
+## 3. Prediction markets widget (Polymarket)
 
 **Effort:** Unknown · **New requests:** yes · **Status:** research first
 
@@ -78,7 +62,7 @@ extension, and bigger than anything the coin-coverage work adds.
   happened. Closes the one real hole in the feature without touching the
   zero-permission stance.
 - **Candlestick mode** (Settings → Appearance) — item 4 below, shipped. Ended up
-  *cheaper* than the line chart rather than equal: in candle mode the candles are
+  _cheaper_ than the line chart rather than equal: in candle mode the candles are
   the only history request, because the line series is derived from their closes.
   Drawn as two SVG paths (one per direction) regardless of candle count, and
   aggregated to roughly one bar per 3px so a 350-candle range doesn't become a
@@ -89,6 +73,13 @@ extension, and bigger than anything the coin-coverage work adds.
   candles and the spot price, making an XMR tab cheaper than a Coinbase one
   (which needs spot + history, plus candles on hover). Verified live across all
   six periods. Opens the door to the rest of the coins Coinbase doesn't list.
+- **Move headlines** — when a coin moves more than its period's threshold (2% in
+  an hour, 50% in a year; ALL excluded because every all-time chart is a big
+  move), up to two headlines that *name that coin* from inside the same window.
+  Deliberately narrow: a general feed beside a falling chart mostly shows other
+  coins' news, and proximity alone reads as explanation. No mention, no line —
+  and the label says where the stories came from, never why the price moved.
+  Off by default, since it reads the news feed. Settings → Chart.
 - **Stats row under the price** — range high/low for whatever period is shown,
   plus market cap and 24h volume. No new request: the range comes off the series
   already drawn, and the market figures were already arriving in the ticker's
