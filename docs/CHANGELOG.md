@@ -23,6 +23,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Monero (XMR)** - charts, prices and everything else, served by Kraken because Coinbase doesn't list it. Coins can now come from different price providers, which is the groundwork for covering more of the market
 
 ### Changed
+- **Settings search** - a filter at the top of Preferences finds a setting by name or by what you'd call it ("colour", "ohlc", "decimals"); matching groups open automatically
+- **Chart settings grouped together** - the chart colour, candlestick and detail switches moved out of Appearance into their own Chart group, instead of sitting beside the theme picker
+- **Keyboard shortcuts are discoverable** - press `?` (or open it from Settings) for the full list; they were previously mentioned nowhere after the first-run tour
 - **Real icons instead of emoji** - the settings, portfolio, price-target, hidden-widget and watched-address controls are drawn as inline SVG rather than 💼🔔👁 emoji. They now follow the theme colour, look identical on every platform (emoji are drawn by the operating system) and share the chart's thin round-capped stroke
 - **Watchlist and Top Movers now list prices** - both widgets show symbol, current price and 24h change on one row, and read the same way. The watchlist keeps its heat wash behind the rows, so the colour still tells you the shape of your list at a glance without hiding the numbers
 

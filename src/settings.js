@@ -1,3 +1,18 @@
+/* Settings search.
+ *
+ * With ~30 controls, finding one meant scrolling and expanding groups. The
+ * filter matches a setting's own name and a few words someone might reach
+ * for instead ("colour" for Chart Color, "ohlc" for Chart Details), so the
+ * search works on intent rather than on our exact labels.
+ */
+const matchesSetting = (query, title, keywords) => {
+  const q = String(query || "").trim().toLowerCase();
+  if (!q) return true;
+  const haystack = `${title || ""} ${keywords || ""}`.toLowerCase();
+  // Every word must appear somewhere, so "chart col" finds Chart Color
+  return q.split(/\s+/).every((word) => haystack.includes(word));
+};
+
 // Collapsible group header for the Preferences tab. Owns its own open state
 // (defaults to open) — the panel unmounts when closed, so every open starts
 // with all groups expanded.
@@ -13,7 +28,13 @@ class CollapsibleGroup extends PureComponent {
   }
 
   render() {
-    const { open } = this.state;
+    // Searching flattens the panel: every surviving group opens, because
+    // hunting for a match behind a collapsed header defeats the search
+    const open = this.props.forceOpen || this.state.open;
+    const hasContent = React.Children.toArray(this.props.children).some(
+      (child) => child !== null && child !== false,
+    );
+    if (!hasContent) return null;
     return [
       React.createElement(
         SettingsGroupTitle,
@@ -53,6 +74,7 @@ class SettingsPanel extends PureComponent {
       suggestions: [],
       searching: false,
       activeTab: "coins", // 'coins' or 'preferences'
+      query: "", // settings search
       showRatePrompt: !loadRatePromptDismissed(),
       undoCoins: null,
     });
@@ -64,6 +86,15 @@ class SettingsPanel extends PureComponent {
 
     _defineProperty(this, "handleTabChange", (tab) => {
       this.setState({ activeTab: tab });
+    });
+
+    // Renders a setting unless the search has filtered it out. The tally
+    // lets the panel tell the difference between "no results" and a screen
+    // that happens to look empty.
+    _defineProperty(this, "section", (title, keywords, node) => {
+      if (!matchesSetting(this.state.query, title, keywords)) return null;
+      this._matched += 1;
+      return node;
     });
 
     _defineProperty(this, "handleRatePromptDismiss", () => {
@@ -393,6 +424,7 @@ class SettingsPanel extends PureComponent {
   }
 
   render() {
+    this._matched = 0; // reset per render; this.section() counts up
     const {
       coins,
       onClose,
@@ -669,502 +701,7 @@ class SettingsPanel extends PureComponent {
           ),
 
         // Preferences Tab Content
-        activeTab === "preferences" &&
-          React.createElement(
-            TabContent,
-            { key: "preferences-tab" },
-            React.createElement(
-              CollapsibleGroup,
-              { title: "Appearance" },
-
-            // Theme Section
-            React.createElement(
-              ThemeSection,
-              null,
-              React.createElement(ThemeSectionTitle, null, "Theme"),
-              React.createElement(
-                ThemeButtonGroup,
-                null,
-                React.createElement(
-                  ThemeButton,
-                  {
-                    active: themePreference === "auto",
-                    onClick: () => onThemeChange && onThemeChange("auto"),
-                  },
-                  "Auto",
-                ),
-                React.createElement(
-                  ThemeButton,
-                  {
-                    active: themePreference === "light",
-                    onClick: () => onThemeChange && onThemeChange("light"),
-                  },
-                  "Light",
-                ),
-                React.createElement(
-                  ThemeButton,
-                  {
-                    active: themePreference === "dark",
-                    onClick: () => onThemeChange && onThemeChange("dark"),
-                  },
-                  "Dark",
-                ),
-              ),
-              React.createElement(
-                ThemeDescription,
-                null,
-                themePreference === "auto"
-                  ? `Using ${activeTheme} mode (system preference)`
-                  : `Using ${themePreference} mode`,
-              ),
-            ),
-
-            // Chart Color Section
-            React.createElement(
-              ToggleSection,
-              null,
-              React.createElement(ToggleSectionTitle, null, "Chart Color"),
-              React.createElement(
-                ToggleSectionDesc,
-                null,
-                "Green when up, red when down — turn off for a plain line",
-              ),
-              React.createElement(
-                ToggleRow,
-                null,
-                React.createElement(
-                  ToggleLabel,
-                  null,
-                  chartColor === false ? "Off" : "On",
-                ),
-                React.createElement(ToggleSwitch, {
-                  active: chartColor !== false,
-                  onClick: () =>
-                    onChartColorChange && onChartColorChange(chartColor === false),
-                  "aria-label": "Toggle chart color",
-                }),
-              ),
-            ),
-
-            // Line vs candlesticks
-            React.createElement(
-              ToggleSection,
-              null,
-              React.createElement(ToggleSectionTitle, null, "Candlesticks"),
-              React.createElement(
-                ToggleSectionDesc,
-                null,
-                "Draw open/high/low/close bars instead of a price line. Ranges without candle data stay on the line",
-              ),
-              React.createElement(
-                ToggleRow,
-                null,
-                React.createElement(
-                  ToggleLabel,
-                  null,
-                  chartType === "candles" ? "On" : "Off",
-                ),
-                React.createElement(ToggleSwitch, {
-                  active: chartType === "candles",
-                  onClick: () =>
-                    onChartTypeChange &&
-                    onChartTypeChange(chartType === "candles" ? "line" : "candles"),
-                  "aria-label": "Toggle candlestick chart",
-                }),
-              ),
-            ),
-
-            // Chart detail (OHLC + volume in the crosshair)
-            React.createElement(
-              ToggleSection,
-              null,
-              React.createElement(ToggleSectionTitle, null, "Chart Details"),
-              React.createElement(
-                ToggleSectionDesc,
-                null,
-                "Show open/high/low/close and volume when you hover the chart (one extra request per chart, only on hover)",
-              ),
-              React.createElement(
-                ToggleRow,
-                null,
-                React.createElement(
-                  ToggleLabel,
-                  null,
-                  ohlcEnabled === false ? "Off" : "On",
-                ),
-                React.createElement(ToggleSwitch, {
-                  active: ohlcEnabled !== false,
-                  onClick: () => onOhlcChange && onOhlcChange(ohlcEnabled === false),
-                  "aria-label": "Toggle chart detail readout",
-                }),
-              ),
-            ),
-
-            // "Since your last visit" line under the price
-            React.createElement(
-              ToggleSection,
-              null,
-              React.createElement(ToggleSectionTitle, null, "Since Your Last Visit"),
-              React.createElement(
-                ToggleSectionDesc,
-                null,
-                "Show how the coin moved since you last opened a tab",
-              ),
-              React.createElement(
-                ToggleRow,
-                null,
-                React.createElement(
-                  ToggleLabel,
-                  null,
-                  lastSeenEnabled === false ? "Off" : "On",
-                ),
-                React.createElement(ToggleSwitch, {
-                  active: lastSeenEnabled !== false,
-                  onClick: () =>
-                    onLastSeenChange && onLastSeenChange(lastSeenEnabled === false),
-                  "aria-label": "Toggle since your last visit line",
-                }),
-              ),
-            ),
-
-            ),
-            React.createElement(
-              CollapsibleGroup,
-              { title: "Display" },
-
-            // Currency Section
-            React.createElement(
-              CurrencySection,
-              null,
-              React.createElement(CurrencyLabel, null, "Currency"),
-              React.createElement(
-                CurrencySelect,
-                {
-                  value: currency || DEFAULT_CURRENCY,
-                  onChange: (e) => {
-                    const newCurrency = e.target.value;
-                    if (onCurrencyChange) {
-                      onCurrencyChange(newCurrency);
-                    }
-                  },
-                },
-                React.createElement(
-                  "optgroup",
-                  { label: "Popular" },
-                  POPULAR_CURRENCIES.map((code) => {
-                    const option = CURRENCY_OPTIONS.find(
-                      (o) => o.value === code,
-                    );
-                    return option
-                      ? React.createElement(
-                          "option",
-                          { key: option.value, value: option.value },
-                          option.label,
-                        )
-                      : null;
-                  }),
-                ),
-                React.createElement(
-                  "optgroup",
-                  { label: "All currencies" },
-                  CURRENCY_OPTIONS.filter(
-                    (option) => !POPULAR_CURRENCIES.includes(option.value),
-                  ).map((option) =>
-                    React.createElement(
-                      "option",
-                      { key: option.value, value: option.value },
-                      option.label,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-
-            // Number Format Section
-            React.createElement(
-              NumberFormatSection,
-              null,
-              React.createElement(NumberFormatLabel, null, "Decimal Places"),
-              React.createElement(
-                NumberFormatSelect,
-                {
-                  value: decimalPlaces || DEFAULT_DECIMAL_PLACES,
-                  onChange: (e) => {
-                    const newPlaces = parseInt(e.target.value, 10);
-                    if (onDecimalPlacesChange) {
-                      onDecimalPlacesChange(newPlaces);
-                    }
-                  },
-                },
-                DECIMAL_PLACES_OPTIONS.map((option) =>
-                  React.createElement(
-                    "option",
-                    { key: option.value, value: option.value },
-                    option.label,
-                  ),
-                ),
-              ),
-              React.createElement(NumberFormatLabel, null, "Number Format"),
-              React.createElement(
-                NumberFormatSelect,
-                {
-                  value: separatorFormat || DEFAULT_SEPARATOR_FORMAT,
-                  onChange: (e) => {
-                    const newFormat = e.target.value;
-                    if (onSeparatorFormatChange) {
-                      onSeparatorFormatChange(newFormat);
-                    }
-                  },
-                },
-                SEPARATOR_FORMAT_OPTIONS.map((option) =>
-                  React.createElement(
-                    "option",
-                    { key: option.value, value: option.value },
-                    option.label,
-                  ),
-                ),
-              ),
-            ),
-
-            ),
-            React.createElement(
-              CollapsibleGroup,
-              { title: "Data" },
-
-            // Refresh Interval Section
-            React.createElement(
-              RefreshIntervalSection,
-              null,
-              React.createElement(
-                RefreshIntervalLabel,
-                null,
-                "Refresh Interval",
-              ),
-              React.createElement(
-                RefreshIntervalSelect,
-                {
-                  value: refreshInterval || DEFAULT_REFRESH_INTERVAL,
-                  onChange: (e) => {
-                    const newInterval = parseInt(e.target.value, 10);
-                    if (onRefreshIntervalChange) {
-                      onRefreshIntervalChange(newInterval);
-                    }
-                  },
-                },
-                REFRESH_INTERVAL_OPTIONS.map((option) =>
-                  React.createElement(
-                    "option",
-                    { key: option.value, value: option.value },
-                    option.label,
-                  ),
-                ),
-              ),
-            ),
-
-            // Auto Rotate Section
-            React.createElement(
-              ToggleSection,
-              null,
-              React.createElement(ToggleSectionTitle, null, "Auto Rotate"),
-              React.createElement(
-                ToggleSectionDesc,
-                null,
-                "Switch to the next coin in your list automatically",
-              ),
-              React.createElement(
-                ToggleRow,
-                null,
-                React.createElement(
-                  ToggleLabel,
-                  null,
-                  autoRotate ? "On" : "Off",
-                ),
-                React.createElement(ToggleSwitch, {
-                  active: autoRotate,
-                  onClick: () =>
-                    onAutoRotateChange && onAutoRotateChange(!autoRotate),
-                  "aria-label": "Toggle auto rotate",
-                }),
-              ),
-            ),
-
-            // Auto Rotate Interval (collapses smoothly when off)
-            React.createElement(
-              SettingReveal,
-              { key: "auto-rotate-interval", open: autoRotate },
-              React.createElement(
-                RefreshIntervalSection,
-                null,
-                React.createElement(RefreshIntervalLabel, null, "Switch Every"),
-                React.createElement(
-                  RefreshIntervalSelect,
-                  {
-                    value: autoRotateInterval || DEFAULT_AUTO_ROTATE_INTERVAL,
-                    onChange: (e) => {
-                      const newInterval = parseInt(e.target.value, 10);
-                      if (onAutoRotateIntervalChange) {
-                        onAutoRotateIntervalChange(newInterval);
-                      }
-                    },
-                  },
-                  AUTO_ROTATE_OPTIONS.map((option) =>
-                    React.createElement(
-                      "option",
-                      { key: option.value, value: option.value },
-                      option.label,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-
-            ),
-            React.createElement(
-              CollapsibleGroup,
-              { title: "Tickers" },
-
-            // Tab Ticker Section
-            React.createElement(
-              ToggleSection,
-              null,
-              React.createElement(
-                ToggleSectionTitle,
-                null,
-                "Browser Tab Title",
-              ),
-              React.createElement(
-                ToggleSectionDesc,
-                null,
-                "Show live prices in the browser tab title",
-              ),
-              React.createElement(
-                ToggleRow,
-                null,
-                React.createElement(
-                  ToggleLabel,
-                  null,
-                  tickerEnabled ? "On" : "Off",
-                ),
-                React.createElement(ToggleSwitch, {
-                  active: tickerEnabled,
-                  onClick: () =>
-                    onTickerChange && onTickerChange(!tickerEnabled),
-                  "aria-label": "Toggle tab ticker",
-                }),
-              ),
-            ),
-
-            // Ticker Format (collapses smoothly when the tab ticker is off)
-            React.createElement(
-              SettingReveal,
-              { key: "ticker-format", open: tickerEnabled },
-                React.createElement(
-                RefreshIntervalSection,
-                null,
-                React.createElement(
-                  RefreshIntervalLabel,
-                  null,
-                  "Title Format",
-                ),
-                React.createElement(
-                  RefreshIntervalSelect,
-                  {
-                    value: tickerFormat || DEFAULT_TICKER_FORMAT,
-                    onChange: (e) => {
-                      if (onTickerFormatChange) {
-                        onTickerFormatChange(e.target.value);
-                      }
-                    },
-                  },
-                  TICKER_FORMAT_OPTIONS.map((option) =>
-                    React.createElement(
-                      "option",
-                      { key: option.value, value: option.value },
-                      option.label,
-                    ),
-                  ),
-                ),
-              ),
-              ),
-
-            // Page Ticker Section
-            React.createElement(
-              ToggleSection,
-              null,
-              React.createElement(
-                ToggleSectionTitle,
-                null,
-                "Price Ticker Bar",
-              ),
-              React.createElement(
-                ToggleSectionDesc,
-                null,
-                "Scrolling price bar across the page (top or bottom)",
-              ),
-              React.createElement(
-                ToggleRow,
-                null,
-                React.createElement(
-                  ToggleLabel,
-                  null,
-                  pageTicker ? "On" : "Off",
-                ),
-                React.createElement(ToggleSwitch, {
-                  active: pageTicker,
-                  onClick: () =>
-                    onPageTickerChange && onPageTickerChange(!pageTicker),
-                  "aria-label": "Toggle page ticker",
-                }),
-              ),
-            ),
-
-            // Page Ticker Position (collapses smoothly when the page ticker is off)
-            React.createElement(
-              SettingReveal,
-              { key: "page-ticker-position", open: pageTicker },
-                React.createElement(
-                RefreshIntervalSection,
-                null,
-                React.createElement(RefreshIntervalLabel, null, "Position"),
-                React.createElement(
-                  RefreshIntervalSelect,
-                  {
-                    value: pageTickerPosition || DEFAULT_PAGE_TICKER_POSITION,
-                    onChange: (e) =>
-                      onPageTickerPositionChange &&
-                      onPageTickerPositionChange(e.target.value),
-                  },
-                  React.createElement("option", { value: "bottom" }, "Bottom"),
-                  React.createElement("option", { value: "top" }, "Top"),
-                ),
-                React.createElement(
-                  ToggleRow,
-                  null,
-                  React.createElement(
-                    ToggleLabel,
-                    null,
-                    "News Headlines",
-                  ),
-                  React.createElement(ToggleSwitch, {
-                    active: newsTicker,
-                    onClick: () =>
-                      onNewsTickerChange && onNewsTickerChange(!newsTicker),
-                    "aria-label": "Toggle news headlines row",
-                  }),
-                ),
-                React.createElement(
-                  SettingReveal,
-                  { key: "news-disclosure", open: newsTicker },
-                  React.createElement(
-                    ToggleSectionDesc,
-                    null,
-                    "Headlines come from public sources via Blockchair. Clicking one opens the news site in a new tab.",
-                  ),
-                ),
-              ),
-              ),
-            ),
-          ),
+        activeTab === "preferences" && renderPreferencesTab(this),
 
         // Widgets Tab Content
         activeTab === "widgets" &&

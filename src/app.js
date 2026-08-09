@@ -65,6 +65,7 @@ class CryptoChart extends PureComponent {
       retrying: false, // Manual retry in flight (from the error banner)
       slowLoad: false, // First fetch is taking a while — say so in the skeleton
       showQuickSwitch: false, // "/" coin jumper
+      showShortcuts: false, // "?" keyboard reference
       alerts: loadAlerts(), // Price targets (in-tab, zero permissions)
       firedAlerts: [], // Targets just hit → toast stack
       showAlerts: false, // Targets panel visibility
@@ -1049,7 +1050,10 @@ class CryptoChart extends PureComponent {
 
       // Esc always closes the open overlay (settings or portfolio)
       if (e.key === "Escape") {
-        if (this.state.showQuickSwitch) {
+        if (this.state.showShortcuts) {
+          e.preventDefault();
+          this.setState({ showShortcuts: false });
+        } else if (this.state.showQuickSwitch) {
           e.preventDefault();
           this.setState({ showQuickSwitch: false });
         } else if (this.state.showAlerts) {
@@ -1091,12 +1095,20 @@ class CryptoChart extends PureComponent {
         return;
       }
 
+      // "?" lists the shortcuts — reachable from anywhere but a text field
+      if (e.key === "?") {
+        e.preventDefault();
+        this.setState((prev) => ({ showShortcuts: !prev.showShortcuts }));
+        return;
+      }
+
       // Remaining shortcuts act on the chart — disabled while an overlay covers it
       if (
         this.state.showSettings ||
         this.state.showPortfolio ||
         this.state.showQuickSwitch ||
-        this.state.showAlerts
+        this.state.showAlerts ||
+        this.state.showShortcuts
       ) {
         return;
       }
@@ -3200,6 +3212,8 @@ class CryptoChart extends PureComponent {
             onOhlcChange: this.handleOhlcChange,
             chartType: this.state.chartType,
             onChartTypeChange: this.handleChartTypeChange,
+            onShowShortcuts: () =>
+              this.setState({ showSettings: false, showShortcuts: true }),
             widgets: widgets,
             onWidgetToggle: this.handleWidgetToggle,
             onWidgetPreset: this.handleWidgetPreset,
@@ -3285,6 +3299,12 @@ class CryptoChart extends PureComponent {
             onAdd: this.handleAddAlert,
             onRemove: this.handleRemoveAlert,
             onClose: () => this.setState({ showAlerts: false }),
+          }),
+
+        // Keyboard reference ("?")
+        this.state.showShortcuts &&
+          React.createElement(ShortcutsPanel, {
+            onClose: () => this.setState({ showShortcuts: false }),
           }),
 
         // Quick coin jumper ("/")

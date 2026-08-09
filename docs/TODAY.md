@@ -124,6 +124,11 @@ extension, and bigger than anything the coin-coverage work adds.
   candles and the spot price, making an XMR tab cheaper than a Coinbase one
   (which needs spot + history, plus candles on hover). Verified live across all
   six periods. Opens the door to the rest of the coins Coinbase doesn't list.
+- **Settings pass** — search, a Chart group, and a `?` shortcut reference. Chose
+  these over the full-screen settings screen that was on the table: the panel's
+  structure was already sound, the real gaps were finding a setting among ~30
+  and knowing the shortcuts exist at all. Also split `settings.js` (1,365 → 810
+  lines) so the next settings change isn't a scroll hunt.
 - **Overlay consistency pass** — audited every panel for two rules: only the
   panel's own close control is visible while it is open, and clicking outside
   closes it. Fixed price targets (main-view buttons showed through, bell now

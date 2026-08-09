@@ -884,3 +884,53 @@ const CurrencySelect = styled.select`
   }
 `;
 
+
+/* Settings search — sits above the groups in Preferences */
+const SettingsSearch = styled.input`
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: ${({ theme }) => theme.spacing.medium}rem;
+  padding: ${({ theme }) => theme.spacing.small}rem
+    ${({ theme }) => theme.spacing.medium}rem;
+  font-family: ${({ theme }) => theme.font.primary};
+  font-size: 0.8125rem;
+  color: ${({ theme }) => theme.color.text};
+  background: ${({ theme }) => theme.color.bg};
+  border: 1px solid ${({ theme }) => theme.color.border};
+  border-radius: ${({ theme }) => theme.scale * 4}rem;
+  transition: border-color 0.15s ease;
+
+  &:focus {
+    outline: none;
+    border-color: ${({ theme }) => theme.color.borderHover};
+  }
+`;
+
+const SettingsNoMatch = styled.div`
+  padding: ${({ theme }) => theme.spacing.medium}rem 0;
+  font-size: 0.8125rem;
+  text-align: center;
+  color: ${({ theme }) => theme.color.textSecondary};
+`;
+
+// Quiet pointer to the shortcut list, at the foot of Preferences
+const ShortcutsHint = styled.button.attrs(() => ({ type: "button" }))`
+  display: block;
+  width: 100%;
+  margin-top: ${({ theme }) => theme.spacing.medium}rem;
+  padding: ${({ theme }) => theme.spacing.small}rem 0;
+  background: transparent;
+  border: none;
+  border-top: 1px solid ${({ theme }) => theme.color.border};
+  font-family: ${({ theme }) => theme.font.primary};
+  font-size: 0.66rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: ${({ theme }) => theme.color.textSecondary};
+  cursor: pointer;
+  transition: color 0.15s ease;
+
+  &:hover {
+    color: ${({ theme }) => theme.color.text};
+  }
+`;
