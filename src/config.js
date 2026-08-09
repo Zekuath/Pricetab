@@ -373,7 +373,59 @@ const WATCH_CHAINS = {
   ETH: { provider: "blockchair", chain: "ethereum", decimals: 18 },
   LTC: { provider: "blockchair", chain: "litecoin", decimals: 8 },
   DOGE: { provider: "blockchair", chain: "dogecoin", decimals: 8 },
+  BCH: { provider: "blockchair", chain: "bitcoin-cash", decimals: 8 },
+  ZEC: { provider: "blockchair", chain: "zcash", decimals: 8 },
 };
+
+/* ERC-20 tokens held by an Ethereum address.
+ *
+ * Balances are read straight from each token's contract (balanceOf) over a
+ * public keyless RPC, not from an indexer's token list. Two reasons: an
+ * indexer's ERC-20 dump for a single address ran to 2 MB and reported
+ * negative balances for a sixth of the entries, and — more importantly —
+ * matching tokens by symbol is unsafe, because anyone can deploy a contract
+ * calling itself USDC. Asking a specific contract removes both problems.
+ *
+ * Every address below was verified against the chain: symbol() and
+ * decimals() were called and had to match the entry, so a mistyped address
+ * can't ship.
+ */
+const ERC20_TOKENS = {
+  USDT: { address: "0xdAC17F958D2ee523a2206206994597C13D831ec7", decimals: 6 },
+  USDC: { address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", decimals: 6 },
+  LINK: { address: "0x514910771AF9Ca656af840dff83E8264EcF986CA", decimals: 18 },
+  SHIB: { address: "0x95aD61b0a150d79219dCF64E1E6Cc01f0B64C4cE", decimals: 18 },
+  MKR: { address: "0x9f8F72aA9304c8B593d555F12eF6589cC3A579A2", decimals: 18 },
+  GRT: { address: "0xc944E90C64B2c07662A292be6244BDf05Cda44a7", decimals: 18 },
+  AAVE: { address: "0x7Fc66500c84A76Ad7e9c93437bFc5Ac33E2DDaE9", decimals: 18 },
+  SAND: { address: "0x3845badAde8e6dFF049820680d1F14bD3903a5d0", decimals: 18 },
+  MANA: { address: "0x0F5D2fB29fb7d3CFeE444a200298f468908cC942", decimals: 18 },
+  ENS: { address: "0xC18360217D8F7Ab5e7c516566761Ea12Ce7F9D72", decimals: 18 },
+  CRV: { address: "0xD533a949740bb3306d119CC777fa900bA034cd52", decimals: 18 },
+  COMP: { address: "0xc00e94Cb662C3520282E6f5717214004A7f26888", decimals: 18 },
+  SNX: { address: "0xC011a73ee8576Fb46F5E1c5751cA3B9Fe0af2a6F", decimals: 18 },
+  "1INCH": { address: "0x111111111117dC0aa78b770fA6A738034120C302", decimals: 18 },
+  BAT: { address: "0x0D8775F648430679A709E98d2b0Cb6250d2887EF", decimals: 18 },
+  LDO: { address: "0x5A98FcBEA516Cf06857215779Fd812CA3beF1B32", decimals: 18 },
+  PEPE: { address: "0x6982508145454Ce325dDbE47a25d4ec3d2311933", decimals: 18 },
+  GALA: { address: "0xd1d2Eb1B1e90B638588728b4130137D262C87cae", decimals: 8 },
+  ILV: { address: "0x767FE9EDC9E0dF98E07454847909b5E959D7ca0E", decimals: 18 },
+  BLUR: { address: "0x5283D291DBCF85356A21bA090E6db59121208b44", decimals: 18 },
+  IMX: { address: "0xF57e7e7C23978C3cAEC3C3548E3D615c346e79fF", decimals: 18 },
+  RPL: { address: "0xD33526068D116cE69F19A9ee46F0bd304F21A51f", decimals: 18 },
+  QNT: { address: "0x4a220E6096B25EADb88358cb44068A3248254675", decimals: 18 },
+  MATIC: { address: "0x7D1AfA7B718fb893dB30A3aBc0Cfc608AaCfeBB0", decimals: 18 },
+  RNDR: { address: "0x6De037ef9aD2725EB40118Bb1702EBb27e4Aeb24", decimals: 18 },
+  AXS: { address: "0xBB0E17EF65F82Ab018d8EDd776e8DD940327B28b", decimals: 18 },
+  INJ: { address: "0xe28b3B32B6c345A34Ff64674606124Dd5Aceca30", decimals: 18 },
+  ARB: { address: "0xB50721BCf8d664c30412Cfbc6cf7a15145234ad1", decimals: 18 },
+  CHZ: { address: "0x3506424F91fD33084466F402d5D97f05F8e3b4AF", decimals: 18 },
+};
+const ETH_RPC = "https://ethereum-rpc.publicnode.com";
+const ERC20_BALANCE_SELECTOR = "0x70a08231"; // balanceOf(address)
+// Watchable when the coin is its own chain, or a token on a watched one
+const isWatchableCoin = (coin) =>
+  Boolean(WATCH_CHAINS[coin] || ERC20_TOKENS[coin]);
 // Loose shape check only (base58 / bech32 / 0x-hex are all alphanumeric);
 // the provider is the real validator — bad addresses just return no balance
 const WATCH_ADDRESS_RE = /^[A-Za-z0-9]{20,100}$/;

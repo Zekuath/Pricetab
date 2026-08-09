@@ -211,6 +211,25 @@ assert.deepStrictEqual(
 );
 assert.deepStrictEqual(json('sanitizePortfolio("junk")'), [], "import sanitizer: non-array → []");
 
+// Tokens are watchable too — the address is an Ethereum one, and the
+// balance comes from the token's own contract
+assert.deepStrictEqual(
+  json(
+    'sanitizePortfolio([{ coin: "LINK", amount: 0, watches: [{ address: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045", amount: 12 }] }])',
+  ),
+  [
+    {
+      coin: "LINK",
+      amount: 0,
+      lots: [],
+      watches: [
+        { address: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045", amount: 12, lots: [] },
+      ],
+    },
+  ],
+  "an ERC-20 token can be watched on an Ethereum address",
+);
+
 // watched addresses: kept only for supported chains with a sane shape
 assert.deepStrictEqual(
   json(

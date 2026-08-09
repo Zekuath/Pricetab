@@ -355,7 +355,7 @@ const sanitizeLots = (list) => {
 // separately from the manually entered part, so the row can break down
 // "what came from where". Addresses must be valid for the holding's chain.
 const sanitizeWatches = (list, coin) => {
-  if (!Array.isArray(list) || !WATCH_CHAINS[coin]) return [];
+  if (!Array.isArray(list) || !isWatchableCoin(coin)) return [];
   const seen = new Set();
   const clean = [];
   for (const entry of list) {
@@ -403,7 +403,7 @@ const sanitizePortfolio = (list) => {
       typeof entry.address === "string" ? entry.address.trim() : "";
     if (
       !watches.length &&
-      WATCH_CHAINS[coin] &&
+      isWatchableCoin(coin) &&
       WATCH_ADDRESS_RE.test(legacyAddr)
     ) {
       watches = [{ address: legacyAddr, amount, lots }];

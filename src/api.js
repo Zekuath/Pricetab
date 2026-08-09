@@ -463,7 +463,95 @@ const BLOCKCHAIR_DASHBOARD_API = "https://api.blockchair.com/";
 
 const addressBalanceCache = new Map(); // "COIN:address" → { balance, timestamp }
 
+/* ERC-20 balances for one Ethereum address.
+ *
+ * Every token asked for goes into a single JSON-RPC batch, so checking a
+ * whole portfolio's worth of tokens costs one request rather than one each.
+ * Balances come back as 32-byte hex and are scaled by the token's own
+ * decimals — parsed via BigInt, since a raw 18-decimal balance overflows a
+ * double long before it reaches the decimal point.
+ */
+const erc20Cache = new Map(); // "address:COIN" → { amount, timestamp }
+
+const decodeErc20Balance = (hex, decimals) => {
+  if (typeof hex !== "string" || !/^0x[0-9a-fA-F]*$/.test(hex)) return null;
+  if (hex === "0x") return 0;
+  let raw;
+  try {
+    raw = BigInt(hex);
+  } catch (error) {
+    return null;
+  }
+  if (raw < 0n) return null;
+  // Split before dividing so precision survives the 18-decimal tokens
+  const scale = 10n ** BigInt(decimals);
+  const whole = raw / scale;
+  const rest = raw % scale;
+  return Number(whole) + Number(rest) / Number(scale);
+};
+
+const fetchErc20Balances = async (address, coins) => {
+  const out = {};
+  if (!WATCH_ADDRESS_RE.test(address || "")) return out;
+  const now = Date.now();
+  const wanted = [];
+  for (const coin of coins || []) {
+    if (!ERC20_TOKENS[coin]) continue;
+    const hit = erc20Cache.get(`${address}:${coin}`);
+    if (hit && now - hit.timestamp < WATCH_BALANCE_TTL) out[coin] = hit.amount;
+    else wanted.push(coin);
+  }
+  if (!wanted.length) return out;
+
+  const padded = address.toLowerCase().replace(/^0x/, "").padStart(64, "0");
+  const batch = wanted.map((coin, i) => ({
+    jsonrpc: "2.0",
+    id: i,
+    method: "eth_call",
+    params: [
+      {
+        to: ERC20_TOKENS[coin].address,
+        data: ERC20_BALANCE_SELECTOR + padded,
+      },
+      "latest",
+    ],
+  }));
+  try {
+    const res = await fetch(ETH_RPC, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(batch),
+    });
+    if (!res.ok) throw new Error("token balance request failed");
+    const rows = await res.json();
+    if (!Array.isArray(rows)) throw new Error("unexpected batch response");
+    for (const row of rows) {
+      const coin = wanted[Number(row && row.id)];
+      if (!coin || !row.result) continue;
+      const amount = decodeErc20Balance(
+        row.result,
+        ERC20_TOKENS[coin].decimals,
+      );
+      if (amount === null) continue;
+      erc20Cache.set(`${address}:${coin}`, { amount, timestamp: Date.now() });
+      out[coin] = amount;
+    }
+  } catch (error) {
+    // Serve whatever was cached; the next sweep tries again
+    for (const coin of wanted) {
+      const hit = erc20Cache.get(`${address}:${coin}`);
+      if (hit) out[coin] = hit.amount;
+    }
+  }
+  return out;
+};
+
 const fetchAddressBalance = async (coin, address) => {
+  // Tokens live on someone else's chain — ask their contract
+  if (ERC20_TOKENS[coin]) {
+    const balances = await fetchErc20Balances(address, [coin]);
+    return coin in balances ? balances[coin] : null;
+  }
   const spec = WATCH_CHAINS[coin];
   if (!spec || typeof address !== "string" || !WATCH_ADDRESS_RE.test(address)) {
     return null;

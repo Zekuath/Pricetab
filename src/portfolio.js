@@ -1913,14 +1913,18 @@ class Portfolio extends PureComponent {
                 onChange: this.handleWatchCoinChange,
                 "aria-label": "Coin for the watched address",
               },
-              Object.keys(WATCH_CHAINS).map((sym) =>
-                React.createElement("option", { key: sym, value: sym }, sym),
+              [...Object.keys(WATCH_CHAINS), ...Object.keys(ERC20_TOKENS)].map(
+                (sym) =>
+                  React.createElement("option", { key: sym, value: sym }, sym),
               ),
             ),
             React.createElement(WatchInput, {
               type: "text",
               value: this.state.watchAddress,
-              placeholder: "Public address (read-only balance lookup)…",
+              placeholder:
+                this.state.watchCoin === "ETH"
+                  ? "Ethereum address — also finds your tokens"
+                  : "Public address (read-only balance lookup)…",
               "aria-label": "Address to watch",
               onChange: this.handleWatchAddressChange,
               onKeyDown: this.handleWatchKeyDown,

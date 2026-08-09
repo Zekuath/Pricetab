@@ -9,7 +9,7 @@ let krakenError = false; // Kraken reports failures in a 200 response body
 const sandbox = {
   console, Date, JSON, Math, Array, Object, Set, Map, Promise, Number,
   parseInt, parseFloat, isFinite, isNaN, setTimeout, clearTimeout, Error, AbortController,
-  fetch: async (url) => {
+  fetch: async (url, options) => {
     fetchCalls.push(url);
     if (url.includes("/spot")) {
       return { ok: true, status: 200, json: async () => ({ data: { amount: "100", currency: "USD" } }) };
@@ -18,6 +18,13 @@ const sandbox = {
       return { ok: true, status: 200, json: async () => ({ data: { prices: [
         { price: "80", time: 1 }, { price: "90", time: 2 },
       ] } }) };
+    }
+    if (url.includes("ethereum-rpc")) {
+      // 1 LINK (18 decimals) and 2.5 USDC (6 decimals)
+      return { ok: true, status: 200, json: async () => ([
+        { jsonrpc: "2.0", id: 0, result: "0x0de0b6b3a7640000" },
+        { jsonrpc: "2.0", id: 1, result: "0x2625a0" },
+      ]) };
     }
     if (url.includes("exchange-rates")) {
       return { ok: true, status: 200, json: async () => ({ data: { rates: { TRY: "30" } } }) };
@@ -113,6 +120,13 @@ const sandbox = {
   },
   WATCH_ADDRESS_RE: /^[A-Za-z0-9]{20,100}$/,
   WATCH_BALANCE_TTL: 600000,
+  ERC20_TOKENS: {
+    LINK: { address: "0xLINKCONTRACT", decimals: 18 },
+    USDC: { address: "0xUSDCCONTRACT", decimals: 6 },
+  },
+  ETH_RPC: "https://ethereum-rpc.publicnode.com",
+  ERC20_BALANCE_SELECTOR: "0x70a08231",
+  BigInt,
   OHLC_GRANULARITY: {
     hour: { granularity: 60, points: 60 },
     day: { granularity: 900, points: 2 }, // small, so the window slice shows
@@ -272,6 +286,57 @@ const run = (c) => vm.runInContext(c, sandbox);
   assert.strictEqual(run("candleAt(__candles, -9000)"), null, "far before the range → null");
   assert.strictEqual(run("candleAt([], 1000)"), null, "no candles → null");
   assert.strictEqual(run("candleAt(null, 1000)"), null, "missing candles → null");
+
+  /* ERC-20 balances: one batched request for every token asked about, and
+   * balances scaled by each token's own decimals. Tokens are read from their
+   * contract rather than matched by symbol — anyone can deploy a contract
+   * calling itself USDC, so a name is not an identity. */
+  fetchCalls = [];
+  const balances = await run(`fetchErc20Balances("${ethAddr}", ["LINK", "USDC"])`);
+  assert.strictEqual(fetchCalls.length, 1, "both tokens ride one request");
+  assert.strictEqual(balances.LINK, 1, "18-decimal balance scaled");
+  assert.strictEqual(balances.USDC, 2.5, "6-decimal balance scaled");
+
+  // Cached per address+token, so the sweep doesn't re-ask
+  fetchCalls = [];
+  await run(`fetchErc20Balances("${ethAddr}", ["LINK", "USDC"])`);
+  assert.strictEqual(fetchCalls.length, 0, "second lookup is cached");
+
+  // A single lookup goes through the same path and cache
+  assert.strictEqual(
+    await run(`fetchAddressBalance("LINK", "${ethAddr}")`),
+    1,
+    "token balance via the shared address lookup",
+  );
+
+  // Unknown tokens and junk addresses never reach the network
+  fetchCalls = [];
+  // Objects made inside the vm need stringify comparison (see tests/README)
+  assert.strictEqual(
+    JSON.stringify(await run(`fetchErc20Balances("${ethAddr}", ["NOTATOKEN"])`)),
+    "{}",
+    "unsupported token → nothing",
+  );
+  assert.strictEqual(
+    JSON.stringify(await run('fetchErc20Balances("not an address!", ["LINK"])')),
+    "{}",
+    "junk address → nothing",
+  );
+  assert.strictEqual(fetchCalls.length, 0, "and no requests for either");
+
+  // Balance decoding must survive what an RPC can actually return
+  assert.strictEqual(run('decodeErc20Balance("0x", 18)'), 0, "empty result is a zero balance");
+  assert.strictEqual(run('decodeErc20Balance("0x0de0b6b3a7640000", 18)'), 1, "one whole token");
+  assert.strictEqual(run('decodeErc20Balance("0x2625a0", 6)'), 2.5, "fractional token");
+  assert.strictEqual(run('decodeErc20Balance("junk", 18)'), null, "non-hex → null, never NaN");
+  assert.strictEqual(run("decodeErc20Balance(null, 18)"), null, "missing result → null");
+  // 18-decimal balances exceed what a double can hold before scaling, so the
+  // raw value is parsed as a BigInt and split before the division
+  assert.strictEqual(
+    run('decodeErc20Balance("0x152d02c7e14af6800000", 18)'),
+    100000,
+    "large balance keeps its magnitude",
+  );
 
   // provider failure → stale cache wins; no cache → null
   chainFail = true;
