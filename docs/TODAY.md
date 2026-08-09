@@ -1,8 +1,8 @@
 # Today — August 8, 2026
 
 Ideas that came out of reviewing a Perplexity Finance chart page, ordered by
-value per unit of effort. The first two need **no new network requests** —
-the data is already on the page or one hover away.
+value per unit of effort. All shipped or decided except comparison mode, which
+was set aside rather than dropped.
 
 Context: candlesticks, the crosshair's OHLC readout and the volume band all
 run off the same candles — Coinbase for most coins, Kraken for the ALL range
@@ -20,33 +20,19 @@ and for coins Coinbase doesn't list.
 
 ---
 
-## 2. Prediction markets widget (Polymarket)
-
-**Effort:** Low–Medium · **New requests:** yes, a heavy one · **Status:**
-researched, decision pending
-
-- [x] **CORS and keys: clears the bar.** `gamma-api.polymarket.com` answers
-      `access-control-allow-origin: *` with no key, and
-      `/events?tag_slug=bitcoin&order=volume24hr` returns exactly the markets
-      you'd want ("Bitcoin above ___ on August 9?" with a price per strike).
-      Technically this is the easiest source we've added.
-- [x] **The cost is the problem.** There is no field selection: one event
-      carries its 11–25 nested markets at 91 fields each. The *smallest useful
-      response is 40 KB* — more than the 37 KB Coinlore sweep that currently
-      feeds the ticker, watchlist, top movers and market stats combined. One
-      widget would weigh as much as everything else on the page.
-- [ ] **Decide.** Two things to weigh beyond the payload:
-      - *Single purpose.* The listing promises crypto price charts. "Will BTC
-        be above $120k on Friday" is at least price-shaped, which is more than
-        most feature sprawl can say — but it is a different product category.
-      - *Gambling.* Polymarket is a betting venue. We would be displaying odds,
-        not taking bets, but CWS reviews gambling-adjacent content more
-        closely, and it is available in some jurisdictions and not others. This
-        is a bigger risk than the 40 KB.
-
 ---
 
 ## Done today
+
+- **Prediction markets widget (Polymarket) — researched, then deferred.**
+  Not a rejection: the source clears our bar easily (keyless,
+  `access-control-allow-origin: *`, and `tag_slug=bitcoin` returns exactly the
+  right markets). What it costs is the issue — no field selection means the
+  smallest useful response is 40 KB, more than the whole Coinlore sweep. The
+  deciding factor was timing rather than either: it now waits until 1.4.0 is
+  approved, so if displaying betting odds does draw a review question, it is
+  obvious what caused it. Written up in `VISION.md` Phase 4 with the
+  measurements, so nobody re-runs the research.
 
 - **Widget request fan-out** — the widget row was the largest remaining request
   count in the extension. Four things were wrong, in rising order of cost:

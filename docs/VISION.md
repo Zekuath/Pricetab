@@ -94,6 +94,23 @@ PriceTab aims to be the go-to new tab experience for crypto enthusiasts — beau
 - Whale Alert feed (large transaction monitoring)
 - Crypto news widget (CryptoPanic)
 
+**Prediction markets widget (Polymarket)** — *researched Aug 2026, deferred
+until after 1.4.0 is approved*
+
+Deliberately held back so it ships alone: if it draws a rejection we want to
+know it was this and not something else in a large release.
+
+- Source clears our bar: `gamma-api.polymarket.com` is keyless and sends
+  `access-control-allow-origin: *`; `/events?tag_slug=bitcoin&order=volume24hr`
+  returns exactly the right markets ("Bitcoin above ___ on August 9?", one
+  probability per strike)
+- Known cost: no field selection, so the smallest useful response is 40 KB —
+  more than the 37 KB Coinlore sweep that feeds the ticker, watchlist, top
+  movers and market stats combined. Would need a long cache and off-by-default
+- Open questions are not technical: whether prediction markets fit a listing
+  that promises price charts, and how closely CWS reviews gambling-adjacent
+  content when we display odds without taking bets
+
 ### Phase 5: Platform Expansion (2027+)
 
 - Firefox WebExtension port
