@@ -101,8 +101,20 @@ class LineBase extends PureComponent {
      * of range. Drawing the new set into the spare layer and fading the two
      * past each other keeps candles on screen the whole way. */
     this.candleLayers = [
-      { group: createRef(), up: createRef(), down: createRef() },
-      { group: createRef(), up: createRef(), down: createRef() },
+      {
+        group: createRef(),
+        up: createRef(),
+        down: createRef(),
+        volUp: createRef(),
+        volDown: createRef(),
+      },
+      {
+        group: createRef(),
+        up: createRef(),
+        down: createRef(),
+        volUp: createRef(),
+        volDown: createRef(),
+      },
     ];
     this.activeLayer = 0;
     _defineProperty(this, "lineGroupRef", createRef());
@@ -385,6 +397,7 @@ class LineBase extends PureComponent {
       const drawInto = (layer, geometry) => {
         layer.up.current.setAttribute("d", candlePathData(geometry, true));
         layer.down.current.setAttribute("d", candlePathData(geometry, false));
+        this.drawVolume(layer, geometry, bars);
       };
 
       // Resize, first draw, or a mode switch with nothing to morph from
@@ -402,9 +415,26 @@ class LineBase extends PureComponent {
        * starts exactly on the old, so neither end of the transition jumps. */
       this.morph(spare, previous, scaled, false);
       this.morph(active, scaled, previous, true);
+      // Volume is a bar chart, not a shape to tween — it swaps with the
+      // layer's own crossfade rather than morphing
+      this.drawVolume(spare, scaled, bars);
       this.fadeTo(spare.group.current, 1, true);
       this.fadeTo(active.group.current, 0, true);
       this.activeLayer = 1 - this.activeLayer;
+    });
+
+    // Volume band for one layer, cleared when the band is switched off
+    _defineProperty(this, "drawVolume", (layer, geometry, bars) => {
+      if (!layer.volUp.current || !layer.volDown.current) return;
+      const show = this.props.showVolume && geometry;
+      layer.volUp.current.setAttribute(
+        "d",
+        show ? volumeBarsData(geometry, bars, this.height, true) : "",
+      );
+      layer.volDown.current.setAttribute(
+        "d",
+        show ? volumeBarsData(geometry, bars, this.height, false) : "",
+      );
     });
 
     /* Tween one layer's paths between two candle geometries. `reverse`
@@ -592,6 +622,9 @@ class LineBase extends PureComponent {
       this._askedForOhlc = false;
     }
     const modeChanged = prevProps.showCandles !== this.props.showCandles;
+    if (prevProps.showVolume !== this.props.showVolume) {
+      this.updateCandles(false);
+    }
     if (modeChanged || prevProps.candles !== this.props.candles) {
       this.updateCandles(true);
     }
@@ -694,6 +727,20 @@ class LineBase extends PureComponent {
               opacity: 0,
               "data-candles": i,
             },
+            // Volume sits behind the candles and reads as background: it is
+            // context for the price, not a second thing to compare
+            React.createElement("path", {
+              ref: layer.volUp,
+              fill: color.chartLineGreen,
+              stroke: "none",
+              opacity: "0.28",
+            }),
+            React.createElement("path", {
+              ref: layer.volDown,
+              fill: color.chartLineRed,
+              stroke: "none",
+              opacity: "0.28",
+            }),
             React.createElement("path", {
               ref: layer.up,
               fill: color.chartLineGreen,

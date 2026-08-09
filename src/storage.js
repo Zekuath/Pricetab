@@ -316,6 +316,11 @@ const loadOhlcEnabled = () =>
 
 const saveOhlcEnabled = (enabled) => saveSetting(OHLC_ENABLED_KEY, enabled);
 
+const loadVolumeBars = () =>
+  loadBoolSetting(VOLUME_BARS_KEY, DEFAULT_VOLUME_BARS);
+
+const saveVolumeBars = (enabled) => saveSetting(VOLUME_BARS_KEY, enabled);
+
 const loadChartType = () =>
   loadEnumSetting(CHART_TYPE_KEY, ["line", "candles"], DEFAULT_CHART_TYPE);
 

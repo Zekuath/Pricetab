@@ -12,6 +12,7 @@ const renderPreferencesTab = (panel) => {
   themePreference, activeTheme, onThemeChange,
   chartColor, onChartColorChange,
   chartType, onChartTypeChange,
+  volumeBars, onVolumeBarsChange,
   ohlcEnabled, onOhlcChange,
   lastSeenEnabled, onLastSeenChange,
   currency, onCurrencyChange,
@@ -186,6 +187,36 @@ const renderPreferencesTab = (panel) => {
                       onChartTypeChange &&
                       onChartTypeChange(chartType === "candles" ? "line" : "candles"),
                     "aria-label": "Toggle candlestick chart",
+                  }),
+                ),
+              ),
+            ),
+
+            panel.section(
+              'Volume Bars',
+              'volume band bars traded activity',
+              React.createElement(
+                ToggleSection,
+                null,
+                React.createElement(ToggleSectionTitle, null, "Volume Bars"),
+                React.createElement(
+                  ToggleSectionDesc,
+                  null,
+                  "Show traded volume as a band along the bottom of the candlestick chart",
+                ),
+                React.createElement(
+                  ToggleRow,
+                  null,
+                  React.createElement(
+                    ToggleLabel,
+                    null,
+                    volumeBars === false ? "Off" : "On",
+                  ),
+                  React.createElement(ToggleSwitch, {
+                    active: volumeBars !== false,
+                    onClick: () =>
+                      onVolumeBarsChange && onVolumeBarsChange(volumeBars === false),
+                    "aria-label": "Toggle volume bars",
                   }),
                 ),
               ),

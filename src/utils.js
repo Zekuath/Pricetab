@@ -234,6 +234,52 @@ const scaleCandles = (candles, height, width, padding = 0) => {
   };
 };
 
+/* Volume bars, drawn in a band along the bottom of the chart.
+ *
+ * The band has its own scale — volume and price share no units, and putting
+ * them on one axis is the classic misleading chart. It is also drawn from
+ * the same bars as the candles, so a bar always sits under the candle it
+ * belongs to.
+ *
+ * Scaled against the 95th percentile rather than the maximum: one spike is
+ * enough to flatten every other bar into the baseline, and the point of the
+ * band is comparing ordinary days to each other. Bars past that clip to full
+ * height, which reads as "off the scale" rather than pretending to be exact.
+ */
+const VOLUME_BAND_RATIO = 0.18; // share of the chart height the band occupies
+
+const volumeBarsData = (scaled, bars, height, up) => {
+  if (!scaled || !Array.isArray(bars) || bars.length !== scaled.bars.length) {
+    return "";
+  }
+  const volumes = bars
+    .map((b) => Number(b.volume) || 0)
+    .filter((v) => v > 0)
+    .sort((a, b) => a - b);
+  if (!volumes.length) return "";
+  // Nearest-rank on a 0-indexed list. Using length × 0.95 would land on the
+  // last element for small samples, making the outlier its own cutoff and
+  // flattening everything else — the exact thing the percentile is for.
+  const cutoff = volumes[Math.floor((volumes.length - 1) * 0.95)];
+  if (!(cutoff > 0)) return "";
+
+  const bandTop = height * (1 - VOLUME_BAND_RATIO);
+  const bandHeight = height - bandTop;
+  const half = scaled.barW / 2;
+  let d = "";
+  for (let i = 0; i < bars.length; i++) {
+    if (scaled.bars[i].up !== up) continue;
+    const volume = Number(bars[i].volume) || 0;
+    if (volume <= 0) continue;
+    const h = Math.max(1, Math.min(1, volume / cutoff) * bandHeight);
+    const x = scaled.bars[i].x - half;
+    d +=
+      `M${x.toFixed(2)} ${(height - h).toFixed(2)}` +
+      `h${scaled.barW.toFixed(2)}v${h.toFixed(2)}h${(-scaled.barW).toFixed(2)}Z`;
+  }
+  return d;
+};
+
 /* Morphing one candle set into another.
  *
  * Bar counts differ between ranges (60 one-minute bars become 120 six-hour

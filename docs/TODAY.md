@@ -4,32 +4,13 @@ Ideas that came out of reviewing a Perplexity Finance chart page, ordered by
 value per unit of effort. The first two need **no new network requests** —
 the data is already on the page or one hover away.
 
-Context: the crosshair now reads out open/high/low/close/volume from Coinbase
-candles (`api.exchange.coinbase.com/products/{PAIR}/candles`, fetched lazily on
-first hover, cached 5 min, USD/EUR/GBP and every period except ALL).
+Context: candlesticks, the crosshair's OHLC readout and the volume band all
+run off the same candles — Coinbase for most coins, Kraken for the ALL range
+and for coins Coinbase doesn't list.
 
 ---
 
-## 1. Volume bars under the chart
-
-**Effort:** Medium · **New requests:** none (reuses the candles we already fetch)
-
-Draw green/red volume bars across the bottom ~15% of the chart, the way every
-serious price chart does. This is the single biggest "looks professional" jump
-available right now.
-
-- [ ] Render bars from `ohlcData` inside the existing SVG (no second chart)
-- [ ] Colour each bar by that candle's direction (close ≥ open → up tint)
-- [ ] Keep the price line's vertical scale unchanged — bars get their own band
-- [ ] Hide bars when candles are unavailable (ALL range, unquoted currency)
-- [ ] Settings toggle, default on — the minimal look has fans
-
-**Watch out:** bars must not appear/disappear as a layout jump when the lazy
-candle fetch resolves; reserve the band or fade them in.
-
----
-
-## 2. Stats row under the price
+## 1. Stats row under the price
 
 **Effort:** Low–Medium · **New requests:** none
 
@@ -45,7 +26,7 @@ hand:
 
 ---
 
-## 3. Big-move headlines
+## 2. Big-move headlines
 
 **Effort:** Medium · **New requests:** none (the news feed already exists)
 
@@ -59,7 +40,7 @@ unusual move, surface the headlines from that window.
 
 ---
 
-## 4. Comparison mode (two coins)
+## 3. Comparison mode (two coins)
 
 **Effort:** Medium–High · **New requests:** one extra history fetch
 
@@ -71,7 +52,7 @@ unusual move, surface the headlines from that window.
 
 ---
 
-## 5. Widget request fan-out
+## 4. Widget request fan-out
 
 **Effort:** Medium · **Saves:** up to 8 requests per 5 min → fewer
 
@@ -92,7 +73,7 @@ extension, and bigger than anything the coin-coverage work adds.
 
 ---
 
-## 6. Prediction markets widget (Polymarket)
+## 5. Prediction markets widget (Polymarket)
 
 **Effort:** Unknown · **New requests:** yes · **Status:** research first
 
@@ -124,6 +105,11 @@ extension, and bigger than anything the coin-coverage work adds.
   candles and the spot price, making an XMR tab cheaper than a Coinbase one
   (which needs spot + history, plus candles on hover). Verified live across all
   six periods. Opens the door to the rest of the coins Coinbase doesn't list.
+- **Volume bars** — a band along the bottom of the candlestick chart, drawn from
+  the candles already fetched, so no extra request. Scaled against the 95th
+  percentile of volume rather than the maximum: one spike would otherwise flatten
+  every other bar into the baseline, and comparing ordinary days is the point.
+  Switchable from Settings → Chart.
 - **Settings pass** — search, a Chart group, and a `?` shortcut reference. Chose
   these over the full-screen settings screen that was on the table: the panel's
   structure was already sound, the real gaps were finding a setting among ~30

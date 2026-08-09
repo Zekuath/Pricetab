@@ -542,4 +542,75 @@ assert.strictEqual(single.bars.length, 1, "a single destination bar still interp
 // Both layers stay mounted so the crossfade has something to fade between
 assert.strictEqual(candleChart.candleLayers.length, 2, "two candle layers exist");
 
+/* ── volume band ────────────────────────────────────────────────────────────
+ * Volume and price share no units, so the band gets its own scale in its own
+ * strip along the bottom. It is scaled against the 95th percentile rather
+ * than the maximum: one spike would otherwise flatten every other bar into
+ * the baseline, and comparing ordinary days is the whole point.
+ */
+
+const volCandles = (vols) =>
+  vols.map((v, i) => ({
+    time: i,
+    open: 10,
+    high: 12,
+    low: 9,
+    close: i % 2 ? 11 : 9.5, // alternating direction
+    volume: v,
+  }));
+
+sandbox.__vb = volCandles([10, 20, 30, 40]);
+sandbox.__vs = json("scaleCandles(__vb, 200, 400, 20)");
+const volUpD = run("volumeBarsData(__vs, __vb, 200, true)");
+const volDownD = run("volumeBarsData(__vs, __vb, 200, false)");
+
+// Every bar goes to one path or the other, none to both
+assert.strictEqual(
+  (volUpD.match(/M/g) || []).length + (volDownD.match(/M/g) || []).length,
+  4,
+  "one bar per candle",
+);
+assert.ok(volUpD && volDownD, "both directions drawn");
+
+// Bars live in the bottom band and never reach into the price area
+const ys = [...`${volUpD} ${volDownD}`.matchAll(/M[\d.]+ ([\d.]+)/g)].map((m) => Number(m[1]));
+const bandTop = 200 * (1 - 0.18);
+assert.ok(Math.min(...ys) >= bandTop - 0.01, "bars stay inside their band");
+assert.ok(Math.max(...ys) <= 200, "and inside the chart");
+
+// A single outlier must not flatten the rest — that is what the percentile
+// cutoff is for. With a 100x spike the ordinary bars keep real height.
+sandbox.__spike = volCandles([10, 12, 11, 1000]);
+sandbox.__spikeScale = json("scaleCandles(__spike, 200, 400, 20)");
+const spikeD = run("volumeBarsData(__spikeScale, __spike, 200, true)") +
+  run("volumeBarsData(__spikeScale, __spike, 200, false)");
+const heights = [...spikeD.matchAll(/v([\d.]+)h/g)].map((m) => Number(m[1]));
+assert.ok(
+  Math.min(...heights) > 1,
+  "ordinary bars keep visible height beside a spike",
+);
+assert.ok(Math.max(...heights) <= 200 * 0.18 + 0.01, "the spike clips to the band");
+
+// Candles that recorded no trade draw nothing rather than a baseline smear
+sandbox.__partial = volCandles([0, 5, 0, 7]);
+sandbox.__partialScale = json("scaleCandles(__partial, 200, 400, 20)");
+const partial =
+  run("volumeBarsData(__partialScale, __partial, 200, true)") +
+  run("volumeBarsData(__partialScale, __partial, 200, false)");
+assert.strictEqual((partial.match(/M/g) || []).length, 2, "only traded candles get a bar");
+
+// No volume data at all, and mismatched inputs, produce nothing
+sandbox.__novolume = volCandles([0, 0, 0, 0]);
+assert.strictEqual(
+  run("volumeBarsData(__vs, __novolume, 200, true)"),
+  "",
+  "nothing traded → no band",
+);
+assert.strictEqual(run("volumeBarsData(null, __vb, 200, true)"), "", "no geometry → nothing");
+assert.strictEqual(
+  run("volumeBarsData(__vs, __vb.slice(0, 2), 200, true)"),
+  "",
+  "bars and geometry must line up, or the band would mislabel volumes",
+);
+
 console.log("CHART TESTS OK");

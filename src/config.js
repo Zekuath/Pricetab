@@ -335,6 +335,10 @@ const DEFAULT_OHLC_ENABLED = true;
 // (Coinbase's ALL, currencies it doesn't quote) fall back to the line.
 const CHART_TYPE_KEY = "crypto_chart_chart_type";
 const DEFAULT_CHART_TYPE = "line";
+// Volume band under the chart. Rides the candles that are already fetched,
+// so it costs nothing extra — but it is a busier look, hence the switch.
+const VOLUME_BARS_KEY = "crypto_chart_volume_bars";
+const DEFAULT_VOLUME_BARS = true;
 
 // Price alerts (in-tab only — no `notifications` permission, so PriceTab
 // stays a zero-permission extension). [{ id, coin, direction, target,

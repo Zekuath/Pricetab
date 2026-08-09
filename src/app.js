@@ -48,6 +48,7 @@ class CryptoChart extends PureComponent {
       lastSeenEnabled: loadLastSeenEnabled(), // settings toggle
       ohlcEnabled: loadOhlcEnabled(), // crosshair OHLC + volume readout
       chartType: loadChartType(), // 'line' | 'candles'
+      volumeBars: loadVolumeBars(), // volume band under the chart
       portfolio: loadPortfolioFromStorage(), // [{ coin, amount, lots, watches }]
       portfolioPrices: {}, // { COIN: { price, change, up } } from pageTickerCache
       portfolioReady: false, // true after first portfolio price fetch
@@ -1488,6 +1489,11 @@ class CryptoChart extends PureComponent {
 
     // Switching to candles refetches through the candle path, which also
     // supplies the line series — so the mode change costs one request, not two
+    _defineProperty(this, "handleVolumeBarsChange", (enabled) => {
+      saveVolumeBars(enabled);
+      this.setState({ volumeBars: enabled });
+    });
+
     _defineProperty(this, "handleChartTypeChange", (type) => {
       saveChartType(type);
       this.setState({ chartType: type }, this.fetchData);
@@ -2533,6 +2539,10 @@ class CryptoChart extends PureComponent {
                       this.state.chartType === "candles" &&
                       Boolean(this.state.ohlcData),
                     candles: this.state.ohlcData,
+                    // Volume rides the candles it is drawn from
+                    showVolume:
+                      this.state.volumeBars !== false &&
+                      this.state.chartType === "candles",
                     // Any overlay covering the chart clears the readout
                     paused:
                       showSettings ||
@@ -3212,6 +3222,8 @@ class CryptoChart extends PureComponent {
             onOhlcChange: this.handleOhlcChange,
             chartType: this.state.chartType,
             onChartTypeChange: this.handleChartTypeChange,
+            volumeBars: this.state.volumeBars,
+            onVolumeBarsChange: this.handleVolumeBarsChange,
             onShowShortcuts: () =>
               this.setState({ showSettings: false, showShortcuts: true }),
             widgets: widgets,
