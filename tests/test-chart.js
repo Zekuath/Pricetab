@@ -47,7 +47,21 @@ const sandbox = {
   line: () => chain(),
   easeCubicOut: () => 0,
   interpolatePath: () => () => "",
-  scaleLinear: () => chain(),
+  // A real linear scale, not a chain stub: the comparison tests below assert
+  // pixel positions, and a stub that swallows arithmetic would make any
+  // scaling bug pass
+  scaleLinear: () => {
+    let domain = [0, 1];
+    let range = [0, 1];
+    const fn = (v) =>
+      domain[1] === domain[0]
+        ? range[0]
+        : range[0] +
+          ((v - domain[0]) / (domain[1] - domain[0])) * (range[1] - range[0]);
+    fn.domain = (d) => (d ? ((domain = d), fn) : domain);
+    fn.range = (r) => (r ? ((range = r), fn) : range);
+    return fn;
+  },
   scaleTime: () => chain(),
   extent: () => [0, 1],
   debounce: (fn) => fn,
@@ -200,6 +214,7 @@ const attach = (ref) => {
 const g = attach(chart.hoverRef);
 attach(chart.hoverLineRef);
 attach(chart.hoverDotRef);
+attach(chart.hoverDotBRef);
 attach(chart.hoverBoxRef);
 attach(chart.hoverPriceRef);
 attach(chart.hoverDateRef);
@@ -654,5 +669,212 @@ assert.strictEqual(run('formatCompactAmount(12.5, "$")'), "$12.50", "small value
 assert.strictEqual(run('formatCompactAmount(0, "$")'), null, "zero is treated as missing");
 assert.strictEqual(run('formatCompactAmount(null, "$")'), null, "missing → null");
 assert.strictEqual(run('formatCompactAmount("junk", "$")'), null, "junk → null");
+
+/* ── comparison mode ─────────────────────────────────────────────────────
+ * The mode's whole claim is that two coins share one honest axis. These
+ * assert that claim directly rather than checking that a function ran.
+ */
+
+// Same shape, wildly different price levels: BTC-sized numbers and XRP-sized
+// numbers that both double
+const bigCoin = [
+  { price: 60000, time: new Date(1000) },
+  { price: 90000, time: new Date(2000) },
+  { price: 120000, time: new Date(3000) },
+];
+const smallCoin = [
+  { price: 0.5, time: new Date(1000) },
+  { price: 0.75, time: new Date(2000) },
+  { price: 1.0, time: new Date(3000) },
+];
+sandbox.__big = bigCoin;
+sandbox.__small = smallCoin;
+
+const pct = json("toPercentChange(__big)");
+assert.strictEqual(pct[0].percent, 0, "the range starts at zero percent");
+assert.strictEqual(pct[1].percent, 50, "halfway up is +50%");
+assert.strictEqual(pct[2].percent, 100, "doubling is +100%");
+
+// The point of the mode: a coin at 60,000 and a coin at 0.50 that moved
+// identically must land on exactly the same pixels. Any implementation that
+// kept prices — a second y-axis included — fails this.
+const same = json("scaleComparison(__big, __small, 200, 400, 20)");
+assert.strictEqual(
+  JSON.stringify(same.a.map((p) => p.price)),
+  JSON.stringify(same.b.map((p) => p.price)),
+  "identical percent moves draw at identical heights regardless of price",
+);
+
+// One shared domain, spanning both series — not one scale each
+sandbox.__laggard = [
+  { price: 100, time: new Date(1000) },
+  { price: 90, time: new Date(2000) },
+  { price: 80, time: new Date(3000) },
+];
+const mixed = json("scaleComparison(__big, __laggard, 200, 400, 20)");
+assert.strictEqual(mixed.low, -20, "the domain reaches the worse performer");
+assert.strictEqual(mixed.high, 100, "and the better one");
+
+// Higher percent → smaller y (SVG grows downward). The winner is drawn above.
+assert.ok(
+  mixed.a[2].price < mixed.b[2].price,
+  "the coin that gained is plotted above the one that lost",
+);
+assert.strictEqual(mixed.lastA, 100, "the label reads the final percent");
+assert.strictEqual(mixed.lastB, -20, "for both coins");
+
+// Both coins flat: without a floor the scale would magnify rounding drift
+// into a dramatic crossing
+sandbox.__flatA = [
+  { price: 100, time: new Date(1000) },
+  { price: 100.01, time: new Date(2000) },
+];
+sandbox.__flatB = [
+  { price: 5, time: new Date(1000) },
+  { price: 5.0002, time: new Date(2000) },
+];
+const flatPair = json("scaleComparison(__flatA, __flatB, 200, 400, 20)");
+assert.ok(
+  flatPair.high - flatPair.low >= 1,
+  `flat pair keeps a minimum span, got ${flatPair.high - flatPair.low}`,
+);
+
+/* The 0% baseline is what both lines are read against, so it must always be
+ * drawable. Both series start at 0% by construction, so the domain can never
+ * sit wholly above or below it — asserted here rather than assumed, since the
+ * chart draws that line unconditionally. */
+sandbox.__up = [
+  { price: 100, time: new Date(1000) },
+  { price: 120, time: new Date(2000) },
+];
+sandbox.__up2 = [
+  { price: 50, time: new Date(1000) },
+  { price: 65, time: new Date(2000) },
+];
+for (const [name, expr] of [
+  ["both rising", "scaleComparison(__up, __up2, 200, 400, 20)"],
+  ["both falling", "scaleComparison(__laggard, __laggard, 200, 400, 20)"],
+  ["one each way", "scaleComparison(__big, __laggard, 200, 400, 20)"],
+  ["both flat", "scaleComparison(__flatA, __flatB, 200, 400, 20)"],
+]) {
+  const s = json(expr);
+  assert.ok(s.low <= 0 && s.high >= 0, `zero stays inside the domain (${name})`);
+  assert.ok(
+    s.zeroY >= 20 && s.zeroY <= 180,
+    `the baseline lands inside the plot area (${name}), got ${s.zeroY}`,
+  );
+}
+
+// Bad input must return null, not a half-drawn overlay
+assert.strictEqual(run("scaleComparison([], __big, 200, 400, 20)"), null, "empty series");
+assert.strictEqual(run("scaleComparison(null, __big, 200, 400, 20)"), null, "missing series");
+assert.strictEqual(
+  run("scaleComparison([{price: 1, time: new Date(1)}], __big, 200, 400, 20)"),
+  null,
+  "a single point is not a series",
+);
+// Zero and negative prices can't be a percentage base
+assert.strictEqual(
+  run("scaleComparison([{price: 0, time: new Date(1)}, {price: 0, time: new Date(2)}], __big, 200, 400, 20)"),
+  null,
+  "zero-priced series is dropped rather than dividing by zero",
+);
+
+assert.strictEqual(run("formatSignedPercent(4.2)"), "+4.20%", "gains carry a sign");
+assert.strictEqual(run("formatSignedPercent(-1.5)"), "-1.50%", "so do losses");
+assert.strictEqual(run("formatSignedPercent(0)"), "+0.00%", "flat reads as zero, not blank");
+assert.strictEqual(run("formatSignedPercent(NaN)"), "", "junk prints nothing");
+
+/* ── comparison readout and labels ───────────────────────────────────────
+ * The crosshair has to describe both coins, and the labels have to stay on
+ * the chart and off each other. Both are geometry, so both are measured.
+ */
+const cmp = run("new LineBase({})");
+cmp.props = {
+  prices: bigCoin,
+  comparePrices: smallCoin,
+  theme: chart.props.theme,
+  period: "day",
+  coin: "BTC",
+  compareCoin: "XRP",
+  formatPrice: (v) => `$${v}`,
+};
+cmp.width = 400;
+cmp.height = 200;
+cmp.hoverX = 200;
+const cmpNodes = [];
+const attachTo = (ref) => {
+  ref.current = fakeNode();
+  cmpNodes.push(ref.current);
+  return ref.current;
+};
+const cmpGroup = attachTo(cmp.hoverRef);
+attachTo(cmp.hoverLineRef);
+attachTo(cmp.hoverDotRef);
+const dotB = attachTo(cmp.hoverDotBRef);
+attachTo(cmp.hoverBoxRef);
+attachTo(cmp.hoverPriceRef);
+attachTo(cmp.hoverDateRef);
+cmp.rowLabelRefs.forEach(attachTo);
+cmp.rowValueRefs.forEach(attachTo);
+cmp.compareScaled = run(
+  "scaleComparison(__big, __small, 200, 400, 20)",
+);
+
+cmp.drawCrosshair();
+assert.strictEqual(cmpGroup.attrs.visibility, "visible", "the readout shows");
+assert.strictEqual(
+  cmp.rowLabelRefs[0].current.textContent,
+  "BTC",
+  "the first row names the coin you are on",
+);
+assert.strictEqual(
+  cmp.rowLabelRefs[1].current.textContent,
+  "XRP",
+  "the second names the one you compared it with",
+);
+assert.ok(
+  /%$/.test(cmp.rowValueRefs[1].current.textContent),
+  "values are percentages, not prices",
+);
+// Five rows exist for OHLC; comparison uses two and the rest must be hidden,
+// not left showing the last coin's high and low
+for (const r of [2, 3, 4]) {
+  assert.strictEqual(
+    cmp.rowLabelRefs[r].current.attrs.visibility,
+    "hidden",
+    `unused row ${r} is hidden in comparison mode`,
+  );
+}
+assert.strictEqual(
+  dotB.attrs.visibility,
+  "inherit",
+  "the compared line gets its own marker, inheriting so it hides with the group",
+);
+assert.strictEqual(
+  cmp.hoverPriceRef.current.textContent,
+  "",
+  "no single price line — there are two coins and neither owns it",
+);
+
+// Labels: on the chart, and clear of each other even when the coins finish
+// level (identical percent moves put both line ends on the same pixel)
+const labelA = attachTo(cmp.compareLabelARef);
+const labelB = attachTo(cmp.compareLabelBRef);
+cmp.placeCompareLabels(cmp.compareScaled);
+assert.ok(/^BTC [+-]/.test(labelA.textContent), `label A names its coin, got ${labelA.textContent}`);
+assert.ok(/^XRP [+-]/.test(labelB.textContent), `label B names its coin, got ${labelB.textContent}`);
+const yA = Number(labelA.attrs.y);
+const yB = Number(labelB.attrs.y);
+assert.ok(
+  Math.abs(yA - yB) >= 14,
+  `labels for two coins that finished level must not overlap, got ${yA} and ${yB}`,
+);
+for (const [name, node] of [["A", labelA], ["B", labelB]]) {
+  const y = Number(node.attrs.y);
+  const x = Number(node.attrs.x);
+  assert.ok(y >= 0 && y <= 200, `label ${name} stays inside the chart height, got ${y}`);
+  assert.ok(x >= 0 && x <= 400, `label ${name} stays inside the chart width, got ${x}`);
+}
 
 console.log("CHART TESTS OK");

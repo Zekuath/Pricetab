@@ -104,4 +104,35 @@ assert.strictEqual(run('coinMarkLabel("MATIC")'), "MAT", "long symbol clipped to
 assert.strictEqual(run('coinMarkLabel("eth")'), "ETH", "label uppercased");
 assert.strictEqual(run("coinMarkLabel()"), "?", "missing symbol has a fallback");
 
+/* ── compare mode ────────────────────────────────────────────────────────
+ * The same picker chooses the coin to compare against, with the coin already
+ * on the chart taken out: plotted against itself it is a flat line at zero,
+ * so offering it is offering an empty chart.
+ */
+const matchExcluding = (q, owned, exclude) => {
+  sandbox.__q = q;
+  sandbox.__owned = owned;
+  sandbox.__ex = exclude;
+  return JSON.parse(
+    JSON.stringify(run("quickSwitchMatches(__q, __owned, __ex)")),
+  ).map((r) => r.coin);
+};
+
+assert.ok(match("BTC", OWNED).includes("BTC"), "normally BTC is offered");
+assert.ok(
+  !matchExcluding("BTC", OWNED, "BTC").includes("BTC"),
+  "the coin already on the chart is not offered to compare against itself",
+);
+// Excluding one coin must not disturb the rest of the list
+assert.deepStrictEqual(
+  matchExcluding("", OWNED, "ETH"),
+  match("", OWNED).filter((c) => c !== "ETH"),
+  "only the excluded coin is removed, ordering is untouched",
+);
+assert.deepStrictEqual(
+  matchExcluding("", OWNED, null),
+  match("", OWNED),
+  "no exclusion behaves exactly like the plain jumper",
+);
+
 console.log("QUICK SWITCH TESTS OK");

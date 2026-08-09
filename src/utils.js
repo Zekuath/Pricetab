@@ -387,6 +387,97 @@ const lineFromPrices = line()
   .x((d) => d.time)
   .y((d) => d.price);
 
+/* COMPARISON MODE ─────────────────────────────────────────────────────────
+ * Two coins never share a price axis. BTC near 60,000 next to XRP near 0.50
+ * presses one of them flat against the floor, and the usual escape — giving
+ * each line its own y-axis — is the textbook misleading chart: where the two
+ * lines cross is then decided by where the scales were put, not by anything
+ * that happened in the market.
+ *
+ * So both series are converted to percent change from the start of the range.
+ * That is a quantity the two coins genuinely share, one axis is therefore
+ * honest for both, and it is the question the mode exists to answer: which of
+ * these has done better over the range I am looking at?
+ */
+const toPercentChange = (history) => {
+  const out = [];
+  let base = null;
+  for (const point of history || []) {
+    const price = Number(point.price);
+    const time = Number(new Date(point.time));
+    if (!isFinite(price) || price <= 0 || !isFinite(time)) continue;
+    if (base === null) base = price;
+    out.push({ percent: ((price - base) / base) * 100, time });
+  }
+  return out.length >= 2 ? out : [];
+};
+
+/* Two coins that both sat still would otherwise be stretched to fill the
+ * chart, turning a tenth of a percent of drift into a dramatic crossing. The
+ * domain never closes tighter than this, so flat reads as flat. */
+const COMPARE_MIN_SPAN = 1; // percentage points
+
+const scaleComparison = (historyA, historyB, height, width, padding = 0) => {
+  const a = toPercentChange(historyA);
+  const b = toPercentChange(historyB);
+  if (!a.length || !b.length) return null;
+
+  // One domain for both series, in both directions — that sharing is the mode
+  let low = Infinity;
+  let high = -Infinity;
+  let start = Infinity;
+  let end = -Infinity;
+  for (const list of [a, b]) {
+    for (const point of list) {
+      if (point.percent < low) low = point.percent;
+      if (point.percent > high) high = point.percent;
+      if (point.time < start) start = point.time;
+      if (point.time > end) end = point.time;
+    }
+  }
+  if (!(end > start)) return null;
+  if (high - low < COMPARE_MIN_SPAN) {
+    const mid = (high + low) / 2;
+    low = mid - COMPARE_MIN_SPAN / 2;
+    high = mid + COMPARE_MIN_SPAN / 2;
+  }
+
+  const percentToY = scaleLinear()
+    .range([height - padding, padding])
+    .domain([low, high]);
+  const timeToX = scaleLinear()
+    .range([padding, width - padding])
+    .domain([start, end]);
+
+  // Named price/time so the existing line generator draws these unchanged
+  const project = (list) =>
+    list.map((point) => ({
+      price: percentToY(point.percent),
+      time: timeToX(point.time),
+      percent: point.percent,
+      at: point.time,
+    }));
+
+  return {
+    a: project(a),
+    b: project(b),
+    low,
+    high,
+    /* The 0% line is what the whole chart is read against, and it is always
+     * on screen: both series start at 0% by construction, so the domain can
+     * never sit entirely above or below it. */
+    zeroY: percentToY(0),
+    lastA: a[a.length - 1].percent,
+    lastB: b[b.length - 1].percent,
+  };
+};
+
+const formatSignedPercent = (value) => {
+  const v = Number(value);
+  if (!isFinite(v)) return "";
+  return `${v >= 0 ? "+" : "-"}${Math.abs(v).toFixed(2)}%`;
+};
+
 /* High and low of whatever range the chart is showing. Read off the series
  * already on screen, so it stays true to the chart rather than to a fixed
  * window the user can't see. */

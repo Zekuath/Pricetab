@@ -15,6 +15,7 @@ const SHORTCUT_GROUPS = [
       { keys: ["←", "→"], label: "Previous / next coin" },
       { keys: ["1", "–", "6"], label: "Switch range, 1H through ALL" },
       { keys: ["R"], label: "Refresh now" },
+      { keys: ["C"], label: "Compare with a second coin" },
     ],
   },
   {

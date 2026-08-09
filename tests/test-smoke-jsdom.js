@@ -11,6 +11,8 @@
 //                becomes visible, then the chart must load normally
 //   candles    — candlestick mode: switching coins must reshape the bars,
 //                never leaving the chart without visible candles
+//   compare    — comparison mode: C then Enter must draw two named percent
+//                lines, with the single-coin price line out of the way
 const fs = require("fs");
 const path = require("path");
 const ROOT = path.join(__dirname, "..");
@@ -31,7 +33,7 @@ const scripts = [...indexHtml.matchAll(/<script src="\.\/([^"]+)"><\/script>/g)]
   (m) => m[1],
 );
 
-const runScenario = ({ hydrated = false, background = false, candles = false } = {}) =>
+const runScenario = ({ hydrated = false, background = false, candles = false, compare = false } = {}) =>
   new Promise((resolve) => {
     const dom = new JSDOM("<!DOCTYPE html><html><body></body></html>", {
       pretendToBeVisual: true,
@@ -136,6 +138,12 @@ const runScenario = ({ hydrated = false, background = false, candles = false } =
     let candlesDrawn = false;
     let coinSwitchedAt = null;
     let candlesEmptyAfterSwitch = false;
+    // Compare scenario: press C, pick the first offered coin, and check the
+    // overlay actually draws two named lines
+    let comparePickedAt = null;
+    let compareLines = 0;
+    let compareLabels = [];
+    let compareLineStillUp = false;
     const t0 = Date.now();
     if (background) {
       // Stay hidden for a while, then reveal the tab
@@ -177,6 +185,46 @@ const runScenario = ({ hydrated = false, background = false, candles = false } =
         if (d.includes("NaN") && !nanSeenAt) nanSeenAt = t;
         if (d.length > 30 && !d.includes("NaN") && !chartReadyAt) chartReadyAt = t;
       }
+      if (compare && chartReadyAt) {
+        if (!comparePickedAt && t > chartReadyAt + 200) {
+          w.document.dispatchEvent(
+            new w.KeyboardEvent("keydown", { key: "c", bubbles: true }),
+          );
+          // The picker takes over the keyboard; Enter accepts the top result,
+          // which is the user's first coin other than the one on screen
+          const input = w.document.querySelector(
+            'input[aria-label="Compare with a coin"]',
+          );
+          if (input) {
+            input.dispatchEvent(
+              new w.KeyboardEvent("keydown", { key: "Enter", bubbles: true }),
+            );
+            comparePickedAt = t;
+          }
+        }
+        const group = w.document.querySelector("[data-compare]");
+        if (group && Number(group.getAttribute("opacity")) > 0.5) {
+          compareLines = [...group.querySelectorAll("path")].filter(
+            (p) => (p.getAttribute("d") || "").length > 10,
+          ).length;
+          compareLabels = [...group.querySelectorAll("text")]
+            .map((n) => n.textContent)
+            .filter(Boolean);
+          /* The single-coin line must give way, not sit under the pair: it
+           * is drawn in price space, so leaving it there would put two
+           * different y-meanings on one chart. Judged only once the
+           * cross-fade has had time to finish — mid-fade both are partly
+           * visible, which is the point of a cross-fade. */
+          const lineGroup = w.document.querySelector("[data-line]");
+          if (
+            lineGroup &&
+            t > comparePickedAt + 800 &&
+            Number(lineGroup.getAttribute("opacity")) > 0.1
+          ) {
+            compareLineStillUp = true;
+          }
+        }
+      }
       if ((chartReadyAt && t > 1500) || t > DEADLINE + 500) {
         clearInterval(poll);
         dom.window.close();
@@ -188,6 +236,10 @@ const runScenario = ({ hydrated = false, background = false, candles = false } =
           requestsWhileHidden,
           candlesDrawn,
           candlesEmptyAfterSwitch,
+          comparePickedAt,
+          compareLines,
+          compareLabels,
+          compareLineStillUp,
         });
       }
     }, 25);
@@ -200,6 +252,7 @@ const runScenario = ({ hydrated = false, background = false, candles = false } =
     { label: "hydrated", hydrated: true },
     { label: "background", background: true },
     { label: "candles", candles: true },
+    { label: "compare", compare: true },
   ]) {
     const { label } = scenario;
     const r = await runScenario(scenario);
@@ -220,6 +273,23 @@ const runScenario = ({ hydrated = false, background = false, candles = false } =
       if (!r.candlesDrawn) problems.push("candlestick chart never drew any bars");
       if (r.candlesEmptyAfterSwitch) {
         problems.push("candles vanished after switching coins");
+      }
+    }
+    if (label === "compare") {
+      if (r.comparePickedAt === null) {
+        problems.push("the compare picker never opened");
+      } else if (r.compareLines < 2) {
+        problems.push(`compare overlay drew ${r.compareLines} lines, expected 2`);
+      } else if (r.compareLabels.length < 2) {
+        problems.push(
+          `both lines must be named on the chart, got ${JSON.stringify(r.compareLabels)}`,
+        );
+      } else if (!r.compareLabels.every((l) => /[+-]\d+\.\d\d%$/.test(l))) {
+        problems.push(
+          `labels must carry a signed percent, got ${JSON.stringify(r.compareLabels)}`,
+        );
+      } else if (r.compareLineStillUp) {
+        problems.push("the single-coin price line stayed visible under the comparison");
       }
     }
     if (label === "background" && r.requestsWhileHidden > 0) {

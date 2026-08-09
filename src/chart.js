@@ -49,6 +49,11 @@ const CROSSHAIR_COL_GAP = 14; // px between a row's label and its value
 // Rows shown when candle data is available for the hovered point
 const CROSSHAIR_ROWS = ["Open", "High", "Low", "Close", "Volume"];
 
+// Comparison-mode direct labels: how far above its line a label sits, and how
+// far apart two of them must stay when the coins finish level
+const COMPARE_LABEL_LIFT = 8;
+const COMPARE_LABEL_MIN_GAP = 14;
+
 // Compact volume: 1.57K, 42.4M — full digits would dominate the readout
 const formatVolume = (value) => {
   const v = Number(value);
@@ -119,10 +124,22 @@ class LineBase extends PureComponent {
     this.activeLayer = 0;
     _defineProperty(this, "lineGroupRef", createRef());
 
+    // Comparison overlay: both coins as percent change on one shared axis
+    _defineProperty(this, "compareGroupRef", createRef());
+    _defineProperty(this, "compareZeroRef", createRef());
+    _defineProperty(this, "comparePathARef", createRef());
+    _defineProperty(this, "comparePathBRef", createRef());
+    _defineProperty(this, "compareLabelARef", createRef());
+    _defineProperty(this, "compareLabelBRef", createRef());
+    this.compareScaled = null;
+    this.compareD = { a: null, b: null };
+
     // Crosshair nodes — written to directly, never through React
     _defineProperty(this, "hoverRef", createRef());
     _defineProperty(this, "hoverLineRef", createRef());
     _defineProperty(this, "hoverDotRef", createRef());
+    // Second dot, comparison mode only — one guide has to mark both lines
+    _defineProperty(this, "hoverDotBRef", createRef());
     _defineProperty(this, "hoverBoxRef", createRef());
     _defineProperty(this, "hoverPriceRef", createRef());
     _defineProperty(this, "hoverDateRef", createRef());
@@ -155,6 +172,7 @@ class LineBase extends PureComponent {
           }
           this.updatePath();
           this.updateCandles(false);
+          this.updateComparison(false);
         }
       }, 150),
     );
@@ -183,6 +201,9 @@ class LineBase extends PureComponent {
       }
       // Belt and braces: hide the rows outright as well, so no future edit
       // that marks a child "visible" can resurrect the readout.
+      if (this.hoverDotBRef.current) {
+        this.hoverDotBRef.current.setAttribute("visibility", "hidden");
+      }
       for (let r = 0; r < CROSSHAIR_ROWS.length; r++) {
         const labelNode = this.rowLabelRefs[r].current;
         const valueNode = this.rowValueRefs[r].current;
@@ -219,12 +240,27 @@ class LineBase extends PureComponent {
         this.props.showCandles && this.candleScale && this.candleBars,
       );
 
+      /* Comparison mode reads off the percent-change series instead. The
+       * guide has to describe both lines at that moment — a readout that
+       * named only the coin you were already on would leave the mode's one
+       * question ("which is ahead here?") unanswered. */
+      const compareMode = Boolean(this.compareScaled);
+
       let i;
       let px;
       let py;
       let source;
       let candle = null;
-      if (candleMode) {
+      let compareIndex = -1;
+      if (compareMode) {
+        const points = this.compareScaled.a;
+        if (points.length < 2) return;
+        i = nearestIndex(points, this.hoverX);
+        compareIndex = nearestIndex(this.compareScaled.b, this.hoverX);
+        px = points[i].time;
+        py = points[i].price;
+        source = { price: points[i].percent, time: new Date(points[i].at) };
+      } else if (candleMode) {
         i = this.candleIndexAt(this.hoverX);
         if (i < 0) return;
         const bar = this.candleScale.bars[i];
@@ -255,6 +291,19 @@ class LineBase extends PureComponent {
       this.hoverDotRef.current.setAttribute("cx", px);
       this.hoverDotRef.current.setAttribute("cy", py);
 
+      // The second line's marker only exists in comparison mode
+      const dotB = this.hoverDotBRef.current;
+      if (dotB) {
+        if (compareMode && compareIndex >= 0) {
+          const point = this.compareScaled.b[compareIndex];
+          dotB.setAttribute("cx", point.time);
+          dotB.setAttribute("cy", point.price);
+          dotB.setAttribute("visibility", "inherit");
+        } else {
+          dotB.setAttribute("visibility", "hidden");
+        }
+      }
+
       const fmt = this.props.formatPrice
         ? (v) => this.props.formatPrice(Number(v))
         : (v) => String(v);
@@ -265,20 +314,32 @@ class LineBase extends PureComponent {
       // no candle (unsupported range/currency, or still loading) it stays
       // the plain price line rather than showing blanks.
       const timeMs = Number(new Date(source.time));
-      if (!candleMode) {
+      if (!candleMode && !compareMode) {
         candle = this.props.ohlc ? candleAt(this.props.ohlc, timeMs) : null;
       }
-      this.hoverPriceRef.current.textContent = candle ? "" : fmt(source.price);
+      this.hoverPriceRef.current.textContent =
+        candle || compareMode ? "" : fmt(source.price);
 
-      const values = candle
+      // Two shapes of readout share the same rows: OHLC for one coin, or one
+      // row per coin when two are being compared
+      const labels = compareMode
+        ? [this.props.coin || "", this.props.compareCoin || ""]
+        : CROSSHAIR_ROWS;
+      const values = compareMode
         ? [
-            fmt(candle.open),
-            fmt(candle.high),
-            fmt(candle.low),
-            fmt(candle.close),
-            `${formatVolume(candle.volume)} ${this.props.coin || ""}`.trim(),
+            formatSignedPercent(this.compareScaled.a[i].percent),
+            formatSignedPercent(this.compareScaled.b[compareIndex].percent),
           ]
-        : null;
+        : candle
+          ? [
+              fmt(candle.open),
+              fmt(candle.high),
+              fmt(candle.low),
+              fmt(candle.close),
+              `${formatVolume(candle.volume)} ${this.props.coin || ""}`.trim(),
+            ]
+          : null;
+      const rowCount = values ? values.length : 0;
 
       let labelW = 0;
       let valueW = 0;
@@ -286,8 +347,8 @@ class LineBase extends PureComponent {
         const labelNode = this.rowLabelRefs[r].current;
         const valueNode = this.rowValueRefs[r].current;
         if (!labelNode || !valueNode) continue;
-        if (values) {
-          labelNode.textContent = CROSSHAIR_ROWS[r];
+        if (r < rowCount) {
+          labelNode.textContent = labels[r];
           valueNode.textContent = values[r];
           // "inherit", never "visible": visibility is an inherited property,
           // so a child marked visible stays on screen even after the parent
@@ -304,12 +365,12 @@ class LineBase extends PureComponent {
 
       // Size the box to its widest line, then keep it inside the chart
       const dateW = this.hoverDateRef.current.getComputedTextLength();
-      const bodyW = values
+      const bodyW = rowCount
         ? labelW + CROSSHAIR_COL_GAP + valueW
         : this.hoverPriceRef.current.getComputedTextLength();
       const boxW = Math.max(dateW, bodyW) + CROSSHAIR_LABEL_PAD * 2;
-      const boxH = values
-        ? CROSSHAIR_LABEL_PAD * 2 + 12 + CROSSHAIR_ROWS.length * CROSSHAIR_ROW_H
+      const boxH = rowCount
+        ? CROSSHAIR_LABEL_PAD * 2 + 12 + rowCount * CROSSHAIR_ROW_H
         : 34;
       let boxX = px + CROSSHAIR_LABEL_GAP;
       if (boxX + boxW > this.width) {
@@ -332,14 +393,14 @@ class LineBase extends PureComponent {
       this.hoverDateRef.current.setAttribute("x", boxX + CROSSHAIR_LABEL_PAD);
       this.hoverDateRef.current.setAttribute(
         "y",
-        boxY + (values ? CROSSHAIR_LABEL_PAD + 8 : 27),
+        boxY + (rowCount ? CROSSHAIR_LABEL_PAD + 8 : 27),
       );
       this.hoverPriceRef.current.setAttribute("x", boxX + CROSSHAIR_LABEL_PAD);
       this.hoverPriceRef.current.setAttribute("y", boxY + 14);
 
-      if (values) {
+      if (rowCount) {
         const rowsTop = boxY + CROSSHAIR_LABEL_PAD + 12 + CROSSHAIR_ROW_H;
-        for (let r = 0; r < CROSSHAIR_ROWS.length; r++) {
+        for (let r = 0; r < rowCount; r++) {
           const y = rowsTop + r * CROSSHAIR_ROW_H;
           this.rowLabelRefs[r].current.setAttribute(
             "x",
@@ -476,6 +537,114 @@ class LineBase extends PureComponent {
         });
     });
 
+    /* Comparison overlay. Both coins are drawn as percent change from the
+     * start of the range on one shared axis — see scaleComparison for why a
+     * second y-axis is not an option. The single-coin line and the candles
+     * fade out while this is up: three sets of marks answering two different
+     * questions on one chart is noise, not more information. */
+    _defineProperty(this, "updateComparison", (animate) => {
+      const group = this.compareGroupRef.current;
+      if (!group) return;
+      const scaled =
+        this.props.comparePrices && this.props.comparePrices.length
+          ? scaleComparison(
+              this.props.prices,
+              this.props.comparePrices,
+              this.height,
+              this.width,
+              PADDING,
+            )
+          : null;
+
+      if (!scaled) {
+        this.compareScaled = null;
+        this.compareD = { a: null, b: null };
+        this.fadeTo(group, 0, animate);
+        return;
+      }
+
+      this.compareScaled = scaled;
+      this.hoverIndex = -1; // a readout from the old scale would be wrong now
+
+      const dA = lineFromPrices(scaled.a);
+      const dB = lineFromPrices(scaled.b);
+      const draw = (ref, from, to) => {
+        const node = select(ref.current);
+        // Morph between ranges when there is a previous shape to morph from;
+        // the first draw has nothing to grow out of
+        if (animate && from) {
+          node
+            .transition()
+            .duration(TRANSITION_DURATION)
+            .ease(easeCubicOut)
+            .attrTween("d", interpolatePath.bind(null, from, to));
+        } else {
+          node.attr("d", to);
+        }
+      };
+      draw(this.comparePathARef, this.compareD.a, dA);
+      draw(this.comparePathBRef, this.compareD.b, dB);
+      this.compareD = { a: dA, b: dB };
+
+      // The 0% reference. Always on screen, since both series start there
+      const zero = this.compareZeroRef.current;
+      if (zero) {
+        zero.setAttribute("y1", scaled.zeroY);
+        zero.setAttribute("y2", scaled.zeroY);
+        zero.setAttribute("x1", PADDING);
+        zero.setAttribute("x2", Math.max(PADDING, this.width - PADDING));
+      }
+
+      this.placeCompareLabels(scaled);
+      this.fadeTo(group, 1, animate);
+    });
+
+    /* Each line is named at its own end. Two colours alone would leave the
+     * chart unreadable to anyone who can't separate them, and unreadable to
+     * everyone once it is a screenshot with no legend. */
+    _defineProperty(this, "placeCompareLabels", (scaled) => {
+      const entries = [
+        [this.compareLabelARef.current, scaled.a, this.props.coin, scaled.lastA],
+        [
+          this.compareLabelBRef.current,
+          scaled.b,
+          this.props.compareCoin,
+          scaled.lastB,
+        ],
+      ];
+      const top = COMPARE_LABEL_MIN_GAP;
+      const bottom = this.height - 4;
+      const clamp = (v) => Math.min(Math.max(v, top), bottom);
+      const placed = [];
+      for (const [node, points, symbol, percent] of entries) {
+        if (!node || !points.length) continue;
+        const end = points[points.length - 1];
+        node.textContent = `${symbol || ""} ${formatSignedPercent(percent)}`.trim();
+        let y = clamp(end.price - COMPARE_LABEL_LIFT);
+        /* Two coins that finish level land on the same pixel, so the second
+         * label steps clear of the first — away from it by preference, but
+         * the other way when that direction is off the chart. Clamping after
+         * the step would just push it back onto the label it moved to avoid. */
+        for (const taken of placed) {
+          if (Math.abs(y - taken) >= COMPARE_LABEL_MIN_GAP) continue;
+          const above = taken - COMPARE_LABEL_MIN_GAP;
+          const below = taken + COMPARE_LABEL_MIN_GAP;
+          y =
+            y <= taken
+              ? above >= top
+                ? above
+                : below
+              : below <= bottom
+                ? below
+                : above;
+          y = clamp(y);
+        }
+        placed.push(y);
+        node.setAttribute("x", end.time);
+        node.setAttribute("y", y);
+      }
+    });
+
     _defineProperty(this, "updatePath", () => {
       const { prices } = this.props;
 
@@ -581,10 +750,11 @@ class LineBase extends PureComponent {
       }
 
       this.updateCandles(false);
+      this.updateComparison(false);
       if (this.lineGroupRef.current) {
         this.lineGroupRef.current.setAttribute(
           "opacity",
-          this.props.showCandles ? "0" : "1",
+          this.props.showCandles || this.compareScaled ? "0" : "1",
         );
       }
 
@@ -621,6 +791,15 @@ class LineBase extends PureComponent {
       // New series → the candles that go with it haven't been asked for yet
       this._askedForOhlc = false;
     }
+    /* The overlay is scaled against both series, so either one changing
+     * rescales it — including the primary coin's own refresh. */
+    const compareChanged =
+      prevProps.comparePrices !== this.props.comparePrices ||
+      prevProps.compareCoin !== this.props.compareCoin;
+    if (compareChanged || prevProps.prices !== this.props.prices) {
+      this.updateComparison(true);
+      if (compareChanged) this.handlePointerLeave();
+    }
     const modeChanged = prevProps.showCandles !== this.props.showCandles;
     if (prevProps.showVolume !== this.props.showVolume) {
       this.updateCandles(false);
@@ -628,10 +807,13 @@ class LineBase extends PureComponent {
     if (modeChanged || prevProps.candles !== this.props.candles) {
       this.updateCandles(true);
     }
-    // Line and candles trade places on a mode switch — cross-fade so one
-    // doesn't blink out before the other arrives
-    if (modeChanged && this.lineGroupRef.current) {
-      this.fadeTo(this.lineGroupRef.current, this.props.showCandles ? 0 : 1, true);
+    /* The single-coin line, the candles and the comparison overlay are three
+     * ways of drawing the same chart and only one is ever up. Deciding the
+     * line's visibility once, from both inputs, keeps a compare toggle and a
+     * candle toggle from arguing over it — cross-faded so nothing blinks. */
+    if ((modeChanged || compareChanged) && this.lineGroupRef.current) {
+      const lineVisible = !this.compareScaled && !this.props.showCandles;
+      this.fadeTo(this.lineGroupRef.current, lineVisible ? 1 : 0, true);
     }
     // An overlay opened over the chart. Opening it from the keyboard moves
     // no pointer, so no pointerleave fires and the readout would linger
@@ -699,7 +881,7 @@ class LineBase extends PureComponent {
         // two chart types cross over instead of blinking
         React.createElement(
           "g",
-          { ref: this.lineGroupRef },
+          { ref: this.lineGroupRef, "data-line": "1" },
           React.createElement("path", {
             // colorize off → no fill, just the line (the "colourless" chart)
             fill:
@@ -755,6 +937,55 @@ class LineBase extends PureComponent {
             }),
           ),
         ),
+        /* Comparison overlay. Ink for the coin you are on and the accent for
+         * the one you brought in: the pair separates at ΔE 43 (light) / 29
+         * (dark) under every simulated colour deficiency, and both lines are
+         * named at their ends anyway, so nothing here rests on colour. */
+        React.createElement(
+          "g",
+          { ref: this.compareGroupRef, opacity: 0, "data-compare": "1" },
+          React.createElement("line", {
+            ref: this.compareZeroRef,
+            stroke: color.border,
+            strokeWidth: "1",
+            strokeDasharray: "3 4",
+          }),
+          React.createElement("path", {
+            ref: this.comparePathARef,
+            fill: "none",
+            stroke: color.text,
+            strokeWidth: "1.5",
+          }),
+          React.createElement("path", {
+            ref: this.comparePathBRef,
+            fill: "none",
+            stroke: color.chartLine,
+            strokeWidth: "1.5",
+          }),
+          /* Painted with a background-coloured halo underneath: a label sits
+           * at its line's end, and a steeply falling line runs straight
+           * through the text otherwise. */
+          React.createElement("text", {
+            ref: this.compareLabelARef,
+            fill: color.text,
+            stroke: color.bg,
+            strokeWidth: "3",
+            paintOrder: "stroke",
+            fontSize: "10",
+            fontWeight: "700",
+            textAnchor: "end",
+          }),
+          React.createElement("text", {
+            ref: this.compareLabelBRef,
+            fill: color.chartLine,
+            stroke: color.bg,
+            strokeWidth: "3",
+            paintOrder: "stroke",
+            fontSize: "10",
+            fontWeight: "700",
+            textAnchor: "end",
+          }),
+        ),
       ),
 
       // Crosshair layer — positions/text are written imperatively on hover
@@ -782,6 +1013,15 @@ class LineBase extends PureComponent {
             fill: color.bg,
             stroke: color.text,
             strokeWidth: "1.5",
+          }),
+          // The compared coin's marker, hidden outside comparison mode
+          React.createElement("circle", {
+            ref: this.hoverDotBRef,
+            r: "3.5",
+            fill: color.bg,
+            stroke: color.chartLine,
+            strokeWidth: "1.5",
+            visibility: "hidden",
           }),
           React.createElement("rect", {
             ref: this.hoverBoxRef,

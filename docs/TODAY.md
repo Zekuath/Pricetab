@@ -1,29 +1,28 @@
 # Today — August 8, 2026
 
 Ideas that came out of reviewing a Perplexity Finance chart page, ordered by
-value per unit of effort. All shipped or decided except comparison mode, which
-was set aside rather than dropped.
+value per unit of effort. All shipped or decided — nothing left open.
 
 Context: candlesticks, the crosshair's OHLC readout and the volume band all
 run off the same candles — Coinbase for most coins, Kraken for the ALL range
 and for coins Coinbase doesn't list.
 
-## 1. Comparison mode (two coins)
-
-**Effort:** Medium–High · **New requests:** one extra history fetch
-
-- [ ] Overlay a second coin's series
-- [ ] **Normalise both to % change from the range start** — never a second
-      y-axis. Two price scales on one chart is the classic misleading chart
-- [ ] Direct-label both lines; a legend alone isn't enough
-- [ ] Pick the second coin from the `/` jumper
-
----
-
 ---
 
 ## Done today
 
+- **Comparison mode** — press `C`, pick a second coin, and both are drawn as
+  percent change from the start of the range on **one** axis. Never a second
+  y-axis: two price scales on one chart put the crossing point wherever the
+  scales were placed rather than where the market put it, which is the classic
+  misleading chart. Each line is named at its own end with its final percent,
+  so identity never rests on colour, and the crosshair reports both coins at
+  the moment under the pointer instead of only the one you were already on.
+  The single-coin line and any candles fade out while it is up — they are
+  drawn in price space, and leaving them there would put two different
+  y-meanings on one chart. The pick isn't persisted: it answers a question you
+  have once, and a tab that always opened with two lines on it would be
+  answering a question nobody asked. Esc or `C` again clears it.
 - **Prediction markets widget (Polymarket) — researched, then deferred.**
   Not a rejection: the source clears our bar easily (keyless,
   `access-control-allow-origin: *`, and `tag_slug=bitcoin` returns exactly the
@@ -33,7 +32,6 @@ and for coins Coinbase doesn't list.
   approved, so if displaying betting odds does draw a review question, it is
   obvious what caused it. Written up in `VISION.md` Phase 4 with the
   measurements, so nobody re-runs the research.
-
 - **Widget request fan-out** — the widget row was the largest remaining request
   count in the extension. Four things were wrong, in rising order of cost:
   market overview and altcoin season each fetched the *same* Coinlore URL (and
@@ -51,7 +49,7 @@ and for coins Coinbase doesn't list.
   even one that reverted before morning — is still reported, with when it
   happened. Closes the one real hole in the feature without touching the
   zero-permission stance.
-- **Candlestick mode** (Settings → Appearance) — item 4 below, shipped. Ended up
+- **Candlestick mode** (Settings → Appearance) — ended up
   _cheaper_ than the line chart rather than equal: in candle mode the candles are
   the only history request, because the line series is derived from their closes.
   Drawn as two SVG paths (one per direction) regardless of candle count, and

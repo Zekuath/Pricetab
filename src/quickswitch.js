@@ -9,7 +9,9 @@ const QUICK_SWITCH_MAX_RESULTS = 8;
 
 // Matches on symbol or full name. Coins already on the user's list rank
 // first (switching is the common case, adding is the exception).
-const quickSwitchMatches = (query, coinOptions) => {
+// `exclude` drops the coin already on the chart when picking one to compare
+// against it — a coin against itself is a flat line at zero.
+const quickSwitchMatches = (query, coinOptions, exclude) => {
   const q = query.trim().toUpperCase();
   const owned = new Set(coinOptions);
   const score = (sym) => {
@@ -24,6 +26,7 @@ const quickSwitchMatches = (query, coinOptions) => {
   };
   const results = [];
   for (const sym of SUGGESTED_COINS) {
+    if (exclude && sym === exclude) continue;
     const s = score(sym);
     if (s < 0) continue;
     results.push({ coin: sym, owned: owned.has(sym), score: s });
@@ -162,7 +165,11 @@ class QuickSwitch extends PureComponent {
   }
 
   results() {
-    return quickSwitchMatches(this.state.query, this.props.coinOptions);
+    return quickSwitchMatches(
+      this.state.query,
+      this.props.coinOptions,
+      this.props.compare ? this.props.exclude : null,
+    );
   }
 
   handleChange(e) {
@@ -210,8 +217,12 @@ class QuickSwitch extends PureComponent {
           innerRef: this.inputRef,
           type: "text",
           value: this.state.query,
-          placeholder: "Jump to a coin…",
-          "aria-label": "Jump to a coin",
+          placeholder: this.props.compare
+            ? `Compare ${this.props.exclude || ""} with…`.replace("  ", " ")
+            : "Jump to a coin…",
+          "aria-label": this.props.compare
+            ? "Compare with a coin"
+            : "Jump to a coin",
           onChange: this.handleChange,
           onKeyDown: this.handleKeyDown,
         }),
@@ -236,7 +247,12 @@ class QuickSwitch extends PureComponent {
                     null,
                     COIN_NAMES[r.coin] || r.coin,
                   ),
-                  !r.owned && React.createElement(QuickTag, null, "add"),
+                  // Comparing doesn't add anything to your list — the overlay
+                  // lasts as long as you look at it, so there is nothing to
+                  // warn about
+                  !r.owned &&
+                    !this.props.compare &&
+                    React.createElement(QuickTag, null, "add"),
                 ),
               ),
             ),
@@ -254,4 +270,6 @@ class QuickSwitch extends PureComponent {
 
 QuickSwitch.defaultProps = {
   coinOptions: [],
+  compare: false,
+  exclude: null,
 };

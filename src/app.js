@@ -68,6 +68,13 @@ class CryptoChart extends PureComponent {
       retrying: false, // Manual retry in flight (from the error banner)
       slowLoad: false, // First fetch is taking a while — say so in the skeleton
       showQuickSwitch: false, // "/" coin jumper
+      quickSwitchCompare: false, // the jumper is picking a coin to compare
+      /* Comparison overlay. Deliberately not persisted: it answers a question
+       * you have once ("has ETH kept up with BTC this week?"), and a new tab
+       * that always opened with two lines on it would be answering a question
+       * nobody asked. */
+      compareCoin: null, // second coin drawn over the chart, or null
+      compareHistory: null, // its series for the current period + currency
       showShortcuts: false, // "?" keyboard reference
       alerts: loadAlerts(), // Price targets (in-tab, zero permissions)
       firedAlerts: [], // Targets just hit → toast stack
@@ -1041,7 +1048,7 @@ class CryptoChart extends PureComponent {
           this.setState({ showShortcuts: false });
         } else if (this.state.showQuickSwitch) {
           e.preventDefault();
-          this.setState({ showQuickSwitch: false });
+          this.setState({ showQuickSwitch: false, quickSwitchCompare: false });
         } else if (this.state.showAlerts) {
           e.preventDefault();
           this.setState({ showAlerts: false });
@@ -1054,6 +1061,11 @@ class CryptoChart extends PureComponent {
         } else if (this.state.showPortfolio) {
           e.preventDefault();
           this.togglePortfolio();
+        } else if (this.state.compareCoin) {
+          // Last in the chain: with nothing covering the chart, Esc drops the
+          // overlay that is on it
+          e.preventDefault();
+          this.clearCompare();
         }
         return;
       }
@@ -1103,7 +1115,15 @@ class CryptoChart extends PureComponent {
       // on some platforms, so claim it explicitly)
       if (e.key === "/") {
         e.preventDefault();
-        this.setState({ showQuickSwitch: true });
+        this.setState({ showQuickSwitch: true, quickSwitchCompare: false });
+        return;
+      }
+
+      // C compares against a second coin — same picker, or off if one is up
+      if (e.key === "c" || e.key === "C") {
+        e.preventDefault();
+        if (this.state.compareCoin) this.clearCompare();
+        else this.setState({ showQuickSwitch: true, quickSwitchCompare: true });
         return;
       }
 
@@ -1225,7 +1245,62 @@ class CryptoChart extends PureComponent {
 
     // Quick switch pick: jump to a coin already on the list, or add it
     // first when the search reached beyond the user's own coins.
+    /* COMPARISON MODE
+     * A second coin drawn over the chart as percent change from the start of
+     * the range. Nothing here is written to storage — see the state comment.
+     */
+    _defineProperty(this, "setCompareCoin", (coin) => {
+      const active = this.state.coinOptions[this.state.coinIndex];
+      if (!coin || coin === active || !SUGGESTED_COINS.includes(coin)) {
+        this.clearCompare();
+        return;
+      }
+      this.setState(
+        { compareCoin: coin, compareHistory: null },
+        this.fetchCompareHistory,
+      );
+    });
+
+    _defineProperty(this, "clearCompare", () => {
+      if (!this.state.compareCoin && !this.state.compareHistory) return;
+      this.setState({ compareCoin: null, compareHistory: null });
+    });
+
+    /* The overlay follows the chart: a new range or currency needs the
+     * compared coin's series for that range too. Uses the same cache the
+     * main chart does, so re-comparing a coin you looked at a moment ago
+     * costs nothing. */
+    _defineProperty(this, "fetchCompareHistory", async () => {
+      const { compareCoin, period, currency, coinOptions } = this.state;
+      if (!compareCoin) return;
+      // The pick may have been changed or dropped while this was in flight
+      const stillWanted = () =>
+        this.state.compareCoin === compareCoin &&
+        this.state.period === period &&
+        this.state.currency === currency;
+      try {
+        const history = await fetchValueHistory(
+          compareCoin,
+          period,
+          currency,
+          null,
+          true,
+          coinOptions,
+        );
+        if (stillWanted()) this.setState({ compareHistory: history });
+      } catch (e) {
+        // A coin whose history won't load just doesn't draw — the chart is
+        // still showing the coin you were on
+        if (stillWanted()) this.setState({ compareHistory: null });
+      }
+    });
+
     _defineProperty(this, "handleQuickSwitchPick", (coin, owned) => {
+      if (this.state.quickSwitchCompare) {
+        this.setState({ showQuickSwitch: false, quickSwitchCompare: false });
+        this.setCompareCoin(coin);
+        return;
+      }
       this.setState({ showQuickSwitch: false });
       if (!owned) {
         const result = this.handleAddCoinOption(coin);
@@ -2200,6 +2275,22 @@ class CryptoChart extends PureComponent {
       document.body.style.backgroundColor = colors.bg;
       document.body.style.color = colors.text;
     }
+
+    /* Keep the comparison overlay honest as the chart moves under it. A new
+     * range or currency means the compared coin needs re-fetching for it, and
+     * switching onto the compared coin itself ends the comparison — a coin
+     * plotted against itself is a flat line at zero. */
+    if (this.state.compareCoin) {
+      const active = this.state.coinOptions[this.state.coinIndex];
+      if (active === this.state.compareCoin) {
+        this.clearCompare();
+      } else if (
+        prevState.period !== this.state.period ||
+        prevState.currency !== this.state.currency
+      ) {
+        this.setState({ compareHistory: null }, this.fetchCompareHistory);
+      }
+    }
   }
 
   render() {
@@ -2631,14 +2722,22 @@ class CryptoChart extends PureComponent {
                     ohlc: this.state.ohlcEnabled === false ? null : this.state.ohlcData,
                     onNeedOhlc:
                       this.state.ohlcEnabled === false ? null : this.loadOhlc,
+                    /* Comparison replaces the single-coin drawing rather than
+                     * layering on top of it: candles and a volume band belong
+                     * to one coin, and leaving them under two percent-change
+                     * lines would put two different y-meanings on one chart. */
+                    compareCoin: this.state.compareCoin,
+                    comparePrices: this.state.compareHistory,
                     showCandles:
                       this.state.chartType === "candles" &&
-                      Boolean(this.state.ohlcData),
+                      Boolean(this.state.ohlcData) &&
+                      !this.state.compareCoin,
                     candles: this.state.ohlcData,
                     // Volume rides the candles it is drawn from
                     showVolume:
                       this.state.volumeBars !== false &&
-                      this.state.chartType === "candles",
+                      this.state.chartType === "candles" &&
+                      !this.state.compareCoin,
                     // Any overlay covering the chart clears the readout
                     paused:
                       showSettings ||
@@ -3419,12 +3518,18 @@ class CryptoChart extends PureComponent {
             onClose: () => this.setState({ showShortcuts: false }),
           }),
 
-        // Quick coin jumper ("/")
+        // Quick coin jumper ("/"), doubling as the compare picker ("C")
         this.state.showQuickSwitch &&
           React.createElement(QuickSwitch, {
             coinOptions,
+            compare: this.state.quickSwitchCompare,
+            exclude: coinOptions[coinIndex],
             onPick: this.handleQuickSwitchPick,
-            onClose: () => this.setState({ showQuickSwitch: false }),
+            onClose: () =>
+              this.setState({
+                showQuickSwitch: false,
+                quickSwitchCompare: false,
+              }),
           }),
 
         !showSettings && !showPortfolio && React.createElement(OnboardingTour, null),
