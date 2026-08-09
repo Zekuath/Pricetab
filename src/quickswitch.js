@@ -240,7 +240,6 @@ class QuickSwitch extends PureComponent {
                     onMouseEnter: () => this.setState({ index: i }),
                     onClick: () => this.props.onPick(r.coin, r.owned),
                   },
-                  coinMark(r.coin, 1.4),
                   React.createElement(QuickSym, null, r.coin),
                   React.createElement(
                     QuickName,

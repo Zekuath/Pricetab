@@ -79,6 +79,18 @@ const ICON_SHAPES = {
     React.createElement("circle", { key: "iris", cx: 12, cy: 12, r: 2.6 }),
   ],
 
+  /* Compare: two arrows passing each other. Three other readings were drawn
+   * and rejected at button size, which is the only size that matters here:
+   * two lines diverging from a shared origin collapsed into a "<", two trend
+   * lines turned to mush, and a pair of peaks read as a scribble. This one
+   * survives 17px with its arrowheads open. */
+  compare: () => [
+    React.createElement("path", { key: "t", d: "M3.5 8.5h15" }),
+    React.createElement("path", { key: "th", d: "M15.2 5 18.7 8.5 15.2 12" }),
+    React.createElement("path", { key: "b", d: "M20.5 15.5h-15" }),
+    React.createElement("path", { key: "bh", d: "M8.8 12 5.3 15.5 8.8 19" }),
+  ],
+
   // Chain link: two interlocking pills. On the diagonal they read as a
   // chain; laid out horizontally they looked like a toggle switch.
   link: () =>

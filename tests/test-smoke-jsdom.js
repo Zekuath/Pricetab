@@ -144,6 +144,8 @@ const runScenario = ({ hydrated = false, background = false, candles = false, co
     let compareLines = 0;
     let compareLabels = [];
     let compareLineStillUp = false;
+    let compareButtonMissing = false;
+    let compareButtonLabel = null;
     const t0 = Date.now();
     if (background) {
       // Stay hidden for a while, then reveal the tab
@@ -187,9 +189,16 @@ const runScenario = ({ hydrated = false, background = false, candles = false, co
       }
       if (compare && chartReadyAt) {
         if (!comparePickedAt && t > chartReadyAt + 200) {
-          w.document.dispatchEvent(
-            new w.KeyboardEvent("keydown", { key: "c", bubbles: true }),
+          // Opened from the button in the range row, not the shortcut — the
+          // button is the discoverable path and has to work on its own
+          const btn = w.document.querySelector(
+            'button[aria-label="Compare with a second coin"]',
           );
+          if (!btn) {
+            compareButtonMissing = true;
+          } else {
+            btn.dispatchEvent(new w.MouseEvent("click", { bubbles: true }));
+          }
           // The picker takes over the keyboard; Enter accepts the top result,
           // which is the user's first coin other than the one on screen
           const input = w.document.querySelector(
@@ -202,6 +211,11 @@ const runScenario = ({ hydrated = false, background = false, candles = false, co
             comparePickedAt = t;
           }
         }
+        /* Once comparing, the button has to say so and offer the exit. It is
+         * an icon, so the coin's name lives in the accessible label — which
+         * is the only place a screen reader would find it either. */
+        const active = w.document.querySelector('button[aria-label^="Stop comparing"]');
+        if (active) compareButtonLabel = active.getAttribute("aria-label");
         const group = w.document.querySelector("[data-compare]");
         if (group && Number(group.getAttribute("opacity")) > 0.5) {
           compareLines = [...group.querySelectorAll("path")].filter(
@@ -237,6 +251,8 @@ const runScenario = ({ hydrated = false, background = false, candles = false, co
           candlesDrawn,
           candlesEmptyAfterSwitch,
           comparePickedAt,
+          compareButtonMissing,
+          compareButtonLabel,
           compareLines,
           compareLabels,
           compareLineStillUp,
@@ -276,7 +292,9 @@ const runScenario = ({ hydrated = false, background = false, candles = false, co
       }
     }
     if (label === "compare") {
-      if (r.comparePickedAt === null) {
+      if (r.compareButtonMissing) {
+        problems.push("no compare button in the range row");
+      } else if (r.comparePickedAt === null) {
         problems.push("the compare picker never opened");
       } else if (r.compareLines < 2) {
         problems.push(`compare overlay drew ${r.compareLines} lines, expected 2`);
@@ -290,6 +308,10 @@ const runScenario = ({ hydrated = false, background = false, candles = false, co
         );
       } else if (r.compareLineStillUp) {
         problems.push("the single-coin price line stayed visible under the comparison");
+      } else if (!/^Stop comparing with [A-Z]+$/.test(r.compareButtonLabel || "")) {
+        problems.push(
+          `the button must offer to stop and name the coin, got ${JSON.stringify(r.compareButtonLabel)}`,
+        );
       }
     }
     if (label === "background" && r.requestsWhileHidden > 0) {

@@ -128,7 +128,7 @@
 | Chart crosshair with price + date readout | [x] | Medium | Shipped Aug 2026 — biggest perceived-quality gap |
 | "Since your last visit" price delta | [x] | Low | Shipped Aug 2026 — unique to the new-tab format |
 | Loading spinner for initial fetch (when cache is cold) | [x] | Low | Shipped Aug 2026 — skeleton says "Fetching prices…" after 2.5s |
-| Coin logos/icons in coin list & chips | [x] | Medium | Shipped Aug 2026 as monogram badges (`src/coinmark.js`) — real brand logos rejected: ~64 trademark files or external requests |
+| Coin logos/icons in coin list & chips | [x] | Medium | Closed as *not wanted*. Real brand logos were rejected (~64 trademark files, or external requests); monogram badges shipped in their place Aug 2026 and were removed the same month — every row already named the coin in text beside the badge |
 | Price change flash animation on update | [x] | Low | Shipped Aug 2026 |
 | Seed price data so the very first open paints a chart | [ ] (declined) | Medium | Would ship fabricated prices that read as real for a moment, and go stale — the honest cold-start note was shipped instead |
 | Quick coin switcher (`/` to search) | [x] | Low | Shipped Aug 2026 — `src/quickswitch.js` |

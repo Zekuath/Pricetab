@@ -39,6 +39,52 @@ const WidgetRestoreButton = styled.button`
   }
 `;
 
+/* Compare toggle — sits beside the widget control on the left, not in the
+ * right-hand cluster: those three all open a panel over the chart, while this
+ * changes how the chart itself is drawn. Active takes the accent the compared
+ * line is drawn in, so the button and the line read as the same thing. */
+const CompareToggleButton = styled.button`
+  position: fixed;
+  left: ${({ theme }) => `calc(${theme.spacing.large}rem + 2.5rem)`};
+  top: ${({ theme, tickerTop }) =>
+    tickerTop
+      ? `calc(${theme.spacing.large}rem + 3rem)`
+      : `${theme.spacing.large}rem`};
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: ${({ theme, active }) =>
+    active ? theme.color.chartLine : theme.color.text};
+  cursor: pointer;
+  line-height: 1;
+  z-index: 120;
+  width: 1.6rem;
+  height: 1.6rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    transform 0.25s ease,
+    color 0.2s ease,
+    top 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+
+  &:hover {
+    transform: scale(1.1);
+  }
+
+  &:focus {
+    outline: none;
+  }
+
+  @media (max-width: ${({ theme }) => theme.breakpoint.down.sm}px) {
+    left: ${({ theme }) => `calc(${theme.spacing.small}rem + 2.5rem)`};
+    top: ${({ theme, tickerTop }) =>
+      tickerTop
+        ? `calc(${theme.spacing.small}rem + 3rem)`
+        : `${theme.spacing.small}rem`};
+  }
+`;
+
 const WidgetHideButton = styled.button`
   position: absolute;
   top: 0.2rem;

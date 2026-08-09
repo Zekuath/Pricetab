@@ -33,7 +33,7 @@ const sandbox = {
 };
 vm.createContext(sandbox);
 const base = path.join(__dirname, "..", "src");
-for (const f of ["config.js", "coinmark.js", "quickswitch.js"]) {
+for (const f of ["config.js", "quickswitch.js"]) {
   vm.runInContext(fs.readFileSync(`${base}/${f}`, "utf8"), sandbox, { filename: f });
 }
 const run = (code) => vm.runInContext(code, sandbox);
@@ -84,25 +84,6 @@ assert.strictEqual(btc.owned, false, "unowned coin flagged for adding");
 sandbox.__q = "ETH";
 const eth = JSON.parse(JSON.stringify(run("quickSwitchMatches(__q, __owned)")))[0];
 assert.strictEqual(eth.owned, true, "owned coin flagged as a plain switch");
-
-/* ── coin marks ─────────────────────────────────────────────────────────── */
-
-// The hue must be stable per symbol (same coin, same colour everywhere and
-// in every session) and case-insensitive
-const hue = (sym) => run(`coinMarkHue(${JSON.stringify(sym)})`);
-assert.strictEqual(hue("BTC"), hue("BTC"), "hue is deterministic");
-assert.strictEqual(hue("BTC"), hue("btc"), "hue ignores case");
-assert.notStrictEqual(hue("BTC"), hue("ETH"), "different coins get different hues");
-for (const sym of ["BTC", "ETH", "SOL", "DOGE", "XRP"]) {
-  const h = hue(sym);
-  assert.ok(h >= 0 && h < 360 && Number.isInteger(h), `${sym} hue in range`);
-}
-
-// Labels stay short enough to stay legible in the badge
-assert.strictEqual(run('coinMarkLabel("BTC")'), "BTC", "3-letter symbol kept");
-assert.strictEqual(run('coinMarkLabel("MATIC")'), "MAT", "long symbol clipped to 3");
-assert.strictEqual(run('coinMarkLabel("eth")'), "ETH", "label uppercased");
-assert.strictEqual(run("coinMarkLabel()"), "?", "missing symbol has a fallback");
 
 /* ── compare mode ────────────────────────────────────────────────────────
  * The same picker chooses the coin to compare against, with the coin already

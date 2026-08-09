@@ -1122,8 +1122,7 @@ class CryptoChart extends PureComponent {
       // C compares against a second coin — same picker, or off if one is up
       if (e.key === "c" || e.key === "C") {
         e.preventDefault();
-        if (this.state.compareCoin) this.clearCompare();
-        else this.setState({ showQuickSwitch: true, quickSwitchCompare: true });
+        this.toggleCompare();
         return;
       }
 
@@ -1264,6 +1263,12 @@ class CryptoChart extends PureComponent {
     _defineProperty(this, "clearCompare", () => {
       if (!this.state.compareCoin && !this.state.compareHistory) return;
       this.setState({ compareCoin: null, compareHistory: null });
+    });
+
+    // What both the "C" key and the button in the range row do
+    _defineProperty(this, "toggleCompare", () => {
+      if (this.state.compareCoin) this.clearCompare();
+      else this.setState({ showQuickSwitch: true, quickSwitchCompare: true });
     });
 
     /* The overlay follows the chart: a new range or currency needs the
@@ -2749,6 +2754,28 @@ class CryptoChart extends PureComponent {
             ),
           ),
         ),
+        // Compare toggle (fixed, right of the widget control)
+        !showSettings &&
+          !showPortfolio &&
+          !this.state.showAlerts &&
+          !this.state.showQuickSwitch &&
+          React.createElement(
+            CompareToggleButton,
+            {
+              type: "button",
+              tickerTop,
+              active: Boolean(this.state.compareCoin),
+              onClick: this.toggleCompare,
+              "aria-label": this.state.compareCoin
+                ? `Stop comparing with ${this.state.compareCoin}`
+                : "Compare with a second coin",
+              title: this.state.compareCoin
+                ? `Comparing with ${this.state.compareCoin} — click to stop (C)`
+                : "Compare with a second coin (C)",
+            },
+            icon("compare", 1.15),
+          ),
+
         // Widget toggle button (fixed, above the panel)
         (() => {
           if (

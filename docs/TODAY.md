@@ -22,7 +22,14 @@ and for coins Coinbase doesn't list.
   drawn in price space, and leaving them there would put two different
   y-meanings on one chart. The pick isn't persisted: it answers a question you
   have once, and a tab that always opened with two lines on it would be
-  answering a question nobody asked. Esc or `C` again clears it.
+  answering a question nobody asked. Esc, `C` again, or the button clears it.
+  The button sits beside the widget control on the left rather than in the
+  right-hand cluster, because those three all open a panel over the chart
+  while this changes how the chart is drawn. Its icon (two arrows passing) was
+  picked by drawing four candidates and looking at them at 17px, the only size
+  that matters: two curves diverging from a shared origin collapsed into a
+  "<", two trend lines turned to mush, a pair of peaks read as a scribble.
+  Active, it takes the compared line's colour.
 - **Prediction markets widget (Polymarket) — researched, then deferred.**
   Not a rejection: the source clears our bar easily (keyless,
   `access-control-allow-origin: *`, and `tag_slug=bitcoin` returns exactly the
@@ -108,7 +115,10 @@ and for coins Coinbase doesn't list.
   "Fetching prices…" cold state instead.
 - **Real brand coin logos** — either ~64 third-party trademark files in the
   bundle or runtime requests to an icon CDN; both break the zero-external-request
-  guarantee. Monogram badges shipped instead.
+  guarantee. Monogram badges were shipped instead and then removed — every row
+  that carried one already spelled the coin out beside it ("BTC · Bitcoin",
+  "BTC rises above $X"), so the badge was decoration repeating the text. That
+  left `coinmark.js` with no callers, so it is gone.
 - **Browser notifications for price targets** — needs the `notifications`
   permission and breaks the zero-permission story that keeps store review fast.
 - **One OKX request serving several widgets** — funding rate, open interest and
