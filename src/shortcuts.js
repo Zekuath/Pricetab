@@ -14,8 +14,20 @@ const SHORTCUT_GROUPS = [
     items: [
       { keys: ["←", "→"], label: "Previous / next coin" },
       { keys: ["1", "–", "6"], label: "Switch range, 1H through ALL" },
-      { keys: ["R"], label: "Refresh now" },
       { keys: ["C"], label: "Compare with a second coin" },
+      { keys: ["R"], label: "Refresh now" },
+    ],
+  },
+  {
+    title: "View",
+    items: [
+      { keys: ["T"], label: "Line / candlestick chart" },
+      { keys: ["G"], label: "Price / time grid on the chart" },
+      { keys: ["L"], label: "Calls on / off" },
+      { keys: ["X"], label: "Percent / price change" },
+      { keys: ["W"], label: "Hide / show widgets" },
+      { keys: ["D"], label: "Dark / light theme" },
+      { keys: ["Space"], label: "Auto-rotate coins on / off" },
     ],
   },
   {
@@ -23,6 +35,7 @@ const SHORTCUT_GROUPS = [
     items: [
       { keys: ["/"], label: "Jump to a coin by name" },
       { keys: ["A"], label: "Price targets" },
+      { keys: ["P"], label: "Portfolio" },
       { keys: ["S"], label: "Settings" },
       { keys: ["?"], label: "This list" },
     ],
@@ -172,7 +185,7 @@ const ShortcutsPanel = ({ onClose }) =>
       React.createElement(
         ShortcutsNote,
         null,
-        "Shortcuts pause while you're typing in a field.",
+        "Shortcuts pause while you're typing in a field. Press ? again, or Esc, to close this.",
       ),
     ),
   );

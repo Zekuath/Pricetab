@@ -15,7 +15,9 @@
   //
   // Usage:  scenes.html?scene=<name>&theme=dark|light&delay=12000
   // Scenes: dashboard, wl-movers, signals, news, presets,
-  //         settings-coins, settings-prefs, minimal
+  //         settings-coins, settings-prefs, minimal,
+  //         hero, compare, portfolio, widgets, widget-row, targets,
+  //         candles, grid  (1.4.0)
   //
   // Serve the repo over http (tests/… or any static server with a /__delay
   // endpoint) and screenshot with plain real-time headless Chrome:
@@ -25,6 +27,7 @@
   // The &delay=N img below stalls the page load event for N ms, so the
   // screenshot fires only after live data + animations have settled.
   const COINS = ["BTC", "ETH", "SOL", "XRP", "DOGE", "ADA", "AVAX", "LINK"];
+
   const W = (on) => {
     const all = ["watchlist","topMovers","fearGreed","marketOverview","halvingCountdown",
                  "rsiWidget","fundingRate","longShortRatio","openInterest","liquidations","altcoinSeason"];
@@ -32,6 +35,82 @@
     all.forEach((k) => { out[k] = on.includes(k) || on === "all"; });
     return JSON.stringify(out);
   };
+
+
+  // Seeded state for the 1.4.0 scenes. Dated relative to capture time so the
+  // holding periods and "hit 2h ago" stay right whenever this is re-run.
+  const DAY = 86400;
+  const ago = (days) => Math.floor(Date.now() / 1000) - days * DAY;
+
+  /* A portfolio that is honest rather than flattering (SCREENSHOT_PLAN D1):
+   * up overall (~+12%) with one clearly red row, so the sort control visibly
+   * does something and the colour system is legible. The paid figures were
+   * worked back from live prices at seeding time — picked by eye they came
+   * out net negative, which is the opposite of the brief. One small old sale
+   * gives Realized something to show without reading as trading activity.
+   * Re-check these if prices move far: the target is up, not up a lot. */
+  const PORTFOLIO = [
+    {
+      coin: "BTC", amount: 0.42, watches: [],
+      lots: [{ amount: 0.42, paid: 24000, time: ago(430), source: "manual" }],
+      sales: [],
+    },
+    {
+      coin: "ETH", amount: 3.1, watches: [],
+      lots: [{ amount: 3.1, paid: 5400, time: ago(295), source: "manual" }],
+      sales: [],
+    },
+    {
+      coin: "SOL", amount: 24, watches: [],
+      lots: [{ amount: 24, paid: 1500, time: ago(150), source: "manual" }],
+      // The one recorded sale — small, and old enough to read as history
+      sales: [{
+        amount: 6, received: 460, basis: 375, basisAmount: 6, time: ago(38),
+        matched: [{ amount: 6, cost: 375, acquired: ago(150), source: "manual" }],
+      }],
+    },
+    {
+      coin: "LINK", amount: 90, watches: [],
+      lots: [{ amount: 90, paid: 700, time: ago(88), source: "manual" }],
+      sales: [],
+    },
+    {
+      // The red row
+      coin: "DOGE", amount: 12000, watches: [],
+      lots: [{ amount: 12000, paid: 1150, time: ago(210), source: "manual" }],
+      sales: [],
+    },
+  ];
+
+  /* Three armed and one already hit, so the panel shows both of its sections,
+   * a percent target, and progress meters part-way along.
+   *
+   * Every number is set against the live price at seeding time. Picked by eye
+   * they misfired: a "SOL below 120" against a $76 coin fired the moment the
+   * page loaded, which put a toast over the header and moved a target into
+   * the wrong section. Targets sit ~5-9% out — near enough to be plausible,
+   * far enough not to trigger. Re-check if prices move a long way.
+   *
+   * Note the unit: alerts timestamp in **milliseconds** (`created`,
+   * `triggeredAt` are `Date.now()`), while lots and sales use **seconds**.
+   * Seeding an alert with `ago()` made a three-hour-old hit render as "a
+   * month ago", so alerts get their own helper. */
+  const agoMs = (hours) => Date.now() - hours * 3600000;
+  const ALERTS = [
+    { id: "a1", coin: "BTC", kind: "price", direction: "above", target: 68000,
+      currency: "USD", created: agoMs(24 * 9), startPrice: 62000,
+      triggeredAt: null, hitPrice: null },
+    { id: "a2", coin: "ETH", kind: "percent", direction: "below", target: 5,
+      currency: "USD", created: agoMs(24 * 4), startPrice: null,
+      triggeredAt: null, hitPrice: null },
+    { id: "a3", coin: "SOL", kind: "price", direction: "below", target: 70,
+      currency: "USD", created: agoMs(24 * 2), startPrice: 82,
+      triggeredAt: null, hitPrice: null },
+    // The hit one: crossed a few hours ago and is still near the line
+    { id: "a4", coin: "LINK", kind: "price", direction: "above", target: 8.2,
+      currency: "USD", created: agoMs(24 * 6), startPrice: 7.4,
+      triggeredAt: agoMs(3), hitPrice: 8.24 },
+  ];
 
   const SCENES = {
     dashboard: {
@@ -98,6 +177,152 @@
       },
       clicks: [{ at: 4000, button: "ALL" }],
     },
+
+    /* ── 1.4.0 store scenes (see docs/SCREENSHOT_PLAN.md §4) ── */
+
+    // F1 — the hero. Near-default: the four coins that ship, one chart,
+    // nothing switched on. What an install actually looks like.
+    hero: {
+      store: {
+        crypto_chart_coin_options: JSON.stringify(["BTC", "ETH", "XRP", "LTC"]),
+        crypto_chart_widgets: W([]),
+        crypto_chart_page_ticker_enabled: "false",
+      },
+      clicks: [{ at: 4000, button: "1W" }],
+    },
+
+    // F2 — compare. "C" opens the picker, then ETH is chosen from it.
+    compare: {
+      store: {
+        crypto_chart_widgets: W([]),
+        crypto_chart_page_ticker_enabled: "false",
+      },
+      /* 1M, not the 1W the rest of the set uses. The house rule is one range
+       * everywhere, but this frame's whole subject is divergence, and over a
+       * week BTC and ETH routinely land within a tenth of a percent of each
+       * other — two lines on top of each other demonstrate nothing at
+       * thumbnail size. A year separates them too (-45% vs -55%) but reads as
+       * a wall of loss; a month is where they part company while both series
+       * still straddle the zero line the shared axis is measured from. */
+      clicks: [
+        { at: 4000, button: "1M" },
+        // The compare button opens the same picker "C" does
+        { at: 6000, selector: '[data-tour="compare"]' },
+        { at: 7500, contains: "Ethereum" },
+      ],
+    },
+
+    // F3 — portfolio. Opened from the briefcase; the seeded holdings give it
+    // a cost-basis line, per-row sparklines and a Realized figure.
+    portfolio: {
+      store: {
+        crypto_chart_widgets: W([]),
+        crypto_chart_page_ticker_enabled: "false",
+        crypto_chart_portfolio: JSON.stringify(PORTFOLIO),
+        /* A month. The cost-basis line only draws while the level is inside
+         * the range on screen — by design, since a line pinned to an edge
+         * would claim a crossing the window doesn't contain — and a portfolio
+         * that hasn't been under water lately has its cost off the bottom of
+         * a short range. A year does show the line, but it puts −49% at the
+         * top of the frame and turns every sparkline red, which is a worse
+         * screenshot than one missing a dashed line. The year capture is kept
+         * for the website, where there is room to explain it. */
+        crypto_chart_portfolio_period: "month",
+        crypto_chart_portfolio_sort: "value",
+      },
+      clicks: [{ at: 3500, selector: '[data-tour="portfolio"]' }],
+    },
+
+    /* F4 — widgets, two candidates.
+     *
+     * `widgets` opens Settings, which turns out to bury the thing it is about:
+     * the overlay dims the page so hard that the widget row behind it is a
+     * ghost. Same lesson as the targets panel — an overlay takes the screen on
+     * purpose. `widget-row` is the alternative: the row itself, no panel.
+     * Decide from the captures, keep the loser for the website. */
+    "widget-row": {
+      store: {
+        crypto_chart_widgets: W(["watchlist", "fearGreed", "marketOverview", "halvingCountdown", "altcoinSeason"]),
+        crypto_chart_page_ticker_enabled: "false",
+      },
+      clicks: [{ at: 4000, button: "1W" }],
+    },
+
+    widgets: {
+      store: {
+        crypto_chart_widgets: W(["watchlist", "fearGreed", "marketOverview", "halvingCountdown", "altcoinSeason"]),
+        crypto_chart_page_ticker_enabled: "false",
+      },
+      clicks: [
+        { at: 3500, selector: '[data-tour="settings"]' },
+        { at: 4500, button: "Widgets" },
+      ],
+    },
+
+    // F5 — price targets, light theme. Three armed + one hit, so both
+    // sections of the panel show.
+    targets: {
+      store: {
+        crypto_chart_widgets: W([]),
+        crypto_chart_page_ticker_enabled: "false",
+        crypto_chart_alerts: JSON.stringify(ALERTS),
+      },
+      clicks: [{ at: 3500, selector: '[data-tour="alerts"]' }],
+    },
+
+    // The price/time grid, on the range where its levels are most legible
+    grid: {
+      store: {
+        crypto_chart_widgets: W([]),
+        crypto_chart_page_ticker_enabled: "false",
+        crypto_chart_grid: "true",
+      },
+      clicks: [{ at: 4000, button: "1M" }],
+    },
+
+    // Call the cell: grid on, future strip reserved, one call already placed
+    predict: {
+      store: {
+        crypto_chart_widgets: W([]),
+        crypto_chart_page_ticker_enabled: "false",
+        crypto_chart_grid: "true",
+        crypto_chart_predict: "true",
+        crypto_chart_predict_ahead: "4",
+        crypto_chart_calls: JSON.stringify({
+          record: { hits: 3, total: 5, streak: 1, best: 2 },
+          // one call already due and inside the band, so the scene lands on
+          // the moment it settles as a hit
+          open: [
+            { id: "win1", coin: "BTC", currency: "USD", period: "month",
+              target: Date.now() - 3 * DAY * 1000, span: 2 * DAY * 1000,
+              lo: 62000, hi: 66000, placed: Date.now() - 9 * DAY * 1000,
+              placedPrice: 63000, col: 1 },
+          ],
+          done: [
+            { id: "d1", coin: "BTC", currency: "USD", period: "month",
+              target: Date.now() - 3 * DAY * 1000, span: 2 * DAY * 1000,
+              col: 1, lo: 64000, hi: 65000, placed: Date.now() - 9 * DAY * 1000,
+              placedPrice: 64200, result: "hit", settledPrice: 64550 },
+            { id: "d2", coin: "BTC", currency: "USD", period: "month",
+              target: Date.now() - 9 * DAY * 1000, span: 2 * DAY * 1000,
+              col: 2, lo: 61000, hi: 62000, placed: Date.now() - 15 * DAY * 1000,
+              placedPrice: 63100, result: "miss", settledPrice: 63400 },
+          ],
+        }),
+      },
+      clicks: [{ at: 4000, button: "1M" }],
+    },
+
+    // Not in the store set (five is the cap) — for the website and socials
+    candles: {
+      store: {
+        crypto_chart_widgets: W([]),
+        crypto_chart_page_ticker_enabled: "false",
+        crypto_chart_chart_type: "candles",
+        crypto_chart_volume_bars: "true",
+      },
+      clicks: [{ at: 4000, button: "1M" }],
+    },
   };
 
   const scene = SCENES[new URLSearchParams(location.search).get("scene")];
@@ -114,6 +339,10 @@
       crypto_chart_theme: theme,
       crypto_chart_currency: "USD",
       crypto_chart_rate_prompt_dismissed: "true",
+      // Without this the first-run tour fires 600 ms in and every capture
+      // lands with a dimmed backdrop and a tour card over the UI. This file
+      // predates the tour; the rating card was already handled.
+      crypto_chart_onboarding_seen: "1",
       // 5 min — no refresh fires between initial load and the screenshot,
       // so the price count-up animation can't be caught mid-roll
       crypto_chart_refresh_interval: "300000",
@@ -139,11 +368,19 @@
       setTimeout(() => {
         const doc = frame.contentDocument;
         if (!doc) return;
+        /* Three ways to find a target, in order of precision:
+         *   selector  — a real hook (data-tour=…, aria-label=…)
+         *   button    — exact button text
+         *   contains  — button text containing a string, for rows that have
+         *               no hook of their own. Kept here rather than adding an
+         *               attribute to the extension: this is capture-only
+         *               machinery and shouldn't leak into the product. */
+        const buttons = () => [...doc.querySelectorAll("button")];
         const el = click.selector
           ? doc.querySelector(click.selector)
-          : [...doc.querySelectorAll("button")].find(
-              (b) => b.textContent.trim() === click.button,
-            );
+          : click.contains
+            ? buttons().find((b) => b.textContent.includes(click.contains))
+            : buttons().find((b) => b.textContent.trim() === click.button);
         if (el) el.click();
       }, click.at);
     });

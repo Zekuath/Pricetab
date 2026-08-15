@@ -80,7 +80,7 @@ for (const [i, s] of steps.entries()) {
   assert.ok(typeof s.title === "string" && s.title.length, `step ${i} has a title`);
   assert.ok(typeof s.text === "string" && s.text.length, `step ${i} has text`);
   assert.ok(
-    s.selector === null || /^\[data-tour="[a-z]+"\]$/.test(s.selector),
+    s.selector === null || /^\[data-tour="[a-z-]+"\]$/.test(s.selector),
     `step ${i} selector is null or a data-tour selector`,
   );
 }
@@ -94,7 +94,7 @@ const srcBlob = fs
   .join("\n");
 for (const s of steps) {
   if (!s.selector) continue;
-  const name = s.selector.match(/"([a-z]+)"/)[1];
+  const name = s.selector.match(/"([a-z-]+)"/)[1];
   assert.ok(
     srcBlob.includes(`"data-tour": "${name}"`) || srcBlob.includes(`dataTour: "${name}"`),
     `tour anchor "${name}" exists in the app markup`,
@@ -148,11 +148,14 @@ assert.strictEqual(timers.length, 0, "finished tour never restarts");
 delete store["crypto_chart_onboarding_seen"];
 tour = mount();
 timers.pop().fn();
-tour.handleKeyDown({ key: "ArrowRight" });
+// The tour calls preventDefault — Space would otherwise scroll the page out
+// from under it — so the fake event needs one, like a real KeyboardEvent.
+const keyEvent = (key) => ({ key, preventDefault() {} });
+tour.handleKeyDown(keyEvent("ArrowRight"));
 assert.strictEqual(tour.state.step, 1, "ArrowRight advances");
-tour.handleKeyDown({ key: "ArrowLeft" });
+tour.handleKeyDown(keyEvent("ArrowLeft"));
 assert.strictEqual(tour.state.step, 0, "ArrowLeft goes back");
-tour.handleKeyDown({ key: "Escape" });
+tour.handleKeyDown(keyEvent("Escape"));
 assert.strictEqual(tour.state.active, false, "Escape dismisses the tour");
 assert.strictEqual(store["crypto_chart_onboarding_seen"], "1", "Escape persists the seen flag");
 

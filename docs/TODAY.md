@@ -108,6 +108,67 @@ and for coins Coinbase doesn't list.
 
 ---
 
+- **Widget + ticker caches made to survive the tab** — the leftover half of the
+  widget cost work. The fan-out fix above cut duplicate and wasted requests
+  *within* a tab, but every cache was an in-memory `Map`, and a new-tab
+  extension gets a fresh JS context each time. So the TTLs — Fear & Greed an
+  hour, Coinlore's global figures five minutes, funding fifteen — were never
+  actually spent: each tab started cold and re-paid for numbers it had just
+  fetched. Both caches now persist to localStorage with the same
+  debounce/cap/hydrate shape the price cache already had, and hydration re-
+  applies the TTL so nothing expired is carried in. A tab opened inside the
+  window now makes zero widget requests.
+  The ticker's top-100 sweep needed one extra fix to benefit: it ran
+  unconditionally, so persisting alone would have changed nothing. It now skips
+  while the last sweep is inside the 60s TTL — and, because that guard is keyed
+  on currency, the sweep had to stop filtering the response by the caller's coin
+  list. Otherwise a three-coin alert sweep would satisfy the page ticker's
+  sixty-five-coin request and push the remainder onto the per-coin Coinbase
+  path, which is *more* expensive than what it replaced.
+
+- **Widget design + accessibility pass** — the cards were designed once, small,
+  and never revisited. Four things were wrong. (1) Nothing could be resized:
+  every dimension inside a card was in `rem`, root-relative, so the card and
+  its contents had no relationship — making them bigger would have meant
+  editing every rule. The card now owns a `font-size` and everything inside is
+  `em`, which turned "let people resize the widgets" into one number and a
+  picker (S/M/L/XL, Settings → Widgets). (2) Labels were the primary text
+  colour at `opacity: 0.5–0.6`, stacked on a translucent card — much less
+  contrast than the number implies, on type already under 9px. They use
+  `textSecondary` now, and the baseline came up. (3) The up/down colours were
+  hardcoded to the dark-mode hex, so light mode drew mint green on white.
+  (4) The per-card hide button only existed on hover — and the one layout
+  where it matters most, the bottom row on a tablet, has no hover at all.
+  Bars and markers keep a px floor so Compact doesn't collapse them.
+  Value on top: hovering a label now gives the same one-line explanation
+  Settings carries, since half the labels are terms of art ("open interest",
+  "funding rate", "alt season") that a three-word card can't unpack itself.
+
+- **Portfolio: tax report + the honesty gap it exposed.** Reading the CSV to
+  improve it turned up a real problem first: cost basis only covers the amount
+  you have logged purchases for, but the report printed the *full* holding
+  beside a P/L covering part of it, with nothing saying so. Someone reconciling
+  the sheet would find numbers that don't add up and no explanation. Fixed in
+  both places — explicit "Amount with cost logged" / "Amount without cost"
+  columns and a footnote in the file, and in the app the expanded holding says
+  which part isn't covered while the P/L stat's tooltip names it.
+  Then the actual improvement: short-term vs long-term is the split a return
+  turns on, and the file left that arithmetic to the reader. Every lot now
+  carries days held, which side of the 365-day mark it's on, and its own
+  current value and gain; a summary block leads with the portfolio value, the
+  basis, and the unrealized P/L split into both halves. The file states the
+  cost-basis method (FIFO), that the threshold isn't universal, and that it
+  records no sales — so nothing in it is a realized gain, which is the honest
+  boundary of a tracking-only tool.
+  Also: numbers are trimmed to 12 significant digits. A spreadsheet renders
+  every digit of double error, so a clean $34,000 gain printed as
+  33999.99999999999. Twelve digits is past anything real and short of the
+  noise, and unlike fixed decimals it doesn't flatten a sub-cent coin to zero.
+  Carried into the UI: a "Long term" share in the header stats, and lots
+  marked "long" once they pass the mark.
+
+---
+
 ## Not doing (and why)
 
 - **Seeded first-paint chart data** — would ship fabricated prices that read as

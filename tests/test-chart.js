@@ -670,6 +670,111 @@ assert.strictEqual(run('formatCompactAmount(0, "$")'), null, "zero is treated as
 assert.strictEqual(run('formatCompactAmount(null, "$")'), null, "missing → null");
 assert.strictEqual(run('formatCompactAmount("junk", "$")'), null, "junk → null");
 
+/* ── grid axis labels ────────────────────────────────────────────────────
+ * The one rule that matters: two adjacent gridlines must never carry the
+ * same text. Formatting by magnitude broke that on the cheap coins, which is
+ * exactly where a grid is most useful — a label that reads $0.07 twice tells
+ * you nothing about where a level is.
+ */
+
+// Decimals follow the step, not the size of the number
+assert.strictEqual(run('formatAxisPrice(64500, 500, "$")'), "$64.5K", "thousands keep the half");
+assert.strictEqual(run('formatAxisPrice(65000, 1000, "$")'), "$65K", "a round step needs no decimal");
+assert.strictEqual(run('formatAxisPrice(1.25, 0.25, "$")'), "$1.3", "sub-dollar steps get one place");
+
+// The regression this function exists for
+assert.notStrictEqual(
+  run('formatAxisPrice(0.070, 0.002, "$")'),
+  run('formatAxisPrice(0.072, 0.002, "$")'),
+  "adjacent Dogecoin levels must not format identically",
+);
+assert.strictEqual(run('formatAxisPrice(0.072, 0.002, "$")'), "$0.072", "three places at a 0.002 step");
+
+// Whole ladders stay distinct, which is the property the chart depends on
+for (const [lo, step] of [[0.0001, 0.00002], [3.2, 0.4], [58000, 2000], [1.1e12, 1e11]]) {
+  const seen = new Set();
+  for (let i = 0; i < 6; i++) {
+    seen.add(run(`formatAxisPrice(${lo + step * i}, ${step}, "$")`));
+  }
+  assert.strictEqual(seen.size, 6, `six levels at step ${step} produce six labels`);
+}
+
+assert.strictEqual(run('formatAxisPrice("junk", 1, "$")'), "", "junk → empty, never NaN");
+
+/* ── settling a call ─────────────────────────────────────────────────────
+ * The record's only job is to be true, so these assert the awkward cases
+ * rather than the happy one: a target the series has not reached, a target
+ * that has scrolled off the start, and a nearby-but-not-near-enough point.
+ */
+
+const HOUR = 3600e3;
+const series = (from, n, stepMs, price) =>
+  Array.from({ length: n }, (_, i) => ({ time: from + i * stepMs, price: price(i) }));
+
+// A flat series at 100, hourly, ten hours long
+sandbox.__flat = series(1000 * HOUR, 11, HOUR, () => 100);
+// Called the band 95-105 at hour 1005 — the price was 100, so that is a hit
+sandbox.__call = { target: 1005 * HOUR, span: HOUR, lo: 95, hi: 105 };
+assert.strictEqual(
+  run("settleCall(__call, __flat, 1010 * 3600e3).status"), "hit", "price inside the band");
+
+sandbox.__miss = { target: 1005 * HOUR, span: HOUR, lo: 120, hi: 130 };
+assert.strictEqual(
+  run("settleCall(__miss, __flat, 1010 * 3600e3).status"), "miss", "price outside the band");
+
+// Time has not reached the target yet
+assert.strictEqual(
+  run("settleCall(__call, __flat, 1002 * 3600e3).status"), "pending", "not due yet");
+
+// Due, but the series has not caught up — must wait, not guess
+sandbox.__short = series(1000 * HOUR, 3, HOUR, () => 100);
+assert.strictEqual(
+  run("settleCall(__call, __short, 1010 * 3600e3).status"),
+  "pending",
+  "series stops short of the target → ask again later",
+);
+
+// The target fell off the start of the range: the evidence is gone
+sandbox.__late = series(1100 * HOUR, 5, HOUR, () => 100);
+assert.strictEqual(
+  run("settleCall(__call, __late, 1200 * 3600e3).status"),
+  "expired",
+  "target predates the series → expired, never scored",
+);
+
+// A point exists near the target but not near enough to be about that moment
+sandbox.__coarse = [
+  { time: 1000 * HOUR, price: 100 },
+  { time: 1010 * HOUR, price: 100 },
+];
+assert.strictEqual(
+  run("settleCall(__call, __coarse, 1020 * 3600e3).status"),
+  "pending",
+  "nearest point is over half a cell away → not an answer about that moment",
+);
+
+/* The tally */
+assert.deepStrictEqual(
+  json('applyCallResult({ hits: 2, total: 3, streak: 2, best: 2 }, "hit")'),
+  { hits: 3, total: 4, streak: 3, best: 3 },
+  "a hit extends the streak and the best",
+);
+assert.deepStrictEqual(
+  json('applyCallResult({ hits: 3, total: 4, streak: 3, best: 5 }, "miss")'),
+  { hits: 3, total: 5, streak: 0, best: 5 },
+  "a miss breaks the streak but leaves the best",
+);
+assert.deepStrictEqual(
+  json('applyCallResult({ hits: 1, total: 1, streak: 1, best: 1 }, "expired")'),
+  { hits: 1, total: 1, streak: 1, best: 1 },
+  "an expired call changes nothing at all",
+);
+assert.deepStrictEqual(
+  json('applyCallResult(null, "hit")'),
+  { hits: 1, total: 1, streak: 1, best: 1 },
+  "a missing record starts from zero rather than NaN",
+);
+
 /* ── comparison mode ─────────────────────────────────────────────────────
  * The mode's whole claim is that two coins share one honest axis. These
  * assert that claim directly rather than checking that a function ran.

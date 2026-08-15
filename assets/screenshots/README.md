@@ -1,39 +1,54 @@
 # Chrome Web Store — Screenshots (upload in this order)
 
-All images are **1280×800 PNG** (Chrome Web Store screenshot size). Upload them
-in the numbered order below — the number prefix in each filename IS the order.
-Each image also carries an on-image caption describing what it shows.
+All images are **1280×800 PNG**. Upload them in the numbered order below — the
+number prefix in each filename IS the order. Each image carries an on-image
+caption describing what it shows.
+
+**The dashboard accepts five.** This is the whole set; there is no sixth file
+to drop or hold back.
 
 | Order | File | What it shows | Caption on image |
 |-------|------|---------------|------------------|
-| **1** | `01-hero.png` | **Promotional hero** — logo, name, tagline and the headline features. Hooks the visitor and explains the whole product at a glance. **Put this first.** | "pricetab — Live crypto charts on every new tab" + feature pills |
-| 2 | `02-dashboard.png` | The real new-tab view: live chart + ticker + widget panel | "Every new tab is a live crypto chart" |
-| 3 | `03-watchlist-movers.png` | Watchlist heatmap + Top Movers widgets (personalization) | "Your watchlist + the day's top movers" |
-| 4 | `04-signals.png` | All 9 market widgets enabled (depth for traders) | "9 market signals traders actually watch" |
-| 5 | `05-presets.png` | Settings → Widgets tab with one-click Holder / Trader / Minimal presets | "Holder or Trader — set up in a tap" |
-| 6 | `06-themes.png` | Light theme, clean minimal view | "Dark, light, or auto — your call" |
-| 7 | `07-news.png` | News ticker row — live crypto headlines scrolling with prices | "Crypto headlines scroll with your prices" |
+| **1** | `01-hero.png` | **Promotional hero** — logo, name, tagline, and a near-default new tab: the four coins that ship, one chart, nothing switched on. **Put this first.** | "pricetab — Live crypto charts on every new tab." |
+| 2 | `02-compare.png` | BTC and ETH over a month, both as percent change from the start of the range on one shared axis | "Two coins, one honest axis" |
+| 3 | `03-portfolio.png` | Five holdings with cost basis, sparklines, allocation bars, Unrealized + Realized, and one clearly red row | "What you hold, what it cost, what it's worth" |
+| 4 | `04-widgets.png` | The widget column with five on — watchlist, Fear & Greed, market cap, halving countdown, alt season — beside the chart | "The market data you want — and nothing else" |
+| 5 | `05-targets.png` | Targets panel in light mode: three armed (one a percent target) plus one already hit, with the tab strip showing the announcement | "It tells you the moment it happens" |
 
-> The first 3 images matter most — they appear in search results. `01-hero` is
-> the promotional/lead image, so it must be uploaded first.
+> The first three appear in search results, so they carry the argument on
+> their own: what it is, what only it does, what 1.4.0 added.
+
+Frame 5's mock tab reads `● LINK hit $8.20` — the same target the panel
+underneath lists as hit. If the targets scene is ever reseeded, that string
+has to move with it, or the frame is claiming something the image disproves.
+
+## What is deliberately not here
+
+- **Candlesticks.** The targets overlay washes the page out at 85% by design,
+  so no chart mode can be shown behind it, and frames 1–2 need the line. A
+  mode lost to a benefit; see `docs/SCREENSHOT_PLAN.md` D3.
+- **The Settings panel.** An overlay takes the screen on purpose, so it can
+  never be the backdrop for the thing it configures (D6).
+
+Both live in `../mockups/raw/` for the website.
 
 ## Regenerating these
 
-The images are composed from a template + real app captures:
+Composed from a template plus real app captures:
 
-- **Template:** `../mockups/store-frames.html` (caption bands + logo + brand styling)
+- **Template:** `../mockups/store-frames.html` (caption bands, logo, framing)
 - **Raw app captures:** `../mockups/raw/*.png` (the live UI behind each frame)
 
-To rebuild: run the fully scripted pipeline documented in `../mockups/README.md`
-(captures the raw UI from the live extension, then renders the frames).
+To rebuild, run the scripted pipeline in `../mockups/README.md` — it captures
+the raw UI from the live extension, then renders the frames.
 
-The root `01…06` files are the **official upload set (Windows-style window
-frame)**. Alternate window-chrome sets live in `safari/`, `windows/` and
-`chromeos/` — same content, different OS framing.
+The root `01…05` files are the **official upload set** (Windows-style window
+frame). Alternate window chrome lives in `safari/`, `windows/` and
+`chromeos/` — same content, different framing.
 
 ## Promotional tiles
 
-The store's promotional images live in `../promotional/` and share the same
-design system (glow backdrop + browser-framed UI):
-`Small Tile.png` (440×280), `Large Tile.png` (920×680), `Marquee.png` (1400×560).
-Rebuild them with the same headless render via `../mockups/promo-tiles.html`.
+The store's promotional images live in `../promotional/` and share the design
+system: `Small Tile.png` (440×280), `Large Tile.png` (920×680),
+`Marquee.png` (1400×560). Rebuilt by the same headless render via
+`../mockups/promo-tiles.html`.

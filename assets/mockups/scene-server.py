@@ -17,6 +17,21 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return
         super().do_GET()
 
+    def end_headers(self):
+        # Never let the browser cache a source file.
+        #
+        # Chrome caches heuristically off Last-Modified when no Cache-Control
+        # is sent, and headless runs share the default profile — so an edit
+        # to src/*.js could be live on disk, served correctly by curl, and
+        # still not be the code the page executed. That produced a real
+        # false negative here: a feature measured as "not working" against a
+        # build from several edits earlier. Every measurement taken through
+        # this server has to be a measurement of the working tree.
+        self.send_header("Cache-Control", "no-store, must-revalidate")
+        self.send_header("Pragma", "no-cache")
+        self.send_header("Expires", "0")
+        super().end_headers()
+
     def log_message(self, *a):
         pass
 

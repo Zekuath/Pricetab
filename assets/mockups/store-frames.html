@@ -116,16 +116,19 @@
   .hero .wm { font-size: 72px; font-weight: 500; color: var(--ink); letter-spacing: -2px; }
   .hero .wm b { color: var(--green); font-weight: 500; }
   .hero .tag { color: var(--muted); font-size: 24px; margin-top: 20px; font-weight: 300; letter-spacing: .2px; }
-  .hero .bullets { display: flex; flex-wrap: wrap; gap: 11px; justify-content: center; margin-top: 34px; max-width: 980px; }
+  /* Three claims, not a feature list. A row of comma-separated features on
+   * an image is the same keyword-spam signal as one in the description, and
+   * Yellow Argon is this listing's likeliest rejection. */
+  .hero .bullets { display: flex; gap: 11px; justify-content: center; margin-top: 32px; }
   .hero .pill {
     border: 1px solid rgba(52, 211, 153, 0.28); border-radius: 999px;
     padding: 10px 19px; font-size: 15.5px; color: #e9eeec;
     background: linear-gradient(rgba(52,211,153,0.08), rgba(52,211,153,0.03));
   }
   .hero .pill b { color: var(--green); font-weight: 500; }
-  .hero .browser { width: 1020px; margin-top: 52px; flex: none; }
+  .hero .browser { width: 1020px; margin-top: 46px; flex: none; }
 
-  /* ---------- FEATURE FRAMES (02-06) ---------- */
+  /* ---------- FEATURE FRAMES (02-05) ---------- */
   .feat { display: flex; flex-direction: column; }
   .cap { flex: 0 0 178px; padding: 0 64px; display: flex; flex-direction: column; justify-content: center; }
   .cap .row { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
@@ -138,8 +141,21 @@
   }
   .cap .title { color: var(--ink); font-size: 40px; font-weight: 500; letter-spacing: -0.8px; line-height: 1.12; }
   .cap .title b { color: var(--green); font-weight: 500; }
-  .feat .browser { margin: 10px 64px 0; flex: 1; }
+  /* Width is set from the crop, not from taste. A caption band means the
+   * 1280x800 capture can never be shown whole, so `cover` eats the bottom —
+   * and how much depends only on how far the box ratio sits from the shot's
+   * 1.6. Full-bleed (1152 wide) crops 152px, which cut the compare frame's
+   * lower end-label off and left one labelled line explaining a two-line
+   * idea. At 1040 the crop is ~78px: captions, panels and end-labels all
+   * survive, and the frame reads as a product shot rather than a bleed. */
+  .feat .browser { width: 1040px; margin: 6px auto 0; flex: 1; }
   .feat .browser .shot { object-fit: cover; object-position: top center; width: 100%; height: calc(100% - 44px); }
+
+  /* The tab-strip announcement, shown in the one place it actually lives.
+   * The text must name the target the capture underneath really shows —
+   * a tab claiming a hit the panel doesn't list is a fabricated screenshot. */
+  .browser .tab.hit { color: var(--green); background: rgba(52, 211, 153, 0.12); }
+  .browser .tab.hit .dot { color: var(--green); font-size: 15px; line-height: 1; }
 </style>
 <script>
   // ?only=f01 → show a single frame at 0,0 for exact headless capture
@@ -161,9 +177,9 @@
 </head>
 <body>
 
-  <!-- 01 HERO -->
+  <!-- 01 HERO — near default: four coins, one chart, nothing switched on -->
   <div>
-    <div class="hint">01-hero — headless: ?only=f01 (or right-click .frame → "Capture node screenshot")</div>
+    <div class="hint">01-hero &mdash; headless: ?only=f01 (or right-click .frame &rarr; "Capture node screenshot")</div>
     <div class="frame hero" id="f01">
       <div class="brand">
         <img src="../icons/icon128.png" alt="" />
@@ -171,13 +187,9 @@
       </div>
       <div class="tag">Live crypto charts on every new tab.</div>
       <div class="bullets">
-        <span class="pill"><b>60+</b> coins</span>
-        <span class="pill"><b>9</b> market signals</span>
-        <span class="pill">Watchlist &amp; top movers</span>
-        <span class="pill">Live price in your tab title</span>
-        <span class="pill">Dark / light / auto</span>
         <span class="pill"><b>Zero</b> permissions</span>
-        <span class="pill"><b>100%</b> free</span>
+        <span class="pill">No account</span>
+        <span class="pill"><b>Free</b>, no premium tier</span>
       </div>
       <div class="browser">
         <div class="bar">
@@ -186,18 +198,18 @@
           <span class="spacer"></span>
           <span class="winctl" aria-hidden="true"><i class="mi"></i><i class="mx"></i><i class="cl"></i></span>
         </div>
-        <img class="shot" src="raw/dashboard-dark.png" alt="" />
+        <img class="shot" src="raw/hero-dark.png" alt="" />
       </div>
     </div>
   </div>
 
-  <!-- 02 DASHBOARD -->
+  <!-- 02-COMPARE -->
   <div>
-    <div class="hint">02-dashboard — ?only=f02</div>
+    <div class="hint">02-compare &mdash; ?only=f02</div>
     <div class="frame feat" id="f02">
       <div class="cap">
-        <div class="row"><img src="../icons/icon128.png" alt="" /><span class="kicker">New tab → instant dashboard</span></div>
-        <div class="title">Every new tab is a <b>live crypto chart</b></div>
+        <div class="row"><img src="../icons/icon128.png" alt="" /><span class="kicker">Compare</span></div>
+        <div class="title">Two coins, <b>one honest axis</b></div>
       </div>
       <div class="browser">
         <div class="bar">
@@ -206,18 +218,18 @@
           <span class="spacer"></span>
           <span class="winctl" aria-hidden="true"><i class="mi"></i><i class="mx"></i><i class="cl"></i></span>
         </div>
-        <img class="shot" src="raw/dashboard-dark.png" alt="" />
+        <img class="shot" src="raw/compare-dark.png" alt="" />
       </div>
     </div>
   </div>
 
-  <!-- 03 WATCHLIST + MOVERS -->
+  <!-- 03-PORTFOLIO -->
   <div>
-    <div class="hint">03-watchlist-movers — ?only=f03</div>
+    <div class="hint">03-portfolio &mdash; ?only=f03</div>
     <div class="frame feat" id="f03">
       <div class="cap">
-        <div class="row"><img src="../icons/icon128.png" alt="" /><span class="kicker">Make it yours</span></div>
-        <div class="title">Your <b>watchlist</b> + the day's <b>top movers</b></div>
+        <div class="row"><img src="../icons/icon128.png" alt="" /><span class="kicker">Portfolio</span></div>
+        <div class="title">What you hold, <b>what it cost</b>, what it&rsquo;s worth</div>
       </div>
       <div class="browser">
         <div class="bar">
@@ -226,18 +238,18 @@
           <span class="spacer"></span>
           <span class="winctl" aria-hidden="true"><i class="mi"></i><i class="mx"></i><i class="cl"></i></span>
         </div>
-        <img class="shot" src="raw/wl-movers-dark.png" alt="" />
+        <img class="shot" src="raw/portfolio-dark.png" alt="" />
       </div>
     </div>
   </div>
 
-  <!-- 04 SIGNALS -->
+  <!-- 04-WIDGETS -->
   <div>
-    <div class="hint">04-signals — ?only=f04</div>
+    <div class="hint">04-widgets &mdash; ?only=f04</div>
     <div class="frame feat" id="f04">
       <div class="cap">
-        <div class="row"><img src="../icons/icon128.png" alt="" /><span class="kicker">Pro market data</span></div>
-        <div class="title"><b>9 market signals</b> traders actually watch</div>
+        <div class="row"><img src="../icons/icon128.png" alt="" /><span class="kicker">Depth on demand</span></div>
+        <div class="title">The market data you want &mdash; <b>and nothing else</b></div>
       </div>
       <div class="browser">
         <div class="bar">
@@ -246,68 +258,27 @@
           <span class="spacer"></span>
           <span class="winctl" aria-hidden="true"><i class="mi"></i><i class="mx"></i><i class="cl"></i></span>
         </div>
-        <img class="shot" src="raw/signals-dark.png" alt="" />
+        <img class="shot" src="raw/widget-row-dark.png" alt="" />
       </div>
     </div>
   </div>
 
-  <!-- 05 PRESETS -->
+  <!-- 05-TARGETS -->
   <div>
-    <div class="hint">05-presets — ?only=f05</div>
+    <div class="hint">05-targets &mdash; ?only=f05</div>
     <div class="frame feat" id="f05">
       <div class="cap">
-        <div class="row"><img src="../icons/icon128.png" alt="" /><span class="kicker">One-click setup</span></div>
-        <div class="title"><b>Holder</b> or <b>Trader</b> — set up in a tap</div>
+        <div class="row"><img src="../icons/icon128.png" alt="" /><span class="kicker">Price targets</span></div>
+        <div class="title">It tells you <b>the moment it happens</b></div>
       </div>
       <div class="browser">
         <div class="bar">
           <span class="dots"><i></i><i></i><i></i></span>
-          <span class="tab"><img src="../icons/icon128.png" alt="" />New Tab</span>
+          <span class="tab hit"><span class="dot">●</span>LINK hit $8.20</span>
           <span class="spacer"></span>
           <span class="winctl" aria-hidden="true"><i class="mi"></i><i class="mx"></i><i class="cl"></i></span>
         </div>
-        <img class="shot" src="raw/presets-dark.png" alt="" />
-      </div>
-    </div>
-  </div>
-
-  <!-- 06 THEMES -->
-  <div>
-    <div class="hint">06-themes — ?only=f06</div>
-    <div class="frame feat" id="f06">
-      <div class="cap">
-        <div class="row"><img src="../icons/icon128.png" alt="" /><span class="kicker">Themes</span></div>
-        <div class="title"><b>Dark</b>, <b>light</b>, or auto — your call</div>
-      </div>
-      <div class="browser">
-        <div class="bar">
-          <span class="dots"><i></i><i></i><i></i></span>
-          <span class="tab"><img src="../icons/icon128.png" alt="" />New Tab</span>
-          <span class="spacer"></span>
-          <span class="winctl" aria-hidden="true"><i class="mi"></i><i class="mx"></i><i class="cl"></i></span>
-        </div>
-        <img class="shot" src="raw/minimal-light.png" alt="" />
-      </div>
-    </div>
-  </div>
-
-
-  <!-- 07 NEWS TICKER -->
-  <div>
-    <div class="hint">07-news — ?only=f07</div>
-    <div class="frame feat" id="f07">
-      <div class="cap">
-        <div class="row"><img src="../icons/icon128.png" alt="" /><span class="kicker">News ticker</span></div>
-        <div class="title"><b>Crypto headlines</b> scroll with your prices</div>
-      </div>
-      <div class="browser">
-        <div class="bar">
-          <span class="dots"><i></i><i></i><i></i></span>
-          <span class="tab"><img src="../icons/icon128.png" alt="" />New Tab</span>
-          <span class="spacer"></span>
-          <span class="winctl" aria-hidden="true"><i class="mi"></i><i class="mx"></i><i class="cl"></i></span>
-        </div>
-        <img class="shot" src="raw/news-dark.png" alt="" />
+        <img class="shot" src="raw/targets-light.png" alt="" />
       </div>
     </div>
   </div>

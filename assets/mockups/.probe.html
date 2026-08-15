@@ -1,0 +1,20 @@
+<!doctype html><meta charset="utf-8">
+<style>html,body{margin:0;background:#000}iframe{display:block;width:1280px;height:800px;border:0}</style>
+<iframe id="f" src="/assets/mockups/scenes.html?scene=predict&theme=dark&delay=1"></iframe>
+<script>
+  var b=new Image(); b.src="/__delay?ms=21000";
+  document.getElementById("f").addEventListener("load", function(){
+    var outer=this.contentDocument;
+    setTimeout(function(){
+      var inner=outer.querySelector("iframe").contentDocument;
+      var cell=inner.querySelector('rect[fill-opacity]');
+      var svg=cell.ownerSVGElement, r=svg.getBoundingClientRect();
+      var nowX=+inner.querySelector('line[stroke-dasharray="2 3"]').getAttribute("x1");
+      var pitch=(r.width-nowX)/4;
+      var x=nowX+pitch*1.5, y=430;
+      var e=new MouseEvent("click",{clientX:r.left+x,clientY:r.top+y,bubbles:true});
+      Object.defineProperty(e,"offsetX",{value:x}); Object.defineProperty(e,"offsetY",{value:y});
+      svg.dispatchEvent(e);
+    }, 20780);
+  });
+</script>

@@ -344,6 +344,51 @@ const DEFAULT_VOLUME_BARS = true;
 const MARKET_STATS_KEY = "crypto_chart_market_stats";
 const DEFAULT_MARKET_STATS = true;
 
+/* Chart grid — price levels across, time divisions down, drawn from the
+ * range actually on screen rather than at a fixed pixel pitch. Off by
+ * default like every other addition: the plain chart is what ships. */
+// "month" -> "1M", for anywhere a stored range has to be named back to a user
+const periodLabel = (value) => {
+  const found = PERIOD_OPTIONS.find((p) => p.value === value);
+  return found ? found.label : String(value || "").toUpperCase();
+};
+
+const CHART_GRID_KEY = "crypto_chart_grid";
+const DEFAULT_CHART_GRID = false;
+
+/* Call the cell — read the chart, name where the price will be.
+ *
+ * Deliberately not an economy. Nothing here is worth anything, can be spent,
+ * or leaves the device: the score is a number about you, kept next to your
+ * settings. A point that could become something a person would pay for turns
+ * a price chart into a wager on an asset, which the Chrome Web Store bans
+ * outright (Grey Copper, critical) — and a score kept in localStorage could
+ * never be trusted with value anyway, since it is editable in a devtools
+ * panel in five seconds. See the private notes for the full reasoning.
+ */
+const PREDICT_KEY = "crypto_chart_predict";
+const DEFAULT_PREDICT = false;
+const PREDICT_AHEAD_KEY = "crypto_chart_predict_ahead";
+const DEFAULT_PREDICT_AHEAD = 2;        // squares of future the chart reserves
+/* Up to ten. Asking for more squares makes them smaller rather than pushing
+ * them off the chart: the future strip has a fixed share of the width, so the
+ * cell size is chosen to fit the number asked for. Squares stay square and
+ * every one you were promised is on screen. */
+const PREDICT_AHEAD_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+/* Two switches for what a settled call does afterwards. Both default on:
+ * seeing the box you drew and being told you got it right is the whole
+ * feedback loop. Both can be turned off, because a chart someone reads for
+ * prices should not be permanently decorated by a game they have stopped
+ * playing. */
+const CALLS_SHOW_SETTLED_KEY = "crypto_chart_calls_show_settled";
+const DEFAULT_CALLS_SHOW_SETTLED = true;
+const CALLS_CELEBRATE_KEY = "crypto_chart_calls_celebrate";
+const DEFAULT_CALLS_CELEBRATE = true;
+
+const CALLS_KEY = "crypto_chart_calls";
+const MAX_OPEN_CALLS = 40;              // ten squares across a few coins
+const MAX_DONE_CALLS = 24;              // settled ones kept for the record
+
 /* Headlines shown when the active coin has made an unusual move for the
  * period on screen. A 2% hour is remarkable; a 2% year is nothing, so the
  * threshold scales with the window. ALL is left out — every coin's all-time
@@ -367,6 +412,29 @@ const DEFAULT_MOVE_HEADLINES = false;
 // currency, created, triggeredAt }]
 const ALERTS_STORAGE_KEY = "crypto_chart_alerts";
 const MAX_ALERTS = 10;
+
+/* Announcing a hit in the tab title.
+ *
+ * The banner only exists on the tab you are looking at, so a target that goes
+ * off while you are on another tab waits, silently, until you happen to come
+ * back. The tab strip is the one surface a background tab still owns, and
+ * writing to it needs no permission — which is the whole reason this feature
+ * is in-tab rather than a notification.
+ *
+ * It also turns the polling back on for a tab that is hidden, which the app
+ * otherwise deliberately stops: a target nobody is checking can't be reported.
+ * That is why the switch governs both, and why it is the only thing in the
+ * extension that fetches while you are looking elsewhere — it does so only
+ * when you have an armed target, only for that target's coins, and slowly.
+ */
+const ALERT_TAB_TITLE_KEY = "crypto_chart_alert_tab_title";
+const DEFAULT_ALERT_TAB_TITLE = true;
+// Slow on purpose: a hidden tab is a background job, and Chrome throttles its
+// timers to about a minute anyway once the tab has been away for a while.
+const ALERT_BACKGROUND_POLL_MS = 120000;
+// How fast the title alternates between the alert and the marker. Fast enough
+// to catch the eye in a tab strip, slow enough not to read as a glitch.
+const ALERT_TITLE_FLASH_MS = 1400;
 
 // "Since your last visit": per-coin snapshot of the price when this tab
 // series was last opened. { COIN: { price, time } }
@@ -491,10 +559,25 @@ const WATCH_BALANCE_TTL = 600000; // 10 min per address — be kind to providers
 // is "manual" (typed in) or "chain" (inferred from a watched address, with
 // prices estimated from the historical series at each transfer's date)
 const MAX_LOTS_PER_HOLDING = 100;
+const MAX_SALES_PER_HOLDING = 100;
 // A holding can track several addresses side by side (plus its manual part)
 const MAX_WATCHES_PER_HOLDING = 10;
 // Selected time range for the portfolio background value chart
 const PORTFOLIO_PERIOD_KEY = "crypto_chart_portfolio_period";
+
+/* Holdings order. The list used to render in the order coins were added,
+ * which meant the biggest position could sit at the bottom — while the chart
+ * behind it was already ranking the same holdings by value to decide which
+ * twelve to draw. Value-first is the default because "what is most of my
+ * money in" is the question the list is read for. */
+const PORTFOLIO_SORT_KEY = "crypto_chart_portfolio_sort";
+const DEFAULT_PORTFOLIO_SORT = "value";
+const PORTFOLIO_SORT_OPTIONS = [
+  { value: "value", label: "Value" },
+  { value: "pl", label: "P/L" },
+  { value: "change", label: "24h" },
+  { value: "name", label: "A–Z" },
+];
 const STORE_LISTING_URL =
   "https://chromewebstore.google.com/detail/pricetab/dobkidjmhpnniiipliollbaefpppalaf";
 

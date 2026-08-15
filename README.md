@@ -4,205 +4,217 @@
 
 **Live cryptocurrency price charts on every new tab.**
 
-A lightweight, privacy-focused Chrome extension that transforms your new tab into a real-time crypto dashboard. No accounts, no tracking, just data.
+A lightweight, privacy-focused Chrome extension that turns your new tab into a
+real-time crypto dashboard. No account, no tracking, **zero permissions**.
 
 [![Chrome Web Store](https://img.shields.io/badge/Chrome_Web_Store-Install-4285F4?logo=googlechrome&logoColor=white)](https://chromewebstore.google.com/detail/pricetab/dobkidjmhpnniiipliollbaefpppalaf)
 ![Manifest V3](https://img.shields.io/badge/Manifest-V3-green)
+![Permissions](https://img.shields.io/badge/Permissions-none-brightgreen)
 ![License](https://img.shields.io/badge/License-MIT-blue)
 
 ---
 
-## Features
+## The chart
 
-- **Live Price Charts** - Real-time charts with smooth animations on every new tab
-- **60+ Cryptocurrencies** - Bitcoin, Ethereum, Solana, and many more
-- **Market Widget Panel** - 11 optional signals: Watchlist, Top Movers, Fear & Greed, Market Overview, BTC Halving, RSI, funding rate, long/short ratio, open interest, liquidations, altcoin season
-- **Portfolio Tracking** - full-screen holdings view (total value + P/L); manually entered amounts, all local, no wallet connection
-- **Watchlist Heatmap** - Your coins as a colour-coded grid (green up / red down)
-- **Top Movers** - The day's biggest gainers and losers at a glance
-- **One-Click Presets** - "Holder", "Trader" or "Minimal" widget bundles
-- **Auto Rotate** - Switch to the next coin automatically at your chosen interval (10s–15m)
-- **Scrolling Ticker** - Optional live price bar across the top or bottom
-- **News Headlines** - Optional crypto news row in the ticker (Blockchair)
-- **Live Tab Title** - Current price + 24h change right in the tab (`BTC $43,250 (+5.2%)`)
-- **6 Time Periods** - 1H, 1D, 1W, 1M, 1Y, ALL
-- **Dark / Light / Auto Themes** - Follows your system preference
-- **37 Currencies** - USD, EUR, GBP, TRY, JPY, and more
-- **Drag & Drop** - Reorder your coins and widgets
-- **Privacy First** - Zero permissions, no account, all data stored locally
-- **100% Free** - No ads, no premium tier, loads instantly
+- **A live chart on every new tab** — line or candlestick, six ranges from the
+  last hour to all time
+- **Crosshair readout** — hover for that point's open, high, low, close and
+  volume; candles are fetched only once you actually hover
+- **Compare two coins** — both drawn as percent change from the start of the
+  range, on one shared axis. Never a second y-axis: two price scales on one
+  chart put the crossing point wherever the scales were placed rather than
+  where the market put it
+- **Market stats** — the range's high and low, market cap and 24h volume
+- **Optional grid** — price levels and time divisions read off the range on
+  screen, so you can judge where a level sits and how far away it is. Hover a
+  cell to light it up
+- **Since your last visit** — how the coin moved since you last looked
+- **Live tab title** — `BTC $43,250 (+5.2%)`, visible while you work elsewhere
 
-### Market Widgets (optional, toggleable from settings)
+## Price targets
 
-- **Watchlist** - Your coins as a colour-coded 24h heatmap
-- **Top Movers** - The day's biggest 24h gainers and losers
-- **Fear & Greed Index** - Crypto market sentiment score
-- **Market Overview** - Total market cap, volume and BTC/ETH dominance
-- **BTC Halving Countdown** - Days until next halving
-- **RSI Widget** - Relative Strength Index for current coin
-- **Funding Rate** - Perpetual futures funding rate (OKX)
-- **Long/Short Ratio** - Long vs short account ratio (Bybit)
-- **Open Interest** - Total open futures contracts in USD (OKX)
-- **Liquidations** - 24h long/short liquidation volume (OKX)
-- **Altcoin Season Index** - BTC dominance-based market phase indicator
+- **"BTC rises above 80,000"** or **"BTC falls 5% in 24h"**
+- Reported the next time you open a tab — including targets hit **overnight**,
+  because detection searches the last week of candles rather than only the
+  price right now
+- Announced in the tab title too, so a PriceTab tab you aren't looking at can
+  tell you. Nothing is pushed: writing your own tab's title needs no
+  permission, which is exactly why the feature is in-tab
 
----
+## Portfolio
 
-## Installation
+- **Track holdings by amount** — or paste a public address and let it read the
+  balance (BTC, ETH, LTC, DOGE, BCH, ZEC, plus 28 ERC-20 tokens). Read-only,
+  no wallet connection
+- **Purchase lots** — log buys the way you made them; cost basis, unrealized
+  P/L and allocation share follow
+- **Record sales** — FIFO against the oldest purchases, with realized P/L kept
+  after the purchases it consumed are gone
+- **vs BTC** — whether holding *these* coins beat holding the obvious one over
+  the range you're looking at
+- **Cost basis report (CSV)** — holdings, purchases and disposals with each
+  sale paired to the purchases it consumed. It is the record a tax return is
+  worked out from, not the return itself: it knows only what you entered here
 
-### Chrome Web Store (Recommended)
+## Market widgets — all optional, all off by default
 
-**[Install PriceTab from the Chrome Web Store](https://chromewebstore.google.com/detail/pricetab/dobkidjmhpnniiipliollbaefpppalaf)** — one click, auto-updates.
+Watchlist · Top Movers · Fear & Greed · Market Overview · BTC Halving
+Countdown · RSI · Funding Rate · Long/Short Ratio · Open Interest ·
+Liquidations · Altcoin Season
 
-If PriceTab makes your new tab better, a rating on the store page helps others find it.
+One-click **Holder / Trader / Minimal** bundles, drag to reorder, and four
+sizes from compact to extra large.
 
-### Manual Installation (Developer Mode)
+## Everything else
 
-1. Download or clone this repository
-2. Open Chrome and navigate to `chrome://extensions/`
-3. Enable **Developer mode** (toggle in top-right)
-4. Click **Load unpacked**
-5. Select the extension folder
-6. Open a new tab
-
----
-
-## Usage
-
-### Viewing Prices
-
-- **Click the price** (top-left) to cycle through your coins
-- **Click the change percentage** (top-right) to toggle between $ and %
-- **Use time period buttons** below the chart to change timeframe
-
-### Managing Coins
-
-1. Click the **gear icon** (top-right) to open settings
-2. **Search** for coins in the search box
-3. **Click** a coin to add it to your watchlist
-4. **Drag** coins to reorder
-5. **Click X** on a coin to remove it
-
-### Preferences
-
-In the settings panel, you can customize:
-
-- **Theme** - Dark, Light, or Auto (follows system)
-- **Currency** - 37 fiat currencies available
-- **Refresh Rate** - 10s, 30s, 1m, or 5m
+- **65 coins**, searchable by name or symbol
+- **37 display currencies**
+- **Dark / light / auto** themes, following your system by default
+- **Auto-rotate** through your coins, 10 seconds to 15 minutes
+- **Scrolling ticker** across the top or bottom, with an optional news row
+- **Keyboard-first** — see below
+- **No ads, no account, no premium tier**
 
 ---
 
-## Tab Title Feature
+## Keyboard shortcuts
 
-Your browser tab shows live crypto prices - visible even when working in other tabs:
+Press <kbd>?</kbd> in a new tab for this list.
 
-```
-BTC $43,250 (+5.2%)
-```
-
-- Updates automatically every 30 seconds
-- Shows current coin, price, and 24h change
-- Changes when you switch coins
+| | |
+|---|---|
+| <kbd>←</kbd> <kbd>→</kbd> | Previous / next coin |
+| <kbd>1</kbd>–<kbd>6</kbd> | Switch range, 1H through ALL |
+| <kbd>/</kbd> | Jump to a coin by name |
+| <kbd>C</kbd> | Compare with a second coin |
+| <kbd>T</kbd> | Line / candlestick chart |
+| <kbd>G</kbd> | Price / time grid on the chart |
+| <kbd>L</kbd> | Calls on / off |
+| <kbd>X</kbd> | Percent / price change |
+| <kbd>W</kbd> | Hide / show widgets |
+| <kbd>D</kbd> | Dark / light theme |
+| <kbd>Space</kbd> | Auto-rotate on / off |
+| <kbd>R</kbd> | Refresh now |
+| <kbd>A</kbd> | Price targets |
+| <kbd>P</kbd> | Portfolio |
+| <kbd>S</kbd> | Settings |
+| <kbd>Esc</kbd> | Close whatever is open |
 
 ---
 
-## Supported Cryptocurrencies
+## Install
 
-**Major:** BTC, ETH, BNB, SOL, XRP, DOGE, ADA, AVAX, DOT, MATIC
+### Chrome Web Store
 
-**DeFi:** LINK, UNI, AAVE, MKR, SNX, COMP, CRV, 1INCH, SUSHI
+**[Install PriceTab](https://chromewebstore.google.com/detail/pricetab/dobkidjmhpnniiipliollbaefpppalaf)**
+— one click, auto-updates.
 
-**Layer 2:** ARB, OP, MATIC, IMX, LRC
+If PriceTab makes your new tab better, a rating helps others find it.
 
-**And 60+ more** including SHIB, LTC, ATOM, FIL, APT, SUI, SEI, TIA, INJ, and others.
+### From source
 
----
-
-## Tech Stack
-
-| Technology | Purpose |
-|------------|---------|
-| React 16.5 | UI Framework |
-| D3.js v5 | Chart Visualization |
-| styled-components | CSS-in-JS Styling |
-| Coinbase API | Price Data |
-| Chrome Manifest V3 | Extension Platform |
-
-All dependencies — scripts, styles, and fonts — are bundled locally. No external CDN requests.
+1. Clone or download this repository
+2. Open `chrome://extensions/`
+3. Enable **Developer mode**
+4. **Load unpacked** → select the project folder
+5. Open a new tab
 
 ---
 
 ## Privacy
 
-PriceTab is designed with privacy as a core principle:
+PriceTab requests **no permissions at all**. There is no account, no
+analytics, no telemetry, and nothing is sent anywhere except the price APIs
+below. Your coin list, settings, portfolio and targets live in your browser's
+local storage and never leave the device.
 
-- **No account required** - Use immediately after install
-- **No data collection** - We don't track anything
-- **No analytics** - No Google Analytics, no telemetry
-- **Local storage only** - Your coin list stays on your device
-- **No third-party sharing** - Your data is yours
-- **Public API only** - No authentication tokens stored
+Every request goes to a public, keyless API:
 
-Network requests are made only to:
-- Coinbase Public API (price charts and spot prices)
-- Alternative.me (Fear & Greed Index)
-- OKX Public API (funding rate, open interest, liquidations)
-- Bybit Public API (long/short ratio)
-- Coinlore Public API (market overview, altcoin season / BTC dominance)
-- mempool.space (BTC halving block height)
-- Blockchair Public API (crypto news headlines, optional ticker row)
+| Host | What for |
+|------|----------|
+| `www.coinbase.com` | Prices and chart history; exchange rates for non-USD |
+| `api.exchange.coinbase.com` | Candles for the crosshair and candlestick chart |
+| `api.kraken.com` | Prices for coins Coinbase doesn't list, and long-range candles |
+| `api.coinlore.com` | Market overview, altcoin season, and one bulk snapshot that feeds the ticker, watchlist and top movers |
+| `api.alternative.me` | Fear & Greed index |
+| `www.okx.com` | Funding rate, open interest, liquidations |
+| `api.bybit.com` | Long/short ratio |
+| `mempool.space` | BTC halving block height, and BTC address balances if you watch one |
+| `api.blockchair.com` | News headlines, and ETH/LTC/DOGE/BCH/ZEC address balances if you watch one |
+| `hn.algolia.com` | Crypto stories from Hacker News for the optional news row |
+| `ethereum-rpc.publicnode.com` | ERC-20 token balances if you watch an Ethereum address |
 
-All of these are public APIs requiring no authentication or account.
+Address balance lookups happen **only** for addresses you explicitly add, and
+the address is sent only to the balance provider for that chain.
+
+Opening the toolbar icon opens the Chrome Web Store listing; clicking a
+headline opens that news site. Nothing else leaves the browser.
+
+Full policy: [docs/PRIVACY.md](docs/PRIVACY.md)
 
 ---
 
 ## Development
 
-### Prerequisites
-
-- Chrome browser
-- Text editor
-
-### Quick Start
+No build step. Edit a file, reload the extension, open a new tab.
 
 ```bash
-# Clone the repository
 git clone https://github.com/Zekuath/Pricetab.git
-
-# Load in Chrome
-1. Go to chrome://extensions/
-2. Enable Developer mode
-3. Click "Load unpacked"
-4. Select the project folder
+# chrome://extensions/ → Developer mode → Load unpacked → select the folder
 ```
 
-### Project Structure
+### Tests
+
+```bash
+cd tests && npm install && npm test
+```
+
+A Node regression suite plus a jsdom smoke test, run in CI on every push.
+
+### Project structure
 
 ```
 pricetab/
-├── src/
-│   ├── app.js          # Main application (~7,700 lines)
-│   ├── theme-init.js   # Prevents white flash on load
-│   └── rate.js         # Toolbar popup script (opens store listing)
-├── vendor/             # Bundled dependencies
-├── assets/icons/       # Extension icons
-├── docs/               # Documentation
-├── site/               # Promo website (GitHub Pages, not shipped)
-├── manifest.json       # Chrome extension config
-├── index.html          # Entry point (new tab page)
-├── rate.html           # Toolbar icon popup
-└── privacy.html        # Privacy policy (GitHub Pages)
+├── src/                    # ~19,000 lines across 22 modules, loaded as
+│   │                       #   ordered <script> tags sharing one global scope
+│   ├── app.js              # Root component and all state
+│   ├── chart.js            # D3 chart, period switcher, price overview
+│   ├── api.js              # Fetchers, caches, providers
+│   ├── portfolio.js        # Holdings, lots, sales, cost basis report
+│   ├── alerts.js           # Price targets
+│   ├── settings*.js        # Settings panel
+│   ├── styles-*.js         # styled-components, split per area
+│   └── …                   # widgets, onboarding, quick switch, shortcuts
+├── vendor/                 # Bundled deps — no npm, no CDN
+├── assets/                 # Icons, store screenshots, mockup pipeline
+├── docs/                   # Roadmap, changelog, store policy compliance
+├── tests/                  # Regression suite
+├── site/                   # Promo page (GitHub Pages, not shipped)
+├── manifest.json
+├── index.html              # The new tab page
+└── privacy.html
 ```
 
-### Making Changes
+`index.html` defines the load order, and it matters — a file may only execute
+references to bindings from files loaded before it.
 
-1. Edit files in `src/`
-2. Go to `chrome://extensions/`
-3. Click reload icon on PriceTab
-4. Open new tab to test
+**Read [CLAUDE.md](CLAUDE.md) before changing anything.** It carries the
+architecture, the conventions and the reasoning behind decisions that look
+arbitrary until you know why.
 
-No build process required - changes are immediate after extension reload.
+---
+
+## Tech stack
+
+| | |
+|---|---|
+| React 16.5 | UI, class components (no hooks at this version) |
+| D3 | Charts — a custom bundle of only the modules used, not full D3 |
+| styled-components | CSS-in-JS |
+| Chrome Manifest V3 | Extension platform |
+
+Every dependency — scripts, styles and fonts — is bundled locally. **Zero
+external CDN requests.**
 
 ---
 
@@ -210,44 +222,38 @@ No build process required - changes are immediate after extension reload.
 
 | Document | Description |
 |----------|-------------|
-| [VISION.md](docs/VISION.md) | Feature roadmap and future plans |
-| [TODO.md](docs/TODO.md) | Development tasks and progress |
+| [CLAUDE.md](CLAUDE.md) | Architecture and conventions — start here |
+| [VISION.md](docs/VISION.md) | Feature roadmap |
+| [TODO.md](docs/TODO.md) | Tasks and progress |
 | [CHANGELOG.md](docs/CHANGELOG.md) | Version history |
 | [PRIVACY.md](docs/PRIVACY.md) | Privacy policy |
-| [STORE_DESCRIPTION.md](docs/STORE_DESCRIPTION.md) | Chrome Web Store listing content |
-| [STORE_ASSETS.md](docs/STORE_ASSETS.md) | Chrome Web Store asset guide |
-| [policies/](docs/policies/) | Chrome Web Store policy compliance |
+| [STORE_DESCRIPTION.md](docs/STORE_DESCRIPTION.md) | Store listing copy |
+| [STORE_ASSETS.md](docs/STORE_ASSETS.md) · [SCREENSHOT_PLAN.md](docs/SCREENSHOT_PLAN.md) | Store visuals |
+| [policies/](docs/policies/) | Chrome Web Store compliance |
 
 ---
 
 ## Contributing
 
-Contributions are welcome! Please read the documentation in `docs/` before submitting PRs.
+Issues and pull requests are welcome.
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+1. Read [CLAUDE.md](CLAUDE.md)
+2. Branch, change, and run `cd tests && npm test`
+3. Open a PR describing what changed and why
 
 ---
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MIT — see [LICENSE](LICENSE).
 
-### Acknowledgments
-
-This project is based on work by [halvves](https://codepen.io/halvves/pen/JmgbVV). See LICENSE for full attribution.
+Based on work by [halvves](https://codepen.io/halvves/pen/JmgbVV); see LICENSE
+for full attribution.
 
 ---
 
 ## Support
 
-- **Website:** [zekuath.github.io/Pricetab/site](https://zekuath.github.io/Pricetab/site/)
-- **Issues:** [GitHub Issues](https://github.com/Zekuath/Pricetab/issues)
-- **Discussions:** [GitHub Discussions](https://github.com/Zekuath/Pricetab/discussions)
-
----
-
-**Made with care for the crypto community.**
+- **Website** — [zekuath.github.io/Pricetab/site](https://zekuath.github.io/Pricetab/site/)
+- **Issues** — [GitHub Issues](https://github.com/Zekuath/Pricetab/issues)
+- **Discussions** — [GitHub Discussions](https://github.com/Zekuath/Pricetab/discussions)

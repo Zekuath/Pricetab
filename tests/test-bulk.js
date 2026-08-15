@@ -68,7 +68,18 @@ const makeSandbox = (opts = {}) => {
   assert.strictEqual(t1.run('pageTickerCache.get("DOGE-USD")'), undefined, "junk price skipped");
   const sol = t1.run('pageTickerCache.get("SOL-USD")');
   assert.strictEqual(sol.change, null, "unparseable change → null");
-  assert.strictEqual(t1.run('pageTickerCache.get("ZZZ-USD")'), undefined, "unwanted symbol skipped");
+  /* Every symbol in the response is cached, including ones this caller did
+   * not ask for. Deliberate, and load-bearing: the sweep is skipped while a
+   * previous one for the same currency is inside its TTL, so if the cache
+   * held only the first caller's coins, a three-coin alert sweep would
+   * satisfy the page ticker's request for sixty-five and push the rest onto
+   * the per-coin path — about 130 requests instead of one.
+   *
+   * Do not "fix" this back to skipping unwanted symbols without removing the
+   * TTL guard in bulkRefreshPageTickerCache first. */
+  const extra = t1.run('pageTickerCache.get("ZZZ-USD")');
+  assert.ok(extra, "a symbol outside the requested list is still cached");
+  assert.strictEqual(extra.price, 5, "…with its real price");
   assert.strictEqual(t1.run('pageTickerCache.get("XRP-USD")'), undefined, "missing coin left for fallback");
 
   // --- fallback loop integration: fresh bulk entries are TTL-skipped ---

@@ -407,6 +407,67 @@ const CoinChipName = styled.span`
   letter-spacing: 0.02em;
 `;
 
+/* The 24h move, on the chip. The list used to be bare symbols — a naming
+ * exercise, when the question you open it with is usually "which of these is
+ * doing what". Nothing is fetched for it: the ticker snapshot is already in
+ * memory, so the number is free.
+ *
+ * A selected chip is filled with the text colour, so the usual green/red
+ * would be sitting on its own inverse and lose most of its contrast.
+ * `currentColor`, dialled back, reads there — and the sign already carries
+ * the direction, so no information rests on the colour. */
+const CoinChipChange = styled.span`
+  margin-left: 0.5em;
+  font-size: 0.8em;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+  text-transform: none;
+  color: currentColor;
+  opacity: 0.7;
+`;
+
+// Sort actions above the selected list — drag is precise but tedious past a
+// handful of coins, and these are the three orders anyone actually wants
+const CoinSortRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin: 0 0 ${({ theme }) => theme.spacing.small}rem;
+`;
+
+const CoinSortLabel = styled.span`
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: ${({ theme }) => theme.color.textSecondary};
+  margin-right: 2px;
+`;
+
+const CoinSortButton = styled.button.attrs(() => ({ type: "button" }))`
+  padding: 4px 9px;
+  border: 1px solid ${({ theme }) => theme.color.border};
+  border-radius: 7px;
+  background: transparent;
+  color: ${({ theme }) => theme.color.textSecondary};
+  font-family: ${({ theme }) => theme.font.primary};
+  font-size: 0.66rem;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    color 0.15s ease;
+
+  &:hover:not(:disabled) {
+    border-color: ${({ theme }) => theme.color.borderHover};
+    color: ${({ theme }) => theme.color.text};
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+`;
+
 const SettingsForm = styled.form`
   display: flex;
   flex-direction: column;
@@ -915,15 +976,22 @@ const SettingsNoMatch = styled.div`
   color: ${({ theme }) => theme.color.textSecondary};
 `;
 
+// The two quiet "how does this work" links at the foot of Preferences
+const HelpHintRow = styled.div`
+  display: flex;
+  align-items: stretch;
+  gap: ${({ theme }) => theme.spacing.medium}rem;
+  margin-top: ${({ theme }) => theme.spacing.medium}rem;
+  border-top: 1px solid ${({ theme }) => theme.color.border};
+`;
+
 // Quiet pointer to the shortcut list, at the foot of Preferences
 const ShortcutsHint = styled.button.attrs(() => ({ type: "button" }))`
   display: block;
-  width: 100%;
-  margin-top: ${({ theme }) => theme.spacing.medium}rem;
+  flex: 1;
   padding: ${({ theme }) => theme.spacing.small}rem 0;
   background: transparent;
   border: none;
-  border-top: 1px solid ${({ theme }) => theme.color.border};
   font-family: ${({ theme }) => theme.font.primary};
   font-size: 0.66rem;
   letter-spacing: 0.1em;

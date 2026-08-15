@@ -29,8 +29,9 @@ const WIDGET_CACHE_TTL = {
   coinloreGlobal: 300000, // 5 minutes — shared by market overview + alt season
   fundingRate: 900000, // 15 min (funding settles 3x/day; the rate barely drifts)
   // openInterest / longShortRatio / liquidations track live positioning and
-  // fall through to the 5-minute default, matching the widget refresh cycle.
+  // fall through to the default below, matching the widget refresh cycle.
 };
+const WIDGET_CACHE_DEFAULT_TTL = 300000; // 5 minutes
 
 /* RETRY MECHANISM WITH CANCELLATION SUPPORT */
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -48,6 +49,81 @@ const PAGE_TICKER_TTL = 60000; // 60s TTL per coin (still < refresh, so prices u
 const PAGE_TICKER_BATCH_SIZE = 4; // coins per batch (each does 2 reqs) — keeps bursts gentle
 const PAGE_TICKER_BATCH_DELAY = 500; // ms between batches — avoids hammering Coinbase
 const PAGE_TICKER_REFRESH_MS = 120000; // full refresh every 2 min (background ticker, no need faster)
+
+/* PERSISTENT TICKER CACHE
+ * The bulk Coinlore sweep is the single largest request the extension makes
+ * (top-100 tickers), and it feeds three things at once: the page ticker, the
+ * watchlist widget and top movers. It ran on every new tab, unconditionally —
+ * so opening five tabs in a minute paid for the same 60-second-fresh snapshot
+ * five times, plus an exchange-rates request each on non-USD.
+ *
+ * Persisting the cache (and when the sweep last ran, per currency) means a new
+ * tab inherits it and paints the ticker with no request at all while it is
+ * still inside the TTL. That TTL is unchanged, so nothing shown is any staler
+ * than it would have been inside one long-lived tab.
+ */
+const TICKER_CACHE_STORAGE_KEY = "crypto_chart_ticker_cache";
+const TICKER_CACHE_MAX_ENTRIES = 140; // one top-100 sweep plus per-coin fallbacks
+const TICKER_CACHE_PERSIST_DELAY = 1000; // debounce: batches land a few at a time
+
+// currency → when the bulk sweep last succeeded for it
+const bulkSweepAt = new Map();
+
+let tickerCachePersistTimer = null;
+
+const persistPageTickerCache = () => {
+  clearTimeout(tickerCachePersistTimer);
+  tickerCachePersistTimer = setTimeout(() => {
+    try {
+      const now = Date.now();
+      const entries = Array.from(pageTickerCache.entries())
+        .filter(([, value]) => now - value.timestamp <= PAGE_TICKER_TTL)
+        .sort((a, b) => b[1].timestamp - a[1].timestamp)
+        .slice(0, TICKER_CACHE_MAX_ENTRIES);
+      localStorage.setItem(
+        TICKER_CACHE_STORAGE_KEY,
+        JSON.stringify({ entries, sweeps: Array.from(bulkSweepAt.entries()) }),
+      );
+    } catch (error) {
+      // Storage full or unavailable — new tabs just start cold
+    }
+  }, TICKER_CACHE_PERSIST_DELAY);
+};
+
+const hydratePageTickerCache = () => {
+  try {
+    const saved = JSON.parse(localStorage.getItem(TICKER_CACHE_STORAGE_KEY));
+    if (!saved || !Array.isArray(saved.entries)) return;
+    const now = Date.now();
+    saved.entries.forEach((entry) => {
+      if (!Array.isArray(entry)) return;
+      const [key, value] = entry;
+      if (
+        typeof key !== "string" ||
+        !value ||
+        typeof value.timestamp !== "number" ||
+        value.timestamp > now || // clock moved back; treat as unusable
+        typeof value.price !== "number" ||
+        !isFinite(value.price) ||
+        now - value.timestamp > PAGE_TICKER_TTL
+      ) {
+        return;
+      }
+      pageTickerCache.set(key, value);
+    });
+    if (Array.isArray(saved.sweeps)) {
+      saved.sweeps.forEach(([currency, at]) => {
+        if (typeof currency !== "string" || typeof at !== "number") return;
+        if (at > now || now - at > PAGE_TICKER_TTL) return;
+        bulkSweepAt.set(currency, at);
+      });
+    }
+  } catch (error) {
+    // Corrupt entry — the next persist overwrites it
+  }
+};
+
+hydratePageTickerCache();
 
 const getCacheKey = (coin, period, currency) => `${coin}-${period}-${currency}`;
 
@@ -256,12 +332,14 @@ const widgetCache = new Map();
 const coinWidgetKey = (name, coin) => name + ":" + coin;
 const widgetCacheName = (key) => key.split(":")[0];
 
+const widgetTtlFor = (key) =>
+  WIDGET_CACHE_TTL[widgetCacheName(key)] || WIDGET_CACHE_DEFAULT_TTL;
+
 const getWidgetCache = (key) => {
   const cached = widgetCache.get(key);
   if (!cached) return null;
 
-  const ttl = WIDGET_CACHE_TTL[widgetCacheName(key)] || 300000;
-  if (Date.now() - cached.timestamp > ttl) {
+  if (Date.now() - cached.timestamp > widgetTtlFor(key)) {
     return null; // Expired
   }
   return cached.data;
@@ -269,7 +347,73 @@ const getWidgetCache = (key) => {
 
 const setWidgetCache = (key, data) => {
   widgetCache.set(key, { data, timestamp: Date.now() });
+  persistWidgetCache();
 };
+
+/* PERSISTENT WIDGET CACHE
+ * The Map above only lives as long as the tab does, and a new-tab extension
+ * gets a brand new JS context every time — so the TTLs never actually got
+ * spent. Fear & Greed publishes a new number twice a day and is cached for an
+ * hour, but ten new tabs in that hour meant ten requests for the same value;
+ * the halving countdown (also 1h) and the shared Coinlore figures (5 min) paid
+ * the same way, per tab, forever. Nothing here changes how stale the data may
+ * be — `getWidgetCache` still applies the same TTL on the way out. It only
+ * stops each tab from starting the clock over.
+ *
+ * Same shape as the price cache above, for the same reason and with the same
+ * failure mode: if storage is unavailable, tabs simply start cold as before.
+ */
+const WIDGET_CACHE_STORAGE_KEY = "crypto_chart_widget_cache";
+// Four per-coin widgets across a 20-coin list is 80 possible keys; keeping the
+// newest 40 bounds the entry while still covering a normal rotation
+const WIDGET_CACHE_MAX_ENTRIES = 40;
+const WIDGET_CACHE_PERSIST_DELAY = 1000; // debounce: the widgets land together
+
+let widgetCachePersistTimer = null;
+
+const persistWidgetCache = () => {
+  clearTimeout(widgetCachePersistTimer);
+  widgetCachePersistTimer = setTimeout(() => {
+    try {
+      const now = Date.now();
+      const entries = Array.from(widgetCache.entries())
+        // Expired entries would only be rejected on the way back in
+        .filter(([key, value]) => now - value.timestamp <= widgetTtlFor(key))
+        .sort((a, b) => b[1].timestamp - a[1].timestamp)
+        .slice(0, WIDGET_CACHE_MAX_ENTRIES);
+      localStorage.setItem(WIDGET_CACHE_STORAGE_KEY, JSON.stringify(entries));
+    } catch (error) {
+      // Storage full or unavailable — new tabs just start cold
+    }
+  }, WIDGET_CACHE_PERSIST_DELAY);
+};
+
+const hydrateWidgetCache = () => {
+  try {
+    const saved = JSON.parse(localStorage.getItem(WIDGET_CACHE_STORAGE_KEY));
+    if (!Array.isArray(saved)) return;
+    const now = Date.now();
+    saved.forEach((entry) => {
+      if (!Array.isArray(entry)) return;
+      const [key, value] = entry;
+      if (
+        typeof key !== "string" ||
+        !value ||
+        typeof value.timestamp !== "number" ||
+        value.timestamp > now || // clock moved back; treat as unusable
+        value.data == null ||
+        now - value.timestamp > widgetTtlFor(key)
+      ) {
+        return;
+      }
+      widgetCache.set(key, { data: value.data, timestamp: value.timestamp });
+    });
+  } catch (error) {
+    // Corrupt entry — the next persist overwrites it
+  }
+};
+
+hydrateWidgetCache();
 
 const fetchFearGreedIndex = async () => {
   const cached = getWidgetCache("fearGreed");
@@ -970,11 +1114,26 @@ const fetchUsdRate = async (currency) => {
 };
 
 // Fills pageTickerCache for every wanted coin Coinlore knows about.
-// Returns true when at least one coin was filled (callers can re-render).
+// Returns true when the cache is usable afterwards, so callers re-render —
+// which includes the case where it was already fresh and nothing was fetched.
 const bulkRefreshPageTickerCache = async (coins, currency) => {
+  // A sweep inside the TTL is still the answer; re-running it would buy a
+  // snapshot the cache already holds. This is what makes persisting the
+  // cache worth anything: without it every tab swept again regardless.
+  const lastSweep = bulkSweepAt.get(currency);
+  if (lastSweep && Date.now() - lastSweep < PAGE_TICKER_TTL) return true;
+
   try {
+    /* Worth one retry, unlike most background calls. This request is the
+     * cheap path — one snapshot covers every coin — and its fallback is the
+     * per-coin one, which is about 130 requests for the same information. A
+     * free endpoint dropping a connection (ERR_CONNECTION_CLOSED) is exactly
+     * the transient `fetchWithRetry` exists for, and waiting a second
+     * beats paying two orders of magnitude more requests. Capped at one retry
+     * so a sweep can't stall behind a long backoff.
+     */
     const [tickersRes, rate] = await Promise.all([
-      fetch(COINLORE_TICKERS_API),
+      fetchWithRetry(COINLORE_TICKERS_API, {}, 1),
       fetchUsdRate(currency),
     ]);
     if (!tickersRes.ok || rate === null) return false;
@@ -982,6 +1141,13 @@ const bulkRefreshPageTickerCache = async (coins, currency) => {
     const list = json && Array.isArray(json.data) ? json.data : null;
     if (!list) return false;
 
+    /* Every symbol in the response is cached, not just the ones this caller
+     * asked for. The response is the same top-100 snapshot whoever asks, so
+     * filtering it by the caller's list would make the cache's contents
+     * depend on who happened to sweep first — and the TTL guard above would
+     * then let a sweep for three alert coins satisfy the page ticker's
+     * request for sixty-five, sending the rest down the per-coin path. The
+     * extra entries cost nothing: nobody reads a key they didn't ask for. */
     const wanted = new Set(coins);
     const seen = new Set();
     const now = Date.now();
@@ -990,7 +1156,7 @@ const bulkRefreshPageTickerCache = async (coins, currency) => {
       const symbol =
         typeof ticker.symbol === "string" ? ticker.symbol.toUpperCase() : null;
       // List is rank-ordered → on duplicate symbols the biggest market cap wins
-      if (!symbol || !wanted.has(symbol) || seen.has(symbol)) continue;
+      if (!symbol || seen.has(symbol)) continue;
       seen.add(symbol);
 
       const usd = parseFloat(ticker.price_usd);
@@ -1010,7 +1176,11 @@ const bulkRefreshPageTickerCache = async (coins, currency) => {
         volume24: isFinite(vol) && vol > 0 ? vol * rate : null,
         timestamp: now,
       });
-      filled++;
+      if (wanted.has(symbol)) filled++; // the caller only cares about its own
+    }
+    if (seen.size > 0) {
+      bulkSweepAt.set(currency, now);
+      persistPageTickerCache();
     }
     return filled > 0;
   } catch (e) {
@@ -1043,6 +1213,7 @@ const refreshPageTickerCoin = async (coin, currency, now) => {
         up: change === null ? null : change >= 0,
         timestamp: Date.now(),
       });
+      persistPageTickerCache();
     } catch (error) {
       // Leave the cache alone — the next sweep tries again
     }
@@ -1082,6 +1253,7 @@ const refreshPageTickerCoin = async (coin, currency, now) => {
       up,
       timestamp: Date.now(),
     });
+    persistPageTickerCache();
   } catch (e) {
     // silently skip unavailable coins
   }

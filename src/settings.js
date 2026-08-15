@@ -73,7 +73,7 @@ class SettingsPanel extends PureComponent {
       pendingCoin: "",
       suggestions: [],
       searching: false,
-      activeTab: "coins", // 'coins' or 'preferences'
+      activeTab: "coins", // 'coins' | 'preferences' | 'widgets'
       query: "", // settings search
       showRatePrompt: !loadRatePromptDismissed(),
       undoCoins: null,
@@ -143,6 +143,64 @@ class SettingsPanel extends PureComponent {
         feedback: "Previous coins restored",
         status: "success",
       });
+    });
+
+    /* One-tap orders for the coin list. Dragging is precise but it is a chore
+     * past a handful of coins, and "biggest first" or "today's movers first"
+     * are orders you want back regularly rather than once.
+     *
+     * The previous order goes into the same undo slot the reset uses — a
+     * sort silently discarding an arrangement you dragged into place would
+     * be the same loss, so it gets the same way back.
+     */
+    _defineProperty(this, "handleSort", (mode) => {
+      const { coins, onRestoreCoins, coinStats } = this.props;
+      if (typeof onRestoreCoins !== "function" || !Array.isArray(coins)) return;
+      const stats = coinStats || {};
+      const value = (coin, field) => {
+        const s = stats[coin];
+        const n = s ? Number(s[field]) : NaN;
+        return isFinite(n) ? n : null;
+      };
+      const previous = [...coins];
+      const sorted = [...coins].sort((a, b) => {
+        if (mode === "alpha") return a.localeCompare(b);
+        const field = mode === "cap" ? "marketCap" : "change";
+        const av = value(a, field);
+        const bv = value(b, field);
+        // Coins we have no figure for keep to the back rather than sorting
+        // as zero, which would drop them into the middle of the list
+        if (av == null && bv == null) return a.localeCompare(b);
+        if (av == null) return 1;
+        if (bv == null) return -1;
+        return bv - av; // biggest first, either way
+      });
+      if (sorted.every((c, i) => c === previous[i])) return; // already in order
+      onRestoreCoins(sorted);
+      this.setState({
+        undoCoins: previous,
+        feedback:
+          mode === "alpha"
+            ? "Sorted A–Z"
+            : mode === "cap"
+              ? "Sorted by market cap"
+              : "Sorted by today's move",
+        status: "info",
+      });
+    });
+
+    /* The 24h move on a selected coin chip, or nothing. Reads the snapshot the
+     * app already holds — a chip never triggers a request, so a coin we have
+     * no figure for simply shows its symbol as before. */
+    _defineProperty(this, "renderChipChange", (coin) => {
+      const stat = this.props.coinStats && this.props.coinStats[coin];
+      const change = stat ? Number(stat.change) : NaN;
+      if (!isFinite(change)) return null;
+      return React.createElement(
+        CoinChipChange,
+        null,
+        `${change >= 0 ? "+" : ""}${change.toFixed(1)}%`,
+      );
     });
 
     _defineProperty(this, "handleChipClick", (symbol) => {
@@ -468,7 +526,10 @@ class SettingsPanel extends PureComponent {
       chartType,
       onChartTypeChange,
       onChartColorChange,
+      coinStats,
       widgets,
+      widgetSize,
+      onWidgetSizeChange,
       onWidgetToggle,
       onWidgetPreset,
     } = this.props;
@@ -486,6 +547,10 @@ class SettingsPanel extends PureComponent {
     const suggestionsOpen = Boolean(
       pendingCoin.trim() && (suggestions.length || !searching),
     );
+    const stats = coinStats || {};
+    // Sorting by a figure needs the figures; until the sweep lands we say so
+    // on the buttons rather than offering an order we can't produce
+    const hasStats = activeCoins.some((c) => stats[c]);
 
     return React.createElement(
       SettingsOverlay,
@@ -592,6 +657,42 @@ class SettingsPanel extends PureComponent {
                 activeCoins.length + " / " + MAX_COINS,
               ),
             ),
+            activeCoins.length > 1 &&
+              React.createElement(
+                CoinSortRow,
+                null,
+                React.createElement(CoinSortLabel, null, "Sort"),
+                React.createElement(
+                  CoinSortButton,
+                  {
+                    onClick: () => this.handleSort("alpha"),
+                    title: "Order the list alphabetically",
+                  },
+                  "A–Z",
+                ),
+                React.createElement(
+                  CoinSortButton,
+                  {
+                    onClick: () => this.handleSort("change"),
+                    disabled: !hasStats,
+                    title: hasStats
+                      ? "Biggest 24h move first"
+                      : "Waiting for today's prices",
+                  },
+                  "24h move",
+                ),
+                React.createElement(
+                  CoinSortButton,
+                  {
+                    onClick: () => this.handleSort("cap"),
+                    disabled: !hasStats,
+                    title: hasStats
+                      ? "Largest market cap first"
+                      : "Waiting for market data",
+                  },
+                  "Market cap",
+                ),
+              ),
             React.createElement(
               CoinList,
               null,
@@ -610,6 +711,8 @@ class SettingsPanel extends PureComponent {
                         onDrop: (e) => this.handleDrop(coin, e),
                       },
                       coin,
+                      // Free — the ticker snapshot is already in memory
+                      this.renderChipChange(coin),
                       React.createElement(
                         CoinChipRemove,
                         {
@@ -701,7 +804,8 @@ class SettingsPanel extends PureComponent {
                     ? this.handleUndoReset
                     : this.handleResetClick,
                 },
-                undoCoins ? "Undo reset" : "Reset to defaults",
+                // Covers a reset and a sort, both of which replace the order
+                undoCoins ? "Undo" : "Reset to defaults",
               ),
             ),
           ),
@@ -722,6 +826,40 @@ class SettingsPanel extends PureComponent {
                 null,
                 "Show data widgets below chart",
               ),
+              /* Size. The cards were built small and everything in them was
+               * fixed to the root font size, so there was no way to make
+               * them readable short of zooming the whole page. */
+              React.createElement(WidgetGroupTitle, null, "Size"),
+              React.createElement(
+                PresetRow,
+                null,
+                ...WIDGET_SIZE_OPTIONS.map((option) =>
+                  React.createElement(
+                    PresetButton,
+                    {
+                      key: option.value,
+                      type: "button",
+                      active:
+                        (widgetSize || DEFAULT_WIDGET_SIZE) === option.value,
+                      title: option.label,
+                      "aria-label": `${option.label} widgets`,
+                      onClick: () =>
+                        onWidgetSizeChange && onWidgetSizeChange(option.value),
+                    },
+                    option.short,
+                  ),
+                ),
+              ),
+              React.createElement(
+                ToggleSectionDesc,
+                null,
+                (
+                  WIDGET_SIZE_OPTIONS.find(
+                    (o) => o.value === (widgetSize || DEFAULT_WIDGET_SIZE),
+                  ) || WIDGET_SIZE_OPTIONS[1]
+                ).label + " — applies to every widget",
+              ),
+              React.createElement(WidgetGroupTitle, null, "Bundles"),
               React.createElement(
                 PresetRow,
                 null,
@@ -811,6 +949,9 @@ SettingsPanel.defaultProps = {
     liquidations: false,
     altcoinSeason: false,
   },
+  coinStats: null, // { COIN: { price, change, marketCap } }, from the app
+  widgetSize: DEFAULT_WIDGET_SIZE,
+  onWidgetSizeChange: null,
   onWidgetToggle: null,
 };
 

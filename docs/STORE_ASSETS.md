@@ -13,7 +13,8 @@ This document explains how to create all required assets for publishing PriceTab
 - [x] Source icon - `assets/icons/icon.png`
 
 ### Screenshots (✅ COMPLETED)
-- [x] 6 store screenshots (1280×800) - `assets/screenshots/01-hero.png` … `06-themes.png`
+- [x] 5 store screenshots (1280×800) - `assets/screenshots/01-hero.png` … `05-targets.png`
+      (five is the cap the upload form accepts — verified in the console)
 - [x] Upload order + on-image captions documented in `assets/screenshots/README.md`
 - [x] First image is the promotional hero
 
@@ -26,38 +27,28 @@ This document explains how to create all required assets for publishing PriceTab
 
 ## 📸 Screenshot Guide
 
-> ✅ **Current screenshots are fresh (1.3.0)** — composed from the live UI via
-> `assets/mockups/store-frames.html` + `assets/mockups/raw/`. Re-capture from there if features change
-> (portfolio + onboarding are staged for 1.4.0 and not yet featured).
+> ⚠️ **The 1.3.0 set is stale.** It predates the portfolio, price targets,
+> compare mode and candlesticks. The 1.4.0 set is planned in
+> **[SCREENSHOT_PLAN.md](SCREENSHOT_PLAN.md)** — read that first; it is the
+> canonical brief. This section only records the constraints.
 
-### What to Capture
+### Constraints
 
-Take 5 screenshots at **1280x800**. Minimum 1, recommended 5.
+- **1280×800**, and **five images maximum** (verified in the CWS console,
+  Aug 2026). Minimum 1. The first three are what show in search results.
+- Composed from the live UI via `assets/mockups/store-frames.html` +
+  `assets/mockups/raw/` — never hand-assembled, never hand-typed numbers.
 
-**1. Main view with widgets (dark mode)**
-- BTC 1D or 1W chart
-- Widget panel visible on the left: Fear & Greed + Market Overview + Halving Countdown at minimum
-- × button visible top-left
-- Shows the full new feature set
+### What to capture
 
-**2. Widget panel close-up**
-- BTC chart with ALL 11 widgets enabled and visible
-- Shows Watchlist, Top Movers, Fear & Greed, Market Overview, Halving, RSI, Funding Rate, Long/Short, OI, Liquidations, Altcoin Season
-- Demonstrates the depth of market data
+See `SCREENSHOT_PLAN.md` §4 for the five frames and §5 for the house rules.
 
-**3. Settings — Widgets tab**
-- Settings panel open, Preferences tab selected, scrolled to WIDGETS section
-- Shows widget toggles (some on, some off)
-- Demonstrates customisability
+Two rules that used to live here and were wrong, kept as a warning:
 
-**4. Settings — Coins tab**
-- Settings panel open, Coins tab selected
-- A few coins selected (BTC, ETH, SOL, XRP)
-- Shows the coin management UI
-
-**5. Light mode — clean view**
-- BTC ALL chart, light theme, no widgets (clean/minimal look)
-- Demonstrates theme support and minimal option
+- ~~"BTC chart with **ALL 11 widgets** enabled"~~ — every widget ships **off**.
+  A frame showing all eleven is a state no install arrives in, and it fights
+  the brief (minimal, near-default). Cap is five widgets in any one frame.
+- ~~"7 screenshots"~~ — the upload form takes five.
 
 ### How to Take Screenshots on Windows
 

@@ -219,9 +219,19 @@ const loadChartColorFromStorage = () =>
 const saveChartColorToStorage = (enabled) =>
   saveSetting(CHART_COLOR_STORAGE_KEY, enabled);
 
-/* Price alerts: [{ id, coin, direction, target, currency, created,
- * triggeredAt }]. Coins and currencies are whitelist-checked and targets
- * must be finite positives, so a corrupted entry can't fire a bogus alert. */
+/* Price targets: [{ id, coin, kind, direction, target, currency, created,
+ * startPrice, triggeredAt, hitPrice }]. Coins and currencies are
+ * whitelist-checked and targets must be finite positives, so a corrupted
+ * entry can't fire a bogus alert.
+ *
+ * `kind` and `startPrice` arrived after the first release: entries written
+ * before them are still valid targets, so a missing kind reads as "price"
+ * and a missing startPrice as null (the panel then draws no progress meter
+ * rather than inventing a starting point). A percent target's `target` is a
+ * size of move, so it is additionally capped — nothing moves 5,000% in a day,
+ * and a target that can never fire is worse than no target. */
+const MAX_PERCENT_TARGET = 100;
+
 const sanitizeAlerts = (list) => {
   if (!Array.isArray(list)) return [];
   const clean = [];
@@ -231,20 +241,27 @@ const sanitizeAlerts = (list) => {
     const currency =
       typeof a.currency === "string" ? a.currency.toUpperCase() : "";
     const target = Number(a.target);
+    const kind = a.kind === "percent" ? "percent" : "price";
     if (!SUGGESTED_COINS.includes(coin)) continue;
     if (!CURRENCY_OPTIONS.some((c) => c.value === currency)) continue;
     if (!isFinite(target) || target <= 0) continue;
+    if (kind === "percent" && target > MAX_PERCENT_TARGET) continue;
     if (a.direction !== "above" && a.direction !== "below") continue;
     const created = Number(a.created);
+    const startPrice = Number(a.startPrice);
     const triggeredAt = Number(a.triggeredAt);
+    const hitPrice = Number(a.hitPrice);
     clean.push({
       id: typeof a.id === "string" && a.id ? a.id : `${coin}-${Date.now()}-${clean.length}`,
       coin,
+      kind,
       direction: a.direction,
       target,
       currency,
       created: isFinite(created) && created > 0 ? created : Date.now(),
+      startPrice: isFinite(startPrice) && startPrice > 0 ? startPrice : null,
       triggeredAt: isFinite(triggeredAt) && triggeredAt > 0 ? triggeredAt : null,
+      hitPrice: isFinite(hitPrice) && hitPrice > 0 ? hitPrice : null,
     });
     if (clean.length >= MAX_ALERTS) break;
   }
@@ -316,6 +333,12 @@ const loadOhlcEnabled = () =>
 
 const saveOhlcEnabled = (enabled) => saveSetting(OHLC_ENABLED_KEY, enabled);
 
+const loadAlertTabTitle = () =>
+  loadBoolSetting(ALERT_TAB_TITLE_KEY, DEFAULT_ALERT_TAB_TITLE);
+
+const saveAlertTabTitle = (enabled) =>
+  saveSetting(ALERT_TAB_TITLE_KEY, enabled);
+
 const loadMoveHeadlines = () =>
   loadBoolSetting(MOVE_HEADLINES_KEY, DEFAULT_MOVE_HEADLINES);
 
@@ -326,6 +349,102 @@ const loadMarketStats = () =>
   loadBoolSetting(MARKET_STATS_KEY, DEFAULT_MARKET_STATS);
 
 const saveMarketStats = (enabled) => saveSetting(MARKET_STATS_KEY, enabled);
+
+const loadChartGrid = () =>
+  loadBoolSetting(CHART_GRID_KEY, DEFAULT_CHART_GRID);
+
+const saveChartGrid = (enabled) => saveSetting(CHART_GRID_KEY, enabled);
+
+const loadPredict = () => loadBoolSetting(PREDICT_KEY, DEFAULT_PREDICT);
+const savePredict = (enabled) => saveSetting(PREDICT_KEY, enabled);
+
+const loadPredictAhead = () =>
+  loadNumberSetting(PREDICT_AHEAD_KEY, PREDICT_AHEAD_OPTIONS, DEFAULT_PREDICT_AHEAD);
+const savePredictAhead = (n) => saveSetting(PREDICT_AHEAD_KEY, n);
+
+const loadCallsShowSettled = () =>
+  loadBoolSetting(CALLS_SHOW_SETTLED_KEY, DEFAULT_CALLS_SHOW_SETTLED);
+const saveCallsShowSettled = (v) => saveSetting(CALLS_SHOW_SETTLED_KEY, v);
+
+const loadCallsCelebrate = () =>
+  loadBoolSetting(CALLS_CELEBRATE_KEY, DEFAULT_CALLS_CELEBRATE);
+const saveCallsCelebrate = (v) => saveSetting(CALLS_CELEBRATE_KEY, v);
+
+/* Open calls and the tally. Sanitized on the way in like every other stored
+ * shape: a hand-edited file must not be able to produce a call that resolves
+ * against a band it never named, or a streak longer than the games played. */
+const sanitizeCalls = (raw) => {
+  const empty = { record: { hits: 0, total: 0, streak: 0, best: 0 }, open: [] };
+  if (!raw || typeof raw !== "object") return empty;
+  const num = (v) => (typeof v === "number" && isFinite(v) && v >= 0 ? Math.floor(v) : 0);
+  const r = raw.record && typeof raw.record === "object" ? raw.record : {};
+  const total = num(r.total);
+  const hits = Math.min(num(r.hits), total);
+  const best = Math.min(num(r.best), total);
+  const record = { hits, total, streak: Math.min(num(r.streak), hits), best };
+
+  const shape = (list, cap, extra) =>
+    (Array.isArray(list) ? list : [])
+    .filter(
+      (c) =>
+        c &&
+        typeof c === "object" &&
+        typeof c.id === "string" &&
+        typeof c.coin === "string" &&
+        SUGGESTED_COINS.includes(c.coin.toUpperCase()) &&
+        // CURRENCY_OPTIONS holds { value, label, symbol } objects, so an
+        // `includes` on the code silently rejected everything
+        CURRENCY_OPTIONS.some((o) => o.value === c.currency) &&
+        [c.target, c.span, c.lo, c.hi, c.placed].every(
+          (v) => typeof v === "number" && isFinite(v),
+        ) &&
+        c.span > 0 &&
+        c.hi > c.lo &&
+        // Which future square: 1 is the next one along. A call without a
+        // column cannot be replaced by a later call on the same square.
+        typeof c.col === "number" &&
+        isFinite(c.col) &&
+        c.col >= 1 &&
+        c.col <= 10,
+    )
+    .map((c) => ({
+      id: c.id,
+      coin: c.coin.toUpperCase(),
+      currency: c.currency,
+      period: typeof c.period === "string" ? c.period : "day",
+      col: Math.round(c.col),
+      target: c.target,
+      span: c.span,
+      lo: c.lo,
+      hi: c.hi,
+      placed: c.placed,
+      placedPrice:
+        typeof c.placedPrice === "number" && isFinite(c.placedPrice)
+          ? c.placedPrice
+          : null,
+      result: c.result === "hit" || c.result === "miss" ? c.result : null,
+      settledPrice:
+        typeof c.settledPrice === "number" && isFinite(c.settledPrice)
+          ? c.settledPrice
+          : null,
+    }))
+      .slice(0, cap)
+      .map((c) => (extra ? extra(c) : c));
+
+  const open = shape(raw.open, MAX_OPEN_CALLS);
+
+  /* Settled calls are kept so the chart can still show what was said and how
+   * it turned out. `result` is the only thing that separates them, and a row
+   * without a real one is dropped rather than shown as an unexplained box. */
+  const done = shape(raw.done, MAX_DONE_CALLS, (c) => c).filter(
+    (c) => c.result === "hit" || c.result === "miss",
+  );
+
+  return { record, open, done };
+};
+
+const loadCalls = () => sanitizeCalls(loadJsonSetting(CALLS_KEY, null));
+const saveCalls = (calls) => saveJsonSetting(CALLS_KEY, sanitizeCalls(calls));
 
 const loadVolumeBars = () =>
   loadBoolSetting(VOLUME_BARS_KEY, DEFAULT_VOLUME_BARS);
@@ -364,6 +483,73 @@ const sanitizeLots = (list) => {
     if (lots.length >= MAX_LOTS_PER_HOLDING) break;
   }
   return lots;
+};
+
+/* The lot slices one sale consumed: [{ amount, cost, acquired, source }].
+ *
+ * This is what lets the report pair an acquisition with a disposal, which is
+ * the shape every tax form asks for. Sales recorded before it existed simply
+ * have none — they keep their totals and the report says which lines it could
+ * not pair, rather than inventing an acquisition date for them.
+ */
+const sanitizeMatched = (list) => {
+  if (!Array.isArray(list)) return [];
+  const out = [];
+  for (const m of list) {
+    if (!m || typeof m !== "object") continue;
+    const amount = Number(m.amount);
+    const cost = Number(m.cost);
+    const acquired = Number(m.acquired);
+    if (!isFinite(amount) || amount <= 0) continue;
+    out.push({
+      amount,
+      cost: isFinite(cost) && cost >= 0 ? cost : 0,
+      acquired: isFinite(acquired) && acquired > 0 ? Math.floor(acquired) : 0,
+      source: m.source === "chain" ? "chain" : "manual",
+    });
+    if (out.length >= MAX_LOTS_PER_HOLDING) break;
+  }
+  return out;
+};
+
+/* Sales: [{ amount, received, basis, basisAmount, matched, time }].
+ *
+ * A sale can't be recomputed after the fact — the lots it consumed are gone —
+ * so the cost basis it used is written down at the moment it is recorded, not
+ * derived later. `basisAmount` is how much of the sold amount actually had a
+ * purchase behind it, which is not always the whole sale: you can hold coins
+ * you never logged a purchase for, and selling those produces proceeds with
+ * no basis to set against them. Keeping the two separate is what lets the
+ * report say "this gain covers 3 of the 5 you sold" instead of quietly
+ * treating the unlogged part as free money.
+ */
+const sanitizeSales = (list) => {
+  if (!Array.isArray(list)) return [];
+  const sales = [];
+  for (const sale of list) {
+    if (!sale || typeof sale !== "object") continue;
+    const amount = Number(sale.amount);
+    const received = Number(sale.received);
+    const basis = Number(sale.basis);
+    const basisAmount = Number(sale.basisAmount);
+    const time = Number(sale.time);
+    if (!isFinite(amount) || amount <= 0) continue;
+    if (!isFinite(received) || received < 0) continue;
+    sales.push({
+      amount,
+      received,
+      basis: isFinite(basis) && basis >= 0 ? basis : 0,
+      // Can never exceed what was sold, whatever the stored value claims
+      basisAmount:
+        isFinite(basisAmount) && basisAmount > 0
+          ? Math.min(basisAmount, amount)
+          : 0,
+      matched: sanitizeMatched(sale.matched),
+      time: isFinite(time) && time > 0 ? Math.floor(time) : 0,
+    });
+    if (sales.length >= MAX_SALES_PER_HOLDING) break;
+  }
+  return sales;
 };
 
 // Watched addresses of one holding: [{ address, amount, lots }] — each entry
@@ -427,7 +613,13 @@ const sanitizePortfolio = (list) => {
       lots = [];
     }
     seen.add(coin);
-    clean.push({ coin, amount, lots, watches });
+    clean.push({
+      coin,
+      amount,
+      lots,
+      watches,
+      sales: sanitizeSales(entry.sales),
+    });
   }
   return clean;
 };
@@ -452,3 +644,13 @@ const loadPortfolioPeriodFromStorage = () =>
 
 const savePortfolioPeriodToStorage = (period) =>
   saveSetting(PORTFOLIO_PERIOD_KEY, period);
+
+const loadPortfolioSortFromStorage = () =>
+  loadEnumSetting(
+    PORTFOLIO_SORT_KEY,
+    PORTFOLIO_SORT_OPTIONS.map((o) => o.value),
+    DEFAULT_PORTFOLIO_SORT,
+  );
+
+const savePortfolioSortToStorage = (sort) =>
+  saveSetting(PORTFOLIO_SORT_KEY, sort);

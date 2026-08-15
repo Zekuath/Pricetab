@@ -1,46 +1,104 @@
 /* ONBOARDING TOUR
- * First-run spotlight tour. Highlights the real UI (settings gear, live price,
- * period switcher) with a dimmed backdrop + cutout, one step at a time.
- * Shown once, then remembered via ONBOARDING_SEEN_KEY in localStorage.
- * Skippable at any point.
+ * First-run spotlight tour. Highlights the real UI (live price, period
+ * switcher, settings gear) with a dimmed backdrop + cutout, one step at a
+ * time. Shown once, then remembered via ONBOARDING_SEEN_KEY in localStorage.
+ * Skippable at any point, and replayable from Settings.
+ *
+ * The step order follows the eye down the page — the chart readouts first,
+ * then the four buttons around it, then Settings — instead of hopping across
+ * the screen. Every step that has a key names it (`keys`), because the
+ * shortcuts are what the extension is actually good at and the tour is the
+ * only place a first-time user will meet them.
+ *
+ * Step fields:
+ *   selector  target to cut out of the dim; null renders a centred card
+ *   optional  the target may legitimately not exist yet (a fresh install has
+ *             no widgets on, so there is no widget row to point at). Those
+ *             steps fall back to a centred card instead of being skipped —
+ *             the step that explains how to turn a thing on must not be the
+ *             one that disappears because it is off.
+ *   keys      shortcut chips under the title
+ *   keyGrid   the closing step's mini shortcut list
  */
-
-// Steps with no `selector` render a centered card (no cutout).
 const ONBOARDING_STEPS = [
   {
     selector: null,
     title: "Welcome to PriceTab 👋",
-    text: "Live crypto charts on every new tab. Here's a quick 30-second tour.",
-  },
-  {
-    selector: '[data-tour="settings"]',
-    title: "Everything starts here",
-    text: "Open Settings to add or remove coins, switch currency and theme, turn on widgets, the news headline ticker, the page ticker and more.",
-  },
-  {
-    selector: '[data-tour="portfolio"]',
-    title: "Portfolio",
-    text: "Track your holdings by amount — no wallet connection. Total value and 24h change update live, stored only on this device.",
+    text: "Live crypto charts on every new tab. Here's a quick run through what's here — skip it any time.",
   },
   {
     selector: '[data-tour="price"]',
-    title: "Live price — click to switch coins",
-    text: "This is your active coin and its live price. Click it to jump to the next coin in your list.",
+    title: "Live price",
+    text: "Your active coin and its live price. Click it — or use the arrow keys — to move through your coin list.",
+    keys: ["←", "→"],
   },
   {
     selector: '[data-tour="change"]',
-    title: "Change — click to flip the view",
-    text: "This shows how the price moved. Click it to toggle between percentage change (%) and absolute price change.",
+    title: "Change",
+    text: "How the price moved over the range. Click it to flip between percentage and absolute change.",
+    keys: ["X"],
   },
   {
     selector: '[data-tour="period"]',
     title: "Time range",
-    text: "Switch the chart range, anywhere from the last hour (1H) to all time (ALL).",
+    text: "Anywhere from the last hour (1H) to all time (ALL). The number keys jump straight to a range.",
+    keys: ["1", "–", "6"],
+  },
+  {
+    selector: null,
+    title: "Jump to any coin",
+    text: "Press / and type a symbol or a name. Your own coins rank first, and picking one you don't track yet adds it to your list.",
+    keys: ["/"],
+  },
+  {
+    selector: '[data-tour="compare"]',
+    title: "Compare two coins",
+    text: "Pick a second coin and both are drawn as percent change from the start of the range — one shared scale, so the lines can be trusted. Press C again or Esc to drop it.",
+    keys: ["C"],
+  },
+  {
+    selector: '[data-tour="alerts"]',
+    title: "Price targets",
+    text: "Set “BTC rises above…” and PriceTab tells you on your next new tab when it was hit — even overnight, while no tab was open. Nothing is pushed, which is how it stays permission-free.",
+    keys: ["A"],
+  },
+  {
+    selector: '[data-tour="portfolio"]',
+    title: "Portfolio",
+    text: "Track holdings by amount, or paste a public address and let it read the balance. Value, cost basis and 24h P/L — stored only on this device, no wallet connection.",
+    keys: ["P"],
   },
   {
     selector: '[data-tour="widgets"]',
+    optional: true, // nothing to point at until a widget is switched on
     title: "Widgets",
-    text: "Extras like your watchlist, Fear & Greed and a market overview. Add, remove or reorder them — and toggle the news headline ticker — from Settings.",
+    text: "Watchlist, Fear & Greed, funding rates, market overview and more. Switch them on in Settings → Widgets — there are ready-made bundles — then drag them to reorder, or hover one and click × to hide just that card.",
+  },
+  {
+    selector: '[data-tour="widget-toggle"]',
+    // Deliberately not `optional`: this step describes a button, so with no
+    // button on screen it has nothing to say and is better skipped. The step
+    // before it is the one that has to survive, and it does.
+    title: "Clear the row",
+    text: "This clears every widget at once, and brings them all back. Nothing is switched off, so they return exactly as you arranged them.",
+    keys: ["W"],
+  },
+  {
+    selector: '[data-tour="settings"]',
+    title: "Everything else lives here",
+    text: "Coins, currency, theme, widgets and the tickers. There's a search box at the top of Preferences if you can't find something.",
+    keys: ["S"],
+  },
+  {
+    selector: null,
+    title: "It's faster from the keyboard",
+    text: "Press ? any time for the full list. A few more worth knowing:",
+    keyGrid: [
+      { keys: ["T"], label: "Line or candlesticks" },
+      { keys: ["D"], label: "Light or dark" },
+      { keys: ["Space"], label: "Rotate through your coins" },
+      { keys: ["R"], label: "Refresh now" },
+    ],
   },
 ];
 
@@ -48,6 +106,8 @@ const SPOTLIGHT_PADDING = 8; // px of breathing room around the highlighted elem
 const TIP_WIDTH = 300; // px, tooltip max width
 const TIP_GAP = 14; // px between cutout and tooltip
 const VIEWPORT_MARGIN = 12; // px, keep tooltip off the screen edges
+const CHARS_PER_LINE = 38; // rough wrap width of the card's body text
+const LINE_HEIGHT = 18; // px per wrapped line, for the height estimate
 
 // Matches the panelLift / widgetAppear entrances used across the app
 const onbCardIn = keyframes`
@@ -87,6 +147,7 @@ const OnbCard = styled.div`
   max-width: calc(100vw - ${VIEWPORT_MARGIN * 2}px);
   box-sizing: border-box;
   padding: 1rem 1.1rem 0.9rem;
+  overflow: hidden; /* keeps the progress bar inside the rounded corners */
   background: ${({ theme }) => theme.color.bgSecondary};
   color: ${({ theme }) => theme.color.text};
   border: 1px solid ${({ theme }) => theme.color.border};
@@ -112,6 +173,53 @@ const OnbText = styled.div`
   margin-bottom: 0.9rem;
 `;
 
+/* Key chips. Same visual language as the "?" reference so the two read as
+ * one system — a key the tour taught is recognisable in the list later. */
+const OnbKey = styled.kbd`
+  min-width: 1.3rem;
+  padding: 0.1rem 0.32rem;
+  border: 1px solid ${({ theme }) => theme.color.border};
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  background: ${({ theme }) => theme.color.bg};
+  font-family: ${({ theme }) => theme.font.primary};
+  font-size: 0.66rem;
+  text-align: center;
+  color: ${({ theme }) => theme.color.text};
+`;
+
+const OnbKeyRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-bottom: 0.55rem;
+`;
+
+const OnbKeySep = styled.span`
+  font-size: 0.66rem;
+  color: ${({ theme }) => theme.color.textSecondary};
+`;
+
+// The closing step's mini shortcut list
+const OnbGrid = styled.div`
+  margin-bottom: 0.9rem;
+`;
+
+const OnbGridRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.22rem 0;
+  font-size: 0.76rem;
+  color: ${({ theme }) => theme.color.text};
+`;
+
+const OnbGridKeys = styled.div`
+  flex: 0 0 3.6rem; /* wide enough for the longest chip ("Space") */
+  display: flex;
+  gap: 0.2rem;
+`;
+
 const OnbFooter = styled.div`
   display: flex;
   align-items: center;
@@ -119,24 +227,28 @@ const OnbFooter = styled.div`
   gap: 0.5rem;
 `;
 
-// Step progress as dots — quieter than "n / m" text, same visual language
-// as the widget/settings chrome (border → text color when active).
-const OnbDots = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 0.32rem;
+/* Progress. A dot per step stopped scaling once the tour covered everything
+ * the extension does — eleven dots crowd the footer out of a 300px card — so
+ * it is a line along the card's bottom edge plus a quiet counter. */
+const OnbProgressTrack = styled.div`
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background: ${({ theme }) => theme.color.border};
 `;
 
-const OnbDot = styled.span`
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: ${({ theme, active }) =>
-    active ? theme.color.text : theme.color.border};
-  transform: scale(${({ active }) => (active ? 1.2 : 1)});
-  transition:
-    background 0.25s ease,
-    transform 0.25s ease;
+const OnbProgressFill = styled.div`
+  height: 100%;
+  background: ${({ theme }) => theme.color.text};
+  transition: width 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+`;
+
+const OnbCount = styled.div`
+  font-size: 0.7rem;
+  font-variant-numeric: tabular-nums;
+  color: ${({ theme }) => theme.color.textSecondary};
 `;
 
 const OnbButtons = styled.div`
@@ -196,33 +308,52 @@ class OnboardingTour extends React.Component {
   }
 
   componentDidMount() {
-    let seen = false;
-    try {
-      seen = localStorage.getItem(ONBOARDING_SEEN_KEY) === "1";
-    } catch (e) {
-      seen = false;
+    // `replay` is Settings asking for the tour again — it ignores the flag
+    if (!this.props.replay) {
+      let seen = false;
+      try {
+        seen = localStorage.getItem(ONBOARDING_SEEN_KEY) === "1";
+      } catch (e) {
+        seen = false;
+      }
+      if (seen) return;
     }
-    if (seen) return;
     // Let the app finish its first render (skeleton -> real elements) first
-    this.startTimer = setTimeout(() => {
-      this.setState({ active: true, step: 0 }, () => this.measure());
-      window.addEventListener("resize", this.handleResize);
-      window.addEventListener("keydown", this.handleKeyDown);
-    }, 600);
+    this.startTimer = setTimeout(
+      () => {
+        this.setState({ active: true, step: 0 }, () => this.measure());
+        this.announce(true);
+        window.addEventListener("resize", this.handleResize);
+        window.addEventListener("keydown", this.handleKeyDown);
+      },
+      this.props.replay ? 120 : 600,
+    );
   }
 
   componentWillUnmount() {
     if (this.startTimer) clearTimeout(this.startTimer);
     if (this.rafId) cancelAnimationFrame(this.rafId);
+    if (this.state.active) this.announce(false);
     window.removeEventListener("resize", this.handleResize);
     window.removeEventListener("keydown", this.handleKeyDown);
+  }
+
+  // The app owns the global shortcut handler; while the tour drives the
+  // arrow keys and Esc itself, it has to know to stand down.
+  announce(active) {
+    if (this.props.onActiveChange) this.props.onActiveChange(active);
   }
 
   // Locate the current step's target; retry across a few frames while the
   // app swaps skeletons for real content.
   measure(retries) {
     if (this.rafId) cancelAnimationFrame(this.rafId);
-    const tries = typeof retries === "number" ? retries : 12;
+    // The generous retry budget is only for the opening steps, which race the
+    // app swapping its skeleton for real content. Later on the page has
+    // settled, so a target that isn't there won't appear — waiting the full
+    // budget would just leave a step the user is about to skip past on screen.
+    const tries =
+      typeof retries === "number" ? retries : this.state.step <= 1 ? 12 : 2;
     const step = ONBOARDING_STEPS[this.state.step];
     if (!step || !step.selector) {
       this.setState({ rect: null });
@@ -238,6 +369,10 @@ class OnboardingTour extends React.Component {
     }
     if (tries > 0) {
       this.rafId = requestAnimationFrame(() => this.measure(tries - 1));
+    } else if (step.optional) {
+      // Nothing to point at yet — the step still has something to say, so
+      // show it centred rather than dropping it
+      this.setState({ rect: null });
     } else {
       // Target never showed up — skip past it rather than blocking the tour
       this.goNext();
@@ -250,9 +385,19 @@ class OnboardingTour extends React.Component {
 
   handleKeyDown(e) {
     if (!this.state.active) return;
+    if (
+      e.key !== "Escape" &&
+      e.key !== "ArrowRight" &&
+      e.key !== "ArrowLeft" &&
+      e.key !== "Enter" &&
+      e.key !== " "
+    ) {
+      return;
+    }
+    e.preventDefault(); // Space would scroll the page out from under the tour
     if (e.key === "Escape") this.finish();
-    else if (e.key === "ArrowRight" || e.key === "Enter") this.goNext();
     else if (e.key === "ArrowLeft") this.goPrev();
+    else this.goNext();
   }
 
   goNext() {
@@ -278,21 +423,34 @@ class OnboardingTour extends React.Component {
     } catch (e) {
       /* localStorage unavailable — tour just won't persist */
     }
+    window.removeEventListener("keydown", this.handleKeyDown);
     this.setState({ active: false });
+    this.announce(false);
+    // Lets the app drop the replay request, so closing Settings later
+    // doesn't remount this and start the tour over
+    if (this.props.onFinish) this.props.onFinish();
   }
 
   // Position the tooltip relative to the cutout (or center it when there's none)
   cardStyle() {
     const { rect } = this.state;
+    const step = ONBOARDING_STEPS[this.state.step] || {};
     const vw = window.innerWidth;
     const vh = window.innerHeight;
+    // Rough card height. The steps vary a lot now — two lines of text or
+    // six, with or without key chips — and a fixed guess would place a tall
+    // card off the bottom of the screen, so estimate from the content.
+    const estHeight =
+      100 +
+      Math.ceil((step.text || "").length / CHARS_PER_LINE) * LINE_HEIGHT +
+      (step.keys ? 28 : 0) +
+      (step.keyGrid ? step.keyGrid.length * 26 + 10 : 0);
     if (!rect) {
       return {
-        top: Math.max(VIEWPORT_MARGIN, vh / 2 - 90),
+        top: Math.max(VIEWPORT_MARGIN, vh / 2 - estHeight / 2),
         left: Math.max(VIEWPORT_MARGIN, vw / 2 - TIP_WIDTH / 2),
       };
     }
-    const estHeight = 150;
     const holeTop = rect.top - SPOTLIGHT_PADDING;
     const holeBottom = rect.top + rect.height + SPOTLIGHT_PADDING;
     let top;
@@ -303,6 +461,12 @@ class OnboardingTour extends React.Component {
     } else {
       top = Math.max(VIEWPORT_MARGIN, vh / 2 - estHeight / 2);
     }
+    // Last resort: a card taller than the estimate still must not hang off
+    // the bottom, where its Next button would be unreachable
+    top = Math.min(
+      top,
+      Math.max(VIEWPORT_MARGIN, vh - estHeight - VIEWPORT_MARGIN),
+    );
     let left = rect.left + rect.width / 2 - TIP_WIDTH / 2;
     left = Math.max(
       VIEWPORT_MARGIN,
@@ -338,21 +502,51 @@ class OnboardingTour extends React.Component {
         OnbCard,
         { key: "card", style: this.cardStyle() },
         React.createElement(OnbTitle, null, current.title),
+        current.keys &&
+          React.createElement(
+            OnbKeyRow,
+            null,
+            current.keys.map((key, i) =>
+              // A bare dash is a range ("1 – 6"), not a key to press
+              key === "–"
+                ? React.createElement(OnbKeySep, { key: i }, "–")
+                : React.createElement(OnbKey, { key: i }, key),
+            ),
+          ),
         React.createElement(OnbText, null, current.text),
+        current.keyGrid &&
+          React.createElement(
+            OnbGrid,
+            null,
+            current.keyGrid.map((row) =>
+              React.createElement(
+                OnbGridRow,
+                { key: row.label },
+                React.createElement(
+                  OnbGridKeys,
+                  null,
+                  row.keys.map((key, i) =>
+                    React.createElement(OnbKey, { key: i }, key),
+                  ),
+                ),
+                row.label,
+              ),
+            ),
+          ),
         React.createElement(
           OnbFooter,
           null,
-          React.createElement(
-            OnbSkip,
-            { type: "button", onClick: () => this.finish() },
-            "Skip",
-          ),
-          React.createElement(
-            OnbDots,
-            { "aria-label": `Step ${step + 1} of ${ONBOARDING_STEPS.length}` },
-            ONBOARDING_STEPS.map((_, i) =>
-              React.createElement(OnbDot, { key: i, active: i === step }),
+          // On the last step there is nothing left to skip past
+          !isLast &&
+            React.createElement(
+              OnbSkip,
+              { type: "button", onClick: () => this.finish() },
+              "Skip tour",
             ),
+          React.createElement(
+            OnbCount,
+            { "aria-label": `Step ${step + 1} of ${ONBOARDING_STEPS.length}` },
+            `${step + 1} / ${ONBOARDING_STEPS.length}`,
           ),
           React.createElement(
             OnbButtons,
@@ -369,6 +563,15 @@ class OnboardingTour extends React.Component {
               isLast ? "Done" : "Next",
             ),
           ),
+        ),
+        React.createElement(
+          OnbProgressTrack,
+          null,
+          React.createElement(OnbProgressFill, {
+            style: {
+              width: `${((step + 1) / ONBOARDING_STEPS.length) * 100}%`,
+            },
+          }),
         ),
       ),
     );

@@ -48,23 +48,45 @@ const json = (code) => JSON.parse(JSON.stringify(run(code)));
 
 assert.deepStrictEqual(json("loadAlerts()"), [], "no alerts by default");
 
-const ok = {
+/* A target written by an older build: no `kind`, `startPrice` or `hitPrice`.
+ * Those arrived later, and an entry saved before them is still a valid
+ * target — sanitization fills the defaults rather than dropping it. */
+const legacy = {
   id: "a1", coin: "BTC", direction: "above", target: 50000,
   currency: "USD", created: 1700000000000, triggeredAt: null,
 };
-sandbox.__ok = ok;
+sandbox.__ok = legacy;
 run("saveAlerts([__ok])");
-assert.deepStrictEqual(json("loadAlerts()"), [ok], "valid alert round-trips");
+assert.deepStrictEqual(
+  json("loadAlerts()"),
+  [{ ...legacy, kind: "price", startPrice: null, hitPrice: null }],
+  "an alert saved before kind/startPrice/hitPrice still loads, with defaults",
+);
+
+// A percent target round-trips as itself
+const percent = {
+  id: "a2", coin: "ETH", kind: "percent", direction: "below", target: 5,
+  currency: "USD", created: 1700000000000, startPrice: null,
+  triggeredAt: null, hitPrice: null,
+};
+sandbox.__pct = percent;
+run("saveAlerts([__pct])");
+assert.deepStrictEqual(json("loadAlerts()"), [percent], "percent target round-trips");
+
+// A move nothing makes in a day can never fire, so it is rejected outright
+sandbox.__wild = { ...percent, id: "a3", target: 500 };
+run("saveAlerts([__wild])");
+assert.deepStrictEqual(json("loadAlerts()"), [], "an absurd percent target is dropped");
 
 // Every field is validated; a bad entry is dropped, not repaired into a
 // bogus alert that could fire at the wrong price
 sandbox.__bad = [
-  ok,
-  { ...ok, id: "b1", coin: "NOTACOIN" },
-  { ...ok, id: "b2", currency: "XYZ" },
-  { ...ok, id: "b3", target: 0 },
-  { ...ok, id: "b4", target: "abc" },
-  { ...ok, id: "b5", direction: "sideways" },
+  legacy,
+  { ...legacy, id: "b1", coin: "NOTACOIN" },
+  { ...legacy, id: "b2", currency: "XYZ" },
+  { ...legacy, id: "b3", target: 0 },
+  { ...legacy, id: "b4", target: "abc" },
+  { ...legacy, id: "b5", direction: "sideways" },
   null,
   "junk",
 ];
@@ -82,7 +104,7 @@ assert.deepStrictEqual(
 );
 
 // The stored list can never exceed the cap
-sandbox.__many = Array.from({ length: 30 }, (_, i) => ({ ...ok, id: `m${i}` }));
+sandbox.__many = Array.from({ length: 30 }, (_, i) => ({ ...legacy, id: `m${i}` }));
 assert.strictEqual(run("sanitizeAlerts(__many).length"), run("MAX_ALERTS"), "capped at MAX_ALERTS");
 
 store["crypto_chart_alerts"] = "not json{";
@@ -128,9 +150,11 @@ assert.deepStrictEqual(fired({ BTC: "150" }, "USD"), ["up"], "numeric string pri
 // The fired alert carries the price that triggered it
 sandbox.__prices = { BTC: 150 };
 assert.strictEqual(
-  json('findTriggeredAlerts(__alerts, __prices, "USD")')[0].price,
+  // Renamed from `price`: it is written down on the target and has to
+  // survive long after the moment it describes
+  json('findTriggeredAlerts(__alerts, __prices, "USD")')[0].hitPrice,
   150,
-  "fired alert reports the observed price",
+  "fired alert reports the price it was hit at",
 );
 
 /* ── targets hit while nothing was watching ─────────────────────────────── */

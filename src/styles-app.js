@@ -8,20 +8,39 @@ const AppShell = styled.main`
   display: flex;
   flex-direction: column;
   gap: 0.125rem;
-  padding: ${({ theme, tickerTop }) =>
-    `${tickerTop ? theme.spacing.medium + 3 : theme.spacing.medium}rem ${theme.spacing.large * 2}rem`};
+  /* Four values, not two.
+   *
+   * This was a two-value "padding: vertical horizontal", and the vertical
+   * half grew by 3rem whenever the page ticker sat on top — which the two-value
+   * shorthand applies to the bottom as well. So switching the ticker on cost
+   * the chart 3rem at the top for the bar and another 3rem at the bottom for
+   * nothing, and left a dead band under the chart that the grid made
+   * impossible to miss. The padding-top transition below is the giveaway that
+   * only the top was ever meant to move.
+   *
+   * Each edge is now driven by the ticker actually on it. */
+  padding: ${({ theme, tickerTop, tickerBottom }) =>
+    `${tickerTop ? theme.spacing.medium + 3 : theme.spacing.medium}rem ` +
+    `${theme.spacing.large * 2}rem ` +
+    `${tickerBottom ? theme.spacing.medium + 3 : theme.spacing.medium}rem`};
   position: relative;
   overflow: hidden;
-  transition: padding-top 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  transition:
+    padding-top 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+    padding-bottom 0.4s cubic-bezier(0.22, 1, 0.36, 1);
 
   @media (max-width: ${({ theme }) => theme.breakpoint.down.md}px) {
-    padding: ${({ theme, tickerTop }) =>
-      `${tickerTop ? theme.spacing.large + 3 : theme.spacing.large}rem ${theme.spacing.medium}rem`};
+    padding: ${({ theme, tickerTop, tickerBottom }) =>
+      `${tickerTop ? theme.spacing.large + 3 : theme.spacing.large}rem ` +
+      `${theme.spacing.medium}rem ` +
+      `${tickerBottom ? theme.spacing.large + 3 : theme.spacing.large}rem`};
   }
 
   @media (max-width: ${({ theme }) => theme.breakpoint.down.sm}px) {
-    padding: ${({ theme, tickerTop }) =>
-      `${tickerTop ? theme.spacing.medium + 3 : theme.spacing.medium}rem ${theme.spacing.small}rem`};
+    padding: ${({ theme, tickerTop, tickerBottom }) =>
+      `${tickerTop ? theme.spacing.medium + 3 : theme.spacing.medium}rem ` +
+      `${theme.spacing.small}rem ` +
+      `${tickerBottom ? theme.spacing.medium + 3 : theme.spacing.medium}rem`};
   }
 `;
 

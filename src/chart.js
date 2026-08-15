@@ -4,6 +4,9 @@ const LINE_DUMMY = Array(2)
   .map((_, i) => ({ price: 0, time: new Date(2010 + i) }));
 
 const PADDING = 24;
+
+// The share of the chart's width the future strip may take when calls are on
+const MAX_FUTURE_FRACTION = 0.45;
 const TRANSITION_DURATION = 300;
 const REVEAL_DURATION = 600;
 
@@ -24,7 +27,37 @@ const isTrendUp = (prices) => {
   return Number(p[p.length - 1].price) >= Number(p[0].price);
 };
 
+/* The live price marker breathes so it reads as a thing that is still
+ * arriving, rather than one more dot on a static picture. Opacity and scale
+ * only — nothing that moves it off the point it is marking. */
+const draftGrow = keyframes`
+  0%   { transform: scale(0.08); opacity: 0.55; }
+  65%  { transform: scale(1);    opacity: 0.22; }
+  100% { transform: scale(1);    opacity: 0; }
+`;
+
+const liveDotPulse = keyframes`
+  0%, 100% { opacity: 1;    r: 3.5; }
+  50%      { opacity: 0.45; r: 5;   }
+`;
+
 const Svg = styled.svg`
+  /* The draft square arming itself: a green square growing from the centre
+     to the walls of the box it is inside. It repeats because the box is
+     still waiting for something — a fill that played once and stopped would
+     just look like a filled box. transform-box:fill-box puts the origin at
+     the middle of the rect rather than the middle of the SVG, which is the
+     difference between growing in place and flying across the chart. */
+  .pt-draft-fill {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: ${draftGrow} 1.5s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+  }
+
+  .pt-live-dot {
+    animation: ${liveDotPulse} 1.8s ease-in-out infinite;
+  }
+
   height: 100%;
   width: 100%;
   /* Only the interactive (main-view) chart takes pointer events; the
@@ -47,7 +80,12 @@ const CROSSHAIR_LABEL_GAP = 10;
 const CROSSHAIR_ROW_H = 13; // px between readout rows
 const CROSSHAIR_COL_GAP = 14; // px between a row's label and its value
 // Rows shown when candle data is available for the hovered point
-const CROSSHAIR_ROWS = ["Open", "High", "Low", "Close", "Volume"];
+/* Row slots in the crosshair readout. The array is a *pool* — how many
+ * <text> pairs exist — not a fixed set of labels: comparison mode names two
+ * coins in the same slots, and with calls on the last two carry the square
+ * the pointer is standing in. Seven because OHLC+volume (5) and the square's
+ * two lines can be on screen together. */
+const CROSSHAIR_ROWS = ["Open", "High", "Low", "Close", "Volume", "Band", "Span"];
 
 // Comparison-mode direct labels: how far above its line a label sits, and how
 // far apart two of them must stay when the coins finish level
@@ -124,6 +162,23 @@ class LineBase extends PureComponent {
     this.activeLayer = 0;
     _defineProperty(this, "lineGroupRef", createRef());
 
+    /* Reference level drawn across the chart — the portfolio's cost basis.
+     * Positioned imperatively like the comparison zero line, so a redraw
+     * moves it without React touching the SVG. */
+    _defineProperty(this, "refLineRef", createRef());
+    _defineProperty(this, "refLabelRef", createRef());
+
+    /* Grid layer. Lines, their axis labels and the cell under the pointer are
+     * all written imperatively into one group, the same way every other
+     * overlay here works — React renders the container once and never has to
+     * diff a hundred short-lived <line> nodes on every resize. */
+    _defineProperty(this, "gridRef", createRef());
+    _defineProperty(this, "gridCellRef", createRef());
+    _defineProperty(this, "cellHintRef", createRef());
+    _defineProperty(this, "liveDotRef", createRef());
+    _defineProperty(this, "callLayerRef", createRef());
+    _defineProperty(this, "burstRef", createRef());
+
     // Comparison overlay: both coins as percent change on one shared axis
     _defineProperty(this, "compareGroupRef", createRef());
     _defineProperty(this, "compareZeroRef", createRef());
@@ -150,7 +205,10 @@ class LineBase extends PureComponent {
     this.scaled = null; // pixel-space points, index-aligned with props.prices
     this.hoverRaf = 0;
     this.hoverX = 0;
+    this.hoverY = 0;
     this.hoverIndex = -1;
+    this.gridX = [];              // vertical line positions, px
+    this.gridY = [];              // horizontal line positions, px
 
     // Unique ids so the gradient/clip defs never collide in the DOM
     const uid = Math.random().toString(36).slice(2, 9);
@@ -180,9 +238,13 @@ class LineBase extends PureComponent {
     /* Pointer handling: record the position, do the work once per frame */
     _defineProperty(this, "handlePointerMove", (e) => {
       this.hoverX = e.offsetX;
-      // Candles are only worth fetching once someone actually reads the
-      // chart — most tabs are opened, glanced at and closed
-      if (!this._askedForOhlc && this.props.onNeedOhlc) {
+      this.hoverY = e.offsetY;      // the grid needs both axes
+      /* Candles are only worth fetching once someone actually reads the
+       * chart — most tabs are opened, glanced at and closed. And not at all
+       * while calls are on and the chart is a line: the readout shows the
+       * square, so the OHLC would be a request for something never drawn. */
+      const needsCandles = !this.props.predict || this.props.showCandles;
+      if (needsCandles && !this._askedForOhlc && this.props.onNeedOhlc) {
         this._askedForOhlc = true;
         this.props.onNeedOhlc();
       }
@@ -198,6 +260,9 @@ class LineBase extends PureComponent {
       this.hoverIndex = -1;
       if (this.hoverRef.current) {
         this.hoverRef.current.setAttribute("visibility", "hidden");
+      }
+      if (this.gridCellRef.current) {
+        this.gridCellRef.current.setAttribute("visibility", "hidden");
       }
       // Belt and braces: hide the rows outright as well, so no future edit
       // that marks a child "visible" can resurrect the readout.
@@ -224,8 +289,420 @@ class LineBase extends PureComponent {
       return Math.min(Math.max(i, 0), bars.length - 1);
     });
 
+    /* The live price, pulsing on the last point it was drawn at.
+     * Moved with a transition rather than jumped, so a refresh reads as the
+     * price moving rather than the chart being replaced. */
+    _defineProperty(this, "updateLiveDot", () => {
+      const dot = this.liveDotRef.current;
+      if (!dot) return;
+      const scaled = this.scaled;
+      if (!this.props.predict || !scaled || !scaled.length) {
+        dot.setAttribute("visibility", "hidden");
+        return;
+      }
+      const last = scaled[scaled.length - 1];
+      const first = dot.getAttribute("visibility") === "hidden";
+      dot.setAttribute("visibility", "visible");
+      if (first) {
+        dot.setAttribute("cx", last.time);
+        dot.setAttribute("cy", last.price);
+        return;
+      }
+      select(dot)
+        .transition()
+        .duration(TRANSITION_DURATION)
+        .ease(easeCubicOut)
+        .attr("cx", last.time)
+        .attr("cy", last.price);
+    });
+
+    /* Open calls, drawn as the boxes they are. */
+    _defineProperty(this, "updateCalls", () => {
+      const layer = this.callLayerRef.current;
+      if (!layer) return;
+      while (layer.firstChild) layer.removeChild(layer.firstChild);
+      if (!this.props.predict || !this.timeToX || !this.priceToY) return;
+
+      const calls = Array.isArray(this.props.calls) ? this.props.calls : [];
+      const { color, font } = this.props.theme;
+      const ns = "http://www.w3.org/2000/svg";
+      const tint = isTrendUp(this.props.prices)
+        ? color.chartLineGreen
+        : color.chartLineRed;
+
+      const settled = Array.isArray(this.props.settledCalls)
+        ? this.props.settledCalls
+        : [];
+      /* Open calls and settled ones are drawn by the same code: a settled
+       * call is the same box with the answer in it. Keeping them on the chart
+       * is the point — a prediction you can no longer see is a prediction you
+       * cannot learn from. They leave on their own when the target scrolls
+       * off the start of the range. */
+      calls
+        .concat(settled)
+        .filter(
+          (c) =>
+            c.coin === this.props.coin &&
+            c.currency === this.props.currency &&
+            c.period === this.props.period,
+        )
+        .forEach((c) => {
+          const x1 = this.timeToX(new Date(c.target - c.span));
+          const x2 = this.timeToX(new Date(c.target));
+          const y1 = this.priceToY(c.hi);
+          const y2 = this.priceToY(c.lo);
+          if (![x1, x2, y1, y2].every(isFinite)) return;
+
+          const hit = c.result === "hit";
+          const miss = c.result === "miss";
+          const colour = hit
+            ? color.chartLineGreen
+            : miss
+              ? color.chartLineRed
+              : tint;
+
+          const box = document.createElementNS(ns, "rect");
+          box.setAttribute("x", Math.min(x1, x2));
+          box.setAttribute("y", Math.min(y1, y2));
+          box.setAttribute("width", Math.abs(x2 - x1));
+          box.setAttribute("height", Math.abs(y2 - y1));
+          box.setAttribute("fill", colour);
+          box.setAttribute("fill-opacity", hit ? "0.14" : miss ? "0.05" : "0.07");
+          box.setAttribute("stroke", colour);
+          box.setAttribute("stroke-opacity", miss ? "0.45" : "0.8");
+          box.setAttribute("stroke-width", "1");
+          // Settled ones stop being dashed: the question is closed
+          if (!c.result) box.setAttribute("stroke-dasharray", "3 3");
+          layer.appendChild(box);
+
+          /* The tag sits *above* its box, not inside it. A call keeps the
+           * width it had when it was made, so an old one can be narrower
+           * than today's squares — and inside the box the label was clipped
+           * by a border it had no reason to be inside. Above, it is never
+           * cut, and it still reads as belonging to the box under it. */
+          const tag = document.createElementNS(ns, "text");
+          const boxTop = Math.min(y1, y2);
+          tag.setAttribute("x", Math.min(x1, x2));
+          tag.setAttribute("y", boxTop > 12 ? boxTop - 4 : Math.max(y1, y2) + 11);
+          tag.setAttribute("fill", colour);
+          tag.setAttribute("fill-opacity", miss ? "0.75" : "1");
+          tag.setAttribute("font-size", "9");
+          tag.setAttribute("font-family", font.primary);
+          tag.setAttribute("letter-spacing", "0.08em");
+          tag.textContent = hit ? "CALLED IT" : miss ? "MISSED" : "CALLED";
+          layer.appendChild(tag);
+        });
+
+      // The draft: drawn like a call that has not been made yet, and asking
+      // for the second click in as many words
+      const draft = this.draftCall;
+      if (draft) {
+        const x1 = this.timeToX(new Date(draft.target - draft.span));
+        const x2 = this.timeToX(new Date(draft.target));
+        const y1 = this.priceToY(draft.hi);
+        const y2 = this.priceToY(draft.lo);
+        if ([x1, x2, y1, y2].every(isFinite)) {
+          const bx = Math.min(x1, x2);
+          const by = Math.min(y1, y2);
+          const bw = Math.abs(x2 - x1);
+          const bh = Math.abs(y2 - y1);
+
+          const box = document.createElementNS(ns, "rect");
+          box.setAttribute("x", bx);
+          box.setAttribute("y", by);
+          box.setAttribute("width", bw);
+          box.setAttribute("height", bh);
+          box.setAttribute("fill", "none");
+          box.setAttribute("stroke", color.text);
+          box.setAttribute("stroke-opacity", "0.85");
+          box.setAttribute("stroke-width", "1.5");
+          layer.appendChild(box);
+
+          // The square inside it, growing out to the walls
+          const fill = document.createElementNS(ns, "rect");
+          fill.setAttribute("class", "pt-draft-fill");
+          fill.setAttribute("x", bx);
+          fill.setAttribute("y", by);
+          fill.setAttribute("width", bw);
+          fill.setAttribute("height", bh);
+          fill.setAttribute("fill", color.chartLineGreen);
+          layer.appendChild(fill);
+
+          /* Inside the box, not above it. The question belongs to the square
+           * it is asking about, and a tag floating over the top edge reads as
+           * a name for it rather than as something to answer. Dropped when
+           * the box is too small to hold the word without spilling out of
+           * the thing it is labelling. */
+          if (bw > 44 && bh > 16) {
+            const tag = document.createElementNS(ns, "text");
+            tag.setAttribute("x", bx + bw / 2);
+            tag.setAttribute("y", by + bh / 2);
+            tag.setAttribute("text-anchor", "middle");
+            tag.setAttribute("dominant-baseline", "central");
+            tag.setAttribute("fill", color.text);
+            tag.setAttribute("font-size", "9");
+            tag.setAttribute("font-family", font.primary);
+            tag.setAttribute("letter-spacing", "0.14em");
+            tag.textContent = "LOCK?";
+            layer.appendChild(tag);
+          }
+        }
+      }
+    });
+
+    /* The one celebration.
+     *
+     * Thin radiating strokes in the chart's own colour — the house has no
+     * confetti and no emoji, and a burst that looked like a different product
+     * would cheapen the only moment the feature has.
+     *
+     * It fires on the **box that was called**, not on the live price. That
+     * was the first version and it was celebrating in the wrong place: the
+     * thing that came true is the square you drew, and a flash somewhere
+     * else reads as an unrelated animation.
+     *
+     * Three things happen together, each on its own timing, because one pop
+     * is an event and a short sequence is an occasion: the box swells and its
+     * outline goes to full strength, two rings travel out of it, and a
+     * staggered spray of rays fades as it goes.
+     */
+    _defineProperty(this, "burst", (cx, cy, box) => {
+      const layer = this.burstRef.current;
+      if (!layer) return;
+      while (layer.firstChild) layer.removeChild(layer.firstChild);
+      const { color } = this.props.theme;
+      const tint = color.chartLineGreen;
+      const ns = "http://www.w3.org/2000/svg";
+
+      // 1. The called box itself reacts
+      if (box) {
+        const flash = document.createElementNS(ns, "rect");
+        flash.setAttribute("x", box.x);
+        flash.setAttribute("y", box.y);
+        flash.setAttribute("width", box.w);
+        flash.setAttribute("height", box.h);
+        flash.setAttribute("fill", tint);
+        flash.setAttribute("stroke", tint);
+        flash.setAttribute("stroke-width", "1.5");
+        flash.setAttribute("rx", "2");
+        layer.appendChild(flash);
+        const grow = Math.min(10, Math.min(box.w, box.h) * 0.14);
+        select(flash)
+          .attr("fill-opacity", 0.42)
+          .attr("stroke-opacity", 1)
+          .transition()
+          .duration(180)
+          .ease(easeCubicOut)
+          .attr("x", box.x - grow)
+          .attr("y", box.y - grow)
+          .attr("width", box.w + grow * 2)
+          .attr("height", box.h + grow * 2)
+          .transition()
+          .duration(760)
+          .attr("x", box.x)
+          .attr("y", box.y)
+          .attr("width", box.w)
+          .attr("height", box.h)
+          .attr("fill-opacity", 0)
+          .attr("stroke-opacity", 0);
+      }
+
+      // 2. Two rings, the second chasing the first
+      [0, 130].forEach((delay, i) => {
+        const ring = document.createElementNS(ns, "circle");
+        ring.setAttribute("cx", cx);
+        ring.setAttribute("cy", cy);
+        ring.setAttribute("r", 5);
+        ring.setAttribute("fill", "none");
+        ring.setAttribute("stroke", tint);
+        ring.setAttribute("stroke-width", i ? 1 : 1.6);
+        layer.appendChild(ring);
+        select(ring)
+          .attr("opacity", 0)
+          .transition()
+          .delay(delay)
+          .duration(0)
+          .attr("opacity", i ? 0.55 : 0.9)
+          .transition()
+          .duration(820 - i * 120)
+          .ease(easeCubicOut)
+          .attr("r", i ? 44 : 66)
+          .attr("opacity", 0);
+      });
+
+      // 3. The spray
+      const rays = 18;
+      for (let i = 0; i < rays; i++) {
+        const a = (i / rays) * Math.PI * 2 + 0.12;
+        const near = 7 + (i % 3) * 4;
+        const far = near + 24 + (i % 5) * 11;
+        const el = document.createElementNS(ns, "line");
+        el.setAttribute("x1", cx + Math.cos(a) * near);
+        el.setAttribute("y1", cy + Math.sin(a) * near);
+        el.setAttribute("x2", cx + Math.cos(a) * (near + 4));
+        el.setAttribute("y2", cy + Math.sin(a) * (near + 4));
+        el.setAttribute("stroke", tint);
+        el.setAttribute("stroke-width", i % 4 ? 1.4 : 2);
+        el.setAttribute("stroke-linecap", "round");
+        layer.appendChild(el);
+        select(el)
+          .attr("opacity", 1)
+          .transition()
+          .delay((i % 5) * 26)
+          .duration(430 + (i % 5) * 70)
+          .ease(easeCubicOut)
+          .attr("x1", cx + Math.cos(a) * far)
+          .attr("y1", cy + Math.sin(a) * far)
+          .attr("x2", cx + Math.cos(a) * (far + 18))
+          .attr("y2", cy + Math.sin(a) * (far + 18))
+          .attr("opacity", 0);
+      }
+    });
+
+    /* Placing a call takes two clicks.
+     *
+     * A call is a claim, and the chart is a surface people click on for other
+     * reasons — one stray click should not commit you to a prediction that
+     * then goes on your record. So the first click on a square drafts it and
+     * the square asks to be locked; the second locks it. Clicking a different
+     * square moves the draft rather than stacking a second one, because a
+     * draft is a thought, not a call.
+     *
+     * The draft lives on the instance rather than in app state: it is a
+     * pointer gesture in progress, it never leaves this component, and
+     * routing it through React would redraw the chart between two clicks.
+     */
+    _defineProperty(this, "cellAt", (x, y) => {
+      if (!this.props.predict || !this.timeToX || !this.priceToY) return null;
+      if (!this.cellPitch || !(x > this.nowX)) return null;
+
+      const pitch = this.cellPitch;
+      const col = Math.ceil((x - this.nowX) / pitch);
+      const xEnd = this.nowX + col * pitch;
+      const span =
+        this.timeToX.invert(this.nowX + pitch) - this.timeToX.invert(this.nowX);
+      const target = this.timeToX.invert(xEnd).getTime();
+
+      const baseY = this.gridY.length ? this.gridY[0] : PADDING;
+      const top = baseY + Math.floor((y - baseY) / pitch) * pitch;
+      const hi = this.priceToY.invert(top);
+      const lo = this.priceToY.invert(top + pitch);
+      if (![hi, lo, target, span].every(isFinite) || !(hi > lo)) return null;
+      return { target, span, lo, hi, col };
+    });
+
+    _defineProperty(this, "sameCell", (a, b) =>
+      Boolean(a && b && a.col === b.col && Math.abs(a.hi - b.hi) < 1e-9),
+    );
+
+    _defineProperty(this, "handleChartClick", (e) => {
+      if (!this.props.predict || !this.props.onPlaceCall) return;
+      const cell = this.cellAt(e.offsetX, e.offsetY);
+      if (!cell) {
+        // A click anywhere else abandons the draft rather than leaving a
+        // half-made call sitting on the chart
+        if (this.draftCall) {
+          this.draftCall = null;
+          this.updateCalls();
+        }
+        return;
+      }
+      if (this.sameCell(this.draftCall, cell)) {
+        this.draftCall = null;
+        this.props.onPlaceCall(cell);
+        return;
+      }
+      this.draftCall = cell;
+      this.updateCalls();
+      this.drawGridCell();
+    });
+
+    /* The cell the pointer is in — always a whole square.
+     *
+     * It used to be bounded by whatever lines happened to be either side,
+     * which meant the strip at the top and bottom of the chart produced a
+     * stub rather than a square: the highlight changed shape depending on
+     * where you pointed, on a grid whose entire point is that every box is
+     * the same. Now it is snapped to the lattice and is exactly one pitch
+     * each way, wherever it lands.
+     *
+     * Where a square hangs off the top or bottom of the chart it is not
+     * clipped into a stub either — it keeps its shape and loses opacity in
+     * proportion to how much of it is off screen, so it fades out instead of
+     * being cut. Drawn behind the series, so the price line stays the thing
+     * you read.
+     */
+    _defineProperty(this, "drawGridCell", () => {
+      const cell = this.gridCellRef.current;
+      if (!cell) return;
+      const hide = () => {
+        cell.setAttribute("visibility", "hidden");
+        if (this.cellHintRef.current) {
+          this.cellHintRef.current.setAttribute("visibility", "hidden");
+        }
+        this.hoverCell = null;
+      };
+      if ((!this.props.grid && !this.props.predict) || !this.gridY.length) {
+        return hide();
+      }
+      const pitch = this.cellPitch;
+      if (!(pitch > 0) || !this.priceToY || !this.timeToX) return hide();
+
+      const y = this.hoverY;
+      const x = this.hoverX;
+      if (!(y >= 0 && y <= this.height && x >= 0 && x <= this.width)) {
+        return hide();
+      }
+
+      // Snap to the lattice both ways rather than to whichever lines exist
+      const baseY = this.gridY[0];
+      const y1 = baseY + Math.floor((y - baseY) / pitch) * pitch;
+      const x2 = this.nowX + Math.ceil((x - this.nowX) / pitch) * pitch;
+      const x1 = x2 - pitch;
+      const y2 = y1 + pitch;
+
+      // How much of the square the chart can actually show
+      const visible = Math.max(0, Math.min(y2, this.height) - Math.max(y1, 0));
+      const frac = visible / pitch;
+      if (!(frac > 0.02)) return hide();
+
+      cell.setAttribute("x", x1);
+      cell.setAttribute("y", y1);
+      cell.setAttribute("width", pitch);
+      cell.setAttribute("height", pitch);
+      cell.setAttribute("fill-opacity", (0.1 * frac).toFixed(3));
+      cell.setAttribute("stroke-opacity", (0.4 * frac).toFixed(3));
+      cell.setAttribute("visibility", "visible");
+
+      /* Say what a click here would do. A square in the future is the only
+       * part of this chart that is clickable, and nothing else on it says so
+       * — without this the two-step placement is a secret. */
+      const hint = this.cellHintRef.current;
+      if (hint) {
+        const future = this.props.predict && x > this.nowX;
+        const drafted = this.sameCell(this.draftCall, this.cellAt(x, y));
+        if (future && !drafted && frac > 0.5) {
+          hint.setAttribute("x", x1 + 5);
+          hint.setAttribute("y", y1 + 13);
+          hint.setAttribute("fill", this.props.theme.color.textSecondary);
+          hint.textContent = "CALL IT";
+          hint.setAttribute("visibility", "visible");
+        } else {
+          hint.setAttribute("visibility", "hidden");
+        }
+      }
+
+      this.hoverCell = {
+        hi: this.priceToY.invert(y1),
+        lo: this.priceToY.invert(y2),
+        from: this.timeToX.invert(x1),
+        to: this.timeToX.invert(x2),
+      };
+    });
+
     _defineProperty(this, "drawCrosshair", () => {
       this.hoverRaf = 0;
+      this.drawGridCell();
       const g = this.hoverRef.current;
       const raw = safePrices(this.props.prices);
       const scaled = this.scaled;
@@ -307,7 +784,21 @@ class LineBase extends PureComponent {
       const fmt = this.props.formatPrice
         ? (v) => this.props.formatPrice(Number(v))
         : (v) => String(v);
-      const dateText = crosshairDate(source.time, this.props.period);
+      /* With calls on, the readout is the square — nothing else.
+       *
+       * It used to append the square's band and span to the OHLC table, so
+       * the answer to "what am I about to call" sat underneath four rows of
+       * open/high/low/close and a volume figure. Those describe what the
+       * price *did*; a call is about where it will be, and the two questions
+       * were competing in one box. In calls mode the headline is the band and
+       * the line under it is the span, and there are no rows at all. */
+      const cellBox = this.props.predict ? this.hoverCell : null;
+      const dateText = cellBox
+        ? `${crosshairDate(cellBox.from, this.props.period)} – ${crosshairDate(
+            cellBox.to,
+            this.props.period,
+          )}`
+        : crosshairDate(source.time, this.props.period);
       this.hoverDateRef.current.textContent = dateText;
 
       // A candle for this point turns the readout into an OHLC table; with
@@ -317,29 +808,36 @@ class LineBase extends PureComponent {
       if (!candleMode && !compareMode) {
         candle = this.props.ohlc ? candleAt(this.props.ohlc, timeMs) : null;
       }
-      this.hoverPriceRef.current.textContent =
-        candle || compareMode ? "" : fmt(source.price);
+      this.hoverPriceRef.current.textContent = cellBox
+        ? `${fmt(cellBox.lo)} – ${fmt(cellBox.hi)}`
+        : candle || compareMode
+          ? ""
+          : fmt(source.price);
 
       // Two shapes of readout share the same rows: OHLC for one coin, or one
       // row per coin when two are being compared
-      const labels = compareMode
-        ? [this.props.coin || "", this.props.compareCoin || ""]
-        : CROSSHAIR_ROWS;
-      const values = compareMode
-        ? [
-            formatSignedPercent(this.compareScaled.a[i].percent),
-            formatSignedPercent(this.compareScaled.b[compareIndex].percent),
-          ]
-        : candle
-          ? [
-              fmt(candle.open),
-              fmt(candle.high),
-              fmt(candle.low),
-              fmt(candle.close),
-              `${formatVolume(candle.volume)} ${this.props.coin || ""}`.trim(),
-            ]
-          : null;
-      const rowCount = values ? values.length : 0;
+      let labels;
+      let values;
+      if (compareMode) {
+        labels = [this.props.coin || "", this.props.compareCoin || ""];
+        values = [
+          formatSignedPercent(this.compareScaled.a[i].percent),
+          formatSignedPercent(this.compareScaled.b[compareIndex].percent),
+        ];
+      } else if (candle && !cellBox) {
+        labels = ["Open", "High", "Low", "Close", "Volume"];
+        values = [
+          fmt(candle.open),
+          fmt(candle.high),
+          fmt(candle.low),
+          fmt(candle.close),
+          `${formatVolume(candle.volume)} ${this.props.coin || ""}`.trim(),
+        ];
+      } else {
+        labels = [];
+        values = [];
+      }
+      const rowCount = values.length;
 
       let labelW = 0;
       let valueW = 0;
@@ -654,6 +1152,8 @@ class LineBase extends PureComponent {
         this.width,
         PADDING,
         PADDING,
+        0,
+        this.futureWidth(),   // history stops short of the reserved future
       );
       this.scaled = scaled;
       this.hoverIndex = -1;
@@ -674,6 +1174,350 @@ class LineBase extends PureComponent {
 
       this.d = d;
       this.areaD = areaD;
+      /* Called from here rather than from inside `updateGrid`, which is what
+       * left traces behind: they used to run at the end of it, so every early
+       * return — grid off, calls off, no geometry — skipped the clean-up and
+       * the boxes and the live marker stayed on a chart that no longer had a
+       * game on it. Drawing is conditional; clearing must not be. */
+      this.updateGrid();
+      this.updateCalls();
+      this.updateLiveDot();
+      this.updateReference();
+    });
+
+    /* The square cell size, and the round price levels that set it.
+     *
+     * Lifted out of `updateGrid` because `updatePath` needs it *first*: with
+     * calls turned on the series has to stop short of the right edge to leave
+     * whole cells of empty future to point at, and that reservation is a
+     * multiple of the pitch. The pitch depends only on the price extent and
+     * the height, never on the width, so there is no circularity — but the
+     * order matters and this is why.
+     */
+    _defineProperty(this, "gridGeometry", () => {
+      const data = safePrices(this.props.prices);
+      if (data.length < 2 || !this.height) return null;
+      const [lo, hi] = extent(data, (d) => d.price);
+      if (!isFinite(lo) || !isFinite(hi) || lo === hi) return null;
+
+      const top = PADDING;
+      const bottom = this.height - PADDING;
+      const plot = bottom - top;
+      if (!(plot > 0)) return null;
+
+      const priceToY = scaleLinear().range([bottom, top]).domain([lo, hi]);
+
+      /* What size a cell should be.
+       *
+       * Normally: about a sixth of the plot height, which is a comfortable
+       * reading grid. With calls on it is decided by the strip instead —
+       * asking for ten squares of future must not push six of them off the
+       * chart, so the squares get smaller rather than fewer. The future is
+       * allowed a fixed share of the width and the cell size is whatever
+       * divides it into the number asked for. */
+      const target = Math.max(46, Math.min(104, plot / 6));
+      /* With calls on the strip gets a budget rather than a target.
+       *
+       * Picking the pitch *nearest* a target looked reasonable and was not:
+       * candidate pitches are quantised by d3's round price steps, so the
+       * nearest one to 57px might be 43 while the nearest to 96 is 86 — and
+       * six squares then reached three weeks while ten reached two and a
+       * half. Asking for more future gave you less of it.
+       *
+       * Taking the largest pitch that still fits `ahead` of them inside the
+       * budget makes the strip land just under the budget whatever the count
+       * is: the reach stays put and the squares get smaller, which is the
+       * behaviour the panel describes. */
+      const budget =
+        this.props.predict && this.width
+          ? this.width * MAX_FUTURE_FRACTION
+          : 0;
+      const ahead = Math.max(1, Math.min(10, this.props.predictAhead || 2));
+
+      /* Every round-step grid d3 will give us, largest cell first. */
+      const candidates = [];
+      for (let n = 3; n <= 14; n++) {
+        const t = priceToY.ticks(n);
+        if (t.length < 2) continue;
+        const p = Math.abs(priceToY(t[1]) - priceToY(t[0]));
+        if (p > 4) candidates.push({ levels: t, pitch: p });
+      }
+      if (!candidates.length) return null;
+
+      let chosen;
+      if (budget) {
+        // The biggest square that still fits `ahead` of them in the strip,
+        // so the reach lands just under the budget at any count. Falls back
+        // to the finest grid when even that is too big for the strip.
+        const fits = candidates.filter((c) => c.pitch * ahead <= budget);
+        chosen = fits.length
+          ? fits.reduce((a, b) => (b.pitch > a.pitch ? b : a))
+          : candidates.reduce((a, b) => (b.pitch < a.pitch ? b : a));
+      } else {
+        chosen = candidates.reduce((a, b) =>
+          Math.abs(b.pitch - target) < Math.abs(a.pitch - target) ? b : a,
+        );
+      }
+      const levels = chosen.levels;
+      const pitch = chosen.pitch;
+
+      return {
+        priceToY,
+        levels,
+        pitch,
+        step: Math.abs(levels[1] - levels[0]),
+        top,
+        bottom,
+      };
+    });
+
+    /* How much of the right-hand side is future rather than history. Zero
+     * unless calls are on: an empty strip on a chart that cannot be pointed
+     * at is just a chart that stops early. */
+    _defineProperty(this, "futureWidth", () => {
+      if (!this.props.predict) return 0;
+      const geo = this.gridGeometry();
+      if (!geo) return 0;
+      /* Every square asked for, at the size `gridGeometry` chose for them.
+       * The hard cap only bites when the pitch had to be clamped upward on a
+       * narrow window — the alternative there is a cell too small to click. */
+      const ahead = Math.max(1, Math.min(10, this.props.predictAhead || 2));
+      return Math.min(geo.pitch * ahead, this.width * 0.55);
+    });
+
+    /* ── The grid ──
+     *
+     * Square cells, and that is the constraint everything else bends to.
+     *
+     * The first version let d3 choose round ticks on both axes independently.
+     * That gives beautiful labels and cells 290px wide by 86px tall — which
+     * is not a grid, it is a set of stripes. Square matters here because the
+     * grid is for judging a move: when one cell across equals one cell up,
+     * the *angle* of the line means something, and you can read "two cells in
+     * a week" off the chart. Rectangles of an arbitrary ratio destroy that.
+     *
+     * So one pixel pitch drives both axes:
+     *   · the price step is still one of d3's round numbers, picked as the
+     *     one whose pixel height lands nearest a comfortable cell size — so
+     *     the horizontal lines keep their $64.5K / $65K labels;
+     *   · the vertical lines are then placed at that same pitch, measured
+     *     from the right edge, because "now" is the origin you count back
+     *     from rather than whenever the series happens to start.
+     *
+     * Columns therefore carry a uniform slice of time rather than a round
+     * one. That is the trade, and it is the right way round: a level you can
+     * name is worth more than a date that ends in :00.
+     */
+    _defineProperty(this, "updateGrid", () => {
+      const g = this.gridRef.current;
+      if (!g) return;
+      while (g.firstChild) g.removeChild(g.firstChild);
+      this.gridX = [];
+      this.gridY = [];
+      /* Forget the geometry on the way out, not just the lines.
+       * `updateCalls` and `drawGridCell` read these to place their boxes, and
+       * leaving yesterday's scales behind meant a chart with the feature
+       * switched off could still be drawn on by them. */
+      const forget = () => {
+        this.timeToX = null;
+        this.priceToY = null;
+        this.cellPitch = 0;
+        this.nowX = this.width;
+        this.hoverCell = null;
+      };
+      if (!this.props.grid && !this.props.predict) return forget();
+
+      const geo = this.gridGeometry();
+      if (!geo || !this.width) return forget();
+      const data = safePrices(this.props.prices);
+      const [t0, t1] = extent(data, (d) => d.time);
+
+      const { color, font } = this.props.theme;
+      const { priceToY, levels, pitch, step, top, bottom } = geo;
+      const future = this.futureWidth();
+      const nowX = this.width - future;
+      // Time runs out at "now", which is where history stops — the reserved
+      // strip to its right is future, and the same scale extrapolates into it
+      const timeToX = scaleTime().range([0, nowX]).domain([t0, t1]);
+      this.nowX = nowX;
+      this.timeToX = timeToX;
+      this.priceToY = priceToY;
+      this.cellPitch = pitch;
+
+      const ns = "http://www.w3.org/2000/svg";
+      const line = (x1, y1, x2, y2, dim) => {
+        const el = document.createElementNS(ns, "line");
+        el.setAttribute("x1", x1);
+        el.setAttribute("y1", y1);
+        el.setAttribute("x2", x2);
+        el.setAttribute("y2", y2);
+        el.setAttribute("stroke", color.border);
+        el.setAttribute("stroke-width", "1");
+        if (dim) el.setAttribute("opacity", "0.55");
+        g.appendChild(el);
+      };
+      const label = (x, y, text) => {
+        const el = document.createElementNS(ns, "text");
+        el.setAttribute("x", x);
+        el.setAttribute("y", y);
+        el.setAttribute("fill", color.textSecondary);
+        el.setAttribute("font-size", "9");
+        el.setAttribute("font-family", font.primary);
+        el.setAttribute("letter-spacing", "0.08em");
+        el.textContent = text;
+        g.appendChild(el);
+      };
+
+      /* The lattice runs the full height, not just the band the data covers.
+       * d3's ticks stop at the domain, which left a ~24px strip top and
+       * bottom with vertical lines but no horizontal ones — so a cell up
+       * there was not a square, it was whatever was left over. Extending by
+       * whole steps keeps every row the same height, and the extra levels
+       * are real prices, so they get real labels. */
+      const rowsUp = Math.ceil((priceToY(levels[levels.length - 1]) - 0) / pitch) + 1;
+      const rowsDown = Math.ceil((this.height - priceToY(levels[0])) / pitch) + 1;
+      const allLevels = [];
+      for (let k = rowsDown; k > 0; k--) allLevels.push(levels[0] - step * k);
+      levels.forEach((v) => allLevels.push(v));
+      for (let k = 1; k <= rowsUp; k++) {
+        allLevels.push(levels[levels.length - 1] + step * k);
+      }
+      allLevels.forEach((v) => {
+        const y = priceToY(v);
+        if (y < -0.5 || y > this.height + 0.5) return;
+        this.gridY.push(y);
+        line(0, y, this.width, y);
+        label(4, y - 4, formatAxisPrice(v, step, this.props.currencySymbol));
+      });
+
+      /* Counted back from "now" at the same pitch, so the cells are square
+       * and the boundaries mean something: the one ending at nowX is the
+       * slice of time that just finished. */
+      /* Labelling the time axis, and why it is sparse.
+       *
+       * A column is one pitch wide and the pitch comes from a round *price*
+       * step, so a column is a uniform but arbitrary slice of time — about
+       * 2.4 days on a month range. Squares and round numbers on both axes
+       * cannot both hold: the price band is the thing a call actually names,
+       * so price keeps the round numbers and time gets the awkward span.
+       *
+       * That awkwardness is only visible in the *labels*: printed at every
+       * boundary they drift, Jul 13, 15, 18, 20, 23 — even spacing carrying
+       * uneven numbers, which is what reads as muddled. Printed every other
+       * boundary or so, each one is still a true date and the drift is a
+       * fraction of the gap rather than most of it.
+       *
+       * A relative axis was tried instead (−2d, +2d) and was worse: with an
+       * arbitrary span the unit slides along the axis, from −4.1w through
+       * −1w to −4.8d, which is a harder thing to read than a date.
+       */
+      const xToTime = timeToX.invert;
+      const LABEL_GAP = 150;
+      const timeLabel = (x, cols) =>
+        cols === 0 && this.props.predict
+          ? "now"
+          : crosshairDate(xToTime(x), this.props.period);
+
+      let lastLabelX = Infinity;
+      let col = 0;
+      for (let x = nowX; x > 0.5; x -= pitch, col--) {
+        this.gridX.push(x);
+        line(x, 0, x, this.height);
+        if (lastLabelX - x < LABEL_GAP) continue;
+        lastLabelX = x;
+        label(x + 4, this.height - 6, timeLabel(x, col));
+      }
+
+      // The future strip, dimmer, so it reads as "not drawn yet"
+      let fcol = 1;
+      for (let x = nowX + pitch; x <= this.width + 0.5; x += pitch, fcol++) {
+        this.gridX.push(x);
+        line(x, 0, x, this.height, true);
+        /* Same convention as the history side: the label sits just right of
+         * the boundary it names. Placing it at the column's left edge put it
+         * on top of "now", which is the boundary the previous loop had
+         * already labelled. Skipped when there is no room left for it. */
+        if (x + 46 <= this.width) label(x + 4, this.height - 6, timeLabel(x, fcol));
+      }
+      if (future > 0) {
+        // "now" itself gets the one emphatic line on the chart
+        const el = document.createElementNS(ns, "line");
+        el.setAttribute("x1", nowX);
+        el.setAttribute("y1", 0);
+        el.setAttribute("x2", nowX);
+        el.setAttribute("y2", this.height);
+        el.setAttribute("stroke", color.textSecondary);
+        el.setAttribute("stroke-width", "1");
+        el.setAttribute("stroke-dasharray", "2 3");
+        el.setAttribute("opacity", "0.65");
+        g.appendChild(el);
+      }
+
+      this.gridY.sort((a, b) => a - b);
+      this.gridX.sort((a, b) => a - b);
+
+      /* Report what a square actually is, so the panel can say it.
+       *
+       * "4 squares" is not a quantity anyone can picture — the two things it
+       * decides are how far ahead you may call and how tight each band is,
+       * and both are computed right here. Sent up only when the numbers
+       * change: this runs on every redraw, and a setState per redraw would
+       * feed straight back into another one. */
+      if (typeof this.props.onGeometry === "function" && future > 0) {
+        const spanMs = xToTime(nowX) - xToTime(nowX - pitch);
+        const next = {
+          step,                                  // price per square
+          spanMs,                                // time per square
+          reachMs: spanMs * Math.round(future / pitch),
+        };
+        const last = this._lastGeo;
+        if (
+          !last ||
+          last.step !== next.step ||
+          Math.abs(last.spanMs - next.spanMs) > 1000 ||
+          Math.abs(last.reachMs - next.reachMs) > 1000
+        ) {
+          this._lastGeo = next;
+          this.props.onGeometry(next);
+        }
+      }
+    });
+
+    /* The cell the pointer is in, bounded by the lines either side of it.
+     * Drawn behind the series so the price line stays the thing you read. */
+    /* Place (or hide) the reference level. Hidden whenever the level is not
+     * inside the range the chart draws — see `priceToChartY`. The label sits
+     * on the line at the left edge, so it reads as belonging to it rather
+     * than floating in the plot. */
+    _defineProperty(this, "updateReference", () => {
+      const line = this.refLineRef.current;
+      const label = this.refLabelRef.current;
+      if (!line || !label) return;
+      const ref = this.props.reference;
+      const y =
+        ref && isFinite(ref.value)
+          ? priceToChartY(
+              safePrices(this.props.prices),
+              ref.value,
+              this.height,
+              PADDING,
+              PADDING,
+            )
+          : null;
+      if (y == null) {
+        line.setAttribute("opacity", "0");
+        label.setAttribute("opacity", "0");
+        return;
+      }
+      line.setAttribute("y1", y);
+      line.setAttribute("y2", y);
+      line.setAttribute("x1", PADDING);
+      line.setAttribute("x2", Math.max(PADDING, this.width - PADDING));
+      line.setAttribute("opacity", "1");
+      label.setAttribute("x", PADDING + 4);
+      label.setAttribute("y", y - 5);
+      label.textContent = ref.label || "";
+      label.setAttribute("opacity", "1");
     });
   }
 
@@ -705,6 +1549,7 @@ class LineBase extends PureComponent {
       const areaD = buildAreaD(d, scaled, height);
       this.path.attr("d", d);
       this.area.attr("d", areaD);
+      this.updateReference();
       this.d = d;
       this.areaD = areaD;
 
@@ -763,6 +1608,7 @@ class LineBase extends PureComponent {
         svg.addEventListener("pointermove", this.handlePointerMove, {
           passive: true,
         });
+        svg.addEventListener("click", this.handleChartClick);
         svg.addEventListener("pointerleave", this.handlePointerLeave, {
           passive: true,
         });
@@ -791,6 +1637,71 @@ class LineBase extends PureComponent {
       // New series → the candles that go with it haven't been asked for yet
       this._askedForOhlc = false;
     }
+
+    /* Turning calls on or off, or changing how far ahead they reach, resizes
+     * the reserved future — which moves every point of the series, so the
+     * path has to be rebuilt, not just the mesh. */
+    /* A draft is about one square on one chart. Change the coin, the range or
+     * the currency and that square no longer means what it meant. */
+    if (
+      prevProps.coin !== this.props.coin ||
+      prevProps.period !== this.props.period ||
+      prevProps.currency !== this.props.currency ||
+      (prevProps.predict && !this.props.predict)
+    ) {
+      this.draftCall = null;
+    }
+
+    if (
+      prevProps.grid !== this.props.grid ||
+      prevProps.predict !== this.props.predict ||
+      prevProps.predictAhead !== this.props.predictAhead
+    ) {
+      this.updatePath();
+    } else if (
+      prevProps.calls !== this.props.calls ||
+      /* Settled calls are a second list and were not being watched, so
+       * clearing the history — or switching "keep settled calls on the
+       * chart" off — left their boxes on screen until something unrelated
+       * happened to redraw. */
+      prevProps.settledCalls !== this.props.settledCalls
+    ) {
+      this.updateCalls();
+    }
+
+    /* A win, announced by the counter changing rather than by a ref reaching
+     * in from the app. Fired at the live point, which is where the price
+     * arrived — the thing that was called correctly. */
+    if (
+      this.props.celebrate &&
+      prevProps.celebrate !== this.props.celebrate &&
+      this.scaled &&
+      this.scaled.length
+    ) {
+      const c = this.props.celebrateCall;
+      let box = null;
+      if (c && this.timeToX && this.priceToY) {
+        const x1 = this.timeToX(new Date(c.target - c.span));
+        const x2 = this.timeToX(new Date(c.target));
+        const y1 = this.priceToY(c.hi);
+        const y2 = this.priceToY(c.lo);
+        if ([x1, x2, y1, y2].every(isFinite)) {
+          box = {
+            x: Math.min(x1, x2),
+            y: Math.min(y1, y2),
+            w: Math.abs(x2 - x1),
+            h: Math.abs(y2 - y1),
+          };
+        }
+      }
+      const last = this.scaled[this.scaled.length - 1];
+      // On the box that came true; the live point only if we cannot place it
+      this.burst(
+        box ? box.x + box.w / 2 : last.time,
+        box ? box.y + box.h / 2 : last.price,
+        box,
+      );
+    }
     /* The overlay is scaled against both series, so either one changing
      * rescales it — including the primary coin's own refresh. */
     const compareChanged =
@@ -799,6 +1710,11 @@ class LineBase extends PureComponent {
     if (compareChanged || prevProps.prices !== this.props.prices) {
       this.updateComparison(true);
       if (compareChanged) this.handlePointerLeave();
+    }
+    // The level itself can move without the series doing so — recording a
+    // purchase changes the cost basis while the chart stays put
+    if (prevProps.reference !== this.props.reference) {
+      this.updateReference();
     }
     const modeChanged = prevProps.showCandles !== this.props.showCandles;
     if (prevProps.showVolume !== this.props.showVolume) {
@@ -833,6 +1749,7 @@ class LineBase extends PureComponent {
     const svg = this.svgRef.current;
     if (svg && this.props.interactive) {
       svg.removeEventListener("pointermove", this.handlePointerMove);
+      svg.removeEventListener("click", this.handleChartClick);
       svg.removeEventListener("pointerleave", this.handlePointerLeave);
       svg.removeEventListener("pointercancel", this.handlePointerLeave);
       document.removeEventListener("mouseleave", this.handlePointerLeave);
@@ -877,6 +1794,63 @@ class LineBase extends PureComponent {
       React.createElement(
         "g",
         { clipPath: `url(#${this.clipId})` },
+        /* Grid and the cell under the pointer, behind everything: the mesh is
+         * the paper the series is drawn on, not something competing with it. */
+        React.createElement("rect", {
+          ref: this.gridCellRef,
+          fill: tint,
+          fillOpacity: "0.1",
+          stroke: tint,
+          strokeOpacity: "0.4",
+          strokeWidth: "1",
+          visibility: "hidden",
+          pointerEvents: "none",
+        }),
+        React.createElement(
+          "text",
+          {
+            ref: this.cellHintRef,
+            fontSize: "9",
+            fontFamily: this.props.theme.font.primary,
+            letterSpacing: "0.08em",
+            visibility: "hidden",
+            pointerEvents: "none",
+            "aria-hidden": "true",
+          },
+          "",
+        ),
+        React.createElement("g", {
+          ref: this.gridRef,
+          "aria-hidden": "true",
+          pointerEvents: "none",
+        }),
+        React.createElement("g", {
+          ref: this.callLayerRef,
+          "aria-hidden": "true",
+          pointerEvents: "none",
+        }),
+        /* Reference level (the portfolio's cost basis). Behind the series so
+         * the line it explains stays on top, dashed and in the border colour
+         * so it reads as a gridline rather than a second series. */
+        React.createElement("line", {
+          ref: this.refLineRef,
+          stroke: color.textSecondary,
+          strokeWidth: "1",
+          strokeDasharray: "4 4",
+          opacity: "0",
+        }),
+        React.createElement(
+          "text",
+          {
+            ref: this.refLabelRef,
+            fill: color.textSecondary,
+            fontSize: "9",
+            fontFamily: this.props.theme.font.primary,
+            letterSpacing: "0.08em",
+            opacity: "0",
+          },
+          "",
+        ),
         // Line layer — faded rather than unmounted on a mode switch, so the
         // two chart types cross over instead of blinking
         React.createElement(
@@ -988,6 +1962,24 @@ class LineBase extends PureComponent {
         ),
       ),
 
+      /* The live price, and the one celebration. Both sit above the series:
+       * the dot is where you are, and the burst is the only moment this chart
+       * ever asks to be looked at. */
+      React.createElement("circle", {
+        ref: this.liveDotRef,
+        r: "3.5",
+        fill: tint,
+        stroke: color.bg,
+        strokeWidth: "1",
+        visibility: "hidden",
+        pointerEvents: "none",
+        className: "pt-live-dot",
+      }),
+      React.createElement("g", {
+        ref: this.burstRef,
+        "aria-hidden": "true",
+        pointerEvents: "none",
+      }),
       // Crosshair layer — positions/text are written imperatively on hover
       this.props.interactive &&
         React.createElement(

@@ -50,6 +50,16 @@ class CryptoChart extends PureComponent {
       chartType: loadChartType(), // 'line' | 'candles'
       volumeBars: loadVolumeBars(), // volume band under the chart
       marketStats: loadMarketStats(), // stats line under the price
+      chartGrid: loadChartGrid(), // price/time mesh behind the series
+      predict: loadPredict(), // "call the cell" — read the chart, name the box
+      predictAhead: loadPredictAhead(), // cells of future the chart reserves
+      callsShowSettled: loadCallsShowSettled(), // keep settled boxes on the chart
+      callsCelebrate: loadCallsCelebrate(), // burst on a hit
+      calls: loadCalls(), // { record, open } — local, valueless, never sent
+      celebrateCall: null, // the call the burst is fired on
+      wonCalls: [], // settled hits waiting to be acknowledged, as toasts
+      callGeometry: null, // { step, spanMs, reachMs } reported by the chart
+      celebrate: 0, // bumped on a hit; the chart bursts when it changes
       moveHeadlines: loadMoveHeadlines(), // headlines beside an unusual move
       portfolio: loadPortfolioFromStorage(), // [{ coin, amount, lots, watches }]
       portfolioPrices: {}, // { COIN: { price, change, up } } from pageTickerCache
@@ -76,8 +86,15 @@ class CryptoChart extends PureComponent {
       compareCoin: null, // second coin drawn over the chart, or null
       compareHistory: null, // its series for the current period + currency
       showShortcuts: false, // "?" keyboard reference
+      /* The tour drives the arrow keys and Esc itself, so the global shortcut
+       * handler has to stand down while it is up. `tourReplay` is bumped by
+       * Settings to remount (and force) the tour on demand. */
+      tourActive: false,
+      tourReplay: 0,
       alerts: loadAlerts(), // Price targets (in-tab, zero permissions)
       firedAlerts: [], // Targets just hit → toast stack
+      // Announce a hit in the tab title, and keep checking while hidden
+      alertTabTitle: loadAlertTabTitle(),
       showAlerts: false, // Targets panel visibility
       tickerEnabled: loadTickerFromStorage(), // Tab ticker mode
       tickerFormat: loadTickerFormatFromStorage(), // 'compact' or 'full'
@@ -89,6 +106,7 @@ class CryptoChart extends PureComponent {
       // Widget states
       widgets: loadWidgetsFromStorage(), // { fearGreed, marketOverview, halvingCountdown, rsiWidget }
       hiddenWidgets: loadHiddenWidgetsFromStorage(), // Per-widget hide state from main screen
+      widgetSize: loadWidgetSizeFromStorage(), // 'small' | 'medium' | 'large' | 'xlarge'
       pendingWidgetReveal: {}, // Widgets enabled while settings open — mounted (animated) on close
       widgetOrder: loadWidgetOrderFromStorage(), // Drag-reorder
       dragWidget: null, // Currently dragged widget key
@@ -129,6 +147,14 @@ class CryptoChart extends PureComponent {
 
     // Auto-rotate timer
     this.autoRotateTimer = null;
+
+    /* Tab-title announcement for a hit target, and the slow background check
+     * that can produce one while the tab is away. `_alertTitleActive` is what
+     * every other writer of document.title checks before touching it. */
+    this.alertTitleTimer = null;
+    this.alertPollInterval = null;
+    this._alertTitleActive = false;
+    this._alertTitleFlip = false;
 
     // News ticker state
     this.newsRefreshInterval = null;
@@ -363,6 +389,11 @@ class CryptoChart extends PureComponent {
       this.setState({ hiddenWidgets: newHidden });
     });
 
+    _defineProperty(this, "handleWidgetSizeChange", (size) => {
+      saveWidgetSizeToStorage(size);
+      this.setState({ widgetSize: size });
+    });
+
     _defineProperty(this, "handleWidgetToggle", (widgetName) => {
       this.setState(
         (prevState) => {
@@ -474,7 +505,7 @@ class CryptoChart extends PureComponent {
             newState.currentValue = cachedSpot.data;
           }
           this.setState(newState, () => {
-            updateTabTitle(
+            this.setTabTitle(
               this.state.coinOptions,
               this.state.coinIndex,
               this.state.currentValue,
@@ -523,7 +554,7 @@ class CryptoChart extends PureComponent {
 
       if (cachedSpot && cachedSpot.isStale && cachedSpot.data) {
         this.setState({ currentValue: cachedSpot.data }, () => {
-          updateTabTitle(
+          this.setTabTitle(
             this.state.coinOptions,
             this.state.coinIndex,
             this.state.currentValue,
@@ -582,7 +613,7 @@ class CryptoChart extends PureComponent {
           () => {
             // Update tab title after state is set
             // Always update normal title first (ticker will override when it starts)
-            updateTabTitle(
+            this.setTabTitle(
               this.state.coinOptions,
               this.state.coinIndex,
               this.state.currentValue,
@@ -649,7 +680,7 @@ class CryptoChart extends PureComponent {
         this.setState(newState, () => {
           // Update tab title with cached data if available
           if (newState.currentValue || newState.valueHistory) {
-            updateTabTitle(
+            this.setTabTitle(
               this.state.coinOptions,
               this.state.coinIndex,
               this.state.currentValue,
@@ -712,6 +743,76 @@ class CryptoChart extends PureComponent {
       this.setState((prevState) => {
         const portfolio = prevState.portfolio.map((h) =>
           h.coin === coin ? { ...h, amount: amt } : h,
+        );
+        savePortfolioToStorage(portfolio);
+        return { portfolio };
+      });
+    });
+
+    /* Record a sale: "sold `amount` for `received` in total".
+     *
+     * One action, not two. Before this, selling meant editing the amount down
+     * by hand, which left the purchase lots untouched — so a position sold in
+     * half still reported the whole position's gain, on coins that were gone.
+     * Recording it does all three things that have to happen together: takes
+     * the coins off the manual amount, consumes the matching cost basis FIFO
+     * (oldest first), and keeps the disposal so the gain it produced survives
+     * the lots it consumed.
+     *
+     * Only the hand-entered part can be sold here. A watched address reports
+     * its own balance from the chain and reconciles itself; what it cannot
+     * know is the price you sold at, so a sale out of a watched address is
+     * still just a balance going down.
+     */
+    _defineProperty(this, "handleAddSale", (coin, amount, received) => {
+      const amt = Number(amount);
+      const got = Number(received);
+      if (!isFinite(amt) || amt <= 0 || !isFinite(got) || got < 0) return;
+      this.setState((prevState) => {
+        const holding = prevState.portfolio.find((h) => h.coin === coin);
+        if (!holding) return null;
+        const sales = holding.sales || [];
+        if (sales.length >= MAX_SALES_PER_HOLDING) return null;
+        // Can't sell what the hand-entered part doesn't hold
+        const sold = Math.min(amt, holding.amount || 0);
+        if (!(sold > 0)) return null;
+        const lots = holding.lots || [];
+        const { basis, covered, matched } = consumeLotsFifo(lots, sold);
+        const portfolio = prevState.portfolio.map((h) =>
+          h.coin === coin
+            ? {
+                ...h,
+                amount: Math.max(0, h.amount - sold),
+                lots: reduceLotsFifo(lots, sold),
+                sales: [
+                  ...sales,
+                  {
+                    amount: sold,
+                    // Proceeds scale with what was actually sold, in case the
+                    // entry asked for more than the holding had
+                    received: got * (sold / amt),
+                    basis,
+                    basisAmount: covered,
+                    // Which purchases it consumed, so the report can pair
+                    // each acquisition with this disposal
+                    matched,
+                    time: Math.floor(Date.now() / 1000),
+                  },
+                ],
+              }
+            : h,
+        );
+        savePortfolioToStorage(portfolio);
+        return { portfolio };
+      });
+    });
+
+    _defineProperty(this, "handleRemoveSale", (coin, index) => {
+      this.setState((prevState) => {
+        const portfolio = prevState.portfolio.map((h) =>
+          h.coin === coin
+            ? { ...h, sales: (h.sales || []).filter((_, i) => i !== index) }
+            : h,
         );
         savePortfolioToStorage(portfolio);
         return { portfolio };
@@ -1031,6 +1132,9 @@ class CryptoChart extends PureComponent {
     _defineProperty(this, "handleKeyDown", (e) => {
       // Ignore shortcuts with modifiers or while typing in a field
       if (e.ctrlKey || e.metaKey || e.altKey) return;
+      // The onboarding tour owns the keyboard while it runs — without this,
+      // Esc and the arrows would drive the tour and the chart at once
+      if (this.state.tourActive) return;
       const t = e.target;
       if (
         t &&
@@ -1093,6 +1197,18 @@ class CryptoChart extends PureComponent {
         return;
       }
 
+      // P opens the portfolio, mirroring S and A
+      if (
+        (e.key === "p" || e.key === "P") &&
+        !this.state.showSettings &&
+        !this.state.showAlerts &&
+        !this.state.showQuickSwitch
+      ) {
+        e.preventDefault();
+        this.togglePortfolio();
+        return;
+      }
+
       // "?" lists the shortcuts — reachable from anywhere but a text field
       if (e.key === "?") {
         e.preventDefault();
@@ -1126,6 +1242,76 @@ class CryptoChart extends PureComponent {
         return;
       }
 
+      // T flips the chart between the line and candlesticks
+      if (e.key === "t" || e.key === "T") {
+        e.preventDefault();
+        this.handleChartTypeChange(
+          this.state.chartType === "candles" ? "line" : "candles",
+        );
+        return;
+      }
+
+      // G puts the price/time mesh behind the chart, or takes it away
+      if (e.key === "g" || e.key === "G") {
+        e.preventDefault();
+        this.handleChartGridChange(this.state.chartGrid !== true);
+        return;
+      }
+
+      // L turns calls on or off — the grid comes with them
+      if (e.key === "l" || e.key === "L") {
+        e.preventDefault();
+        this.handlePredictChange(this.state.predict !== true);
+        return;
+      }
+
+      // X flips the change readout between percent and absolute. That mode
+      // lives inside Overview (it's a display choice, not app state), so
+      // reach it the same way the click does.
+      if (e.key === "x" || e.key === "X") {
+        e.preventDefault();
+        if (this.overviewRef) this.overviewRef.togglePercentage();
+        return;
+      }
+
+      // W clears the widget row, or brings back everything hidden from it
+      if (e.key === "w" || e.key === "W") {
+        e.preventDefault();
+        if (Object.keys(this.state.hiddenWidgets).length) {
+          this.restoreAllWidgets();
+        } else {
+          this.hideAllWidgets();
+        }
+        return;
+      }
+
+      // D flips light/dark. It reads the theme that is actually on screen,
+      // so the first press changes something even from 'auto'.
+      if (e.key === "d" || e.key === "D") {
+        e.preventDefault();
+        this.handleThemeChange(
+          this.state.activeTheme === "dark" ? "light" : "dark",
+        );
+        return;
+      }
+
+      // Space starts/stops the rotation through the coin list — but Space is
+      // also how a keyboard user presses a focused control, so leave it alone
+      // when one has the focus
+      if (e.key === " ") {
+        if (
+          t &&
+          (t.tagName === "BUTTON" ||
+            t.tagName === "SELECT" ||
+            t.tagName === "A")
+        ) {
+          return;
+        }
+        e.preventDefault();
+        this.handleAutoRotateChange(!this.state.autoRotate);
+        return;
+      }
+
       if (e.key === "ArrowRight") {
         e.preventDefault();
         this.shiftCoin(1);
@@ -1144,19 +1330,24 @@ class CryptoChart extends PureComponent {
 
     /* ── price targets (in-tab) ── */
 
-    _defineProperty(this, "handleAddAlert", (coin, direction, target) => {
+    _defineProperty(this, "handleAddAlert", (coin, kind, direction, target) => {
       this.setState((prev) => {
         if (prev.alerts.length >= MAX_ALERTS) return null;
         const alerts = [
           ...prev.alerts,
           {
-            id: `${coin}-${direction}-${Date.now()}`,
+            id: `${coin}-${kind}-${direction}-${Date.now()}`,
             coin,
+            kind,
             direction,
             target,
             currency: prev.currency,
             created: Date.now(),
+            // Where the price was when this was set, so the panel can show
+            // how far it has come rather than only how far is left
+            startPrice: this.alertPriceFor(coin, prev),
             triggeredAt: null,
+            hitPrice: null,
           },
         ];
         saveAlerts(alerts);
@@ -1164,11 +1355,165 @@ class CryptoChart extends PureComponent {
       }, this.checkAlerts);
     });
 
+    /* Re-arm a target that has been hit. It keeps its number and direction —
+     * that was the point of it — but starts again from now, so the candle
+     * lookback can't immediately re-report the crossing it just reported. */
+    _defineProperty(this, "handleRearmAlert", (id) => {
+      this.setState((prev) => {
+        const alerts = prev.alerts.map((a) =>
+          a.id === id
+            ? {
+                ...a,
+                created: Date.now(),
+                startPrice: this.alertPriceFor(a.coin, prev),
+                triggeredAt: null,
+                hitPrice: null,
+              }
+            : a,
+        );
+        saveAlerts(alerts);
+        return {
+          alerts,
+          firedAlerts: prev.firedAlerts.filter((f) => f.id !== id),
+        };
+      }, this.checkAlerts);
+    });
+
+    // Best price we have for a coin in the displayed currency: the chart's
+    // own value for the active coin, the ticker snapshot otherwise.
+    _defineProperty(this, "alertPriceFor", (coin, state) => {
+      const s = state || this.state;
+      if (coin === s.coinOptions[s.coinIndex]) {
+        const live = Number(s.currentValue);
+        if (isFinite(live) && live > 0) return live;
+      }
+      const entry = pageTickerCache.get(`${coin}-${s.currency}`);
+      return entry && isFinite(entry.price) && entry.price > 0
+        ? entry.price
+        : null;
+    });
+
     _defineProperty(this, "handleRemoveAlert", (id) => {
       this.setState((prev) => {
         const alerts = prev.alerts.filter((a) => a.id !== id);
         saveAlerts(alerts);
         return { alerts, firedAlerts: prev.firedAlerts.filter((a) => a.id !== id) };
+      });
+    });
+
+    /* Put a removed target back exactly as it was — same id, same created
+     * time, same start price. Rebuilding it from the form would lose all
+     * three, which is the reason undo exists rather than "type it again". */
+    _defineProperty(this, "handleRestoreAlert", (alert) => {
+      this.setState((prev) => {
+        if (prev.alerts.length >= MAX_ALERTS) return null;
+        if (prev.alerts.some((a) => a.id === alert.id)) return null;
+        const alerts = [...prev.alerts, alert];
+        saveAlerts(alerts);
+        return { alerts };
+      }, this.checkAlerts);
+    });
+
+    /* ── announcing a hit in the tab title ──
+     *
+     * What a hit looks like from another tab. The text alternates with a
+     * short marker rather than sitting still: a tab strip shows a dozen
+     * truncated titles and a static one among them is easy to miss, while
+     * something that changes catches the eye the way an unread count does.
+     *
+     * It stops the moment you look at the tab — the banner is right there and
+     * a title still flashing at a page you are reading is just noise. The
+     * announcement itself stays until the banner is dismissed, so a hit
+     * noticed out of the corner of your eye is still there when you arrive.
+     */
+    _defineProperty(this, "alertTitleText", () => {
+      const fired = this.state.firedAlerts;
+      if (!fired.length) return null;
+      const first = fired[0];
+      const what =
+        first.kind === "percent"
+          ? `${first.coin} ${first.direction === "above" ? "rose" : "fell"} ${formatPercentValue(first.target)}`
+          : `${first.coin} hit ${formatNumberString(
+              first.target,
+              getCurrencySymbol(first.currency),
+              true,
+              false,
+              this.state.decimalPlaces,
+              this.state.separatorFormat,
+            )}`;
+      return fired.length > 1 ? `${what} +${fired.length - 1} more` : what;
+    });
+
+    _defineProperty(this, "syncAlertTitle", () => {
+      const wanted =
+        this.state.alertTabTitle && this.state.firedAlerts.length > 0;
+      if (!wanted) {
+        this.stopAlertTitle();
+        return;
+      }
+      this._alertTitleActive = true;
+      // Visible tab: state it once and leave it alone. Hidden tab: alternate,
+      // so the change is what draws the eye rather than the text.
+      const paint = () => {
+        const text = this.alertTitleText();
+        if (!text) return;
+        if (document.hidden) {
+          this._alertTitleFlip = !this._alertTitleFlip;
+          document.title = this._alertTitleFlip ? `● ${text}` : "● ● ●";
+        } else {
+          document.title = `● ${text}`;
+        }
+      };
+      paint();
+      clearInterval(this.alertTitleTimer);
+      this.alertTitleTimer = setInterval(paint, ALERT_TITLE_FLASH_MS);
+    });
+
+    _defineProperty(this, "stopAlertTitle", () => {
+      if (this.alertTitleTimer) {
+        clearInterval(this.alertTitleTimer);
+        this.alertTitleTimer = null;
+      }
+      if (!this._alertTitleActive) return;
+      this._alertTitleActive = false;
+      this._alertTitleFlip = false;
+      // Hand the title back to whoever had it
+      this.setTabTitle(
+        this.state.coinOptions,
+        this.state.coinIndex,
+        this.state.currentValue,
+        this.state.valueHistory,
+      );
+    });
+
+    /* Keeps checking targets while the tab is hidden — the one thing in the
+     * extension that fetches while you are looking elsewhere, because a
+     * target nobody checks can't be announced. Bounded on every side: only
+     * with an armed target, only that target's coins (one bulk request, and
+     * the candle lookback is cached), only slowly, and only while the
+     * announcement setting is on, which is what makes the switch a real off
+     * switch for the background work rather than for the message alone.
+     */
+    _defineProperty(this, "syncAlertBackgroundPoll", () => {
+      const armed = this.state.alerts.some((a) => !a.triggeredAt);
+      const wanted = this.state.alertTabTitle && armed;
+      if (wanted === Boolean(this.alertPollInterval)) return;
+      if (wanted) {
+        this.alertPollInterval = setInterval(() => {
+          if (!document.hidden) return; // the normal fetch loop has it
+          this.refreshAlertPrices();
+        }, ALERT_BACKGROUND_POLL_MS);
+      } else {
+        clearInterval(this.alertPollInterval);
+        this.alertPollInterval = null;
+      }
+    });
+
+    _defineProperty(this, "handleAlertTabTitleChange", (enabled) => {
+      saveAlertTabTitle(enabled);
+      this.setState({ alertTabTitle: enabled }, () => {
+        this.syncAlertTitle();
+        this.syncAlertBackgroundPoll();
       });
     });
 
@@ -1186,14 +1531,28 @@ class CryptoChart extends PureComponent {
       if (!alerts.some((a) => !a.triggeredAt)) return;
       const prices = {};
       const activeCoin = this.state.coinOptions[this.state.coinIndex];
-      if (activeCoin && isFinite(Number(this.state.currentValue))) {
+      /* The chart's own value is the freshest thing we have for the active
+       * coin — but only while the tab is being looked at. Hidden, the chart
+       * loop is paused and that number is however old the tab is, while the
+       * background check's own sweep is seconds old, so state must not win. */
+      if (
+        !document.hidden &&
+        activeCoin &&
+        isFinite(Number(this.state.currentValue))
+      ) {
         prices[activeCoin] = Number(this.state.currentValue);
       }
       const watched = alertCoinsToWatch(alerts, currency);
+      // Percent targets compare against the 24h change, which the ticker
+      // snapshot already carries — no request of their own
+      const changes = {};
       for (const coin of watched) {
-        if (prices[coin] != null) continue;
         const entry = pageTickerCache.get(`${coin}-${currency}`);
-        if (entry && isFinite(entry.price)) prices[coin] = entry.price;
+        if (!entry) continue;
+        if (prices[coin] == null && isFinite(entry.price)) {
+          prices[coin] = entry.price;
+        }
+        if (isFinite(entry.change)) changes[coin] = entry.change;
       }
       // Candle history catches targets hit while no tab was open. Cached
       // for 5 minutes and only fetched for coins with an armed target.
@@ -1209,20 +1568,55 @@ class CryptoChart extends PureComponent {
         prices,
         currency,
         candlesByCoin,
+        changes,
       );
       if (!fired.length) return;
-      // Record when it was actually hit, not when we noticed
-      const hitTimes = new Map(fired.map((a) => [a.id, a.hitAt]));
+      // Record when it was actually hit, not when we noticed, and what it was
+      // worth then — the row still says so days later
+      const hits = new Map(fired.map((a) => [a.id, a]));
       this.setState((prev) => {
         const now = Date.now();
-        const updated = prev.alerts.map((a) =>
-          hitTimes.has(a.id)
-            ? { ...a, triggeredAt: hitTimes.get(a.id) || now }
-            : a,
-        );
+        const updated = prev.alerts.map((a) => {
+          const hit = hits.get(a.id);
+          if (!hit) return a;
+          return {
+            ...a,
+            triggeredAt: hit.hitAt || now,
+            hitPrice: hit.hitPrice != null ? hit.hitPrice : a.hitPrice,
+          };
+        });
         saveAlerts(updated);
         return { alerts: updated, firedAlerts: [...prev.firedAlerts, ...fired] };
       });
+    });
+
+    /* What price, 24h move and market cap we currently know for every
+     * supported coin. Both the targets panel and the Settings coin list read
+     * it: the first so a target can name any coin, the second so the coin
+     * chips can say how their coin is doing.
+     *
+     * Everything comes from data already on hand — the chart's own value for
+     * the active coin, the ticker snapshot for the rest — so opening either
+     * panel costs no request. A coin with no snapshot yet is simply absent,
+     * and the panels show nothing rather than a placeholder pretending to be
+     * a price. Built only while a panel is open: every call site sits behind
+     * that panel's render guard.
+     */
+    _defineProperty(this, "coinStats", () => {
+      const out = {};
+      const currency = this.state.currency;
+      for (const coin of SUGGESTED_COINS) {
+        const entry = pageTickerCache.get(`${coin}-${currency}`);
+        const price = this.alertPriceFor(coin);
+        if (price == null && !entry) continue;
+        out[coin] = {
+          price,
+          change: entry && isFinite(entry.change) ? entry.change : null,
+          marketCap:
+            entry && isFinite(entry.marketCap) ? entry.marketCap : null,
+        };
+      }
+      return out;
     });
 
     // Alerts on coins other than the active one need prices too — one bulk
@@ -1562,6 +1956,211 @@ class CryptoChart extends PureComponent {
       });
     });
 
+    /* One switch, one result.
+     *
+     * Calls are played on the grid's squares, so turning them on with the
+     * grid off used to give you an invisible game and a second row telling
+     * you to go and fix it. Switching them on brings the grid with them.
+     * Switching them off leaves the grid alone — someone who wanted the mesh
+     * before they wanted the game still wants it afterwards. */
+    _defineProperty(this, "handlePredictChange", (enabled) => {
+      savePredict(enabled);
+      if (enabled && this.state.chartGrid !== true) {
+        saveChartGrid(true);
+        this.setState({ predict: enabled, chartGrid: true });
+        return;
+      }
+      this.setState({ predict: enabled });
+    });
+
+    _defineProperty(this, "handlePredictAheadChange", (n) => {
+      savePredictAhead(n);
+      this.setState({ predictAhead: n });
+    });
+
+    /* One open call per *square*, not per coin.
+     *
+     * With three squares of future on screen there are three separate
+     * questions — where the price is in two days, in four, in six — and a
+     * player should be able to answer all of them. What must not stack is two
+     * answers to the *same* question, so placing again on a square replaces
+     * whatever was on it. */
+    _defineProperty(this, "handlePlaceCall", ({ target, span, lo, hi, col }) => {
+      const coin = this.state.coinOptions[this.state.coinIndex];
+      const period = this.state.period;
+      const currency = this.state.currency;
+      this.setState((prev) => {
+        const open = prev.calls.open.filter(
+          (c) =>
+            !(
+              c.coin === coin &&
+              c.currency === currency &&
+              c.period === period &&
+              c.col === col
+            ),
+        );
+        open.push({
+          id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          coin,
+          currency,
+          period,
+          target,
+          span,
+          lo,
+          hi,
+          col,
+          placed: Date.now(),
+          /* The live price is `currentValue`, a plain number. This read
+           * `prev.spot.amount` — a field this component has never had — so
+           * every call was stored with a null placedPrice. It is what the
+           * panel needs to say what the price was when the call was made. */
+          placedPrice:
+            typeof prev.currentValue === "number" && isFinite(prev.currentValue)
+              ? prev.currentValue
+              : null,
+        });
+        /* Capped here as well as on load. Only sanitising on read meant a
+         * long session could hold more than the cap and quietly drop the
+         * overflow at the next reload — the oldest calls vanishing with no
+         * event the user could connect them to. */
+        const calls = {
+          record: prev.calls.record,
+          done: prev.calls.done,
+          open: open.slice(-MAX_OPEN_CALLS),
+        };
+        saveCalls(calls);
+        return { calls };
+      });
+    });
+
+    /* Settle whatever is due against the series already on screen. No new
+     * request and no new host: the answer is in data the chart was drawn
+     * from. Runs when a series arrives, which is exactly "next time you open
+     * a tab" for the coin that was called. */
+    _defineProperty(this, "settleDueCalls", () => {
+      const { calls, period, currency } = this.state;
+      if (!calls.open.length) return;
+      const coin = this.state.coinOptions[this.state.coinIndex];
+      const prices = this.state.valueHistory;
+      if (!Array.isArray(prices) || prices.length < 2) return;
+
+      const now = Date.now();
+      let record = calls.record;
+      let hit = false;
+      const open = [];
+      const settled = [];
+      for (const c of calls.open) {
+        const mine =
+          c.coin === coin && c.currency === currency && c.period === period;
+        if (!mine) {
+          open.push(c);
+          continue;
+        }
+        const { status, price } = settleCall(c, prices, now);
+        if (status === "pending") {
+          open.push(c);
+          continue;
+        }
+        record = applyCallResult(record, status);
+        if (status === "hit") hit = true;
+        /* Expired calls are dropped rather than kept: there is no answer to
+         * show, and a box on the chart with no result is a question mark
+         * nobody can resolve. */
+        if (status === "hit" || status === "miss") {
+          settled.push({ ...c, result: status, settledPrice: price });
+        }
+      }
+      if (open.length === calls.open.length && record === calls.record) return;
+
+      const next = {
+        record,
+        open,
+        // Newest first, so the cap drops the oldest rather than the latest
+        done: settled.concat(calls.done || []).slice(0, MAX_DONE_CALLS),
+      };
+      saveCalls(next);
+      const won = settled.filter((c) => c.result === "hit");
+      this.setState((prev) => ({
+        calls: next,
+        celebrate: hit ? prev.celebrate + 1 : prev.celebrate,
+        // The chart bursts on the box that came true, so it needs to know
+        // which one — the newest hit if several settled at once
+        celebrateCall: won.length ? won[won.length - 1] : prev.celebrateCall,
+        /* Announced the same way a hit target is. A call settling while you
+         * were away is exactly the kind of thing the toast stack exists for,
+         * and the panel is not open when it happens. */
+        wonCalls: won.length ? won.concat(prev.wonCalls) : prev.wonCalls,
+      }));
+    });
+
+    /* The chart already guards against reporting the same numbers twice, so
+     * this only ever runs on a real change — but it compares again anyway,
+     * because a setState loop between a chart and its panel is the kind of
+     * bug that only shows up as a warm laptop. */
+    _defineProperty(this, "handleChartGeometry", (geo) => {
+      const cur = this.state.callGeometry;
+      if (
+        cur &&
+        cur.step === geo.step &&
+        cur.spanMs === geo.spanMs &&
+        cur.reachMs === geo.reachMs
+      ) {
+        return;
+      }
+      this.setState({ callGeometry: geo });
+    });
+
+    _defineProperty(this, "handleCallsShowSettledChange", (v) => {
+      saveCallsShowSettled(v);
+      this.setState({ callsShowSettled: v });
+    });
+
+    _defineProperty(this, "handleCallsCelebrateChange", (v) => {
+      saveCallsCelebrate(v);
+      this.setState({ callsCelebrate: v });
+    });
+
+    _defineProperty(this, "dismissWonCall", (id) => {
+      this.setState((prev) => ({
+        wonCalls: prev.wonCalls.filter((c) => c.id !== id),
+      }));
+    });
+
+    _defineProperty(this, "handleClearSettled", () => {
+      this.setState((prev) => {
+        const next = { record: prev.calls.record, open: prev.calls.open, done: [] };
+        saveCalls(next);
+        return { calls: next };
+      });
+    });
+
+    _defineProperty(this, "handleWithdrawCall", (id) => {
+      this.setState((prev) => {
+        const next = {
+          record: prev.calls.record,
+          done: prev.calls.done,
+          open: prev.calls.open.filter((c) => c.id !== id),
+        };
+        saveCalls(next);
+        return { calls: next };
+      });
+    });
+
+    _defineProperty(this, "handleResetCalls", () => {
+      const empty = {
+        record: { hits: 0, total: 0, streak: 0, best: 0 },
+        open: [],
+        done: [],
+      };
+      saveCalls(empty);
+      this.setState({ calls: empty });
+    });
+
+    _defineProperty(this, "handleChartGridChange", (enabled) => {
+      saveChartGrid(enabled);
+      this.setState({ chartGrid: enabled });
+    });
+
     _defineProperty(this, "handleMarketStatsChange", (enabled) => {
       saveMarketStats(enabled);
       this.setState({ marketStats: enabled });
@@ -1625,7 +2224,7 @@ class CryptoChart extends PureComponent {
         } else {
           this.stopTickerInterval();
           // Reset to current coin title
-          updateTabTitle(
+          this.setTabTitle(
             this.state.coinOptions,
             this.state.coinIndex,
             this.state.currentValue,
@@ -2087,7 +2686,21 @@ class CryptoChart extends PureComponent {
       }
     });
 
+    /* ── the tab title has one owner at a time ──
+     *
+     * Three things want to write it: the price readout, the scrolling ticker
+     * (every 250ms), and a target that has just been hit. Without a single
+     * gate the ticker simply overwrites an announcement a quarter-second
+     * after it appears, so the announcement claims the title and everything
+     * else stands down while it holds it.
+     */
+    _defineProperty(this, "setTabTitle", (...args) => {
+      if (this._alertTitleActive) return;
+      updateTabTitle(...args);
+    });
+
     _defineProperty(this, "scrollTickerTitle", () => {
+      if (this._alertTitleActive) return;
       const { tickerText } = this.state;
       if (!tickerText) {
         document.title = "New Tab";
@@ -2116,7 +2729,7 @@ class CryptoChart extends PureComponent {
   componentDidMount() {
     this.fetchData();
     // Set initial tab title
-    updateTabTitle(
+    this.setTabTitle(
       this.state.coinOptions,
       this.state.coinIndex,
       this.state.currentValue,
@@ -2169,6 +2782,9 @@ class CryptoChart extends PureComponent {
 
     // Resume paused polling as soon as the tab becomes visible again
     this.handleVisibilityChange = () => {
+      // The announcement alternates only while the tab is away; arriving or
+      // leaving changes which of those it should be doing
+      this.syncAlertTitle();
       if (document.hidden) {
         return;
       }
@@ -2186,6 +2802,10 @@ class CryptoChart extends PureComponent {
       }
     };
     document.addEventListener("visibilitychange", this.handleVisibilityChange);
+
+    // A target armed in a previous session needs the background check running
+    // from the start, not only once something changes
+    this.syncAlertBackgroundPoll();
 
     // Start ticker interval if enabled (delay 3s for prices to load)
     if (this.state.tickerEnabled) {
@@ -2234,6 +2854,8 @@ class CryptoChart extends PureComponent {
     clearInterval(this.widgetRefreshInterval);
     clearInterval(this.pageTickerRefreshInterval);
     clearInterval(this.portfolioInterval);
+    clearInterval(this.alertTitleTimer);
+    clearInterval(this.alertPollInterval);
     this.stopTickerInterval();
     this.stopAutoRotate();
     this.stopNewsTicker();
@@ -2265,6 +2887,27 @@ class CryptoChart extends PureComponent {
   }
 
   componentDidUpdate(_prevProps, prevState) {
+    // A hit arriving, or the last banner being dismissed, is what starts and
+    // stops the announcement
+    if (prevState.firedAlerts !== this.state.firedAlerts) {
+      this.syncAlertTitle();
+    }
+    // Setting a first target, or the last one firing, decides whether there is
+    // anything left to check for while the tab is away
+    if (prevState.alerts !== this.state.alerts) {
+      this.syncAlertBackgroundPoll();
+    }
+
+    /* A new series for this coin is the moment a due call can be answered —
+     * that is what "next time you open a tab" means in practice, and it costs
+     * no request because the answer is inside the data just drawn. */
+    if (
+      this.state.predict &&
+      prevState.valueHistory !== this.state.valueHistory
+    ) {
+      this.settleDueCalls();
+    }
+
     if (
       prevState.showSettings !== this.state.showSettings ||
       prevState.showPortfolio !== this.state.showPortfolio
@@ -2451,7 +3094,7 @@ class CryptoChart extends PureComponent {
           ),
         React.createElement(
           AppShell,
-          { tickerTop },
+          { tickerTop, tickerBottom },
           !showPortfolio &&
             !this.state.showAlerts &&
             !this.state.showQuickSwitch &&
@@ -2483,6 +3126,7 @@ class CryptoChart extends PureComponent {
                 type: "button",
                 tickerTop: tickerTop && !this.state.showAlerts,
                 open: this.state.showAlerts,
+                "data-tour": "alerts",
                 hasFired:
                   !this.state.showAlerts &&
                   this.state.alerts.some((a) => a.triggeredAt),
@@ -2540,6 +3184,8 @@ class CryptoChart extends PureComponent {
                   Fragment,
                   null,
                   React.createElement(Overview, {
+                    // "X" flips the change readout through this
+                    ref: (r) => (this.overviewRef = r),
                     coin: activeCoin,
                     cycleCoinIndex: this.cycleCoinIndex,
                     currentValue,
@@ -2721,6 +3367,23 @@ class CryptoChart extends PureComponent {
                 : React.createElement(Line, {
                     prices: valueHistory,
                     colorize: this.state.chartColor,
+                    grid: this.state.chartGrid === true,
+                    predict: this.state.predict === true,
+                    predictAhead: this.state.predictAhead,
+                    calls: this.state.calls.open,
+                    settledCalls:
+                      this.state.callsShowSettled === false
+                        ? null
+                        : this.state.calls.done,
+                    currency: this.state.currency,
+                    celebrate:
+                      this.state.callsCelebrate === false
+                        ? 0
+                        : this.state.celebrate,
+                    celebrateCall: this.state.celebrateCall,
+                    onPlaceCall: this.handlePlaceCall,
+                    onGeometry: this.handleChartGeometry,
+                    currencySymbol: getCurrencySymbol(this.state.currency),
                     interactive: true, // crosshair with OHLC + volume
                     period,
                     coin: activeCoin,
@@ -2766,6 +3429,7 @@ class CryptoChart extends PureComponent {
               tickerTop,
               active: Boolean(this.state.compareCoin),
               onClick: this.toggleCompare,
+              "data-tour": "compare",
               "aria-label": this.state.compareCoin
                 ? `Stop comparing with ${this.state.compareCoin}`
                 : "Compare with a second coin",
@@ -2795,6 +3459,7 @@ class CryptoChart extends PureComponent {
             {
               type: "button",
               tickerTop,
+              "data-tour": "widget-toggle",
               onClick: anyVisible ? this.hideAllWidgets : this.restoreAllWidgets,
               "aria-label": anyVisible ? "Hide all widgets" : "Show hidden widgets",
               title: anyVisible ? "Hide all widgets" : "Show hidden widgets",
@@ -2848,8 +3513,9 @@ class CryptoChart extends PureComponent {
                         style: {
                           display: "block",
                           margin: "0 auto",
-                          width: "92px",
-                          height: "40px",
+                          // em, so the gauge grows with the card
+                          width: "5.75em",
+                          height: "2.5em",
                           overflow: "visible",
                         },
                       },
@@ -2884,7 +3550,7 @@ class CryptoChart extends PureComponent {
                     ),
                     React.createElement(
                       WidgetValue,
-                      { style: { marginTop: "3px" } },
+                      { style: { marginTop: "0.2em" } },
                       fearGreedData.value,
                     ),
                     React.createElement(
@@ -2904,7 +3570,7 @@ class CryptoChart extends PureComponent {
                     null,
                     React.createElement(
                       WidgetValue,
-                      { style: { fontSize: "0.85rem" } },
+                      { style: { fontSize: "0.9em" } },
                       React.createElement(MarketStatLabel, null, "Cap"),
                       "$" +
                         (marketOverviewData.totalMarketCap / 1e12).toFixed(
@@ -2984,8 +3650,8 @@ class CryptoChart extends PureComponent {
                         style: {
                           display: "flex",
                           alignItems: "center",
-                          gap: "6px",
-                          marginTop: "5px",
+                          gap: "0.4em",
+                          marginTop: "0.35em",
                         },
                       },
                       React.createElement(
@@ -3089,13 +3755,13 @@ class CryptoChart extends PureComponent {
                       LSRow,
                       null,
                       React.createElement(
-                        "span",
-                        { style: { color: "#34d399" } },
+                        WidgetSideValue,
+                        { up: true },
                         "L " + longShortData.longPct + "%",
                       ),
                       React.createElement(
-                        "span",
-                        { style: { color: "#f87171" } },
+                        WidgetSideValue,
+                        { up: false },
                         "S " + longShortData.shortPct + "%",
                       ),
                     ),
@@ -3145,14 +3811,16 @@ class CryptoChart extends PureComponent {
                     React.createElement(
                       LiqRow,
                       null,
+                      // Liquidated longs are the losing side here, so the
+                      // colours are the reverse of the positioning widget
                       React.createElement(
-                        "span",
-                        { style: { color: "#f87171" } },
+                        WidgetSideValue,
+                        { up: false },
                         "L " + liquidationsData.longFormatted,
                       ),
                       React.createElement(
-                        "span",
-                        { style: { color: "#34d399" } },
+                        WidgetSideValue,
+                        { up: true },
                         "S " + liquidationsData.shortFormatted,
                       ),
                     ),
@@ -3217,6 +3885,9 @@ class CryptoChart extends PureComponent {
                   WidgetCard,
                   {
                     key: key,
+                    // One number drives the whole card — everything inside
+                    // it is sized in em against this
+                    scale: widgetSizeScale(this.state.widgetSize),
                     dragging: dragWidget === key,
                     draggable: true,
                     onDragStart: () => this.onWidgetDragStart(key),
@@ -3228,10 +3899,21 @@ class CryptoChart extends PureComponent {
                   },
                   React.createElement(
                     WidgetHideButton,
-                    { onClick: () => this.hideWidget(key), title: "Hide" },
+                    {
+                      onClick: () => this.hideWidget(key),
+                      title: `Hide ${def.label}`,
+                      "aria-label": `Hide ${def.label}`,
+                    },
                     "\u00d7",
                   ),
-                  React.createElement(WidgetLabel, null, def.label),
+                  // Half of these labels are terms of art, and a card three
+                  // words wide can't explain itself \u2014 so it hands over the
+                  // same sentence Settings uses
+                  React.createElement(
+                    WidgetLabel,
+                    { title: WIDGET_DESCRIPTIONS[key] || undefined },
+                    def.label,
+                  ),
                   def.content,
                 );
               }),
@@ -3410,6 +4092,9 @@ class CryptoChart extends PureComponent {
             onReorderCoin: this.handleReorderCoinOption,
             onResetCoins: this.handleResetCoins,
             onRestoreCoins: this.handleRestoreCoins,
+            // Lets the coin chips show today's move and the list be sorted
+            // by it — read from the ticker snapshot, so it costs no request
+            coinStats: this.coinStats(),
             onClose: this.toggleSettings,
             themePreference: themePreference,
             activeTheme: activeTheme,
@@ -3440,6 +4125,8 @@ class CryptoChart extends PureComponent {
             onChartColorChange: this.handleChartColorChange,
             lastSeenEnabled: this.state.lastSeenEnabled,
             onLastSeenChange: this.handleLastSeenChange,
+            alertTabTitle: this.state.alertTabTitle,
+            onAlertTabTitleChange: this.handleAlertTabTitleChange,
             ohlcEnabled: this.state.ohlcEnabled,
             onOhlcChange: this.handleOhlcChange,
             chartType: this.state.chartType,
@@ -3448,11 +4135,20 @@ class CryptoChart extends PureComponent {
             onVolumeBarsChange: this.handleVolumeBarsChange,
             marketStats: this.state.marketStats,
             onMarketStatsChange: this.handleMarketStatsChange,
+            chartGrid: this.state.chartGrid,
+            onChartGridChange: this.handleChartGridChange,
             moveHeadlines: this.state.moveHeadlines,
             onMoveHeadlinesChange: this.handleMoveHeadlinesChange,
             onShowShortcuts: () =>
               this.setState({ showSettings: false, showShortcuts: true }),
+            onReplayTour: () =>
+              this.setState((prev) => ({
+                showSettings: false,
+                tourReplay: prev.tourReplay + 1,
+              })),
             widgets: widgets,
+            widgetSize: this.state.widgetSize,
+            onWidgetSizeChange: this.handleWidgetSizeChange,
             onWidgetToggle: this.handleWidgetToggle,
             onWidgetPreset: this.handleWidgetPreset,
           }),
@@ -3472,6 +4168,8 @@ class CryptoChart extends PureComponent {
             onUpdateAmount: this.handleUpdateHoldingAmount,
             onAddLot: this.handleAddLot,
             onRemoveLot: this.handleRemoveLot,
+            onAddSale: this.handleAddSale,
+            onRemoveSale: this.handleRemoveSale,
             onRemove: this.handleRemoveHolding,
             onImport: this.handleImportPortfolio,
             onWatch: this.handleWatchAddress,
@@ -3479,32 +4177,106 @@ class CryptoChart extends PureComponent {
             onClose: this.togglePortfolio,
           }),
 
-        // Targets that were hit — one dismissible toast each
-        this.state.firedAlerts.length > 0 &&
+        /* Targets that were hit and calls that came true — one dismissible
+         * toast each. The stack was gated on `firedAlerts` alone, so a call
+         * settling with no target pending had nowhere to be announced. */
+        (this.state.firedAlerts.length > 0 || this.state.wonCalls.length > 0) &&
           React.createElement(
             AlertToastStack,
             null,
+            this.state.wonCalls.map((c) =>
+              React.createElement(
+                AlertToast,
+                { key: `call-${c.id}`, up: true },
+                React.createElement(
+                  AlertDirBadge,
+                  { up: true, "aria-hidden": "true" },
+                  "\u2713",
+                ),
+                React.createElement(
+                  AlertToastBody,
+                  null,
+                  React.createElement(
+                    "div",
+                    null,
+                    `Called it — ${c.coin} in ` +
+                      formatNumberString(
+                        c.lo,
+                        getCurrencySymbol(c.currency),
+                        true,
+                        false,
+                        decimalPlaces,
+                        separatorFormat,
+                      ) +
+                      " – " +
+                      formatNumberString(
+                        c.hi,
+                        getCurrencySymbol(c.currency),
+                        true,
+                        false,
+                        decimalPlaces,
+                        separatorFormat,
+                      ),
+                  ),
+                  React.createElement(
+                    AlertToastWhen,
+                    null,
+                    c.settledPrice != null
+                      ? `closed at ${formatNumberString(c.settledPrice, getCurrencySymbol(c.currency), true, false, decimalPlaces, separatorFormat)}`
+                      : "settled",
+                  ),
+                ),
+                React.createElement(
+                  AlertToastClose,
+                  {
+                    "aria-label": "Dismiss",
+                    onClick: () => this.dismissWonCall(c.id),
+                  },
+                  "×",
+                ),
+              ),
+            ),
             this.state.firedAlerts.map((a) =>
               React.createElement(
                 AlertToast,
                 { key: a.id, up: a.direction === "above" },
                 React.createElement(
-                  "span",
+                  AlertDirBadge,
+                  { up: a.direction === "above", "aria-hidden": "true" },
+                  a.direction === "above" ? "↑" : "↓",
+                ),
+                React.createElement(
+                  AlertToastBody,
                   null,
-                  `${a.coin} hit ` +
-                    formatNumberString(
-                      a.target,
-                      getCurrencySymbol(a.currency),
-                      true,
-                      false,
-                      decimalPlaces,
-                      separatorFormat,
-                    ) +
+                  React.createElement(
+                    "div",
+                    null,
+                    // A percent target reports the move it was watching for
+                    a.kind === "percent"
+                      ? `${a.coin} ${a.direction === "above" ? "rose" : "fell"} ${formatPercentValue(a.target)} in 24h`
+                      : `${a.coin} hit ` +
+                          formatNumberString(
+                            a.target,
+                            getCurrencySymbol(a.currency),
+                            true,
+                            false,
+                            decimalPlaces,
+                            separatorFormat,
+                          ),
+                  ),
+                  React.createElement(
+                    AlertToastWhen,
+                    null,
                     // Candles can say when it happened; a live crossing is
                     // happening right now, so it says so
                     (a.hitAt
-                      ? ` · ${describeElapsed(Date.now() - a.hitAt)}`
-                      : " · just now"),
+                      ? describeElapsed(Date.now() - a.hitAt)
+                      : "just now") +
+                      // What it was worth then, where the candles could say
+                      (a.kind === "percent" && a.hitPrice != null
+                        ? ` · ${formatNumberString(a.hitPrice, getCurrencySymbol(a.currency), true, false, decimalPlaces, separatorFormat)}`
+                        : ""),
+                  ),
                 ),
                 React.createElement(
                   AlertToastClose,
@@ -3521,7 +4293,28 @@ class CryptoChart extends PureComponent {
         // Price targets panel ("a")
         this.state.showAlerts &&
           React.createElement(AlertsPanel, {
-            alerts: this.state.alerts,
+            predict: this.state.predict,
+                  onPredictChange: this.handlePredictChange,
+                  predictAhead: this.state.predictAhead,
+                  onPredictAheadChange: this.handlePredictAheadChange,
+                  calls: this.state.calls.open,
+                  settledCalls: this.state.calls.done,
+                  callRecord: this.state.calls.record,
+                  callsShowSettled: this.state.callsShowSettled,
+                  onCallsShowSettledChange: this.handleCallsShowSettledChange,
+                  callsCelebrate: this.state.callsCelebrate,
+                  onCallsCelebrateChange: this.handleCallsCelebrateChange,
+                  onClearSettled: this.handleClearSettled,
+                  callGeometry: this.state.callGeometry,
+                  chartGrid: this.state.chartGrid,
+                  onChartGridChange: this.handleChartGridChange,
+                  onWithdrawCall: this.handleWithdrawCall,
+                  onResetCalls: this.handleResetCalls,
+                  // The panel names a call's range when it is not the one on
+                  // screen; without this it had nothing to compare against
+                  // and said so on every row.
+                  period: this.state.period,
+                  alerts: this.state.alerts,
             coinOptions,
             activeCoin,
             currency,
@@ -3534,8 +4327,13 @@ class CryptoChart extends PureComponent {
                 decimalPlaces,
                 separatorFormat,
               ),
+            // Live prices and 24h moves, so each row can say where it stands
+            // instead of only what was asked for
+            stats: this.coinStats(),
             onAdd: this.handleAddAlert,
             onRemove: this.handleRemoveAlert,
+            onRestore: this.handleRestoreAlert,
+            onRearm: this.handleRearmAlert,
             onClose: () => this.setState({ showAlerts: false }),
           }),
 
@@ -3559,7 +4357,16 @@ class CryptoChart extends PureComponent {
               }),
           }),
 
-        !showSettings && !showPortfolio && React.createElement(OnboardingTour, null),
+        // First-run spotlight tour, replayable from Settings. The key
+        // remounts it so a replay re-runs from step one.
+        !showSettings &&
+          !showPortfolio &&
+          React.createElement(OnboardingTour, {
+            key: this.state.tourReplay,
+            replay: this.state.tourReplay > 0,
+            onActiveChange: (active) => this.setState({ tourActive: active }),
+            onFinish: () => this.setState({ tourReplay: 0 }),
+          }),
       ),
     );
   }

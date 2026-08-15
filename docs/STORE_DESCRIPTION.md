@@ -123,7 +123,7 @@ English (United States)
 | Dashboard field | File | Size |
 | --- | --- | --- |
 | Store icon | `assets/icons/icon128.png` | 128x128 |
-| Screenshots (upload in this order) | `assets/screenshots/01-hero.png` … `06-themes.png` | 1280x800 |
+| Screenshots (upload in this order) | `assets/screenshots/01-hero.png` … `05-targets.png` | 1280x800 |
 | Small promo tile | `assets/promotional/Small Tile.png` | 440x280 |
 | Marquee promo tile | `assets/promotional/Marquee.png` | 1400x560 |
 

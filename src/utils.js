@@ -383,6 +383,31 @@ const scalePricesCore = (
 // Memoized version for performance
 const scalePrices = memoize(scalePricesCore);
 
+/* The y `scalePrices` would give an arbitrary price — for drawing a
+ * horizontal reference across the chart at a level that isn't a data point.
+ *
+ * Null when the level falls outside the range the chart actually covers.
+ * Clamping it to an edge would draw a line claiming the price came down to
+ * meet it when it never entered the window at all, and a reference line that
+ * can lie is worse than no reference line.
+ */
+const priceToChartY = (
+  data,
+  value,
+  height,
+  paddingTop = 0,
+  paddingBottom = 0,
+) => {
+  if (!Array.isArray(data) || data.length < 2) return null;
+  if (!isFinite(value)) return null;
+  const [min, max] = extent(data, (d) => d.price);
+  if (!isFinite(min) || !isFinite(max) || min === max) return null;
+  if (value < min || value > max) return null;
+  return scaleLinear()
+    .range([height - paddingBottom, paddingTop])
+    .domain([min, max])(value);
+};
+
 const lineFromPrices = line()
   .x((d) => d.time)
   .y((d) => d.price);
@@ -512,6 +537,107 @@ const formatCompactAmount = (value, symbol) => {
   return `${symbol}${v.toFixed(2)}`;
 };
 
+/* Axis labels for the chart grid.
+ *
+ * The decimals come from the *step between levels*, not from the magnitude
+ * of the number. That is the only rule that works across this coin list: at
+ * a $500 step "64500" needs none, and at a $0.002 step Dogecoin needs three —
+ * formatting by magnitude gave two adjacent gridlines the same label ($0.07
+ * and $0.07), which makes the grid useless for reading a level off.
+ */
+const formatAxisPrice = (value, step, symbol = "") => {
+  const v = Number(value);
+  const s = Number(step);
+  if (!isFinite(v)) return "";
+  const places = (x) =>
+    isFinite(x) && x > 0 ? Math.max(0, Math.min(8, Math.ceil(-Math.log10(x)))) : 2;
+  if (Math.abs(v) >= 1e3) {
+    const units = [
+      { at: 1e12, suffix: "T" },
+      { at: 1e9, suffix: "B" },
+      { at: 1e6, suffix: "M" },
+      { at: 1e3, suffix: "K" },
+    ];
+    for (const { at, suffix } of units) {
+      if (Math.abs(v) >= at) {
+        return `${symbol}${(v / at).toFixed(places(s / at))}${suffix}`;
+      }
+    }
+  }
+  return `${symbol}${v.toFixed(places(s))}`;
+};
+
+/* ── Calls: settling one ──
+ *
+ * A call names a box: this price band, at this time. Settling it needs the
+ * price *at that time*, not the price now — someone who opens a tab three
+ * hours after the target must not be judged on three hours of drift they
+ * were never asked about. So the series is searched for the point nearest
+ * the target, and it only counts when that point is genuinely near: within
+ * half the call's own cell width. Anything looser and the answer is about a
+ * different moment than the one that was called.
+ *
+ * Four outcomes, and "expired" is a real one. If the tab stays shut long
+ * enough for the target to fall off the start of the range, the evidence is
+ * gone. Guessing from whatever is left would let the record drift away from
+ * what actually happened, and this record's only job is to be true.
+ */
+const settleCall = (call, prices, now) => {
+  const out = (status, price) => ({ status, price: price == null ? null : price });
+  if (!call || !isFinite(call.target) || !isFinite(call.span)) return out("expired");
+  if (!(now >= call.target)) return out("pending");
+
+  const data = Array.isArray(prices) ? prices : [];
+  if (data.length < 2) return out("pending");
+
+  const at = (d) => (d.time instanceof Date ? d.time.getTime() : Number(d.time));
+  const first = at(data[0]);
+  const last = at(data[data.length - 1]);
+  if (!isFinite(first) || !isFinite(last)) return out("pending");
+
+  // The target predates everything on screen: the moment is unrecoverable
+  if (call.target < first) return out("expired");
+  // The series has not caught up yet — ask again next time
+  if (call.target > last + call.span) return out("pending");
+
+  let best = null;
+  let bestGap = Infinity;
+  for (const d of data) {
+    const gap = Math.abs(at(d) - call.target);
+    if (gap < bestGap) {
+      bestGap = gap;
+      best = d;
+    }
+  }
+  if (!best || bestGap > call.span / 2) return out("pending");
+
+  const price = Number(best.price);
+  if (!isFinite(price)) return out("pending");
+  return out(price >= call.lo && price <= call.hi ? "hit" : "miss", price);
+};
+
+/* Applies a settled outcome to the tally. Separate from `settleCall` so the
+ * arithmetic can be checked on its own, and so a miss and a hit go through
+ * exactly the same path. */
+const applyCallResult = (record, status) => {
+  const r = {
+    hits: record && isFinite(record.hits) ? record.hits : 0,
+    total: record && isFinite(record.total) ? record.total : 0,
+    streak: record && isFinite(record.streak) ? record.streak : 0,
+    best: record && isFinite(record.best) ? record.best : 0,
+  };
+  if (status !== "hit" && status !== "miss") return r;   // expired never counts
+  r.total += 1;
+  if (status === "hit") {
+    r.hits += 1;
+    r.streak += 1;
+    if (r.streak > r.best) r.best = r.streak;
+  } else {
+    r.streak = 0;
+  }
+  return r;
+};
+
 /* Prices for the widget list rows. The panel is narrow, so the decimals
  * adapt to the magnitude instead of using the display setting: a $65,014.68
  * would crowd out the change column, while a $0.0000 would say nothing.
@@ -535,6 +661,38 @@ const describeElapsed = (ms) => {
   if (days === 1) return "yesterday";
   if (days < 30) return `${days} days ago`;
   return "a month ago";
+};
+
+/* The mirror of `describeElapsed`, for something that has not happened yet.
+ * Same thresholds, so "3h ago" and "in 3h" read as the same scale — and it
+ * degrades to "now" rather than "0 min" when the moment has arrived. */
+const describeAhead = (ms) => {
+  if (!isFinite(ms) || ms <= 0) return "now";
+  const mins = Math.round(ms / 60000);
+  if (mins < 1) return "now";
+  if (mins < 60) return `in ${mins} min`;
+  const hours = Math.round(mins / 60);
+  if (hours < 24) return `in ${hours}h`;
+  const days = Math.round(hours / 24);
+  if (days === 1) return "tomorrow";
+  if (days < 30) return `in ${days} days`;
+  return "in over a month";
+};
+
+/* A duration written the way someone would say it: "2 days", "6h", "45 min".
+ * Not `describeAhead` — that answers "when", this answers "how long", and a
+ * square's size is a length, not a moment. */
+const describeSpan = (ms) => {
+  if (!isFinite(ms) || ms <= 0) return "";
+  const mins = Math.round(ms / 60000);
+  if (mins < 60) return `${mins} min`;
+  const hours = ms / 3600e3;
+  if (hours < 24) return `${hours < 10 ? hours.toFixed(1).replace(/\.0$/, "") : Math.round(hours)}h`;
+  const days = ms / 86400e3;
+  if (days < 14) return `${days < 10 ? days.toFixed(1).replace(/\.0$/, "") : Math.round(days)} days`;
+  const weeks = ms / 604800e3;
+  if (weeks < 9) return `${weeks.toFixed(1).replace(/\.0$/, "")} weeks`;
+  return `${Math.round(ms / 2629800e3)} months`;
 };
 
 const NUMBER_REG = /\B(?=(\d{3})+(?!\d))/g;

@@ -92,10 +92,56 @@ assert.deepStrictEqual(
         },
         { address: BTC_ADDR2, amount: 0.1, lots: [] },
       ],
+      // Added when disposals became recordable; a holding saved before that
+      // still loads, with an empty list rather than being dropped
+      sales: [],
     },
-    { coin: "ETH", amount: 2, lots: [], watches: [] },
+    { coin: "ETH", amount: 2, lots: [], watches: [], sales: [] },
   ],
   "roundtrip (manual part + several watched addresses)",
+);
+
+/* ── recorded sales ─────────────────────────────────────────────────────── */
+
+// A sale keeps the basis it consumed *and* which lots it came from: the lots
+// are gone afterwards, so neither can be recomputed later.
+run(
+  `savePortfolioToStorage([{ coin: "BTC", amount: 0.5, lots: [], watches: [], sales: [` +
+    `{ amount: 0.5, received: 45000, basis: 15000, basisAmount: 0.5, time: 1700000000,` +
+    ` matched: [{ amount: 0.5, cost: 15000, acquired: 1600000000, source: "manual" }] }` +
+    `] }])`,
+);
+const sale = json("loadPortfolioFromStorage()")[0].sales[0];
+assert.deepStrictEqual(
+  sale,
+  {
+    amount: 0.5, received: 45000, basis: 15000, basisAmount: 0.5,
+    matched: [{ amount: 0.5, cost: 15000, acquired: 1600000000, source: "manual" }],
+    time: 1700000000,
+  },
+  "a sale round-trips with the lots it consumed",
+);
+
+// basisAmount can never exceed what was sold, whatever the stored value claims
+run(
+  `savePortfolioToStorage([{ coin: "BTC", amount: 0, lots: [], watches: [], sales: [` +
+    `{ amount: 1, received: 100, basis: 50, basisAmount: 99 }] }])`,
+);
+assert.strictEqual(
+  json("loadPortfolioFromStorage()")[0].sales[0].basisAmount,
+  1,
+  "basisAmount is capped at the amount sold",
+);
+
+// Junk sales are dropped rather than repaired into a bogus disposal
+run(
+  `savePortfolioToStorage([{ coin: "BTC", amount: 0, lots: [], watches: [], sales: [` +
+    `null, {}, { amount: -1, received: 5 }, { amount: 1, received: -5 }] }])`,
+);
+assert.deepStrictEqual(
+  json("loadPortfolioFromStorage()")[0].sales,
+  [],
+  "invalid sales are dropped",
 );
 
 // Legacy single-address holding migrates into one watch entry
@@ -116,6 +162,7 @@ assert.deepStrictEqual(
           lots: [{ amount: 0.5, paid: 9000, time: 5, source: "chain" }],
         },
       ],
+      sales: [],
     },
   ],
   "legacy address holding migrates to a watch entry",
@@ -139,8 +186,9 @@ assert.deepStrictEqual(
       amount: 1,
       lots: [],
       watches: [{ address: BTC_ADDR, amount: 2, lots: [] }],
+      sales: [],
     },
-    { coin: "SOL", amount: 1, lots: [], watches: [] },
+    { coin: "SOL", amount: 1, lots: [], watches: [], sales: [] },
   ],
   "watch entries validated per chain, duplicates and junk dropped",
 );
@@ -181,9 +229,9 @@ store["crypto_chart_portfolio"] = JSON.stringify([
 assert.deepStrictEqual(
   json("loadPortfolioFromStorage()"),
   [
-    { coin: "ETH", amount: 2, lots: [{ amount: 2, paid: 1500, time: 0, source: "manual" }], watches: [] },
-    { coin: "BTC", amount: 1, lots: [], watches: [] },
-    { coin: "ADA", amount: 0, lots: [], watches: [] },
+    { coin: "ETH", amount: 2, lots: [{ amount: 2, paid: 1500, time: 0, source: "manual" }], watches: [], sales: [] },
+    { coin: "BTC", amount: 1, lots: [], watches: [], sales: [] },
+    { coin: "ADA", amount: 0, lots: [], watches: [], sales: [] },
   ],
   "malformed entries dropped, coins normalized/deduped, legacy paid migrated",
 );
@@ -205,6 +253,7 @@ assert.deepStrictEqual(
       amount: 3,
       lots: [{ amount: 1, paid: 50, time: 1700000000, source: "manual" }],
       watches: [],
+      sales: [],
     },
   ],
   "import sanitizer: bad lots dropped, holding kept",
@@ -225,6 +274,7 @@ assert.deepStrictEqual(
       watches: [
         { address: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045", amount: 12, lots: [] },
       ],
+      sales: [],
     },
   ],
   "an ERC-20 token can be watched on an Ethereum address",
@@ -240,9 +290,9 @@ assert.deepStrictEqual(
       "])",
   ),
   [
-    { coin: "ETH", amount: 0, lots: [], watches: [{ address: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045", amount: 1, lots: [] }] },
-    { coin: "SOL", amount: 1, lots: [], watches: [] },
-    { coin: "BTC", amount: 1, lots: [], watches: [] },
+    { coin: "ETH", amount: 0, lots: [], watches: [{ address: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045", amount: 1, lots: [] }], sales: [] },
+    { coin: "SOL", amount: 1, lots: [], watches: [], sales: [] },
+    { coin: "BTC", amount: 1, lots: [], watches: [], sales: [] },
   ],
   "legacy addresses migrate per chain; junk cleared",
 );
@@ -415,39 +465,61 @@ sandbox.__csvRows = [
 ];
 const csv = run('buildPortfolioCsv(__csvRows, "USD")');
 const csvLines = csv.split("\n");
-assert.ok(csvLines[0].includes("prices in USD"), "csv: currency in header comment");
-assert.strictEqual(
-  csvLines[1],
-  "Coin,Name,Amount,Cost basis,Avg cost,Current price,Current value,Unrealized P/L,P/L %",
-  "csv: column header",
+
+/* Asserted on content, not line numbers. The old version pinned rows to
+ * indices (`csvLines[7] === "Purchase lots"`), which broke the moment the
+ * header grew a summary block — a brittle failure that says nothing about
+ * what actually regressed. */
+const csvLine = (prefix) => csvLines.find((l) => l.startsWith(prefix));
+const csvLineOf = (text, prefix) =>
+  text.split("\n").find((l) => l.startsWith(prefix));
+const csvHas = (needle) => csv.includes(needle);
+
+// The file says what it is, and what it is not
+assert.ok(csvHas("cost basis report"), "csv: named a cost basis report");
+assert.ok(
+  csvHas("not the return itself"),
+  "csv: says it is the record a return is worked out from, not a return",
+);
+assert.ok(csvHas("no exchange history"), "csv: states what it cannot know");
+assert.ok(csvHas("Nothing here is tax advice"), "csv: disclaimer present");
+assert.ok(csvHas("All amounts in USD"), "csv: currency stated");
+assert.ok(csvHas("FIFO"), "csv: cost-basis method stated");
+
+// Summary block
+assert.strictEqual(csvLine("Portfolio value,"), "Portfolio value,23000", "csv: portfolio value");
+assert.strictEqual(csvLine("Cost basis (logged"), "Cost basis (logged purchases),15000", "csv: total basis");
+assert.strictEqual(csvLine("Unrealized P/L,"), "Unrealized P/L,5000", "csv: unrealized total");
+
+// Per-coin table
+assert.ok(
+  csvLine("Coin,Name,Amount held,").includes("Amount without cost"),
+  "csv: per-coin header names the uncovered amount",
 );
 assert.strictEqual(
-  csvLines[2],
-  "BTC,Bitcoin,0.5,15000,30000,40000,20000,5000,33.33",
-  "csv: summary row from lots (basis, derived avg cost, P/L)",
+  csvLine("BTC,Bitcoin,"),
+  "BTC,Bitcoin,0.5,0.5,,15000,30000,40000,20000,5000,33.33",
+  "csv: per-coin row (basis, avg cost, P/L)",
 );
 assert.strictEqual(
-  csvLines[3],
-  "ETH,Ethereum,2,,,1500,3000,,",
-  "csv: lot-less row leaves P/L cells empty",
+  csvLine("ETH,Ethereum,"),
+  "ETH,Ethereum,2,,2,,,1500,3000,,",
+  "csv: a holding with no logged purchase reports its uncovered amount",
 );
-assert.strictEqual(
-  csvLines[5],
-  "Total,,,15000,,,20000,5000,33.33",
-  "csv: totals only over rows with lots + price",
+assert.strictEqual(csvLine("Total,"), "Total,,,,,15000,,,20000,5000,33.33", "csv: totals");
+
+// Purchase lots, now carrying holding period and term
+assert.ok(csvHas("Purchase lots"), "csv: lots section present");
+assert.ok(
+  csvLine("Coin,Date acquired,Amount,Paid,").includes("Days held,Term,Source"),
+  "csv: lot header carries the holding period and term",
 );
-assert.strictEqual(csvLines[7], "Purchase lots", "csv: lots section present");
-assert.strictEqual(
-  csvLines[9],
-  "BTC,0.25,7000,2024-03-05,manual",
-  "csv: dated manual lot line",
-);
-assert.strictEqual(
-  csvLines[10],
-  "BTC,0.25,8000,,chain (estimated)",
-  "csv: chain lot labeled estimated, unknown date empty",
-);
-assert.ok(csv.includes("not tax advice"), "csv: disclaimer present");
+const btcLot = csvLines.find((l) => l.startsWith("BTC,2024-03-05,"));
+assert.ok(btcLot, "csv: dated manual lot line");
+assert.ok(btcLot.endsWith(",long,manual"), "csv: an old lot is long term");
+const chainLot = csvLines.find((l) => l.includes("chain (estimated)"));
+assert.ok(chainLot.startsWith("BTC,,"), "csv: an undated lot leaves the date empty");
+assert.ok(chainLot.includes(",unknown,"), "csv: no date means no holding period");
 
 // commas/quotes in names can't break the format
 sandbox.__csvEsc = [{ coin: "BTC", amount: 1, lots: [], price: 1, value: 1 }];
@@ -457,6 +529,35 @@ assert.ok(
   "csv: names with commas/quotes escaped",
 );
 run('COIN_NAMES.BTC = "Bitcoin"');
+
+/* ── disposals ──────────────────────────────────────────────────────────── */
+
+// A sale becomes one line per purchase it consumed — the shape a tax form
+// asks for — and the proceeds still add up to what was received.
+sandbox.__saleRows = [{
+  coin: "BTC", amount: 0, price: 40000, value: 0, lots: [],
+  sales: [{
+    amount: 1, received: 40000, basis: 15000, basisAmount: 1, time: 1709596800,
+    matched: [
+      { amount: 0.4, cost: 5000, acquired: 1609459200, source: "manual" },
+      { amount: 0.6, cost: 10000, acquired: 1704067200, source: "manual" },
+    ],
+  }],
+}];
+const saleCsv = run('buildPortfolioCsv(__saleRows, "USD")');
+const saleLines = saleCsv.split("\n").filter((l) => l.startsWith("BTC,2"));
+assert.strictEqual(saleLines.length, 2, "csv: one line per purchase consumed");
+assert.ok(
+  saleCsv.includes("Coin,Date acquired,Date sold,Amount,Proceeds,Cost basis,Gain"),
+  "csv: disposals header pairs acquisition with disposal",
+);
+const proceeds = saleLines.reduce((a, l) => a + Number(l.split(",")[4]), 0);
+assert.strictEqual(proceeds, 40000, "csv: split proceeds add up to what was received");
+assert.strictEqual(
+  csvLineOf(saleCsv, "Realized P/L (recorded"),
+  "Realized P/L (recorded sales),25000",
+  "csv: realized total in the summary",
+);
 
 /* ── getPortfolioHistory cache ──────────────────────────────────────────── */
 

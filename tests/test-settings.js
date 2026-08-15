@@ -44,7 +44,9 @@ const sandbox = {
 };
 vm.createContext(sandbox);
 const base = path.join(__dirname, "..", "src");
-for (const f of ["config.js", "storage.js", "shortcuts.js", "settings.js"]) {
+// Same order as index.html — settings.js reads DEFAULT_WIDGET_SIZE and
+// WIDGET_SIZE_OPTIONS from widgets-data.js at definition time
+for (const f of ["config.js", "storage.js", "widgets-data.js", "shortcuts.js", "settings.js"]) {
   vm.runInContext(fs.readFileSync(`${base}/${f}`, "utf8"), sandbox, { filename: f });
 }
 const run = (code) => vm.runInContext(code, sandbox);
@@ -112,6 +114,8 @@ const handled = {
   Esc: "Escape",
   "1": 'e.key >= "1"',
   "6": 'e.key <= "6"',
+  // The space bar is a key like any other, but its name is a literal space
+  Space: 'e.key === " "',
 };
 for (const key of advertised) {
   if (key === "–") continue; // a range dash, not a key

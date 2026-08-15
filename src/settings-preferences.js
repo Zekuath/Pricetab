@@ -14,9 +14,11 @@ const renderPreferencesTab = (panel) => {
   chartType, onChartTypeChange,
   volumeBars, onVolumeBarsChange,
   marketStats, onMarketStatsChange,
+  chartGrid, onChartGridChange,
   moveHeadlines, onMoveHeadlinesChange,
   ohlcEnabled, onOhlcChange,
   lastSeenEnabled, onLastSeenChange,
+  alertTabTitle, onAlertTabTitleChange,
   currency, onCurrencyChange,
   decimalPlaces, onDecimalPlacesChange,
   separatorFormat, onSeparatorFormatChange,
@@ -131,6 +133,36 @@ const renderPreferencesTab = (panel) => {
             ),
 
             panel.section(
+              'Chart Grid',
+              'grid mesh levels gridlines price time axis estimate target',
+              React.createElement(
+                ToggleSection,
+                null,
+                React.createElement(ToggleSectionTitle, null, "Chart Grid"),
+                React.createElement(
+                  ToggleSectionDesc,
+                  null,
+                  "Price levels and time divisions behind the chart, so you can read a level off it. Hover a cell to light it up",
+                ),
+                React.createElement(
+                  ToggleRow,
+                  null,
+                  React.createElement(
+                    ToggleLabel,
+                    null,
+                    chartGrid === true ? "On" : "Off",
+                  ),
+                  React.createElement(ToggleSwitch, {
+                    active: chartGrid === true,
+                    onClick: () =>
+                      onChartGridChange && onChartGridChange(chartGrid !== true),
+                    "aria-label": "Toggle chart grid",
+                  }),
+                ),
+              ),
+            ),
+
+            panel.section(
               'Move Headlines',
               'news headlines big move story context',
               React.createElement(
@@ -186,6 +218,45 @@ const renderPreferencesTab = (panel) => {
                     onClick: () =>
                       onLastSeenChange && onLastSeenChange(lastSeenEnabled === false),
                     "aria-label": "Toggle since your last visit line",
+                  }),
+                ),
+              ),
+            ),
+
+            /* The one setting that also governs work done while you are
+             * elsewhere, so the description says so rather than describing
+             * only the part you can see. */
+            panel.section(
+              "Price Target Alerts",
+              "alert target tab title notify background announce",
+              React.createElement(
+                ToggleSection,
+                null,
+                React.createElement(
+                  ToggleSectionTitle,
+                  null,
+                  "Announce Targets In The Tab Title",
+                ),
+                React.createElement(
+                  ToggleSectionDesc,
+                  null,
+                  "When a price target is hit, say so in the tab title, so a PriceTab tab you're not looking at can tell you. Keeps checking your targets while the tab is in the background — the only thing PriceTab fetches while you're elsewhere, and only when you have a target set",
+                ),
+                React.createElement(
+                  ToggleRow,
+                  null,
+                  React.createElement(
+                    ToggleLabel,
+                    null,
+                    alertTabTitle === false ? "Off" : "On",
+                  ),
+                  React.createElement(ToggleSwitch, {
+                    active: alertTabTitle !== false,
+                    onClick: () =>
+                      onAlertTabTitleChange &&
+                      onAlertTabTitleChange(alertTabTitle === false),
+                    "aria-label":
+                      "Toggle price target announcements in the tab title",
                   }),
                 ),
               ),
@@ -698,16 +769,31 @@ const renderPreferencesTab = (panel) => {
                 )
               : null,
 
-            // The shortcuts are the least discoverable part of the extension
+            // The shortcuts and the tour are the least discoverable parts of
+            // the extension — and the tour only ever shows itself once
             !panel.state.query &&
               React.createElement(
-                ShortcutsHint,
-                {
-                  onClick: () =>
-                    panel.props.onShowShortcuts && panel.props.onShowShortcuts(),
-                  title: "Show the keyboard shortcuts",
-                },
-                "Keyboard shortcuts",
+                HelpHintRow,
+                null,
+                React.createElement(
+                  ShortcutsHint,
+                  {
+                    onClick: () =>
+                      panel.props.onShowShortcuts &&
+                      panel.props.onShowShortcuts(),
+                    title: "Show the keyboard shortcuts",
+                  },
+                  "Keyboard shortcuts",
+                ),
+                React.createElement(
+                  ShortcutsHint,
+                  {
+                    onClick: () =>
+                      panel.props.onReplayTour && panel.props.onReplayTour(),
+                    title: "Run the first-run tour again",
+                  },
+                  "Replay tour",
+                ),
               ),
           );
 };

@@ -2,6 +2,41 @@
 const WIDGETS_STORAGE_KEY = "crypto_chart_widgets";
 const HIDDEN_WIDGETS_KEY = "crypto_chart_hidden_widgets";
 
+/* WIDGET SIZE
+ * The cards were built at one size, small, and everything inside them was
+ * sized in `rem` — root-relative, so nothing scaled together. Their text ran
+ * from 0.55rem (under 9px) upward, which is below what a lot of people can
+ * comfortably read and not something the browser's own zoom fixes well on a
+ * new-tab page you glance at.
+ *
+ * The card now sets a font size and everything inside it is in `em`, so one
+ * number scales the whole thing — text, bars, gauges and padding together.
+ * These are the multipliers on that number; `medium` is the shipped default
+ * and already larger than what the cards used to be.
+ */
+const WIDGET_SIZE_KEY = "crypto_chart_widget_size";
+const DEFAULT_WIDGET_SIZE = "medium";
+const WIDGET_SIZE_OPTIONS = [
+  { value: "small", short: "S", label: "Compact", scale: 0.85 },
+  { value: "medium", short: "M", label: "Default", scale: 1 },
+  { value: "large", short: "L", label: "Large", scale: 1.2 },
+  { value: "xlarge", short: "XL", label: "Extra large", scale: 1.45 },
+];
+
+const widgetSizeScale = (value) => {
+  const found = WIDGET_SIZE_OPTIONS.find((o) => o.value === value);
+  return found ? found.scale : 1;
+};
+
+const loadWidgetSizeFromStorage = () =>
+  loadEnumSetting(
+    WIDGET_SIZE_KEY,
+    WIDGET_SIZE_OPTIONS.map((o) => o.value),
+    DEFAULT_WIDGET_SIZE,
+  );
+
+const saveWidgetSizeToStorage = (size) => saveSetting(WIDGET_SIZE_KEY, size);
+
 const loadHiddenWidgetsFromStorage = () =>
   loadJsonSetting(HIDDEN_WIDGETS_KEY) || {};
 
@@ -137,6 +172,15 @@ const WIDGET_GROUPS = [
     ],
   },
 ];
+
+/* Key → the one-line explanation Settings already carries. Half of these are
+ * terms of art ("open interest", "funding rate", "alt season") that a card
+ * three words wide has no room to explain, so the card hands the same
+ * sentence over on hover instead of leaving the label to fend for itself. */
+const WIDGET_DESCRIPTIONS = WIDGET_GROUPS.reduce((out, group) => {
+  for (const item of group.items) out[item.key] = item.desc;
+  return out;
+}, {});
 
 const loadWidgetsFromStorage = () => {
   const saved = loadJsonSetting(WIDGETS_STORAGE_KEY);

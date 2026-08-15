@@ -149,13 +149,17 @@
 | Task | Status | Notes |
 |------|--------|-------|
 | Alert data model + localStorage persistence (max 10 active) | [x] | Shipped Aug 2026 — `src/alerts.js`, validated in storage |
-| Price target UI (above/below) | [x] | Shipped Aug 2026 — bell button / `A` key panel. Percentage-change alerts still open |
-| Browser notification integration | [ ] (declined) | ⚠ Requires adding the `notifications` permission — breaks "zero permissions". **Decide:** in-tab visual alerts only (badge/flash/title) keep zero permissions; push notifications need the permission + store copy update |
+| Price target UI (above/below) | [x] | Shipped Aug 2026 — bell button / `A` key panel |
+| Percentage-change targets ("moves 5% in 24h") | [x] | Shipped Aug 2026 — currency-independent, backfilled from the same weekly hourly candles (each compared with the one 24 steps earlier) |
+| Live distance, progress meter, nearest-first sort, re-arm | [x] | Shipped Aug 2026 — rows read from data already on hand, so opening the panel costs no request |
+| Browser notification integration | [ ] (declined) | ⚠ Requires adding the `notifications` permission — breaks "zero permissions". Decided: in-tab visual only. Shipped as the tab-title announcement below |
+| Tab-title announcement + background target checking | [x] | Aug 2026 — a hit is announced in the tab title (alternating while the tab is away), and targets keep being checked while hidden. Still zero permissions: writing `document.title` needs none. Settings → Preferences, on by default; the switch governs the background polling too |
 | Alert checked on each fetch cycle (no server, no background worker if possible) | [x] | Rides the normal fetch; one bulk request only when non-active coins have alerts |
-| Alert history with timestamps | [ ] | Nice-to-have |
+| Alert history with timestamps | [x] | A hit row keeps when it happened and the price it happened at, until removed or re-armed |
 
 ```javascript
-{ id, coin, type: "above"|"below"|"percent_change", target, currency, created, triggered, active }
+{ id, coin, kind: "price"|"percent", direction: "above"|"below", target,
+  currency, created, startPrice, triggeredAt, hitPrice }
 ```
 
 ### 3.2 Portfolio v2 (tracking view shipped ✅)
@@ -166,7 +170,17 @@
 | Allocation breakdown (% per coin) | [x] | Share meter + % per row (Aug 2026) |
 | Per-coin cost basis → total P/L since purchase | [x] | Dated purchase lots ("bought X for Y"); row + headline unrealized P/L; BTC lots inferred from watched-address history (Aug 2026) |
 | JSON export / import | [x] | Backup/restore, import validated via `sanitizePortfolio` (Aug 2026) |
-| Tax report CSV (cost basis + unrealized P/L, "not tax advice") | [x] | Foundation for the seasonal affiliate line (Aug 2026) |
+| Cost basis report CSV (was "Tax report") | [x] | Renamed Aug 2026 — the old name promised a filing document, and the file is the record one is worked out *from*: it has no exchange history, transfers, fees or crypto-to-crypto trades. Foundation for the seasonal affiliate line |
+| Cost basis report: holding period, short/long-term split, per-lot gain | [x] | Aug 2026 — summary block, days held + term per lot, FIFO and threshold stated in the file |
+| Cost basis report: matched acquisition→disposal pairs | [x] | Aug 2026 — one line per purchase a sale consumed, with its own acquisition date, holding period and term. Proceeds split by amount; unmatched and pre-pairing sales still emitted so the proceeds column reconciles |
+| Country-specific tax computation | [ ] (declined) | Rules differ on cost-basis method, tax-year end, holding-period effects, allowances and crypto-to-crypto treatment, and change annually. More decisive: the input is incomplete — no exchange import, transfers, fees or crypto-to-crypto — so a computed liability would be wrong for most people, and a confident-looking wrong number is worse than none. The matched-pair export is what an accountant or Koinly/CoinTracker actually needs |
+| Cost basis report: unlogged-amount reconciliation | [x] | Aug 2026 — "Amount with/without cost logged" columns; the app says the same on the row |
+| Benchmark: portfolio vs holding BTC over the chart range | [x] | Aug 2026 — gap in percentage points, aligned to the portfolio's own window; rides the chart's existing history requests |
+| Realized P/L (record disposals, FIFO-match against lots) | [x] | Aug 2026 — "Sold" beside "Bought" on a holding; FIFO consumes the oldest lots, the disposal keeps the basis it used. Realized stat + a Disposals section in the CSV. Fixed a real bug on the way: a hand-edited amount left the lots alone, so a sold-down holding reported the whole position's gain |
+| Sale out of a watched address | [ ] | The chain reports the balance going down but not the price you sold at, so it can't produce a realized figure. Recording it by hand would double-count the amount. Needs thought |
+| Allocation donut | [ ] | What most portfolio apps lead with. We already show a share meter + % per row and a full-bleed value chart, so it may be a third view of the same fact rather than a new one — decide before building |
+| Concentration note ("62% is in one coin") | [ ] | One number from data already computed. Factual, not advice — keep the wording that way |
+| CSV import of exchange transaction history | [ ] | What Koinly/CoinTracker are actually for. Formats vary per exchange; only worth it after realized P/L exists, since that's what the rows would feed |
 | Address watching (BTC/ETH/LTC/DOGE, read-only balance sync) | [x] | mempool.space + Blockchair, 10-min cache, opt-in (Aug 2026) |
 | Tax-season affiliate line (Jan–Apr, local date check) | [ ] | See `MONETIZATION.md` §3.5 — portfolio v2 now shipped |
 

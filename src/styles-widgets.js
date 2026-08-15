@@ -26,8 +26,16 @@ const WidgetRestoreButton = styled.button`
     transform: scale(1.1);
   }
 
+  /* A visible ring rather than none at all — these are the only way to reach
+     the widget row and the compare overlay from the keyboard */
   &:focus {
     outline: none;
+  }
+
+  &:focus-visible {
+    outline: 2px solid ${({ theme }) => theme.color.borderHover};
+    outline-offset: 3px;
+    border-radius: 4px;
   }
 
   @media (max-width: ${({ theme }) => theme.breakpoint.down.sm}px) {
@@ -72,8 +80,16 @@ const CompareToggleButton = styled.button`
     transform: scale(1.1);
   }
 
+  /* A visible ring rather than none at all — these are the only way to reach
+     the widget row and the compare overlay from the keyboard */
   &:focus {
     outline: none;
+  }
+
+  &:focus-visible {
+    outline: 2px solid ${({ theme }) => theme.color.borderHover};
+    outline-offset: 3px;
+    border-radius: 4px;
   }
 
   @media (max-width: ${({ theme }) => theme.breakpoint.down.sm}px) {
@@ -85,17 +101,21 @@ const CompareToggleButton = styled.button`
   }
 `;
 
+/* Hidden until the card is hovered — except where there is no hover to give.
+ * On a tablet the widget row sits at the bottom of the screen and this was
+ * the only way to dismiss a card, so it was unreachable on exactly the
+ * devices that have the least room for the row. */
 const WidgetHideButton = styled.button`
   position: absolute;
-  top: 0.2rem;
-  right: 0.2rem;
-  width: 1rem;
-  height: 1rem;
+  top: 0.15em;
+  right: 0.15em;
+  width: 1.15em;
+  height: 1.15em;
   padding: 0;
   border: none;
   background: transparent;
   color: ${({ theme }) => theme.color.text};
-  font-size: 0.6rem;
+  font-size: 0.75em;
   cursor: pointer;
   line-height: 1;
   display: flex;
@@ -108,6 +128,10 @@ const WidgetHideButton = styled.button`
   &:hover {
     background: ${({ theme }) => theme.color.border}44;
   }
+
+  @media (hover: none) {
+    opacity: 0.55;
+  }
 `;
 
 const WidgetPanel = styled.div`
@@ -119,12 +143,12 @@ const WidgetPanel = styled.div`
   pointer-events: ${({ visible }) => (visible ? "auto" : "none")};
   transition: opacity 0.3s ease, top 0.4s cubic-bezier(0.22, 1, 0.36, 1);
 
-  /* Desktop: sol üst, dikey */
-  top: ${({ tickerTop }) => tickerTop ? "8rem" : "5rem"};
+  /* Desktop: a column down the left */
+  top: ${({ tickerTop }) => (tickerTop ? "8rem" : "5rem")};
   left: 1rem;
   flex-direction: column;
 
-  /* Tablet: alt orta, yatay + yatay kaydırma */
+  /* Tablet: a scrollable row along the bottom */
   @media (max-width: 1024px) {
     top: auto;
     left: 50%;
@@ -151,7 +175,7 @@ const WidgetPanel = styled.div`
     }
   }
 
-  /* Mobil: daha kompakt */
+  /* Phone: tighter */
   @media (max-width: 600px) {
     bottom: 0.5rem;
     gap: 0.3rem;
@@ -159,33 +183,39 @@ const WidgetPanel = styled.div`
   }
 `;
 
-/* ── New widget styled components ─────────────────────────── */
+/* Widget internals. Everything is `em` so it rides the card's size, and the
+ * up/down colours come from the theme rather than fixed hex — the dark-mode
+ * greens and reds were being drawn on white in light mode, where they are
+ * noticeably weaker. */
 const FundingValue = styled.div`
-  font-size: 1rem;
+  font-size: 1.05em;
   font-weight: ${({ theme }) => theme.fontWeight.semibold};
-  color: ${({ positive }) =>
-    positive ? "#f87171" : "#34d399"}; /* red = positive (long pays), green = negative (shorts pay) */
+  /* Positive funding means longs pay, which is the crowded side — so the
+     colour follows who is paying, not whether the number is above zero */
+  color: ${({ theme, positive }) =>
+    positive ? theme.color.chartLineRed : theme.color.chartLineGreen};
   letter-spacing: 0.02em;
 `;
 
 const FundingAnnual = styled.div`
-  font-size: 0.6rem;
-  opacity: 0.6;
-  margin-top: 2px;
+  font-size: 0.68em;
+  color: ${({ theme }) => theme.color.textSecondary};
+  margin-top: 0.15em;
 `;
 
 const LSBarWrap = styled.div`
   display: flex;
   width: 100%;
-  height: 5px;
-  border-radius: 3px;
+  height: 0.35em;
+  min-height: 4px;
+  border-radius: 0.2em;
   overflow: hidden;
-  margin: 4px 0 2px;
+  margin: 0.3em 0 0.15em;
 `;
 
 const LSBarLong = styled.div`
   height: 100%;
-  background: #34d399;
+  background: ${({ theme }) => theme.color.chartLineGreen};
   width: ${({ pct }) => pct}%;
   transition: width 0.4s ease;
 `;
@@ -193,18 +223,26 @@ const LSBarLong = styled.div`
 const LSBarShort = styled.div`
   flex: 1;
   height: 100%;
-  background: #f87171;
+  background: ${({ theme }) => theme.color.chartLineRed};
 `;
 
 const LSRow = styled.div`
   display: flex;
   justify-content: space-between;
-  font-size: 0.6rem;
-  opacity: 0.75;
+  font-size: 0.68em;
+  color: ${({ theme }) => theme.color.textSecondary};
+`;
+
+/* The two figures under a long/short or liquidation bar, tinted to match
+ * their side of it. These were inline hex, so they stayed dark-mode colours
+ * on a white background. */
+const WidgetSideValue = styled.span`
+  color: ${({ theme, up }) =>
+    up ? theme.color.chartLineGreen : theme.color.chartLineRed};
 `;
 
 const OIValue = styled.div`
-  font-size: 0.95rem;
+  font-size: 1em;
   font-weight: ${({ theme }) => theme.fontWeight.semibold};
   letter-spacing: 0.02em;
 `;
@@ -212,15 +250,16 @@ const OIValue = styled.div`
 const LiqBarWrap = styled.div`
   display: flex;
   width: 100%;
-  height: 5px;
-  border-radius: 3px;
+  height: 0.35em;
+  min-height: 4px;
+  border-radius: 0.2em;
   overflow: hidden;
-  margin: 4px 0 2px;
+  margin: 0.3em 0 0.15em;
 `;
 
 const LiqBarLong = styled.div`
   height: 100%;
-  background: #f87171;
+  background: ${({ theme }) => theme.color.chartLineRed};
   width: ${({ pct }) => pct}%;
   transition: width 0.4s ease;
 `;
@@ -228,34 +267,39 @@ const LiqBarLong = styled.div`
 const LiqBarShort = styled.div`
   flex: 1;
   height: 100%;
-  background: #34d399;
+  background: ${({ theme }) => theme.color.chartLineGreen};
 `;
 
 const LiqRow = styled.div`
   display: flex;
   justify-content: space-between;
-  font-size: 0.6rem;
-  opacity: 0.75;
+  font-size: 0.68em;
+  color: ${({ theme }) => theme.color.textSecondary};
 `;
 
+// A three-stop scale, so it keeps its own colours in both themes
 const AltSeasonBar = styled.div`
   width: 100%;
-  height: 5px;
-  border-radius: 3px;
+  height: 0.35em;
+  min-height: 4px;
+  border-radius: 0.2em;
   background: linear-gradient(to right, #f97316, #facc15, #34d399);
   position: relative;
-  margin: 4px 0 2px;
+  margin: 0.3em 0 0.15em;
 `;
 
 const AltSeasonMarker = styled.div`
   position: absolute;
-  top: -2px;
+  top: 50%;
   left: ${({ pct }) => Math.min(Math.max(pct, 2), 96)}%;
-  width: 9px;
-  height: 9px;
+  width: 0.62em;
+  height: 0.62em;
+  min-width: 8px;
+  min-height: 8px;
   border-radius: 50%;
   background: ${({ theme }) => theme.color.text};
-  transform: translateX(-50%);
+  border: 1px solid ${({ theme }) => theme.color.bg};
+  transform: translate(-50%, -50%);
   transition: left 0.4s ease;
 `;
 
@@ -270,67 +314,73 @@ const widgetAppear = keyframes`
   }
 `;
 
+/* The card owns the type scale. Everything inside it is sized in `em`, so the
+ * one `font-size` here — driven by the Settings size picker — scales the text,
+ * the bars, the gauges and the padding together. Sizing the children in `rem`
+ * (as they were) meant nothing could be scaled without touching every rule. */
 const WidgetCard = styled.div`
   position: relative;
   flex: 0 0 auto;
+  font-size: ${({ scale }) => scale || 1}rem;
   background: ${({ theme }) =>
     theme.color.bg === "#ffffff"
       ? "rgba(255, 255, 255, 0.95)"
       : "rgba(15, 15, 15, 0.9)"};
   backdrop-filter: blur(8px);
   border: 1px solid ${({ theme }) => theme.color.border};
-  border-radius: 0.5rem;
-  padding: 0.5rem 0.75rem;
+  border-radius: 0.55em;
+  padding: 0.55em 0.8em;
   text-align: center;
   box-shadow: 0 2px 8px ${({ theme }) => theme.color.shadow};
   cursor: grab;
   user-select: none;
-  transition: opacity 0.15s ease, transform 0.15s ease;
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease,
+    border-color 0.15s ease;
   animation: ${widgetAppear} 0.35s cubic-bezier(0.22, 1, 0.36, 1);
   opacity: ${({ dragging }) => (dragging ? 0.4 : 1)};
   transform: ${({ dragging }) => (dragging ? "scale(0.97)" : "scale(1)")};
 
-  &:hover ${WidgetHideButton} {
-    opacity: 0.5;
+  &:hover {
+    border-color: ${({ theme }) => theme.color.borderHover};
   }
 
-  &:hover ${WidgetHideButton}:hover {
+  &:hover ${WidgetHideButton}, &:focus-within ${WidgetHideButton} {
+    opacity: 0.55;
+  }
+
+  &:hover ${WidgetHideButton}:hover, ${WidgetHideButton}:focus {
     opacity: 1;
   }
 
   /* Tablet */
   @media (max-width: 1024px) {
-    padding: 0.4rem 0.6rem;
+    padding: 0.45em 0.65em;
   }
 
-  /* Mobil */
+  /* Phone */
   @media (max-width: 600px) {
-    padding: 0.3rem 0.5rem;
-    border-radius: 0.4rem;
+    padding: 0.35em 0.55em;
   }
 `;
 
+/* Labels use the secondary text colour rather than an opacity knocked out of
+ * the primary one. Opacity on already-small type is what made these hardest
+ * to read — and it stacked with the card's own translucent background, so the
+ * effective contrast was lower than the number suggested. */
 const WidgetLabel = styled.div`
-  font-size: 0.55rem;
-  letter-spacing: 0.1em;
+  font-size: 0.62em;
+  letter-spacing: 0.09em;
   text-transform: uppercase;
-  opacity: 0.6;
-  margin-bottom: 0.2rem;
-
-  @media (max-width: 600px) {
-    font-size: 0.5rem;
-    margin-bottom: 0.1rem;
-  }
+  color: ${({ theme }) => theme.color.textSecondary};
+  margin-bottom: 0.25em;
 `;
 
 const WidgetValue = styled.div`
-  font-size: 1rem;
+  font-size: 1.05em;
   font-weight: ${({ theme }) => theme.fontWeight.medium};
   letter-spacing: 0.02em;
-
-  @media (max-width: 600px) {
-    font-size: 0.85rem;
-  }
 `;
 
 /* Watchlist + Top movers: both are coin rows now — symbol, price, 24h
@@ -340,19 +390,19 @@ const WidgetValue = styled.div`
 const WidgetCoinList = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 0.15em;
   width: 100%;
-  min-width: 9.5rem;
-  margin-top: 3px;
+  min-width: 10.5em;
+  margin-top: 0.25em;
 `;
 const WidgetCoinRow = styled.div`
   display: grid;
-  grid-template-columns: 2.6rem 1fr auto;
+  grid-template-columns: 2.8em 1fr auto;
   align-items: baseline;
-  gap: 0.4rem;
-  padding: 3px 5px;
-  border-radius: 4px;
-  font-size: 0.64rem;
+  gap: 0.4em;
+  padding: 0.22em 0.35em;
+  border-radius: 0.3em;
+  font-size: 0.72em;
   line-height: 1.35;
   background: ${({ up, intensity }) =>
     intensity
@@ -369,14 +419,13 @@ const WidgetCoinSym = styled.span`
   text-overflow: ellipsis;
 `;
 const WidgetCoinPrice = styled.span`
-  color: ${({ theme }) => theme.color.text};
-  opacity: 0.75;
+  color: ${({ theme }) => theme.color.textSecondary};
   text-align: right;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 `;
 const WidgetCoinChg = styled.span`
-  min-width: 3.1rem;
+  min-width: 3.4em;
   text-align: right;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
@@ -386,36 +435,29 @@ const WidgetCoinChg = styled.span`
 // Separates gainers from losers in Top Movers
 const WidgetListDivider = styled.div`
   height: 1px;
-  margin: 3px 2px;
+  margin: 0.25em 0.15em;
   background: ${({ theme }) => theme.color.border};
 `;
 
 const WidgetSubtext = styled.div`
-  font-size: 0.65rem;
-  opacity: 0.7;
-  margin-top: 2px;
+  font-size: 0.72em;
+  color: ${({ theme }) => theme.color.textSecondary};
+  margin-top: 0.15em;
   text-transform: capitalize;
-
-  @media (max-width: 600px) {
-    font-size: 0.55rem;
-  }
 `;
 
 const FearGreedGauge = styled.div`
   display: flex;
   justify-content: center;
-  gap: 2px;
-  margin-top: 3px;
-
-  @media (max-width: 600px) {
-    gap: 1px;
-    margin-top: 2px;
-  }
+  gap: 0.15em;
+  margin-top: 0.25em;
 `;
 
 const GaugeDot = styled.span`
-  width: 5px;
-  height: 5px;
+  width: 0.35em;
+  height: 0.35em;
+  min-width: 4px;
+  min-height: 4px;
   border-radius: 50%;
   background: ${({ active, value, theme }) => {
     if (!active) return theme.color.border;
@@ -425,11 +467,6 @@ const GaugeDot = styled.span`
     if (value <= 75) return "#93d572";
     return "#16c784";
   }};
-
-  @media (max-width: 600px) {
-    width: 4px;
-    height: 4px;
-  }
 `;
 
 const GaugeTrackPath = styled.path`
@@ -457,94 +494,79 @@ const GaugeCenterDot = styled.circle`
 `;
 
 const MarketStatLabel = styled.span`
-  opacity: 0.5;
-  margin-right: 2px;
-  font-size: 0.6rem;
-
-  @media (max-width: 600px) {
-    font-size: 0.5rem;
-  }
+  color: ${({ theme }) => theme.color.textSecondary};
+  margin-right: 0.15em;
+  font-size: 0.68em;
 `;
 
 const HalvingProgressBar = styled.div`
   width: 100%;
-  height: 4px;
+  height: 0.3em;
+  min-height: 3px;
   background: ${({ theme }) => theme.color.border};
-  border-radius: 2px;
-  margin-top: 5px;
+  border-radius: 0.15em;
+  margin-top: 0.35em;
   overflow: hidden;
-
-  @media (max-width: 600px) {
-    height: 3px;
-    margin-top: 4px;
-  }
 `;
 
 const HalvingProgressFill = styled.div`
   height: 100%;
   width: ${({ percent }) => percent}%;
   background: ${({ theme }) => theme.color.text};
-  border-radius: 2px;
+  border-radius: 0.15em;
   transition: width 0.4s ease;
 `;
 
 const HalvingTimeGrid = styled.div`
   display: flex;
   justify-content: center;
-  gap: 0.5rem;
-  margin-bottom: 0.4rem;
+  gap: 0.5em;
+  margin-bottom: 0.35em;
 `;
 
 const HalvingTimeUnit = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
-  min-width: 2rem;
+  min-width: 2em;
 `;
 
 const HalvingTimeNumber = styled.span`
-  font-size: 1.15rem;
+  font-size: 1.2em;
   font-weight: ${({ theme }) => theme.fontWeight.medium};
   letter-spacing: 0.02em;
   line-height: 1;
-
-  @media (max-width: 600px) {
-    font-size: 0.95rem;
-  }
 `;
 
 const HalvingTimeLabel = styled.span`
-  font-size: 0.45rem;
+  font-size: 0.55em;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  opacity: 0.5;
-  margin-top: 2px;
+  color: ${({ theme }) => theme.color.textSecondary};
+  margin-top: 0.2em;
 `;
 
 const HalvingTimeSep = styled.span`
-  font-size: 1rem;
-  opacity: 0.3;
+  font-size: 1em;
+  color: ${({ theme }) => theme.color.border};
   align-self: flex-start;
   padding-top: 1px;
 `;
 
 const HalvingEta = styled.div`
-  font-size: 0.55rem;
-  opacity: 0.55;
-  margin-top: 4px;
+  font-size: 0.65em;
+  color: ${({ theme }) => theme.color.textSecondary};
+  margin-top: 0.3em;
   letter-spacing: 0.03em;
-
-  @media (max-width: 600px) {
-    font-size: 0.5rem;
-  }
 `;
 
 const RsiBar = styled.div`
   width: 100%;
-  height: 4px;
+  height: 0.3em;
+  min-height: 3px;
   background: linear-gradient(90deg, #16c784 0%, #f5a623 50%, #ea3943 100%);
-  border-radius: 2px;
-  margin: 5px 0 3px;
+  border-radius: 0.15em;
+  margin: 0.35em 0 0.2em;
   position: relative;
 `;
 
@@ -554,20 +576,19 @@ const RsiMarker = styled.div`
   left: ${({ value }) => value}%;
   transform: translate(-50%, -50%);
   transition: left 0.4s ease;
-  width: 8px;
-  height: 8px;
+  width: 0.55em;
+  height: 0.55em;
+  min-width: 7px;
+  min-height: 7px;
   border-radius: 50%;
   background: ${({ theme }) => theme.color.bg};
   border: 1.5px solid ${({ theme }) => theme.color.text};
-
-  @media (max-width: 600px) {
-    width: 6px;
-    height: 6px;
-  }
 `;
 
 const RsiLabels = styled.div`
   display: flex;
   justify-content: space-between;
+  font-size: 0.68em;
+  color: ${({ theme }) => theme.color.textSecondary};
 `;
 

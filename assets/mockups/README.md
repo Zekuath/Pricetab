@@ -15,9 +15,50 @@ in titles use the brand green.
 |------|---------|
 | `scenes.html` | Boots the real `index.html` in an iframe with per-scene localStorage state + scripted clicks (period, settings, tabs) — produces `raw/<scene>-<theme>.png` |
 | `scene-server.py` | Serves the repo on `:8123` + a `/__delay` endpoint that stalls the page load event so screenshots fire after live data + animations settle |
-| `store-frames.html` | The 6 store screenshots (backdrop + caption + framed UI), 1280×800 |
+| `store-frames.html` | The 5 store screenshots (backdrop + caption + framed UI), 1280×800 |
 | `promo-tiles.html` | Small Tile 440×280, Large Tile 920×680, Marquee 1400×560 |
+| `check-scenes.js` | Runs `scenes.html`'s script for real in a stubbed browser and asserts every scene resolves. **Run it after editing `scenes.html`** — see below |
 | `raw/*.png` | Raw live-UI captures produced by `scenes.html` |
+
+## Shooting the promo site
+
+`site/index.html` fetches its own hero chart and ticker, so a plain
+`--screenshot` fires before either lands. Wrap it the same way the scenes are
+wrapped — an iframe plus a `/__delay` blocker — rather than guessing a sleep:
+
+```bash
+cat > /tmp/siteshot.html <<'HTML'
+<!DOCTYPE html><meta charset="utf-8">
+<style>html,body{margin:0;overflow:hidden;background:#000}iframe{display:block;width:1280px;height:1000px;border:0}</style>
+<script>
+  var b=new Image(); b.src="/__delay?ms=14000";
+  b.style.cssText="position:absolute;width:1px;height:1px;opacity:0";
+  document.body.appendChild(b);
+  var f=document.createElement("iframe"); f.src="/site/index.html";
+  document.body.appendChild(f);
+</script>
+HTML
+cp /tmp/siteshot.html assets/mockups/.siteshot.html   # served from the repo root
+```
+
+## Check the scenes before capturing
+
+```bash
+node assets/mockups/check-scenes.js
+```
+
+`node --check` is not enough. It proves the file parses, not that it runs — an
+edit once deleted the `W()` widget helper that `SCENES` calls, and `--check`
+reported OK while the script died on a ReferenceError before it could append
+the iframe. Every capture came out a blank black frame, twice, because a
+screenshot of a page whose script never ran still writes a valid PNG.
+
+Two guards now exist:
+
+- `check-scenes.js` executes the script per scene in a stubbed browser and
+  fails if any scene throws or writes no state.
+- The capture loop flags any output under 10 KB — an all-black 1280×800 PNG
+  compresses to about 4.7 KB, so silence can no longer look like success.
 
 ## Window-chrome variants (`?os=`)
 
@@ -45,20 +86,27 @@ shot() {  # shot <WxH> <out> <url-path>
 
 # 1. Raw captures from the LIVE extension (real API data), every scene in
 #    BOTH themes. Ticker/news scenes need a longer delay because the
-#    all-coin sweep takes ~10 s.
+#    all-coin sweep takes ~10 s; widget-row waits on the chart transition.
 M=assets/mockups
 for theme in dark light; do
-  for s in dashboard wl-movers signals news presets settings-coins settings-prefs minimal; do
-    case "$s" in dashboard|wl-movers|signals|news) d=18000 ;; *) d=12000 ;; esac
+  for s in dashboard wl-movers signals news presets settings-coins settings-prefs minimal \
+           hero compare portfolio widgets widget-row targets candles; do
+    case "$s" in
+      dashboard|wl-movers|signals|news) d=18000 ;;
+      widget-row)                       d=20000 ;;
+      compare|portfolio|targets)        d=16000 ;;
+      *)                                d=12000 ;;
+    esac
     shot 1280,800 "$M/raw/$s-$theme.png" "$M/scenes.html?scene=$s&theme=$theme&delay=$d"
   done
 done
 
-# 2. Framed store screenshots (swap os=win for mac/cros alternates)
+# 2. Framed store screenshots — five, the cap the upload form accepts.
 S=assets/screenshots
-for f in f01:01-hero f02:02-dashboard f03:03-watchlist-movers \
-         f04:04-signals f05:05-presets f06:06-themes f07:07-news; do
-  shot 1280,800 "$S/windows/${f#*:}.png" "$M/store-frames.html?only=${f%%:*}&os=win"
+for os in win:windows mac:safari cros:chromeos; do
+  for f in f01:01-hero f02:02-compare f03:03-portfolio f04:04-widgets f05:05-targets; do
+    shot 1280,800 "$S/${os#*:}/${f#*:}.png" "$M/store-frames.html?only=${f%%:*}&os=${os%%:*}"
+  done
 done
 cp $S/windows/*.png $S/   # chosen official set
 
@@ -73,10 +121,12 @@ optional clicks by button text or CSS selector).
 
 ## Final asset checklist (Chrome Web Store)
 
-- [x] 7 framed screenshots at 1280×800 — first is the promotional hero (first 3
-      show in search; if the dashboard caps the count, drop from the end)
-- [x] 16-image raw library (8 scenes × dark/light) in `raw/` for the website,
-      socials and future store experiments
+- [x] 5 framed screenshots at 1280×800 — **five is the hard cap the upload form
+      accepts** (verified in the CWS console, Aug 2026). First is the
+      promotional hero; the first three are what show in search results.
+- [x] 30-image raw library (15 scenes × dark/light) in `raw/` for the website,
+      socials and future store experiments — including the two the store set
+      has no room for (candlesticks, the Settings widget tab)
 - [x] Small Tile 440×280 (required if featured)
 - [x] Large Tile 920×680 (optional, recommended)
 - [x] Marquee 1400×560 (optional, for featuring)
