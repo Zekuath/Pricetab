@@ -65,15 +65,48 @@ const SettingsGroupTitle = styled.h4`
   cursor: pointer;
   user-select: none;
 
+  /* The heading is the hit area, so the arrow has to answer to it — hovering
+   * the word and watching the only control on the row stay flat is what made
+   * the group read as a label. */
+  &:hover span,
+  &:focus-visible span {
+    opacity: 1;
+  }
+
   &:first-child {
     margin-top: 0;
   }
 `;
 
+/* The one thing that says a heading opens.
+ *
+ * It was a 0.6rem "▾" at 0.7 opacity and went unreported for long enough that
+ * the groups read as headings rather than as controls. Three things changed
+ * and all three were needed: it is an SVG on the icon grid rather than a font
+ * glyph, it is 0.82rem rather than 0.6, and it sits in its own bordered well
+ * so there is a control-shaped thing to aim at. The rotation is what tells
+ * you which way it went — a quarter turn, eased, on the same curve as the
+ * reveal below it, so the arrow and the drawer move as one gesture.
+ *
+ * `-90deg` when closed rather than `+90`: the head of the arrow ends up on
+ * the right, pointing into the row it would open, which is the direction the
+ * content arrives from. */
 const GroupChevron = styled.span`
-  font-size: 0.6rem;
-  opacity: 0.7;
-  transition: transform 0.25s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.15rem;
+  height: 1.15rem;
+  flex: 0 0 auto;
+  border-radius: 0.4rem;
+  color: ${({ theme }) => theme.color.textSecondary};
+  border: 1px solid
+    ${({ theme, open }) => (open ? theme.color.border : "transparent")};
+  opacity: ${({ open }) => (open ? 0.95 : 0.6)};
+  transition:
+    transform 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.2s ease,
+    border-color 0.2s ease;
   transform: rotate(${({ open }) => (open ? "0deg" : "-90deg")});
 `;
 
@@ -250,7 +283,19 @@ const CoinList = styled.div`
   position: relative;
 `;
 
-const CoinChip = styled.button.attrs(() => ({ type: "button" }))`
+/* The coin chip, in two elements that look identical.
+ *
+ * A tracked coin's chip carries a remove control inside it, and the two cannot
+ * both be buttons — a button inside a button is invalid, and the browser makes
+ * its own mind up about which one a click belongs to. So the tracked chip is a
+ * plain element that happens to be draggable, and the × inside it is the real
+ * button. It used to be the other way round: an outer `<button>` with no
+ * `onClick` at all and a `<span>` carrying the click, which meant the only way
+ * to remove a coin was to hit a 16px span with a pointer. Tab landed on the
+ * chip, which did nothing, and never reached the ×. The suggestion chips below
+ * the box are still buttons — there the whole chip *is* the action.
+ */
+const coinChipFace = css`
   border-radius: 999px;
   border: 1px solid
     ${({ selected, theme }) =>
@@ -265,7 +310,6 @@ const CoinChip = styled.button.attrs(() => ({ type: "button" }))`
     selected ? theme.color.bg : theme.color.text};
   text-transform: uppercase;
   font-weight: ${({ theme }) => theme.fontWeight.bold};
-  cursor: pointer;
   transition:
     background 0.2s ease,
     color 0.2s ease,
@@ -278,6 +322,11 @@ const CoinChip = styled.button.attrs(() => ({ type: "button" }))`
   display: inline-flex;
   align-items: center;
   justify-content: center;
+`;
+
+const CoinChip = styled.button.attrs(() => ({ type: "button" }))`
+  ${coinChipFace};
+  cursor: pointer;
 
   &:hover:not(:disabled) {
     transform: translateY(-1px);
@@ -294,23 +343,35 @@ const CoinChip = styled.button.attrs(() => ({ type: "button" }))`
     opacity: 0.6;
     transform: none;
   }
+`;
 
-  &[draggable="true"] {
-    cursor: grab;
+// The tracked-coin chip: the same face, but it is a handle for dragging and a
+// frame for the × — not something to press.
+const CoinChipStatic = styled.div`
+  ${coinChipFace};
+  cursor: grab;
+
+  &:hover {
+    border-color: ${({ theme }) => theme.color.text};
   }
 
-  &[draggable="true"]:active {
+  &:active {
     cursor: grabbing;
   }
 `;
 
-const CoinChipRemove = styled.span`
+const CoinChipRemove = styled.button.attrs(() => ({ type: "button" }))`
   position: absolute;
   right: 0.5rem;
   top: 50%;
   transform: translateY(-50%);
   width: 1rem;
   height: 1rem;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font-family: inherit;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -326,6 +387,14 @@ const CoinChipRemove = styled.span`
   &:hover {
     opacity: 1;
     transform: translateY(-50%) scale(1.2);
+  }
+
+  /* It is the only way to remove a coin, so it has to be findable from the
+     keyboard as well as under a pointer. */
+  &:focus-visible {
+    opacity: 1;
+    outline: 2px solid ${({ theme }) => theme.color.bg};
+    outline-offset: 1px;
   }
 `;
 
@@ -637,6 +706,57 @@ const ToggleSectionTitle = styled.div`
   margin-bottom: 0.25rem;
 `;
 
+/* A setting's title, with the ring that explains it.
+ *
+ * Only settings with something genuinely non-obvious to say get one — the
+ * cost of a control, an interaction with another setting, a gotcha. A ring on
+ * every row would be noise, and noise is what people stop reading. */
+const SettingTitleRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  margin-bottom: 0.25rem;
+`;
+
+const SettingInfoBtn = styled.button.attrs(() => ({ type: "button" }))`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  color: ${({ theme }) => theme.color.text};
+  opacity: ${({ active }) => (active ? 0.9 : 0.4)};
+  transition: opacity 0.15s ease;
+
+  &:hover,
+  &:focus-visible {
+    opacity: 0.9;
+  }
+`;
+
+/* The note itself: left-aligned, in a box, at readable weight.
+ *
+ * The one-line description above it is centred at half opacity because it is
+ * a caption. This is prose — a caption you have to squint at is a caption
+ * nobody reads, and the whole point of the ring is that what it reveals is
+ * worth reading. */
+const SettingNote = styled.div`
+  margin: 0 auto ${({ theme }) => theme.spacing.small}rem;
+  padding: 0.5rem 0.65rem;
+  max-width: 22rem;
+  border-radius: 6px;
+  border: 1px solid ${({ theme }) => theme.color.border};
+  background: ${({ theme }) => theme.color.bgSecondary};
+  font-size: 0.68rem;
+  line-height: 1.5;
+  text-align: left;
+  color: ${({ theme }) => theme.color.textSecondary};
+`;
+
 const ToggleSectionDesc = styled.div`
   font-size: 0.65rem;
   opacity: 0.5;
@@ -683,6 +803,39 @@ const ToggleDesc = styled.span`
   font-size: 0.62rem;
   letter-spacing: 0.02em;
   color: ${({ theme }) => theme.color.textSecondary};
+`;
+
+/* The modes row.
+ *
+ * Sits above the groups with a rule under it, because it is not one of them:
+ * everything below is a single setting, and this is the row that moves twelve
+ * of them at once. It borrows the widget bundles' pills on purpose — the same
+ * gesture ("pick a bundle") should look the same wherever it appears. */
+const ModeSection = styled.div`
+  margin: 0 auto ${({ theme }) => theme.spacing.medium}rem;
+  padding-bottom: ${({ theme }) => theme.spacing.small}rem;
+  width: 100%;
+  max-width: 22rem;
+  border-bottom: 1px solid ${({ theme }) => theme.color.border};
+`;
+
+const ModeLabel = styled.div`
+  font-size: 0.66rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: ${({ theme }) => theme.color.textSecondary};
+  margin-bottom: 0.35rem;
+`;
+
+/* Two lines of room, held whether or not there is anything to say: the text
+ * follows the pointer across four pills, and a box that grew and shrank as it
+ * changed would move the pills out from under the cursor. */
+const ModeDesc = styled.div`
+  min-height: 2.4em;
+  font-size: 0.66rem;
+  line-height: 1.45;
+  color: ${({ theme }) => theme.color.textSecondary};
+  opacity: ${({ dim }) => (dim ? 0.8 : 1)};
 `;
 
 const PresetRow = styled.div`

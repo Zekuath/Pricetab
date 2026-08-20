@@ -1,5 +1,22 @@
 # Screenshot plan — 1.4.0
 
+> **Set changed on 19 Aug 2026 for the 1.4.0 upload.** Frame 2 is now
+> `02-calls` and not `02-compare`: the board is the feature this release
+> exists for, and the dashboard takes five. Compare is still captured and
+> kept in `assets/mockups/raw/` for the site.
+>
+> Two capture notes worth keeping, both learned against live data:
+> **(a)** the calls frame is shot on **1D**, not 1M. With a board on, the
+> price scale stops fitting the data and becomes a window onto a fixed
+> lattice, so a range wider than the window keeps the live price and lets
+> the rest clip — the month spans ~$7.8K against a ~$5.3K window and drew
+> as a vertical spike at the right edge. It also carries one notch of
+> board zoom, or the day's low sits on the window's floor and the line
+> clips at the left. **(b)** the hero composite shows only the *top* of
+> the capture, so the right range is whichever one puts the line where
+> the frame can see it — a week that sat flat and then spiked left the
+> hero looking like an empty chart. Re-check both when re-shooting.
+
 Draft for agreement **before** any capture. The pipeline already exists
 (`assets/mockups/`), so this is about *what* to shoot and *how it should
 look*, not how to shoot it.
@@ -48,7 +65,7 @@ state the user can't reach in one click from Settings.
 
 | Source | Says |
 |--------|------|
-| `docs/policies/SUBMISSION_CHECKLIST.md` | Screenshots **1–5** |
+| `docs/store/policies/SUBMISSION_CHECKLIST.md` | Screenshots **1–5** |
 | `assets/mockups/README.md` | "7 framed screenshots … if the dashboard caps the count, drop from the end" |
 | `assets/screenshots/` | 7 files sitting there |
 
@@ -117,7 +134,7 @@ Things that make a set look composed rather than assembled.
   feature-list caption. The image carries the feature; the caption says why it
   matters.
 
-**Compliance** (`docs/policies/`)
+**Compliance** (`docs/store/policies/`)
 - Captions must not be keyword lists. No "BTC, ETH, XRP, SOL…" strings on any
   image — Yellow Argon is this project's most likely rejection.
 - No price predictions, no returns implied, nothing that reads as advice.
@@ -239,7 +256,7 @@ Three consequences:
   be uploaded. The new set replaces it outright rather than being added to,
   so nothing ambiguous is left lying around.
 - `assets/mockups/README.md` ("7 framed screenshots… if the dashboard caps
-  the count, drop from the end") and `docs/STORE_ASSETS.md` ("ALL 11 widgets
+  the count, drop from the end") and `docs/store/STORE_ASSETS.md` ("ALL 11 widgets
   enabled") are both now known-wrong. Corrected.
 
 ## 7. Order of work

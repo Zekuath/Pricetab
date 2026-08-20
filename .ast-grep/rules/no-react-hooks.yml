@@ -1,0 +1,33 @@
+# React 16.5 is bundled in vendor/ and hooks do not exist in it.
+#
+# This is the single most likely thing for an AI agent to get wrong in this
+# codebase: every model has been trained on years of function components, and
+# hook code looks completely correct right up until it throws at runtime on a
+# new tab. CLAUDE.md says "Why class components? React 16.5 (hooks not
+# available)" — this makes that a build failure instead of a blank page.
+id: no-react-hooks
+language: JavaScript
+severity: error
+message: React 16.5 (vendor/react.production.min.js) has no hooks — use a class component.
+note: |
+  Convert to a class extending React.Component. State goes in the constructor
+  and updates through this.setState(prev => ...); effects go in
+  componentDidMount / componentDidUpdate, with cleanup in componentWillUnmount.
+  Upgrading React is a deliberate, separate decision (see docs/product/TODO.md).
+files:
+  - src/**/*.js
+rule:
+  any:
+    - pattern: useState($$$)
+    - pattern: useEffect($$$)
+    - pattern: useLayoutEffect($$$)
+    - pattern: useRef($$$)
+    - pattern: useMemo($$$)
+    - pattern: useCallback($$$)
+    - pattern: useContext($$$)
+    - pattern: useReducer($$$)
+    - pattern: React.useState($$$)
+    - pattern: React.useEffect($$$)
+    - pattern: React.useRef($$$)
+    - pattern: React.useMemo($$$)
+    - pattern: React.useCallback($$$)

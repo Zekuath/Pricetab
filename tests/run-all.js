@@ -26,19 +26,29 @@ for (const f of fs.readdirSync(path.join(ROOT, "src")).filter((f) => f.endsWith(
 }
 
 const suites = [
+  "test-invariants.js",
   "test-load.js",
   "test-storage.js",
   "test-api.js",
+  "test-provider.js",
   "test-cache.js",
   "test-bulk.js",
   "test-portfolio.js",
+  "test-portfolio-chart.js",
   "test-onboarding.js",
   "test-settings.js",
   "test-chart.js",
   "test-quickswitch.js",
   "test-alerts.js",
+  "test-calls.js",
   "test-d3.js",
   "test-smoke-jsdom.js",
+  // Real browser, real D3. Skip themselves (exit 0) when Playwright or its
+  // browser binary is absent, so these stay runnable on a bare checkout.
+  "test-render.js",
+  "test-calls-render.js",
+  "test-modes-render.js",
+  "test-polish-render.js",
 ];
 for (const suite of suites) {
   step(suite, () =>

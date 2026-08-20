@@ -68,6 +68,8 @@ const TICKER_CACHE_PERSIST_DELAY = 1000; // debounce: batches land a few at a ti
 
 // currency → when the bulk sweep last succeeded for it
 const bulkSweepAt = new Map();
+// currency → a sweep already running, so concurrent callers share it
+const bulkSweepInFlight = new Map();
 
 let tickerCachePersistTimer = null;
 
@@ -899,14 +901,17 @@ const fetchKrakenCandles = async (coin, period, currency) => {
  */
 const CANDLES_API = "https://api.exchange.coinbase.com/products/";
 const ohlcCache = new Map(); // "COIN-period-currency" → { data, timestamp }
+// Requests in flight per key, so concurrent readers of a cold key share one
+const ohlcInFlight = new Map();
 
 // Coins Kraken turned out not to list. Populated on the first miss so an
 // unlisted pair isn't re-requested every time the range is selected.
 const krakenUnsupported = new Set();
 
 const fetchOhlcCandles = async (coin, period, currency, crossProvider) => {
-  // Kraken coins already have candles from their history request
-  if (providerFor(coin) === "kraken") {
+  // Kraken coins already have candles from their history request — including
+  // ones that started the tab on Coinbase and were failed over
+  if (effectiveProvider(coin) === "kraken") {
     return fetchKrakenCandles(coin, period, currency);
   }
 
@@ -928,6 +933,21 @@ const fetchOhlcCandles = async (coin, period, currency, crossProvider) => {
   const key = `${coin}-${period}-${currency}`;
   const hit = ohlcCache.get(key);
   if (hit && Date.now() - hit.timestamp < OHLC_CACHE_TTL) return hit.data;
+  /* One request per cold key, however many callers want it.
+   *
+   * The cache only holds an answer *after* the response lands, so two readers
+   * arriving on the same cold key — the crosshair and a target check, say —
+   * each saw a miss and each sent a request. `fetchCoinloreGlobal` already
+   * shared its in-flight promise; this is the same pattern for a keyed cache.
+   * The entry is deleted in `finally`, so a failure is never remembered as
+   * one: the next caller tries again rather than inheriting a rejection.
+   *
+   * Deliberately not applied to the chart's own history requests, which carry
+   * a caller's `AbortSignal` — sharing one of those would let whoever switched
+   * coin first cancel everybody else's work. */
+  const shared = ohlcInFlight.get(key);
+  if (shared) return shared;
+  const run = (async () => {
   try {
     const res = await fetch(
       `${CANDLES_API}${encodeURIComponent(`${coin}-${currency}`)}` +
@@ -952,6 +972,13 @@ const fetchOhlcCandles = async (coin, period, currency, crossProvider) => {
     return windowed;
   } catch (error) {
     return hit ? hit.data : null; // stale beats nothing; null = price-only
+  }
+  })();
+  ohlcInFlight.set(key, run);
+  try {
+    return await run;
+  } finally {
+    ohlcInFlight.delete(key);
   }
 };
 
@@ -1046,27 +1073,104 @@ const fetchBtcAddressDeltas = async (address) => {
  * on ordinary English. The full name is matched case-insensitively, and the
  * feed's own coin tags count too.
  */
+/* Does one story name one coin? Lifted out of `headlinesForCoin` when the
+ * news row grew a filter of its own: two places deciding what "about BTC"
+ * means is two places that can come to disagree, and the answer here is
+ * fiddly enough (case-sensitive symbols, case-insensitive names) that the
+ * copy would have been the one that drifted. */
+const newsMentionsCoin = (item, coin, symbolRe, name) => {
+  if (!item || typeof item.title !== "string") return false;
+  const raw = `${item.title} ${item.tags || ""}`;
+  return (
+    symbolRe.test(raw) || (name.length > 2 && raw.toLowerCase().includes(name))
+  );
+};
+
+const coinNameLower = (coin) =>
+  String((typeof COIN_NAMES !== "undefined" && COIN_NAMES[coin]) || "").toLowerCase();
+
 const headlinesForCoin = (items, coin, sinceMs, limit = 2) => {
   if (!Array.isArray(items) || !coin) return [];
-  const name = String((typeof COIN_NAMES !== "undefined" && COIN_NAMES[coin]) || "").toLowerCase();
+  const name = coinNameLower(coin);
   const symbolRe = new RegExp(`\\b${coin}\\b`);
   const out = [];
   for (const item of items) {
     if (!item || typeof item.title !== "string") continue;
     if (sinceMs && !(item.time >= sinceMs)) continue;
-    const raw = `${item.title} ${item.tags || ""}`;
-    const mentions =
-      symbolRe.test(raw) || (name.length > 2 && raw.toLowerCase().includes(name));
-    if (!mentions) continue;
+    if (!newsMentionsCoin(item, coin, symbolRe, name)) continue;
     out.push(item);
     if (out.length >= limit) break;
   }
   return out;
 };
 
+/* The headline row, narrowed to a set of coins.
+ *
+ * The whole list back when the set is empty rather than nothing: an empty set
+ * means "you are not tracking anything", and a row that goes blank because a
+ * portfolio has not been filled in yet looks like a broken feature rather
+ * than an honoured setting. The caller decides whether to narrow at all; this
+ * only ever answers "which of these name one of those".
+ */
+const newsForCoins = (items, coins) => {
+  if (!Array.isArray(items)) return [];
+  const list = Array.isArray(coins) ? coins.filter(Boolean) : [];
+  if (!list.length) return items;
+  // Built once per call, not once per story: 40 headlines × 66 coins is 2,640
+  // regex constructions a redraw does not need
+  const tests = list.map((coin) => ({
+    re: new RegExp(`\\b${coin}\\b`),
+    name: coinNameLower(coin),
+    coin,
+  }));
+  return items.filter((item) =>
+    tests.some((t) => newsMentionsCoin(item, t.coin, t.re, t.name)),
+  );
+};
+
 /* Merge news lists in priority order: spam filtered everywhere, duplicate
  * stories collapsed across sources by normalized title (aggregators often
  * carry the same story from several outlets), capped at MAX_NEWS_ITEMS. */
+/* Headlines read back out of localStorage, put through the same rules the
+ * fetchers apply on the way in.
+ *
+ * Every other stored shape here has a sanitizer — `sanitizeCalls`,
+ * `sanitizeSales`, `sanitizeLots` — because localStorage survives upgrades and
+ * anyone can edit it from DevTools. The news cache was the exception: it was
+ * trusted whenever `items` was a non-empty array, and its `url` went straight
+ * into an `href`. Measured with a hand-edited cache: a `javascript:` URL and a
+ * plain `http://` one both reached the DOM. The `javascript:` one does not run
+ * when clicked — the link carries `target="_blank"` and MV3's CSP refuses the
+ * navigation — but the HTTPS-only rule the fetchers enforce was gone, and a
+ * non-string title would have been handed to React as a child.
+ *
+ * Same limits as `fetchBlockchairNews`, deliberately: two places deciding what
+ * a headline may contain is two places that can disagree, and the one that
+ * drifts is the one nobody is looking at. */
+const sanitizeNewsItems = (list) =>
+  (Array.isArray(list) ? list : [])
+    .map((item) => {
+      if (!item || typeof item !== "object") return null;
+      const title = typeof item.title === "string" ? item.title.slice(0, 140) : "";
+      if (!title) return null;
+      return {
+        source:
+          typeof item.source === "string"
+            ? item.source.replace(/^(www|en)\./, "").slice(0, 30)
+            : "news",
+        title,
+        time: typeof item.time === "number" && isFinite(item.time) ? item.time : null,
+        tags: typeof item.tags === "string" ? item.tags.slice(0, 200) : "",
+        // https only, and nothing else — the same test the fetchers apply
+        url:
+          typeof item.url === "string" && /^https:\/\//.test(item.url)
+            ? item.url
+            : null,
+      };
+    })
+    .filter(Boolean)
+    .slice(0, MAX_NEWS_ITEMS);
+
 const mergeNewsItems = (...lists) => {
   const seen = new Set();
   const items = [];
@@ -1123,6 +1227,13 @@ const bulkRefreshPageTickerCache = async (coins, currency) => {
   const lastSweep = bulkSweepAt.get(currency);
   if (lastSweep && Date.now() - lastSweep < PAGE_TICKER_TTL) return true;
 
+  /* The TTL guard above is only set once the response has landed, so two
+   * consumers starting together — the page ticker's own refresh and opening
+   * the portfolio, say — both saw no sweep and both sent the largest request
+   * the extension makes. They share one now, per currency. */
+  const shared = bulkSweepInFlight.get(currency);
+  if (shared) return shared;
+  const run = (async () => {
   try {
     /* Worth one retry, unlike most background calls. This request is the
      * cheap path — one snapshot covers every coin — and its fallback is the
@@ -1186,6 +1297,13 @@ const bulkRefreshPageTickerCache = async (coins, currency) => {
   } catch (e) {
     return false;
   }
+  })();
+  bulkSweepInFlight.set(currency, run);
+  try {
+    return await run;
+  } finally {
+    bulkSweepInFlight.delete(currency);
+  }
 };
 
 /* PAGE TICKER COIN SNAPSHOT */
@@ -1199,7 +1317,7 @@ const refreshPageTickerCoin = async (coin, currency, now) => {
   // Non-Coinbase coins would 404 here. The bulk Coinlore sweep normally
   // covers them; this fallback derives the same numbers from their own
   // provider's daily candles rather than leaving a hole in the ticker.
-  if (providerFor(coin) === "kraken") {
+  if (effectiveProvider(coin) === "kraken") {
     try {
       const candles = await fetchKrakenCandles(coin, "day", currency);
       if (!candles || candles.length < 2) return;

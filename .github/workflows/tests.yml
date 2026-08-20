@@ -13,7 +13,35 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Install test dependencies (jsdom)
-        run: npm install --prefix tests --no-audit --no-fund
-      - name: Run test suite
+
+      # `npm ci` (not `npm install`) so the tracked package-lock.json is
+      # honoured exactly: CI must install the same resolved versions the
+      # lockfile pins, not whatever the ranges resolve to today.
+      - name: Install dev tooling
+        run: npm ci --prefix tests --no-audit --no-fund
+
+      # Cheapest checks first, so an obvious break fails in seconds.
+      - name: Lint (ESLint)
+        run: npm --prefix tests run lint
+
+      - name: Architectural rules (ast-grep)
+        run: npm --prefix tests run scan
+
+      - name: Browser for the render test
+        run: npm --prefix tests run browsers
+
+      - name: Test suite
         run: node tests/run-all.js
+
+  # Secret scanning is a separate job: it needs the full history, which the
+  # test job has no reason to fetch.
+  secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

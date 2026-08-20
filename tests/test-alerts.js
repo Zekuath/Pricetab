@@ -38,7 +38,9 @@ const sandbox = {
 };
 vm.createContext(sandbox);
 const base = path.join(__dirname, "..", "src");
-for (const f of ["config.js", "storage.js", "alerts.js"]) {
+// styles-alerts.js comes with it now: the info card is rendered by these tests,
+// and its styled-components live there (in load order, before alerts.js)
+for (const f of ["config.js", "storage.js", "styles-alerts.js", "alerts.js"]) {
   vm.runInContext(fs.readFileSync(`${base}/${f}`, "utf8"), sandbox, { filename: f });
 }
 const run = (code) => vm.runInContext(code, sandbox);
@@ -230,5 +232,153 @@ assert.deepStrictEqual(
   "only the matching-currency alerts count",
 );
 assert.deepStrictEqual(json("alertCoinsToWatch([], 'USD')"), [], "no alerts → nothing to fetch");
+
+/* ── the info card ──────────────────────────────────────────────────────── */
+/* The card exists to say three things: what the tab is, where it stands, and
+ * which keys reach it. The middle one is the reason it is not a help page — it
+ * is read off the same props the list is drawn from — and the reason it needs
+ * a test: a state line that goes stale is worse than no state line.
+ *
+ * `createElement` is swapped for one that keeps its children, so the assertions
+ * can read what the panel actually says rather than trusting that it renders.
+ */
+{
+  const realCreate = sandbox.React.createElement;
+  sandbox.React.createElement = (type, props, ...children) => ({
+    type,
+    props,
+    children,
+  });
+  const flatten = (node, out = []) => {
+    if (node == null || node === false) return out;
+    if (typeof node === "string" || typeof node === "number") {
+      out.push(String(node));
+      return out;
+    }
+    if (Array.isArray(node)) {
+      node.forEach((n) => flatten(n, out));
+      return out;
+    }
+    if (node.children) flatten(node.children, out);
+    return out;
+  };
+  const said = (props, onCalls, lists) => {
+    const Panel = run("AlertsPanel");
+    const inst = new Panel(props);
+    inst.props = props;
+    return flatten(inst.renderInfo(onCalls, lists)).join(" ");
+  };
+
+  const ALERTS = [
+    { id: "1", coin: "BTC", kind: "price", direction: "above", target: 50000, currency: "USD" },
+    { id: "2", coin: "ETH", kind: "percent", direction: "below", target: 5, currency: "USD" },
+    { id: "3", coin: "LTC", kind: "price", direction: "above", target: 90, currency: "EUR" },
+    { id: "4", coin: "XRP", kind: "price", direction: "above", target: 0.6, currency: "USD", triggeredAt: 1 },
+  ];
+  const lists = {
+    armed: ALERTS.filter((a) => !a.triggeredAt),
+    done: ALERTS.filter((a) => a.triggeredAt),
+  };
+
+  // Targets: what it is, the counts, and the two conditional lines
+  const t = said({ alerts: ALERTS, currency: "USD", activeCoin: "BTC" }, false, lists);
+  assert.ok(/tell me when/.test(t), "targets: says what a target is");
+  assert.ok(/3 armed · 1 hit · 4 of 10 used/.test(t), `targets: counts — ${t}`);
+  assert.ok(/1 paused/.test(t), "targets: names the paused one");
+  assert.ok(/never pauses/.test(t), "…and why a move target is not among them");
+  assert.ok(/announced in the tab title/.test(t), "targets: announcing is on");
+  assert.ok(/\bA\b/.test(t) && /Esc/.test(t) && /Enter/.test(t), "targets: the keys");
+
+  /* Nothing paused when every price target is in the displayed currency — the
+   * percent one is there to prove it is not counted either way. */
+  const own = [ALERTS[2], ALERTS[1]];
+  const eur = said({ alerts: own, currency: "EUR", activeCoin: "BTC" }, false, {
+    armed: own,
+    done: [],
+  });
+  assert.ok(/2 armed/.test(eur), "targets: counts follow the lists it is given");
+  assert.ok(!/paused/.test(eur), "nothing is paused in its own currency");
+
+  /* …and the other way round: the same list read in a currency none of the
+   * price targets were set in pauses every one of them, and only them. */
+  const usd = said({ alerts: own, currency: "USD", activeCoin: "BTC" }, false, {
+    armed: own,
+    done: [],
+  });
+  assert.ok(/1 paused/.test(usd), `only the price target pauses — ${usd}`);
+
+  // The tab-title line states the setting rather than assuming it
+  const quiet = said(
+    { alerts: ALERTS, currency: "USD", activeCoin: "BTC", alertTabTitle: false },
+    false,
+    lists,
+  );
+  assert.ok(/reported here only/.test(quiet), "targets: says when announcing is off");
+  assert.ok(/stops the background checking/.test(quiet), "…and what that costs");
+
+  // Calls, on: the record and the counts
+  const on = said(
+    {
+      alerts: [],
+      currency: "USD",
+      activeCoin: "BTC",
+      predict: true,
+      calls: [{ id: "c1" }],
+      settledCalls: [{ id: "c2" }, { id: "c3" }],
+      callRecord: { hits: 3, total: 7, streak: 1, best: 2 },
+    },
+    true,
+    lists,
+  );
+  assert.ok(/I say where/.test(on), "calls: says what a call is");
+  assert.ok(/On · 1 open · 2 settled/.test(on), `calls: counts — ${on}`);
+  assert.ok(/3 of 7 called right/.test(on), "calls: the record");
+  assert.ok(/best streak 2/.test(on), "…and the best streak when there is one");
+  assert.ok(/worth nothing/.test(on), "calls: says the score is worth nothing");
+  /* Not the board's numbers: how far it reaches and what a square is worth are
+   * already on screen in the Board strip at the foot of the same tab. */
+  assert.ok(!/ahead/.test(on), "calls: does not repeat the board readout");
+  /* K reaches the panel, L turns the feature on. K is the newer of the two
+   * and the one worth asserting hardest: calls left the targets panel and
+   * took their own corner control and their own key with them, so a card that
+   * still named only "A" would be pointing at the wrong door. */
+  assert.ok(
+    /\bK\b/.test(on) && /\bL\b/.test(on) && /\bG\b/.test(on),
+    "calls: the keys",
+  );
+
+  // Calls, off: the off state has to say the calls are kept, not lost
+  const off = said(
+    {
+      alerts: [],
+      currency: "USD",
+      activeCoin: "BTC",
+      predict: false,
+      calls: [{ id: "c1" }, { id: "c2" }],
+      settledCalls: [],
+      callRecord: { hits: 0, total: 0, streak: 0, best: 0 },
+    },
+    true,
+    lists,
+  );
+  assert.ok(/^|Off · 2 kept/.test(off) && /2 kept/.test(off), `calls: off — ${off}`);
+  /* Off used to pause settling, and the card said so. It no longer does: a
+   * call is a claim someone already made, and whether they are still looking
+   * at the board does not change whether it came true — a week with calls off
+   * used to leave every open one frozen until its evidence scrolled off the
+   * range. So the off card has to say the opposite of what it used to, and
+   * say what the switch *does* govern. */
+  assert.ok(
+    /still settling in the background/.test(off),
+    `calls: off says settling continues — ${off}`,
+  );
+  assert.ok(
+    /nothing is drawn|not announced/.test(off),
+    "…and what being off actually costs",
+  );
+  assert.ok(!/called right/.test(off), "no record line before anything has settled");
+
+  sandbox.React.createElement = realCreate;
+}
 
 console.log("ALERT TESTS OK");

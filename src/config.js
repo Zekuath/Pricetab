@@ -53,6 +53,7 @@ const SUGGESTED_COINS = [
   "ENS",
   "ZEC",
   "XMR",
+  "PI",
   "KSM",
   "CHZ",
   "CAKE",
@@ -122,6 +123,7 @@ const COIN_NAMES = {
   ENS: "Ethereum Name Service",
   ZEC: "Zcash",
   XMR: "Monero",
+  PI: "Pi Network",
   KSM: "Kusama",
   CHZ: "Chiliz",
   CAKE: "PancakeSwap",
@@ -246,6 +248,28 @@ const NEWS_REFRESH_MS = 600000; // 10 minutes
 // the browser blocks them — Blockchair + Hacker News (below) are the only
 // viable in-extension feeds.
 const NEWS_API_URL = "https://api.blockchair.com/news?q=language(en)&limit=40";
+
+/* What the headline row is allowed to carry.
+ *
+ * The feed is general crypto news, so on a tab kept open for four coins most
+ * of what scrolls past is about something else. The filter narrows it to
+ * stories that actually name a coin you are watching — the same test the
+ * move-headlines line already applies, so the two cannot disagree about what
+ * "about BTC" means.
+ *
+ * `all` stays the default. The narrower settings can empty the row for hours
+ * at a time (a quiet week for your four coins is a quiet week), and a feature
+ * that silently shows nothing is a worse first impression than one that shows
+ * too much — so choosing to narrow it is yours, and the setting says what it
+ * costs.
+ */
+const NEWS_FILTER_KEY = "crypto_chart_news_filter";
+const DEFAULT_NEWS_FILTER = "all";
+const NEWS_FILTER_OPTIONS = [
+  { value: "all", label: "Everything" },
+  { value: "coins", label: "My coins" },
+  { value: "portfolio", label: "What I hold" },
+];
 const MAX_NEWS_ITEMS = 50;
 // Hacker News via Algolia — the only other CORS-enabled, no-key news source
 // found (X/Twitter, Reddit, Nitter, Stacker News all block extension origins).
@@ -286,8 +310,43 @@ const RATE_PROMPT_DELAY_MS = 2 * 24 * 60 * 60 * 1000;
  */
 const COIN_PROVIDERS = {
   XMR: "kraken", // delisted from Coinbase — all three endpoints 404
+  PI: "kraken", // never listed by Coinbase; Kraken quotes PIUSD (17 Aug 2026)
 };
 const providerFor = (coin) => COIN_PROVIDERS[coin] || "coinbase";
+
+/* The four coins Kraken cannot serve, so there is nowhere to fall back to for
+ * them. Swept against Kraken's own pair list on 13 Aug 2026: it answers for
+ * 62 of our 66. Re-run the sweep before trusting this — a listing is a fact
+ * about someone else's exchange and it changes without telling us. */
+const KRAKEN_MISSING = ["MATIC", "MKR", "RNDR", "ILV"];
+
+/* Coinbase can stop answering for one coin without anything being wrong here.
+ * A delisting 404s. A burst of requests gets throttled at the edge. A region
+ * is served a block page. The first arrives as an empty payload; the other two
+ * arrive in the browser as *a CORS error*, because an error handed back by an
+ * edge server carries no `Access-Control-Allow-Origin` — which is why the
+ * console says the header is missing when the real answer is "not today".
+ *
+ * `COIN_PROVIDERS` covers the permanent case. This covers the rest: the first
+ * failure sends that coin to Kraken for the rest of the tab, and the tab is
+ * the right lifetime — a bad ten minutes must not reroute a coin for good, and
+ * every new tab tries Coinbase again. In memory only; nothing is stored.
+ */
+const failedProviders = new Set();
+const effectiveProvider = (coin) =>
+  failedProviders.has(coin) ? "kraken" : providerFor(coin);
+
+/* Was this a failure worth failing over for? Not if we cancelled the request
+ * ourselves — switching coin or range aborts whatever is in flight, and
+ * treating that as "Coinbase is down for BTC" would reroute the whole list
+ * within a few keystrokes. */
+const noteProviderFailure = (coin, error) => {
+  if (error && error.name === "AbortError") return false;
+  if (providerFor(coin) === "kraken") return false; // already there
+  if (KRAKEN_MISSING.includes(coin)) return false;
+  failedProviders.add(coin);
+  return true;
+};
 
 const KRAKEN_API = "https://api.kraken.com/0/public/";
 // Kraken returns at most 720 candles; the interval per period is chosen so
@@ -356,6 +415,176 @@ const periodLabel = (value) => {
 const CHART_GRID_KEY = "crypto_chart_grid";
 const DEFAULT_CHART_GRID = false;
 
+/* How far the board reaches in price, as a multiple of the fair square.
+ *
+ * One square size cannot serve both calls. A square sized to what the price
+ * usually does in that time is the right size for a *tight* call and puts the
+ * board's whole reach at about three squares either side of the price — so the
+ * one call an hour chart most invites, "it falls off a cliff", has no square to
+ * point at. Zooming out makes each square worth more and the reach grow with
+ * it; zooming in tightens the band you are naming.
+ *
+ * Doubling per notch, because the square lands on a round number either way and
+ * doubling is the step people can hold in their head. At ×16 an hour board
+ * reaches past any hour BTC has ever had; at ×0.5 the band is half a typical
+ * move, which is as tight as a call can be and still be winnable.
+ */
+const BOARD_ZOOM_KEY = "crypto_chart_board_zoom";
+const DEFAULT_BOARD_ZOOM = 1;
+// Discrete rungs, not a continuous scale: the price step lands on a round
+// number either way, and a zoom you can count is a zoom you can undo.
+const BOARD_ZOOM_STEPS = [0.5, 1, 2, 4, 8, 16, 32, 64];
+const BOARD_ZOOM_MIN = BOARD_ZOOM_STEPS[0];
+const BOARD_ZOOM_MAX = BOARD_ZOOM_STEPS[BOARD_ZOOM_STEPS.length - 1];
+// How long the scale takes to travel when it changes. Long enough to see which
+// way it went and what happened to the boxes; short enough not to be a wait.
+const BOARD_ZOOM_MS = 260;
+
+/* Quiet controls: the corner buttons rest almost invisible and come up under
+ * the pointer. Nothing is hidden and nothing becomes unclickable — a control
+ * you cannot see but can still press is a trap, so they fade to a ghost rather
+ * than to nothing, and each one lights up on hover and on keyboard focus. */
+const QUIET_CHROME_KEY = "crypto_chart_quiet_chrome";
+const DEFAULT_QUIET_CHROME = false;
+
+/* MODES
+ *
+ * A mode is one click that sets a dozen settings at once — the same idea as the
+ * widget bundles, one level up. It is not a new kind of state: every value here
+ * goes through the setting's own handler, so a mode leaves the app in a state
+ * you could have reached by hand, and every switch still says what it says.
+ * That is why there is no "current mode" stored anywhere — the mode is
+ * *recognised* from the settings (`activeAppMode`), and the moment you change
+ * one of them by hand you are simply back to your own arrangement.
+ *
+ * `settings` names the values the mode cares about. Anything not named is left
+ * alone on purpose: a mode should not silently take your currency, your number
+ * format or your theme, which are yours whatever you use the tab for. Calls are
+ * left alone for the same reason and one more — turning them off would hide a
+ * record you made.
+ */
+const APP_MODES = [
+  {
+    value: "minimal",
+    label: "Minimal",
+    // Everything off, and the controls stop asking to be looked at
+    desc: "The price and the chart, nothing else. The corner controls fade to a ghost until you point at them; the keys still work.",
+    widgets: "none",
+    settings: {
+      quietChrome: true,
+      chartType: "line",
+      chartGrid: false,
+      volumeBars: false,
+      ohlcEnabled: false,
+      marketStats: false,
+      lastSeen: false,
+      moveHeadlines: false,
+      tickerEnabled: false,
+      pageTicker: false,
+      newsTicker: false,
+      autoRotate: false,
+      refreshInterval: 60000,
+    },
+  },
+  {
+    value: "fast",
+    label: "Fast",
+    /* Fast is about the price being current, not about the app feeling quick —
+     * so it polls hard and drops the things that cost a request each. */
+    desc: "The freshest price. Polls every ten seconds and drops everything that costs its own request — widgets, the news row, the scrolling bar.",
+    widgets: "none",
+    settings: {
+      quietChrome: false,
+      /* The chart settings are named here too, and they have to be: a mode is
+       * recognised by the values it names, so one that left the chart out was
+       * indistinguishable from Trader with the widgets switched off — the row
+       * would light up "Fast" on a candlestick chart with a volume band. They
+       * belong in this mode anyway: candles and the crosshair's open/high/low/
+       * close are a second request per range. */
+      chartType: "line",
+      chartGrid: false,
+      volumeBars: false,
+      ohlcEnabled: false,
+      refreshInterval: 10000,
+      tickerEnabled: true,
+      pageTicker: false,
+      newsTicker: false,
+      moveHeadlines: false,
+      marketStats: true,
+      lastSeen: true,
+      autoRotate: false,
+    },
+  },
+  {
+    value: "trader",
+    label: "Trader",
+    desc: "Everything to read a move with: candles, volume, the grid, the crosshair’s open/high/low/close, and the derivatives widgets.",
+    widgets: "trader",
+    settings: {
+      quietChrome: false,
+      chartType: "candles",
+      volumeBars: true,
+      ohlcEnabled: true,
+      chartGrid: true,
+      marketStats: true,
+      lastSeen: true,
+      moveHeadlines: false,
+      refreshInterval: 10000,
+      tickerEnabled: true,
+      pageTicker: false,
+      newsTicker: false,
+      autoRotate: false,
+    },
+  },
+  {
+    value: "holder",
+    label: "Holder",
+    desc: "For checking in, not watching: a calm chart, the market around it, and headlines. Polls every five minutes.",
+    widgets: "holder",
+    settings: {
+      quietChrome: false,
+      chartType: "line",
+      chartGrid: false,
+      volumeBars: false,
+      ohlcEnabled: true,
+      marketStats: true,
+      lastSeen: true,
+      moveHeadlines: true,
+      refreshInterval: 300000,
+      tickerEnabled: false,
+      pageTicker: true,
+      newsTicker: true,
+      autoRotate: false,
+    },
+  },
+];
+
+/* Which mode the settings currently amount to, or null for "your own".
+ *
+ * Recognised rather than remembered: a stored "current mode" would go on
+ * claiming to be Minimal after you switched the page ticker back on, and the
+ * one thing a mode row must not do is describe a screen that isn't there.
+ * `widgets` counts too — a mode that turns them all off is not in force while
+ * six of them are on screen.
+ */
+const activeAppMode = (settings, widgets) => {
+  const on = (w) => Boolean(widgets && widgets[w]);
+  const anyWidget = widgets ? Object.keys(widgets).some(on) : false;
+  for (const mode of APP_MODES) {
+    const settingsMatch = Object.keys(mode.settings).every(
+      (key) => settings[key] === mode.settings[key],
+    );
+    if (!settingsMatch) continue;
+    if (mode.widgets === "none") {
+      if (anyWidget) continue;
+    } else if (mode.widgets) {
+      if (!isPresetActive(widgets, mode.widgets)) continue;
+    }
+    return mode.value;
+  }
+  return null;
+};
+
 /* Call the cell — read the chart, name where the price will be.
  *
  * Deliberately not an economy. Nothing here is worth anything, can be spent,
@@ -368,13 +597,25 @@ const DEFAULT_CHART_GRID = false;
  */
 const PREDICT_KEY = "crypto_chart_predict";
 const DEFAULT_PREDICT = false;
-const PREDICT_AHEAD_KEY = "crypto_chart_predict_ahead";
-const DEFAULT_PREDICT_AHEAD = 2;        // squares of future the chart reserves
-/* Up to ten. Asking for more squares makes them smaller rather than pushing
- * them off the chart: the future strip has a fixed share of the width, so the
- * cell size is chosen to fit the number asked for. Squares stay square and
- * every one you were promised is on screen. */
-const PREDICT_AHEAD_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+/* How much of the chart's width the board takes, as a fraction.
+ *
+ * It used to be a count of squares, one to ten, with a stepper in the calls
+ * panel — and the geometry bent itself into knots to honour it: the strip got
+ * a budget that rose with the count, the cell size was chosen to fit that
+ * many inside it, and asking for more squares made every square smaller. Once
+ * the "now" line could be dragged, all of that was a second way to say the
+ * same thing, in a unit nobody thinks in. What you actually want is *this much
+ * board*, and you say it by pulling the line to where you want it.
+ *
+ * So the width is the setting and the squares are simply however many fit at
+ * a comfortable size. The bounds are geometric rather than fractions of the
+ * width — two whole squares of history at one end and two of board at the
+ * other — so they are enforced where the square size is known (`futureWidth`);
+ * these are only the outer sanity limits a stored value is read through. */
+const FUTURE_SHARE_KEY = "crypto_chart_future_share";
+const DEFAULT_FUTURE_SHARE = 0.18;
+const MIN_FUTURE_SHARE = 0.05;
+const MAX_FUTURE_SHARE = 0.95;
 /* Two switches for what a settled call does afterwards. Both default on:
  * seeing the box you drew and being told you got it right is the whole
  * feedback loop. Both can be turned off, because a chart someone reads for
@@ -384,6 +625,14 @@ const CALLS_SHOW_SETTLED_KEY = "crypto_chart_calls_show_settled";
 const DEFAULT_CALLS_SHOW_SETTLED = true;
 const CALLS_CELEBRATE_KEY = "crypto_chart_calls_celebrate";
 const DEFAULT_CALLS_CELEBRATE = true;
+
+/* When the calls panel was last opened, as a timestamp.
+ *
+ * The dot on the calls button means "something settled since you last
+ * looked", and "last looked" has to survive the tab being closed or the mark
+ * comes back on every new tab for a result you have already seen — which is
+ * the fastest way to teach someone to ignore it. */
+const CALLS_SEEN_KEY = "crypto_chart_calls_seen";
 
 const CALLS_KEY = "crypto_chart_calls";
 const MAX_OPEN_CALLS = 40;              // ten squares across a few coins
@@ -562,8 +811,15 @@ const MAX_LOTS_PER_HOLDING = 100;
 const MAX_SALES_PER_HOLDING = 100;
 // A holding can track several addresses side by side (plus its manual part)
 const MAX_WATCHES_PER_HOLDING = 10;
-// Selected time range for the portfolio background value chart
+// Selected time range for the portfolio value chart
 const PORTFOLIO_PERIOD_KEY = "crypto_chart_portfolio_period";
+
+/* Whether the expanded chart draws the total as one line or as the coins it is
+ * made of. Persisted because it is a way of reading rather than a one-off
+ * question — someone who thinks in composition thinks in it every time. The
+ * chart being *open* is not persisted: that is where you are, not how you
+ * read, and a portfolio opens on its holdings. */
+const PORTFOLIO_STACKED_KEY = "crypto_chart_portfolio_stacked";
 
 /* Holdings order. The list used to render in the order coins were added,
  * which meant the biggest position could sit at the bottom — while the chart

@@ -1,7 +1,22 @@
 # Local editor / internal notes (not part of the published extension)
 .claude/
 CLAUDE.md
-docs/AI_GUIDELINES.md
+AGENTS.md
+GEMINI.md
+
+# Every piece of working material now lives in one place: the agent rules and
+# guidelines, the journals and memories, the tooling research and the business
+# thinking. One directory rule rather than a path per file — the old list named
+# five paths, and a sixth file dropped beside them would have gone to a public
+# remote with nobody noticing. That was not hypothetical:
+# `docs/AI_TOOLING_RESEARCH.md`, `MONETIZATION.md` and `BUSINESS_IDEAS.md` were
+# protected only by this clone's `.git/info/exclude`, which no fresh clone has.
+#
+# They are checkpoint EXTRA_PATHS, so a snapshot still holds them: ignored
+# means "not part of the shipped history", not "disposable".
+docs/internal/
+MONETIZATION.md
+BUSINESS_IDEAS.md
 
 # macOS
 .DS_Store
@@ -31,4 +46,6 @@ assets/upload/
 
 # Test dependencies (dev-only)
 tests/node_modules/
-tests/package-lock.json
+# package-lock.json is deliberately TRACKED: it pins every transitive dev
+# dependency to an exact resolved version + integrity hash, which is the only
+# real defence against a dependency being hijacked between installs.

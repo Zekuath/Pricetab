@@ -20,7 +20,16 @@ const WidgetRestoreButton = styled.button`
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.25s ease, top 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: transform 0.25s ease, opacity 0.25s ease,
+    top 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* Resting weight, and the two ways back to full — see QUIET_LEAD */
+  opacity: ${({ quiet }) => (quiet ? QUIET_REST : 1)};
+
+  &:hover,
+  &:focus-visible {
+    opacity: 1;
+  }
 
   &:hover {
     transform: scale(1.1);
@@ -74,7 +83,16 @@ const CompareToggleButton = styled.button`
   transition:
     transform 0.25s ease,
     color 0.2s ease,
+    opacity 0.25s ease,
     top 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* Resting weight, and the two ways back to full — see QUIET_LEAD */
+  opacity: ${({ quiet }) => (quiet ? QUIET_REST : 1)};
+
+  &:hover,
+  &:focus-visible {
+    opacity: 1;
+  }
 
   &:hover {
     transform: scale(1.1);

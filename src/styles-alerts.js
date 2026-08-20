@@ -137,6 +137,236 @@ const AlertsBody = styled.div`
   @media (max-width: ${({ theme }) => theme.breakpoint.down.sm}px) {
     padding: 0 1.1rem;
   }
+
+  /* The same scrollbar the settings panel uses.
+   *
+   * This body was the one scrolling surface in the app that never got it, so
+   * it grew the platform's own bar: a grey strip in the OS style, sitting
+   * inside the rounded card and offset from the content by the 1.5rem
+   * padding, belonging to nothing around it. A stable gutter reserves the
+   * lane whether or not it is needed, so nothing shifts sideways the moment
+   * the list gets long enough to scroll. */
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: ${({ theme }) => theme.color.border} transparent;
+
+  /* The list ends by fading rather than by being sliced. A row cut in half by
+   * the divider above the foot reads as content jammed against a wall, which
+   * is a large part of why a full panel felt tight even once everything fit.
+   * Fourteen pixels is enough to say "there is more" without dimming a row
+   * anyone is trying to read. */
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    #000 14px,
+    #000 calc(100% - 14px),
+    transparent 100%
+  );
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+    margin: 0.4rem 0;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: ${({ theme }) => theme.color.border};
+    border-radius: 3px;
+    transition: background 0.2s ease;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background: ${({ theme }) => theme.color.borderHover};
+  }
+`;
+
+/* The calls tab's pinned foot, and its three strips.
+ *
+ * Two designs failed before this one. Putting every switch into the scrolling
+ * body rendered a settings page inside a list panel: the content ran past the
+ * card and the last row was cut in half by the edge. Hiding them behind a
+ * disclosure labelled SETTINGS was worse — invisible to anyone who did not
+ * already know the switches were there, and borrowing the name of the app's
+ * own panel, so the row read as a way *out* of this tab rather than the rest
+ * of it.
+ *
+ * So: always visible, never named after somewhere else, and split into strips
+ * by what each one does — aim the call, choose what is drawn, manage the
+ * record. A strip is a label and its controls on one line, which is the only
+ * shape that fits under a list. */
+const AlertCallsFoot = styled.div`
+  flex: 0 0 auto;
+  padding: 0.35rem 1.5rem 0.75rem;
+  border-top: 1px solid ${({ theme }) => theme.color.border};
+
+  @media (max-width: ${({ theme }) => theme.breakpoint.down.sm}px) {
+    padding: 0.3rem 1.1rem 0.65rem;
+  }
+`;
+
+/* Laid out like a terminal's status lines: a fixed label column on the left
+ * and everything else in a settled column beside it, so the eye runs straight
+ * down the labels instead of hunting for where each row starts. */
+const AlertCallsStrip = styled.div`
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.6rem;
+  padding: 0.55rem 0;
+
+  & + & {
+    border-top: 1px solid ${({ theme }) => theme.color.border};
+  }
+`;
+
+/* The strip's name. Quiet, and the same width on every row — that shared width
+ * is the whole reason the foot reads as a table rather than three unrelated
+ * lines of controls. */
+const AlertStripLabel = styled.span`
+  flex: 0 0 auto;
+  width: 4.1rem;
+  font-size: 0.58rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: ${({ theme }) => theme.color.textSecondary};
+`;
+
+// Pushes whatever follows to the far end of the strip.
+const AlertStripGap = styled.span`
+  flex: 1 1 auto;
+`;
+
+/* What the reach actually buys, on the same line rather than wrapped
+ * underneath — the wrap was most of what made the foot feel cramped. */
+const AlertStripFigures = styled.span`
+  flex: 0 0 auto;
+  font-size: 0.63rem;
+  color: ${({ theme }) => theme.color.textSecondary};
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+`;
+
+/* A switch that says what it is, the way a config listing does: a filled dot
+ * for on, a hollow one for off. State is never carried by colour alone, so it
+ * survives both themes and a reader who cannot separate them. */
+const AlertStateChip = styled.button.attrs(() => ({ type: "button" }))`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.28rem 0.5rem;
+  border: 1px solid ${({ theme }) => theme.color.border};
+  border-radius: 3px;
+  background: transparent;
+  color: ${({ theme, on }) =>
+    on ? theme.color.text : theme.color.textSecondary};
+  font-family: ${({ theme }) => theme.font.primary};
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease;
+
+  &::before {
+    content: "";
+    width: 0.42rem;
+    height: 0.42rem;
+    border-radius: 50%;
+    border: 1px solid
+      ${({ theme, on }) => (on ? theme.color.chartLineGreen : theme.color.border)};
+    background: ${({ theme, on }) =>
+      on ? theme.color.chartLineGreen : "transparent"};
+  }
+
+  &:hover {
+    border-color: ${({ theme }) => theme.color.borderHover};
+    color: ${({ theme }) => theme.color.text};
+  }
+
+  &:focus-visible {
+    outline: none;
+    border-color: ${({ theme }) => theme.color.chartLineGreen};
+  }
+`;
+
+/* The plain actions. Square-cornered like everything else down here, and
+ * quieter than the switches — they are the things you reach for least. */
+/* `strong` is for the one action in a strip that is not a piece of tidying up.
+ * Switching calls off is the mode itself, and it was the same 24px sliver as
+ * "clear settled" beside it — the smallest target in the panel for the biggest
+ * thing in it. It gets a real hit area, the foreground colour, and a fill on
+ * hover so it reads as the button of the row rather than one of three
+ * equally-weighted words. */
+/* A filled action. Inverted rather than "white": the panel's own foreground
+ * becomes the surface and its background becomes the label, so it is a solid
+ * button in the dark theme and a solid button in the light one, without either
+ * colour being named anywhere.
+ *
+ * Red was tried and rejected. Red already means something on this chart — the
+ * price is down, the call was MISSED, three rows above — and turning calls off
+ * loses nothing: the calls and the score are kept, and "L" brings it back. It
+ * would also put the loudest colour in the panel on the exit while `reset
+ * score`, the one action here that cannot be undone, sits beside it in a
+ * ghost. If anything ever wears red in this foot it should be that one. */
+const ACTION_FILL = {
+  solid: (theme) => ({ bg: theme.color.text, fg: theme.color.bg }),
+};
+
+const AlertActionKey = styled.button.attrs(() => ({ type: "button" }))`
+  padding: ${({ strong }) => (strong ? "0.45rem 1.1rem" : "0.28rem 0.55rem")};
+  min-height: ${({ strong }) => (strong ? "2rem" : "auto")};
+  border: 1px solid
+    ${({ theme, fill }) =>
+      fill && ACTION_FILL[fill]
+        ? ACTION_FILL[fill](theme).bg
+        : theme.color.border};
+  border-radius: 3px;
+  background: ${({ theme, fill }) =>
+    fill && ACTION_FILL[fill] ? ACTION_FILL[fill](theme).bg : "transparent"};
+  color: ${({ theme, strong, fill }) =>
+    fill && ACTION_FILL[fill]
+      ? ACTION_FILL[fill](theme).fg
+      : strong
+        ? theme.color.text
+        : theme.color.textSecondary};
+  font-family: ${({ theme }) => theme.font.primary};
+  font-size: ${({ strong }) => (strong ? "0.74rem" : "0.68rem")};
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease,
+    opacity 0.15s ease;
+
+  /* At the end of a ladder there is nothing to press. Dimmed *and* disabled:
+     one without the other is either a button that lies about being usable or
+     one that looks usable and does nothing. */
+  &:disabled {
+    opacity: 0.35;
+    cursor: default;
+  }
+
+  &:hover:not(:disabled) {
+    border-color: ${({ theme, fill }) =>
+      fill && ACTION_FILL[fill]
+        ? ACTION_FILL[fill](theme).bg
+        : theme.color.borderHover};
+    color: ${({ theme, fill }) =>
+      fill && ACTION_FILL[fill] ? ACTION_FILL[fill](theme).fg : theme.color.text};
+    // A filled button dims on hover rather than lighting up: there is nowhere
+    // brighter for it to go
+    opacity: ${({ fill }) => (fill ? "0.85" : "1")};
+    background: ${({ theme, strong, fill }) =>
+      fill && ACTION_FILL[fill]
+        ? ACTION_FILL[fill](theme).bg
+        : strong
+          ? theme.color.bgSecondary
+          : "transparent"};
+  }
+
+  &:focus-visible {
+    outline: none;
+    border-color: ${({ theme }) => theme.color.chartLineGreen};
+  }
 `;
 
 // Title on the left, the tally on the right — the count used to be glued to
@@ -155,55 +385,29 @@ const AlertsHead = styled.div`
   }
 `;
 
-/* Tabs inside the panel.
+/* What the panel is, in its head.
  *
- * The head used to be a title and a tally. It is now a switch between two
- * lists that behave the same way — targets and calls — because they are two
- * kinds of the same statement about a future price, and giving each a whole
- * panel would mean two overlays, two keys and two places to look.
+ * There were tabs here — Targets and Calls, one panel, one key. They are two
+ * kinds of statement about a future price, so sharing looked right, and it
+ * cost more than it saved: calls are placed on the chart and settle by
+ * themselves, so the one thing that brings you back to them is a result, and
+ * the way to that result was a panel named after something else plus a tab.
+ * Each has its own corner control and its own key now, and the head simply
+ * says which one you are in.
  *
- * Sized like the panel, not like the settings modal: this sits above a list,
- * so the active tab is marked with a bar under it rather than a filled pill,
- * which would compete with the rows below.
+ * Kept as a heading rather than reverting to the old plain title so the row's
+ * metrics do not move: the tally and the info ring beside it were laid out
+ * against the tab strip's height.
  */
-const AlertsTabs = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 0.15rem;
-`;
-
-const AlertsTab = styled.button.attrs(() => ({ type: "button" }))`
-  position: relative;
-  padding: 0.35rem 0.6rem 0.45rem;
-  border: none;
-  background: transparent;
+const AlertsHeadTitle = styled.h2`
+  margin: 0;
+  padding: 0.35rem 0.1rem 0.45rem;
   font-family: ${({ theme }) => theme.font.primary};
   font-size: 0.72rem;
+  font-weight: ${({ theme }) => theme.fontWeight.bold};
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  cursor: pointer;
-  color: ${({ theme, active }) =>
-    active ? theme.color.text : theme.color.textSecondary};
-  transition: color 0.15s ease;
-
-  &::after {
-    content: "";
-    position: absolute;
-    left: 0.6rem;
-    right: 0.6rem;
-    bottom: 0;
-    height: 1px;
-    background: ${({ theme }) => theme.color.text};
-    transform: scaleX(${({ active }) => (active ? 1 : 0)});
-    transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
-  }
-
-  &:hover { color: ${({ theme }) => theme.color.text}; }
-
-  &:focus-visible {
-    outline: none;
-    color: ${({ theme }) => theme.color.text};
-  }
+  color: ${({ theme }) => theme.color.text};
 `;
 
 /* A labelled control line in the panel's bottom block: label left, control
@@ -305,12 +509,129 @@ const AlertsTitle = styled.div`
   color: ${({ theme }) => theme.color.textSecondary};
 `;
 
+/* The right-hand end of the head: the tally, and the button that explains it.
+ * Aligned on the text baseline rather than centred, so the tally still reads as
+ * part of the same line as the tab labels. */
+const AlertsHeadRight = styled.div`
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+`;
+
 const AlertsTally = styled.div`
   flex: 0 0 auto;
   font-size: 0.66rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: ${({ theme }) => theme.color.textSecondary};
+`;
+
+/* "What is this, and where do I stand?"
+ *
+ * A tab that is both a record and a set of controls has to be able to say what
+ * it is — the tally says "0 open" and nothing about what an open call is, and
+ * the shortcut that gets you here is written down in one place nobody is
+ * looking at while they are already here. Quiet until asked: it is a ring in
+ * the corner, and it goes bright while it is the thing that is open. */
+const AlertsInfoBtn = styled.button.attrs(() => ({ type: "button" }))`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.15rem;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  color: ${({ theme, active }) =>
+    active ? theme.color.text : theme.color.textSecondary};
+  opacity: ${({ active }) => (active ? 1 : 0.75)};
+  transition:
+    color 0.15s ease,
+    opacity 0.15s ease;
+
+  &:hover,
+  &:focus-visible {
+    color: ${({ theme }) => theme.color.text};
+    opacity: 1;
+  }
+`;
+
+/* The explanation itself, between the head and the list rather than floating
+ * over it: a popover would cover the rows it is describing, and the one thing
+ * someone reading this wants to do next is look at them. It pushes the list
+ * down instead, and the list gives up the height (the body is the only band
+ * that scrolls). */
+const AlertsInfo = styled.div`
+  flex: 0 0 auto;
+  padding: 0.85rem 1.5rem 0.95rem;
+  border-bottom: 1px solid ${({ theme }) => theme.color.border};
+  background: ${({ theme }) => theme.color.bgSecondary};
+  font-size: 0.72rem;
+  line-height: 1.55;
+  color: ${({ theme }) => theme.color.textSecondary};
+
+  @media (max-width: ${({ theme }) => theme.breakpoint.down.sm}px) {
+    padding: 0.8rem 1.1rem 0.9rem;
+  }
+`;
+
+// What it is. Full ink: this is the sentence the panel exists to have somewhere
+const AlertsInfoText = styled.p`
+  margin: 0;
+  color: ${({ theme }) => theme.color.text};
+`;
+
+/* Where it stands right now — the half of the answer a static help text can
+ * never give. One line per fact, quiet, under the description. */
+const AlertsInfoState = styled.div`
+  margin-top: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+`;
+
+const AlertsInfoLine = styled.div`
+  display: flex;
+  gap: 0.4rem;
+
+  &::before {
+    content: "·";
+    color: ${({ theme }) => theme.color.textSecondary};
+  }
+`;
+
+const AlertsInfoKeys = styled.div`
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.3rem 0.6rem;
+  margin-top: 0.65rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid ${({ theme }) => theme.color.border};
+`;
+
+const AlertsInfoKey = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+`;
+
+/* The same key chip the "?" reference uses — deliberately the same shape, so a
+ * key looks like a key everywhere in the app. Defined here rather than borrowed
+ * from `shortcuts.js` because each panel owns its own styles; if a third
+ * surface needs it, that is the moment to lift it into one place. */
+const AlertsKey = styled.kbd`
+  min-width: 1.35rem;
+  padding: 0.1rem 0.3rem;
+  border: 1px solid ${({ theme }) => theme.color.border};
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  background: ${({ theme }) => theme.color.bg};
+  font-family: ${({ theme }) => theme.font.primary};
+  font-size: 0.66rem;
+  text-align: center;
+  color: ${({ theme }) => theme.color.text};
 `;
 
 // Section heading between the armed targets and the ones already hit
@@ -387,7 +708,11 @@ const AlertRow = styled.div`
   display: flex;
   align-items: flex-start;
   gap: 0.65rem;
-  padding: 0.7rem 0.75rem;
+  /* Calls stack up in a way targets do not — you place several in a session
+   * and they all sit there until they settle, so ten of them is normal rather
+   * than exceptional. At the target tab's spacing that reads as a wall of
+   * identical blocks, so call rows run tighter. */
+  padding: ${({ dense }) => (dense ? "0.5rem 0.7rem" : "0.7rem 0.75rem")};
   background: ${({ theme }) => theme.color.bg};
   border: 1px solid ${({ theme }) => theme.color.border};
   border-left: 3px solid

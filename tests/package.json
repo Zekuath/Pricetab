@@ -1,11 +1,22 @@
 {
   "name": "pricetab-tests",
   "private": true,
-  "description": "Dev-only test dependencies (jsdom for the smoke test)",
+  "description": "Dev-only tooling: test suite (jsdom) + lint. Never shipped in the extension zip.",
   "scripts": {
-    "test": "node run-all.js"
+    "test": "node run-all.js",
+    "lint": "node lint.js",
+    "lint:fix": "node lint.js --fix",
+    "scan": "ast-grep scan -c ../sgconfig.yml",
+    "browsers": "playwright install chromium --no-shell",
+    "check": "npm run lint && npm run scan && npm test"
   },
   "devDependencies": {
-    "jsdom": "^24.0.0"
+    "@ast-grep/cli": "0.45.1",
+    "@eslint/js": "10.0.1",
+    "@playwright/test": "1.62.1",
+    "eslint": "10.8.1",
+    "eslint-plugin-security": "4.0.1",
+    "globals": "17.10.0",
+    "jsdom": "24.1.3"
   }
 }

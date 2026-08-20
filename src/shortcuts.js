@@ -24,6 +24,7 @@ const SHORTCUT_GROUPS = [
       { keys: ["T"], label: "Line / candlestick chart" },
       { keys: ["G"], label: "Price / time grid on the chart" },
       { keys: ["L"], label: "Calls on / off" },
+      { keys: ["[", "–", "]"], label: "Board reach: zoom out / in (calls on)" },
       { keys: ["X"], label: "Percent / price change" },
       { keys: ["W"], label: "Hide / show widgets" },
       { keys: ["D"], label: "Dark / light theme" },
@@ -35,6 +36,7 @@ const SHORTCUT_GROUPS = [
     items: [
       { keys: ["/"], label: "Jump to a coin by name" },
       { keys: ["A"], label: "Price targets" },
+      { keys: ["K"], label: "Calls — the board, the record, the settings" },
       { keys: ["P"], label: "Portfolio" },
       { keys: ["S"], label: "Settings" },
       { keys: ["?"], label: "This list" },

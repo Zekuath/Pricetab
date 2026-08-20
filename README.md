@@ -31,6 +31,44 @@ real-time crypto dashboard. No account, no tracking, **zero permissions**.
 - **Since your last visit** — how the coin moved since you last looked
 - **Live tab title** — `BTC $43,250 (+5.2%)`, visible while you work elsewhere
 
+## Calls — say where the price goes, and keep the score
+
+Switch them on with <kbd>L</kbd> and the right-hand side of the chart becomes a
+**board**: real price bands at real moments in the future, drawn as squares you
+can point at.
+
+- **Two clicks to commit** — the first drafts the square, the second locks it.
+  A chart is a surface people click for other reasons, and one stray click
+  should not put a prediction on a record
+- **It settles itself**, the next time you open a tab, against the price at the
+  moment that was called. Not against hours of drift afterwards: judging
+  someone on a stretch they were never asked about would make the record untrue
+- **The board is a fixed lattice, not a fitted scale** — one square stays
+  fifteen minutes and $100 while you are on that range, so a box you locked
+  yesterday is still on the gridlines it was drawn on. The chart's usual habit
+  of fitting whatever it is given is right for reading a line and wrong under a
+  board
+- **Several calls can share a column, and they are not equal.** The one placed
+  first is the claim; the rest are hedges around it, and only the first is
+  marked. A mark every lone call carried would say nothing
+- **Drag the "now" line** to trade history for board — it is the only control,
+  because the board's size is a length and the edge you want to pull is already
+  on the chart
+- **A win is celebrated on the box that came true**, not at the live price. The
+  first call you ever get right, and the first into a contested column, get the
+  full show
+- Its own key (<kbd>K</kbd>), its own control in the corner, and a mark on that
+  control when something has settled since you last looked
+
+Calls keep running with the feature switched off — a claim you already made
+does not stop being true because you put the board away — but nothing is drawn
+and nothing is announced while it is off.
+
+**The score is local, valueless and never sent.** That is deliberate: a score
+that could become something purchasable would turn a price chart into a wager
+on an asset, which the Chrome Web Store bans outright and which is not what
+this is for.
+
 ## Price targets
 
 - **"BTC rises above 80,000"** or **"BTC falls 5% in 24h"**
@@ -90,12 +128,14 @@ Press <kbd>?</kbd> in a new tab for this list.
 | <kbd>T</kbd> | Line / candlestick chart |
 | <kbd>G</kbd> | Price / time grid on the chart |
 | <kbd>L</kbd> | Calls on / off |
+| <kbd>[</kbd> <kbd>]</kbd> | Board reach: zoom out / in (with calls on) |
 | <kbd>X</kbd> | Percent / price change |
 | <kbd>W</kbd> | Hide / show widgets |
 | <kbd>D</kbd> | Dark / light theme |
 | <kbd>Space</kbd> | Auto-rotate on / off |
 | <kbd>R</kbd> | Refresh now |
 | <kbd>A</kbd> | Price targets |
+| <kbd>K</kbd> | Calls — the board, the record, the settings |
 | <kbd>P</kbd> | Portfolio |
 | <kbd>S</kbd> | Settings |
 | <kbd>Esc</kbd> | Close whatever is open |
@@ -118,6 +158,21 @@ If PriceTab makes your new tab better, a rating helps others find it.
 3. Enable **Developer mode**
 4. **Load unpacked** → select the project folder
 5. Open a new tab
+
+### Building the upload
+
+```bash
+./scripts/package.sh
+```
+
+Writes both forms side by side — `assets/upload/pricetab-<version>/` to load
+unpacked, and `assets/upload/pricetab-<version>.zip` for the dashboard. The
+archive is built from an allowlist rather than by zipping the folder: the tree
+carries docs, tests, mockups and previous releases, and every one of those is
+either dead weight in the package or something that should not be published.
+The script also checks the allowlist against what `index.html` actually loads,
+so a new `src/` file nobody added to it fails the build instead of breaking the
+extension for everyone on the store.
 
 ---
 
@@ -223,13 +278,13 @@ external CDN requests.**
 | Document | Description |
 |----------|-------------|
 | [CLAUDE.md](CLAUDE.md) | Architecture and conventions — start here |
-| [VISION.md](docs/VISION.md) | Feature roadmap |
-| [TODO.md](docs/TODO.md) | Tasks and progress |
+| [VISION.md](docs/product/VISION.md) | Feature roadmap |
+| [TODO.md](docs/product/TODO.md) | Tasks and progress |
 | [CHANGELOG.md](docs/CHANGELOG.md) | Version history |
 | [PRIVACY.md](docs/PRIVACY.md) | Privacy policy |
-| [STORE_DESCRIPTION.md](docs/STORE_DESCRIPTION.md) | Store listing copy |
-| [STORE_ASSETS.md](docs/STORE_ASSETS.md) · [SCREENSHOT_PLAN.md](docs/SCREENSHOT_PLAN.md) | Store visuals |
-| [policies/](docs/policies/) | Chrome Web Store compliance |
+| [STORE_DESCRIPTION.md](docs/store/STORE_DESCRIPTION.md) | Store listing copy |
+| [STORE_ASSETS.md](docs/store/STORE_ASSETS.md) · [SCREENSHOT_PLAN.md](docs/store/SCREENSHOT_PLAN.md) | Store visuals |
+| [policies/](docs/store/policies/) | Chrome Web Store compliance |
 
 ---
 

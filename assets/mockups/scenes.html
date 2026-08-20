@@ -178,7 +178,7 @@
       clicks: [{ at: 4000, button: "ALL" }],
     },
 
-    /* ── 1.4.0 store scenes (see docs/SCREENSHOT_PLAN.md §4) ── */
+    /* ── 1.4.0 store scenes (see docs/store/SCREENSHOT_PLAN.md §4) ── */
 
     // F1 — the hero. Near-default: the four coins that ship, one chart,
     // nothing switched on. What an install actually looks like.
@@ -188,7 +188,16 @@
         crypto_chart_widgets: W([]),
         crypto_chart_page_ticker_enabled: "false",
       },
-      clicks: [{ at: 4000, button: "1W" }],
+      /* 1M rather than the set's 1W, and the reason is the *frame*, not the
+       * chart. The hero composite shows only the top of the capture — the
+       * browser mock is 1020px wide and the band beneath the wordmark cuts it
+       * at about 430px — so whatever the line does in the lower half of the
+       * page is not in the picture. A week that sat flat and then spiked left
+       * the hero looking like an empty chart with a tick in the corner. A
+       * month climbs across the crop instead. Re-check this when re-shooting:
+       * the right range is whichever one puts the line where the frame can
+       * see it. */
+      clicks: [{ at: 4000, button: "1D" }],
     },
 
     // F2 — compare. "C" opens the picker, then ETH is chosen from it.
@@ -280,37 +289,83 @@
       clicks: [{ at: 4000, button: "1M" }],
     },
 
-    // Call the cell: grid on, future strip reserved, one call already placed
-    predict: {
+    /* Calls — the board, with a column that is contested.
+     *
+     * Rewritten for 1.4.0: the old scene set `crypto_chart_predict_ahead`, a
+     * key that no longer exists (the board's width is dragged now and stored
+     * as `crypto_chart_future_share`), and its bands were written when BTC was
+     * in the low sixties, so they sat off the window entirely.
+     *
+     * The bands are placed against the range actually on screen, and two open
+     * calls share one column so the `CALLED · 1ST` mark has something to be
+     * first *of* — a lone call never carries it, so a frame without a
+     * contested column cannot show the feature at all. One settled hit and one
+     * settled miss sit behind them: a board showing only wins is not the
+     * honest picture.
+     */
+    calls: {
       store: {
         crypto_chart_widgets: W([]),
         crypto_chart_page_ticker_enabled: "false",
-        crypto_chart_grid: "true",
         crypto_chart_predict: "true",
-        crypto_chart_predict_ahead: "4",
-        crypto_chart_calls: JSON.stringify({
-          record: { hits: 3, total: 5, streak: 1, best: 2 },
-          // one call already due and inside the band, so the scene lands on
-          // the moment it settles as a hit
-          open: [
-            { id: "win1", coin: "BTC", currency: "USD", period: "month",
-              target: Date.now() - 3 * DAY * 1000, span: 2 * DAY * 1000,
-              lo: 62000, hi: 66000, placed: Date.now() - 9 * DAY * 1000,
-              placedPrice: 63000, col: 1 },
-          ],
-          done: [
-            { id: "d1", coin: "BTC", currency: "USD", period: "month",
-              target: Date.now() - 3 * DAY * 1000, span: 2 * DAY * 1000,
-              col: 1, lo: 64000, hi: 65000, placed: Date.now() - 9 * DAY * 1000,
-              placedPrice: 64200, result: "hit", settledPrice: 64550 },
-            { id: "d2", coin: "BTC", currency: "USD", period: "month",
-              target: Date.now() - 9 * DAY * 1000, span: 2 * DAY * 1000,
-              col: 2, lo: 61000, hi: 62000, placed: Date.now() - 15 * DAY * 1000,
-              placedPrice: 63100, result: "miss", settledPrice: 63400 },
-          ],
-        }),
+        // A third of the width is board — enough squares to point at without
+        // pushing the day's shape off the screen
+        crypto_chart_future_share: "0.32",
+        /* One notch out. At the default the window is about $7.7K and
+         * this day spans $5.9K, which fits — but only just, so the low
+         * sits on the window's floor and the line clips at the left edge.
+         * That is the board behaving exactly as designed, and in a still
+         * image it reads as a rendering fault. */
+        crypto_chart_board_zoom_day: "2",
+        crypto_chart_calls: (() => {
+          const H = 3600000;
+          // Aligned to the lattice, which counts whole hours off the clock
+          const hour = Math.floor(Date.now() / H) * H;
+          const call = (id, at, lo, hi, placedH) => ({
+            id, coin: "BTC", currency: "USD", period: "day",
+            target: hour + at * H, span: H, lo, hi,
+            placed: Date.now() - placedH * H, placedPrice: 68800,
+          });
+          return JSON.stringify({
+            record: { hits: 4, total: 7, streak: 2, best: 3 },
+            open: [
+              // One column, two bands: the claim and the hedge above it
+              call("c1", 2, 68000, 70000, 5),
+              call("c2", 2, 66000, 68000, 2),
+              call("c3", 4, 67000, 69000, 3),
+            ],
+            done: [
+              { id: "d1", coin: "BTC", currency: "USD", period: "day",
+                target: hour - 4 * H, span: H, lo: 67000, hi: 69000,
+                placed: Date.now() - 11 * H, placedPrice: 67400,
+                result: "hit", settledPrice: 68610, settledAt: Date.now() - 4 * H },
+              { id: "d2", coin: "BTC", currency: "USD", period: "day",
+                target: hour - 7 * H, span: H, lo: 63000, hi: 65000,
+                placed: Date.now() - 15 * H, placedPrice: 65200,
+                result: "miss", settledPrice: 66980, settledAt: Date.now() - 8 * H },
+            ],
+          });
+        })(),
       },
-      clicks: [{ at: 4000, button: "1M" }],
+      /* 1D, not the 1M the old scene used and not the set's 1W.
+       *
+       * With a board on, the price scale stops fitting the data and becomes a
+       * window onto a fixed lattice — so a range whose span is wider than the
+       * window keeps the live price on screen and lets the rest clip, by
+       * design. Measured against live data: the month spans about $7.8K and
+       * the window about $5.3K, which drew the whole month as a vertical spike
+       * at the right-hand edge. The day spans ~$5.9K inside a ~$7.7K window,
+       * so the line fills the chart and the boxes still land on whole squares.
+       */
+      clicks: [{ at: 4000, button: "1D" }],
+    },
+
+    "calls-panel": {
+      store: {},
+      clicks: [
+        { at: 4000, button: "1M" },
+        { at: 6000, selector: '[data-tour="calls"]' },
+      ],
     },
 
     // Not in the store set (five is the cap) — for the website and socials
@@ -324,6 +379,8 @@
       clicks: [{ at: 4000, button: "1M" }],
     },
   };
+
+  SCENES["calls-panel"].store = SCENES.calls.store;
 
   const scene = SCENES[new URLSearchParams(location.search).get("scene")];
   if (!scene) {

@@ -59,32 +59,54 @@ const getPortfolioHistory = async (coin, period, currency) => {
   }
 };
 
-// Sum per-coin histories into one total-value series. Series are aligned from
-// the end (latest points line up); the range trims to the shortest history so
-// a young coin can't fabricate a pre-listing portfolio value.
-const buildPortfolioSeries = (histories, holdings) => {
-  const parts = [];
+/* Sum per-coin histories into one total-value series, and keep the parts.
+ *
+ * Series are aligned from the end (latest points line up); the range trims to
+ * the shortest history so a young coin can't fabricate a pre-listing portfolio
+ * value.
+ *
+ * The per-coin values used to be summed and thrown away, because the chart was
+ * a single line behind some text. They are the answer to "which of these is
+ * carrying the position, and since when" — the question a total cannot be read
+ * for — so they are kept, aligned index-for-index with the total, and the
+ * chart can stack them. Sorted biggest-first, which is the order the stack and
+ * the legend both want.
+ */
+const buildPortfolioParts = (histories, holdings) => {
+  const held = [];
   for (const h of holdings) {
     const amount = holdingAmount(h);
     if (!(amount > 0)) continue;
     const prices = histories[h.coin];
     if (Array.isArray(prices) && prices.length > 1) {
-      parts.push({ amount, prices });
+      held.push({ coin: h.coin, amount, prices });
     }
   }
-  if (!parts.length) return null;
-  const len = Math.min(...parts.map((p) => p.prices.length));
+  if (!held.length) return null;
+  const len = Math.min(...held.map((p) => p.prices.length));
   if (len < 2) return null;
-  const base = parts[0].prices;
+  const base = held[0].prices;
   const series = [];
+  const values = held.map(() => []);
   for (let i = 0; i < len; i++) {
     let total = 0;
-    for (const p of parts) {
-      total += p.prices[p.prices.length - len + i].price * p.amount;
+    for (let k = 0; k < held.length; k++) {
+      const p = held[k];
+      const v = p.prices[p.prices.length - len + i].price * p.amount;
+      values[k].push(v);
+      total += v;
     }
     series.push({ price: total, time: base[base.length - len + i].time });
   }
-  return series;
+  const parts = held.map((p, k) => ({ coin: p.coin, values: values[k] }));
+  const last = (p) => p.values[p.values.length - 1] || 0;
+  parts.sort((a, b) => last(b) - last(a));
+  return { series, parts };
+};
+
+const buildPortfolioSeries = (histories, holdings) => {
+  const built = buildPortfolioParts(histories, holdings);
+  return built ? built.series : null;
 };
 
 /* ── purchase lots ─────────────────────────────────────────────────────────
@@ -659,6 +681,67 @@ const PortfolioInner = styled.div`
   animation: ${portfolioLift} 0.4s cubic-bezier(0.22, 1, 0.36, 1);
 `;
 
+/* ── the chart brought forward ─────────────────────────────────────────────
+ * Laid over the list rather than replacing it: the holdings stay mounted
+ * underneath, so coming back costs no refetch, loses no scroll position and
+ * keeps whatever row was open still open. It is opaque because the thing
+ * behind it is a wall of text, and a chart you are trying to read through a
+ * table is the problem this screen exists to fix.
+ */
+const PortfolioStage = styled.div`
+  position: fixed;
+  inset: 0;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 4.5rem 1.25rem 1.5rem;
+  background: ${({ theme }) => theme.color.bg};
+  animation: ${portfolioFadeIn} 0.25s ease;
+`;
+
+const PortfolioStageInner = styled.div`
+  width: 100%;
+  max-width: 1100px;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+`;
+
+// `min-height: 0` all the way down, or a flex child refuses to shrink and the
+// x-axis band ends up below the fold with the container growing a scrollbar
+const PortfolioStageChart = styled.div`
+  flex: 1;
+  min-height: 15rem;
+  margin-top: 0.75rem;
+`;
+
+const PortfolioStageFoot = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.6rem 1rem;
+  margin-top: 0.9rem;
+`;
+
+const PortfolioStageTools = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+`;
+
+// A hint that says what the toggle costs, rather than leaving it to be
+// discovered when the axis stops zooming
+const PortfolioStageNote = styled.div`
+  font-size: 0.62rem;
+  letter-spacing: 0.06em;
+  color: ${({ theme }) => theme.color.textSecondary};
+  margin-top: 0.5rem;
+`;
+
 const PortfolioHeader = styled.div`
   margin-bottom: 1.5rem;
 `;
@@ -755,6 +838,11 @@ const StatValue = styled.span`
 // Pulls the (generously padded) PeriodSwitcher into the portfolio's rhythm
 const PortfolioPeriodRow = styled.div`
   margin: -1.25rem 0 -0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.75rem;
 `;
 
 // Section labels between the header and the lists — same voice as the eyebrow
@@ -813,6 +901,15 @@ const PortfolioSortBtn = styled.button.attrs(() => ({ type: "button" }))`
   &:hover {
     border-color: ${({ theme }) => theme.color.borderHover};
   }
+`;
+
+// The same pill as the sort buttons, given room for an icon beside its label
+const PortfolioChartBtn = styled(PortfolioSortBtn)`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.6rem;
+  font-size: 0.68rem;
 `;
 
 const HoldingsList = styled.div`
@@ -1457,17 +1554,36 @@ class Portfolio extends PureComponent {
       lotMode: "buy", // "buy" | "sell" — the same two fields mean both
       sort: loadPortfolioSortFromStorage(), // holdings order (persisted)
       chartPeriod: loadPortfolioPeriodFromStorage(),
-      histories: {}, // { COIN: [{ price, time }] } for the background chart
+      histories: {}, // { COIN: [{ price, time }] } for the value chart
+      // The chart brought forward: same series, given a scale, a crosshair and
+      // the purchases and sales drawn where they happened
+      chartOpen: false,
+      chartStacked: loadPortfolioStackedFromStorage(),
     };
     this._chartToken = 0; // invalidates in-flight history loads
     this._chartSig = null; // last loaded coins|currency|period signature
     this._seriesMemo = null; // keeps the summed series referentially stable
+    this._eventsMemo = null; // …and the marker list
     this._importErrTimer = null;
     this.fileInput = createRef();
+    this.handleChartKey = this.handleChartKey.bind(this);
+    this.toggleChart = this.toggleChart.bind(this);
+    this.toggleStacked = this.toggleStacked.bind(this);
   }
 
   componentDidMount() {
     this.maybeLoadHistories();
+    /* Esc, taken in the capture phase.
+     *
+     * The app's own handler listens on `document` and closes the portfolio
+     * outright, which is the right answer from the holdings list and the wrong
+     * one from inside the chart: pressing Esc there means "put the chart
+     * away", not "throw the whole view away". Capturing at `document` runs
+     * before the app's bubble-phase listener, and stopping propagation there
+     * stops the event reaching it at all. It only intervenes while the chart
+     * is actually open, so every other Esc in this view behaves as it did.
+     */
+    document.addEventListener("keydown", this.handleChartKey, true);
   }
 
   componentDidUpdate() {
@@ -1477,6 +1593,26 @@ class Portfolio extends PureComponent {
   componentWillUnmount() {
     this._chartToken++; // drop any in-flight load's setState
     if (this._importErrTimer) clearTimeout(this._importErrTimer);
+    document.removeEventListener("keydown", this.handleChartKey, true);
+  }
+
+  handleChartKey(e) {
+    if (e.key !== "Escape" || !this.state.chartOpen) return;
+    e.stopPropagation();
+    e.preventDefault();
+    this.setState({ chartOpen: false });
+  }
+
+  toggleChart() {
+    this.setState((prev) => ({ chartOpen: !prev.chartOpen }));
+  }
+
+  toggleStacked() {
+    this.setState((prev) => {
+      const chartStacked = !prev.chartStacked;
+      savePortfolioStackedToStorage(chartStacked);
+      return { chartStacked };
+    });
   }
 
   // The biggest holdings by current value, capped so a period switch never
@@ -1548,18 +1684,77 @@ class Portfolio extends PureComponent {
     this.setState({ chartPeriod: period }); // componentDidUpdate reloads
   };
 
-  // Memoized on (histories, holdings) refs so re-renders from typing don't
-  // hand the Line a new array and restart its path transition.
-  totalSeries() {
+  /* Memoized on (histories, holdings) refs so re-renders from typing don't
+   * hand the chart a new array and restart its path transition — and, now that
+   * the expanded chart reads the parts as well, so the stack isn't rebuilt on
+   * every keystroke either. */
+  chartData() {
     const { holdings } = this.props;
     const { histories } = this.state;
     const memo = this._seriesMemo;
     if (memo && memo.histories === histories && memo.holdings === holdings) {
-      return memo.series;
+      return memo.built;
     }
-    const series = buildPortfolioSeries(histories, holdings);
-    this._seriesMemo = { histories, holdings, series };
-    return series;
+    const built = buildPortfolioParts(histories, holdings);
+    this._seriesMemo = { histories, holdings, built };
+    return built;
+  }
+
+  totalSeries() {
+    const built = this.chartData();
+    return built ? built.series : null;
+  }
+
+  /* Every purchase and sale that falls inside the window on screen.
+   *
+   * From `holdingLots` rather than the held subset the rows carry: `heldLots`
+   * exists so a position sold down cannot keep claiming the cost basis of
+   * coins that are gone, which is right for a basis and wrong for a record. A
+   * purchase you later sold still happened, and the whole point of putting it
+   * on the chart is to see what you paid against what it did next.
+   *
+   * Undated entries (`time: 0`) are skipped rather than placed anywhere —
+   * "somewhere on this chart" is not a date, and a marker in the wrong month
+   * is worse than no marker.
+   */
+  chartEvents(series) {
+    const { holdings } = this.props;
+    const memo = this._eventsMemo;
+    if (memo && memo.holdings === holdings && memo.series === series) {
+      return memo.events;
+    }
+    const events = [];
+    if (Array.isArray(series) && series.length > 1) {
+      const from = +series[0].time;
+      const to = +series[series.length - 1].time;
+      for (const h of holdings) {
+        for (const lot of holdingLots(h)) {
+          const ms = (lot.time || 0) * 1000;
+          if (!(ms >= from && ms <= to)) continue;
+          events.push({
+            time: ms,
+            kind: "buy",
+            coin: h.coin,
+            amount: lot.amount,
+            cash: lot.paid,
+          });
+        }
+        for (const sale of h.sales || []) {
+          const ms = (sale.time || 0) * 1000;
+          if (!(ms >= from && ms <= to)) continue;
+          events.push({
+            time: ms,
+            kind: "sell",
+            coin: h.coin,
+            amount: sale.amount,
+            cash: sale.received,
+          });
+        }
+      }
+      events.sort((a, b) => a.time - b.time);
+    }
+    this._eventsMemo = { holdings, series, events };
+    return events;
   }
 
   /* One holding's shape over the chart period, as a bare polyline.
@@ -1647,6 +1842,135 @@ class Portfolio extends PureComponent {
     const last = bench[bench.length - 1].price;
     if (!(first > 0) || !isFinite(last)) return null;
     return ((last - first) / first) * 100;
+  }
+
+  /* The chart, brought forward.
+   *
+   * Everything on it answers a *when* question, which is what the wallpaper
+   * could not do: the crosshair reads the total at a moment and what it was
+   * made of, the dashed level is what you paid, the wash between them is the
+   * profit that was actually on the table, and the triangles are the days you
+   * did something about it.
+   */
+  renderChartStage(view) {
+    const { built, costBasis, seriesDelta, seriesPct, periodLabel } = view;
+    const { chartPeriod, chartStacked } = this.state;
+    const series = built.series;
+    return React.createElement(
+      PortfolioStage,
+      {
+        /* Anywhere off the card puts the chart away. Esc did this and the
+         * "Holdings" button did this, and both are things you have to know;
+         * clicking the empty margin around a thing you opened is what
+         * everybody tries first, and it did nothing at all. `currentTarget`
+         * is the test rather than a bounding box, so a click that lands on
+         * the chart, the range switcher or the note is a click on the chart —
+         * the same rule the targets overlay already uses.
+         *
+         * `onMouseDown`, not `onClick`: the chart is a surface people drag
+         * across to read the crosshair, and a drag that starts on the plot
+         * and finishes in the margin is not a request to leave. */
+        onMouseDown: (e) => {
+          if (e.target === e.currentTarget) this.setState({ chartOpen: false });
+        },
+      },
+      React.createElement(
+        PortfolioStageInner,
+        null,
+        React.createElement(
+          PortfolioHeader,
+          { style: { marginBottom: 0 } },
+          React.createElement(PortfolioEyebrow, null, "Portfolio · Total value"),
+          React.createElement(
+            PortfolioTotal,
+            null,
+            this.fmtMoney(series[series.length - 1].price, false),
+          ),
+          seriesDelta != null &&
+            React.createElement(
+              PortfolioDelta,
+              { up: seriesDelta === 0 ? null : seriesDelta > 0 },
+              this.fmtMoney(seriesDelta, true) +
+                (seriesPct != null
+                  ? ` (${seriesPct >= 0 ? "+" : ""}${seriesPct.toFixed(2)}%)`
+                  : "") +
+                ` · ${periodLabel}`,
+            ),
+        ),
+        React.createElement(
+          PortfolioStageChart,
+          null,
+          React.createElement(PortfolioChart, {
+            series,
+            parts: built.parts,
+            events: this.chartEvents(series),
+            costBasis: costBasis > 0 ? costBasis : null,
+            period: chartPeriod,
+            currency: this.props.currency,
+            stacked: chartStacked,
+            formatMoney: (v, sign) => this.fmtMoney(v, sign),
+            formatAmount: (v) => this.fmtAmount(v),
+          }),
+        ),
+        React.createElement(
+          PortfolioStageFoot,
+          null,
+          React.createElement(PeriodSwitcher, {
+            onChange: this.handlePeriodChange,
+            options: PORTFOLIO_CHART_PERIODS,
+            value: chartPeriod,
+          }),
+          React.createElement(
+            PortfolioStageTools,
+            null,
+            React.createElement(PortfolioSortLabel, null, "Show"),
+            React.createElement(
+              PortfolioSortBtn,
+              {
+                active: !chartStacked,
+                onClick: chartStacked ? this.toggleStacked : undefined,
+                title: "One line: the total, on the range it actually moved in",
+              },
+              "Total",
+            ),
+            React.createElement(
+              PortfolioSortBtn,
+              {
+                active: chartStacked,
+                onClick: chartStacked ? undefined : this.toggleStacked,
+                title:
+                  "The coins the total is made of, stacked. The scale starts at zero — that is what makes the bands comparable",
+              },
+              "By coin",
+            ),
+            React.createElement(
+              PortfolioChartBtn,
+              {
+                onClick: this.toggleChart,
+                title: "Back to the holdings list (Esc)",
+              },
+              icon("portfolio", 0.85),
+              React.createElement("span", null, "Holdings"),
+            ),
+          ),
+        ),
+        React.createElement(
+          PortfolioStageNote,
+          null,
+          chartStacked
+            ? "Bands add up to the line. The scale starts at zero, so the heights are comparable — which costs the zoom."
+            : "Hover anywhere to read the total, what it was made of, and how far it sat above or below what you paid.",
+        ),
+      ),
+    );
+  }
+
+  // Amounts are quantities, not money: enough digits to be true, none of the
+  // trailing zeros a currency format would add
+  fmtAmount(value) {
+    const v = Number(value);
+    if (!isFinite(v)) return "0";
+    return String(Number(v.toPrecision(6)));
   }
 
   fmtMoney(value, withSign) {
@@ -2092,8 +2416,9 @@ class Portfolio extends PureComponent {
     const sortedRows = this.sortRows(rows);
     const atCap = holdings.length >= PORTFOLIO_MAX_HOLDINGS;
 
-    // Background chart series + its first→last change over the chart period
-    const series = this.totalSeries();
+    // Value chart series + its first→last change over the chart period
+    const built = this.chartData();
+    const series = built ? built.series : null;
     const seriesFirst = series ? series[0].price : null;
     const seriesDelta = series
       ? series[series.length - 1].price - seriesFirst
@@ -2318,7 +2643,8 @@ class Portfolio extends PureComponent {
             ),
         ),
 
-        // Chart range switcher (persisted; drives the background chart)
+        // Chart range switcher (persisted; drives the value chart), and the
+        // way into the chart itself
         holdings.length > 0 &&
           React.createElement(
             PortfolioPeriodRow,
@@ -2328,6 +2654,17 @@ class Portfolio extends PureComponent {
               options: PORTFOLIO_CHART_PERIODS,
               value: chartPeriod,
             }),
+            series &&
+              React.createElement(
+                PortfolioChartBtn,
+                {
+                  onClick: this.toggleChart,
+                  title:
+                    "Open the value chart — read it at any moment, with your purchases and sales on it",
+                },
+                icon("eye", 0.85),
+                React.createElement("span", null, "Explore chart"),
+              ),
           ),
 
         // Holdings list or empty state
@@ -2898,6 +3235,17 @@ class Portfolio extends PureComponent {
           "Tracking only · no wallet connection · stored locally on this device. Watched addresses are used solely for public balance lookups.",
         ),
       ),
+      /* Over the list, not instead of it — the holdings stay mounted, so
+       * leaving and coming back costs nothing and loses nothing. */
+      this.state.chartOpen &&
+        built &&
+        this.renderChartStage({
+          built,
+          costBasis,
+          seriesDelta,
+          seriesPct,
+          periodLabel,
+        }),
     );
   }
 }

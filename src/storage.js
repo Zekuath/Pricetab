@@ -35,20 +35,65 @@ const loadJsonSetting = (key) => {
   }
 };
 
-const saveSetting = (key, value) => {
+/* The four caches, in the order they are worth least.
+ *
+ * Everything in this list is *rebuildable from the network*, and everything
+ * not in it was typed by a person. That is the whole distinction the eviction
+ * below rests on, so it is written once, here, rather than inferred from a key
+ * prefix that a future cache might not follow. */
+const EPHEMERAL_CACHE_KEYS = [
+  "crypto_chart_price_cache",
+  "crypto_chart_widget_cache",
+  "crypto_chart_news_cache",
+  "crypto_chart_ticker_cache",
+];
+
+/* Write, and if the quota refuses, spend the caches to make room.
+ *
+ * The caches are each capped by *entry count* — 30 prices, 40 widgets, 140
+ * ticker symbols — and never against a shared byte budget, so a tab that has
+ * met a lot of coins can fill the origin's storage with data that exists only
+ * to save a request. Every write here caught the failure and returned in
+ * silence, which is right for a cache and wrong for a portfolio: the holding
+ * someone just typed would vanish at the next reload, with nothing said.
+ *
+ * So a failed write drops the caches, cheapest first, and tries again after
+ * each one. Portfolio, calls, targets and preferences are never evicted to
+ * make room for anything — they are the reason the storage exists. `true` or
+ * `false` comes back so a caller who *can* tell the user (an import, say) has
+ * something to tell them; the background caches keep ignoring it and start
+ * cold next time, which is what a cache is for. */
+const writeStorage = (key, serialized) => {
   try {
-    localStorage.setItem(key, String(value));
+    localStorage.setItem(key, serialized);
+    return true;
   } catch (error) {
-    // Silently fail
+    // A cache failing to save is not worth evicting other caches for
+    if (EPHEMERAL_CACHE_KEYS.includes(key)) return false;
+    for (const cacheKey of EPHEMERAL_CACHE_KEYS) {
+      try {
+        if (localStorage.getItem(cacheKey) === null) continue;
+        localStorage.removeItem(cacheKey);
+        localStorage.setItem(key, serialized);
+        return true;
+      } catch (retryError) {
+        // Still no room — fall through to the next cache
+      }
+    }
+    return false;
   }
 };
 
+const saveSetting = (key, value) => writeStorage(key, String(value));
+
 const saveJsonSetting = (key, value) => {
+  let serialized;
   try {
-    localStorage.setItem(key, JSON.stringify(value));
+    serialized = JSON.stringify(value);
   } catch (error) {
-    // Silently fail
+    return false; // a shape that cannot be written is not a quota problem
   }
+  return writeStorage(key, serialized);
 };
 
 // Theme helper functions
@@ -98,6 +143,14 @@ const loadNewsTickerFromStorage = () =>
 
 const saveNewsTickerToStorage = (enabled) =>
   saveSetting(NEWS_TICKER_STORAGE_KEY, enabled);
+
+const loadNewsFilter = () =>
+  loadEnumSetting(
+    NEWS_FILTER_KEY,
+    NEWS_FILTER_OPTIONS.map((o) => o.value),
+    DEFAULT_NEWS_FILTER,
+  );
+const saveNewsFilter = (value) => saveSetting(NEWS_FILTER_KEY, value);
 
 const loadAutoRotateFromStorage = () =>
   loadBoolSetting(AUTO_ROTATE_STORAGE_KEY, DEFAULT_AUTO_ROTATE);
@@ -355,12 +408,41 @@ const loadChartGrid = () =>
 
 const saveChartGrid = (enabled) => saveSetting(CHART_GRID_KEY, enabled);
 
+/* Held per range: the reach you want on an hour chart is not the reach you want
+ * on a year, and a single number would fight you every time you switched. */
+const loadBoardZoom = (period) =>
+  Number(
+    loadEnumSetting(
+      `${BOARD_ZOOM_KEY}_${period}`,
+      BOARD_ZOOM_STEPS.map(String),
+      String(DEFAULT_BOARD_ZOOM),
+    ),
+  );
+
+const saveBoardZoom = (period, zoom) =>
+  saveSetting(`${BOARD_ZOOM_KEY}_${period}`, String(zoom));
+
+const loadQuietChrome = () =>
+  loadBoolSetting(QUIET_CHROME_KEY, DEFAULT_QUIET_CHROME);
+
+const saveQuietChrome = (enabled) => saveSetting(QUIET_CHROME_KEY, enabled);
+
 const loadPredict = () => loadBoolSetting(PREDICT_KEY, DEFAULT_PREDICT);
 const savePredict = (enabled) => saveSetting(PREDICT_KEY, enabled);
 
-const loadPredictAhead = () =>
-  loadNumberSetting(PREDICT_AHEAD_KEY, PREDICT_AHEAD_OPTIONS, DEFAULT_PREDICT_AHEAD);
-const savePredictAhead = (n) => saveSetting(PREDICT_AHEAD_KEY, n);
+/* A continuous setting, so it is read through a clamp rather than a list of
+ * allowed values the way every other number here is: what it stores is where
+ * someone let go of a line, and there are no legal positions, only limits. */
+const loadFutureShare = () => {
+  try {
+    const parsed = parseFloat(localStorage.getItem(FUTURE_SHARE_KEY));
+    if (!isFinite(parsed)) return DEFAULT_FUTURE_SHARE;
+    return Math.min(MAX_FUTURE_SHARE, Math.max(MIN_FUTURE_SHARE, parsed));
+  } catch (error) {
+    return DEFAULT_FUTURE_SHARE;
+  }
+};
+const saveFutureShare = (share) => saveSetting(FUTURE_SHARE_KEY, share);
 
 const loadCallsShowSettled = () =>
   loadBoolSetting(CALLS_SHOW_SETTLED_KEY, DEFAULT_CALLS_SHOW_SETTLED);
@@ -370,20 +452,47 @@ const loadCallsCelebrate = () =>
   loadBoolSetting(CALLS_CELEBRATE_KEY, DEFAULT_CALLS_CELEBRATE);
 const saveCallsCelebrate = (v) => saveSetting(CALLS_CELEBRATE_KEY, v);
 
+/* When the calls panel was last opened. Not `loadNumberSetting` — that takes
+ * a whitelist of permitted values, and a timestamp has no whitelist. A stored
+ * value that is not a finite number reads as "never looked", which shows the
+ * mark; the failure that costs nothing is the one to pick. */
+const loadCallsSeenAt = () => {
+  try {
+    const raw = Number(localStorage.getItem(CALLS_SEEN_KEY));
+    return isFinite(raw) && raw > 0 ? raw : 0;
+  } catch (error) {
+    return 0;
+  }
+};
+const saveCallsSeenAt = (at) => saveSetting(CALLS_SEEN_KEY, at);
+
 /* Open calls and the tally. Sanitized on the way in like every other stored
  * shape: a hand-edited file must not be able to produce a call that resolves
  * against a band it never named, or a streak longer than the games played. */
 const sanitizeCalls = (raw) => {
-  const empty = { record: { hits: 0, total: 0, streak: 0, best: 0 }, open: [] };
+  /* `done` belongs in the empty shape too. Leaving it out meant a fresh
+   * install held a `calls` whose settled list was `undefined` while every
+   * other path holds an array, so each reader needed its own guard and the one
+   * that forgot would throw on the first call ever placed. */
+  const empty = {
+    record: { hits: 0, total: 0, streak: 0, best: 0 },
+    open: [],
+    done: [],
+  };
   if (!raw || typeof raw !== "object") return empty;
   const num = (v) => (typeof v === "number" && isFinite(v) && v >= 0 ? Math.floor(v) : 0);
   const r = raw.record && typeof raw.record === "object" ? raw.record : {};
   const total = num(r.total);
   const hits = Math.min(num(r.hits), total);
-  const best = Math.min(num(r.best), total);
-  const record = { hits, total, streak: Math.min(num(r.streak), hits), best };
+  /* A best streak longer than the number of hits never happened, and a current
+   * streak longer than the best one cannot come out of `applyCallResult` —
+   * it raises `best` the moment `streak` passes it. Clamping both against
+   * `total` instead let a hand-edited file claim a best of five with no hits
+   * at all, which is the one thing this record exists not to do. */
+  const best = Math.min(num(r.best), hits);
+  const record = { hits, total, streak: Math.min(num(r.streak), best), best };
 
-  const shape = (list, cap, extra) =>
+  const shape = (list) =>
     (Array.isArray(list) ? list : [])
     .filter(
       (c) =>
@@ -399,20 +508,22 @@ const sanitizeCalls = (raw) => {
           (v) => typeof v === "number" && isFinite(v),
         ) &&
         c.span > 0 &&
-        c.hi > c.lo &&
-        // Which future square: 1 is the next one along. A call without a
-        // column cannot be replaced by a later call on the same square.
-        typeof c.col === "number" &&
-        isFinite(c.col) &&
-        c.col >= 1 &&
-        c.col <= 10,
+        c.hi > c.lo,
     )
+    /* No column number, here or in the stored shape.
+     *
+     * `col` counts squares back from "now", so it is not an identity and
+     * nothing reads it off a stored call — placement, drawing and settling all
+     * work from `target`, `span`, `lo` and `hi`, which do not move. It was
+     * still being *validated*, `1 ≤ col ≤ 10`, and the strip can offer more
+     * squares than that: a call locked in the twelfth was dropped by this
+     * function on the way to localStorage, so the write silently kept nothing.
+     * A record is not allowed to lose a row over a field it does not use. */
     .map((c) => ({
       id: c.id,
       coin: c.coin.toUpperCase(),
       currency: c.currency,
       period: typeof c.period === "string" ? c.period : "day",
-      col: Math.round(c.col),
       target: c.target,
       span: c.span,
       lo: c.lo,
@@ -427,18 +538,55 @@ const sanitizeCalls = (raw) => {
         typeof c.settledPrice === "number" && isFinite(c.settledPrice)
           ? c.settledPrice
           : null,
-    }))
-      .slice(0, cap)
-      .map((c) => (extra ? extra(c) : c));
+      /* When the answer was *found*, not when the call was due — a tab opened
+       * a day late settles a call whose moment was yesterday. It is what the
+       * mark on the calls button reads to decide whether there is a result
+       * you have not seen, so it has to survive the write; a field left out
+       * of this shape is a field that exists until the next reload. Calls
+       * settled before it existed carry null and never light the mark, which
+       * is right: you have already seen them. */
+      settledAt:
+        typeof c.settledAt === "number" && isFinite(c.settledAt) && c.settledAt > 0
+          ? c.settledAt
+          : null,
+    }));
 
-  const open = shape(raw.open, MAX_OPEN_CALLS);
+  /* Overlapping open calls cannot be drawn honestly — two boxes covering the
+   * same minutes and prices are two answers to one question, and on screen
+   * they simply pile up. Placement refuses to create them, but a store
+   * written before that rule existed can still hold them, so they are cleared
+   * on the way in rather than left to be redrawn every time the chart loads.
+   *
+   * The earliest call wins: it is the one that was actually locked first, and
+   * a later claim on ground already taken is exactly what should never have
+   * been accepted. Same rule as `handlePlaceCall`, applied retroactively. */
+  const intersects = (a, b) =>
+    a.coin === b.coin &&
+    a.currency === b.currency &&
+    a.period === b.period &&
+    a.target - a.span < b.target &&
+    b.target - b.span < a.target &&
+    a.lo < b.hi &&
+    b.lo < a.hi;
+  /* Over the cap, the newest survive — the same end of the list `handlePlaceCall`
+   * keeps when it writes. Cutting from the front here meant the two halves of
+   * one rule disagreed: a session that had already dropped its oldest calls
+   * reloaded to find the newest gone instead. */
+  const open = [];
+  for (const c of shape(raw.open)
+    .sort((a, b) => b.placed - a.placed)
+    .slice(0, MAX_OPEN_CALLS)
+    .sort((a, b) => a.placed - b.placed)) {
+    if (!open.some((kept) => intersects(kept, c))) open.push(c);
+  }
 
   /* Settled calls are kept so the chart can still show what was said and how
    * it turned out. `result` is the only thing that separates them, and a row
-   * without a real one is dropped rather than shown as an unexplained box. */
-  const done = shape(raw.done, MAX_DONE_CALLS, (c) => c).filter(
-    (c) => c.result === "hit" || c.result === "miss",
-  );
+   * without a real one is dropped rather than shown as an unexplained box.
+   * Stored newest-first, so the cap takes from the front. */
+  const done = shape(raw.done)
+    .filter((c) => c.result === "hit" || c.result === "miss")
+    .slice(0, MAX_DONE_CALLS);
 
   return { record, open, done };
 };
@@ -644,6 +792,15 @@ const loadPortfolioPeriodFromStorage = () =>
 
 const savePortfolioPeriodToStorage = (period) =>
   saveSetting(PORTFOLIO_PERIOD_KEY, period);
+
+// Total or composition in the expanded chart. Off by default: the plain line
+// is what the portfolio has always shown, and the stacked view trades the
+// zoomed scale for honest proportions — an opt-in, not a surprise.
+const loadPortfolioStackedFromStorage = () =>
+  loadBoolSetting(PORTFOLIO_STACKED_KEY, false);
+
+const savePortfolioStackedToStorage = (on) =>
+  saveSetting(PORTFOLIO_STACKED_KEY, on ? "true" : "false");
 
 const loadPortfolioSortFromStorage = () =>
   loadEnumSetting(

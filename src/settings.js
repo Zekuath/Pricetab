@@ -19,7 +19,11 @@ const matchesSetting = (query, title, keywords) => {
 class CollapsibleGroup extends PureComponent {
   constructor(...args) {
     super(...args);
-    this.state = { open: true };
+    /* Open unless the group says otherwise. Every group used to start open,
+     * which made the Preferences tab one long scroll — the groups were
+     * headings in a wall rather than a way through it. The two people touch
+     * most stay open; the rest are a list you can read in one look. */
+    this.state = { open: this.props.defaultOpen !== false };
     this.toggle = this.toggle.bind(this);
   }
 
@@ -52,7 +56,7 @@ class CollapsibleGroup extends PureComponent {
           },
         },
         this.props.title,
-        React.createElement(GroupChevron, { open }, "▾"),
+        React.createElement(GroupChevron, { open }, icon("chevron", 0.82)),
       ),
       React.createElement(
         GroupReveal,
@@ -77,6 +81,13 @@ class SettingsPanel extends PureComponent {
       query: "", // settings search
       showRatePrompt: !loadRatePromptDismissed(),
       undoCoins: null,
+      /* Which mode the pointer is over, so the line under the row can say what
+       * a mode would do *before* it is clicked — which is the only moment that
+       * question has a use. */
+      modeHover: null,
+      /* Which setting's info note is open, by section key. One at a time: two
+       * open notes push the switch you were reading about off the screen. */
+      openInfo: null,
     });
 
     this.draggingSymbol = null;
@@ -431,11 +442,22 @@ class SettingsPanel extends PureComponent {
 
       const { onReorderCoin } = this.props;
 
+      /* Only if the live drag has not already put it here.
+       *
+       * `handleDragOver` reorders as you drag, so the list under the cursor is
+       * the answer before you let go. Dropping then applied the *same* move a
+       * second time — and the second application is not a no-op, because the
+       * two coins have swapped places by then: drag LTC to the front and the
+       * list showed LTC, BTC, ETH, XRP under the cursor, then jumped to BTC,
+       * LTC, ETH, XRP the moment you released. The drop kept the guard the
+       * live path has, so it still commits a drop that somehow never got a
+       * dragover, and does nothing when the preview already did it. */
       if (
         this.draggingSymbol &&
         targetSymbol &&
         typeof onReorderCoin === "function" &&
-        this.draggingSymbol !== targetSymbol
+        this.draggingSymbol !== targetSymbol &&
+        this.lastEnteredSymbol !== targetSymbol
       ) {
         onReorderCoin(this.draggingSymbol, targetSymbol);
       }
@@ -489,43 +511,16 @@ class SettingsPanel extends PureComponent {
 
   render() {
     this._matched = 0; // reset per render; this.section() counts up
+    // Only what this method actually renders — the coins tab, the widgets tab
+    // and the shell. Every preference (theme, currency, ticker, chart, rotation)
+    // is still a prop of this panel, but it is read where it is used:
+    // renderPreferencesTab() destructures them from `panel.props` itself. They
+    // were listed here too until the preferences tab was split out; do not add
+    // them back unless this method starts using them.
     const {
       coins,
       onClose,
       visible,
-      themePreference,
-      activeTheme,
-      onThemeChange,
-      refreshInterval,
-      onRefreshIntervalChange,
-      decimalPlaces,
-      separatorFormat,
-      onDecimalPlacesChange,
-      onSeparatorFormatChange,
-      currency,
-      onCurrencyChange,
-      tickerEnabled,
-      onTickerChange,
-      tickerFormat,
-      onTickerFormatChange,
-      autoRotate,
-      onAutoRotateChange,
-      autoRotateInterval,
-      onAutoRotateIntervalChange,
-      pageTicker,
-      onPageTickerChange,
-      pageTickerPosition,
-      onPageTickerPositionChange,
-      newsTicker,
-      onNewsTickerChange,
-      chartColor,
-      lastSeenEnabled,
-      onLastSeenChange,
-      ohlcEnabled,
-      onOhlcChange,
-      chartType,
-      onChartTypeChange,
-      onChartColorChange,
       coinStats,
       widgets,
       widgetSize,
@@ -698,8 +693,15 @@ class SettingsPanel extends PureComponent {
               null,
               activeCoins.length
                 ? activeCoins.map((coin) =>
+                    /* Not a button. The × inside it is the only action here,
+                     * and a button inside a button is invalid — so the chip is
+                     * the drag handle and the frame, and the × is the control.
+                     * It was the other way round: the chip was a `<button>`
+                     * with no `onClick`, so Tab landed on something that did
+                     * nothing and never reached the × at all — there was no
+                     * way to remove a coin without a pointer. */
                     React.createElement(
-                      CoinChip,
+                      CoinChipStatic,
                       {
                         key: coin,
                         selected: true,
@@ -721,6 +723,7 @@ class SettingsPanel extends PureComponent {
                             this.handleChipClick(coin);
                           },
                           title: "Remove " + coin,
+                          "aria-label": "Remove " + coin,
                         },
                         "×",
                       ),

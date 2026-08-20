@@ -1,6 +1,6 @@
 # PriceTab - Development Roadmap
 
-> Development roadmap aligned with [VISION.md](VISION.md) and [MONETIZATION.md](MONETIZATION.md).
+> Development roadmap aligned with [VISION.md](VISION.md) and [MONETIZATION.md](../internal/MONETIZATION.md).
 > Tasks are organized by priority with clear status.
 >
 > **Last refreshed:** July 30, 2026 (post sector scan — see "Insights" section)
@@ -23,7 +23,7 @@
 ## Active Focus (ordered)
 
 > **Everything below Phase 1 is secondary until the staged build is live.**
-> The July 2026 sector scan (see [MONETIZATION.md §2b](MONETIZATION.md)) confirmed:
+> The July 2026 sector scan (see [MONETIZATION.md §2b](../internal/MONETIZATION.md)) confirmed:
 > installs are the bottleneck for every product and revenue goal — affiliate-style
 > extensions earn per active user, and we have ~0 installs on a listing that is
 > one version behind the local build.
@@ -229,7 +229,7 @@
 
 ## Monetization Track
 
-> Strategy, principles, compliance and phasing live in **[MONETIZATION.md](MONETIZATION.md)**.
+> Strategy, principles, compliance and phasing live in **[MONETIZATION.md](../internal/MONETIZATION.md)**.
 > Sequenced after launch traction — no channel matters at ~0 installs.
 
 | Phase | Contents | Gate |
@@ -290,12 +290,12 @@ Foresights that should shape prioritization (full data in `MONETIZATION.md` §2b
 | Document | Purpose |
 |----------|---------|
 | [VISION.md](VISION.md) | Long-term feature vision |
-| [MONETIZATION.md](MONETIZATION.md) | Revenue strategy + market/competitor research |
-| [CHANGELOG.md](CHANGELOG.md) | Version history |
-| [MARKETING_LAUNCH.md](MARKETING_LAUNCH.md) | Launch checklist + copy templates |
-| [STORE_DESCRIPTION.md](STORE_DESCRIPTION.md) | Web Store listing content (canonical) |
-| [STORE_ASSETS.md](STORE_ASSETS.md) | Web Store asset specs |
-| [../assets/mockups/README.md](../assets/mockups/README.md) | Promo tile + screenshot export tools |
+| [MONETIZATION.md](../internal/MONETIZATION.md) | Revenue strategy + market/competitor research |
+| [CHANGELOG.md](../CHANGELOG.md) | Version history |
+| [MARKETING_LAUNCH.md](../store/MARKETING_LAUNCH.md) | Launch checklist + copy templates |
+| [STORE_DESCRIPTION.md](../store/STORE_DESCRIPTION.md) | Web Store listing content (canonical) |
+| [STORE_ASSETS.md](../store/STORE_ASSETS.md) | Web Store asset specs |
+| [../assets/mockups/README.md](../../assets/mockups/README.md) | Promo tile + screenshot export tools |
 
 ---
 

@@ -1,0 +1,11 @@
+# ast-grep configuration — PriceTab
+#
+# These rules cover the architectural constraints that are structural rather
+# than lexical, i.e. the ones a regex gets wrong (it cannot tell a call from a
+# mention in a string) and ESLint has no rule for. The lexical invariants —
+# zero permissions, no external hosts, no eval, the widget-card em rule — live
+# in tests/test-invariants.js, which needs no dependency at all.
+#
+# Run:  npm --prefix tests run scan
+ruleDirs:
+  - .ast-grep/rules

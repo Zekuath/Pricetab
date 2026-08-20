@@ -88,6 +88,169 @@ const prefs = fs.readFileSync(`${base}/settings-preferences.js`, "utf8");
 const wrapped = (prefs.match(/panel\.section\(/g) || []).length;
 assert.ok(wrapped >= 11, `expected every preference control to be wrapped, found ${wrapped}`);
 
+/* ── The three ways this tab breaks quietly as it grows ─────────────────
+ *
+ * None of these is a bug today; all three are one keystroke away, and none
+ * would announce itself. The groups at the foot of `settings-preferences.js`
+ * are a list of *names*, which is what makes reordering the panel eight lines
+ * instead of forty — and it is also what makes a typo invisible to everything
+ * except a person opening the tab.
+ */
+
+// 1. A group naming a section that does not exist takes the panel down with
+//    it: `sections[name]()` on undefined throws inside render, and the whole
+//    Preferences tab goes blank rather than losing one row.
+const sectionNames = (prefs.match(/^ {4}(\w+): \(\) =>/gm) || []).map((m) =>
+  m.trim().replace(/: \(\) =>$/, ""),
+);
+const grouped = [];
+for (const block of prefs.match(/group\(\s*"[^"]*",\s*(?:true|false),\s*\[[\s\S]*?\]\s*\)/g) || []) {
+  const list = block.slice(block.indexOf("["));
+  for (const q of list.match(/"(\w+)"/g) || []) grouped.push(q.slice(1, -1));
+}
+assert.ok(sectionNames.length >= 15, `expected the sections to be found, got ${sectionNames.length}`);
+const unknown = grouped.filter((n) => !sectionNames.includes(n));
+assert.deepStrictEqual(unknown, [], `a group names a section that does not exist: ${unknown}`);
+
+// 2. …and a section in no group is built, kept in memory, and never shown.
+const orphans = sectionNames.filter((n) => !grouped.includes(n));
+assert.deepStrictEqual(orphans, [], `a setting exists but is in no group: ${orphans}`);
+
+// 3. A setting placed twice renders twice, and the second copy silently
+//    disagrees with the first about where it lives.
+const twice = grouped.filter((n, i) => grouped.indexOf(n) !== i);
+assert.deepStrictEqual(twice, [], `a setting is placed in more than one group: ${twice}`);
+
+/* ── A key that works but is not advertised does not exist ──────────────
+ *
+ * `CLAUDE.md` states the rule and nothing enforced it: the "?" list is what
+ * tells anyone a shortcut is there, so a key handled in `handleKeyDown` and
+ * missing from `SHORTCUT_GROUPS` is a feature only its author can reach.
+ * Letters only — Esc, the arrows and the digits are described in the list in
+ * words rather than one chip per key, and a mapping table for those would rot
+ * faster than the thing it guards.
+ */
+{
+  const appSrc = fs.readFileSync(path.join(base, "app.js"), "utf8");
+  const from = appSrc.indexOf('_defineProperty(this, "handleKeyDown"');
+  assert.ok(from > 0, "handleKeyDown is where the keys are read");
+  const to = appSrc.indexOf('_defineProperty(this, "handleVisibilityChange"', from);
+  const body = appSrc.slice(from, to > from ? to : from + 30000);
+  const handled = [
+    ...new Set((body.match(/e\.key === "[a-z]"/g) || []).map((m) => m.slice(-2, -1).toUpperCase())),
+  ].sort();
+  const shortcutsSrc = fs.readFileSync(path.join(base, "shortcuts.js"), "utf8");
+  const listed = new Set();
+  for (const block of shortcutsSrc.match(/keys: \[[^\]]*\]/g) || []) {
+    for (const q of block.match(/"[A-Z]"/g) || []) listed.add(q.slice(1, -1));
+  }
+  assert.ok(handled.length >= 8, `expected the chart's letter keys, found ${handled}`);
+  const unlisted = handled.filter((k) => !listed.has(k));
+  assert.deepStrictEqual(unlisted, [], `handled but missing from the "?" list: ${unlisted}`);
+  const phantom = [...listed].filter((k) => !handled.includes(k)).sort();
+  assert.deepStrictEqual(phantom, [], `advertised but no longer handled: ${phantom}`);
+}
+
+/* The tab is a plain function, not a method, so `this` in it is the global
+ * object. It reached for `this.setState` in the search box's onChange and every
+ * keystroke threw — the box took no text at all. Nothing in this file can
+ * render it, so the promise is asserted on the source: state goes through the
+ * `panel` it was handed. */
+/* Comments stripped first, or the note explaining the bug reads as the bug.
+ * The test is on `this.` — a member access — not on the word: the settings
+ * notes are prose, and prose says "this setting" and "this governs the plain
+ * chart". `this.setState` is the shape that actually threw. */
+const prefsCode = prefs.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
+assert.ok(
+  !/\bthis\s*[.[]/.test(prefsCode),
+  "the preferences tab must not reach through `this` — it has no receiver",
+);
+assert.ok(
+  /panel\.setState\(\{ query/.test(prefs),
+  "the search box writes the query through the panel",
+);
+
+/* ── modes ──────────────────────────────────────────────────────────────── */
+/* A mode is recognised from the settings rather than remembered, so this is the
+ * function the row's active pill depends on. It has to be exact: a row that
+ * claims Minimal while the ticker is back on is worse than no row.
+ */
+const modes = run("APP_MODES");
+const active = (settings, widgets) => {
+  sandbox.__settings = settings;
+  sandbox.__widgets = widgets;
+  return run("activeAppMode(__settings, __widgets)");
+};
+const noWidgets = run("({ ...DEFAULT_WIDGETS })");
+
+assert.ok(modes.length >= 3, "there are modes to pick from");
+assert.ok(
+  modes.every((m) => m.value && m.label && m.desc && m.settings),
+  "every mode has a name, a label, a description and settings",
+);
+/* None of them touches currency, number format or theme: those are yours
+ * whatever you use the tab for, and a mode that took them would be a mode
+ * people learn not to press. */
+for (const mode of modes) {
+  for (const key of ["currency", "decimalPlaces", "separatorFormat", "theme"]) {
+    assert.ok(
+      !(key in mode.settings),
+      `${mode.value} must not set ${key}`,
+    );
+  }
+  // Nor calls: turning them off would hide a record someone made
+  assert.ok(!("predict" in mode.settings), `${mode.value} must not touch calls`);
+}
+
+/* Each mode has to be recognised as *itself*, which is not free: a mode that
+ * names fewer settings than another can be a subset of it, and then applying
+ * one lights up the other's pill. Fast was exactly that — with no chart
+ * settings of its own it was Trader with the widgets off. */
+for (const mode of modes) {
+  const widgets =
+    mode.widgets && mode.widgets !== "none"
+      ? run(`({ ...DEFAULT_WIDGETS, ...WIDGET_PRESETS.${mode.widgets} })`)
+      : noWidgets;
+  assert.strictEqual(
+    active(mode.settings, widgets),
+    mode.value,
+    `${mode.value} must be recognised as itself, not as another mode`,
+  );
+}
+
+const minimal = modes.find((m) => m.value === "minimal");
+assert.ok(minimal, "Minimal is one of them");
+assert.strictEqual(
+  active(minimal.settings, noWidgets),
+  "minimal",
+  "its own settings are recognised as it",
+);
+// One switch away is your own arrangement, not a lie about the mode
+assert.strictEqual(
+  active({ ...minimal.settings, pageTicker: true }, noWidgets),
+  null,
+  "flip one setting by hand and no mode claims to be in force",
+);
+// Widgets count: a mode that turns them all off is not on with six on screen
+assert.strictEqual(
+  active(minimal.settings, { ...noWidgets, fearGreed: true }),
+  null,
+  "…and a widget on screen contradicts a mode that turns them off",
+);
+// A mode that names a bundle wants that bundle, not merely no widgets
+const trader = modes.find((m) => m.value === "trader");
+assert.strictEqual(
+  active(trader.settings, noWidgets),
+  null,
+  "a bundled mode is not in force with the bundle off",
+);
+assert.strictEqual(
+  active(trader.settings, run("({ ...DEFAULT_WIDGETS, ...WIDGET_PRESETS.trader })")),
+  "trader",
+  "…and is in force with it on",
+);
+assert.strictEqual(active({}, noWidgets), null, "no settings, no mode");
+
 // Section titles are unique, otherwise a search would surface two identical
 // looking rows and the tally would be misleading
 const titles = [...prefs.matchAll(/panel\.section\(\s*\n\s*'([^']+)'/g)].map((m) => m[1]);

@@ -201,7 +201,10 @@ const aggregateCandles = (candles, maxBars) => {
 
 // Pixel geometry for each bar. The y scale spans highs and lows (not just
 // closes) so wicks can't run off the top or bottom of the plot.
-const scaleCandles = (candles, height, width, padding = 0) => {
+/* `left`/`right` are the x bounds the bars are spread across — the history
+ * area, which with calls on stops short of the reserved board. Defaulted to
+ * the full width so every other caller is unchanged. */
+const scaleCandles = (candles, height, width, padding = 0, left = null, right = null) => {
   if (!Array.isArray(candles) || candles.length < 1) return null;
   let min = Infinity;
   let max = -Infinity;
@@ -216,15 +219,21 @@ const scaleCandles = (candles, height, width, padding = 0) => {
     max += 1;
   }
   const plotH = Math.max(1, height - padding * 2);
-  const plotW = Math.max(1, width - padding * 2);
+  const x0 = left == null ? padding : left;
+  const x1 = right == null ? width - padding : right;
+  const plotW = Math.max(1, x1 - x0);
   const y = (v) => padding + (1 - (v - min) / (max - min)) * plotH;
   const step = plotW / candles.length;
   // Leave a hairline gap between bars; never thinner than a visible line
   const barW = Math.max(1, Math.min(step * 0.7, 18));
   return {
     barW,
+    // What the crosshair needs to turn an x back into a bar, without having to
+    // reconstruct the layout from constants it does not own
+    step,
+    x0,
     bars: candles.map((c, i) => ({
-      x: padding + step * (i + 0.5),
+      x: x0 + step * (i + 0.5),
       yOpen: y(c.open),
       yClose: y(c.close),
       yHigh: y(c.high),
@@ -357,6 +366,10 @@ const candlePathData = (scaled, up) => {
   return d;
 };
 
+/* `yLo`/`yHi` override the price domain. The chart normally fits whatever it
+ * is given, which is why the domain is read off the data — but a board of
+ * squares needs a scale that does *not* move every time a new high arrives,
+ * so calls mode decides the window itself and passes it in. */
 const scalePricesCore = (
   data,
   height,
@@ -365,10 +378,16 @@ const scalePricesCore = (
   paddingBottom = 0,
   paddingLeft = 0,
   paddingRight = 0,
+  yLo = null,
+  yHi = null,
 ) => {
+  const domain =
+    yLo != null && yHi != null && yHi > yLo
+      ? [yLo, yHi]
+      : extent(data, (d) => d.price);
   const priceToY = scaleLinear()
     .range([height - paddingBottom, paddingTop])
-    .domain(extent(data, (d) => d.price));
+    .domain(domain);
 
   const timeToX = scaleTime()
     .range([paddingLeft, width - paddingRight])
@@ -381,7 +400,30 @@ const scalePricesCore = (
 };
 
 // Memoized version for performance
-const scalePrices = memoize(scalePricesCore);
+/* Cached on the *identity* of the series, not on its contents.
+ *
+ * This went through `memoize`, which keys on `JSON.stringify(args)` — and the
+ * first argument is the whole price series, so every call built a string of
+ * three hundred points to look up an answer. Worse under a drag: each frame
+ * passes a different padding, so each frame minted a new key and a new entry,
+ * filling a hundred-entry cache with a hundred scaled copies of the series
+ * nobody would ask for again.
+ *
+ * The series arrives as the same array on every redraw until new prices come
+ * in, so `===` answers the question the string was being built to answer. Four
+ * entries because two charts can be on screen (the portfolio draws its own)
+ * and each wants a live entry and the one it had before the last change. */
+const SCALE_CACHE = [];
+const scalePrices = (data, height, width, pt, pb, pl, pr, yLo, yHi) => {
+  const key = `${height}|${width}|${pt}|${pb}|${pl}|${pr}|${yLo}|${yHi}`;
+  for (const entry of SCALE_CACHE) {
+    if (entry.data === data && entry.key === key) return entry.out;
+  }
+  const out = scalePricesCore(data, height, width, pt, pb, pl, pr, yLo, yHi);
+  SCALE_CACHE.unshift({ data, key, out });
+  if (SCALE_CACHE.length > 4) SCALE_CACHE.pop();
+  return out;
+};
 
 /* The y `scalePrices` would give an arbitrary price — for drawing a
  * horizontal reference across the chart at a level that isn't a data point.
@@ -616,6 +658,44 @@ const settleCall = (call, prices, now) => {
   return out(price >= call.lo && price <= call.hi ? "hit" : "miss", price);
 };
 
+/* Who claimed each column, and whether anyone contested it.
+ *
+ * Several calls can share a column — same minutes, different price bands —
+ * and they are not equal: the earliest one placed there is the claim, the
+ * rest are hedges around it. That is what the chart's `CALLED · 1ST` tag
+ * means, and it is also what decides whether a win is worth a firework, so
+ * the test lives here rather than in either caller. It was inline in the
+ * chart's draw loop; the second reader would have been a copy, and a copy of
+ * a rule this small is the one that drifts.
+ *
+ * The caller filters to one coin, currency and range first — a column is a
+ * stretch of time on one chart, and two coins at the same minute are not
+ * competing for anything.
+ */
+const callColumns = (calls) => {
+  const columns = new Map();
+  for (const c of calls || []) {
+    const placed = isFinite(c.placed) ? c.placed : Infinity;
+    const at = columns.get(c.target);
+    if (!at) columns.set(c.target, { first: placed, count: 1 });
+    else {
+      at.count += 1;
+      if (placed < at.first) at.first = placed;
+    }
+  }
+  return columns;
+};
+
+/* First into a column somebody else also called. Both halves matter: a mark
+ * every lone call carries says nothing about being first, so a column of one
+ * is never leading. */
+const isLeadingCall = (call, columns) => {
+  if (!call || !columns) return false;
+  const column = columns.get(call.target);
+  if (!column || column.count < 2) return false;
+  return (isFinite(call.placed) ? call.placed : Infinity) === column.first;
+};
+
 /* Applies a settled outcome to the tally. Separate from `settleCall` so the
  * arithmetic can be checked on its own, and so a miss and a hit go through
  * exactly the same path. */
@@ -830,37 +910,47 @@ const fetchValueHistory = async (
     }
   }
 
-  // Coins Coinbase doesn't list come from their own provider, in the same
-  // shape, and go through the same cache
-  if (providerFor(coin) === "kraken") {
+  // Coins Coinbase doesn't list — or has stopped answering for — come from
+  // their own provider, in the same shape, and go through the same cache
+  const fromKraken = async () => {
     const data = await fetchKrakenHistory(coin, period, currency, signal);
     setCachedData(coin, period, currency, "history", data, allowedCoins);
     return data;
-  }
+  };
+  if (effectiveProvider(coin) === "kraken") return fromKraken();
 
   // Fetch fresh data
   const options = signal ? { signal } : {};
-  const d = await fetchWithRetry(
-    `${API_BASE}${coin}-${currency}/${API_HISTORY}${period}`,
-    options,
-  ).then((r) => r.json());
-  const prices = d && d.data && d.data.prices;
+  try {
+    const d = await fetchWithRetry(
+      `${API_BASE}${coin}-${currency}/${API_HISTORY}${period}`,
+      options,
+    ).then((r) => r.json());
+    const prices = d && d.data && d.data.prices;
 
-  if (Array.isArray(prices) && prices.length > 0) {
-    const formattedData = formatValueHistory(prices);
-    // Cache the result (only if coin is in first 10)
-    setCachedData(
-      coin,
-      period,
-      currency,
-      "history",
-      formattedData,
-      allowedCoins,
-    );
-    return formattedData;
+    if (Array.isArray(prices) && prices.length > 0) {
+      const formattedData = formatValueHistory(prices);
+      // Cache the result (only if coin is in first 10)
+      setCachedData(
+        coin,
+        period,
+        currency,
+        "history",
+        formattedData,
+        allowedCoins,
+      );
+      return formattedData;
+    }
+
+    throw new Error("invalid price data returned");
+  } catch (error) {
+    /* A blank chart is the worst possible answer to "the other exchange is
+     * having a moment". The same series exists at Kraken for all but four of
+     * the coins offered here, so it is fetched from there instead and the coin
+     * stays there for the rest of the tab. */
+    if (!noteProviderFailure(coin, error)) throw error;
+    return fromKraken();
   }
-
-  throw new Error("invalid price data returned");
 };
 
 const fetchCurrentValue = async (
@@ -879,27 +969,35 @@ const fetchCurrentValue = async (
     }
   }
 
-  if (providerFor(coin) === "kraken") {
+  const fromKraken = async () => {
     const value = await fetchKrakenSpot(coin, currency, signal);
     setCachedData(coin, "current", currency, "spot", value, allowedCoins);
     return value;
-  }
+  };
+  if (effectiveProvider(coin) === "kraken") return fromKraken();
 
   // Fetch fresh data
   const options = signal ? { signal } : {};
-  const d = await fetchWithRetry(
-    `${API_BASE}${coin}-${currency}/${API_SPOT}`,
-    options,
-  ).then((r) => r.json());
-  const spot = d && d.data && d.data.amount;
+  try {
+    const d = await fetchWithRetry(
+      `${API_BASE}${coin}-${currency}/${API_SPOT}`,
+      options,
+    ).then((r) => r.json());
+    const spot = d && d.data && d.data.amount;
 
-  if (typeof spot === "string") {
-    const value = Number(spot);
-    // Cache the result (only if coin is in first 10)
-    setCachedData(coin, "current", currency, "spot", value, allowedCoins);
-    return value;
+    if (typeof spot === "string") {
+      const value = Number(spot);
+      // Cache the result (only if coin is in first 10)
+      setCachedData(coin, "current", currency, "spot", value, allowedCoins);
+      return value;
+    }
+
+    throw new Error("invalid spot data returned");
+  } catch (error) {
+    // Same fallback as the history: one failing exchange is not a reason to
+    // show nothing, and the price it quotes is the same price
+    if (!noteProviderFailure(coin, error)) throw error;
+    return fromKraken();
   }
-
-  throw new Error("invalid spot data returned");
 };
 

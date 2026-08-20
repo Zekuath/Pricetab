@@ -222,9 +222,12 @@ class AlertsPanel extends PureComponent {
       // The last target removed in this session, restorable until the panel
       // closes or another one is removed
       undo: null,
-      // Which list is on screen. Targets first: it is what the panel has
-      // always been, and what the "A" key has always opened.
-      tab: "targets",
+      /* Whether the explanation is open. Not persisted, and closed by default:
+       * it answers a question you ask once, and a help card that reopens every
+       * time becomes a thing to dismiss. It follows the tab rather than being
+       * per-tab — you opened "what is this", and switching tab changes what
+       * "this" is. */
+      info: false,
     };
     this.handleAdd = this.handleAdd.bind(this);
     this.handleKeyDown = this.handleKeyDown.bind(this);
@@ -520,6 +523,12 @@ class AlertsPanel extends PureComponent {
    * nothing — and "needs +1.8%" is the one number that tells you whether a
    * call is close, which a band alone does not. */
   callDistance(c) {
+    /* Only while the call's own currency is the one on screen. `priceOf` reads
+     * the ticker, which holds the *display* currency, so a USD band measured
+     * against a EUR price produced a confident "needs +9.4%" that was nothing
+     * but the exchange rate. Settling is already scoped the same way, so the
+     * honest row for a call in another currency says it is paused. */
+    if (c.currency !== this.props.currency) return null;
     const price = this.priceOf(c.coin);
     if (price === null) return null;
     if (price >= c.lo && price <= c.hi) return { inside: true };
@@ -549,7 +558,12 @@ class AlertsPanel extends PureComponent {
           React.createElement(
             AlertsEmptyMark,
             { "aria-hidden": "true" },
-            icon("target", 1.3),
+            /* The board, not the target's rings. Both empty states borrowed
+             * the rings back when this was a tab inside the targets panel and
+             * there was nothing else to borrow; with its own control in the
+             * corner, an empty calls screen wearing the targets mark says you
+             * are in the wrong place. */
+            icon("calls", 1.3),
           ),
           React.createElement(AlertsEmptyTitle, null, "Calls are off"),
           React.createElement(
@@ -565,16 +579,20 @@ class AlertsPanel extends PureComponent {
             "Turn calls on",
           ),
           /* Stored calls do not disappear when the feature is switched off,
-           * and settling is paused with it — saying so is the difference
-           * between "off" and "gone". */
+           * and they do not stop being judged either — settling runs whatever
+           * this switch says, or a call left open across a week off would come
+           * back with its evidence scrolled off the range and be dropped
+           * unanswered. What the switch turns off is the board: drawing it,
+           * placing on it, and being told. So the off screen says *still
+           * running*, which is a different promise from "paused, not lost" and
+           * the true one. */
           paused > 0 &&
             React.createElement(
               AlertsEmptyText,
               null,
-              `${paused} call${paused === 1 ? "" : "s"} ${paused === 1 ? "is" : "are"} paused, not lost. Turning calls back on picks them up where they were.`,
+              `${paused} call${paused === 1 ? "" : "s"} ${paused === 1 ? "is" : "are"} still being settled in the background — turning calls back on brings the board back with them.`,
             ),
         ),
-        this.renderCallsControls(),
       );
     }
 
@@ -583,9 +601,13 @@ class AlertsPanel extends PureComponent {
       .sort((a, b) => a.target - b.target);
     const done = Array.isArray(settledCalls) ? settledCalls : [];
     const record = callRecord || { hits: 0, total: 0, streak: 0, best: 0 };
-    const symbol = getCurrencySymbol(currency);
-    const money = (v) => formatNumberString(v, symbol, true, false);
-    const band = (c) => `${money(c.lo)} – ${money(c.hi)}`;
+    /* Every price on a call row is printed in the currency that call was made
+     * in, not the one on screen. Formatting a USD band with whatever symbol
+     * happens to be selected puts a € in front of a number that was never a
+     * euro — and the toast and the target rows had it right all along, so the
+     * two halves of the same panel disagreed about the same call. */
+    const money = (v, c) => this.props.formatPrice(v, c.currency);
+    const band = (c) => `${money(c.lo, c)} – ${money(c.hi, c)}`;
 
     return React.createElement(
       Fragment,
@@ -612,18 +634,44 @@ class AlertsPanel extends PureComponent {
           ),
         ),
 
+      /* Nothing called yet: the panel's whole job on this visit is to explain
+       * the gesture, so it gets the room the targets tab's empty state gets.
+       * As a `AlertsNote` it was two lines of small grey text pinned to the
+       * top-left of a band with no height to give — and the second line ran
+       * into the fade at the bottom of the scroller, so the sentence that
+       * explains the *second click* was the half you could not read.
+       *
+       * The wording is the gesture as it actually is. "With the chart grid on"
+       * was left over from when the mesh was a separate switch — calls draw it
+       * themselves now — and it named a prerequisite instead of the two
+       * clicks, which is the part nobody guesses. */
       open.length === 0 && done.length === 0 &&
         React.createElement(
-          AlertsNote,
+          AlertsEmpty,
           null,
-          "No calls yet. With the chart grid on, click any square to the right of the dotted line.",
+          React.createElement(
+            AlertsEmptyMark,
+            { "aria-hidden": "true" },
+            icon("calls", 1.3),
+          ),
+          React.createElement(AlertsEmptyTitle, null, "No calls yet"),
+          React.createElement(
+            AlertsEmptyText,
+            null,
+            "Point at a square to the right of the dotted line and click it twice — once to draft it, once to lock it in. You have said the price will be in that band, at that time.",
+          ),
+          React.createElement(
+            AlertsEmptyText,
+            null,
+            "Drag the dotted line itself to make the board bigger or smaller.",
+          ),
         ),
 
       open.length > 0 &&
         React.createElement(
           Fragment,
           null,
-          React.createElement(AlertsSectionLabel, null, "Open"),
+          React.createElement(AlertsSectionLabel, null, `Open · ${open.length}`),
           React.createElement(
             AlertsList,
             null,
@@ -631,7 +679,7 @@ class AlertsPanel extends PureComponent {
               const d = this.callDistance(c);
               return React.createElement(
                 AlertRow,
-                { key: c.id, up: true },
+                { key: c.id, up: true, dense: true },
                 React.createElement(
                   AlertMain,
                   null,
@@ -645,7 +693,14 @@ class AlertsPanel extends PureComponent {
                   React.createElement(
                     AlertDetail,
                     null,
-                    `Settles ${describeAhead(c.target - Date.now())}`,
+                    /* A target that has come and gone is not "settling now" —
+                     * it is waiting for the series that answers it. Left to
+                     * `describeAhead`, a negative number came back as "now"
+                     * and the row said "Settles now" for as long as the call
+                     * sat there, which is a promise the panel cannot keep. */
+                    c.target <= Date.now()
+                      ? "Due — settles next time this range loads"
+                      : `Settles ${describeAhead(c.target - Date.now())}`,
                     d &&
                       (d.inside
                         ? " · in the band now"
@@ -654,7 +709,7 @@ class AlertsPanel extends PureComponent {
                      * beginning and never shown — it is what turns a band
                      * into a decision you can look back on. */
                     c.placedPrice != null
-                      ? ` · called at ${money(c.placedPrice)}`
+                      ? ` · called at ${money(c.placedPrice, c)}`
                       : "",
                     /* A call belongs to the range it was made on — that is
                      * what keeps it from being settled against a series that
@@ -663,6 +718,12 @@ class AlertsPanel extends PureComponent {
                      * and the row has to say which one, or it looks lost. */
                     c.period !== this.props.period
                       ? ` · on ${periodLabel(c.period)}`
+                      : "",
+                    /* Same for the currency, and it matters more: settling
+                     * only ever runs in the currency a call was made in, so
+                     * this row is not merely elsewhere, it is stopped. */
+                    c.currency !== currency
+                      ? ` · paused — set in ${c.currency}`
                       : "",
                   ),
                 ),
@@ -684,7 +745,7 @@ class AlertsPanel extends PureComponent {
         React.createElement(
           Fragment,
           null,
-          React.createElement(AlertsSectionLabel, null, "Settled"),
+          React.createElement(AlertsSectionLabel, null, `Settled · ${done.length}`),
           React.createElement(
             AlertsList,
             null,
@@ -713,12 +774,12 @@ class AlertsPanel extends PureComponent {
                     AlertDetail,
                     null,
                     c.placedPrice != null
-                      ? `Called at ${money(c.placedPrice)}`
+                      ? `Called at ${money(c.placedPrice, c)}`
                       : "Called",
                     c.settledPrice != null
-                      ? ` · closed at ${money(c.settledPrice)}`
+                      ? ` · closed at ${money(c.settledPrice, c)}`
                       : "",
-                    by != null && by > 0 ? ` · missed by ${money(by)}` : "",
+                    by != null && by > 0 ? ` · missed by ${money(by, c)}` : "",
                   ),
                 ),
                 React.createElement(
@@ -730,8 +791,6 @@ class AlertsPanel extends PureComponent {
             }),
           ),
         ),
-
-      this.renderCallsControls(),
     );
   }
 
@@ -743,12 +802,21 @@ class AlertsPanel extends PureComponent {
    * the chart, not here, so this tab has no action to keep in reach — and a
    * 400px block of switches nailed to the bottom left the list a slot barely
    * two rows deep. */
-  renderCallsControls() {
+  /* The calls foot: three strips, always on screen.
+   *
+   * Grouped by what each control does, not by what kind of widget it is —
+   * aim the call, choose what gets drawn, manage the record and the mode.
+   * Each strip is one line, because three title-plus-explanation setting rows
+   * is a settings page and a settings page does not fit under a list.
+   *
+   * The explanations moved into `title` tooltips. They were worth a paragraph
+   * each when they lived in a scrolling body with room to spare; pinned under
+   * the list, a paragraph per switch is what pushed the whole thing off the
+   * card in the first place.
+   */
+  renderCallsFoot() {
     const {
-      predict,
       onPredictChange,
-      predictAhead,
-      onPredictAheadChange,
       callsShowSettled,
       onCallsShowSettledChange,
       callsCelebrate,
@@ -757,177 +825,294 @@ class AlertsPanel extends PureComponent {
       onClearSettled,
       callRecord,
       settledCalls,
-      chartGrid,
-      onChartGridChange,
+      callGeometry,
+      currency,
+      boardZoom,
+      onBoardZoomChange,
     } = this.props;
     const record = callRecord || { total: 0 };
     const doneCount = Array.isArray(settledCalls) ? settledCalls.length : 0;
+    /* One rung along the zoom ladder, clamped. `+1` is out — a wider band and a
+     * longer reach, which is what you press when the move you want to call has
+     * no square on the screen. */
+    const zoomBy = (dir) => {
+      const at = BOARD_ZOOM_STEPS.indexOf(boardZoom);
+      const i = at === -1 ? BOARD_ZOOM_STEPS.indexOf(DEFAULT_BOARD_ZOOM) : at;
+      return BOARD_ZOOM_STEPS[
+        Math.min(BOARD_ZOOM_STEPS.length - 1, Math.max(0, i + dir))
+      ];
+    };
 
-    const row = (name, hint, control) =>
+    const toggle = (label, on, onClick, title) =>
       React.createElement(
-        AlertSettingRow,
-        null,
-        React.createElement(
-          AlertSettingText,
-          null,
-          React.createElement(AlertSettingName, null, name),
-          hint && React.createElement(AlertSettingHint, null, hint),
-        ),
-        control,
+        AlertStateChip,
+        { on, onClick, title, "aria-pressed": Boolean(on), "aria-label": title || label },
+        label,
       );
-
-    const chip = (label, active, onClick, aria) =>
+    const action = (label, onClick, title, strong, fill, disabled) =>
       React.createElement(
-        AlertPlainChip,
-        { active, onClick, "aria-label": aria || label },
+        AlertActionKey,
+        {
+          onClick,
+          title,
+          strong,
+          fill,
+          disabled,
+          "aria-label": title || label,
+        },
         label,
       );
 
     return React.createElement(
-      AlertCallSettings,
+      AlertCallsFoot,
       null,
-      /* Off is as reachable as on.
+
+      /* Reach. It reports; it does not set.
        *
-       * Turning calls on was a button across the empty screen; turning them
-       * off was a chip the width of the word. A switch whose two directions
-       * look nothing alike reads as one you are meant to use once — and this
-       * one sits on a chart people read for prices, so leaving has to be as
-       * plain as arriving. Shown only while on: the off screen already has
-       * the other half of the pair. */
-      predict === true &&
+       * There was a stepper here, one to ten squares, and it was the second
+       * way to say a thing the chart already says better: the board's size is
+       * a length, you can see it, and the line between what happened and what
+       * has not is right there to be pulled. A number counting squares is that
+       * length in a unit nobody thinks in, kept in sync by hand. What is worth
+       * keeping is the readout — how far the board reaches and what one square
+       * is worth in price and in time — which is the part you cannot see by
+       * looking. */
+      callGeometry &&
         React.createElement(
-          Fragment,
+          AlertCallsStrip,
           null,
           React.createElement(
-            AlertPrimaryButton,
-            {
-              ghost: true,
-              block: true,
-              onClick: () => onPredictChange && onPredictChange(false),
-            },
-            "Turn calls off",
+            AlertStripLabel,
+            { title: "Drag the now line on the chart to resize the board" },
+            "Board",
           ),
           React.createElement(
-            AlertSettingHint,
-            { style: { marginTop: "0.4rem", marginBottom: "0.2rem" } },
-            "L does the same from the chart, and brings the grid with it. Your calls and score are kept either way.",
-          ),
-        ),
-
-      predict === true &&
-        chartGrid !== true &&
-        row(
-          "Chart grid",
-          "The squares are the grid's — with it off you cannot see what you are pointing at",
-          chip("Turn on", false, () => onChartGridChange && onChartGridChange(true)),
-        ),
-
-      predict === true &&
-        React.createElement(
-          Fragment,
-          null,
-          React.createElement(
-            AlertSettingRow,
+            AlertStripFigures,
             null,
-            React.createElement(
-              AlertSettingText,
-              null,
-              React.createElement(AlertSettingName, null, "Squares of future"),
-              React.createElement(
-                AlertSettingHint,
-                null,
-                "Each one is a separate call. More squares generally reach further, until the strip runs out of room and they start getting smaller instead — the line below is what this choice actually gives you",
-              ),
-              React.createElement(
-                AlertChipRow,
-                null,
-                PREDICT_AHEAD_OPTIONS.map((n) =>
-                  React.createElement(
-                    AlertPlainChip,
-                    {
-                      key: n,
-                      active: (predictAhead || DEFAULT_PREDICT_AHEAD) === n,
-                      onClick: () =>
-                        onPredictAheadChange && onPredictAheadChange(n),
-                      "aria-label": `${n} squares of future`,
-                    },
-                    String(n),
-                  ),
-                ),
-              ),
-              /* What the number buys, in the two units it decides. A count on
-               * its own is not a quantity anyone can picture; this is the
-               * chart's own geometry, reported back rather than guessed. */
-              this.props.callGeometry &&
-                React.createElement(
-                  AlertGeometryLine,
-                  null,
-                  React.createElement(
-                    AlertGeometryFigure,
-                    null,
-                    describeSpan(this.props.callGeometry.reachMs),
-                  ),
-                  " of future to call in · each square is ",
-                  React.createElement(
-                    AlertGeometryFigure,
-                    null,
-                    formatAxisPrice(
-                      this.props.callGeometry.step,
-                      this.props.callGeometry.step,
-                      getCurrencySymbol(this.props.currency),
-                    ),
-                  ),
-                  " tall and ",
-                  React.createElement(
-                    AlertGeometryFigure,
-                    null,
-                    describeSpan(this.props.callGeometry.spanMs),
-                  ),
-                  " wide",
-                ),
-            ),
+            /* "square" earns its place. Without it the second half is two
+             * numbers with no noun in front of them — and it is the half that
+             * decides how precise a call has to be. The label is "Board"
+             * rather than "Reach" because the row describes the thing, and
+             * because a row named after a quantity in a column of settings
+             * reads like a setting you can change here. */
+            `${describeSpan(callGeometry.reachMs)} ahead${
+              callGeometry.covers
+                ? ` · ±${formatAxisPrice(
+                    callGeometry.covers,
+                    callGeometry.step,
+                    getCurrencySymbol(currency),
+                  )}`
+                : ""
+            } · square ${formatAxisPrice(
+              callGeometry.step,
+              callGeometry.step,
+              getCurrencySymbol(currency),
+            )} × ${describeSpan(callGeometry.spanMs)}`,
           ),
-
-          row(
-            "Keep settled calls on the chart",
-            "The box you drew stays where it was, marked called it or missed",
-            chip(
-              callsShowSettled === false ? "Off" : "On",
-              callsShowSettled !== false,
-              () =>
-                onCallsShowSettledChange &&
-                onCallsShowSettledChange(callsShowSettled === false),
-              "Toggle settled calls on the chart",
-            ),
+          /* The strip was a readout with nothing to press, and the one thing it
+           * describes that you *cannot* set by dragging the now line is how far
+           * the board reaches in price. Out makes each square worth more and the
+           * reach grow with it — which is the difference between being able to
+           * call a crash and having no square to point at. */
+          React.createElement(AlertStripGap, null),
+          action(
+            "−",
+            () => onBoardZoomChange && onBoardZoomChange(zoomBy(-1)),
+            "Zoom in: a tighter band, a shorter reach  ( ] )",
+            false,
+            null,
+            boardZoom <= BOARD_ZOOM_MIN,
           ),
-
-          row(
-            "Celebrate a hit",
-            "A burst on the chart the first time you open a tab after getting one right",
-            chip(
-              callsCelebrate === false ? "Off" : "On",
-              callsCelebrate !== false,
-              () =>
-                onCallsCelebrateChange &&
-                onCallsCelebrateChange(callsCelebrate === false),
-              "Toggle the celebration",
-            ),
+          action(
+            "+",
+            () => onBoardZoomChange && onBoardZoomChange(zoomBy(1)),
+            "Zoom out: a wider band, far enough to call a big move  ( [ )",
+            false,
+            null,
+            boardZoom >= BOARD_ZOOM_MAX,
           ),
-
-          (record.total > 0 || doneCount > 0) &&
-            row(
-              "History",
-              "The score lives on this device only, is worth nothing and is never sent anywhere",
-              React.createElement(
-                AlertChipRow,
-                null,
-                doneCount > 0 &&
-                  chip("Clear settled", false, () => onClearSettled && onClearSettled()),
-                record.total > 0 &&
-                  chip("Reset score", false, () => onResetCalls && onResetCalls()),
-              ),
+          /* And the way back, beside the two that take you away from it.
+           *
+           * The zoom is held per range and survives the tab, so a board left
+           * eight notches out a week ago is still eight notches out — and
+           * counting clicks back is guesswork, because nothing says which
+           * notch is the ordinary one. Shown only while it leads somewhere:
+           * at the default it is not a control, it is a word that does
+           * nothing. The chart's own pill carries the same action on its
+           * readout, so whichever of the two you are looking at can undo it. */
+          boardZoom !== DEFAULT_BOARD_ZOOM &&
+            action(
+              "reset",
+              () => onBoardZoomChange && onBoardZoomChange(DEFAULT_BOARD_ZOOM),
+              "Back to the default board reach",
             ),
         ),
+
+      /* What is drawn on the chart.
+       *
+       * No grid switch here any more. It offered to turn the mesh off, and
+       * with calls on the chart draws it either way — the squares *are* the
+       * mesh, so there is nothing coherent for the switch to do. Measured:
+       * twenty-eight lines with it on, twenty-eight with it off. A control
+       * that cannot change anything in the state it is shown in is worse than
+       * a missing one, because it teaches people the panel is decorative. It
+       * still lives in Settings → Chart Grid and on "G", where it governs the
+       * plain chart. */
+      React.createElement(
+        AlertCallsStrip,
+        null,
+        React.createElement(AlertStripLabel, null, "Show"),
+        toggle(
+          "settled",
+          callsShowSettled !== false,
+          () =>
+            onCallsShowSettledChange &&
+            onCallsShowSettledChange(callsShowSettled === false),
+          "Keep settled calls on the chart, marked called it or missed",
+        ),
+        toggle(
+          "celebrate",
+          callsCelebrate !== false,
+          () =>
+            onCallsCelebrateChange &&
+            onCallsCelebrateChange(callsCelebrate === false),
+          "A burst on the chart the first time you open a tab after getting one right",
+        ),
+      ),
+
+      /* The mode and the record. Turning calls off sits where the eye lands,
+       * and the two things that cannot be undone at the far end, away from it. */
+      React.createElement(
+        AlertCallsStrip,
+        null,
+        React.createElement(AlertStripLabel, null, "Calls"),
+        action(
+          "turn off",
+          () => onPredictChange && onPredictChange(false),
+          "Stop calls. Your calls and score are kept, and L does the same from the chart",
+          true,
+          "solid",
+        ),
+        React.createElement(AlertStripGap, null),
+        doneCount > 0 &&
+          action(
+            "clear settled",
+            () => onClearSettled && onClearSettled(),
+            "Remove settled calls from the chart and from this list",
+          ),
+        record.total > 0 &&
+          action(
+            "reset score",
+            () => onResetCalls && onResetCalls(),
+            "Set the record back to nothing. It lives on this device only and is worth nothing",
+          ),
+      ),
+    );
+  }
+
+  /* What this tab is, where it stands, and the keys that reach it.
+   *
+   * Three things, and the middle one is why this is not a help page. A tally of
+   * "0 open" says nothing about what an open call is; a paragraph of
+   * documentation says nothing about the four you already have. The state lines
+   * are read off the same props the list is drawn from, so they cannot drift
+   * out of date the way written help does.
+   *
+   * The keys belong here too. They are all listed under "?", which is a
+   * different overlay — telling someone the shortcut in the place they are
+   * standing is how they stop needing this card at all.
+   */
+  renderInfo(onCalls, lists) {
+    const { currency, alerts } = this.props;
+    const key = (keys, label) =>
+      React.createElement(
+        AlertsInfoKey,
+        { key: label },
+        ...keys.map((k) => React.createElement(AlertsKey, { key: k }, k)),
+        label,
+      );
+    const line = (text, i) =>
+      React.createElement(AlertsInfoLine, { key: i }, React.createElement("span", null, text));
+
+    if (!onCalls) {
+      const paused = alerts.filter(
+        (a) => !a.triggeredAt && !targetApplies(a, currency),
+      ).length;
+      const state = [
+        `${lists.armed.length} armed · ${lists.done.length} hit · ${alerts.length} of ${MAX_ALERTS} used`,
+      ];
+      if (paused) {
+        state.push(
+          `${paused} paused — set in another currency, so ${paused === 1 ? "it resumes" : "they resume"} when you switch back to it. A move target never pauses: a percentage means the same thing everywhere.`,
+        );
+      }
+      state.push(
+        this.props.alertTabTitle !== false
+          ? "A hit is announced in the tab title, and targets are checked while this tab is hidden."
+          : "A hit is reported here only — announcing it in the tab title is off in Settings, which also stops the background checking.",
+      );
+      return React.createElement(
+        AlertsInfo,
+        null,
+        React.createElement(
+          AlertsInfoText,
+          null,
+          "A target is a request: tell me when. Name a price (“BTC rises above 80,000”) or a move (“BTC falls 5% in 24h”) and it is reported here the next time you open a tab — including one that happened overnight, because every target is checked against the last week of hourly candles rather than only against the price right now.",
+        ),
+        React.createElement(AlertsInfoState, null, ...state.map(line)),
+        React.createElement(
+          AlertsInfoKeys,
+          null,
+          key(["A"], "this panel"),
+          key(["Enter"], "add"),
+          key(["Esc"], "close"),
+        ),
+      );
+    }
+
+    const on = this.props.predict === true;
+    const rec = this.props.callRecord || { hits: 0, total: 0, best: 0 };
+    const open = Array.isArray(this.props.calls) ? this.props.calls.length : 0;
+    const settled = Array.isArray(this.props.settledCalls)
+      ? this.props.settledCalls.length
+      : 0;
+    const state = [];
+    state.push(
+      on
+        ? `On · ${open} open · ${settled} settled`
+        : `Off · ${open} kept and still settling in the background — what is off is the board: nothing is drawn, nothing can be placed, and a win is not announced`,
+    );
+    if (rec.total > 0) {
+      state.push(
+        `${rec.hits} of ${rec.total} called right${rec.best > 1 ? ` · best streak ${rec.best}` : ""}. The score is on this device only and is worth nothing.`,
+      );
+    }
+    /* No board numbers here. How far it reaches and what a square is worth are
+     * already on screen, in the Board strip at the foot of this tab — printing
+     * them again a few inches above it makes the card look padded, and the card
+     * has to be the one thing that says something new. The strip is a readout
+     * with no control, so what this adds is where the control is. */
+    if (on) {
+      state.push(
+        "A call belongs to the coin, range and currency it was made on, and only settles there. Calls stand down while two coins share the chart.",
+      );
+    }
+    return React.createElement(
+      AlertsInfo,
+      null,
+      React.createElement(
+        AlertsInfoText,
+        null,
+        "A call is a claim: not “tell me when”, but “I say where”. Point at a square in the empty strip to the right of the chart and you are naming a price band and a moment — one click drafts it, a second locks it. It settles itself the next time you open a tab, against the price at that moment, and the box stays on the chart saying whether you were right. How far that strip reaches is yours to set: drag the “now” line left for more board, right for more history.",
+      ),
+      React.createElement(AlertsInfoState, null, ...state.map(line)),
+      React.createElement(
+        AlertsInfoKeys,
+        null,
+        key(["K"], "this panel"),
+        key(["L"], "calls on / off"),
+        key(["G"], "grid on the plain chart"),
+      ),
     );
   }
 
@@ -939,10 +1124,14 @@ class AlertsPanel extends PureComponent {
     // Already-hit targets are history: they get their own section under the
     // live ones instead of trailing the same list, so a full panel still
     // opens on what is about to happen
-    /* The calls tab only exists when the app wired the feature up; the panel
-     * is still the targets panel first. */
-    const hasCallsTab = typeof this.props.onPredictChange === "function";
-    const onCalls = hasCallsTab && this.state.tab === "calls";
+    /* Which of the two the caller opened. It is a prop rather than state
+     * because the two are separate controls now — the corner button and the
+     * key decide, and a panel that remembered its own last tab would open on
+     * calls after you pressed the targets key. Calls still need the app to
+     * have wired the feature up, so a caller that did not falls back to
+     * targets rather than rendering a screen with no handlers behind it. */
+    const hasCalls = typeof this.props.onPredictChange === "function";
+    const onCalls = hasCalls && this.props.view === "calls";
     const sorted = this.sortedAlerts();
     const armed = sorted.filter((a) => !a.triggeredAt);
     const done = sorted.filter((a) => a.triggeredAt);
@@ -977,28 +1166,30 @@ class AlertsPanel extends PureComponent {
           AlertsHead,
           null,
           React.createElement(
-            AlertsTabs,
+            AlertsHeadTitle,
             null,
-            React.createElement(
-              AlertsTab,
-              {
-                active: onCalls === false,
-                onClick: () => this.setState({ tab: "targets" }),
-              },
-              "Targets",
-            ),
-            hasCallsTab &&
-              React.createElement(
-                AlertsTab,
-                {
-                  active: onCalls,
-                  onClick: () => this.setState({ tab: "calls" }),
-                },
-                "Calls",
-              ),
+            onCalls ? "Calls" : "Targets",
           ),
-          React.createElement(AlertsTally, null, tally),
+          React.createElement(
+            AlertsHeadRight,
+            null,
+            React.createElement(AlertsTally, null, tally),
+            React.createElement(
+              AlertsInfoBtn,
+              {
+                active: this.state.info,
+                onClick: () => this.setState((p) => ({ info: !p.info })),
+                title: onCalls
+                  ? "What calls are, where they stand, and the keys"
+                  : "What targets are, where they stand, and the keys",
+                "aria-label": "About this panel",
+                "aria-expanded": this.state.info ? "true" : "false",
+              },
+              icon("info", 0.95),
+            ),
+          ),
         ),
+        this.state.info && this.renderInfo(onCalls, { armed, done }),
         React.createElement(
           AlertsBody,
           null,
@@ -1056,6 +1247,10 @@ class AlertsPanel extends PureComponent {
               ),
             ),
         ),
+        /* The calls tab's pinned foot. Only while calls are on: the off
+         * screen already carries its own switch, and a drawer whose every row
+         * is conditional on the feature being on would open onto nothing. */
+        onCalls && this.props.predict === true && this.renderCallsFoot(),
         !onCalls &&
         React.createElement(
           AlertFormBlock,
@@ -1190,6 +1385,7 @@ class AlertsPanel extends PureComponent {
 }
 
 AlertsPanel.defaultProps = {
+  view: "targets", // "targets" | "calls" — which of the two the caller opened
   alerts: [],
   coinOptions: [],
   activeCoin: "BTC",

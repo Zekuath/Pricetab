@@ -1,0 +1,38 @@
+# CLAUDE.md: storage.js holds "Generic localStorage helpers + all setting
+# load/save", and every reader validates + falls back
+# (loadBoolSetting / loadEnumSetting / loadNumberSetting / loadJsonSetting).
+#
+# Reading localStorage raw skips that validation, and localStorage is the one
+# input this extension cannot trust: it survives version upgrades, it is
+# editable from DevTools by anyone, and a malformed value there is exactly how
+# a new tab ends up blank. Writing raw skips the silent-fail wrapper, which
+# throws in private-browsing modes where the quota is zero.
+#
+# The four files below already predate this rule and are deliberate:
+#   storage.js    — the helpers themselves
+#   theme-init.js — runs before React (and before storage.js) to stop the flash
+#   api.js        — cache persistence, which has its own hydrate/persist pair
+#   onboarding.js — the seen flag, read once at mount
+# The rule exists to stop the pattern spreading further, not to force a refactor.
+id: no-raw-localstorage
+language: JavaScript
+severity: warning
+message: Go through the storage.js helpers instead of touching localStorage directly.
+note: |
+  Reading:  loadBoolSetting(KEY, default) / loadEnumSetting / loadNumberSetting / loadJsonSetting
+  Writing:  saveSetting(KEY, value) / saveJsonSetting(KEY, value)
+  They validate the stored value and fall back instead of throwing.
+files:
+  - src/**/*.js
+ignores:
+  - src/storage.js
+  - src/theme-init.js
+  - src/api.js
+  - src/onboarding.js
+rule:
+  any:
+    - pattern: localStorage.getItem($$$)
+    - pattern: localStorage.setItem($$$)
+    - pattern: localStorage.removeItem($$$)
+    - pattern: window.localStorage.getItem($$$)
+    - pattern: window.localStorage.setItem($$$)

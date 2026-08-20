@@ -428,6 +428,90 @@ assert.deepStrictEqual(
   "aligned from the end, trimmed to shortest",
 );
 
+/* ── buildPortfolioParts ────────────────────────────────────────────────── */
+// The per-coin values used to be summed and thrown away. They are what the
+// expanded chart stacks, so they have to line up with the total index for
+// index — a band that is off by one is a band drawn on the wrong day.
+
+const parts = (histories, holdings) => {
+  sandbox.__histories = histories;
+  sandbox.__holdings = holdings;
+  return json("buildPortfolioParts(__histories, __holdings)");
+};
+
+{
+  const built = parts(
+    {
+      BTC: [{ price: 100, time: 1 }, { price: 110, time: 2 }],
+      ETH: [{ price: 10, time: 1 }, { price: 20, time: 2 }],
+    },
+    [{ coin: "BTC", amount: 2 }, { coin: "ETH", amount: 3 }],
+  );
+  assert.deepStrictEqual(
+    built.series,
+    [{ price: 230, time: 1 }, { price: 280, time: 2 }],
+    "parts still produce the same total",
+  );
+  assert.deepStrictEqual(
+    built.parts,
+    [
+      { coin: "BTC", values: [200, 220] },
+      { coin: "ETH", values: [30, 60] },
+    ],
+    "one value series per coin, index-aligned with the total",
+  );
+  built.parts.forEach((p) =>
+    assert.strictEqual(
+      p.values.length,
+      built.series.length,
+      `${p.coin} has one value per point`,
+    ),
+  );
+  // Every point: the bands add up to the line drawn over them
+  built.series.forEach((pt, i) =>
+    assert.strictEqual(
+      built.parts.reduce((sum, p) => sum + p.values[i], 0),
+      pt.price,
+      "bands sum to the total",
+    ),
+  );
+}
+
+{
+  // Biggest last-value first — the order the stack and the legend both want,
+  // and the reason a coin's colour doesn't change when two of them swap
+  const built = parts(
+    {
+      BTC: [{ price: 1, time: 1 }, { price: 1, time: 2 }],
+      ETH: [{ price: 1, time: 1 }, { price: 9, time: 2 }],
+    },
+    [{ coin: "BTC", amount: 1 }, { coin: "ETH", amount: 1 }],
+  );
+  assert.deepStrictEqual(
+    built.parts.map((p) => p.coin),
+    ["ETH", "BTC"],
+    "sorted by what each is worth now, biggest first",
+  );
+}
+
+{
+  // Trimming applies to the parts as well, or a young coin's band would be
+  // drawn against days it did not exist for
+  const built = parts(
+    {
+      BTC: [{ price: 1, time: 1 }, { price: 2, time: 2 }, { price: 3, time: 3 }],
+      ETH: [{ price: 10, time: 2 }, { price: 20, time: 3 }],
+    },
+    [{ coin: "BTC", amount: 1 }, { coin: "ETH", amount: 1 }],
+  );
+  assert.strictEqual(built.series.length, 2, "trimmed to the shortest");
+  built.parts.forEach((p) =>
+    assert.strictEqual(p.values.length, 2, `${p.coin} trimmed with it`),
+  );
+}
+
+assert.strictEqual(parts({}, []), null, "nothing held → nothing to stack");
+
 // zero-amount and history-less holdings are skipped
 assert.deepStrictEqual(
   series(

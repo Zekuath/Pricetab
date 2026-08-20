@@ -20,6 +20,16 @@ class ErrorBoundary extends Component {
   }
 }
 
+/* The two theme objects the app ever hands to `ThemeProvider`, built once.
+ *
+ * Their *identity* is the point, not their contents: styled-components passes
+ * the theme through context, so a fresh object per render is a changed value for
+ * every styled descendant and for `LineBase`, which takes it via `withTheme`.
+ * Built here rather than in `render` because there are only two palettes and
+ * neither depends on state. */
+const LIGHT_THEME = { ...theme, color: lightColors };
+const DARK_THEME = { ...theme, color: darkColors };
+
 /* CRYPTO CHART */
 class CryptoChart extends PureComponent {
   constructor(...args) {
@@ -51,15 +61,21 @@ class CryptoChart extends PureComponent {
       volumeBars: loadVolumeBars(), // volume band under the chart
       marketStats: loadMarketStats(), // stats line under the price
       chartGrid: loadChartGrid(), // price/time mesh behind the series
+      // Corner controls resting almost invisible — see QUIET_CHROME_KEY
+      quietChrome: loadQuietChrome(),
       predict: loadPredict(), // "call the cell" — read the chart, name the box
-      predictAhead: loadPredictAhead(), // cells of future the chart reserves
+      futureShare: loadFutureShare(), // how much of the width the board takes
+      // How far the board reaches in price, per range — see BOARD_ZOOM_KEY
+      boardZoom: loadBoardZoom(PERIOD_OPTIONS[0].value),
       callsShowSettled: loadCallsShowSettled(), // keep settled boxes on the chart
       callsCelebrate: loadCallsCelebrate(), // burst on a hit
       calls: loadCalls(), // { record, open } — local, valueless, never sent
+      callsSeenAt: loadCallsSeenAt(), // when the calls panel was last opened
       celebrateCall: null, // the call the burst is fired on
       wonCalls: [], // settled hits waiting to be acknowledged, as toasts
       callGeometry: null, // { step, spanMs, reachMs } reported by the chart
       celebrate: 0, // bumped on a hit; the chart bursts when it changes
+      fireworks: 0, // bumped on a hit worth the big show — see `settleDueCalls`
       moveHeadlines: loadMoveHeadlines(), // headlines beside an unusual move
       portfolio: loadPortfolioFromStorage(), // [{ coin, amount, lots, watches }]
       portfolioPrices: {}, // { COIN: { price, change, up } } from pageTickerCache
@@ -95,12 +111,22 @@ class CryptoChart extends PureComponent {
       firedAlerts: [], // Targets just hit → toast stack
       // Announce a hit in the tab title, and keep checking while hidden
       alertTabTitle: loadAlertTabTitle(),
-      showAlerts: false, // Targets panel visibility
+      /* Which of the two overlay lists is up: null, "targets" or "calls".
+       *
+       * One field rather than two booleans, because they are one slot — the
+       * card is in the middle of the screen and only one thing can be in it.
+       * Two flags would have meant an impossible state (both up) that every
+       * other overlay's guard would then have had to test for twice, and the
+       * guards are already the fiddliest part of `handleKeyDown`. Everything
+       * that only cares *whether* a list is up keeps reading it as a
+       * truthy value, which is why the rename cost nothing at those sites. */
+      alertsView: null,
       tickerEnabled: loadTickerFromStorage(), // Tab ticker mode
       tickerFormat: loadTickerFormatFromStorage(), // 'compact' or 'full'
       autoRotate: loadAutoRotateFromStorage(), // Auto-cycle through coins
       autoRotateInterval: loadAutoRotateIntervalFromStorage(), // ms
       newsTicker: loadNewsTickerFromStorage(), // News row in the page ticker
+      newsFilter: loadNewsFilter(), // "all" | "coins" | "portfolio"
       newsItems: [], // [{ source, title, url }]
       tickerText: "", // Full ticker string
       // Widget states
@@ -141,9 +167,17 @@ class CryptoChart extends PureComponent {
     this.pageTickerRefreshInterval = null;
     this._pageTickerFetching = false;
 
+    // Widget answers gathered for one commit per frame — see `queueWidgetData`
+    this._widgetPatch = null;
+    this._widgetFlush = 0;
+
     // Portfolio price refresh timer (runs only while the view is open)
     this.portfolioInterval = null;
     this._portfolioFetching = false;
+    // A refresh asked for while one was already running, and which run is the
+    // newest — see `fetchPortfolioPrices`
+    this._portfolioPending = false;
+    this._portfolioRun = 0;
 
     // Auto-rotate timer
     this.autoRotateTimer = null;
@@ -205,13 +239,24 @@ class CryptoChart extends PureComponent {
 
     // Jump straight to a position in the list (quick switch). Same reset
     // work as shiftCoin, expressed as an absolute move.
+    /* `index` may be a number or a function of the pending state.
+     *
+     * The second form exists because "add this coin and then show it" is two
+     * queued updates, and the caller that computed the index between them was
+     * reading the list from *before* the add. Resolving it inside this update
+     * means it is read after — see `handleQuickSwitchPick`, where picking an
+     * unowned coin added it correctly and then opened whatever happened to be
+     * last in the old list. */
     _defineProperty(this, "setCoinIndex", (index) => {
       this.tickerScrollPos = 0;
       this.setState(
         (prevState) => {
           const len = prevState.coinOptions.length;
           if (!len) return null;
-          const next = Math.min(Math.max(index, 0), len - 1);
+          const wanted =
+            typeof index === "function" ? index(prevState) : index;
+          if (!isFinite(wanted)) return null;
+          const next = Math.min(Math.max(wanted, 0), len - 1);
           if (next === prevState.coinIndex) return null;
           return {
             coinIndex: next,
@@ -240,6 +285,8 @@ class CryptoChart extends PureComponent {
       this.setState(
         {
           period,
+          // The board's reach is held per range — see BOARD_ZOOM_KEY
+          boardZoom: loadBoardZoom(period),
           apiError: false, // Clear API error when changing period
           // Held in candle mode so the new period reshapes from the old one
           ohlcData:
@@ -316,6 +363,19 @@ class CryptoChart extends PureComponent {
        * requests run together rather than one after another — with every
        * widget on, awaiting them in sequence left the panel filling in for
        * seconds even though the requests are independent. */
+      /* Answers are collected into one commit per frame rather than one each.
+       *
+       * The eight requests run together, which is right — awaiting them in
+       * sequence left the panel filling in for seconds. But each answer used
+       * to call `setState` from its own promise callback, and React 16 does
+       * not batch across an await: eight answers were eight root renders.
+       *
+       * One commit after `Promise.all` was the obvious alternative and is
+       * worse: the slowest provider would then gate every card, so one
+       * endpoint on a retry backoff holds up seven that already answered. A
+       * frame is the unit that matches what the eye can tell apart — answers
+       * landing together commit together, a straggler still arrives on its
+       * own. */
       const jobs = [
         ["fearGreed", fetchFearGreedIndex, "fearGreedData", false],
         ["marketOverview", fetchMarketOverview, "marketOverviewData", false],
@@ -334,13 +394,26 @@ class CryptoChart extends PureComponent {
             const data = await (perCoin ? fetcher(coin) : fetcher());
             // Coin-specific answers are dropped if the coin moved on
             if (data && (!perCoin || isStillCurrent())) {
-              this.setState({ [field]: data });
+              this.queueWidgetData(field, data);
             }
           } catch (e) {
             /* silent fail — the widget keeps whatever it last had */
           }
         }),
       );
+    });
+
+    /* Hold a widget's answer until the end of the frame, then commit whatever
+     * has gathered. See `fetchWidgets` for why a frame and not `Promise.all`. */
+    _defineProperty(this, "queueWidgetData", (field, data) => {
+      this._widgetPatch = { ...(this._widgetPatch || {}), [field]: data };
+      if (this._widgetFlush) return;
+      this._widgetFlush = requestAnimationFrame(() => {
+        this._widgetFlush = 0;
+        const patch = this._widgetPatch;
+        this._widgetPatch = null;
+        if (patch) this.setState(patch);
+      });
     });
 
     _defineProperty(this, "hideWidget", (widgetName) => {
@@ -700,6 +773,37 @@ class CryptoChart extends PureComponent {
       }));
     });
 
+    /* Open one of the two lists, or close it if it is the one already up.
+     *
+     * Asking for the view you are looking at means "put it away"; asking for
+     * the other one swaps the card. Swapping rather than closing-then-opening
+     * matters because they share one slot on screen — a keystroke that closed
+     * targets and needed a second press to open calls would read as the key
+     * having missed. Opening calls also clears the settled-call marker on its
+     * button: the dot means "something happened since you last looked", and
+     * you are now looking. */
+    _defineProperty(this, "toggleAlertsView", (view) => {
+      this.setState((prev) => {
+        const next = prev.alertsView === view ? null : view;
+        if (next !== "calls") return { alertsView: next };
+        const seen = Date.now();
+        saveCallsSeenAt(seen);
+        return { alertsView: next, callsSeenAt: seen };
+      });
+    });
+
+    /* Has a call come back since the panel was last opened?
+     *
+     * Read off `settledAt`, which is when the answer was found. Calls settled
+     * before this shipped have no `settledAt`, so they never light the mark —
+     * the alternative is a dot on every existing install for results the
+     * person has already seen, which teaches them the dot means nothing. */
+    _defineProperty(this, "hasUnseenSettledCalls", () => {
+      const done = (this.state.calls && this.state.calls.done) || [];
+      const seen = this.state.callsSeenAt || 0;
+      return done.some((c) => isFinite(c.settledAt) && c.settledAt > seen);
+    });
+
     _defineProperty(this, "togglePortfolio", () => {
       this.setState(
         (prevState) => ({ showPortfolio: !prevState.showPortfolio }),
@@ -1021,8 +1125,27 @@ class CryptoChart extends PureComponent {
 
     // Ensure every held coin has a fresh price in the shared pageTickerCache,
     // then publish a coin→price map into state for the Portfolio view.
+    /* One refresh at a time, and never a request that is simply dropped.
+     *
+     * A run takes as long as its slowest address lookup, and the two things
+     * that ask for a refresh — opening the view and adding a holding — both
+     * land inside that window. The in-flight guard used to return and leave
+     * nothing behind, so a coin added while a refresh was running had no price
+     * until the sixty-second interval came round: measured, BTC priced and ETH
+     * blank six seconds after the refresh finished. The ask is remembered now
+     * and honoured once the current run ends.
+     *
+     * The generation counter answers the other half: a run publishes a
+     * snapshot of the coins and the currency it *started* with, so a slow run
+     * finishing after the currency changed would overwrite the newer prices
+     * with older ones. A run that is no longer the newest publishes nothing. */
     _defineProperty(this, "fetchPortfolioPrices", async () => {
-      if (document.hidden || this._portfolioFetching) return;
+      if (document.hidden) return;
+      if (this._portfolioFetching) {
+        this._portfolioPending = true;
+        return;
+      }
+      const generation = ++this._portfolioRun;
       const holdings = this.state.portfolio;
       if (!holdings.length) {
         this.setState({ portfolioPrices: {}, portfolioReady: true });
@@ -1126,7 +1249,15 @@ class CryptoChart extends PureComponent {
         if (e) prices[c] = { price: e.price, change: e.change, up: e.up };
       });
       this._portfolioFetching = false;
-      this.setState({ portfolioPrices: prices, portfolioReady: true });
+      // A newer run has already started: this snapshot is the older answer to
+      // a question that has since changed, and publishing it would undo theirs
+      if (generation === this._portfolioRun) {
+        this.setState({ portfolioPrices: prices, portfolioReady: true });
+      }
+      if (this._portfolioPending) {
+        this._portfolioPending = false;
+        this.fetchPortfolioPrices();
+      }
     });
 
     _defineProperty(this, "handleKeyDown", (e) => {
@@ -1136,10 +1267,17 @@ class CryptoChart extends PureComponent {
       // Esc and the arrows would drive the tour and the chart at once
       if (this.state.tourActive) return;
       const t = e.target;
+      /* `SELECT` belongs here with the text fields. A native dropdown is
+       * driven by letters — typing "s" jumps to the first option beginning
+       * with s — so a focused Number Format select answering "s" by closing
+       * Settings meant the control could not be used from the keyboard at all,
+       * and the panel vanished from under it. Anything the browser is already
+       * spending keystrokes on is not ours to claim. */
       if (
         t &&
         (t.tagName === "INPUT" ||
           t.tagName === "TEXTAREA" ||
+          t.tagName === "SELECT" ||
           t.isContentEditable)
       ) {
         return;
@@ -1153,9 +1291,9 @@ class CryptoChart extends PureComponent {
         } else if (this.state.showQuickSwitch) {
           e.preventDefault();
           this.setState({ showQuickSwitch: false, quickSwitchCompare: false });
-        } else if (this.state.showAlerts) {
+        } else if (this.state.alertsView) {
           e.preventDefault();
-          this.setState({ showAlerts: false });
+          this.setState({ alertsView: null });
         } else if (this.state.firedAlerts.length) {
           e.preventDefault();
           this.setState({ firedAlerts: [] });
@@ -1177,7 +1315,7 @@ class CryptoChart extends PureComponent {
       if (
         (e.key === "s" || e.key === "S") &&
         !this.state.showPortfolio &&
-        !this.state.showAlerts &&
+        !this.state.alertsView &&
         !this.state.showQuickSwitch
       ) {
         e.preventDefault();
@@ -1185,15 +1323,20 @@ class CryptoChart extends PureComponent {
         return;
       }
 
-      // A toggles price targets, mirroring S
+      /* A opens targets and K opens calls, both mirroring S. They share the
+       * one slot, so pressing the other key while one is up swaps the card
+       * rather than closing it — the guards below exclude the *other*
+       * overlays, not each other. */
       if (
-        (e.key === "a" || e.key === "A") &&
+        (e.key === "a" || e.key === "A" || e.key === "k" || e.key === "K") &&
         !this.state.showPortfolio &&
         !this.state.showSettings &&
         !this.state.showQuickSwitch
       ) {
         e.preventDefault();
-        this.setState((prev) => ({ showAlerts: !prev.showAlerts }));
+        this.toggleAlertsView(
+          e.key === "k" || e.key === "K" ? "calls" : "targets",
+        );
         return;
       }
 
@@ -1201,7 +1344,7 @@ class CryptoChart extends PureComponent {
       if (
         (e.key === "p" || e.key === "P") &&
         !this.state.showSettings &&
-        !this.state.showAlerts &&
+        !this.state.alertsView &&
         !this.state.showQuickSwitch
       ) {
         e.preventDefault();
@@ -1221,7 +1364,7 @@ class CryptoChart extends PureComponent {
         this.state.showSettings ||
         this.state.showPortfolio ||
         this.state.showQuickSwitch ||
-        this.state.showAlerts ||
+        this.state.alertsView ||
         this.state.showShortcuts
       ) {
         return;
@@ -1258,7 +1401,26 @@ class CryptoChart extends PureComponent {
         return;
       }
 
-      // L turns calls on or off — the grid comes with them
+      /* [ and ] reach the board's price scale — out and in. Only while calls
+       * are on, since there is no board otherwise, and chosen because they are
+       * the two keys next to each other that nothing else here wants. */
+      if (this.state.predict && (e.key === "[" || e.key === "]")) {
+        e.preventDefault();
+        this.handleBoardZoomChange(
+          (() => {
+            const at = BOARD_ZOOM_STEPS.indexOf(this.state.boardZoom);
+            const i = at === -1 ? BOARD_ZOOM_STEPS.indexOf(DEFAULT_BOARD_ZOOM) : at;
+            const next = i + (e.key === "[" ? 1 : -1);
+            return BOARD_ZOOM_STEPS[
+              Math.min(BOARD_ZOOM_STEPS.length - 1, Math.max(0, next))
+            ];
+          })(),
+        );
+        return;
+      }
+
+      // L turns calls on or off. It leaves the grid setting alone: with calls
+      // on the mesh is drawn either way, so there is nothing to bring along.
       if (e.key === "l" || e.key === "L") {
         e.preventDefault();
         this.handlePredictChange(this.state.predict !== true);
@@ -1705,11 +1867,16 @@ class CryptoChart extends PureComponent {
         const result = this.handleAddCoinOption(coin);
         if (!result || result.success === false) return;
       }
-      const index = this.state.coinOptions.indexOf(coin);
-      // Adding appends to the end of the list
-      const target =
-        index >= 0 ? index : Math.max(0, this.state.coinOptions.length - 1);
-      this.setCoinIndex(target);
+      /* Resolved against the list as it will be, not as it was.
+       *
+       * `handleAddCoinOption` queues its update, so reading `this.state` here
+       * gave the list from before the add: the coin was appended correctly and
+       * then `length - 1` selected whatever used to be last. Picking BNB from
+       * BTC/ETH/XRP/LTC added BNB and opened LTC. */
+      this.setCoinIndex((prev) => {
+        const at = prev.coinOptions.indexOf(coin);
+        return at >= 0 ? at : prev.coinOptions.length - 1;
+      });
     });
 
     // Manual retry from the error banner. Shows a "retrying" state long
@@ -1824,16 +1991,19 @@ class CryptoChart extends PureComponent {
         return;
       }
 
-      // Serve from cache while fresh
+      /* Serve from cache while fresh — through the sanitizer, like every
+       * other stored shape. A cache that survived a version upgrade or a hand
+       * edit is untrusted input, and its `url` becomes an `href`. If nothing
+       * survives the check, fall through and fetch rather than render the
+       * remains: an empty row from a corrupt cache would look like a dead
+       * feature and would keep looking like one for the rest of the TTL. */
       const cached = loadJsonSetting(NEWS_CACHE_KEY);
-      if (
-        cached &&
-        Date.now() - cached.t < NEWS_REFRESH_MS &&
-        Array.isArray(cached.items) &&
-        cached.items.length
-      ) {
-        this.setState({ newsItems: cached.items });
-        return;
+      if (cached && Date.now() - cached.t < NEWS_REFRESH_MS) {
+        const items = sanitizeNewsItems(cached.items);
+        if (items.length) {
+          this.setState({ newsItems: items });
+          return;
+        }
       }
 
       this._newsFetching = true;
@@ -1859,9 +2029,38 @@ class CryptoChart extends PureComponent {
       }
     });
 
+    /* The headline row's own list. "My coins" is the list on the chart; "what
+     * I hold" is the portfolio, which is a smaller and more personal set — a
+     * coin you own is one you care about whether or not it is in the rotation.
+     * Anything else, including a stored value from a future version, reads as
+     * "everything", because showing too much is the harmless failure. */
+    _defineProperty(this, "filteredNews", () => {
+      const items = this.state.newsItems;
+      const mode = this.state.newsFilter;
+      if (mode === "coins") return newsForCoins(items, this.state.coinOptions);
+      if (mode === "portfolio") {
+        return newsForCoins(items, (this.state.portfolio || []).map((h) => h.coin));
+      }
+      return items;
+    });
+
+    _defineProperty(this, "handleNewsFilterChange", (value) => {
+      saveNewsFilter(value);
+      this.setState({ newsFilter: value });
+    });
+
+    /* One loader, two consumers.
+     *
+     * `fetchNewsData` has always served both the scrolling row and the
+     * move-headlines line under the price, but this only started it for the
+     * row — so a tab with headlines on and the ticker off made no news request
+     * at all on load, and the line only ever appeared if you happened to
+     * toggle the setting in that session. Measured: 0 requests to Blockchair
+     * or Hacker News on a fresh tab. The condition here has to be the same one
+     * `fetchNewsData` uses, or one of them is always wrong. */
     _defineProperty(this, "startNewsTicker", () => {
       this.stopNewsTicker();
-      if (!this.state.newsTicker) {
+      if (!this.state.newsTicker && !this.state.moveHeadlines) {
         return;
       }
       this.fetchNewsData();
@@ -1879,13 +2078,10 @@ class CryptoChart extends PureComponent {
 
     _defineProperty(this, "handleNewsTickerChange", (enabled) => {
       saveNewsTickerToStorage(enabled);
-      this.setState({ newsTicker: enabled }, () => {
-        if (enabled) {
-          this.startNewsTicker();
-        } else {
-          this.stopNewsTicker();
-        }
-      });
+      /* Not `enabled ? start : stop` — the loader is shared with the
+       * move-headlines line, and stopping it because the row was switched off
+       * would silently stop refreshing the feed the line still reads. */
+      this.setState({ newsTicker: enabled }, this.startNewsTicker);
     });
 
     _defineProperty(this, "startAutoRotate", () => {
@@ -1950,33 +2146,60 @@ class CryptoChart extends PureComponent {
     // supplies the line series — so the mode change costs one request, not two
     _defineProperty(this, "handleMoveHeadlinesChange", (enabled) => {
       saveMoveHeadlines(enabled);
-      this.setState({ moveHeadlines: enabled }, () => {
-        // It reads the same feed as the ticker; fetch it if nothing has yet
-        if (enabled) this.fetchNewsData();
-      });
+      /* Both consumers drive the one loader, so both have to be able to start
+       * and stop it — otherwise turning the row off while headlines stay on
+       * stops refreshing the feed the headlines are read from. `startNewsTicker`
+       * decides for itself whether there is anything to do. */
+      this.setState({ moveHeadlines: enabled }, this.startNewsTicker);
     });
 
-    /* One switch, one result.
+    /* One switch, one setting — and it is not the grid's.
      *
-     * Calls are played on the grid's squares, so turning them on with the
-     * grid off used to give you an invisible game and a second row telling
-     * you to go and fix it. Switching them on brings the grid with them.
-     * Switching them off leaves the grid alone — someone who wanted the mesh
-     * before they wanted the game still wants it afterwards. */
+     * Turning calls on used to switch `chartGrid` on as well, and write it to
+     * storage. The reason was real once: the squares were the grid's, so calls
+     * on a chart with the grid off were an invisible game. It stopped being
+     * true when `updateGrid` began drawing on `predict` alone (`!grid &&
+     * !predict` is the only way out of it) — with calls on, the mesh is drawn
+     * whatever the grid setting says, because the squares *are* the mesh.
+     *
+     * What was left was a switch that quietly rewrote a different, persisted
+     * setting — and never gave it back. Turn calls on once and the plain chart
+     * had a grid on it forever, in every tab, with the Chart Grid row in
+     * Settings showing On for a choice nobody made. Turning calls off could
+     * not undo it either, because by then there was nothing recording what the
+     * setting had been.
+     *
+     * So calls own `predict` and nothing else. The Chart Grid switch and "G"
+     * mean exactly one thing: the mesh on the plain chart. */
     _defineProperty(this, "handlePredictChange", (enabled) => {
       savePredict(enabled);
-      if (enabled && this.state.chartGrid !== true) {
-        saveChartGrid(true);
-        this.setState({ predict: enabled, chartGrid: true });
-        return;
-      }
       this.setState({ predict: enabled });
     });
 
-    _defineProperty(this, "handlePredictAheadChange", (n) => {
-      savePredictAhead(n);
-      this.setState({ predictAhead: n });
+    /* Where the "now" line was put, as a share of the chart's width.
+     *
+     * The write is debounced and the state is not: a drag reports every frame,
+     * and localStorage is synchronous — sixty writes a second is the one thing
+     * on this path that could make the line stutter. The last position wins a
+     * third of a second after the hand stops, which is indistinguishable from
+     * saving on release and needs no second event to be sure of. */
+    /* Held per range, so the zoom follows the chart rather than the tab: the
+     * reach you want on an hour is not the reach you want on a year, and one
+     * shared number would fight you at every switch. */
+    _defineProperty(this, "handleBoardZoomChange", (zoom) => {
+      saveBoardZoom(this.state.period, zoom);
+      this.setState({ boardZoom: zoom });
     });
+
+    _defineProperty(this, "handleFutureShareChange", (share) => {
+      this.setState({ futureShare: share });
+      this.saveFutureShareSoon(share);
+    });
+    _defineProperty(
+      this,
+      "saveFutureShareSoon",
+      debounce((share) => saveFutureShare(share), 300),
+    );
 
     /* One open call per *square*, not per coin.
      *
@@ -1985,20 +2208,44 @@ class CryptoChart extends PureComponent {
      * player should be able to answer all of them. What must not stack is two
      * answers to the *same* question, so placing again on a square replaces
      * whatever was on it. */
-    _defineProperty(this, "handlePlaceCall", ({ target, span, lo, hi, col }) => {
+    _defineProperty(this, "handlePlaceCall", ({ target, span, lo, hi }) => {
       const coin = this.state.coinOptions[this.state.coinIndex];
       const period = this.state.period;
       const currency = this.state.currency;
       this.setState((prev) => {
-        const open = prev.calls.open.filter(
-          (c) =>
-            !(
-              c.coin === coin &&
-              c.currency === currency &&
-              c.period === period &&
-              c.col === col
-            ),
-        );
+        /* Two calls are the same claim when their rectangles intersect in
+         * real time and real price. This used to compare `col` — the column
+         * index counted back from "now" — and that is not an identity at all:
+         * "now" moves, so column 2 names a different stretch of time every
+         * minute. The consequences were both of the things that looked like
+         * separate bugs. A call placed today in column 2 deleted a locked
+         * call made yesterday in what was then column 2, so locks vanished on
+         * their own; and two calls whose columns differed could still cover
+         * the same minutes and prices, so boxes piled up on top of each other
+         * and the chart became unreadable.
+         *
+         * Absolute geometry fixes both at once, and permanently: a stored
+         * call never moves in time-and-price space, so a set that does not
+         * overlap today cannot start overlapping later. */
+        const intersects = (a, b) =>
+          a.target - a.span < b.target &&
+          b.target - b.span < a.target &&
+          a.lo < b.hi &&
+          b.lo < a.hi;
+        const here = { target, span, lo, hi };
+        const mine = (c) =>
+          c.coin === coin && c.currency === currency && c.period === period;
+
+        /* Locked is locked. Landing on an existing open call is not a
+         * replacement and not an error — it is a click on something already
+         * decided, and the honest response is to leave it exactly as it is.
+         * Being able to overwrite a call while watching the price move would
+         * make the record worthless. */
+        if (prev.calls.open.some((c) => mine(c) && intersects(c, here))) {
+          return null;
+        }
+
+        const open = prev.calls.open.slice();
         open.push({
           id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
           coin,
@@ -2008,7 +2255,10 @@ class CryptoChart extends PureComponent {
           span,
           lo,
           hi,
-          col,
+          /* No `col`. The square's identity is the ground it covers, and a
+           * column index counted back from "now" names different ground every
+           * minute — it was written, never read, and validating it on the way
+           * to storage threw away calls placed past the tenth square. */
           placed: Date.now(),
           /* The live price is `currentValue`, a plain number. This read
            * `prev.spot.amount` — a field this component has never had — so
@@ -2067,7 +2317,12 @@ class CryptoChart extends PureComponent {
          * show, and a box on the chart with no result is a question mark
          * nobody can resolve. */
         if (status === "hit" || status === "miss") {
-          settled.push({ ...c, result: status, settledPrice: price });
+          /* `settledAt` is when the answer was *found*, not when the call was
+           * due — a tab opened a day late settles a call whose target was
+           * yesterday, and the mark on the calls button has to say "there is
+           * something here you have not seen", which is a fact about looking,
+           * not about the clock. */
+          settled.push({ ...c, result: status, settledPrice: price, settledAt: now });
         }
       }
       if (open.length === calls.open.length && record === calls.record) return;
@@ -2080,16 +2335,47 @@ class CryptoChart extends PureComponent {
       };
       saveCalls(next);
       const won = settled.filter((c) => c.result === "hit");
+
+      /* Which wins get the big show.
+       *
+       * Three cases, and each is a different kind of "this one mattered":
+       *
+       *   · the first call ever settled right — the moment the feature either
+       *     becomes a habit or does not, and there is exactly one of them;
+       *   · the leading call in a contested column, which is the claim every
+       *     hedge in that column was placed against (the chart's `1ST` tag);
+       *   · any win at all while calls are switched off, because then the
+       *     board is not drawn and nothing is announced, so this is the only
+       *     thing that says it happened.
+       *
+       * The columns are worked out from the calls as they stood *before* this
+       * settlement: everything sharing a target settles in the same pass, so
+       * asking afterwards would find an empty column and nobody first in it.
+       */
+      const quiet = this.state.predict !== true;
+      const columns = callColumns(
+        calls.open.filter(
+          (c) => c.coin === coin && c.currency === currency && c.period === period,
+        ),
+      );
+      const firstEver = !(calls.record && calls.record.hits > 0);
+      const bang =
+        won.length > 0 &&
+        (quiet || firstEver || won.some((c) => isLeadingCall(c, columns)));
+
       this.setState((prev) => ({
         calls: next,
         celebrate: hit ? prev.celebrate + 1 : prev.celebrate,
         // The chart bursts on the box that came true, so it needs to know
         // which one — the newest hit if several settled at once
         celebrateCall: won.length ? won[won.length - 1] : prev.celebrateCall,
-        /* Announced the same way a hit target is. A call settling while you
-         * were away is exactly the kind of thing the toast stack exists for,
-         * and the panel is not open when it happens. */
-        wonCalls: won.length ? won.concat(prev.wonCalls) : prev.wonCalls,
+        fireworks: bang ? prev.fireworks + 1 : prev.fireworks,
+        /* Announced the same way a hit target is — but only while the feature
+         * is on. With calls off you are not playing: settling still runs, so
+         * the record stays true, and the win is shown on the chart rather than
+         * pushed into a toast stack for a game you have put down. */
+        wonCalls:
+          won.length && !quiet ? won.concat(prev.wonCalls) : prev.wonCalls,
       }));
     });
 
@@ -2159,6 +2445,57 @@ class CryptoChart extends PureComponent {
     _defineProperty(this, "handleChartGridChange", (enabled) => {
       saveChartGrid(enabled);
       this.setState({ chartGrid: enabled });
+    });
+
+    _defineProperty(this, "handleQuietChromeChange", (enabled) => {
+      saveQuietChrome(enabled);
+      this.setState({ quietChrome: enabled });
+    });
+
+    /* Apply a mode: a dozen settings in one click.
+     *
+     * Every value goes through the setting's own handler rather than being
+     * written into state here. That is the whole design: each handler already
+     * knows what its setting costs — the refresh interval restarts a timer, the
+     * chart type sends the next fetch down the candle path, the widget preset
+     * kicks off a data load — and a mode that wrote state directly would set
+     * the values and skip all of it, leaving a screen that looked switched but
+     * behaved as before. The cost is a handful of `setState` calls; React
+     * batches them inside one event, and this runs on a click.
+     *
+     * Anything a mode does not name is left alone. See `APP_MODES`.
+     */
+    _defineProperty(this, "handleAppMode", (modeKey) => {
+      const mode = APP_MODES.find((m) => m.value === modeKey);
+      if (!mode) return;
+      const apply = {
+        quietChrome: this.handleQuietChromeChange,
+        chartType: this.handleChartTypeChange,
+        chartGrid: this.handleChartGridChange,
+        volumeBars: this.handleVolumeBarsChange,
+        ohlcEnabled: this.handleOhlcChange,
+        marketStats: this.handleMarketStatsChange,
+        lastSeen: this.handleLastSeenChange,
+        moveHeadlines: this.handleMoveHeadlinesChange,
+        tickerEnabled: this.handleTickerChange,
+        pageTicker: this.handlePageTickerChange,
+        newsTicker: this.handleNewsTickerChange,
+        autoRotate: this.handleAutoRotateChange,
+        refreshInterval: this.handleRefreshIntervalChange,
+      };
+      for (const key of Object.keys(mode.settings)) {
+        const handler = apply[key];
+        if (handler) handler(mode.settings[key]);
+      }
+      if (mode.widgets === "none") {
+        // The bundles are additive sets; "none" is the empty one, and there is
+        // no preset for it because a preset that turns everything off is a
+        // reset with a name
+        saveWidgetsToStorage({ ...DEFAULT_WIDGETS });
+        this.setState({ widgets: { ...DEFAULT_WIDGETS } }, this.ensureCoinSweep);
+      } else if (mode.widgets) {
+        this.handleWidgetPreset(mode.widgets);
+      }
     });
 
     _defineProperty(this, "handleMarketStatsChange", (enabled) => {
@@ -2322,14 +2659,36 @@ class CryptoChart extends PureComponent {
 
       // One bulk request covers the top-100 coins; the per-coin loop below
       // only fetches whatever Coinlore didn't have (TTL skips fresh entries)
-      if (await bulkRefreshPageTickerCache(SUGGESTED_COINS, curr)) {
-        this.buildPageTickerItems();
-      }
+      const bulkFilled = await bulkRefreshPageTickerCache(SUGGESTED_COINS, curr);
 
-      for (let i = 0; i < SUGGESTED_COINS.length; i += PAGE_TICKER_BATCH_SIZE) {
+      /* What the bulk response did not cover, worked out once.
+       *
+       * The fallback loop used to walk all 66 coins in groups of four whatever
+       * the bulk sweep had achieved. `refreshPageTickerCoin` does return
+       * without a request for a fresh coin — so no requests were wasted — but
+       * the *caller* still published the ticker after every group and still
+       * waited 500ms before the next one. On the ordinary path, where Coinlore
+       * answers for every coin, that was seventeen publications and sixteen
+       * sleeps for no work at all: measured at 19 root renders and about eight
+       * seconds of a fetch that had already finished.
+       *
+       * The `needsCoinSweep()` guard below reads as though it prevented this
+       * and does not: it asks whether anything is *watching* the ticker, not
+       * whether there is anything to fetch. Both are wanted, so both are kept.
+       */
+      const stale = SUGGESTED_COINS.filter((coin) => {
+        const entry = pageTickerCache.get(`${coin}-${curr}`);
+        return !entry || now - entry.timestamp > PAGE_TICKER_TTL;
+      });
+
+      // Publish what the bulk gave us — or, on a hydrated cache with nothing
+      // to fetch, publish the cache itself so the bar paints without a request
+      if (bulkFilled || !stale.length) this.buildPageTickerItems();
+
+      for (let i = 0; i < stale.length; i += PAGE_TICKER_BATCH_SIZE) {
         if (!this.needsCoinSweep()) break;
 
-        const batch = SUGGESTED_COINS.slice(i, i + PAGE_TICKER_BATCH_SIZE);
+        const batch = stale.slice(i, i + PAGE_TICKER_BATCH_SIZE);
 
         await Promise.all(
           batch.map((coin) => refreshPageTickerCoin(coin, curr, now)),
@@ -2337,7 +2696,8 @@ class CryptoChart extends PureComponent {
 
         this.buildPageTickerItems();
 
-        if (i + PAGE_TICKER_BATCH_SIZE < SUGGESTED_COINS.length) {
+        // Only between batches that actually went to the network
+        if (i + PAGE_TICKER_BATCH_SIZE < stale.length) {
           await new Promise((resolve) =>
             setTimeout(resolve, PAGE_TICKER_BATCH_DELAY),
           );
@@ -2859,6 +3219,8 @@ class CryptoChart extends PureComponent {
     this.stopTickerInterval();
     this.stopAutoRotate();
     this.stopNewsTicker();
+    // A widget answer waiting for the end of the frame — see `queueWidgetData`
+    if (this._widgetFlush) cancelAnimationFrame(this._widgetFlush);
 
     // Cancel any ongoing requests
     if (this.abortController) {
@@ -2900,11 +3262,19 @@ class CryptoChart extends PureComponent {
 
     /* A new series for this coin is the moment a due call can be answered —
      * that is what "next time you open a tab" means in practice, and it costs
-     * no request because the answer is inside the data just drawn. */
-    if (
-      this.state.predict &&
-      prevState.valueHistory !== this.state.valueHistory
-    ) {
+     * no request because the answer is inside the data just drawn.
+     *
+     * It runs with the feature switched off too. Settling used to be gated on
+     * `predict`, so turning calls off left every open call frozen mid-flight:
+     * come back a week later, switch them on, and a pile of them settle at
+     * once against whatever series happens to be on screen — targets that had
+     * long since scrolled off the range came back "expired" and were dropped
+     * without ever having been judged. A call is a claim someone already made;
+     * whether they are still looking at the board does not change whether it
+     * came true. What the switch governs is the *board* — drawing, placing,
+     * and being told — which is why a hit settled with calls off is celebrated
+     * on the chart and never announced in the toast stack. */
+    if (prevState.valueHistory !== this.state.valueHistory) {
       this.settleDueCalls();
     }
 
@@ -2951,6 +3321,7 @@ class CryptoChart extends PureComponent {
       showSettings,
       showPortfolio,
       showRateAsk,
+      quietChrome,
       portfolio,
       portfolioPrices,
       portfolioReady,
@@ -2996,12 +3367,17 @@ class CryptoChart extends PureComponent {
     const tickerTop = tickerVisible && tickerPosition === "top";
     const tickerBottom = tickerVisible && tickerPosition === "bottom";
 
-    // Select color palette based on active theme
-    const colors = activeTheme === "light" ? lightColors : darkColors;
-    const currentTheme = {
-      ...theme,
-      color: colors,
-    };
+    /* One of two objects, never a third.
+     *
+     * This used to be `{ ...theme, color: colors }` — a new object on every
+     * render, which is a new styled-components context value, which is a new
+     * theme reaching every styled descendant *and* `LineBase` through
+     * `withTheme`. `PureComponent` cannot help: the prop genuinely changed.
+     * Measured: five `setState({ tickerText })` calls — the scrolling tab
+     * title, which touches nothing on the chart — produced five full
+     * `LineBase` renders. There are only ever two palettes, so there only ever
+     * need to be two objects, and switching theme still hands over a new one. */
+    const currentTheme = activeTheme === "light" ? LIGHT_THEME : DARK_THEME;
 
     return React.createElement(
       ThemeProvider,
@@ -3096,7 +3472,7 @@ class CryptoChart extends PureComponent {
           AppShell,
           { tickerTop, tickerBottom },
           !showPortfolio &&
-            !this.state.showAlerts &&
+            !this.state.alertsView &&
             !this.state.showQuickSwitch &&
             React.createElement(
               SettingsToggleButton,
@@ -3104,6 +3480,9 @@ class CryptoChart extends PureComponent {
                 onClick: this.toggleSettings,
                 open: showSettings,
                 type: "button",
+                /* Never quiet while it is this panel's × — you are looking at
+                 * the panel, and the way out of it is not a thing to hunt for. */
+                quiet: quietChrome && !showSettings,
                 // While open this is the panel's × — the panel covers the
                 // ticker, so the corner is where it belongs
                 tickerTop: tickerTop && !showSettings,
@@ -3118,31 +3497,62 @@ class CryptoChart extends PureComponent {
           !showSettings &&
             !showPortfolio &&
             !this.state.showQuickSwitch &&
+            this.state.alertsView !== "calls" &&
             React.createElement(
               AlertsToggleButton,
               {
-                onClick: () =>
-                  this.setState((prev) => ({ showAlerts: !prev.showAlerts })),
+                onClick: () => this.toggleAlertsView("targets"),
                 type: "button",
-                tickerTop: tickerTop && !this.state.showAlerts,
-                open: this.state.showAlerts,
+                quiet: quietChrome && !this.state.alertsView,
+                tickerTop: tickerTop && !this.state.alertsView,
+                open: this.state.alertsView === "targets",
                 "data-tour": "alerts",
                 hasFired:
-                  !this.state.showAlerts &&
+                  !this.state.alertsView &&
                   this.state.alerts.some((a) => a.triggeredAt),
-                "aria-label": this.state.showAlerts
+                "aria-label": this.state.alertsView
                   ? "Close price targets"
                   : "Price targets",
-                title: this.state.showAlerts
+                title: this.state.alertsView
                   ? "Close price targets"
                   : "Price targets (A)",
               },
-              this.state.showAlerts ? "×" : icon("target", 1.1),
+              this.state.alertsView ? "×" : icon("target", 1.1),
+            ),
+
+          /* Calls — its own control, left of the targets bell.
+           *
+           * The two swap places in the corner rather than stacking: whichever
+           * list is up owns the × in the top-right, and the other button
+           * stands down, because two × -shaped controls in one corner is a
+           * question about which one closes what. */
+          !showSettings &&
+            !showPortfolio &&
+            !this.state.showQuickSwitch &&
+            this.state.alertsView !== "targets" &&
+            React.createElement(
+              CallsToggleButton,
+              {
+                onClick: () => this.toggleAlertsView("calls"),
+                type: "button",
+                quiet: quietChrome && !this.state.alertsView,
+                tickerTop: tickerTop && !this.state.alertsView,
+                open: this.state.alertsView === "calls",
+                "data-tour": "calls",
+                /* Something settled since the panel was last opened. This is
+                 * the only thing on the page that says a call came back, and
+                 * it is the reason to open a new tab and look. */
+                hasFired:
+                  !this.state.alertsView && this.hasUnseenSettledCalls(),
+                "aria-label": this.state.alertsView ? "Close calls" : "Calls",
+                title: this.state.alertsView ? "Close calls" : "Calls (K)",
+              },
+              this.state.alertsView ? "×" : icon("calls", 1.05),
             ),
 
           // Portfolio toggle (left of the gear)
           !showSettings &&
-            !this.state.showAlerts &&
+            !this.state.alertsView &&
             !this.state.showQuickSwitch &&
             React.createElement(
               PortfolioToggleButton,
@@ -3150,6 +3560,7 @@ class CryptoChart extends PureComponent {
                 onClick: this.togglePortfolio,
                 open: showPortfolio,
                 type: "button",
+                quiet: quietChrome && !showPortfolio,
                 // The portfolio covers the page ticker, so its × must not
                 // follow it — otherwise a ticker that finishes loading in
                 // the background shifts the close button for no visible
@@ -3367,9 +3778,25 @@ class CryptoChart extends PureComponent {
                 : React.createElement(Line, {
                     prices: valueHistory,
                     colorize: this.state.chartColor,
-                    grid: this.state.chartGrid === true,
-                    predict: this.state.predict === true,
-                    predictAhead: this.state.predictAhead,
+                    /* Both off while two coins share the chart, for the same
+                     * reason the candles and the volume band are: comparison
+                     * puts percent change on the y axis, and the mesh, its
+                     * price labels and the squares you call are all built from
+                     * the price scale. Left on, the chart offered a band to
+                     * point at that no line on it was drawn against — and let
+                     * you lock a prediction on it. Calls already placed keep
+                     * settling; only drawing and placing stand down. */
+                    grid: this.state.chartGrid === true && !this.state.compareCoin,
+                    predict:
+                      this.state.predict === true && !this.state.compareCoin,
+                    /* The board's width, and the line that sets it. There is
+                     * no second control: a stepper counting squares said the
+                     * same thing in a unit nobody thinks in, and the chart
+                     * already had the edge you actually want to pull. */
+                    futureShare: this.state.futureShare,
+                    onFutureShareChange: this.handleFutureShareChange,
+                    boardZoom: this.state.boardZoom,
+                    onBoardZoomChange: this.handleBoardZoomChange,
                     calls: this.state.calls.open,
                     settledCalls:
                       this.state.callsShowSettled === false
@@ -3381,6 +3808,14 @@ class CryptoChart extends PureComponent {
                         ? 0
                         : this.state.celebrate,
                     celebrateCall: this.state.celebrateCall,
+                    /* Behind the same switch as the burst: "celebrate a win"
+                     * is one preference, not two, and a setting that stopped
+                     * the small celebration while letting the big one through
+                     * would read as broken. */
+                    fireworks:
+                      this.state.callsCelebrate === false
+                        ? 0
+                        : this.state.fireworks,
                     onPlaceCall: this.handlePlaceCall,
                     onGeometry: this.handleChartGeometry,
                     currencySymbol: getCurrencySymbol(this.state.currency),
@@ -3410,7 +3845,7 @@ class CryptoChart extends PureComponent {
                     paused:
                       showSettings ||
                       showPortfolio ||
-                      this.state.showAlerts ||
+                      this.state.alertsView ||
                       this.state.showQuickSwitch,
                     formatPrice: this.formatChartPrice,
                   }),
@@ -3420,13 +3855,14 @@ class CryptoChart extends PureComponent {
         // Compare toggle (fixed, right of the widget control)
         !showSettings &&
           !showPortfolio &&
-          !this.state.showAlerts &&
+          !this.state.alertsView &&
           !this.state.showQuickSwitch &&
           React.createElement(
             CompareToggleButton,
             {
               type: "button",
               tickerTop,
+              quiet: quietChrome,
               active: Boolean(this.state.compareCoin),
               onClick: this.toggleCompare,
               "data-tour": "compare",
@@ -3445,7 +3881,7 @@ class CryptoChart extends PureComponent {
           if (
             showSettings ||
             showPortfolio ||
-            this.state.showAlerts ||
+            this.state.alertsView ||
             this.state.showQuickSwitch
           ) {
             return null;
@@ -3459,6 +3895,7 @@ class CryptoChart extends PureComponent {
             {
               type: "button",
               tickerTop,
+              quiet: quietChrome,
               "data-tour": "widget-toggle",
               onClick: anyVisible ? this.hideAllWidgets : this.restoreAllWidgets,
               "aria-label": anyVisible ? "Hide all widgets" : "Show hidden widgets",
@@ -3929,9 +4366,16 @@ class CryptoChart extends PureComponent {
             pageTickerPosition,
             pageTickerCollapsed,
             newsTicker,
-            newsItems,
           } = this.state;
           if (showSettings || showPortfolio || !pageTicker || !pageTickerReady || !pageTickerItems || pageTickerItems.length === 0) return null;
+
+          /* Filtered here rather than at the fetch. The same `newsItems` feeds
+           * the move-headlines line under the price, which is already narrowed
+           * to the coin on screen — narrowing the stored list as well would
+           * mean a headline about the coin you are looking at disappearing
+           * because it is not one you hold. One feed, two readers, each asking
+           * for what it needs. */
+          const newsItems = this.filteredNews();
 
           const position = pageTickerPosition || DEFAULT_PAGE_TICKER_POSITION;
 
@@ -4121,6 +4565,8 @@ class CryptoChart extends PureComponent {
             onPageTickerPositionChange: this.handlePageTickerPositionChange,
             newsTicker: this.state.newsTicker,
             onNewsTickerChange: this.handleNewsTickerChange,
+            newsFilter: this.state.newsFilter,
+            onNewsFilterChange: this.handleNewsFilterChange,
             chartColor: this.state.chartColor,
             onChartColorChange: this.handleChartColorChange,
             lastSeenEnabled: this.state.lastSeenEnabled,
@@ -4139,6 +4585,30 @@ class CryptoChart extends PureComponent {
             onChartGridChange: this.handleChartGridChange,
             moveHeadlines: this.state.moveHeadlines,
             onMoveHeadlinesChange: this.handleMoveHeadlinesChange,
+            quietChrome: this.state.quietChrome,
+            onQuietChromeChange: this.handleQuietChromeChange,
+            /* Modes are recognised from the settings rather than remembered, so
+             * the row needs the same values the switches below it are drawn
+             * from — see `activeAppMode`. */
+            appMode: activeAppMode(
+              {
+                quietChrome: this.state.quietChrome === true,
+                chartType: this.state.chartType,
+                chartGrid: this.state.chartGrid === true,
+                volumeBars: this.state.volumeBars !== false,
+                ohlcEnabled: this.state.ohlcEnabled !== false,
+                marketStats: this.state.marketStats !== false,
+                lastSeen: this.state.lastSeenEnabled !== false,
+                moveHeadlines: this.state.moveHeadlines === true,
+                tickerEnabled: this.state.tickerEnabled === true,
+                pageTicker: this.state.pageTicker === true,
+                newsTicker: this.state.newsTicker === true,
+                autoRotate: this.state.autoRotate === true,
+                refreshInterval: this.state.refreshInterval,
+              },
+              widgets,
+            ),
+            onAppMode: this.handleAppMode,
             onShowShortcuts: () =>
               this.setState({ showSettings: false, showShortcuts: true }),
             onReplayTour: () =>
@@ -4291,12 +4761,12 @@ class CryptoChart extends PureComponent {
           ),
 
         // Price targets panel ("a")
-        this.state.showAlerts &&
+        this.state.alertsView &&
           React.createElement(AlertsPanel, {
+            view: this.state.alertsView,
             predict: this.state.predict,
                   onPredictChange: this.handlePredictChange,
-                  predictAhead: this.state.predictAhead,
-                  onPredictAheadChange: this.handlePredictAheadChange,
+
                   calls: this.state.calls.open,
                   settledCalls: this.state.calls.done,
                   callRecord: this.state.calls.record,
@@ -4306,8 +4776,8 @@ class CryptoChart extends PureComponent {
                   onCallsCelebrateChange: this.handleCallsCelebrateChange,
                   onClearSettled: this.handleClearSettled,
                   callGeometry: this.state.callGeometry,
-                  chartGrid: this.state.chartGrid,
-                  onChartGridChange: this.handleChartGridChange,
+                  boardZoom: this.state.boardZoom,
+                  onBoardZoomChange: this.handleBoardZoomChange,
                   onWithdrawCall: this.handleWithdrawCall,
                   onResetCalls: this.handleResetCalls,
                   // The panel names a call's range when it is not the one on
@@ -4315,6 +4785,10 @@ class CryptoChart extends PureComponent {
                   // and said so on every row.
                   period: this.state.period,
                   alerts: this.state.alerts,
+                  // The info card states where things stand, and whether a hit
+                  // is announced (and checked in the background) is part of
+                  // that — it is a Settings switch the panel cannot see
+                  alertTabTitle: this.state.alertTabTitle,
             coinOptions,
             activeCoin,
             currency,
@@ -4334,7 +4808,7 @@ class CryptoChart extends PureComponent {
             onRemove: this.handleRemoveAlert,
             onRestore: this.handleRestoreAlert,
             onRearm: this.handleRearmAlert,
-            onClose: () => this.setState({ showAlerts: false }),
+            onClose: () => this.setState({ alertsView: null }),
           }),
 
         // Keyboard reference ("?")
@@ -4414,6 +4888,62 @@ injectGlobal`
     -moz-osx-font-smoothing: grayscale;
     -webkit-font-smoothing: antialiased;
     overflow: hidden;
+  }
+
+  /* The board's handle is an SVG group, so it takes the browser's own focus
+     ring — a blue rectangle that belongs to no part of this design. It is
+     drawn imperatively by the chart and cannot carry a styled-component, so
+     its focus style lives here. Kept as a ring rather than removed: it is the
+     only way to see where the keyboard is. */
+  .pt-now-grip:focus {
+    outline: none;
+  }
+
+  .pt-now-grip:focus-visible rect {
+    stroke: ${theme.color.text};
+    stroke-width: 2;
+  }
+
+  /* The board's zoom buttons: quiet until the pointer is near them, and a
+     visible ring when the keyboard is on one. */
+  .pt-zoom {
+    opacity: 0.45;
+    transition: opacity 0.18s ease;
+  }
+
+  .pt-zoom:hover,
+  .pt-zoom:focus-within {
+    opacity: 1;
+  }
+
+  .pt-zoom-btn,
+  .pt-zoom-home[role="button"] {
+    cursor: pointer;
+  }
+
+  /* The readout is the way back to the default reach — but only while it is
+     one. At the default it carries no role, so it takes no cursor and no ring
+     either, and reads as the label it is. */
+  .pt-zoom-home:focus {
+    outline: none;
+  }
+
+  /* The hit area, which is the first rect in the group — not the one-pixel
+     rule under the number, which is a rect too and must not get a ring. */
+  .pt-zoom-home:focus-visible rect:first-of-type {
+    fill: ${theme.color.bg};
+    stroke: ${theme.color.text};
+    stroke-width: 1.5;
+  }
+
+  .pt-zoom-btn:focus {
+    outline: none;
+  }
+
+  .pt-zoom-btn:focus-visible rect {
+    fill: ${theme.color.bg};
+    stroke: ${theme.color.text};
+    stroke-width: 1.5;
   }
 
   @media (max-width: ${theme.breakpoint.down.sm}px) {

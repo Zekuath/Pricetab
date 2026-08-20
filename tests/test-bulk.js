@@ -23,6 +23,10 @@ const makeSandbox = (opts = {}) => {
     // config.js supplies this at runtime; the sweep only cares that most
     // coins are Coinbase-served
     providerFor: (coin) => (opts.krakenCoins || []).includes(coin) ? "kraken" : "coinbase",
+    // The runtime half of the same policy (a coin can be failed over mid-tab);
+    // the real one lives in config.js, exercised in tests/test-provider.js
+    effectiveProvider: (coin) =>
+      (opts.krakenCoins || []).includes(coin) ? "kraken" : "coinbase",
     KRAKEN_API: "https://api.kraken.com/0/public/",
     KRAKEN_PERIODS: { day: { interval: 5, points: 288 } },
     fetch: async (url) => {

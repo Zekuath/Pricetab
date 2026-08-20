@@ -27,10 +27,35 @@ This document explains how to create all required assets for publishing PriceTab
 
 ## 📸 Screenshot Guide
 
-> ⚠️ **The 1.3.0 set is stale.** It predates the portfolio, price targets,
-> compare mode and candlesticks. The 1.4.0 set is planned in
-> **[SCREENSHOT_PLAN.md](SCREENSHOT_PLAN.md)** — read that first; it is the
-> canonical brief. This section only records the constraints.
+> ✅ **The 1.4.0 set is shot** (19 Aug 2026), against live market data:
+> `01-hero`, `02-calls`, `03-portfolio`, `04-widgets`, `05-targets`.
+> **[SCREENSHOT_PLAN.md](SCREENSHOT_PLAN.md)** is still the canonical brief —
+> read it first; it carries the five frames, the house rules, and the two
+> capture traps that cost a morning (the board's window versus the range, and
+> what the hero composite's crop can actually see). This section records the
+> constraints and how to re-shoot.
+
+### Re-shooting the set
+
+There is a pipeline; do not take these by hand.
+
+```bash
+python3 assets/mockups/scene-server.py          # serves the repo on :8123
+# then, per scene, screenshot at 1280x800:
+#   http://localhost:8123/assets/mockups/scenes.html?scene=<name>&theme=dark|light
+# and compose the five frames from:
+#   http://localhost:8123/assets/mockups/store-frames.html?os=win   (#f01 … #f05)
+```
+
+`scenes.html` boots the **real extension** in an iframe with a per-scene
+`localStorage` state and performs the scene's clicks, so every number in the
+image came from the live API rather than from a designer. `store-frames.html`
+adds the wordmark, the browser chrome and the caption, and each `#fNN` is
+exactly 1280×800 — screenshot the element, not the page.
+
+The manual routes further down this file are the fallback for a machine
+without Node, and nothing more. Prefer the pipeline: it is repeatable, it
+cannot hand-type a number, and it is what the existing set was made with.
 
 ### Constraints
 
@@ -216,12 +241,12 @@ PriceTab - Crypto Charts on Every New Tab
 
 **Summary** (required, max 132 characters) — keep in sync with `manifest.json` and `STORE_DESCRIPTION.md`:
 ```
-Every new tab opens a live crypto chart. Watch your coins, spot the top movers, and read 9 market signals. Free, no account.
+Every new tab opens a live crypto chart. Follow your coins, call where the price goes next, and keep the score. No account.
 ```
 
 **Description** (required, max 16,000 characters):
 
-> ⚠️ **Use the description from `docs/STORE_DESCRIPTION.md`** — that file is the canonical, policy-compliant version.
+> ⚠️ **Use the description from `docs/store/STORE_DESCRIPTION.md`** — that file is the canonical, policy-compliant version.
 > Do NOT use the description below; it has been removed to prevent accidental keyword spam rejections.
 
 **Category** (old "Productivity" category no longer exists — see `STORE_DESCRIPTION.md`):
@@ -241,7 +266,7 @@ English (United States)
 ### Immediate (Before Publishing)
 - [x] Take 3-5 screenshots (1280x800) ✓ 9 screenshots ready
 - [x] Create small tile (440x280) ✓
-- [x] Write store description - see `docs/STORE_DESCRIPTION.md`
+- [x] Write store description - see `docs/store/STORE_DESCRIPTION.md`
 - [x] Privacy policy URL live: `https://zekuath.github.io/Pricetab/privacy.html` ✓
 
 ### Optional (For Better Results)

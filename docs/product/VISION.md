@@ -127,7 +127,7 @@ only from optional, clearly-labeled, contextual surfaces — hardware-wallet &
 exchange affiliate links, optional donations / tip jar, and a single
 self-served (untracked, "Sponsored"-labeled) slot. No ad networks, no data
 sold. Full strategy, placement, CWS compliance and phasing live in
-**[MONETIZATION.md](MONETIZATION.md)**.
+**[MONETIZATION.md](../internal/MONETIZATION.md)**.
 
 ---
 

@@ -8,7 +8,7 @@ A concrete, step-by-step plan to get the first real users for a zero-install, fr
 
 ## Phase 0 — Before you tell anyone (store readiness)
 
-- [x] Upload the new build with the new title + description (`docs/STORE_DESCRIPTION.md`) — 1.3.0 live since August 2026.
+- [x] Upload the new build with the new title + description (`docs/store/STORE_DESCRIPTION.md`) — 1.3.0 live since August 2026.
 - [ ] Host the privacy policy and put the URL in the **Privacy** field (not the description). GitHub Pages from `privacy.html` works.
 - [ ] Add a support email in the dashboard (a plain Gmail is fine).
 - [ ] Replace outdated screenshots with fresh captures (asset pipeline in `assets/mockups/`).
@@ -84,7 +84,7 @@ Now every new tab shows a live chart for my coins, the price in the tab title, a
 
 Tech notes for anyone curious: Manifest V3, React + D3, zero permissions, all data in localStorage, Coinbase public API. No build step — single bundled file.
 
-Free, no account. Link in comments (per sub rules). Happy to answer anything.
+No account, and nothing leaves your machine. Link in comments (per sub rules). Happy to answer anything.
 ```
 
 ### Hacker News — Show HN

@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "PriceTab - Crypto Charts on Every New Tab",
   "version": "1.4.0",
-  "description": "Every new tab opens a live crypto chart. Watch your coins, spot the top movers, and read 9 market signals. Free, no account.",
+  "description": "Every new tab opens a live crypto chart. Follow your coins, call where the price goes next, and keep the score. No account.",
   "chrome_url_overrides": {
     "newtab": "index.html"
   },

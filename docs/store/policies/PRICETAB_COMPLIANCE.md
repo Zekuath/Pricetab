@@ -7,7 +7,20 @@
 
 ## Summary
 
-PriceTab is **FULLY COMPLIANT** with the vast majority of Chrome Web Store policies. The only rejection reason was **Yellow Argon (Keyword Spam)**, caused by coin lists in the store description.
+PriceTab is **FULLY COMPLIANT** with the vast majority of Chrome Web Store
+policies. Both past rejections were **Yellow Argon (Keyword Spam)**, caused by
+coin lists in the store description.
+
+**Standing at 1.4.0 (19 Aug 2026):**
+
+- The rewritten description in `STORE_DESCRIPTION.md` contains **zero coin
+  names and zero tickers** — measured, not assumed. That is the direct answer
+  to the only thing this listing has ever been rejected for.
+- The one genuinely new policy surface is **calls**, which a reviewer can
+  misread as gambling. The position, and the code that enforces it, is set out
+  in *Calls and the gambling policy* below. Read it before submitting.
+- Still zero permissions, still no remote code, still no data collection of any
+  kind.
 
 ---
 
@@ -52,7 +65,7 @@ PriceTab is **FULLY COMPLIANT** with the vast majority of Chrome Web Store polic
 | Hate Content | COMPLIANT | Neutral financial data |
 | Violence | COMPLIANT | Not applicable |
 | Illegal Activities | COMPLIANT | Legal API usage |
-| Gambling | COMPLIANT | No betting/gambling features |
+| Gambling | COMPLIANT | Nothing can be staked, won or cashed out — see *Calls and the gambling policy* below |
 
 ### Privacy Policies
 
@@ -140,6 +153,48 @@ are added regularly based on Coinbase availability.
 - Long coin lists are considered "keyword stuffing"
 - Comma-separated lists look like spam
 - Chrome Web Store prefers natural language
+
+---
+
+## Calls and the gambling policy
+
+**Read this before the next submission.** Since 1.4.0 the extension has a
+feature called *calls*: you point at a square on the chart — a price band at a
+moment in the future — and it settles itself later as "called it" or "missed",
+keeping a tally. A reviewer skimming the listing will see *predict the price
+and keep score*, and gambling services are explicitly prohibited (see
+`CHROME_STORE_POLICIES.md`; Grey Copper in `REJECTION_CODES.md`). The position
+below is the answer, and it is enforced by the code rather than by intent.
+
+**Nothing is staked.** There is no wager, no entry cost, no pot and no
+counterparty. A call costs nothing to place and withdrawing one costs nothing.
+
+**Nothing is won.** The outcome is two counters — how many were right, and the
+best run — held in `localStorage` on that one machine. There is no currency, no
+points that buy anything, no leaderboard, no account to attach a result to, and
+no way to move a score to another device, let alone to another person.
+
+**Nothing can be cashed out.** The extension has zero permissions and makes no
+outbound request other than fetching public market data. There is no payment
+path, no wallet connection anywhere in the product (the holdings view is
+tracking-only and asks for no key), and no server that could hold a balance.
+
+**This was a deliberate design constraint, not a happy accident.** The comment
+in `src/config.js` beside the feature's storage key states it: a score that
+could become something purchasable would turn a price chart into a wager on an
+asset, which the store bans outright — and a number in `localStorage` could
+never be trusted with value in any case.
+
+**If asked, the one-line answer:** calls are a self-scored accuracy record for
+your own reading of the market, like marking your own exam paper. The store
+listing says the same in its disclaimer: *"they are not a wager, nothing can be
+staked on them and they carry no value."*
+
+**What would break this** — do not do any of these without a policy review
+first: attaching a purchasable or transferable value to the score; a
+leaderboard or any comparison against other users; syncing the record off the
+device; or any wording in the listing that frames a call as a bet, a stake or a
+prize.
 
 ---
 

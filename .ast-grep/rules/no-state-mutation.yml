@@ -1,0 +1,27 @@
+# CLAUDE.md, React 16.5 Patterns: "Immutability - never mutate".
+#
+# Mutating this.state directly does not re-render, so the symptom is not a
+# crash but a chart that silently stops updating — the hardest class of bug to
+# notice in a page that refreshes every 30 seconds anyway.
+#
+# A regex cannot separate `this.state.coin = x` from `this.state.coin == x` or
+# from the same text inside a comment; the AST can.
+id: no-state-mutation
+language: JavaScript
+severity: error
+message: Direct this.state mutation does not re-render — go through this.setState().
+note: |
+  Use the functional form so concurrent updates compose:
+    this.setState(prev => ({ coins: [...prev.coins, next] }));
+  Never assign to this.state outside the constructor.
+files:
+  - src/**/*.js
+rule:
+  any:
+    - pattern: this.state.$FIELD = $VALUE
+    - pattern: this.state.$FIELD.push($$$)
+    - pattern: this.state.$FIELD.splice($$$)
+    - pattern: this.state.$FIELD.sort($$$)
+constraints:
+  FIELD:
+    regex: "^[A-Za-z_$][A-Za-z0-9_$]*$"

@@ -490,6 +490,18 @@ const settingsPulse = keyframes`
   to { transform: scale(1); }
 `;
 
+/* Quiet controls.
+ *
+ * With `quiet` on, the corner buttons rest at a fraction of their opacity and
+ * come back to full under the pointer or on keyboard focus. They fade to a
+ * ghost rather than to nothing on purpose: a control that is invisible but
+ * still clickable is a trap, and one that stops receiving the pointer cannot
+ * be brought back by reaching for it. The gear rests brightest of the five —
+ * it is the way back to this setting, so it is the one that must stay
+ * findable. */
+const QUIET_LEAD = 0.32;
+const QUIET_REST = 0.14;
+
 const SettingsToggleButton = styled.button`
   position: absolute;
   top: ${({ theme, tickerTop }) =>
@@ -514,9 +526,18 @@ const SettingsToggleButton = styled.button`
      own entrance, so the close control and the panel move together */
   transition:
     transform 0.25s ease,
+    opacity 0.25s ease,
     top 0.4s ease,
     right 0.4s ease;
   z-index: 120;
+
+  /* Resting weight, and the two ways back to full — see QUIET_LEAD */
+  opacity: ${({ quiet }) => (quiet ? QUIET_LEAD : 1)};
+
+  &:hover,
+  &:focus-visible {
+    opacity: 1;
+  }
 
   &:hover {
     transform: scale(1.1);
@@ -562,9 +583,18 @@ const PortfolioToggleButton = styled.button`
   /* Same corner travel as the settings control */
   transition:
     transform 0.25s ease,
+    opacity 0.25s ease,
     top 0.4s ease,
     right 0.4s ease;
   z-index: 120;
+
+  /* Resting weight, and the two ways back to full — see QUIET_LEAD */
+  opacity: ${({ quiet }) => (quiet ? QUIET_REST : 1)};
+
+  &:hover,
+  &:focus-visible {
+    opacity: 1;
+  }
 
   &:hover {
     transform: scale(1.1);
@@ -614,9 +644,18 @@ const AlertsToggleButton = styled.button`
   /* Same corner travel as the settings control */
   transition:
     transform 0.25s ease,
+    opacity 0.25s ease,
     top 0.4s ease,
     right 0.4s ease;
   z-index: 120;
+
+  /* Resting weight, and the two ways back to full — see QUIET_LEAD */
+  opacity: ${({ quiet }) => (quiet ? QUIET_REST : 1)};
+
+  &:hover,
+  &:focus-visible {
+    opacity: 1;
+  }
 
   &:hover {
     transform: scale(1.1);
@@ -651,6 +690,87 @@ const AlertsToggleButton = styled.button`
   }
 `;
 
+
+/* Calls — left of the targets button, same treatment.
+ *
+ * Its own control rather than a tab inside the targets panel. They are two
+ * kinds of statement about a future price, which is why they shared a panel
+ * to begin with, but only one of them is a game you come back to: a call is
+ * placed on the chart, settles by itself and keeps a record, and reaching it
+ * meant opening a panel named after something else and then finding a tab.
+ * A dot marks calls that have settled since you last looked, the same way the
+ * targets bell marks a hit — that is the whole reason to come back.
+ */
+const CallsToggleButton = styled.button`
+  position: absolute;
+  top: ${({ theme, tickerTop }) =>
+    tickerTop
+      ? `calc(${theme.spacing.large}rem + 3rem)`
+      : `${theme.spacing.large}rem`};
+  right: ${({ theme, open }) =>
+    open
+      ? `${theme.spacing.large}rem`
+      : `calc(${theme.spacing.large}rem + 7.5rem)`};
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: ${({ theme }) => theme.color.text};
+  font-size: ${({ open }) => (open ? "1.35rem" : "1.05rem")};
+  cursor: pointer;
+  line-height: 1;
+  width: 1.6rem;
+  height: 1.6rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Same corner travel as the settings control */
+  transition:
+    transform 0.25s ease,
+    opacity 0.25s ease,
+    top 0.4s ease,
+    right 0.4s ease;
+  z-index: 120;
+
+  /* Resting weight, and the two ways back to full — see QUIET_LEAD */
+  opacity: ${({ quiet }) => (quiet ? QUIET_REST : 1)};
+
+  &:hover,
+  &:focus-visible {
+    opacity: 1;
+  }
+
+  &:hover {
+    transform: scale(1.1);
+  }
+
+  &:focus {
+    outline: none;
+    animation: ${settingsPulse} 1s ease;
+  }
+
+  &::after {
+    content: "";
+    display: ${({ hasFired }) => (hasFired ? "block" : "none")};
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 0.4rem;
+    height: 0.4rem;
+    border-radius: 50%;
+    background: ${({ theme }) => theme.color.chartLineGreen};
+  }
+
+  @media (max-width: ${({ theme }) => theme.breakpoint.down.sm}px) {
+    right: ${({ theme, open }) =>
+      open
+        ? `${theme.spacing.small}rem`
+        : `calc(${theme.spacing.small}rem + 7.5rem)`};
+    top: ${({ theme, tickerTop }) =>
+      tickerTop
+        ? `calc(${theme.spacing.small}rem + 3rem)`
+        : `${theme.spacing.small}rem`};
+  }
+`;
 
 const overlayBlur = keyframes`
   from { backdrop-filter: blur(0px); }

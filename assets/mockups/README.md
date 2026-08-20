@@ -104,7 +104,7 @@ done
 # 2. Framed store screenshots — five, the cap the upload form accepts.
 S=assets/screenshots
 for os in win:windows mac:safari cros:chromeos; do
-  for f in f01:01-hero f02:02-compare f03:03-portfolio f04:04-widgets f05:05-targets; do
+  for f in f01:01-hero f02:02-calls f03:03-portfolio f04:04-widgets f05:05-targets; do
     shot 1280,800 "$S/${os#*:}/${f#*:}.png" "$M/store-frames.html?only=${f%%:*}&os=${os%%:*}"
   done
 done

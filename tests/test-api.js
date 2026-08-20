@@ -5,12 +5,21 @@ const assert = require("assert");
 
 let fetchCalls = [];
 let chainFail = false; // simulates the balance providers going down
+let coinbaseDown = false; // an edge error: a rejected fetch, as the browser sees it
 let krakenError = false; // Kraken reports failures in a 200 response body
 const sandbox = {
   console, Date, JSON, Math, Array, Object, Set, Map, Promise, Number,
   parseInt, parseFloat, isFinite, isNaN, setTimeout, clearTimeout, Error, AbortController,
   fetch: async (url, options) => {
     fetchCalls.push(url);
+    /* What a blocked or throttled edge looks like from inside the page: the
+     * response carries no `Access-Control-Allow-Origin`, so the browser never
+     * hands it over — `fetch` rejects with a TypeError and the console prints
+     * a CORS complaint. Nothing distinguishes it from the network being down,
+     * which is the point of the test. */
+    if (coinbaseDown && url.includes("coinbase.com/api")) {
+      throw new TypeError("Failed to fetch");
+    }
     if (url.includes("/spot")) {
       return { ok: true, status: 200, json: async () => ({ data: { amount: "100", currency: "USD" } }) };
     }
@@ -147,6 +156,9 @@ const sandbox = {
   OHLC_CURRENCIES: ["USD", "EUR", "GBP"],
   OHLC_CACHE_TTL: 300000,
   providerFor: (coin) => (coin === "XMR" ? "kraken" : "coinbase"),
+  // The runtime half of the same policy — the real one lives in config.js and
+  // is exercised end to end in tests/test-provider.js
+  effectiveProvider: (coin) => (coin === "XMR" ? "kraken" : "coinbase"),
   KRAKEN_API: "https://api.kraken.com/0/public/",
   KRAKEN_PERIODS: {
     day: { interval: 5, points: 3 }, // small, so the tail slice shows
@@ -248,6 +260,68 @@ const json = (c) => JSON.parse(JSON.stringify(run(c)));
 
   assert.deepStrictEqual(json('headlinesForCoin(null, "BTC", 0, 2)'), [], "no feed → nothing");
   assert.deepStrictEqual(json("headlinesForCoin(__news, null, 0, 2)"), [], "no coin → nothing");
+
+  /* The scrolling headline row's own filter: the same "does this story name
+   * this coin" rule, asked across a set instead of one coin. It shares
+   * `newsMentionsCoin` with the line above precisely so the two cannot come
+   * to disagree about what "about BTC" means. */
+  const forCoins = (coins) =>
+    json(`newsForCoins(__news, ${JSON.stringify(coins)})`).map((i) => i.url);
+
+  assert.deepStrictEqual(
+    forCoins(["BTC"]),
+    ["a", "c", "d", "old"],
+    "every story naming the coin, by symbol, by name and by the feed's tag",
+  );
+  assert.deepStrictEqual(
+    forCoins(["ETH", "SOL"]),
+    ["b"],
+    "a set is a union, and a coin nobody wrote about adds nothing",
+  );
+  assert.deepStrictEqual(forCoins(["SOL"]), [], "no mention → an empty row, not filler");
+  /* An empty set means "you are not tracking anything", not "show nothing":
+   * a row that went blank because a portfolio has not been filled in yet
+   * looks like a broken feature rather than an honoured setting. */
+  assert.strictEqual(
+    json("newsForCoins(__news, []).length"),
+    5,
+    "no coins to narrow to → the whole feed",
+  );
+  assert.strictEqual(json("newsForCoins(__news, null).length"), 5, "…and the same for nothing");
+  assert.deepStrictEqual(json('newsForCoins(null, ["BTC"])'), [], "no feed → nothing");
+  // The same word-boundary and case rules the single-coin version follows
+  assert.deepStrictEqual(json('newsForCoins(__partial, ["BTC"])'), [], "not a mention inside a longer token");
+  assert.deepStrictEqual(json('newsForCoins(__prose, ["OP", "BAT", "TON"])'), [], "not lowercase prose");
+
+  /* The news cache, read back as untrusted input.
+   *
+   * It was the one stored shape with no sanitizer: accepted whenever `items`
+   * was a non-empty array, with `url` going straight into an `href`. Measured
+   * with a hand-edited cache, a `javascript:` URL and a plain `http://` one
+   * both reached the DOM. */
+  sandbox.__dirty = [
+    { source: "www.evil.example", title: "click me", url: "javascript:alert(1)" },
+    { source: "x", title: "downgrade", url: "http://insecure.example/a" },
+    { source: "ok", title: "a real one", url: "https://example.com/ok", time: 123 },
+    { source: "n", title: 42, url: "https://example.com/n" },
+    null,
+    "not an object",
+    { source: "l", title: "x".repeat(400), url: "https://example.com/l" },
+  ];
+  const clean = json("sanitizeNewsItems(__dirty)");
+
+  assert.strictEqual(clean.length, 4, `only the shaped rows survive — ${clean.length}`);
+  assert.strictEqual(clean[0].url, null, "a javascript: URL never becomes an href");
+  assert.strictEqual(clean[1].url, null, "nor does a plain http: one");
+  assert.strictEqual(clean[2].url, "https://example.com/ok", "https is kept");
+  assert.strictEqual(clean[0].source, "evil.example", "the source prefix is trimmed as on fetch");
+  assert.strictEqual(clean[3].title.length, 140, "titles are capped at the fetcher's limit");
+  /* The row is kept without its link rather than dropped: the headline is
+   * still a headline, and silently losing rows would make a corrupt cache look
+   * like a quiet news day. */
+  assert.strictEqual(clean[0].title, "click me", "an unsafe link costs the link, not the row");
+  assert.deepStrictEqual(json("sanitizeNewsItems(null)"), [], "no list → nothing");
+  assert.deepStrictEqual(json('sanitizeNewsItems("nope")'), [], "…and a non-list is a non-list");
 
   // mergeNewsItems: priority order kept, spam filtered, near-duplicate
   // titles collapsed across sources, cap respected

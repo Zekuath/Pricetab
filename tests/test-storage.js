@@ -241,4 +241,76 @@ assert.strictEqual(run("describeElapsed(24 * 3600000)"), "yesterday", "one day")
 assert.strictEqual(run("describeElapsed(5 * 24 * 3600000)"), "5 days ago", "days");
 assert.strictEqual(run("describeElapsed(60 * 24 * 3600000)"), "a month ago", "long ago");
 
+/* ── The quota, and who is allowed to lose data to it ──────────────────
+ *
+ * The caches are capped by entry count and never against a byte budget, so a
+ * tab that has met a lot of coins can fill the origin with data that exists
+ * only to save a request — and then the portfolio somebody just typed fails to
+ * save, silently. A failed write now spends the caches, cheapest first, and
+ * retries. Nothing a person authored is ever evicted to make room.
+ */
+{
+  // A store that refuses anything once it is holding too much
+  const LIMIT = 400;
+  const tight = {};
+  const bytes = () =>
+    Object.keys(tight).reduce((n, k) => n + k.length + tight[k].length, 0);
+  sandbox.localStorage = {
+    getItem: (k) => (k in tight ? tight[k] : null),
+    setItem: (k, v) => {
+      const value = String(v);
+      const after = bytes() - (k in tight ? k.length + tight[k].length : 0) + k.length + value.length;
+      if (after > LIMIT) {
+        const e = new Error("QuotaExceededError");
+        e.name = "QuotaExceededError";
+        throw e;
+      }
+      tight[k] = value;
+    },
+    removeItem: (k) => { delete tight[k]; },
+  };
+
+  // Fill the space with rebuildable cache data
+  tight["crypto_chart_price_cache"] = "p".repeat(150);
+  tight["crypto_chart_ticker_cache"] = "t".repeat(150);
+
+  const held = [{ coin: "BTC", amount: 1, lots: [], watches: [] }];
+  sandbox.__held = held;
+  run("savePortfolioToStorage(__held)");
+  assert.notStrictEqual(
+    sandbox.localStorage.getItem("crypto_chart_portfolio"),
+    null,
+    "a portfolio write survives a full quota",
+  );
+  assert.strictEqual(
+    sandbox.localStorage.getItem("crypto_chart_price_cache"),
+    null,
+    "…by spending the cheapest cache first",
+  );
+  assert.notStrictEqual(
+    sandbox.localStorage.getItem("crypto_chart_ticker_cache"),
+    null,
+    "…and no more of them than it had to",
+  );
+
+  /* A cache that cannot save is not worth evicting another cache for: it
+   * simply starts cold next time, which is what a cache is for. */
+  const before = sandbox.localStorage.getItem("crypto_chart_ticker_cache");
+  sandbox.__big = "w".repeat(500);
+  const ok = run('saveJsonSetting("crypto_chart_widget_cache", __big)');
+  assert.strictEqual(ok, false, "a cache write that does not fit simply fails");
+  assert.strictEqual(
+    sandbox.localStorage.getItem("crypto_chart_ticker_cache"),
+    before,
+    "…and takes nothing else down with it",
+  );
+
+  // The caller is told, so an import can say so rather than losing data quietly
+  assert.strictEqual(
+    run('saveSetting("crypto_chart_theme", "dark")'),
+    true,
+    "a write that fits reports success",
+  );
+}
+
 console.log("ALL STORAGE TESTS PASSED");

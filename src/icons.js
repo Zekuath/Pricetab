@@ -70,6 +70,23 @@ const ICON_SHAPES = {
     }),
   ],
 
+  /* Info: a ring with a dotted stem. The dot is a filled circle rather than a
+   * short stroke, because at 15px a two-pixel tittle sitting above a stroked
+   * bar reads as a lower-case "i" with a broken top — a filled dot survives
+   * the size the button is actually used at. */
+  info: () => [
+    React.createElement("circle", { key: "o", cx: 12, cy: 12, r: 9 }),
+    React.createElement("path", { key: "s", d: "M12 11v5.5" }),
+    React.createElement("circle", {
+      key: "d",
+      cx: 12,
+      cy: 7.8,
+      r: 1.15,
+      fill: "currentColor",
+      stroke: "none",
+    }),
+  ],
+
   // Eye: restore hidden widgets
   eye: () => [
     React.createElement("path", {
@@ -90,6 +107,40 @@ const ICON_SHAPES = {
     React.createElement("path", { key: "b", d: "M20.5 15.5h-15" }),
     React.createElement("path", { key: "bh", d: "M8.8 12 5.3 15.5 8.8 19" }),
   ],
+
+  /* Calls: a board of squares with one of them claimed.
+   *
+   * The feature is "point at a square and name the price", so the icon is the
+   * lattice with a box on it — the thing you actually do. A target's rings
+   * were the obvious neighbour to borrow from and are exactly wrong here: a
+   * target is a request and a call is a claim, and the two controls sit next
+   * to each other in the corner, so they have to be told apart at 17px. The
+   * claimed square is filled rather than outlined, because at that size a
+   * second outline inside the first is invisible.
+   *
+   * Two squares each way, not three: at the 2.4 stroke these buttons use, a
+   * 3×3 grid inside a 17-unit box leaves 5.7 units of gap between 2.4-unit
+   * lines, and at 17px on screen that closes into a solid block. */
+  calls: () => [
+    React.createElement("rect", {
+      key: "board", x: 3.6, y: 3.6, width: 16.8, height: 16.8, rx: 2.4,
+    }),
+    React.createElement("path", { key: "v", d: "M12 3.6v16.8" }),
+    React.createElement("path", { key: "h", d: "M3.6 12h16.8" }),
+    React.createElement("rect", {
+      key: "claim", x: 13.4, y: 5, width: 5.6, height: 5.6, rx: 0.8,
+      fill: "currentColor", stroke: "none",
+    }),
+  ],
+
+  /* A plain chevron, pointing down. The settings groups used the text glyph
+   * "▾" for this, at 0.6rem and 0.7 opacity — a 9.6px character drawn by
+   * whatever font the operating system picked, which is the same reason the
+   * emoji were replaced here in the first place. On macOS it rendered as a
+   * hairline wedge nobody reported ever noticing, so the accordion looked
+   * like a heading you could not open. Drawn on the 24 grid it inherits the
+   * icon weight and stays legible at any size. */
+  chevron: () => React.createElement("path", { d: "M6 9.5 12 15.5 18 9.5" }),
 
   // Chain link: two interlocking pills. On the diagonal they read as a
   // chain; laid out horizontally they looked like a toggle switch.
