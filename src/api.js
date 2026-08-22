@@ -566,36 +566,12 @@ const fetchHalvingData = async () => {
 };
 
 
-/* NEWS FEED FETCHER (Blockchair JSON — only CORS-enabled crypto feed) */
-const fetchBlockchairNews = async () => {
-  const res = await fetch(NEWS_API_URL);
-  if (!res.ok) {
-    throw new Error("Blockchair news request failed");
-  }
-  const json = await res.json();
-  return (json && Array.isArray(json.data) ? json.data : [])
-    .map((article) => ({
-      source:
-        typeof article.source === "string"
-          ? article.source.replace(/^(www|en)\./, "").slice(0, 30)
-          : "news",
-      title:
-        typeof article.title === "string"
-          ? article.title.slice(0, 140)
-          : "",
-      // Kept for the move-headlines line: when it was published, and the
-      // coins the feed itself tagged it with — a better signal than
-      // guessing from the wording
-      time: parseNewsTime(article.time),
-      tags: typeof article.tags === "string" ? article.tags : "",
-      url:
-        typeof article.link === "string" &&
-        /^https:\/\//.test(article.link)
-          ? article.link
-          : null,
-    }))
-    .filter((item) => item.title);
-};
+/* Blockchair's live news feed used to be fetched here and is not any more —
+ * it was dropped as a headline source on 21 Aug 2026 (see `NEWS_SOURCES` in
+ * `config.js` for the measurement that decided it). What remains of Blockchair
+ * in this file is `fetchNewsAround` below, which asks the same endpoint about
+ * a *window in the past* for the "what happened here?" card, and the
+ * address-balance lookups, which are not news at all. */
 
 // Blockchair stamps news in UTC as "YYYY-MM-DD HH:MM:SS", which is not a
 // format Date parses consistently across engines without the marker
@@ -603,6 +579,226 @@ const parseNewsTime = (value) => {
   if (typeof value !== "string") return null;
   const ms = Date.parse(value.replace(" ", "T") + "Z");
   return isFinite(ms) ? ms : null;
+};
+
+/* ── Headlines from around one moment ─────────────────────────────────────
+ *
+ * The same Blockchair feed, asked about a window in the past instead of about
+ * now: `time(YYYY-MM-DD..YYYY-MM-DD)`. Nothing new is added to the network
+ * profile — same host, same endpoint, one request per window, and only when
+ * somebody points at a mark.
+ *
+ * Cached like the other three (`CLAUDE.md`, *Caching System*): a window that
+ * has already been asked about is answered from memory, and the cache survives
+ * the tab. It has to — a mark on a chart is exactly the thing someone hovers,
+ * loses, and hovers again, and every new tab is a fresh JS context. The TTL is
+ * a day rather than the feed's ten minutes, because a window in 2021 does not
+ * get newer.
+ */
+const MOVE_NEWS_CACHE_KEY = "crypto_chart_move_news_cache";
+/* A day either side of the move. Narrower than a day and a timezone puts the
+ * story outside the window; wider and it stops being about this move. */
+const MOVE_NEWS_PAD_MS = 86400000;
+// These are historical windows, so what came back yesterday is still true
+const MOVE_NEWS_TTL = 86400000;
+const MOVE_NEWS_CACHE_MAX = 30;
+const MOVE_NEWS_PERSIST_DELAY = 1000;
+
+const moveNewsCache = new Map();
+let moveNewsPersistTimer = null;
+const moveNewsInFlight = new Map();
+
+const utcDay = (ms) => new Date(ms).toISOString().slice(0, 10);
+const moveNewsKey = (fromMs, toMs) => `${utcDay(fromMs)}..${utcDay(toMs)}`;
+
+const persistMoveNewsCache = () => {
+  clearTimeout(moveNewsPersistTimer);
+  moveNewsPersistTimer = setTimeout(() => {
+    try {
+      const now = Date.now();
+      const entries = Array.from(moveNewsCache.entries())
+        .filter(([, v]) => now - v.t <= MOVE_NEWS_TTL)
+        .sort((a, b) => b[1].t - a[1].t)
+        .slice(0, MOVE_NEWS_CACHE_MAX);
+      localStorage.setItem(MOVE_NEWS_CACHE_KEY, JSON.stringify(entries));
+    } catch (error) {
+      // Storage full or unavailable — the next hover simply asks again
+    }
+  }, MOVE_NEWS_PERSIST_DELAY);
+};
+
+const hydrateMoveNewsCache = () => {
+  try {
+    const saved = JSON.parse(localStorage.getItem(MOVE_NEWS_CACHE_KEY));
+    if (!Array.isArray(saved)) return;
+    const now = Date.now();
+    for (const entry of saved) {
+      if (!Array.isArray(entry)) continue;
+      const [key, value] = entry;
+      if (typeof key !== "string" || !value || typeof value.t !== "number") continue;
+      if (value.t > now || now - value.t > MOVE_NEWS_TTL) continue;
+      // Through the same sanitizer as the live feed: stored is untrusted, and
+      // these titles and urls go straight into the DOM
+      moveNewsCache.set(key, { t: value.t, items: sanitizeNewsItems(value.items) });
+    }
+  } catch (error) {
+    // Corrupt entry — the next persist overwrites it
+  }
+};
+
+/* Blockchair's archive. The deepest of the three — it answers for windows in
+ * 2021 — and the least current: measured 21 Aug 2026 it had published nothing
+ * since the 16th, so on its own it returns **nothing at all** for any mark on
+ * a 1H, 1D or 1W chart. That is what "the what-happened-here card is empty"
+ * turned out to be, and it is why this is no longer the only source. */
+const newsAroundBlockchair = async (from, to) => {
+  const url =
+    "https://api.blockchair.com/news?q=" +
+    encodeURIComponent(`language(en),time(${utcDay(from)}..${utcDay(to)})`) +
+    "&limit=10";
+  const res = await fetch(url);
+  if (!res.ok) throw new Error("Blockchair archive request failed");
+  const json = await res.json();
+  return (json && Array.isArray(json.data) ? json.data : [])
+    /* The query above asks for `language(en)` and does not get it: of ten
+     * items sampled on 21 Aug 2026, **seven** came back Turkish, Russian,
+     * Dutch or French. The per-article `language` field is accurate even
+     * though the server-side filter is not, so the answer is to check it here
+     * rather than to trust the request. Absent is allowed through — an
+     * unlabelled story is not a foreign one. */
+    .filter((a) => !a || !a.language || a.language === "en")
+    .map((a) => ({
+      source: typeof a.source === "string" ? a.source : "news",
+      title: typeof a.title === "string" ? a.title : "",
+      time: parseNewsTime(a.time),
+      tags: typeof a.tags === "string" ? a.tags : "",
+      url: typeof a.link === "string" ? a.link : null,
+    }));
+};
+
+/* Hacker News, asked about a window instead of about the past week.
+ *
+ * The important property is that it needs **no permission**: Algolia is
+ * keyless and CORS-enabled, so this is the archive a fresh install has. It
+ * reaches back to 2007 — asked about 18–21 May 2021 it returns the crash
+ * ("Crypto crash deepens, stocks slip", 368 points).
+ *
+ * One request, not three. The live fetcher asks once per term because Algolia
+ * ANDs the words in a query; `optionalWords` turns the same three words into
+ * an OR (measured: 1 hit AND-ed, 112 OR-ed, over the same window). Ranked by
+ * points rather than by date, because the question is what was being *talked
+ * about* in those days, not what happened to be posted last. `CRYPTO_TERMS_RE`
+ * then drops what the loose match dragged in.
+ */
+const newsAroundHackerNews = async (from, to) => {
+  const url =
+    `${HN_NEWS_API}?tags=story&hitsPerPage=${MOVE_NEWS_HN_POOL}` +
+    `&query=${encodeURIComponent(HN_NEWS_TERMS.join(" "))}` +
+    `&optionalWords=${encodeURIComponent(HN_NEWS_TERMS.join(","))}` +
+    `&numericFilters=${encodeURIComponent(
+      `created_at_i>${Math.floor(from / 1000)},created_at_i<${Math.ceil(to / 1000)}`,
+    )}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error("Hacker News archive request failed");
+  const json = await res.json();
+  return (json && Array.isArray(json.hits) ? json.hits : [])
+    .filter((hit) => hit && typeof hit.title === "string")
+    .filter((hit) => CRYPTO_TERMS_RE.test(hit.title))
+    .sort((a, b) => (Number(b.points) || 0) - (Number(a.points) || 0))
+    .slice(0, MOVE_NEWS_HN_MAX)
+    .map((hit) => ({
+      source: "Hacker News",
+      title: hit.title,
+      time: isFinite(Number(hit.created_at_i))
+        ? Number(hit.created_at_i) * 1000
+        : null,
+      tags: "",
+      url:
+        typeof hit.url === "string" && /^https:\/\//.test(hit.url)
+          ? hit.url
+          : `https://news.ycombinator.com/item?id=${hit.objectID}`,
+    }));
+};
+
+/* CoinJournal, the one granted newsroom with a usable archive.
+ *
+ * WordPress takes `after`/`before`, so the same endpoint the panel reads
+ * answers about any window — verified back to March 2025. Two parameters are
+ * not optional here: `categories_exclude` (its press releases, as everywhere
+ * else) and **`lang=en`**, because without it the archive returns the same
+ * story in Polish, Swedish, Finnish, Norwegian and Danish — six of six items
+ * on the window measured. `lang=en` returns only the `/news/` paths.
+ *
+ * Bitcoin Magazine has the same shape and is deliberately not here: its WAF
+ * began answering 403 to everything from one address during this work,
+ * including requests that had succeeded minutes earlier, so nothing about its
+ * archive could be established rather than guessed at.
+ */
+const newsAroundCoinJournal = async (from, to) => {
+  const stamp = (ms) => new Date(ms).toISOString().slice(0, 19);
+  const url =
+    "https://coinjournal.net/wp-json/wp/v2/posts?per_page=6&lang=en" +
+    "&categories_exclude=40&_fields=title,link,date_gmt" +
+    `&after=${stamp(from)}&before=${stamp(to)}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error("CoinJournal archive request failed");
+  return parseWpFeed(await res.json(), "CoinJournal");
+};
+
+const fetchNewsAround = async (fromMs, toMs, granted) => {
+  if (!isFinite(fromMs) || !isFinite(toMs)) return [];
+  const from = Math.min(fromMs, toMs) - MOVE_NEWS_PAD_MS;
+  const to = Math.max(fromMs, toMs) + MOVE_NEWS_PAD_MS;
+  const key = moveNewsKey(from, to);
+
+  const hit = moveNewsCache.get(key);
+  if (hit && Date.now() - hit.t <= MOVE_NEWS_TTL) return hit.items;
+  /* Two marks a day apart round to the same window, and a pointer crossing
+   * three of them fires three identical requests before the first answers. */
+  if (moveNewsInFlight.has(key)) return moveNewsInFlight.get(key);
+
+  /* Which archives can be asked. Hacker News and Blockchair always; CoinJournal
+   * only where its origin is granted — the caller passes what Chrome holds,
+   * rather than this file reaching into `news.js`, which loads after it. */
+  const archives = [newsAroundBlockchair, newsAroundHackerNews];
+  if (Array.isArray(granted) && granted.includes("coinjournal")) {
+    archives.push(newsAroundCoinJournal);
+  }
+
+  const request = (async () => {
+    try {
+      /* `allSettled`, not `all`: one archive being down must not lose the
+       * others' answers, which is the whole reason there is more than one. */
+      const settled = await Promise.allSettled(
+        archives.map((ask) => ask(from, to)),
+      );
+      if (settled.every((r) => r.status === "rejected")) {
+        throw new Error("every archive refused");
+      }
+      const merged = settled
+        .filter((r) => r.status === "fulfilled")
+        .reduce((all, r) => all.concat(r.value || []), [])
+        .sort((a, b) => (b.time || 0) - (a.time || 0));
+      /* The same advertising rule the panel uses. It matters more here, not
+       * less: the card shows one window's headlines with nothing beside them
+       * to compare against, so a press release in it has no context to give
+       * it away. */
+      const items = mergeNewsItems(sanitizeNewsItems(merged));
+      /* An empty answer is cached too. "Nothing was written that week" is a
+       * real answer and a common one on a thin range, and not storing it means
+       * every hover pays for the same silence. */
+      moveNewsCache.set(key, { t: Date.now(), items });
+      persistMoveNewsCache();
+      return items;
+    } catch (error) {
+      // Not cached: a failed request must not be remembered as "no news"
+      return null;
+    } finally {
+      moveNewsInFlight.delete(key);
+    }
+  })();
+  moveNewsInFlight.set(key, request);
+  return request;
 };
 
 /* Hacker News crypto stories (Algolia API — CORS-enabled, no key).
@@ -1171,13 +1367,155 @@ const sanitizeNewsItems = (list) =>
     .filter(Boolean)
     .slice(0, MAX_NEWS_ITEMS);
 
+hydrateMoveNewsCache();
+
+/* ── The opt-in newsrooms ─────────────────────────────────────────────────
+ *
+ * Two wire formats and no third: RSS/Atom, and WordPress's REST posts. Both
+ * are read into the same `{ source, title, time, url }` shape every other
+ * feed in this file produces, so nothing downstream — the ticker, the panel,
+ * `newsForCoins`, the move card — has to know where a story came from.
+ *
+ * **Parsed with `DOMParser` as XML, never assigned to `innerHTML`.**
+ * `parseFromString(text, "application/xml")` builds a detached document that
+ * executes nothing, and `textContent` unwraps CDATA for free — which matters,
+ * because Cointelegraph wraps its links in it and BBC wraps its titles.
+ */
+const feedText = (node, tag) => {
+  const el = node.querySelector(tag);
+  return el ? (el.textContent || "").trim() : "";
+};
+
+/* The byline. `getElementsByTagName` rather than `querySelector`, because the
+ * name is `dc:creator` — a CSS type selector cannot address a prefixed name in
+ * an XML document, and `querySelector("dc\\:creator")` is not the escape it
+ * looks like. Atom's `<author><name>` gives the name through `textContent`. */
+const feedAuthor = (node) => {
+  const dc = node.getElementsByTagName("dc:creator")[0];
+  if (dc) return (dc.textContent || "").trim();
+  const author = node.getElementsByTagName("author")[0];
+  return author ? (author.textContent || "").trim() : "";
+};
+
+/* Is this an advertisement rather than a story?
+ *
+ * One predicate, asked by every path that can put a headline on screen — the
+ * panel, the ticker and the move card's archive — so the three cannot disagree
+ * about what counts as an ad. `newsMentionsCoin` is shared for exactly the
+ * same reason.
+ *
+ * Dropped, never labelled. A "sponsored" badge is still the advertisement on
+ * screen, and the requirement is that it does not reach the panel.
+ *
+ * The three signals and the order they are asked in are explained where they
+ * are defined, on `NEWS_PROMO_PATH_RE` in `config.js`. Short version: the
+ * outlet's own filing is worth more than our reading of its wording, so the
+ * wording rule goes last and is the only one that can be wrong.
+ */
+const isPromoNews = (item) => {
+  if (!item || typeof item.title !== "string") return true;
+  if (NEWS_SPAM_RE.test(item.title)) return true;
+  if (typeof item.url === "string" && NEWS_PROMO_PATH_RE.test(item.url)) {
+    return true;
+  }
+  /* Stripped to letters before comparing, so "Chainwire", "chainwire" and
+   * "CS Press Release" are one pattern rather than three. */
+  const by =
+    typeof item.author === "string" ? item.author.replace(/[^a-z]/gi, "") : "";
+  return Boolean(by) && NEWS_WIRE_RE.test(by);
+};
+
+const parseRssFeed = (text, source) => {
+  const doc = new DOMParser().parseFromString(text, "application/xml");
+  // A parse failure is a document containing <parsererror>, not an exception
+  if (doc.querySelector("parsererror")) return [];
+  const nodes = doc.querySelectorAll("item, entry");
+  const out = [];
+  for (const node of nodes) {
+    const title = feedText(node, "title");
+    if (!title) continue;
+    // Atom keeps the url in an attribute; RSS in the element's text
+    let url = feedText(node, "link");
+    if (!url) {
+      const link = node.querySelector("link[href]");
+      url = link ? link.getAttribute("href") : "";
+    }
+    const when =
+      feedText(node, "pubDate") ||
+      feedText(node, "published") ||
+      feedText(node, "updated");
+    const ms = when ? Date.parse(when) : NaN;
+    out.push({
+      source,
+      title: title.slice(0, 140),
+      time: isFinite(ms) ? ms : null,
+      tags: "",
+      url: /^https:\/\//.test(url) ? url : null,
+      // Read for `isPromoNews` only, and dropped by `sanitizeNewsItems`
+      // before anything stores or renders the item
+      author: feedAuthor(node),
+    });
+  }
+  return out;
+};
+
+const parseWpFeed = (json, source) =>
+  (Array.isArray(json) ? json : []).map((post) => {
+    const title =
+      post && post.title && typeof post.title.rendered === "string"
+        ? decodeEntities(post.title.rendered)
+        : "";
+    // `date_gmt` has no zone marker, so it needs one or engines disagree
+    const ms = post && post.date_gmt ? Date.parse(post.date_gmt + "Z") : NaN;
+    return {
+      source,
+      title: title.slice(0, 140),
+      time: isFinite(ms) ? ms : null,
+      tags: "",
+      url:
+        post && typeof post.link === "string" && /^https:\/\//.test(post.link)
+          ? post.link
+          : null,
+    };
+  });
+
+/* One source, fetched and normalised. Never throws: a newsroom being down is
+ * an ordinary Tuesday, and the panel's job is to say which ones answered. */
+const fetchNewsSource = async (source) => {
+  try {
+    if (source.kind === "hn") return await fetchHackerNewsStories();
+    const res = await fetch(source.url);
+    if (!res.ok) throw new Error(`${source.id} answered ${res.status}`);
+    const items =
+      source.kind === "wp"
+        ? parseWpFeed(await res.json(), source.name)
+        : parseRssFeed(await res.text(), source.name);
+    /* A general newsroom has to name the subject to be here at all — most of
+     * what BBC Business publishes is not about this beat, and an unfiltered
+     * business feed in a crypto news panel reads as a bug. */
+    const onBeat = source.cryptoOnly
+      ? items.filter((i) => CRYPTO_TERMS_RE.test(i.title))
+      : items;
+    /* Advertising is refused here, before the sanitizer, because this is the
+     * last point at which the byline still exists — `sanitizeNewsItems`
+     * rebuilds each item field by field and does not carry `author` through. */
+    const kept = onBeat.filter((item) => !isPromoNews(item));
+    return sanitizeNewsItems(kept);
+  } catch (error) {
+    return null; // null is "did not answer", which is not the same as "empty"
+  }
+};
+
 const mergeNewsItems = (...lists) => {
   const seen = new Set();
   const items = [];
   for (const list of lists) {
     if (!Array.isArray(list)) continue;
     for (const item of list) {
-      if (!item || !item.title || NEWS_SPAM_RE.test(item.title)) continue;
+      /* Asked again here even though `fetchNewsSource` already refused it.
+       * This is the path a cache written by an older build comes back through,
+       * and localStorage is untrusted input like every other stored shape. */
+      if (!item || !item.title || isPromoNews(item)) continue;
       const key = item.title
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, " ")

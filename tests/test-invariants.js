@@ -51,14 +51,65 @@ const scanSrc = (re, why) => {
   return out;
 };
 
-// --- 1. Zero permissions -----------------------------------------------
+// --- 1. Nothing is granted at install ------------------------------------
 // CLAUDE.md: "Zero permissions required" / "Zero permissions = faster review".
 // This is the product's central privacy claim and the store listing rests on it.
-check("manifest.json declares no permissions", () => {
+//
+// The rule used to be "no manifest key matching /permission/i", which is the
+// right default. It was changed deliberately on 21 Aug 2026 to admit
+// `optional_host_permissions`: every news source worth reading (Cointelegraph,
+// Decrypt, CryptoSlate, Bitcoin Magazine, CoinJournal, BBC) sends no CORS
+// header, so a browser extension cannot read one without host access — and the
+// only reachable keyless feed had gone 101 hours without publishing anything.
+//
+// **An optional host permission is not a permission at install.** Chrome grants
+// it only when someone presses a button, it raises no install-time warning and
+// it does not slow review, so the claim the listing makes is still true. This
+// check now enforces the two things that keep it true, which is more than the
+// old one did:
+//
+//   1. `permissions`, `host_permissions` and `optional_permissions` are empty —
+//      nothing is granted without a person asking for it;
+//   2. every entry in `optional_host_permissions` is on the list below, so a
+//      new origin cannot appear without editing this file and saying why.
+const OPTIONAL_ORIGINS = new Set([
+  "https://cointelegraph.com/*",
+  "https://decrypt.co/*",
+  "https://cryptoslate.com/*",
+  "https://bitcoinmagazine.com/*",
+  "https://coinjournal.net/*",
+  "https://feeds.bbci.co.uk/*",
+]);
+check("nothing is granted at install", () => {
   const m = JSON.parse(read("manifest.json"));
-  return Object.keys(m)
-    .filter((k) => /permission/i.test(k))
-    .map((k) => `manifest.json declares "${k}": ${JSON.stringify(m[k])}`);
+  const out = [];
+  for (const key of ["permissions", "host_permissions", "optional_permissions"]) {
+    if (m[key] && m[key].length) {
+      out.push(
+        `manifest declares "${key}": ${JSON.stringify(m[key])} — that is granted at install`,
+      );
+    }
+  }
+  const known = [
+    "permissions",
+    "host_permissions",
+    "optional_permissions",
+    "optional_host_permissions",
+  ];
+  for (const key of Object.keys(m)) {
+    if (/permission/i.test(key) && !known.includes(key)) {
+      out.push(`manifest declares an unreviewed permission key "${key}"`);
+    }
+  }
+  for (const origin of m.optional_host_permissions || []) {
+    if (!OPTIONAL_ORIGINS.has(origin)) {
+      out.push(
+        `${origin} is in optional_host_permissions but not in this test's list — ` +
+          "add it here and to CLAUDE.md's provider list in the same change, with a reason",
+      );
+    }
+  }
+  return out;
 });
 
 // --- 2. The new tab page stays the new tab page -------------------------
@@ -175,6 +226,28 @@ check("no rem units inside widget-card components", () => {
 // privacy-claim change and a Chrome Web Store single-purpose question, so
 // adding one should be a conscious edit to this list.
 const ALLOWED_HOSTS = new Set([
+  /* The six opt-in newsrooms. These are only ever fetched once the user has
+   * pressed "Turn on full sources" and Chrome has granted the matching
+   * `optional_host_permissions` — see §1 above, which holds the same list and
+   * is what stops one being added without a reason. They are here rather than
+   * absent because `src/config.js` names their URLs whether or not anyone has
+   * granted them, and a host this file has not seen is a host nobody reviewed. */
+  "bitcoinmagazine.com",
+  "cointelegraph.com",
+  "coinjournal.net",
+  "cryptoslate.com",
+  "decrypt.co",
+  "feeds.bbci.co.uk",
+
+  /* Three financial newsrooms that need **no permission at all**: each answers
+   * `Access-Control-Allow-Origin: *`, verified 21 Aug 2026 by sending a
+   * `chrome-extension://` Origin and reading the header back. That is what
+   * separates them from the six above, and it is why they are `optional:
+   * false` in `NEWS_SOURCES` while Cointelegraph and the rest are not. */
+  "feeds.content.dowjones.io",
+  "finance.yahoo.com",
+  "search.cnbc.com",
+
   "api.alternative.me",
   "api.blockchair.com",
   "api.bybit.com",

@@ -27,6 +27,10 @@ const sandbox = {
   styled: styledStub,
   keyframes: tagged("keyframes"),
   css: tagged("css"),
+  /* Defined in theme.js, which these sandboxes do not load. Anything
+   * interpolated into a styled block by every file has to be stubbed
+   * here too, or the file throws before a single assertion runs. */
+  themedScrollbar: "",
   React: {
     Component: class {},
     createElement: () => null,
@@ -250,6 +254,64 @@ assert.strictEqual(
   "…and is in force with it on",
 );
 assert.strictEqual(active({}, noWidgets), null, "no settings, no mode");
+
+/* Holder is the only mode that turns the headline row on, so it is the only
+ * one that may name what the row carries. */
+const holder = modes.find((m) => m.value === "holder");
+const holderWidgets = run("({ ...DEFAULT_WIDGETS, ...WIDGET_PRESETS.holder })");
+assert.strictEqual(
+  holder.settings.newsFilter,
+  "portfolio",
+  "Holder narrows the headline row to what you hold",
+);
+for (const other of modes.filter((m) => m.value !== "holder")) {
+  assert.ok(
+    !("newsFilter" in other.settings),
+    `${other.value} switches the headline row off, so it must not name a filter for it`,
+  );
+}
+assert.strictEqual(
+  active(holder.settings, holderWidgets),
+  "holder",
+  "Holder is recognised with the filter it names",
+);
+assert.strictEqual(
+  active({ ...holder.settings, newsFilter: "all" }, holderWidgets),
+  null,
+  "…and widening the filter by hand makes the arrangement yours again",
+);
+
+/* ── every setting a mode names is actually sent to `activeAppMode` ──────
+ *
+ * The check above cannot see this: it calls `activeAppMode` with its own
+ * object, while the app builds a snapshot by hand in `render`. A setting named
+ * by a mode and missing from that snapshot is compared against `undefined` for
+ * ever, so the mode's pill simply never lights — nothing throws, nothing looks
+ * wrong, and the only symptom is a row that has quietly stopped working. Same
+ * shape of guard as the shortcut-list check below, and for the same reason:
+ * two lists that must agree, kept in two files.
+ */
+{
+  const src = fs.readFileSync(`${base}/app.js`, "utf8");
+  const at = src.indexOf("activeAppMode(");
+  assert.ok(at > 0, "app.js asks activeAppMode which mode is in force");
+  const snapshot = src.slice(at, src.indexOf("},", at));
+  const named = new Set(modes.flatMap((m) => Object.keys(m.settings)));
+  // `handleAppMode`'s map is the other half: a named setting with no handler
+  // is a value a mode promises to set and then does not
+  const applyAt = src.indexOf("const apply = {");
+  const applyMap = src.slice(applyAt, src.indexOf("};", applyAt));
+  for (const key of named) {
+    assert.ok(
+      new RegExp(`\\b${key}:`).test(snapshot),
+      `${key} is named by a mode but never sent to activeAppMode — its pill cannot light`,
+    );
+    assert.ok(
+      new RegExp(`\\b${key}:`).test(applyMap),
+      `${key} is named by a mode but has no handler in handleAppMode — picking the mode would not set it`,
+    );
+  }
+}
 
 // Section titles are unique, otherwise a search would surface two identical
 // looking rows and the tally would be misleading

@@ -89,9 +89,10 @@ const QuickInput = styled.input`
 const QuickList = styled.div`
   max-height: 17rem;
   overflow-y: auto;
+  ${themedScrollbar};
 `;
 
-const QuickRow = styled.button.attrs(() => ({ type: "button" }))`
+const QuickRow = styled.button.attrs({ type: "button" })`
   display: flex;
   align-items: center;
   gap: 0.6rem;

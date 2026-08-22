@@ -135,6 +135,7 @@ const renderPreferencesTab = (panel) => {
   volumeBars, onVolumeBarsChange,
   marketStats, onMarketStatsChange,
   chartGrid, onChartGridChange,
+  moveNews, onMoveNewsChange,
   quietChrome, onQuietChromeChange,
   moveHeadlines, onMoveHeadlinesChange,
   ohlcEnabled, onOhlcChange,
@@ -375,6 +376,41 @@ const renderPreferencesTab = (panel) => {
                 onClick: () =>
                   onChartGridChange && onChartGridChange(chartGrid !== true),
                 "aria-label": "Toggle chart grid",
+              }),
+            ),
+          ),
+        ),
+    moveNews: () =>
+        panel.section(
+          'What Happened Here',
+          'news headlines moves spikes crash rally why history archive events',
+          React.createElement(
+            ToggleSection,
+            null,
+            settingTitle(panel, "moveNews", "What Happened Here"),
+            React.createElement(
+              ToggleSectionDesc,
+              null,
+              "Marks the moments the price did something unusual for the range you are on. Click one for the headlines published around that day",
+            ),
+            settingNote(
+              panel,
+              "moveNews",
+              "The marks cost nothing \u2014 where they go is worked out from the series already on screen. Only opening one asks for anything, and the answer is cached, so the same moment is free afterwards. What it cannot tell you is why: headlines from the day of a move are what was being written, not the cause, and the card says so. Off while two coins share the chart, like the grid.",
+            ),
+            React.createElement(
+              ToggleRow,
+              null,
+              React.createElement(
+                ToggleLabel,
+                null,
+                moveNews === true ? "On" : "Off",
+              ),
+              React.createElement(ToggleSwitch, {
+                active: moveNews === true,
+                onClick: () =>
+                  onMoveNewsChange && onMoveNewsChange(moveNews !== true),
+                "aria-label": "Toggle what happened here",
               }),
             ),
           ),
@@ -816,7 +852,7 @@ const renderPreferencesTab = (panel) => {
                 React.createElement(
                   ToggleSectionDesc,
                   null,
-                  "Headlines come from public sources via Blockchair. Clicking one opens the news site in a new tab.",
+                  "Headlines come from public feeds \u2014 Hacker News and three financial newsrooms, plus any you have allowed in the news panel. Clicking one opens the story in a new tab.",
                 ),
                 /* What the row is allowed to carry. The feed is general crypto
                  * news, so on a tab kept for four coins most of what scrolls
@@ -1086,12 +1122,23 @@ const renderPreferencesTab = (panel) => {
       "candlesticks",
       "volumeBars",
       "chartGrid",
+      "moveNews",
       "chartDetails",
     ]),
     /* The three readouts that live under the price, together, because that is
      * where they are on screen — they used to sit under "Appearance" while the
-     * chart's own settings were in "Chart", so half the chart was in each. */
-    group("Under the price", false, ["marketStats", "lastSeen", "moveHeadlines"]),
+     * chart's own settings were in "Chart", so half the chart was in each.
+     *
+     * **Open by default, and it is the third group that is** — the rest start
+     * closed so the tab reads as a table of contents, which is the right
+     * default and stays the default. The departure is deliberate: this is the
+     * only group whose settings all govern the strip immediately under the
+     * price, which is the most-looked-at part of the screen, and the headline
+     * line is the one thing here that appears on its own without being asked
+     * for. Someone who wants it gone looks straight at it and then goes to
+     * Settings — and a closed accordion called "Under the price" is not where
+     * they look. Reported as exactly that. */
+    group("Under the price", true, ["moveHeadlines", "marketStats", "lastSeen"]),
     group("Numbers", false, ["currency", "numberFormat"]),
     /* Ordered by how much of the screen each one changes: the bar across the
      * page leads, the tab strip follows. */

@@ -256,7 +256,7 @@ const OnbButtons = styled.div`
   gap: 0.4rem;
 `;
 
-const OnbSkip = styled.button`
+const OnbSkip = styled.button.attrs({ type: "button" })`
   background: none;
   border: none;
   cursor: pointer;
@@ -270,7 +270,7 @@ const OnbSkip = styled.button`
   }
 `;
 
-const OnbBtn = styled.button`
+const OnbBtn = styled.button.attrs({ type: "button" })`
   cursor: pointer;
   font-family: ${({ theme }) => theme.font.primary};
   font-size: 0.76rem;

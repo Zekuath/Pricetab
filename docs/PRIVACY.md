@@ -38,6 +38,10 @@ We want to be clear about what we DON'T do:
 
 All APIs used by PriceTab are **public** — no authentication or accounts required.
 
+Everything below is fetched with no permission at all, with one exception that
+is clearly marked: *Additional newsrooms*, which are only ever contacted after
+you have pressed a button and Chrome has asked you to confirm.
+
 ### Coinbase Public API
 
 - **Endpoints**: `https://www.coinbase.com/api/v2/prices/` and `https://api.exchange.coinbase.com/products/…/candles`
@@ -94,13 +98,48 @@ All APIs used by PriceTab are **public** — no authentication or accounts requi
 - **Storage**: Watched addresses are stored locally like every other setting and can be removed at any time
 - **Privacy**: See [mempool.space Privacy Policy](https://mempool.space/privacy-policy), [Blockchair Privacy Policy](https://blockchair.com/privacy) and [PublicNode Privacy Policy](https://www.publicnode.com/privacy)
 
-### News sources (optional ticker row, off by default)
+### News sources (optional ticker row and news panel, off by default)
 
-- **Endpoints**: `https://api.blockchair.com/news` and `https://hn.algolia.com/api/v1/search` (Hacker News stories)
-- **Purpose**: Crypto news headlines in the optional ticker bar
+- **Endpoint**: `https://hn.algolia.com/api/v1/search` (Hacker News stories)
+- **Purpose**: Crypto news headlines in the optional ticker bar and the news panel
 - **Data Sent**: No user data — plain GET requests
 - **Outbound links**: Clicking a headline opens the news site in a new tab. The link carries no referrer information (`rel="noreferrer"`), so the site cannot tell the visit came from PriceTab. From that point the news site's own privacy policy applies.
+- **Privacy**: See [Algolia Privacy Policy](https://www.algolia.com/policies/privacy/)
+
+### "What happened here?" archive (optional chart feature, off by default)
+
+- **Endpoints**: `https://api.blockchair.com/news` and `https://hn.algolia.com/api/v1/search`, each asked about a window in the past. If you have allowed the additional newsrooms, `https://coinjournal.net/wp-json/…` is asked about the same window
+- **Purpose**: When you click a marked price move on the chart, the headlines published around that date
+- **Data Sent**: Only the date range you clicked — no user data, no coin, no holdings
 - **Privacy**: See [Blockchair Privacy Policy](https://blockchair.com/privacy) and [Algolia Privacy Policy](https://www.algolia.com/policies/privacy/)
+
+### Additional newsrooms (opt-in, off until you turn them on)
+
+PriceTab can read six news feeds directly. **It does not do so unless you ask
+it to.** They are declared in the manifest as *optional* host permissions,
+which means Chrome grants nothing at install time; the extension still asks for
+no permissions when you add it.
+
+- **How it is turned on**: a "Turn on full sources" button in the news panel
+  (press `N`). Chrome shows you its own permission dialog and you decide. There
+  is a "Turn off" button in the same place that revokes it, and you can also
+  revoke it from `chrome://extensions`.
+- **Endpoints** (only ever fetched once granted): `cointelegraph.com/rss`,
+  `decrypt.co/feed`, `cryptoslate.com/feed/`,
+  `bitcoinmagazine.com/wp-json/wp/v2/posts`,
+  `coinjournal.net/wp-json/wp/v2/posts`,
+  `feeds.bbci.co.uk/news/business/rss.xml`
+- **Purpose**: headlines in the news panel. The feed PriceTab can read without
+  permission carries only a handful of outlets, and is sometimes days out of
+  date.
+- **Data Sent**: no user data — plain GET requests for the publicly published
+  feed. Nothing about you, your coins, your holdings or your settings is
+  included, and nothing is sent anywhere when you turn the permission on.
+- **What the permission does *not* allow**: PriceTab reads these feed URLs and
+  nothing else. It does not read your browsing on those sites, does not run on
+  their pages, and has no content script.
+- **Privacy**: each newsroom's own privacy policy applies to the request, and
+  to any page you open by clicking a headline.
 
 ### Local Vendor Files
 
@@ -218,7 +257,8 @@ This extension is provided "as is" without warranty. We are not responsible for:
 ✅ **What we store**: Only your coin preferences, locally on your device
 ✅ **What we collect**: Nothing
 ✅ **What we share**: Nothing
-✅ **Third parties**: Only public, no-auth APIs — Coinbase (prices), OKX/Bybit/Coinlore/Alternative.me/mempool.space (optional widgets), Blockchair + Hacker News/Algolia (optional news headlines), mempool.space/Blockchair (optional watched-address balances)
+✅ **Third parties**: Only public, no-auth APIs — Coinbase (prices), OKX/Bybit/Coinlore/Alternative.me/mempool.space (optional widgets), Hacker News/Algolia (optional news headlines), Blockchair (the optional "what happened here?" archive), mempool.space/Blockchair (optional watched-address balances)
+✅ **Permissions**: none are granted when you install. Six news feeds can be read directly *if* you press the button that asks Chrome for it, and the same panel turns it back off
 ✅ **Your control**: Delete data anytime by clearing localStorage or uninstalling
 
 **We respect your privacy because we simply don't collect any data.**

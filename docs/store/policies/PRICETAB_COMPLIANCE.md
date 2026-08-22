@@ -92,9 +92,9 @@ coin lists in the store description.
 
 | Policy | Status | Notes |
 |--------|--------|-------|
-| Minimum Permission | COMPLIANT | **ZERO** permissions |
+| Minimum Permission | COMPLIANT | **ZERO** granted at install. Six news origins are declared `optional_host_permissions` and requested from a button — see *Optional host permissions* below |
 | Unnecessary Permission | COMPLIANT | No extra permissions |
-| Host Permissions | COMPLIANT | No host permissions |
+| Host Permissions | COMPLIANT | No `host_permissions`. The optional list is the narrowest that works: six exact origins, no wildcards |
 
 ### Quality Policies
 
@@ -202,14 +202,49 @@ prize.
 
 Features that help PriceTab get easy approval:
 
-### 1. Zero Permissions
+### 1. Zero Permissions at Install
 ```json
-// manifest.json - NO PERMISSIONS
+// manifest.json — nothing is granted when the extension is added
 {
-  "permissions": []  // Empty!
+  "permissions": [],
+  "optional_host_permissions": [
+    "https://cointelegraph.com/*", "https://decrypt.co/*",
+    "https://cryptoslate.com/*", "https://bitcoinmagazine.com/*",
+    "https://coinjournal.net/*", "https://feeds.bbci.co.uk/*"
+  ]
 }
 ```
-This significantly speeds up the review process.
+Chrome shows **no install-time warning** for `optional_host_permissions` and
+does not treat them as granted, so the fast review path is unchanged.
+
+#### Optional host permissions — the justification, if it is ever asked for
+
+**Read this before the next submission**, alongside *Calls and the gambling
+policy* below.
+
+- **What it is for.** Headlines in the news panel. Every crypto newsroom worth
+  reading serves its feed without an `Access-Control-Allow-Origin` header, so a
+  browser page cannot read one at all. Measured 21 Aug 2026: the only keyless,
+  CORS-enabled feed available carried **7 outlets** across a 580-article sample,
+  a third from a single aggregator, and had published nothing for **101 hours**.
+  GDELT, the only global alternative, answered **3 of 20** requests at 8-second
+  spacing and **0 of 7** at 100 seconds.
+- **It is never granted without a person asking.** There is a button in the
+  news panel; Chrome shows its own dialog; a second button revokes it.
+- **The narrowest scope that works.** Six exact origins, no wildcards, no
+  `<all_urls>`, no content scripts, no `tabs`, no `webRequest`. The extension
+  fetches the published feed URL and nothing else.
+- **Nothing is sent.** Plain GET requests for a public feed. No user data, no
+  coin list, no holdings, no identifiers — and the request is not made at all
+  until the permission is granted (`tests/test-polish-render.js` §10b asserts
+  exactly that).
+- **Single purpose is unchanged.** Crypto price charts; news about the coins
+  you are charting is part of that surface, not a second product.
+
+**What would break this** — do not do any of these without a policy review:
+moving these origins into `host_permissions`; widening any of them to a
+wildcard host; adding a content script; or fetching a feed before the
+permission is granted.
 
 ### 2. Fully Local Code
 ```

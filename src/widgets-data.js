@@ -147,7 +147,9 @@ const WIDGET_GROUPS = [
       {
         key: "rsiWidget",
         label: "RSI",
-        desc: "Momentum — overbought above 70, oversold below 30",
+        // Not "overbought above 70, oversold below 30": that describes the
+        // daily RSI, and this one's period follows the range on screen
+        desc: "Momentum on a 0–100 scale, over the range you are looking at",
       },
       {
         key: "fundingRate",

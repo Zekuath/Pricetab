@@ -16,16 +16,27 @@ const PADDING = 24;
  * short of the left edge when you dragged it as far as it would go — the drag
  * ran out of travel with a strip of chart nobody had asked to keep.
  *
- * Board: two, and it cannot be one. The lattice is anchored to the clock, so
- * "now" falls somewhere *inside* a column and `cellAt` refuses that column —
- * half of it has already happened. One square of board is therefore that
- * part-column and nothing else: measured at 1280×800 with a 64.5px pitch,
- * dragging to a one-square board left **zero** callable squares, which is a
- * board you cannot call on. Two is the smallest number that guarantees one
- * whole square to the right of "now" whatever the anchor does — so on this
- * side, two squares *is* one square you can use. */
+ * Board: one, and it is counted in a different unit — squares you can *call
+ * on*, not pitches. The lattice is anchored to the clock, so "now" falls
+ * somewhere *inside* a column and `cellAt` refuses that column, half of it
+ * having already happened. So the first pitch of board is never callable, and
+ * the clamps below add it (`+ 1`) rather than asking the reader to remember
+ * that two means one. Written as two pitches this read as a refusal of what
+ * was asked for — measured at 1280×800 with a 64.5px pitch, a board of one
+ * *pitch* leaves zero callable squares, so the honest way to say it is that
+ * the minimum is one square you can use, plus the half-spent one it sits
+ * behind. */
+/* Two marks closer than this share one, and this is how near the pointer has
+ * to be to be reading one. The gap matches `portfolio-chart.js`'s, because it
+ * is the same judgment about the same thing: below about sixteen pixels two
+ * triangles are a smudge that hides how many it is. */
+const MOVE_MARK_GAP = 16;
+const MOVE_MARK_HIT = 12;
+
 const MIN_HISTORY_CELLS = 1;
-const MIN_BOARD_CELLS = 2;
+const MIN_BOARD_CALLABLE = 1;
+/* The part-column under "now", which no clamp may count as board. */
+const NOW_PART_COLUMN = 1;
 
 /* What one square is worth in clock time — a rung on this ladder, and nothing
  * else.
@@ -95,6 +106,17 @@ const NOW_GRAB = 12;
  * used to set it was removed when the drag replaced it. */
 const NOW_STEP_CELLS = 1;
 const TRANSITION_DURATION = 300;
+/* A refresh and a range switch are not the same event, and one duration was
+ * being asked to serve both. Thirty seconds of new price moves the last few
+ * pixels of the line — 300ms is right for it, and anything longer reads as
+ * lag. Switching 1H → 1W replaces every point on the chart and moves the y
+ * scale with them; at 300ms that is a swap, not a redraw.
+ *
+ * The same 600ms the chart takes to draw itself in when a tab opens
+ * (`REVEAL_DURATION` below), because it is the same event: this app already
+ * had a number for "a chart arriving", and two of them a hundred milliseconds
+ * apart would be an accident, not a decision. */
+const RESHAPE_DURATION = 600;
 const REVEAL_DURATION = 600;
 
 const safePrices = (prices) =>
@@ -272,6 +294,7 @@ class LineBase extends PureComponent {
     _defineProperty(this, "cellHintRef", createRef());
     _defineProperty(this, "liveDotRef", createRef());
     _defineProperty(this, "callLayerRef", createRef());
+    _defineProperty(this, "moveLayerRef", createRef());
     _defineProperty(this, "burstRef", createRef());
 
     // Comparison overlay: both coins as percent change on one shared axis
@@ -310,11 +333,32 @@ class LineBase extends PureComponent {
     this.hoverCellKey = null;     // which square the readout is describing
     this.nowDrag = null;          // { from, moved } while the now line is held
     this.suppressClick = false;   // the click that ends a drag is not a click
-    // Kept and rewritten rather than rebuilt — see `poolNode`
-    this._gridLines = { list: [], at: 0 };
-    this._gridLabels = { list: [], at: 0 };
+    /* Kept and rewritten rather than rebuilt — see `poolNode`.
+     *
+     * Two sets of them, and two layers to hold them, for the reason the
+     * candles already have two: on a range switch the lattice is not the old
+     * lattice moved, it is a different one — different price step, different
+     * column of clock, different labels — and there is no correspondence to
+     * tween along. Rewritten in place it *teleports*, which on a chart with a
+     * board on is most of the ink changing between two frames while the price
+     * line eases over three quarters of a second. The new mesh is drawn into
+     * the spare layer and the two are dissolved, so the grid arrives instead
+     * of appearing. `_gridLines` / `_gridLabels` / `_meshLayer` point at
+     * whichever set is being drawn into, so the body of `updateGrid` neither
+     * knows nor cares which one that is. */
+    this._meshSets = [
+      { layer: null, lines: { list: [], at: 0 }, labels: { list: [], at: 0 } },
+      { layer: null, lines: { list: [], at: 0 }, labels: { list: [], at: 0 } },
+    ];
+    this._meshAt = 0;
+    this._gridLines = this._meshSets[0].lines;
+    this._gridLabels = this._meshSets[0].labels;
     this._callBoxes = { list: [], at: 0 };
     this._callTags = { list: [], at: 0 };
+    // "What happened here?" marks — pooled like everything else on this chart
+    this._moveMarks = { list: [], at: 0 };
+    this._moveTags = { list: [], at: 0 };
+    this._moveClusters = [];
     // The leading-edge bar on the first call in a contested column
     this._callMarks = { list: [], at: 0 };
     this._nowLine = null;
@@ -405,7 +449,7 @@ class LineBase extends PureComponent {
      * the mouse cannot, or the other way round. */
     _defineProperty(this, "nowLimits", () => {
       const pitch = this.boardPitch();
-      const least = MIN_BOARD_CELLS * pitch;
+      const least = (MIN_BOARD_CALLABLE + NOW_PART_COLUMN) * pitch;
       const most = Math.max(least, this.width - MIN_HISTORY_CELLS * pitch);
       return { pitch, least, most };
     });
@@ -538,6 +582,30 @@ class LineBase extends PureComponent {
       if (grabbable) return;
       this.hoverX = e.offsetX;
       this.hoverY = e.offsetY;      // the grid needs both axes
+      /* A mark under the pointer comes up to full strength, takes the pointer
+       * cursor, and is announced upward so the headlines for that window can
+       * be on their way before anybody clicks. Announced on the way *off* one
+       * too (`null`), or a card left open would go on describing a mark the
+       * pointer left behind. */
+      const hot = this.moveAt(e.offsetX, e.offsetY);
+      const hotAt = hot ? hot.items[0].time : null;
+      if (this._moveHot !== hotAt) {
+        this._moveHot = hotAt;
+        if (svg) svg.style.cursor = hot ? "pointer" : "";
+        this.updateMoveMarks();
+        if (typeof this.props.onMoveHover === "function") {
+          this.props.onMoveHover(hot ? hot.items : null);
+        }
+      }
+      /* On a mark the chart is being operated, not read — the same rule the
+       * "now" handle follows. Left drawing, the crosshair put a price readout
+       * across the card that the click is about to open, and a guide line
+       * through the triangle being aimed at. */
+      if (hot) {
+        this.clearHover();
+        this.updateGrid();
+        return;
+      }
       /* Candles are only worth fetching once someone actually reads the
        * chart — most tabs are opened, glanced at and closed. And not at all
        * while calls are on and the chart is a line: the readout shows the
@@ -655,7 +723,7 @@ class LineBase extends PureComponent {
        * middle of the plot with the line nowhere near it. `interrupt` because
        * a transition already in flight would otherwise carry on painting over
        * the position set here. */
-      if (first || this.nowDrag) {
+      if (first || this.nowDrag || this.zoomAnim) {
         select(dot).interrupt();
         dot.setAttribute("cx", last.time);
         dot.setAttribute("cy", last.price);
@@ -663,10 +731,116 @@ class LineBase extends PureComponent {
       }
       select(dot)
         .transition()
-        .duration(TRANSITION_DURATION)
+        .duration(this.tweenMs())
         .ease(easeCubicOut)
         .attr("cx", last.time)
         .attr("cy", last.price);
+    });
+
+    /* ── "What happened here?" ────────────────────────────────────────────
+     *
+     * A mark above each of the moments the price did something unusual for
+     * this series. Where they go is worked out locally (`findUnusualMoves`),
+     * so a chart nobody points at makes no request; what they *say* costs one
+     * request per window, and only on a click.
+     *
+     * Neutral ink and the same triangle-with-a-ring the portfolio chart uses
+     * for buys and sells — green and red are already spoken for on this chart
+     * (the area fill, the call outcomes), and a coloured mark would read as a
+     * verdict on the move rather than a pointer at it.
+     *
+     * Marks closer than `MOVE_MARK_GAP` share one, carrying `×N`. Nothing is
+     * dropped: a chart must not quietly edit history, which is the same rule
+     * `clusterEvents` follows in `portfolio-chart.js`.
+     */
+    _defineProperty(this, "moveClusters", () => {
+      const scaled = this.scaled;
+      const moves = this.props.moves;
+      /* Off during comparison, like the grid and the board: the y axis is
+       * percent change from two series, and a mark placed from this coin's
+       * scaled points would sit at a price nothing on screen is drawn in. */
+      if (
+        !this.props.showMoves ||
+        this.props.compareCoin ||
+        !Array.isArray(moves) ||
+        !moves.length ||
+        !scaled ||
+        !scaled.length
+      ) {
+        return [];
+      }
+      const out = [];
+      for (const move of moves) {
+        const point = scaled[move.index];
+        if (!point || !isFinite(point.time) || !isFinite(point.price)) continue;
+        const last = out[out.length - 1];
+        if (last && point.time - last.x <= MOVE_MARK_GAP) {
+          last.items.push(move);
+          last.x = point.time; // the cluster sits at its latest move
+          last.y = Math.min(last.y, point.price);
+          continue;
+        }
+        out.push({ x: point.time, y: point.price, items: [move] });
+      }
+      return out;
+    });
+
+    _defineProperty(this, "updateMoveMarks", () => {
+      const layer = this.moveLayerRef.current;
+      if (!layer) return;
+      this._moveMarks.at = 0;
+      this._moveTags.at = 0;
+      const clusters = this.moveClusters();
+      this._moveClusters = clusters;
+      const color = this.props.theme.color;
+      const s = 5;
+
+      for (const c of clusters) {
+        /* Above the point, never on it: the line is the thing being read, and
+         * a marker sitting on it reads as a kink in the price. */
+        const y = Math.max(s + 2, c.y - s - 6);
+        const mark = this.poolNode(this._moveMarks, "path", layer);
+        mark.setAttribute(
+          "d",
+          `M${c.x},${y - s} L${c.x + s},${y + s} L${c.x - s},${y + s} Z`,
+        );
+        mark.setAttribute("fill", color.text);
+        mark.setAttribute("stroke", color.bg);
+        mark.setAttribute("stroke-width", "2");
+        mark.setAttribute("stroke-linejoin", "round");
+        mark.setAttribute("paint-order", "stroke");
+        mark.setAttribute(
+          "opacity",
+          this._moveHot === c.items[0].time ? "1" : "0.75",
+        );
+
+        const tag = this.poolNode(this._moveTags, "text", layer);
+        if (c.items.length > 1) {
+          tag.setAttribute("visibility", "inherit");
+          tag.setAttribute("x", c.x + s + 3);
+          tag.setAttribute("y", y + s);
+          tag.setAttribute("fill", color.textSecondary);
+          tag.setAttribute("font-size", "9");
+          tag.setAttribute("font-family", this.props.theme.font.primary);
+          tag.textContent = `×${c.items.length}`;
+        } else {
+          tag.setAttribute("visibility", "hidden");
+        }
+      }
+      this.hideRest(this._moveMarks);
+      this.hideRest(this._moveTags);
+    });
+
+    /* Which mark the pointer is on, if any. Pixel distance in both axes, so
+     * running the pointer along the line under a mark does not open it. */
+    _defineProperty(this, "moveAt", (x, y) => {
+      for (const c of this._moveClusters) {
+        const my = Math.max(7, c.y - 11);
+        if (Math.abs(c.x - x) <= MOVE_MARK_HIT && Math.abs(my - y) <= MOVE_MARK_HIT) {
+          return c;
+        }
+      }
+      return null;
     });
 
     /* Open calls, drawn as the boxes they are. */
@@ -700,6 +874,18 @@ class LineBase extends PureComponent {
         this.hideRest(this._callTags);
         this.hideRest(this._callMarks);
         return;
+      }
+
+      /* Boxes belong to a range — that is what stops a call being settled
+       * against a series that never reaches it — so a range switch replaces
+       * the whole set. Rewritten in place they popped: one frame of the range
+       * you left, the next of the one you arrived at, over a lattice that is
+       * taking 600ms to dissolve between the two. They arrive with it instead.
+       * The pair the mesh gets is not worth it here — a handful of rectangles,
+       * where the mesh is forty lines and their labels. */
+      if (this.redraw) {
+        this._boxLayer.setAttribute("opacity", "0");
+        this.fadeTo(this._boxLayer, 1, true);
       }
 
       const calls = Array.isArray(this.props.calls) ? this.props.calls : [];
@@ -1345,6 +1531,34 @@ class LineBase extends PureComponent {
         this.suppressClick = false;
         return;
       }
+      /* A mark takes the click before calls see it. Hovering asks for the
+       * headlines; clicking is what pins them, because a card that lives only
+       * while the pointer is on the mark is a card whose links can never be
+       * reached. Ahead of the call path deliberately: with both features on,
+       * the eleven pixels of a mark belong to the mark — a stray call is
+       * undoable in one click, and a card that refuses to open at all reads as
+       * a broken feature. */
+      const mark = this.moveAt(e.offsetX, e.offsetY);
+      if (mark && typeof this.props.onMoveOpen === "function") {
+        /* In page coordinates, not the chart's own: the card is a React
+         * element outside the SVG, and it is anchored to the mark so the two
+         * read as one thing. The mark's x rather than the pointer's — the card
+         * belongs to the triangle, not to wherever the click landed inside its
+         * twelve pixels. */
+        const box = this.svgRef.current
+          ? this.svgRef.current.getBoundingClientRect()
+          : null;
+        // Where the triangle is, in page coordinates — both axes, so the card
+        // can sit under the mark rather than at a fixed height with nothing
+        // to connect it to the moment it is describing
+        const markY = Math.max(7, mark.y - 11);
+        this.props.onMoveOpen(
+          mark.items,
+          box ? box.left + mark.x : mark.x,
+          box ? box.top + markY : markY,
+        );
+        return;
+      }
       if (!this.props.predict || !this.props.onPlaceCall) return;
       const cell = this.cellAt(e.offsetX, e.offsetY);
       if (!cell) {
@@ -1914,12 +2128,12 @@ class LineBase extends PureComponent {
       };
       select(layer.up.current)
         .transition()
-        .duration(TRANSITION_DURATION)
+        .duration(this.tweenMs())
         .ease(easeCubicOut)
         .attrTween("d", build(true));
       select(layer.down.current)
         .transition()
-        .duration(TRANSITION_DURATION)
+        .duration(this.tweenMs())
         .ease(easeCubicOut)
         .attrTween("d", build(false));
     });
@@ -1933,7 +2147,7 @@ class LineBase extends PureComponent {
       }
       select(node)
         .transition()
-        .duration(TRANSITION_DURATION)
+        .duration(this.tweenMs())
         .ease(easeCubicOut)
         .attr("opacity", value)
         .on("end", () => {
@@ -1976,13 +2190,19 @@ class LineBase extends PureComponent {
       const draw = (ref, from, to) => {
         const node = select(ref.current);
         // Morph between ranges when there is a previous shape to morph from;
-        // the first draw has nothing to grow out of
+        // the first draw has nothing to grow out of.
         if (animate && from) {
+          /* `from` is the previous *target*, so it is the gate but not the
+           * starting point: what is drawn right now is the attribute, and a
+           * morph that begins anywhere else snaps there for a frame — the same
+           * defect `updatePath` had, and the same reason a range switch read
+           * as a swap. */
+          const start = node.attr("d") || from;
           node
             .transition()
-            .duration(TRANSITION_DURATION)
+            .duration(this.tweenMs())
             .ease(easeCubicOut)
-            .attrTween("d", interpolatePath.bind(null, from, to));
+            .attrTween("d", interpolatePath.bind(null, start, to));
         } else {
           node.attr("d", to);
         }
@@ -2050,8 +2270,29 @@ class LineBase extends PureComponent {
       }
     });
 
+    /* How long the line has to get where it is going.
+     *
+     * `reshape` is raised when the coin, the range or the currency changes and
+     * spent by the update that draws the series arriving because of it — see
+     * `componentDidUpdate`. Everything that moves with the line reads its
+     * duration from here, or a range switch would morph the path over 700ms
+     * while the live dot and the candles finished 400ms early. */
+    _defineProperty(this, "reshape", false);
+    _defineProperty(this, "tweenMs", () =>
+      this.reshape ? RESHAPE_DURATION : TRANSITION_DURATION,
+    );
+
     _defineProperty(this, "updatePath", () => {
       const { prices } = this.props;
+
+      /* Is something already animating this path frame by frame?
+       *
+       * Read here, at the top, because `gridGeometry` below is what retires a
+       * finished zoom — ask afterwards and the travel's last frame looks like
+       * an ordinary update and gets sent on a 300ms journey of its own, a
+       * pixel long, after the hand has stopped. */
+      const driven =
+        this.nowDrag || Boolean(this.zoomAnim && !this.reshape);
 
       /* The board is taken out of the left, not out of the price line.
        *
@@ -2093,7 +2334,10 @@ class LineBase extends PureComponent {
       const d = lineFromPrices(scaled);
       const areaD = buildAreaD(d, scaled, this.height);
 
-      /* A drag is not animated: the hand is the animation.
+      /* A drag is not animated: the hand is the animation. Nor is the board's
+       * zoom travel, which drives this from its own rAF (`runZoomAnim`) and is
+       * already an animation — a tween per frame would leave the line trailing
+       * the lattice it is drawn into.
        *
        * The morph is 300ms and a drag re-fires it at every square it crosses,
        * each new tween starting from the last committed shape — so the mesh
@@ -2101,21 +2345,57 @@ class LineBase extends PureComponent {
        * off after it. Under the hand the path is simply put where it belongs;
        * `interrupt` first, or the transition still running would paint over
        * it a frame later. */
-      if (this.nowDrag) {
+      if (driven) {
         this.path.interrupt().attr("d", d);
         this.area.interrupt().attr("d", areaD);
-      } else {
+      } else if (d !== this.d || areaD !== this.areaD) {
+        /* Morph from what is on the screen, not from where the last morph was
+         * headed.
+         *
+         * `this.d` is the *target* of the previous update, assigned the moment
+         * that transition is started rather than when it lands. A range switch
+         * delivers two updates a frame or two apart — the warm cache paints
+         * the new series immediately (`prefetchPeriods` makes that the normal
+         * case, not the rare one) and the fresh fetch lands right behind it —
+         * so the second tween began at a shape the path had never reached, and
+         * its first frame snapped straight there. That snap *was* the
+         * animation: the line arrived in one frame and then eased across
+         * whatever sliver was left, which is why switching the range looked
+         * like the chart being replaced rather than redrawn. The attribute is
+         * always the truth, because the tween in flight has been writing it
+         * every frame — read it, and a morph interrupted halfway simply
+         * carries on from halfway.
+         *
+         * Guarded on the shape actually changing, too: a refresh that comes
+         * back with the same points used to restart the tween from zero, so a
+         * poll landing mid-morph reset a switch that was already under way. */
+        const ms = this.tweenMs();
+        const fromD = this.path.attr("d") || this.d || d;
+        const interp = interpolatePath(fromD, d);
+
+        /* One tween drives all three paths.
+         *
+         * The fill used to run its own `interpolatePath` against the area's
+         * own previous shape, and the two came apart in the middle of every
+         * change: the area path is the line plus three commands (`buildAreaD`
+         * closes it along the foot), so with a different point count it
+         * resamples differently and interpolates somewhere else. Measured on a
+         * 1H → 1W switch: 112ms in, the fill was climbing to the top right
+         * while the line it is supposed to hang from was falling — a wedge of
+         * green with no line on it. The fill is now *built from the line's own
+         * intermediate shape* every frame, so it cannot describe a different
+         * price from the line above it. One shape built per frame, used
+         * twice, instead of two shapes built and hoped to agree. */
+        this.area.interrupt();
         this.path
           .transition()
-          .duration(TRANSITION_DURATION)
+          .duration(ms)
           .ease(easeCubicOut)
-          .attrTween("d", interpolatePath.bind(null, this.d, d));
-
-        this.area
-          .transition()
-          .duration(TRANSITION_DURATION)
-          .ease(easeCubicOut)
-          .attrTween("d", interpolatePath.bind(null, this.areaD || d, areaD));
+          .attrTween("d", () => (t) => {
+            const at = interp(t);
+            this.area.attr("d", buildAreaD(at, scaled, this.height));
+            return at;
+          });
       }
 
       this.d = d;
@@ -2128,6 +2408,7 @@ class LineBase extends PureComponent {
       this.updateGrid();
       this.updateCalls();
       this.updateLiveDot();
+      this.updateMoveMarks();
       this.updateReference();
     });
 
@@ -2777,8 +3058,8 @@ class LineBase extends PureComponent {
      *
      * The share is what someone dragged the line to; the limits are what the
      * chart insists on either side of that — `MIN_HISTORY_CELLS` and
-     * `MIN_BOARD_CELLS`, which are one and two for the reason set out where
-     * they are declared. The board's limit is also what keeps the handle
+     * `MIN_BOARD_CALLABLE` (plus the part-column it sits behind), both one
+     * for the reason set out where they are declared. The board's limit is also what keeps the handle
      * reachable: the line is only drawn while there is a board, so a drag that
      * could take the board to nothing would take the handle with it. */
     _defineProperty(this, "futureWidth", () => {
@@ -2795,7 +3076,7 @@ class LineBase extends PureComponent {
       const share = isFinite(this.props.futureShare)
         ? this.props.futureShare
         : DEFAULT_FUTURE_SHARE;
-      const least = MIN_BOARD_CELLS * pitch;
+      const least = (MIN_BOARD_CALLABLE + NOW_PART_COLUMN) * pitch;
       const most = this.width - MIN_HISTORY_CELLS * pitch;
       // A window too narrow to hold both gives what it can to the board
       if (!(most > least)) return Math.min(this.width * 0.5, least);
@@ -2872,6 +3153,33 @@ class LineBase extends PureComponent {
       return el;
     });
 
+    /* One of the two mesh layers, made on demand.
+     *
+     * Masked, both of them: a lattice solid over a faded one is the fade
+     * failing at exactly the moment two lattices are on screen. The first is
+     * born visible and the second at nothing, since the only thing that ever
+     * asks for a second layer is a cross-fade, and it has to come *from*
+     * nothing. */
+    _defineProperty(this, "meshSet", (i, g) => {
+      const set = this._meshSets[i];
+      if (!set.layer) {
+        const layer = document.createElementNS(
+          "http://www.w3.org/2000/svg",
+          "g",
+        );
+        layer.setAttribute("mask", `url(#${this.fadeId})`);
+        layer.setAttribute("opacity", i === this._meshAt ? "1" : "0");
+        set.layer = layer;
+        const other = this._meshSets[1 - i].layer;
+        // First child, so everything created later draws over it — and the
+        // pair kept adjacent, so the two never end up either side of the
+        // controls that live in this group.
+        if (other) g.insertBefore(layer, other.nextSibling);
+        else g.insertBefore(layer, g.firstChild);
+      }
+      return set;
+    });
+
     _defineProperty(this, "hideRest", (pool) => {
       for (let i = pool.at; i < pool.list.length; i++) {
         pool.list[i].setAttribute("visibility", "hidden");
@@ -2910,17 +3218,32 @@ class LineBase extends PureComponent {
       /* The mesh gets its own layer so the *mask* can be on the mesh alone.
        * The now-line's handle and the zoom pill live in this group too, and
        * they sit exactly where the fade is strongest — masked with the lattice
-       * they would be the two controls on the board you cannot see. */
-      if (!this._meshLayer) {
-        const layer = document.createElementNS(
-          "http://www.w3.org/2000/svg",
-          "g",
-        );
-        layer.setAttribute("mask", `url(#${this.fadeId})`);
-        this._meshLayer = layer;
-        // First child, so everything created later draws over it
-        g.insertBefore(layer, g.firstChild);
-      }
+       * they would be the two controls on the board you cannot see.
+       *
+       * Which of the two layers this draw goes into is the whole of the
+       * cross-fade: an ordinary refresh rewrites the one already on screen —
+       * the lines are the same lines a pixel along, and dissolving that would
+       * be a flicker every thirty seconds — while a redraw draws into the
+       * spare and dissolves. Only when there is something to dissolve *from*:
+       * the first mesh a chart ever draws has to simply appear. */
+      /* Only the draw that carries the new series dissolves.
+       *
+       * `updatePath` runs more than once around a range switch: the board's
+       * own branch fires first, on the *old* prices, because the reach is held
+       * per range and so the prop changes a commit early. A dissolve there
+       * would spend itself on a lattice whose time axis is still the range you
+       * left, and the real one would then be written into the same layer with
+       * nothing covering it — the teleport this exists to remove, arrived at
+       * the long way round. `redraw` is set for exactly one call: the one made
+       * from the prices branch of the commit that ends the switch. */
+      const crossFade = Boolean(
+        this.redraw && this._meshSets[this._meshAt].layer,
+      );
+      const meshAt = crossFade ? 1 - this._meshAt : this._meshAt;
+      const meshSet = this.meshSet(meshAt, g);
+      this._meshLayer = meshSet.layer;
+      this._gridLines = meshSet.lines;
+      this._gridLabels = meshSet.labels;
       this._gridLines.at = 0;
       this._gridLabels.at = 0;
       this.gridX = [];
@@ -2939,9 +3262,18 @@ class LineBase extends PureComponent {
         this.gridOriginTime = null;
         this.nowX = this.width;
         this.hoverCell = null;
-        // Nothing is removed any more, so leaving means hiding what is there
-        this.hideRest(this._gridLines);
-        this.hideRest(this._gridLabels);
+        /* Nothing is removed any more, so leaving means hiding what is
+         * there — in *both* layers, and with any dissolve still in flight
+         * stopped and unwound, or a grid switched off mid-fade comes back
+         * later on a layer that is still on its way to invisible. */
+        this._meshSets.forEach((set, i) => {
+          this.hideRest(set.lines);
+          this.hideRest(set.labels);
+          if (set.layer) {
+            select(set.layer).interrupt();
+            set.layer.setAttribute("opacity", i === this._meshAt ? "1" : "0");
+          }
+        });
         if (this._nowLine) this._nowLine.setAttribute("visibility", "hidden");
         if (this._nowGrip) this._nowGrip.setAttribute("visibility", "hidden");
         if (this._nowLabel) this._nowLabel.setAttribute("visibility", "hidden");
@@ -3279,10 +3611,17 @@ class LineBase extends PureComponent {
 
           /* The slider's value, in the unit the board is measured in. Squares,
            * not pixels and not a percentage: "four squares of board" is the
-           * thing someone is actually setting. */
+           * thing someone is actually setting.
+           *
+           * Squares you can *call on*, so the part-column under "now" comes
+           * off. It used to count pitches, which announced "2 squares of
+           * board" at a minimum where exactly one of them could be pointed at
+           * — the same off-by-a-part-column that made the clamp read as a
+           * refusal of what was asked for. */
           const { pitch, least, most } = this.nowLimits();
           if (pitch > 0) {
-            const cells = (px) => Math.round(px / pitch);
+            const cells = (px) =>
+              Math.max(0, Math.round(px / pitch) - NOW_PART_COLUMN);
             this._nowGrip.setAttribute("aria-valuemin", String(cells(least)));
             this._nowGrip.setAttribute("aria-valuemax", String(cells(most)));
             this._nowGrip.setAttribute("aria-valuenow", String(cells(future)));
@@ -3535,6 +3874,34 @@ class LineBase extends PureComponent {
       this.hideRest(this._gridLines);
       this.hideRest(this._gridLabels);
 
+      /* The dissolve. The outgoing layer keeps its own lines and labels while
+       * it goes — it is showing the range you were on, which is the honest
+       * thing for it to be showing — and is left where it lies afterwards,
+       * because the next redraw makes it the spare and writes over it. */
+      if (crossFade) {
+        const gone = this._meshSets[this._meshAt];
+        this.fadeTo(meshSet.layer, 1, true);
+        /* And when it has gone, it is *hidden*, node by node.
+         *
+         * On this chart a `<line>` means "one gridline", and the pitch is read
+         * off consecutive ones — by the tests, and by anything else counting
+         * them. A second lattice left in the DOM at zero opacity is invisible
+         * to the eye and not to them: it doubles the count and halves every
+         * answer. Opacity is what the dissolve needs; `visibility` is what the
+         * document needs, and it cannot be set on the layer alone, because a
+         * child carrying `visibility: inherit` still *reads* as "inherit" to
+         * anyone asking the node itself. During the dissolve there really are
+         * two lattices on screen and both really are visible — that is the
+         * honest answer for those 700ms. */
+        this.fadeTo(gone.layer, 0, true, () => {
+          gone.lines.at = 0;
+          gone.labels.at = 0;
+          this.hideRest(gone.lines);
+          this.hideRest(gone.labels);
+        });
+        this._meshAt = meshAt;
+      }
+
       this.gridY.sort((a, b) => a - b);
       this.gridX.sort((a, b) => a - b);
 
@@ -3731,9 +4098,34 @@ class LineBase extends PureComponent {
   }
 
   componentDidUpdate(prevProps) {
+    /* A redraw, not a refresh.
+     *
+     * A new range or a new coin replaces every point on the chart, and that is
+     * the change the longer duration and the mesh dissolve are for. A new
+     * *currency* is deliberately not one of them: the shape is the same shape,
+     * only the numbers beside it change.
+     *
+     * Raised before anything is drawn — including the board-zoom branch below,
+     * which a range switch also trips, since `boardZoom` is held per range —
+     * so every mark that moves because of the switch moves over the same,
+     * longer duration. Spent at the foot of this method by the commit that
+     * actually carries the new series: the range changes in one commit and the
+     * prices land in a later one, so clearing it any earlier would put the
+     * flag down before the thing it is for had arrived. */
+    const reshaped =
+      prevProps.coin !== this.props.coin ||
+      prevProps.period !== this.props.period;
+    if (reshaped) this.reshape = true;
+
     // Only update path if prices actually changed
     if (prevProps.prices !== this.props.prices) {
+      /* This is the draw the range switch was waiting for — the one the mesh
+       * dissolve and the fading-in call boxes belong to. Any other call to
+       * `updatePath` in the meantime is drawing the old series into a new
+       * frame, which is not a redraw and must not be dressed as one. */
+      this.redraw = this.reshape;
       this.updatePath();
+      this.redraw = false;
       this.handlePointerLeave(); // stale readout would point at old data
       // New series → the candles that go with it haven't been asked for yet
       this._askedForOhlc = false;
@@ -3763,7 +4155,22 @@ class LineBase extends PureComponent {
      * else, so a draft pointed at one of them is not a thought about anything
      * any more — and the scale travels rather than jumps, which is what lets
      * you see your own locked calls grow or shrink instead of finding them
-     * somewhere new. */
+     * somewhere new.
+     *
+     * **A range switch is not a zoom, and this branch was eating every one of
+     * them.** The reach is held per range (`BOARD_ZOOM_KEY`), so `setPeriod`
+     * always hands down that range's stored value — and on any profile where
+     * two ranges have been zoomed differently, switching between them changed
+     * this prop. That started a travel: `runZoomAnim` then drove `updatePath`
+     * from its own rAF for the length of the animation, and a per-frame drive
+     * has to write the path straight rather than tween it. So the new series
+     * arrived, mid-travel, and was simply *set* — the whole range switch with
+     * no animation on it at all, on the one chart where it was most visible.
+     * There is nothing to travel between here in any case: the board you are
+     * going to is a different range's board, not this one moved. Nor was the
+     * branch ever the plain chart's business — with no board drawn it was
+     * animating a scale nothing on screen was using. The state still has to be
+     * let go of either way; only the travel is conditional. */
     if (prevProps.boardZoom !== this.props.boardZoom) {
       /* Let go of the held step. Stickiness exists so a *drifting* market does
        * not re-step the square under a locked call, and its band is ±2× — which
@@ -3773,13 +4180,17 @@ class LineBase extends PureComponent {
       const board = this.board();
       board.step = 0;
       board.base = null;
-      this.zoomAnim = {
-        from: this._zoomShown || prevProps.boardZoom || 1,
-        start: Date.now(),
-      };
       this.draftAt = null;
       this.clearHover();
-      if (!this.zoomRaf) this.zoomRaf = requestAnimationFrame(this.runZoomAnim);
+      if (this.props.predict && !reshaped) {
+        this.zoomAnim = {
+          from: this._zoomShown || prevProps.boardZoom || 1,
+          start: Date.now(),
+        };
+        if (!this.zoomRaf) this.zoomRaf = requestAnimationFrame(this.runZoomAnim);
+      } else {
+        this.zoomAnim = null;
+      }
     }
 
     if (
@@ -3788,7 +4199,14 @@ class LineBase extends PureComponent {
       prevProps.futureShare !== this.props.futureShare ||
       prevProps.boardZoom !== this.props.boardZoom
     ) {
-      this.updatePath();
+      /* …unless a redraw is already on its way. The board's reach is held per
+       * range, so a range switch changes this prop a commit *before* the
+       * prices land: drawing here would step the whole lattice to the new
+       * board while the time axis is still the range being left, and put that
+       * on screen with nothing covering it — then dissolve from it a moment
+       * later. Waiting costs nothing, because the commit that brings the
+       * series redraws all of this anyway. */
+      if (!this.reshape) this.updatePath();
     } else if (
       prevProps.calls !== this.props.calls ||
       /* Settled calls are a second list and were not being watched, so
@@ -3798,6 +4216,18 @@ class LineBase extends PureComponent {
       prevProps.settledCalls !== this.props.settledCalls
     ) {
       this.updateCalls();
+    }
+
+    /* The marks have their own list and their own switch, and neither is one
+     * of the things above. Without this, switching the feature off left the
+     * triangles on the chart until something unrelated happened to redraw it
+     * — the same defect the settled-call boxes had, for the same reason. */
+    if (
+      prevProps.moves !== this.props.moves ||
+      prevProps.showMoves !== this.props.showMoves ||
+      prevProps.compareCoin !== this.props.compareCoin
+    ) {
+      this.updateMoveMarks();
     }
 
     /* A win, announced by the counter changing rather than by a ref reaching
@@ -3878,6 +4308,44 @@ class LineBase extends PureComponent {
     // under the panel.
     if (this.props.paused && !prevProps.paused) {
       this.handlePointerLeave();
+    }
+
+    // The series that the switch was waiting for has been drawn — back to a
+    // refresh's duration until something asks for a redraw again.
+    if (prevProps.prices !== this.props.prices) this.reshape = false;
+
+    /* The candles this chart asked for have arrived — redraw the readout the
+     * pointer is already sitting on.
+     *
+     * `drawCrosshair` reads `this.props.ohlc` and is only ever scheduled from
+     * a pointer move, so the first hover of a session drew the readout, *then*
+     * the request it had just started landed, and nothing put the numbers on
+     * screen. Holding still showed no open/high/low/close at all; moving the
+     * pointer a pixel filled it in. It read as "1H has no chart details",
+     * because 1H is the range a tab opens on and is therefore always the hover
+     * that pays for the cold fetch — switching range and coming back worked
+     * only because that is another pointer move.
+     *
+     * **Last in this method on purpose.** Placed with the other prop-diff
+     * branches it drew correctly and was then wiped by the redraws below it;
+     * the readout has to be the final thing written.
+     *
+     * Guarded on the pointer still being on the chart: `handlePointerLeave`
+     * sets `hoverX` to -1, and drawing a crosshair for a pointer that has left
+     * is worse than the bug.
+     *
+     * **`hoverIndex` has to be cleared first.** `drawCrosshair` keeps a memo of
+     * the point it last described and returns early when nothing about it has
+     * changed — which is right for thirty pointer moves inside one data point,
+     * and wrong here: the point is the same point, and what changed is that
+     * there is now a candle for it. Without the reset this branch ran, hit that
+     * guard and returned, and the numbers still only appeared on the next
+     * pointer move. Same shape as the board's zoom stickiness: a deliberate act
+     * must clear the memory that smooths accidents. */
+    if (prevProps.ohlc !== this.props.ohlc && this.hoverX >= 0) {
+      this.hoverIndex = -1;
+      this.hoverCellKey = null;
+      this.drawCrosshair();
     }
   }
 
@@ -4175,6 +4643,19 @@ class LineBase extends PureComponent {
        * — the rays were identified by `stroke-linecap="round"`, which the
        * board's grip bars also use, so a test for "the burst cleaned up after
        * itself" started counting the handle. */
+      /* The "what happened here?" marks. Above the line so they are not
+       * drawn into it, below the burst and the crosshair so neither is ever
+       * hidden behind one. `pointerEvents: none` on purpose: the marks are
+       * found by `moveAt` from the pointer position the chart already tracks,
+       * rather than by hit-testing eleven-pixel triangles — the chart has one
+       * pointer pipeline and a second one would have to be kept in step with
+       * the drag, the draft and the crosshair. */
+      React.createElement("g", {
+        ref: this.moveLayerRef,
+        className: "pt-moves",
+        "aria-hidden": "true",
+        pointerEvents: "none",
+      }),
       React.createElement("g", {
         ref: this.burstRef,
         className: "pt-burst",
@@ -4272,7 +4753,7 @@ class LineBase extends PureComponent {
 const Line = withTheme(LineBase);
 
 /* PERIOD SWITCHER */
-const PeriodButton = styled.button`
+const PeriodButton = styled.button.attrs({ type: "button" })`
   isolation: isolate;
   perspective: 1px;
   position: relative;
@@ -4398,6 +4879,7 @@ const PeriodSwitcherWrapper = styled.div`
     ${({ theme }) => theme.spacing.large}rem;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
+  ${themedScrollbar};
 
   @media (max-width: ${({ theme }) => theme.breakpoint.down.sm}px) {
     justify-content: center;
@@ -4438,7 +4920,7 @@ _defineProperty(PeriodSwitcher, "defaultProps", {
 });
 
 /* OVERVIEW */
-const OverviewItemButton = styled.button`
+const OverviewItemButton = styled.button.attrs({ type: "button" })`
   padding: ${({ theme }) =>
     `${theme.spacing.small}rem ${theme.spacing.medium}rem`};
   flex: 1 1 calc(50% - ${({ theme }) => theme.spacing.medium}rem);
@@ -4548,6 +5030,7 @@ const OverviewWrapper = styled.div`
   color: ${({ theme }) => theme.color.text};
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
+  ${themedScrollbar};
 
   @media (max-width: ${({ theme }) => theme.breakpoint.down.sm}px) {
     justify-content: flex-start;

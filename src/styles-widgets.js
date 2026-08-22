@@ -1,5 +1,5 @@
 /* WIDGET PANEL STYLES */
-const WidgetRestoreButton = styled.button`
+const WidgetRestoreButton = styled.button.attrs({ type: "button" })`
   position: fixed;
   left: ${({ theme }) => theme.spacing.large}rem;
   top: ${({ theme, tickerTop }) =>
@@ -60,7 +60,7 @@ const WidgetRestoreButton = styled.button`
  * right-hand cluster: those three all open a panel over the chart, while this
  * changes how the chart itself is drawn. Active takes the accent the compared
  * line is drawn in, so the button and the line read as the same thing. */
-const CompareToggleButton = styled.button`
+const CompareToggleButton = styled.button.attrs({ type: "button" })`
   position: fixed;
   left: ${({ theme }) => `calc(${theme.spacing.large}rem + 2.5rem)`};
   top: ${({ theme, tickerTop }) =>
@@ -123,7 +123,7 @@ const CompareToggleButton = styled.button`
  * On a tablet the widget row sits at the bottom of the screen and this was
  * the only way to dismiss a card, so it was unreachable on exactly the
  * devices that have the least room for the row. */
-const WidgetHideButton = styled.button`
+const WidgetHideButton = styled.button.attrs({ type: "button" })`
   position: absolute;
   top: 0.15em;
   right: 0.15em;
@@ -178,19 +178,7 @@ const WidgetPanel = styled.div`
     overflow-y: hidden;
     padding-bottom: 0.35rem;
     -webkit-overflow-scrolling: touch;
-    scrollbar-width: thin;
-    scrollbar-color: ${({ theme }) => theme.color.border} transparent;
-
-    &::-webkit-scrollbar {
-      height: 5px;
-    }
-    &::-webkit-scrollbar-track {
-      background: transparent;
-    }
-    &::-webkit-scrollbar-thumb {
-      background: ${({ theme }) => theme.color.border};
-      border-radius: 3px;
-    }
+    ${themedScrollbar};
   }
 
   /* Phone: tighter */
@@ -578,11 +566,23 @@ const HalvingEta = styled.div`
   letter-spacing: 0.03em;
 `;
 
+/* A scale, drawn as one. It used to run green → amber → red, which says the
+ * same thing the words at its ends used to say: low is good, high is bad. That
+ * is the textbook reading of the *daily* RSI, this number is not the daily RSI
+ * (its period follows the range on screen), and on 21,669 daily closes the
+ * claim does not hold for the daily one either — see `docs/product/TODAY.md`
+ * §9. Removing the two words and leaving the traffic light would have moved
+ * the claim rather than dropped it. Theme colours, too, per CLAUDE.md: the
+ * three hex values were drawn on both a white and a black card. */
 const RsiBar = styled.div`
   width: 100%;
   height: 0.3em;
   min-height: 3px;
-  background: linear-gradient(90deg, #16c784 0%, #f5a623 50%, #ea3943 100%);
+  background: linear-gradient(
+    90deg,
+    ${({ theme }) => theme.color.border} 0%,
+    ${({ theme }) => theme.color.textSecondary} 100%
+  );
   border-radius: 0.15em;
   margin: 0.35em 0 0.2em;
   position: relative;

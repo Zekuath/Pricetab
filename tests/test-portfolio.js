@@ -42,6 +42,10 @@ const sandbox = {
   styled: styledStub,
   keyframes: tagged("keyframes"),
   css: tagged("css"),
+  /* Defined in theme.js, which these sandboxes do not load. Anything
+   * interpolated into a styled block by every file has to be stubbed
+   * here too, or the file throws before a single assertion runs. */
+  themedScrollbar: "",
   React: { Component: class { constructor(p) { this.props = p; } }, createElement: () => null, Fragment: Symbol("Fragment") },
   PureComponent: class { constructor(p) { this.props = p; } },
   Component: class { constructor(p) { this.props = p; } },
@@ -57,7 +61,10 @@ const sandbox = {
 vm.createContext(sandbox);
 
 const base = path.join(__dirname, "..", "src");
-for (const f of ["config.js", "storage.js", "portfolio.js"]) {
+/* `styles-portfolio.js` is loaded for the same reason `index.html` loads it
+ * first: the donut constants and `bandInk` live there now, and `portfolio.js`
+ * reads them at render. The styled blocks themselves are inert here. */
+for (const f of ["config.js", "storage.js", "styles-portfolio.js", "portfolio.js"]) {
   vm.runInContext(fs.readFileSync(`${base}/${f}`, "utf8"), sandbox, { filename: f });
 }
 const run = (code) => vm.runInContext(code, sandbox);
@@ -279,6 +286,30 @@ assert.deepStrictEqual(
   ],
   "an ERC-20 token can be watched on an Ethereum address",
 );
+
+/* Reading a token and charting one are different questions, and the whitelist
+ * used to answer only the second. stETH, wBETH, FDUSD and TUSD sit at plenty
+ * of Ethereum addresses and are priced by the sweep the price bar already
+ * makes, but neither Coinbase nor Kraken quotes a series for any of them — so
+ * they are tokens you can hold and not coins you can chart. On
+ * `SUGGESTED_COINS` alone they were found at the address, added, saved, and
+ * dropped on the next tab open with nothing said, which is the worst shape a
+ * data-loss bug can take: it happens while the tab is closed.
+ *
+ * Asserted through the sanitizer because that is the gate a reload goes
+ * through — it is what runs on the way back out of localStorage. */
+for (const coin of ["STETH", "WBETH", "FDUSD", "TUSD"]) {
+  assert.ok(
+    !run("SUGGESTED_COINS").includes(coin),
+    `${coin} is deliberately not chartable — if it has become so, this case has stopped testing anything`,
+  );
+  assert.ok(run(`isWatchableCoin("${coin}")`), `${coin} is watchable`);
+  assert.deepStrictEqual(
+    json(`sanitizePortfolio([{ coin: "${coin}", amount: 2.5 }])`),
+    [{ coin, amount: 2.5, lots: [], watches: [], sales: [] }],
+    `a holding in ${coin} survives a save and reload`,
+  );
+}
 
 // watched addresses: kept only for supported chains with a sane shape
 assert.deepStrictEqual(

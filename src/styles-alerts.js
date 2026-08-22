@@ -77,7 +77,7 @@ const AlertToastWhen = styled.div`
   color: ${({ theme }) => theme.color.textSecondary};
 `;
 
-const AlertToastClose = styled.button.attrs(() => ({ type: "button" }))`
+const AlertToastClose = styled.button.attrs({ type: "button" })`
   flex: 0 0 auto;
   background: transparent;
   border: none;
@@ -147,8 +147,7 @@ const AlertsBody = styled.div`
    * lane whether or not it is needed, so nothing shifts sideways the moment
    * the list gets long enough to scroll. */
   scrollbar-gutter: stable;
-  scrollbar-width: thin;
-  scrollbar-color: ${({ theme }) => theme.color.border} transparent;
+  ${themedScrollbar};
 
   /* The list ends by fading rather than by being sliced. A row cut in half by
    * the divider above the foot reads as content jammed against a wall, which
@@ -163,23 +162,10 @@ const AlertsBody = styled.div`
     transparent 100%
   );
 
-  &::-webkit-scrollbar {
-    width: 6px;
-  }
-
+  /* The one thing this list wants that the shared rule does not give it: the
+     track stops short of the card's rounded corners. */
   &::-webkit-scrollbar-track {
-    background: transparent;
     margin: 0.4rem 0;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    background: ${({ theme }) => theme.color.border};
-    border-radius: 3px;
-    transition: background 0.2s ease;
-  }
-
-  &::-webkit-scrollbar-thumb:hover {
-    background: ${({ theme }) => theme.color.borderHover};
   }
 `;
 
@@ -252,7 +238,7 @@ const AlertStripFigures = styled.span`
 /* A switch that says what it is, the way a config listing does: a filled dot
  * for on, a hollow one for off. State is never carried by colour alone, so it
  * survives both themes and a reader who cannot separate them. */
-const AlertStateChip = styled.button.attrs(() => ({ type: "button" }))`
+const AlertStateChip = styled.button.attrs({ type: "button" })`
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
@@ -291,47 +277,38 @@ const AlertStateChip = styled.button.attrs(() => ({ type: "button" }))`
 `;
 
 /* The plain actions. Square-cornered like everything else down here, and
- * quieter than the switches — they are the things you reach for least. */
-/* `strong` is for the one action in a strip that is not a piece of tidying up.
+ * quieter than the switches — they are the things you reach for least.
+ *
+ * `strong` is for the one action in a strip that is not a piece of tidying up.
  * Switching calls off is the mode itself, and it was the same 24px sliver as
  * "clear settled" beside it — the smallest target in the panel for the biggest
  * thing in it. It gets a real hit area, the foreground colour, and a fill on
- * hover so it reads as the button of the row rather than one of three
- * equally-weighted words. */
-/* A filled action. Inverted rather than "white": the panel's own foreground
- * becomes the surface and its background becomes the label, so it is a solid
- * button in the dark theme and a solid button in the light one, without either
- * colour being named anywhere.
+ * hover.
  *
- * Red was tried and rejected. Red already means something on this chart — the
- * price is down, the call was MISSED, three rows above — and turning calls off
- * loses nothing: the calls and the score are kept, and "L" brings it back. It
- * would also put the loudest colour in the panel on the exit while `reset
- * score`, the one action here that cannot be undone, sits beside it in a
- * ghost. If anything ever wears red in this foot it should be that one. */
-const ACTION_FILL = {
-  solid: (theme) => ({ bg: theme.color.text, fg: theme.color.bg }),
-};
-
-const AlertActionKey = styled.button.attrs(() => ({ type: "button" }))`
-  padding: ${({ strong }) => (strong ? "0.45rem 1.1rem" : "0.28rem 0.55rem")};
-  min-height: ${({ strong }) => (strong ? "2rem" : "auto")};
-  border: 1px solid
-    ${({ theme, fill }) =>
-      fill && ACTION_FILL[fill]
-        ? ACTION_FILL[fill](theme).bg
-        : theme.color.border};
+ * **A permanent fill was too far, and that is what shipped.** The intent above
+ * says "a fill on hover"; the code did it always, so the panel's loudest
+ * object — a black slab in the light theme, a white one in the dark — was the
+ * way *out* of the feature, sitting under a list of calls you are in the
+ * middle of making. The primary thing here is placing a call, and that happens
+ * on the chart; nothing in this foot should outrank it. It is back to the
+ * described design: foreground colour, a real target, and the fill only under
+ * the pointer.
+ *
+ * `danger` is the other half of that correction. Red was rejected for the exit
+ * — red already means MISSED three rows above, and turning calls off loses
+ * nothing — but `reset score` genuinely cannot be undone, and it was the
+ * quietest thing in the foot. It stays quiet at rest and answers in red when
+ * you reach for it, which is where the warning is actually useful. */
+const AlertActionKey = styled.button.attrs({ type: "button" })`
+  padding: ${({ strong }) => (strong ? "0.34rem 0.9rem" : "0.28rem 0.55rem")};
+  min-height: ${({ strong }) => (strong ? "1.8rem" : "auto")};
+  border: 1px solid ${({ theme }) => theme.color.border};
   border-radius: 3px;
-  background: ${({ theme, fill }) =>
-    fill && ACTION_FILL[fill] ? ACTION_FILL[fill](theme).bg : "transparent"};
-  color: ${({ theme, strong, fill }) =>
-    fill && ACTION_FILL[fill]
-      ? ACTION_FILL[fill](theme).fg
-      : strong
-        ? theme.color.text
-        : theme.color.textSecondary};
+  background: transparent;
+  color: ${({ theme, strong }) =>
+    strong ? theme.color.text : theme.color.textSecondary};
   font-family: ${({ theme }) => theme.font.primary};
-  font-size: ${({ strong }) => (strong ? "0.74rem" : "0.68rem")};
+  font-size: ${({ strong }) => (strong ? "0.72rem" : "0.68rem")};
   letter-spacing: 0.04em;
   cursor: pointer;
   transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease,
@@ -346,28 +323,123 @@ const AlertActionKey = styled.button.attrs(() => ({ type: "button" }))`
   }
 
   &:hover:not(:disabled) {
-    border-color: ${({ theme, fill }) =>
-      fill && ACTION_FILL[fill]
-        ? ACTION_FILL[fill](theme).bg
-        : theme.color.borderHover};
-    color: ${({ theme, fill }) =>
-      fill && ACTION_FILL[fill] ? ACTION_FILL[fill](theme).fg : theme.color.text};
-    // A filled button dims on hover rather than lighting up: there is nowhere
-    // brighter for it to go
-    opacity: ${({ fill }) => (fill ? "0.85" : "1")};
-    background: ${({ theme, strong, fill }) =>
-      fill && ACTION_FILL[fill]
-        ? ACTION_FILL[fill](theme).bg
-        : strong
-          ? theme.color.bgSecondary
-          : "transparent"};
+    border-color: ${({ theme, danger }) =>
+      danger ? theme.color.chartLineRed : theme.color.borderHover};
+    color: ${({ theme, danger }) =>
+      danger ? theme.color.chartLineRed : theme.color.text};
+    background: ${({ theme, strong }) =>
+      strong ? theme.color.bgSecondary : "transparent"};
   }
 
   &:focus-visible {
     outline: none;
-    border-color: ${({ theme }) => theme.color.chartLineGreen};
+    border-color: ${({ theme, danger }) =>
+      danger ? theme.color.chartLineRed : theme.color.chartLineGreen};
   }
 `;
+
+/* One stepper, not two buttons and a word that comes and goes.
+ *
+ * The board's reach had `−` and `+` at the far end of the strip and a `reset`
+ * that appeared beside them only when there was something to reset, which
+ * moved the other two every time you crossed the default. The chart's own zoom
+ * pill had already solved this: `−`, what the board covers, `+`, with the
+ * middle one doubling as the way home. Same shape here, so the two controls
+ * are one thing to learn rather than two that happen to do the same job. */
+const AlertStepper = styled.span`
+  display: inline-flex;
+  align-items: stretch;
+  border: 1px solid ${({ theme }) => theme.color.border};
+  border-radius: 3px;
+  overflow: hidden;
+
+  &:hover {
+    border-color: ${({ theme }) => theme.color.borderHover};
+  }
+`;
+
+const AlertStepperBtn = styled.button.attrs({ type: "button" })`
+  min-width: 1.6rem;
+  padding: 0.28rem 0.3rem;
+  border: 0;
+  background: transparent;
+  color: ${({ theme }) => theme.color.textSecondary};
+  font-family: ${({ theme }) => theme.font.primary};
+  font-size: 0.75rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, opacity 0.15s ease;
+
+  &:disabled {
+    opacity: 0.3;
+    cursor: default;
+  }
+  &:hover:not(:disabled) {
+    background: ${({ theme }) => theme.color.bgSecondary};
+    color: ${({ theme }) => theme.color.text};
+  }
+  &:focus-visible {
+    outline: none;
+    background: ${({ theme }) => theme.color.bgSecondary};
+    color: ${({ theme }) => theme.color.chartLineGreen};
+  }
+`;
+
+/* The middle of the stepper: where the board is on the ladder, and the way
+ * back to where it started.
+ *
+ * A control only while it leads somewhere — the rule the chart's pill already
+ * follows. At the default this is a `span` with no role, no tab stop, no name
+ * and no underline, because a button that cannot change anything is a promise
+ * the next click breaks. Rendered at every zoom either way, so the two arrows
+ * never move under the pointer. */
+const AlertStepperValue = styled.span`
+  display: inline-flex;
+  align-items: center;
+  /* Written for both forms of itself: as a button (see AlertStepperReset) the
+     browser would otherwise supply its own margin and a border on all four
+     sides, and the two halves of one control would not line up. */
+  margin: 0;
+  padding: 0 0.45rem;
+  border-top: 0;
+  border-bottom: 0;
+  border-left: 1px solid ${({ theme }) => theme.color.border};
+  border-right: 1px solid ${({ theme }) => theme.color.border};
+  background: transparent;
+  color: ${({ theme, active }) =>
+    active ? theme.color.text : theme.color.textSecondary};
+  font-family: ${({ theme }) => theme.font.primary};
+  font-size: 0.63rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  text-decoration: ${({ active }) => (active ? "underline" : "none")};
+  text-underline-offset: 2px;
+  cursor: ${({ active }) => (active ? "pointer" : "default")};
+  transition: background 0.15s ease, color 0.15s ease;
+
+  &:hover {
+    background: ${({ theme, active }) =>
+      active ? theme.color.bgSecondary : "transparent"};
+  }
+  &:focus-visible {
+    outline: none;
+    background: ${({ theme }) => theme.color.bgSecondary};
+    color: ${({ theme }) => theme.color.chartLineGreen};
+  }
+`;
+
+/* The same thing, as a real button, for when it leads somewhere.
+ *
+ * Not a `<span role="button">` with a key handler, which is what this was for
+ * about ten minutes. Two reasons, and the second is the one that bites: the
+ * browser gives a real button Enter and Space for nothing, and — because the
+ * new tab page listens for Space on the document to start and stop the coin
+ * rotation, and stands down only for `BUTTON`, `SELECT` and `A` — a span
+ * pretending to be a button would have reset the zoom *and* started the
+ * rotation on the same keystroke. `preventDefault` does not help; the event
+ * still reaches the document. Anything in this app that behaves like a button
+ * for the keyboard has to actually be one. */
+const AlertStepperReset = AlertStepperValue.withComponent("button");
 
 // Title on the left, the tally on the right — the count used to be glued to
 // the title, which read as part of the name rather than as status
@@ -416,7 +488,7 @@ const AlertsHeadTitle = styled.h2`
 /* The one real action on an empty screen. A chip is right for a setting in a
  * row of settings; the thing that starts the feature should look like the
  * button it is. */
-const AlertPrimaryButton = styled.button.attrs(() => ({ type: "button" }))`
+const AlertPrimaryButton = styled.button.attrs({ type: "button" })`
   display: block;
   width: ${({ block }) => (block ? "100%" : "auto")};
   margin-top: 0.9rem;
@@ -534,7 +606,7 @@ const AlertsTally = styled.div`
  * the shortcut that gets you here is written down in one place nobody is
  * looking at while they are already here. Quiet until asked: it is a ring in
  * the corner, and it goes bright while it is the thing that is open. */
-const AlertsInfoBtn = styled.button.attrs(() => ({ type: "button" }))`
+const AlertsInfoBtn = styled.button.attrs({ type: "button" })`
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -684,7 +756,7 @@ const AlertUndoBar = styled.div`
   color: ${({ theme }) => theme.color.textSecondary};
 `;
 
-const AlertUndoButton = styled.button.attrs(() => ({ type: "button" }))`
+const AlertUndoButton = styled.button.attrs({ type: "button" })`
   flex: 0 0 auto;
   padding: 0.2rem 0.5rem;
   font-family: ${({ theme }) => theme.font.primary};
@@ -790,7 +862,7 @@ const AlertMeta = styled.span`
 
 // Re-arm: a target that has been hit is a target you cared about, and the
 // only way back was to retype it
-const AlertRearm = styled.button.attrs(() => ({ type: "button" }))`
+const AlertRearm = styled.button.attrs({ type: "button" })`
   flex: 0 0 auto;
   padding: 0.2rem 0.45rem;
   font-family: ${({ theme }) => theme.font.primary};
@@ -809,7 +881,7 @@ const AlertRearm = styled.button.attrs(() => ({ type: "button" }))`
   }
 `;
 
-const AlertRemove = styled.button.attrs(() => ({ type: "button" }))`
+const AlertRemove = styled.button.attrs({ type: "button" })`
   flex: 0 0 auto;
   width: 1.6rem;
   height: 1.6rem;
@@ -880,7 +952,7 @@ const AlertsSectionRow = styled.div`
  * target and impossible on a touchpad in a hurry. The selected state is
  * carried by fill *and* border rather than border alone, so it survives being
  * looked at quickly. */
-const AlertPlainChip = styled.button.attrs(() => ({ type: "button" }))`
+const AlertPlainChip = styled.button.attrs({ type: "button" })`
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -962,7 +1034,7 @@ const AlertRecordFigure = styled.span`
   color: ${({ theme }) => theme.color.text};
 `;
 
-const AlertQuickChip = styled.button.attrs(() => ({ type: "button" }))`
+const AlertQuickChip = styled.button.attrs({ type: "button" })`
   padding: 0.2rem 0.5rem;
   font-family: ${({ theme }) => theme.font.primary};
   font-size: 0.68rem;
@@ -990,6 +1062,123 @@ const AlertForm = styled.div`
   @media (max-width: ${({ theme }) => theme.breakpoint.down.xs}px) {
     flex-wrap: wrap;
   }
+`;
+
+/* THE COIN PICKER IN THE TARGET FORM
+ *
+ * It was a `<select>` over all 81 coins in two optgroups. A native select can
+ * only jump by first letter of the label, so finding SNX meant scrolling a
+ * list as long as the panel — and the panel is a place people come to type a
+ * number, not to hunt. This is a text box with a ranked list under it, using
+ * the matcher the "/" jumper already has: symbol or full name, your own coins
+ * first.
+ *
+ * Kept the same height and border as the controls beside it, because it is
+ * still one field in a row of four and should not announce itself as new.
+ */
+const AlertCoinField = styled.div`
+  position: relative;
+  flex: 0 0 7.5rem;
+
+  @media (max-width: ${({ theme }) => theme.breakpoint.down.xs}px) {
+    flex: 1 1 100%;
+  }
+`;
+
+const AlertCoinInput = styled.input`
+  width: 100%;
+  padding: 0.6rem 0.55rem;
+  font-family: ${({ theme }) => theme.font.primary};
+  font-size: 0.82rem;
+  letter-spacing: 0.04em;
+  color: ${({ theme }) => theme.color.text};
+  background: ${({ theme }) => theme.color.bg};
+  border: 1px solid
+    ${({ theme, open }) => (open ? theme.color.borderHover : theme.color.border)};
+  border-radius: 8px;
+  cursor: text;
+
+  &::placeholder {
+    color: ${({ theme }) => theme.color.textSecondary};
+    letter-spacing: 0;
+  }
+
+  &:focus {
+    outline: none;
+    border-color: ${({ theme }) => theme.color.borderHover};
+  }
+`;
+
+/* Above the form rather than below it: the form sits at the foot of the card,
+ * so a menu dropping downwards would open off the bottom of the panel.
+ *
+ * Wider than the field it belongs to (`min-width`), because the field is
+ * sized for a three-letter symbol and the rows carry the full name — clipping
+ * "Synthetix" to fit the box would take away the reason the name is there.
+ * It grows rightwards only, so its left edge still lines up with the control
+ * that opened it.
+ *
+ * Opaque and lifted, not tinted: it crosses the kind buttons above it, and a
+ * translucent menu over a pill reads as a rendering fault rather than as a
+ * layer. */
+const AlertCoinMenu = styled.div`
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 0.45rem);
+  z-index: 4;
+  min-width: 13rem;
+  max-height: 13rem;
+  overflow-y: auto;
+  padding: 0.3rem;
+  background: ${({ theme }) => theme.color.bg};
+  border: 1px solid ${({ theme }) => theme.color.borderHover};
+  border-radius: 8px;
+  box-shadow: 0 10px 28px ${({ theme }) => theme.color.shadow},
+    0 2px 6px ${({ theme }) => theme.color.shadow};
+  ${themedScrollbar};
+
+  @media (max-width: ${({ theme }) => theme.breakpoint.down.xs}px) {
+    right: 0;
+    min-width: 0;
+  }
+`;
+
+const AlertCoinOption = styled.button.attrs({ type: "button" })`
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  width: 100%;
+  padding: 0.34rem 0.42rem;
+  border: none;
+  border-radius: 6px;
+  text-align: left;
+  font-family: ${({ theme }) => theme.font.primary};
+  font-size: 0.76rem;
+  cursor: pointer;
+  color: ${({ theme }) => theme.color.text};
+  background: ${({ theme, active }) =>
+    active ? theme.color.bgSecondary : "transparent"};
+
+  &:hover {
+    background: ${({ theme }) => theme.color.bgSecondary};
+  }
+`;
+
+/* The full name, so "Synthetix" finds SNX and the symbol is not a riddle. */
+const AlertCoinName = styled.span`
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.68rem;
+  color: ${({ theme }) => theme.color.textSecondary};
+`;
+
+const AlertCoinEmpty = styled.div`
+  padding: 0.4rem 0.42rem;
+  font-size: 0.72rem;
+  color: ${({ theme }) => theme.color.textSecondary};
 `;
 
 const AlertSelect = styled.select`
@@ -1028,7 +1217,7 @@ const AlertInput = styled.input`
 
 // Filled rather than outlined: it is the one thing in the panel you press to
 // make something happen, and it read as another input before
-const AlertAdd = styled.button.attrs(() => ({ type: "button" }))`
+const AlertAdd = styled.button.attrs({ type: "button" })`
   flex: 0 0 auto;
   padding: 0 1.2rem;
   font-family: ${({ theme }) => theme.font.primary};
@@ -1062,7 +1251,7 @@ const AlertKindRow = styled.div`
   gap: 0.35rem;
 `;
 
-const AlertKindButton = styled.button.attrs(() => ({ type: "button" }))`
+const AlertKindButton = styled.button.attrs({ type: "button" })`
   padding: 0.25rem 0.55rem;
   font-family: ${({ theme }) => theme.font.primary};
   font-size: 0.68rem;
@@ -1132,4 +1321,49 @@ const AlertsEmptyText = styled.div`
   max-width: 24rem;
   font-size: 0.76rem;
   line-height: 1.5;
+`;
+
+/* What an off screen is actually for.
+ *
+ * The calls tab switched off used to be six centred lines of prose with a
+ * button under it and, *below the button*, the one concrete thing on the
+ * screen: that calls you had already made were still being settled. That is
+ * status, not a footnote — and the record, which survives the switch just as
+ * the calls do, was not shown at all, so a feature you had used forty times
+ * looked exactly like one you had never touched.
+ *
+ * Figures, then, above the button and in the panel's own numeric voice: only
+ * the ones that are true, so a first visit still gets a clean screen with
+ * nothing but the explanation and the way in. */
+const AlertsEmptyFacts = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.4rem;
+  margin-top: 0.35rem;
+`;
+
+const AlertsEmptyFact = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  min-width: 6.5rem;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid ${({ theme }) => theme.color.border};
+  border-radius: 7px;
+  background: ${({ theme }) => theme.color.bgSecondary};
+`;
+
+const AlertsEmptyFactValue = styled.div`
+  color: ${({ theme }) => theme.color.text};
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+`;
+
+const AlertsEmptyFactLabel = styled.div`
+  font-size: 0.55rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: ${({ theme }) => theme.color.textSecondary};
 `;

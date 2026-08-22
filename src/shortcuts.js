@@ -37,6 +37,7 @@ const SHORTCUT_GROUPS = [
       { keys: ["/"], label: "Jump to a coin by name" },
       { keys: ["A"], label: "Price targets" },
       { keys: ["K"], label: "Calls — the board, the record, the settings" },
+      { keys: ["N"], label: "News — every source, filtered and dated" },
       { keys: ["P"], label: "Portfolio" },
       { keys: ["S"], label: "Settings" },
       { keys: ["?"], label: "This list" },
@@ -79,6 +80,7 @@ const ShortcutsCard = styled.div`
   border-radius: 12px;
   box-shadow: 0 8px 32px ${({ theme }) => theme.color.shadow};
   animation: ${shortcutsIn} 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+  ${themedScrollbar};
 `;
 
 const ShortcutsTitle = styled.div`

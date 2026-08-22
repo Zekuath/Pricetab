@@ -72,6 +72,21 @@ const SUGGESTED_COINS = [
   "ILV",
   "BLUR",
   "PYTH",
+  "WETH",
+  "WBTC",
+  "DAI",
+  "UNI",
+  "USDE",
+  "PYUSD",
+  "PAXG",
+  "ONDO",
+  "XAUT",
+  "OKB",
+  "MNT",
+  "CRO",
+  "ENA",
+  "ETHFI",
+  "FET",
 ];
 
 // Full names so users can search "Dogecoin" as well as "DOGE"
@@ -142,6 +157,21 @@ const COIN_NAMES = {
   ILV: "Illuvium",
   BLUR: "Blur",
   PYTH: "Pyth Network",
+  WETH: "Wrapped Ether",
+  WBTC: "Wrapped Bitcoin",
+  DAI: "Dai",
+  UNI: "Uniswap",
+  USDE: "Ethena USDe",
+  PYUSD: "PayPal USD",
+  PAXG: "PAX Gold",
+  ONDO: "Ondo",
+  XAUT: "Tether Gold",
+  OKB: "OKB",
+  MNT: "Mantle",
+  CRO: "Cronos",
+  ENA: "Ethena",
+  ETHFI: "Ether.fi",
+  FET: "Artificial Superintelligence Alliance",
 };
 
 const PERIOD_OPTIONS = [
@@ -244,10 +274,10 @@ const NEWS_CACHE_KEY = "crypto_chart_news_cache";
 const NEWS_REFRESH_MS = 600000; // 10 minutes
 // News sources — no-auth + CORS-enabled (verified). Most other crypto news
 // APIs (CryptoCompare, CoinGecko, Messari, CryptoPanic) require keys, and RSS
-// feeds (CoinDesk, Decrypt, Cointelegraph, ...) don't send CORS headers, so
-// the browser blocks them — Blockchair + Hacker News (below) are the only
-// viable in-extension feeds.
-const NEWS_API_URL = "https://api.blockchair.com/news?q=language(en)&limit=40";
+// feeds don't send CORS headers, so a page cannot read one without host
+// access. What is reachable with no permission at all is Hacker News; the six
+// newsrooms in `NEWS_SOURCES` below are opt-in. Blockchair's live news feed
+// was the third and has been dropped — the note in `NEWS_SOURCES` says why.
 
 /* What the headline row is allowed to carry.
  *
@@ -271,6 +301,36 @@ const NEWS_FILTER_OPTIONS = [
   { value: "portfolio", label: "What I hold" },
 ];
 const MAX_NEWS_ITEMS = 50;
+
+/* ── "What happened here?" — headlines at the moments the price moved ──────
+ *
+ * Blockchair's news endpoint takes a time filter and the archive goes back
+ * years, which is the whole reason this is affordable: one request answers
+ * "what was being written the day this happened", with no paging (`offset` is
+ * capped at 10,000, and the time filter makes paging unnecessary).
+ * Re-checked against the live endpoint on 20 Aug 2026 for 2021, 2022 and 2024.
+ *
+ * Off by default, like every other addition — the plain chart is what ships.
+ * And nothing is fetched until someone points at a mark: the marks themselves
+ * are worked out locally by `findUnusualMoves`, so a chart nobody reads costs
+ * no request at all.
+ *
+ * **The wording is part of the feature, not decoration.** Headlines from the
+ * day of a move are what was *being said*, not the cause — post hoc is the
+ * whole trap here. Anything this feature renders says "around this move" and
+ * never "because of", and the caption under the card says so in as many words.
+ */
+const MOVE_NEWS_KEY = "crypto_chart_move_news";
+const DEFAULT_MOVE_NEWS = false;
+/* The window's cache lives in `api.js` beside the other three, because that
+ * file loads first and hydrates its caches at load — a key declared here would
+ * still be in its temporal dead zone when the hydration runs. */
+/* How far out of the ordinary a step has to be before it earns a mark, and how
+ * many marks a chart may carry. 2.5σ marks roughly the top 1% of steps, which
+ * on a 300-point series is about three of them; six is the cap so a violent
+ * window does not turn the chart into a row of triangles. */
+const MOVE_NEWS_SIGMA = 2.5;
+const MOVE_NEWS_MAX_MARKS = 6;
 // Hacker News via Algolia — the only other CORS-enabled, no-key news source
 // found (X/Twitter, Reddit, Nitter, Stacker News all block extension origins).
 // Algolia ANDs multi-word queries, so each term is queried separately.
@@ -279,7 +339,242 @@ const HN_NEWS_TERMS = ["bitcoin", "ethereum", "crypto"];
 const HN_NEWS_MIN_POINTS = 30; // well-upvoted stories only
 const HN_NEWS_MAX_AGE_S = 7 * 86400; // past week
 const HN_NEWS_MAX_ITEMS = 8;
-// Low-signal SEO/promo headlines dropped from the ticker regardless of source
+/* The "what happened here?" archive asks Hacker News about a window rather than
+ * about the past week. A wide pool because the ranking is done here (by points,
+ * after `CRYPTO_TERMS_RE` drops what the loose OR match dragged in), not by
+ * Algolia; four survive onto a card that shows four. */
+const MOVE_NEWS_HN_POOL = 40;
+const MOVE_NEWS_HN_MAX = 6;
+
+/* ── The newsroom sources, and why they need asking for ───────────────────
+ *
+ * Measured on 21 August 2026, and the measurement is the whole reason this
+ * exists. The two keyless feeds this extension had were not enough:
+ *
+ *   - **Blockchair** carried **7 distinct outlets** across a 580-article
+ *     sample, 35% of them from one Turkish aggregator, no wire service among
+ *     them — and it had published **nothing for 101 hours**. A news row that
+ *     silently shows four-day-old headlines is worse than no news row. It has
+ *     since been dropped from this list entirely; see the note in
+ *     `NEWS_SOURCES` for what a second measurement found and what it cost.
+ *   - **Hacker News** is reliable and is discussion, not reporting. When
+ *     Blockchair left it was briefly the whole of what a fresh install showed,
+ *     which is what sent us looking for the three CORS-enabled newsrooms below.
+ *
+ * Everything actually worth reading — Cointelegraph, Decrypt, CryptoSlate,
+ * Bitcoin Magazine, CoinJournal, BBC — answers a server happily and sends
+ * **no `Access-Control-Allow-Origin` header**, so a page cannot read one.
+ * GDELT, the only global index that is both keyless and CORS-enabled, answered
+ * **3 of 20** requests at 8-second spacing and **0 of 7** at 100 seconds, with
+ * 10–21s latency when it did. It is not a source you can build on. Everything
+ * keyed (CryptoCompare, CoinDesk's data API, CoinGecko, Messari, CryptoPanic)
+ * is a 401 and a different privacy story.
+ *
+ * So the only route to real reporting is host access — and it is **optional**,
+ * requested from a button in the news panel and never at install. Chrome shows
+ * no install-time warning for `optional_host_permissions`, so "asks for
+ * nothing" is still true of the extension you install; what changes is only
+ * what a person has explicitly turned on. `tests/test-invariants.js` §1
+ * enforces both halves of that.
+ *
+ * `cryptoOnly` marks a general newsroom: BBC Business is here because it is
+ * the most credible feed on the list and it does cover this beat, but most of
+ * what it publishes is not about crypto at all, so its items have to name the
+ * subject before they earn a place in a crypto news panel.
+ */
+const NEWS_SOURCE_ORIGINS = {
+  cointelegraph: "https://cointelegraph.com/*",
+  decrypt: "https://decrypt.co/*",
+  cryptoslate: "https://cryptoslate.com/*",
+  bitcoinmagazine: "https://bitcoinmagazine.com/*",
+  coinjournal: "https://coinjournal.net/*",
+  bbc: "https://feeds.bbci.co.uk/*",
+};
+
+const NEWS_SOURCES = [
+  /* Blockchair used to be here, and is not any more.
+   *
+   * It was the one source that needed no permission, which made it the default
+   * and made it hard to remove. Measured on 21 Aug 2026: its newest item was
+   * **five days old**, and **7 of its 10 stories were not in English** — four
+   * Turkish, one Russian, one Dutch, one French — from outlets (`coin-turk`,
+   * `bitcoinsistemi`, `kriptofoni`, `bitcoinhaber`, `coinspot.io`, `newsbit.nl`,
+   * `cointribune`) that are aggregators rather than newsrooms. That is exactly
+   * the staleness this panel was built to expose, shipping as the default.
+   *
+   * The cost of removing it is real and was accepted deliberately: a fresh
+   * install now shows Hacker News alone until someone grants the newsrooms.
+   * A thin panel that is honest beats a full one that is not.
+   *
+   * It stays in `api.js` for `fetchNewsAround` — the "what happened here?"
+   * card's archive — because no RSS feed can be asked about last March, and
+   * for ETH/LTC/DOGE/BCH/ZEC address balances, which have nothing to do with
+   * news. Both of those apply the same promo filter this list does.
+   */
+  /* Always available: keyless, and **`Access-Control-Allow-Origin: *`**, which
+   * is what makes them readable with no permission at all. Verified 21 Aug
+   * 2026 by sending a `chrome-extension://` Origin and reading the header
+   * back; all three answered `*`.
+   *
+   * Finding these mattered more than it looks. Dropping Blockchair left a
+   * fresh install on Hacker News alone — discussion, not reporting. These are
+   * three financial newsrooms, dated, and they cost nothing to add. Yields on
+   * the crypto beat in one poll, measured the same day: Yahoo 11 of 50, CNBC
+   * 1 of 30, MarketWatch 1 of 10.
+   *
+   * All three are `cryptoOnly` for the reason BBC Business is: they are
+   * finance desks, not crypto desks, and an unfiltered markets feed in a
+   * crypto news panel reads as a bug. */
+  { id: "hn", name: "Hacker News", kind: "hn", optional: false },
+  {
+    id: "yahoo",
+    name: "Yahoo Finance",
+    kind: "rss",
+    url: "https://finance.yahoo.com/news/rssindex",
+    optional: false,
+    cryptoOnly: true,
+  },
+  {
+    id: "cnbc",
+    name: "CNBC",
+    kind: "rss",
+    url: "https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=10000664",
+    optional: false,
+    cryptoOnly: true,
+  },
+  {
+    id: "marketwatch",
+    name: "MarketWatch",
+    kind: "rss",
+    url: "https://feeds.content.dowjones.io/public/rss/mw_topstories",
+    optional: false,
+    cryptoOnly: true,
+  },
+  // Opt-in: real newsrooms, reachable only with host access
+  {
+    id: "cointelegraph",
+    name: "Cointelegraph",
+    kind: "rss",
+    url: "https://cointelegraph.com/rss",
+    optional: true,
+  },
+  {
+    id: "decrypt",
+    name: "Decrypt",
+    kind: "rss",
+    url: "https://decrypt.co/feed",
+    optional: true,
+  },
+  {
+    id: "cryptoslate",
+    name: "CryptoSlate",
+    kind: "rss",
+    // Its RSS rather than its wp-json: the WAF answers 403 to the `_fields`
+    // parameter, and without `_fields` one poll is 542 KB of post bodies
+    url: "https://cryptoslate.com/feed/",
+    optional: true,
+  },
+  {
+    id: "bitcoinmagazine",
+    name: "Bitcoin Magazine",
+    kind: "wp",
+    /* `_fields` is not a nicety: the same twenty posts are 186 KB with the
+     * bodies and 4 KB without them, and nothing here renders a body.
+     *
+     * `categories_exclude=39` is this outlet's own `press-releases` category.
+     * Filtering server-side is the strongest form of this available: the
+     * advertising is never fetched, never parsed, and never has to be
+     * recognised by a rule of ours. It cost nothing — no extra request, no
+     * extra bytes. (39 was empty the week this was added; the category exists
+     * and will not stay empty.) */
+    url: "https://bitcoinmagazine.com/wp-json/wp/v2/posts?per_page=20&categories_exclude=39&_fields=title,link,date_gmt",
+    optional: true,
+  },
+  {
+    id: "coinjournal",
+    name: "CoinJournal",
+    kind: "wp",
+    /* `categories_exclude=40` is CoinJournal's "Press Releases". This is the
+     * source that made the case: 5 of its 20 posts were advertising — three
+     * consecutive MEXC press releases, a KuCoin piece and a prop-firm ad.
+     * Verified against the live endpoint: with the exclusion, twenty posts
+     * still come back and none of the three MEXC items is among them. */
+    url: "https://coinjournal.net/wp-json/wp/v2/posts?per_page=20&categories_exclude=40&_fields=title,link,date_gmt",
+    optional: true,
+  },
+  {
+    id: "bbc",
+    name: "BBC Business",
+    kind: "rss",
+    url: "https://feeds.bbci.co.uk/news/business/rss.xml",
+    optional: true,
+    cryptoOnly: true,
+  },
+];
+
+/* What counts as "about this beat" for a general newsroom. Deliberately short
+ * and deliberately not a coin list: `newsForCoins` already answers "about BTC",
+ * and this answers the cruder question of whether a business story is about
+ * crypto at all, so that a BBC piece on cruise-ship air conditioning does not
+ * arrive in a crypto news panel. */
+const CRYPTO_TERMS_RE =
+  /\b(crypto\w*|bitcoin|ethereum|blockchain|stablecoin|defi|altcoin|binance|coinbase|ripple|solana|dogecoin|tether|web3|nft|digital asset|token(s|ised|ized)?)\b/i;
+
+// A source that has published nothing for this long is called out as quiet
+// rather than left looking live — the failure this whole feature was built for
+const NEWS_STALE_MS = 24 * 3600 * 1000;
+
+const NEWS_PANEL_KEY = "crypto_chart_news_sources"; // which sources are shown
+const NEWS_PANEL_FILTER_KEY = "crypto_chart_news_panel_filter"; // coin scope
+/* ADVERTISING MUST NOT REACH THE PANEL — and a title regex cannot do it alone.
+ *
+ * Three filters, weakest last, because that is the order of how much each one
+ * actually knows:
+ *
+ *   1. the publisher's own label (`categories_exclude` on the WordPress
+ *      sources, above) — it never arrives;
+ *   2. the URL path and the byline (here) — the outlet has already sorted its
+ *      promo into its own section, so the item says what it is;
+ *   3. `NEWS_SPAM_RE` (here) — a guess about wording, and the only one of the
+ *      three that can be wrong in both directions.
+ *
+ * The order is the finding. Measured against the live feeds on 21 Aug 2026,
+ * `NEWS_SPAM_RE` caught **0 of the 5** advertisements in one CoinJournal
+ * response — three MEXC press releases, a KuCoin puff piece and a prop-firm
+ * ad. "MEXC's August 2026 Proof-of-Reserves Confirms User Assets Fully Backed"
+ * is a headline; there is no wording rule that separates it from reporting.
+ * Widening the regex until it caught them would have started eating real
+ * stories, because real stories also say "announces". So the regex stopped
+ * being the mechanism and became the net under the net.
+ *
+ * This is the one place in the codebase where **over-filtering is the
+ * acceptable failure**. Everywhere else a false negative is the cheap one; here
+ * a single press release on screen is the thing that must not happen, so a
+ * borderline pattern goes in rather than staying out.
+ */
+
+/* Promo lives in its own path on every outlet that has any. Measured:
+ * CryptoSlate serves `cryptoslate.com/press-releases/<slug>` (and `/sponsored/`
+ * answers 200) while its editorial sits at the bare `cryptoslate.com/<slug>`;
+ * Cointelegraph has `/press-releases`; Decrypt has no such section at all —
+ * `/sponsored`, `/partner-content` and `/press-release` are all 404 there.
+ * `advertorial` and `paid-content` are not measured on these six; they are the
+ * industry's other names for the same thing and cost nothing to refuse.
+ * Anchored on both sides by `/` so a slug that merely contains the word — a
+ * story about a company that "partners with" someone — is not a match. */
+const NEWS_PROMO_PATH_RE =
+  /\/(press-releases?|sponsored|sponsored-content|partner-content|advertorial|paid-content|paid-post)\//i;
+
+/* The byline gives it away too, and earlier than the path does: press releases
+ * are distributed by wire services, and the wire signs them. CryptoSlate's
+ * promo section is written by `chainwire` and `cs-press-release` — measured,
+ * 12 of 12 items on its press-releases page. Compared with the byline stripped
+ * to letters, so "Chainwire", "chainwire" and "CS Press Release" are one
+ * pattern rather than three. */
+const NEWS_WIRE_RE =
+  /(chainwire|globenewswire|businesswire|accesswire|prnewswire|pressrelease|sponsored)/i;
+
+// Low-signal SEO/promo headlines — the last of the three, and the weakest
 const NEWS_SPAM_RE =
   /price (prediction|analysis)|presale|pre-sale|best (coins?|cryptos?) to buy|casino|airdrop|giveaway|sponsored/i;
 const AUTO_ROTATE_STORAGE_KEY = "crypto_chart_auto_rotate";
@@ -311,14 +606,27 @@ const RATE_PROMPT_DELAY_MS = 2 * 24 * 60 * 60 * 1000;
 const COIN_PROVIDERS = {
   XMR: "kraken", // delisted from Coinbase — all three endpoints 404
   PI: "kraken", // never listed by Coinbase; Kraken quotes PIUSD (17 Aug 2026)
+  // Swept 20 Aug 2026: Coinbase 404s on these three and Kraken answers
+  USDE: "kraken",
+  XAUT: "kraken",
+  OKB: "kraken",
+  /* MNT is the one that is not a 404, and is worse than one. Coinbase answers
+   * MNT-USD with $0.00028 where Mantle trades near a dollar — the ticker is
+   * some other asset. A wrong price is not a degraded chart, it is a lie with
+   * a number in it, so this is routed away from Coinbase permanently rather
+   * than left to the runtime failover, which only ever triggers on a failure
+   * and this does not fail. */
+  MNT: "kraken",
 };
 const providerFor = (coin) => COIN_PROVIDERS[coin] || "coinbase";
 
-/* The four coins Kraken cannot serve, so there is nowhere to fall back to for
- * them. Swept against Kraken's own pair list on 13 Aug 2026: it answers for
- * 62 of our 66. Re-run the sweep before trusting this — a listing is a fact
+/* The coins Kraken cannot serve, so there is nowhere to fall back to for
+ * them. Re-swept 20 Aug 2026 after fifteen coins were added: Kraken answers
+ * for all but WETH, which Coinbase does quote — so the pair below is a real
+ * gap only if Coinbase stops. Re-run the sweep before trusting this — a
+ * listing is a fact
  * about someone else's exchange and it changes without telling us. */
-const KRAKEN_MISSING = ["MATIC", "MKR", "RNDR", "ILV"];
+const KRAKEN_MISSING = ["MATIC", "MKR", "RNDR", "ILV", "WETH"];
 
 /* Coinbase can stop answering for one coin without anything being wrong here.
  * A delisting 404s. A burst of requests gets throttled at the edge. A region
@@ -553,7 +861,14 @@ const APP_MODES = [
       refreshInterval: 300000,
       tickerEnabled: false,
       pageTicker: true,
+      /* The only mode that turns the headline row on, so the only one that can
+       * name what the row carries — in the other three `newsFilter` would be a
+       * value with nothing to filter. Holder is for checking in on what you
+       * hold, so the headlines are narrowed to that; an empty portfolio gives
+       * the whole feed back rather than an empty row (see `NEWS_FILTER_OPTIONS`),
+       * so this cannot leave someone with a bar and nothing in it. */
       newsTicker: true,
+      newsFilter: "portfolio",
       autoRotate: false,
     },
   },
@@ -763,6 +1078,34 @@ const ERC20_TOKENS = {
   INJ: { address: "0xe28b3B32B6c345A34Ff64674606124Dd5Aceca30", decimals: 18 },
   ARB: { address: "0xB50721BCf8d664c30412Cfbc6cf7a15145234ad1", decimals: 18 },
   CHZ: { address: "0x3506424F91fD33084466F402d5D97f05F8e3b4AF", decimals: 18 },
+
+  /* Added 20 Aug 2026, so that watching an Ethereum address finds more of
+   * what is actually in it. Every one was asked what it is before it went in
+   * — one batched call of symbol() and decimals() against each contract, 80
+   * calls in 125ms — and one candidate was thrown out by that check: the
+   * token quoted as TON calls itself TONCOIN, which is the mismatch the rule
+   * exists to catch. Chosen from Coinlore's top 100 because that is the sweep
+   * the page ticker already makes, so every one of these is priced without a
+   * single extra request. */
+  WETH: { address: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2", decimals: 18 },
+  WBTC: { address: "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599", decimals: 8 },
+  STETH: { address: "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84", decimals: 18 },
+  DAI: { address: "0x6B175474E89094C44Da98b954EedeAC495271d0F", decimals: 18 },
+  UNI: { address: "0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984", decimals: 18 },
+  USDE: { address: "0x4c9EDD5852cd905f086C759E8383e09bff1E68B3", decimals: 18 },
+  PYUSD: { address: "0x6c3ea9036406852006290770BEdFcAbA0e23A0e8", decimals: 6 },
+  PAXG: { address: "0x45804880De22913dAFE09f4980848ECE6EcbAf78", decimals: 18 },
+  ONDO: { address: "0xfAbA6f8e4a5E8Ab82F62fe7C39859FA577269BE3", decimals: 18 },
+  XAUT: { address: "0x68749665FF8D2d112Fa859AA293F07A622782F38", decimals: 6 },
+  WBETH: { address: "0xa2E3356610840701BDf5611a53974510Ae27E2e1", decimals: 18 },
+  FDUSD: { address: "0xc5f0f7b66764F6ec8C8Dff7BA683102295E16409", decimals: 18 },
+  TUSD: { address: "0x0000000000085d4780B73119b644AE5ecd22b376", decimals: 18 },
+  OKB: { address: "0x75231F58b43240C9718Dd58B4967c5114342a86c", decimals: 18 },
+  MNT: { address: "0x3c3a81e81dc49A522A592e7622A7E711c06bf354", decimals: 18 },
+  CRO: { address: "0xA0b73E1Ff0B80914AB6fe0444E65848C4C34450b", decimals: 8 },
+  ENA: { address: "0x57e114B691Db790C35207b2e685D4A43181e6061", decimals: 18 },
+  ETHFI: { address: "0xFe0c30065B384F05761f15d0CC899D4F9F9Cc0eB", decimals: 18 },
+  FET: { address: "0xaea46A60368A7bD060eec7DF8CBa43b7EF41Ad85", decimals: 18 },
 };
 const ETH_RPC = "https://ethereum-rpc.publicnode.com";
 const ERC20_BALANCE_SELECTOR = "0x70a08231"; // balanceOf(address)

@@ -57,8 +57,8 @@ Ignored means "not part of the shipped history", not "disposable" —
 | `internal/AGENT_RULES.md` | Binding on every AI agent working here. Read it first |
 | `internal/AI_GUIDELINES.md` | The security checklists behind those rules |
 | `internal/AI_TOOLING_RESEARCH.md` | Notes on the tooling itself |
-| `internal/MONETIZATION.md` | The long-form strategy and roadmap — no paywall; affiliate, donations, sponsorship |
-| `internal/MONETIZATION_PLAN.md` | The pricing plan. Kept apart from the strategy above deliberately: one is where the money could come from, the other is what it would cost |
+| `internal/MONETIZATION.md` | The long-form strategy and the principles a paid version still has to keep. Its "no paywall" position was superseded on 21 Aug 2026 |
+| `internal/MONETIZATION_PLAN.md` | The pricing plan, and **the current direction**: freemium, one-time "Pro", new features only. Kept apart from the strategy above deliberately: one is the principles, this is the price |
 | `internal/BUSINESS_IDEAS.md` | Working notes. Nothing here is a decision until it moves to `product/` or `store/` |
 | `internal/agents/` | One journal and one memory file per agent |
 

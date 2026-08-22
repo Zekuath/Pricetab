@@ -44,6 +44,12 @@ const AppShell = styled.main`
   }
 `;
 
+/* `stale` is the chart of the coin (or range) you were looking at a moment
+ * ago, still on screen while the new one is being fetched. It fades rather
+ * than being torn down — see the note on `startSkeletonTimer` in app.js for
+ * what tearing it down actually cost — and it stops taking the pointer,
+ * because a crosshair over it would report the previous coin's prices under
+ * the new coin's name. */
 const ChartWrapper = styled.section`
   width: 100%;
   display: flex;
@@ -51,9 +57,13 @@ const ChartWrapper = styled.section`
   min-height: 0;
   padding: 0;
   margin: 0;
+  opacity: ${({ stale }) => (stale ? 0.32 : 1)};
+  pointer-events: ${({ stale }) => (stale ? "none" : "auto")};
+  transition: opacity 240ms ease;
 `;
 
 const FullBleed = styled.div`
+  position: relative;
   width: 100vw;
   margin-left: calc(-1 * ${({ theme }) => theme.spacing.large * 2}rem);
   margin-right: calc(-1 * ${({ theme }) => theme.spacing.large * 2}rem);
@@ -167,9 +177,10 @@ const MoveHeadlineLink = styled.a`
   white-space: nowrap;
   max-width: 100%;
 
+  ${hoverUnderline};
+
   &:hover {
     color: ${({ theme }) => theme.color.text};
-    text-decoration: underline;
   }
 `;
 
@@ -284,7 +295,7 @@ const ApiErrorMessage = styled.div`
 `;
 
 // Retry action inside the API-error banner — silent failures read as bugs
-const RetryButton = styled.button.attrs(() => ({ type: "button" }))`
+const RetryButton = styled.button.attrs({ type: "button" })`
   flex: 0 0 auto;
   background: transparent;
   border: none;
@@ -350,7 +361,7 @@ const InvalidCoinMessage = styled.span`
   }
 `;
 
-const InvalidCoinButton = styled.button`
+const InvalidCoinButton = styled.button.attrs({ type: "button" })`
   background: transparent;
   border: 1px solid ${({ theme }) => theme.color.border};
   border-radius: ${({ theme }) => theme.scale}rem;
@@ -435,6 +446,63 @@ const SkeletonNote = styled.div`
   color: ${({ theme }) => theme.color.textSecondary};
 `;
 
+/* The price readout's slot, while a switch is in flight.
+ *
+ * `blank` hides the figures without giving up the space they were standing
+ * in: the coin you asked for has no price yet, and printing the one you just
+ * left under its name would be a lie. Swapping the block for the shorter
+ * skeleton instead was the obvious way to do it and cost 71px of column
+ * height (measured at 1280x800), which the chart below immediately took —
+ * so every coin switch threw the whole drawing 71px up the screen and back.
+ * The layout has to hold still for the morph underneath it to read as one.
+ *
+ * The flex rules are ControlsStack's, repeated because this now sits between
+ * it and its children and would otherwise collapse the gaps between them. */
+const ReadoutSlot = styled.div`
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing.small * 0.75}rem;
+  width: 100%;
+  /* Inherited, not selected: the stand-in is a child of this box and turns
+   * itself back on. A child selector would have had to out-specify it. */
+  visibility: ${({ blank }) => (blank ? "hidden" : "visible")};
+
+  @media (max-width: ${({ theme }) => theme.breakpoint.down.sm}px) {
+    gap: ${({ theme }) => theme.spacing.small * 0.5}rem;
+  }
+`;
+
+// The grey boxes that stand in for the figures, over the slot they came from
+const ReadoutStandIn = styled.div`
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: ${({ theme }) => theme.spacing.small}rem;
+  visibility: visible;
+  pointer-events: none;
+`;
+
+/* The same honest word, for the case where the chart was kept instead of
+ * being replaced by the skeleton. Outside `ChartWrapper` so the stale fade
+ * does not take the message down with the drawing it is explaining. */
+const ChartStaleNote = styled(SkeletonNote)`
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  text-align: center;
+  transform: translateY(-50%);
+  pointer-events: none;
+`;
+
 const SkeletonChart = styled.div`
   width: 100%;
   height: 100%;
@@ -502,7 +570,7 @@ const settingsPulse = keyframes`
 const QUIET_LEAD = 0.32;
 const QUIET_REST = 0.14;
 
-const SettingsToggleButton = styled.button`
+const SettingsToggleButton = styled.button.attrs({ type: "button" })`
   position: absolute;
   top: ${({ theme, tickerTop }) =>
     tickerTop
@@ -558,7 +626,7 @@ const SettingsToggleButton = styled.button`
 `;
 
 // Sits just left of the settings gear, same vertical rhythm.
-const PortfolioToggleButton = styled.button`
+const PortfolioToggleButton = styled.button.attrs({ type: "button" })`
   position: absolute;
   top: ${({ theme, tickerTop }) =>
     tickerTop
@@ -619,7 +687,7 @@ const PortfolioToggleButton = styled.button`
 
 // Alerts bell — sits left of the portfolio button, same treatment.
 // A dot marks alerts that have fired but not been cleared.
-const AlertsToggleButton = styled.button`
+const AlertsToggleButton = styled.button.attrs({ type: "button" })`
   position: absolute;
   top: ${({ theme, tickerTop }) =>
     tickerTop
@@ -701,7 +769,7 @@ const AlertsToggleButton = styled.button`
  * A dot marks calls that have settled since you last looked, the same way the
  * targets bell marks a hit — that is the whole reason to come back.
  */
-const CallsToggleButton = styled.button`
+const CallsToggleButton = styled.button.attrs({ type: "button" })`
   position: absolute;
   top: ${({ theme, tickerTop }) =>
     tickerTop
@@ -843,11 +911,7 @@ const PageTickerRow = styled.div`
 
 const PageTickerNewsLink = styled.a`
   color: inherit;
-  text-decoration: none;
-
-  &:hover {
-    text-decoration: underline;
-  }
+  ${hoverUnderline};
 `;
 
 // Rows wrapper (fixed positioning now lives on the Shell)
@@ -865,7 +929,7 @@ const PageTickerBar = styled.div`
 `;
 
 // Hover-revealed chevron tab that collapses the ticker toward the screen edge
-const PageTickerChevron = styled.button`
+const PageTickerChevron = styled.button.attrs({ type: "button" })`
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
@@ -893,7 +957,7 @@ const PageTickerChevron = styled.button`
 `;
 
 // Small bobbing handle that remains when the ticker is collapsed
-const PageTickerHandle = styled.button`
+const PageTickerHandle = styled.button.attrs({ type: "button" })`
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
@@ -980,3 +1044,180 @@ const PageTickerChange = styled.span`
   font-size: 0.62rem;
 `;
 
+
+/* ── "What happened here?" — the card a mark opens ────────────────────────
+ *
+ * Anchored to the mark rather than parked in a corner, because the question it
+ * answers is about *that* moment: a card at the foot of the screen would make
+ * the reader carry the date across the chart to find out which triangle it
+ * belongs to. `translateX(-50%)` off the mark's own x, clamped by the caller
+ * so a mark near either edge still opens a card that is entirely on screen.
+ *
+ * Opened by a click, not by the hover that fetches it — a card that lives only
+ * while the pointer is on an eleven-pixel triangle is a card whose links can
+ * never be reached.
+ */
+/* The transform is part of the animation, so the two have to be written
+ * together: a keyframe that only moved `translateY` would drop the −50% and
+ * the card would slide in a half-width off its own mark. */
+const moveCardIn = keyframes`
+  from { transform: translate(-50%, 8px); opacity: 0; }
+  to   { transform: translate(-50%, 0);   opacity: 1; }
+`;
+
+const MoveCard = styled.div`
+  position: fixed;
+  top: ${({ y }) => y}px;
+  left: ${({ x }) => x}px;
+  transform: translateX(-50%);
+  z-index: 90;
+  width: min(26rem, calc(100vw - 2rem));
+  padding: 0.85rem 1rem 0.9rem;
+  border: 1px solid ${({ theme }) => theme.color.border};
+  border-radius: 10px;
+  background: ${({ theme }) => theme.color.bgSecondary};
+  box-shadow: 0 ${({ theme }) => theme.scale * 2}rem
+    ${({ theme }) => theme.scale * 4}rem ${({ theme }) => theme.color.shadow};
+  animation: ${moveCardIn} 0.18s ease-out;
+`;
+
+const MoveCardHead = styled.div`
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.15rem;
+`;
+
+/* The move itself, in the colours the chart already uses for up and down —
+ * here they mean the direction of the price, which is the one thing about this
+ * card that *is* a fact about the market. */
+const MoveCardMove = styled.div`
+  font-size: 0.95rem;
+  font-weight: ${({ theme }) => theme.fontWeight.semibold};
+  color: ${({ theme, up }) =>
+    up ? theme.color.chartLineGreen : theme.color.chartLineRed};
+`;
+
+const MoveCardWhen = styled.div`
+  font-size: 0.7rem;
+  color: ${({ theme }) => theme.color.textSecondary};
+  margin-bottom: 0.65rem;
+`;
+
+const MoveCardClose = styled.button.attrs({ type: "button" })`
+  flex: none;
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  color: ${({ theme }) => theme.color.textSecondary};
+
+  &:hover,
+  &:focus-visible {
+    color: ${({ theme }) => theme.color.text};
+  }
+`;
+
+const MoveCardList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+`;
+
+const MoveCardItem = styled.a`
+  display: block;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: ${({ theme }) => theme.color.text};
+  ${hoverUnderline};
+`;
+
+const MoveCardSource = styled.span`
+  display: block;
+  font-size: 0.58rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: ${({ theme }) => theme.color.textSecondary};
+`;
+
+/* The caveat, and it is not decoration. Headlines from the day of a move are
+ * what was *being said*, not the cause — post hoc is the whole trap in a
+ * feature like this. So the card says "around", never "because", and says it
+ * every time rather than once in a tooltip somebody dismissed months ago. */
+const MoveCardNote = styled.div`
+  margin-top: 0.7rem;
+  padding-top: 0.55rem;
+  border-top: 1px solid ${({ theme }) => theme.color.border};
+  font-size: 0.65rem;
+  line-height: 1.45;
+  color: ${({ theme }) => theme.color.textSecondary};
+`;
+
+/* News, one slot further left than calls. Same corner family as the other
+ * four: same travel, same resting weight, same × when it is the panel that is
+ * open. No unread dot — the calls button has one because a call settling is
+ * something that happened to you, while headlines are something you go and
+ * read, and a permanently-lit dot on a feed that never stops is just a mark
+ * that means "the world still exists". */
+const NewsToggleButton = styled.button.attrs({ type: "button" })`
+  position: absolute;
+  top: ${({ theme, tickerTop }) =>
+    tickerTop
+      ? `calc(${theme.spacing.large}rem + 3rem)`
+      : `${theme.spacing.large}rem`};
+  right: ${({ theme, open }) =>
+    open
+      ? `${theme.spacing.large}rem`
+      : `calc(${theme.spacing.large}rem + 10rem)`};
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: ${({ theme }) => theme.color.text};
+  font-size: ${({ open }) => (open ? "1.35rem" : "1.05rem")};
+  cursor: pointer;
+  line-height: 1;
+  width: 1.6rem;
+  height: 1.6rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Same corner travel as the settings control */
+  transition:
+    transform 0.25s ease,
+    opacity 0.25s ease,
+    top 0.4s ease,
+    right 0.4s ease;
+  z-index: 120;
+
+  /* Resting weight, and the two ways back to full — see QUIET_LEAD */
+  opacity: ${({ quiet }) => (quiet ? QUIET_REST : 1)};
+
+  &:hover,
+  &:focus-visible {
+    opacity: 1;
+  }
+
+  &:hover {
+    transform: scale(1.1);
+  }
+
+  &:focus {
+    outline: none;
+    animation: ${settingsPulse} 1s ease;
+  }
+
+
+  @media (max-width: ${({ theme }) => theme.breakpoint.down.sm}px) {
+    right: ${({ theme, open }) =>
+      open
+        ? `${theme.spacing.small}rem`
+        : `calc(${theme.spacing.small}rem + 10rem)`};
+    top: ${({ theme, tickerTop }) =>
+      tickerTop
+        ? `calc(${theme.spacing.small}rem + 3rem)`
+        : `${theme.spacing.small}rem`};
+  }
+`;

@@ -6,6 +6,15 @@
   "chrome_url_overrides": {
     "newtab": "index.html"
   },
+  "permissions": [],
+  "optional_host_permissions": [
+    "https://cointelegraph.com/*",
+    "https://decrypt.co/*",
+    "https://cryptoslate.com/*",
+    "https://bitcoinmagazine.com/*",
+    "https://coinjournal.net/*",
+    "https://feeds.bbci.co.uk/*"
+  ],
   "action": {
     "default_title": "PriceTab - Rate on Chrome Web Store",
     "default_popup": "rate.html"

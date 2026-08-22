@@ -33,6 +33,10 @@ const sandbox = {
   styled: styledStub,
   keyframes: tagged("keyframes"),
   css: tagged("css"),
+  /* Defined in theme.js, which these sandboxes do not load. Anything
+   * interpolated into a styled block by every file has to be stubbed
+   * here too, or the file throws before a single assertion runs. */
+  themedScrollbar: "",
   withTheme: (c) => c,
   React: { createElement: (...args) => ({ args }), Fragment: Symbol("Fragment") },
   Component: class { constructor(p) { this.props = p; } setState() {} },

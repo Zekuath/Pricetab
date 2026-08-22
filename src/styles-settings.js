@@ -24,7 +24,7 @@ const SettingsCard = styled.div`
   position: relative;
 `;
 
-const SettingsClose = styled.button.attrs(() => ({ type: "button" }))`
+const SettingsClose = styled.button.attrs({ type: "button" })`
   position: absolute;
   top: ${({ theme }) => theme.spacing.medium}rem;
   right: ${({ theme }) => theme.spacing.medium}rem;
@@ -154,7 +154,7 @@ const RatePromptLink = styled.a`
   cursor: pointer;
 `;
 
-const RatePromptClose = styled.button.attrs(() => ({ type: "button" }))`
+const RatePromptClose = styled.button.attrs({ type: "button" })`
   flex: 0 0 auto;
   background: transparent;
   border: none;
@@ -184,7 +184,7 @@ const TabContainer = styled.div`
   padding-bottom: ${({ theme }) => theme.spacing.small}rem;
 `;
 
-const TabButton = styled.button.attrs(() => ({ type: "button" }))`
+const TabButton = styled.button.attrs({ type: "button" })`
   background: transparent;
   border: none;
   padding: ${({ theme }) => theme.spacing.small}rem
@@ -236,29 +236,38 @@ const TabContent = styled.div`
   padding-right: ${({ theme }) => theme.spacing.large}rem;
   animation: ${tabFadeIn} 0.25s ease-out;
 
-  /* Custom scrollbar - Firefox */
-  scrollbar-width: thin;
-  scrollbar-color: ${({ theme }) => theme.color.border} transparent;
-
-  /* Custom scrollbar - Webkit (Chrome, Edge, Safari) */
-  &::-webkit-scrollbar {
-    width: 6px;
-  }
-
+  ${themedScrollbar};
   &::-webkit-scrollbar-track {
-    background: transparent;
     margin: ${({ theme }) => theme.scale * 4}rem 0;
   }
 
-  &::-webkit-scrollbar-thumb {
-    background: ${({ theme }) => theme.color.border};
-    border-radius: 3px;
-    transition: background 0.2s ease;
-  }
+  /* Scrolled content **arrives and leaves**; it is never sliced.
+   *
+   * There was nothing here, so a heading scrolled to the top edge was cut
+   * clean through the middle of its letters and left sitting a few pixels
+   * under the tab strip's underline — two lines of type meeting with nothing
+   * between them, which is what "the writing has run into itself" was. Caught
+   * by screenshotting the panel rather than by measuring it: every box was
+   * exactly where it should be, and the defect was the clipping edge.
+   *
+   * A mask rather than a gradient overlay, because the panel is drawn on two
+   * different backgrounds and an overlay would have to know which. The same
+   * treatment the news list and the targets panel already use at their foot —
+   * this is the first surface here that needed it at the head as well, since
+   * it is the only one whose content scrolls up into furniture. */
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    #000 ${({ theme }) => theme.scale * 22}px,
+    #000 calc(100% - ${({ theme }) => theme.scale * 22}px),
+    transparent 100%
+  );
 
-  &::-webkit-scrollbar-thumb:hover {
-    background: ${({ theme }) => theme.color.borderHover};
-  }
+  /* And the fade is only honest if nothing lands *inside* it. Without this a
+     heading scrolled into view stops half-faded, which is a slice by another
+     means. */
+  scroll-padding-top: ${({ theme }) => theme.scale * 24}px;
+  scroll-padding-bottom: ${({ theme }) => theme.scale * 24}px;
 `;
 
 /* A setting that only applies while another one is on. Kept mounted so it
@@ -324,7 +333,7 @@ const coinChipFace = css`
   justify-content: center;
 `;
 
-const CoinChip = styled.button.attrs(() => ({ type: "button" }))`
+const CoinChip = styled.button.attrs({ type: "button" })`
   ${coinChipFace};
   cursor: pointer;
 
@@ -360,7 +369,7 @@ const CoinChipStatic = styled.div`
   }
 `;
 
-const CoinChipRemove = styled.button.attrs(() => ({ type: "button" }))`
+const CoinChipRemove = styled.button.attrs({ type: "button" })`
   position: absolute;
   right: 0.5rem;
   top: 50%;
@@ -443,7 +452,7 @@ const ResetRow = styled.div`
     padding-top 0.45s cubic-bezier(0.33, 1, 0.68, 1);
 `;
 
-const ResetButton = styled.button.attrs(() => ({ type: "button" }))`
+const ResetButton = styled.button.attrs({ type: "button" })`
   background: none;
   border: 1px solid ${({ theme }) => theme.color.border};
   color: ${({ theme }) => theme.color.text};
@@ -513,7 +522,7 @@ const CoinSortLabel = styled.span`
   margin-right: 2px;
 `;
 
-const CoinSortButton = styled.button.attrs(() => ({ type: "button" }))`
+const CoinSortButton = styled.button.attrs({ type: "button" })`
   padding: 4px 9px;
   border: 1px solid ${({ theme }) => theme.color.border};
   border-radius: 7px;
@@ -591,7 +600,7 @@ const SuggestionList = styled.div`
   padding: 0.25rem 0;
 `;
 
-const SettingsActionButton = styled.button`
+const SettingsActionButton = styled.button.attrs({ type: "button" })`
   padding: 0.75rem 1rem;
   border-radius: ${({ theme }) => theme.scale * 3}rem;
   border: none;
@@ -649,7 +658,7 @@ const ThemeButtonGroup = styled.div`
   justify-content: center;
 `;
 
-const ThemeButton = styled.button.attrs(() => ({ type: "button" }))`
+const ThemeButton = styled.button.attrs({ type: "button" })`
   flex: 1;
   padding: 0.6rem 1rem;
   border-radius: ${({ theme }) => theme.scale * 3}rem;
@@ -719,7 +728,7 @@ const SettingTitleRow = styled.div`
   margin-bottom: 0.25rem;
 `;
 
-const SettingInfoBtn = styled.button.attrs(() => ({ type: "button" }))`
+const SettingInfoBtn = styled.button.attrs({ type: "button" })`
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -845,7 +854,7 @@ const PresetRow = styled.div`
   flex-wrap: wrap;
 `;
 
-const PresetButton = styled.button`
+const PresetButton = styled.button.attrs({ type: "button" })`
   flex: 1 1 auto;
   min-width: 64px;
   padding: 6px 8px;
@@ -870,7 +879,7 @@ const PresetButton = styled.button`
   }
 `;
 
-const ToggleSwitch = styled.button`
+const ToggleSwitch = styled.button.attrs({ type: "button" })`
   position: relative;
   width: 44px;
   height: 24px;
@@ -1139,7 +1148,7 @@ const HelpHintRow = styled.div`
 `;
 
 // Quiet pointer to the shortcut list, at the foot of Preferences
-const ShortcutsHint = styled.button.attrs(() => ({ type: "button" }))`
+const ShortcutsHint = styled.button.attrs({ type: "button" })`
   display: block;
   flex: 1;
   padding: ${({ theme }) => theme.spacing.small}rem 0;

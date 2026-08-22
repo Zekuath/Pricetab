@@ -61,6 +61,13 @@ class CryptoChart extends PureComponent {
       volumeBars: loadVolumeBars(), // volume band under the chart
       marketStats: loadMarketStats(), // stats line under the price
       chartGrid: loadChartGrid(), // price/time mesh behind the series
+      /* "What happened here?" — marks at the moments the price did something
+       * unusual for this series, and the headlines from around them. Where the
+       * marks go is local; only opening one costs a request. */
+      moveNews: loadMoveNews(),
+      // The mark that is open, and what came back for it. `null` for neither.
+      openMove: null,      // { items, x, loading, items: [...] }
+      moveHeadlinesFor: null, // the window's headlines, or null while in flight
       // Corner controls resting almost invisible — see QUIET_CHROME_KEY
       quietChrome: loadQuietChrome(),
       predict: loadPredict(), // "call the cell" — read the chart, name the box
@@ -127,6 +134,22 @@ class CryptoChart extends PureComponent {
       autoRotateInterval: loadAutoRotateIntervalFromStorage(), // ms
       newsTicker: loadNewsTickerFromStorage(), // News row in the page ticker
       newsFilter: loadNewsFilter(), // "all" | "coins" | "portfolio"
+      /* The news panel ("N"). Its own reading surface rather than a strip
+       * inside another view: headlines are something you go and read, and the
+       * ticker can only be read in the order it scrolls past. */
+      showNews: false,
+      newsSources: loadNewsPanelSources(), // { source: false } — absent is on
+      newsPanelScope: loadNewsPanelFilter(), // its own scope, not the ticker's
+      // A real in-flight flag. What stood in for it was `newsItems.length === 0`,
+      // which cannot tell "still asking" from "asked, and nothing came back"
+      newsLoading: false,
+      // Every granted newsroom failed to answer at once — see `fetchNewsData`
+      newsBlocked: false,
+      /* Which newsroom origins Chrome actually holds. Kept in state rather
+       * than asked per hover, because the "what happened here?" archive needs
+       * it on a pointer move — and because `api.js` loads before `news.js`, so
+       * the archive is handed the answer rather than reaching for it. */
+      newsGranted: [],
       newsItems: [], // [{ source, title, url }]
       tickerText: "", // Full ticker string
       // Widget states
@@ -327,7 +350,21 @@ class CryptoChart extends PureComponent {
       clearTimeout(this.slowLoadTimer);
       if (this.state.slowLoad) this.setState({ slowLoad: false });
 
-      // Show skeleton after 300ms if still loading
+      /* Show the skeleton after 300ms if still loading.
+       *
+       * With nothing on screen yet it stands in for the whole page, which is
+       * what it is for. Once there is a chart up it blanks the *numbers* and
+       * nothing else: taking the chart and the range switcher with them is
+       * what made switching coin look like a reload rather than a change.
+       * Measured on a 600ms fetch: the old line held for 300ms, then 300ms
+       * of grey rectangles, then `LineBase` re-mounted and drew itself in
+       * from the left over 600ms — 1.2s of which not one frame was a
+       * transition from the old coin to the new one. Kept on screen the same
+       * switch is a single 300ms morph, because the chart already knows how
+       * to grow one series into another (`interpolatePath` in `updatePath`)
+       * and never got the chance while it was being destroyed between the
+       * two. `hasChart` in `render` is what decides which of the two this
+       * is. */
       this.skeletonTimer = setTimeout(() => {
         if (this.state.isLoading) {
           this.setState({ showSkeleton: true });
@@ -1291,6 +1328,9 @@ class CryptoChart extends PureComponent {
         } else if (this.state.showQuickSwitch) {
           e.preventDefault();
           this.setState({ showQuickSwitch: false, quickSwitchCompare: false });
+        } else if (this.state.showNews) {
+          e.preventDefault();
+          this.toggleNews();
         } else if (this.state.alertsView) {
           e.preventDefault();
           this.setState({ alertsView: null });
@@ -1303,6 +1343,13 @@ class CryptoChart extends PureComponent {
         } else if (this.state.showPortfolio) {
           e.preventDefault();
           this.togglePortfolio();
+        } else if (this.state.openMove) {
+          /* Above `compareCoin` and below every panel: the move card is the
+           * smallest thing on screen and the most recently opened, so it is
+           * the one Esc means — but it sits on the chart, so anything covering
+           * the chart is closed first. */
+          e.preventDefault();
+          this.closeMove();
         } else if (this.state.compareCoin) {
           // Last in the chain: with nothing covering the chart, Esc drops the
           // overlay that is on it
@@ -1316,6 +1363,7 @@ class CryptoChart extends PureComponent {
         (e.key === "s" || e.key === "S") &&
         !this.state.showPortfolio &&
         !this.state.alertsView &&
+        !this.state.showNews &&
         !this.state.showQuickSwitch
       ) {
         e.preventDefault();
@@ -1331,6 +1379,7 @@ class CryptoChart extends PureComponent {
         (e.key === "a" || e.key === "A" || e.key === "k" || e.key === "K") &&
         !this.state.showPortfolio &&
         !this.state.showSettings &&
+        !this.state.showNews &&
         !this.state.showQuickSwitch
       ) {
         e.preventDefault();
@@ -1340,11 +1389,27 @@ class CryptoChart extends PureComponent {
         return;
       }
 
+      /* N opens the news panel, mirroring S, A/K and P. It excludes the other
+       * overlays and they exclude it: one card in the middle of the screen at
+       * a time is the rule this corner already follows. */
+      if (
+        (e.key === "n" || e.key === "N") &&
+        !this.state.showPortfolio &&
+        !this.state.showSettings &&
+        !this.state.alertsView &&
+        !this.state.showQuickSwitch
+      ) {
+        e.preventDefault();
+        this.toggleNews();
+        return;
+      }
+
       // P opens the portfolio, mirroring S and A
       if (
         (e.key === "p" || e.key === "P") &&
         !this.state.showSettings &&
         !this.state.alertsView &&
+        !this.state.showNews &&
         !this.state.showQuickSwitch
       ) {
         e.preventDefault();
@@ -1986,8 +2051,35 @@ class CryptoChart extends PureComponent {
       });
     });
 
+    /* Who wants the feed. Three consumers now — the scrolling row, the
+     * move-headlines line under the price, and the portfolio's own strip —
+     * and the loader and the poller have to agree about it or one of them is
+     * always wrong. That was not hypothetical: the poller once asked only
+     * about the row, so a tab with headlines on and the ticker off made no
+     * news request at all on load. Two copies of the condition became three,
+     * which is where a condition stops being a condition and becomes a name. */
+    _defineProperty(this, "newsWanted", () =>
+      Boolean(
+        this.state.newsTicker ||
+          this.state.moveHeadlines ||
+          this.state.showNews,
+      ),
+    );
+
     _defineProperty(this, "fetchNewsData", async () => {
-      if ((!this.state.newsTicker && !this.state.moveHeadlines) || this._newsFetching) {
+      if (!this.newsWanted()) return;
+      /* A fetch already running does not mean this one has nothing to do.
+       *
+       * `refreshNewsSources` is called the moment a permission is granted, and
+       * the fetch in flight resolved the permission state *before* the grant —
+       * so its source list excludes the newsrooms that just became readable,
+       * and it will write that answer into the cache. Returning here left the
+       * panel saying it was reading six newsrooms while showing none of them,
+       * with nothing to correct it until the ten-minute poll. So the request
+       * is remembered and re-run when the current one lands, rather than
+       * dropped. */
+      if (this._newsFetching) {
+        this._newsAgain = true;
         return;
       }
 
@@ -2007,16 +2099,49 @@ class CryptoChart extends PureComponent {
       }
 
       this._newsFetching = true;
+      this.setState({ newsLoading: true });
       try {
-        // Either source failing alone must not empty the row
-        const [blockchairItems, hnItems] = await Promise.all([
-          fetchBlockchairNews().catch(() => []),
-          fetchHackerNewsStories().catch(() => []),
-        ]);
+        /* Every source that can be read right now, asked at once. Hacker News
+         * always; a newsroom only once Chrome has actually granted that
+         * origin, which is a question with a real answer rather than a setting
+         * — the permission can be revoked from chrome://extensions without
+         * this app being told, and it can be revoked one origin at a time.
+         * `fetchNewsSource` never throws, and answers `null` for "did not
+         * answer", which is not the same as an empty feed and is why the panel
+         * can say which sources are quiet. */
+        const granted = await grantedNewsSources();
+        this.setState({ newsGranted: granted });
+        const sources = NEWS_SOURCES.filter(
+          (src) => !src.optional || granted.includes(src.id),
+        );
+        const results = await Promise.all(sources.map(fetchNewsSource));
 
-        // Fresh headlines first, HN's weekly best appended; spam + cross-source
-        // duplicates dropped inside the merge
-        const items = mergeNewsItems(blockchairItems, hnItems);
+        /* Granted and yet not one of them answered. That is the shape of the
+         * permission being live while the page's own network state is not —
+         * the case where a reload is what fixes it. It is deliberately narrow:
+         * one newsroom being down is an ordinary Tuesday, all of them at once
+         * is not. Said in the panel rather than guessed at silently. */
+        const optionalResults = sources
+          .map((src, i) => (src.optional ? results[i] : undefined))
+          .filter((r) => r !== undefined);
+        this.setState({
+          newsBlocked:
+            optionalResults.length > 0 && optionalResults.every((r) => !r),
+        });
+
+        /* Newest first, across all of them.
+         *
+         * The old order was "Blockchair, then Hacker News", which was fine
+         * with two sources and is wrong with eight: it would have put a
+         * four-day-old aggregator story above a wire report from an hour ago
+         * purely because of the order the fetchers are listed in. Undated
+         * stories sort last rather than first — an unknown time is not a
+         * recent one. */
+        const ranked = results
+          .filter(Boolean)
+          .reduce((all, list) => all.concat(list), [])
+          .sort((a, b) => (b.time || 0) - (a.time || 0));
+        const items = mergeNewsItems(ranked);
 
         if (items.length) {
           this.setState({ newsItems: items });
@@ -2026,7 +2151,53 @@ class CryptoChart extends PureComponent {
         // Silently fail — the news row simply stays hidden
       } finally {
         this._newsFetching = false;
+        /* The panel's "Fetching headlines…" used to be `newsItems.length === 0`
+         * — which is not a loading flag, it is an emptiness flag. A fetch where
+         * nothing answered never reached `setState` at all, so the panel sat on
+         * "Fetching headlines…" for ever and a failed refresh was
+         * indistinguishable on screen from one still running. It has to be
+         * cleared here, in `finally`, or the throw path leaves the same lie. */
+        this.setState({ newsLoading: false });
+        if (this._newsAgain) {
+          this._newsAgain = false;
+          this.fetchNewsData();
+        }
       }
+    });
+
+    /* The panel asks for this after a permission is granted or dropped: six
+     * feeds became readable (or stopped being), and waiting ten minutes for
+     * the next poll to notice would make the button look like it did nothing.
+     * The cache is cleared first, or the poll would serve the old answer. */
+    _defineProperty(this, "refreshNewsSources", () => {
+      saveJsonSetting(NEWS_CACHE_KEY, { t: 0, items: [] });
+      this.setState({ newsItems: [] }, this.fetchNewsData);
+    });
+
+    _defineProperty(this, "handleNewsSourceToggle", (name) => {
+      this.setState((prev) => {
+        const next = { ...prev.newsSources };
+        if (next[name] === false) delete next[name];
+        else next[name] = false;
+        saveNewsPanelSources(next);
+        return { newsSources: next };
+      });
+    });
+
+    _defineProperty(this, "handleNewsScopeChange", (value) => {
+      saveNewsPanelFilter(value);
+      this.setState({ newsPanelScope: value });
+    });
+
+    _defineProperty(this, "toggleNews", () => {
+      this.setState(
+        (prev) => ({ showNews: !prev.showNews }),
+        () => {
+          // Opening it is a reason to want the feed, so the shared loader has
+          // to be asked again — same shape as the portfolio's own toggle
+          this.startNewsTicker();
+        },
+      );
     });
 
     /* The headline row's own list. "My coins" is the list on the chart; "what
@@ -2060,7 +2231,7 @@ class CryptoChart extends PureComponent {
      * `fetchNewsData` uses, or one of them is always wrong. */
     _defineProperty(this, "startNewsTicker", () => {
       this.stopNewsTicker();
-      if (!this.state.newsTicker && !this.state.moveHeadlines) {
+      if (!this.newsWanted()) {
         return;
       }
       this.fetchNewsData();
@@ -2396,6 +2567,94 @@ class CryptoChart extends PureComponent {
       this.setState({ callGeometry: geo });
     });
 
+    /* ── "What happened here?" ────────────────────────────────────────────
+     *
+     * Where the marks go, worked out from the series on screen and nothing
+     * else. Memoized on the identity of the series, because `render` runs on
+     * every price tick and every hover and this walks 300 points — the same
+     * reason `scalePrices` is cached on identity rather than through
+     * `memoize`, which would stringify the whole series to look up an answer.
+     */
+    _defineProperty(this, "chartMoves", (prices) => {
+      if (this.state.moveNews !== true || this.state.compareCoin) return null;
+      if (this._movesFor === prices) return this._moves;
+      this._movesFor = prices;
+      this._moves = findUnusualMoves(prices, {
+        sigma: MOVE_NEWS_SIGMA,
+        max: MOVE_NEWS_MAX_MARKS,
+      });
+      return this._moves;
+    });
+
+    /* Hovering a mark asks for its window, and does nothing visible.
+     *
+     * The request is started here rather than on the click so the card is
+     * already filled by the time it opens — a mark is a small target and the
+     * pointer rests on it before the finger comes down. `fetchNewsAround`
+     * caches and de-duplicates, so running the pointer along a row of marks
+     * costs one request each and repeats cost none. */
+    _defineProperty(this, "handleMoveHover", (items) => {
+      if (!items || !items.length) return;
+      const move = items[0];
+      fetchNewsAround(
+        move.startTime,
+        items[items.length - 1].time,
+        this.state.newsGranted,
+      );
+    });
+
+    _defineProperty(this, "handleMoveOpen", (items, x, y) => {
+      if (!items || !items.length) return;
+      const first = items[0];
+      const last = items[items.length - 1];
+      const token = `${first.time}-${last.time}`;
+      this._moveToken = token;
+      this.setState({
+        openMove: { items, x, y, token },
+        moveHeadlinesFor: null,
+      });
+      fetchNewsAround(first.startTime, last.time, this.state.newsGranted).then((items2) => {
+        /* Another mark may have been opened while this was in flight, and a
+         * card must never fill with the previous window's headlines. */
+        if (this._moveToken !== token) return;
+        this.setState({ moveHeadlinesFor: items2 || [] });
+      });
+    });
+
+    _defineProperty(this, "closeMove", () => {
+      this._moveToken = null;
+      this.setState({ openMove: null, moveHeadlinesFor: null });
+    });
+
+    /* Clicking away closes the card.
+     *
+     * It had Escape and its own ×, which is two ways out for someone who knows
+     * they exist. A small card floating over a chart people click for other
+     * reasons — to place a call, to hover a square — has to get out of the way
+     * when the next click is plainly not about it.
+     *
+     * On `mousedown`, and this is what makes it safe: the card is opened from
+     * a `click`, which fires *after* the mousedown that produced it, so the
+     * listener registered here cannot see its own opening gesture. No timer,
+     * no flag, no "ignore the first event". Clicking a second mark closes the
+     * first on mousedown and opens the second on click, in that order.
+     *
+     * The chart is left alone deliberately — no overlay, no capture phase, no
+     * `stopPropagation`. Everything the chart does with a pointer keeps
+     * working while the card is up, and the card simply stops being up. */
+    _defineProperty(this, "handleMoveOutside", (e) => {
+      const card = this._moveCardNode;
+      if (card && e.target instanceof Node && card.contains(e.target)) return;
+      this.closeMove();
+    });
+
+    _defineProperty(this, "handleMoveNewsChange", (enabled) => {
+      saveMoveNews(enabled);
+      // Switching it off closes whatever is open with it — a card describing a
+      // mark that is no longer drawn is a card pointing at nothing
+      this.setState({ moveNews: enabled, openMove: null, moveHeadlinesFor: null });
+    });
+
     _defineProperty(this, "handleCallsShowSettledChange", (v) => {
       saveCallsShowSettled(v);
       this.setState({ callsShowSettled: v });
@@ -2480,6 +2739,7 @@ class CryptoChart extends PureComponent {
         tickerEnabled: this.handleTickerChange,
         pageTicker: this.handlePageTickerChange,
         newsTicker: this.handleNewsTickerChange,
+        newsFilter: this.handleNewsFilterChange,
         autoRotate: this.handleAutoRotateChange,
         refreshInterval: this.handleRefreshIntervalChange,
       };
@@ -3088,6 +3348,16 @@ class CryptoChart extends PureComponent {
 
   componentDidMount() {
     this.fetchData();
+    /* Ask Chrome once what is granted, whether or not any news is wanted.
+     * `fetchNewsData` also records this, but it only runs when something wants
+     * the feed — and "what happened here?" wants the *archive* without wanting
+     * the feed, so on a tab with the panel and the ticker both off the
+     * newsroom archive would never be used. Local call, no network. */
+    // No unmount guard: this is the root component and it lives as long as
+    // the tab does, so there is no path where this resolves after teardown
+    grantedNewsSources().then((granted) =>
+      this.setState({ newsGranted: granted }),
+    );
     // Set initial tab title
     this.setTabTitle(
       this.state.coinOptions,
@@ -3219,6 +3489,7 @@ class CryptoChart extends PureComponent {
     this.stopTickerInterval();
     this.stopAutoRotate();
     this.stopNewsTicker();
+    document.removeEventListener("mousedown", this.handleMoveOutside);
     // A widget answer waiting for the end of the frame — see `queueWidgetData`
     if (this._widgetFlush) cancelAnimationFrame(this._widgetFlush);
 
@@ -3249,6 +3520,16 @@ class CryptoChart extends PureComponent {
   }
 
   componentDidUpdate(_prevProps, prevState) {
+    /* The click-away listener lives exactly as long as the card does. Bound on
+     * mousedown so it cannot catch the click that opened the card — see
+     * `handleMoveOutside`. */
+    const wasOpen = Boolean(prevState.openMove);
+    const isOpen = Boolean(this.state.openMove);
+    if (isOpen !== wasOpen) {
+      const bind = isOpen ? "addEventListener" : "removeEventListener";
+      document[bind]("mousedown", this.handleMoveOutside);
+    }
+
     // A hit arriving, or the last banner being dismissed, is what starts and
     // stops the announcement
     if (prevState.firedAlerts !== this.state.firedAlerts) {
@@ -3311,6 +3592,119 @@ class CryptoChart extends PureComponent {
     }
   }
 
+  /* The card a mark opens.
+   *
+   * What it says about the move is a fact taken off the series. What it says
+   * about the headlines is deliberately weaker than it looks: they are the
+   * stories published around that date, and the note at the foot says so in
+   * as many words. A feature that puts a headline next to a price move is one
+   * sentence away from claiming a cause it cannot know, and the sentence is
+   * the one that is missing, not one that is there.
+   */
+  renderMoveCard() {
+    const open = this.state.openMove;
+    if (!open || this.state.moveNews !== true || this.state.compareCoin) {
+      return null;
+    }
+    const items = open.items;
+    /* The biggest move in the cluster, not the net of them.
+     *
+     * A spike and its recovery are two unusual steps in the same place, so
+     * they share one mark — and their *net* is close to nothing. The card said
+     * "rose 1.0% across 2 moves" about a chart that had visibly fallen six per
+     * cent and come back, which is the one number on the card nobody could
+     * have read off the screen. The event is the spike; the count says there
+     * was more than one step to it. */
+    const biggest = items.reduce((a, b) =>
+      Math.abs(b.z) > Math.abs(a.z) ? b : a,
+    );
+    const pct = biggest.pct;
+    const up = pct >= 0;
+    const activeCoin =
+      this.state.coinOptions[this.state.coinIndex] || this.state.coinOptions[0];
+    const when = new Date(biggest.time).toLocaleString(undefined, {
+      month: "short", day: "numeric", year: "numeric",
+      hour: "numeric", minute: "2-digit",
+    });
+    const headlines = this.state.moveHeadlinesFor;
+    /* Anchored to the mark in both axes, and clamped so it is always whole on
+     * screen: half the card either side, and below the mark unless there is no
+     * room, in which case above it. A card pinned to a fixed height would make
+     * the reader carry the date back to the chart to find out which of five
+     * triangles it belongs to. `MOVE_CARD_H` is an estimate rather than a
+     * measurement — the card is not on screen yet when this runs, and being a
+     * few pixels out only changes when it flips to the other side. */
+    const half = Math.min(208, window.innerWidth / 2 - 16);
+    const x = Math.max(half + 16, Math.min(window.innerWidth - half - 16, open.x));
+    const MOVE_CARD_H = 230;
+    const below = (open.y || 0) + 16;
+    const y =
+      below + MOVE_CARD_H > window.innerHeight - 12
+        ? Math.max(12, (open.y || 0) - MOVE_CARD_H - 12)
+        : below;
+
+    return React.createElement(
+      MoveCard,
+      {
+        x,
+        y,
+        key: open.token,
+        // v3 styled-components: the DOM node comes back through `innerRef`
+        innerRef: (n) => (this._moveCardNode = n),
+      },
+      React.createElement(
+        MoveCardHead,
+        null,
+        React.createElement(
+          MoveCardMove,
+          { up },
+          `${activeCoin} ${up ? "rose" : "fell"} ${Math.abs(pct).toFixed(1)}%`,
+        ),
+        React.createElement(
+          MoveCardClose,
+          { onClick: this.closeMove, "aria-label": "Close" },
+          "×",
+        ),
+      ),
+      React.createElement(
+        MoveCardWhen,
+        null,
+        when + (items.length > 1 ? ` · ${items.length} unusual moves here` : ""),
+      ),
+      headlines === null
+        ? React.createElement(MoveCardWhen, null, "Looking for headlines…")
+        : headlines.length
+          ? React.createElement(
+              MoveCardList,
+              null,
+              ...headlines.slice(0, 4).map((item, i) =>
+                React.createElement(
+                  MoveCardItem,
+                  {
+                    key: `mv-${i}`,
+                    href: item.url || undefined,
+                    target: "_blank",
+                    rel: "noopener noreferrer",
+                  },
+                  React.createElement(MoveCardSource, null, item.source),
+                  item.title,
+                ),
+              ),
+            )
+          : React.createElement(
+              MoveCardWhen,
+              null,
+              "Nothing in the archive for those days.",
+            ),
+      React.createElement(
+        MoveCardNote,
+        null,
+        "Headlines published around this move — what was being written at the " +
+          "time, not why the price moved.",
+      ),
+    );
+  }
+
   render() {
     const {
       coinIndex,
@@ -3356,6 +3750,14 @@ class CryptoChart extends PureComponent {
       ? (Math.min(Math.max(fearGreedData.value, 0), 100) * 1.8).toFixed(1)
       : 90;
     const activeCoin = coinOptions[coinIndex] || coinOptions[0] || "BTC";
+    /* There is a drawing on screen, so a switch is a transition and not a
+     * first paint: the skeleton stands down for the chart and the range
+     * switcher, and the chart is left to morph into the new series. The
+     * price readout still greys out — those figures belong to the coin you
+     * just left, and the one thing this must not do is print them under the
+     * new coin's name. */
+    const hasChart = Boolean(valueHistory && valueHistory.length);
+    const chartStale = showSkeleton && hasChart;
     const periodOption = PERIOD_OPTIONS.find((o) => o.value === period);
     const periodLabel = periodOption ? periodOption.label : "";
     const tickerVisible =
@@ -3437,6 +3839,24 @@ class CryptoChart extends PureComponent {
             ),
           ),
 
+        this.state.showNews &&
+          React.createElement(NewsPanel, {
+            items: this.state.newsItems,
+            enabled: this.state.newsSources,
+            scope: this.state.newsPanelScope,
+            coinOptions: this.state.coinOptions,
+            portfolio: this.state.portfolio,
+            loading: this.state.newsLoading,
+            blocked: this.state.newsBlocked,
+            onToggleSource: this.handleNewsSourceToggle,
+            onScopeChange: this.handleNewsScopeChange,
+            onSourcesChange: this.refreshNewsSources,
+            onClose: this.toggleNews,
+          }),
+
+        // "What happened here?" — the headlines from around one marked move
+        this.renderMoveCard(),
+
         // One-time rating ask (hidden behind full-screen views; the settings
         // overlay stacks above it)
         showRateAsk &&
@@ -3473,6 +3893,7 @@ class CryptoChart extends PureComponent {
           { tickerTop, tickerBottom },
           !showPortfolio &&
             !this.state.alertsView &&
+            !this.state.showNews &&
             !this.state.showQuickSwitch &&
             React.createElement(
               SettingsToggleButton,
@@ -3498,6 +3919,7 @@ class CryptoChart extends PureComponent {
             !showPortfolio &&
             !this.state.showQuickSwitch &&
             this.state.alertsView !== "calls" &&
+            !this.state.showNews &&
             React.createElement(
               AlertsToggleButton,
               {
@@ -3530,6 +3952,7 @@ class CryptoChart extends PureComponent {
             !showPortfolio &&
             !this.state.showQuickSwitch &&
             this.state.alertsView !== "targets" &&
+            !this.state.showNews &&
             React.createElement(
               CallsToggleButton,
               {
@@ -3550,9 +3973,31 @@ class CryptoChart extends PureComponent {
               this.state.alertsView ? "×" : icon("calls", 1.05),
             ),
 
+          /* News, one slot further left than calls. Same rule as the pair
+           * beside it: whichever panel is up owns the × in the corner, so the
+           * others stand down rather than stacking a second one. */
+          !showSettings &&
+            !showPortfolio &&
+            !this.state.alertsView &&
+            !this.state.showQuickSwitch &&
+            React.createElement(
+              NewsToggleButton,
+              {
+                onClick: this.toggleNews,
+                type: "button",
+                quiet: quietChrome && !this.state.showNews,
+                tickerTop: tickerTop && !this.state.showNews,
+                open: this.state.showNews,
+                "aria-label": this.state.showNews ? "Close news" : "News",
+                title: this.state.showNews ? "Close news" : "News (N)",
+              },
+              this.state.showNews ? "×" : icon("news", 1.05),
+            ),
+
           // Portfolio toggle (left of the gear)
           !showSettings &&
             !this.state.alertsView &&
+            !this.state.showNews &&
             !this.state.showQuickSwitch &&
             React.createElement(
               PortfolioToggleButton,
@@ -3577,8 +4022,15 @@ class CryptoChart extends PureComponent {
             ControlsStack,
             null,
 
-            // Show skeleton or actual overview
-            showSkeleton
+            /* Show skeleton or actual overview.
+             *
+             * Two different situations, and only one of them is a skeleton.
+             * With nothing on screen yet the grey boxes take the space and
+             * that is the whole of it. With a chart already up, the figures
+             * are hidden inside a slot that keeps its height and the boxes
+             * are laid over them — see `ReadoutSlot` for the 71px the
+             * straight swap cost. */
+            showSkeleton && !hasChart
               ? React.createElement(
                   SkeletonOverview,
                   null,
@@ -3592,8 +4044,8 @@ class CryptoChart extends PureComponent {
                   }),
                 )
               : React.createElement(
-                  Fragment,
-                  null,
+                  ReadoutSlot,
+                  { blank: chartStale },
                   React.createElement(Overview, {
                     // "X" flips the change readout through this
                     ref: (r) => (this.overviewRef = r),
@@ -3731,10 +4183,25 @@ class CryptoChart extends PureComponent {
                       ),
                     );
                   })(),
+                  chartStale &&
+                    React.createElement(
+                      ReadoutStandIn,
+                      null,
+                      React.createElement(SkeletonBox, {
+                        width: "8rem",
+                        height: "2.5rem",
+                      }),
+                      React.createElement(SkeletonBox, {
+                        width: "6rem",
+                        height: "1rem",
+                      }),
+                    ),
                 ),
 
-            // Show skeleton or actual period switcher
-            showSkeleton
+            /* Show skeleton or actual period switcher. The range is known
+             * the instant it is pressed — greying the six buttons while the
+             * prices arrive said the app had lost the press. */
+            showSkeleton && !hasChart
               ? React.createElement(
                   SkeletonPeriodSwitcher,
                   null,
@@ -3760,9 +4227,9 @@ class CryptoChart extends PureComponent {
             null,
             React.createElement(
               ChartWrapper,
-              null,
+              { stale: chartStale },
               // Show skeleton or actual chart
-              showSkeleton
+              showSkeleton && !hasChart
                 ? React.createElement(
                     SkeletonChart,
                     null,
@@ -3818,6 +4285,18 @@ class CryptoChart extends PureComponent {
                         : this.state.fireworks,
                     onPlaceCall: this.handlePlaceCall,
                     onGeometry: this.handleChartGeometry,
+                    /* "What happened here?" — where the marks go is worked out
+                     * from the series on screen, so it costs no request; what
+                     * they say costs one window, asked for on a click. Off
+                     * during comparison for the reason `grid` and `predict`
+                     * are: the y axis is percent change from two series, and a
+                     * mark placed from this coin's prices would sit at a level
+                     * nothing on the chart is drawn in. */
+                    showMoves:
+                      this.state.moveNews === true && !this.state.compareCoin,
+                    moves: this.chartMoves(valueHistory),
+                    onMoveHover: this.handleMoveHover,
+                    onMoveOpen: this.handleMoveOpen,
                     currencySymbol: getCurrencySymbol(this.state.currency),
                     interactive: true, // crosshair with OHLC + volume
                     period,
@@ -3846,10 +4325,25 @@ class CryptoChart extends PureComponent {
                       showSettings ||
                       showPortfolio ||
                       this.state.alertsView ||
-                      this.state.showQuickSwitch,
+                      this.state.showQuickSwitch ||
+                      // A readout taken off the previous coin's series
+                      chartStale,
                     formatPrice: this.formatChartPrice,
                   }),
             ),
+            /* The skeleton's word for a slow fetch, for the case where the
+             * chart was kept rather than replaced by it. Same 2.5s trigger,
+             * so an ordinary switch — every tick of auto-rotate — passes
+             * without a label flashing over the chart. */
+            chartStale &&
+              this.state.slowLoad &&
+              React.createElement(
+                ChartStaleNote,
+                null,
+                isOffline
+                  ? "Offline — waiting for a connection"
+                  : "Fetching prices…",
+              ),
           ),
         ),
         // Compare toggle (fixed, right of the widget control)
@@ -4131,19 +4625,32 @@ class CryptoChart extends PureComponent {
                           value: Math.min(Math.max(rsiValue, 2), 98),
                         }),
                       ),
+                      /* The ends of the scale, not a verdict on it.
+                       *
+                       * They read "Oversold" and "Overbought", which are the
+                       * words the textbook attaches to 30 and 70 on the
+                       * *daily* RSI — and this number is not that. It is a
+                       * 14-period RSI over whatever interval the range on
+                       * screen happens to give, which is 16 minutes on 1H and
+                       * three and a half years on ALL; measured on live BTC at
+                       * one instant the six ranges read 63.8 / 63.9 / 82.2 /
+                       * 80.9 / 37.8 / 54.6 against 80.5 for the daily one. So
+                       * the thresholds those words name were being printed
+                       * beside a number they do not describe.
+                       *
+                       * The words would be worth keeping if they were right
+                       * about the daily RSI either, and they are not: counting
+                       * episodes over 21,669 daily closes, the 30 days after
+                       * RSI 14 crosses above 70 beat the coin's ordinary month
+                       * on six of eight coins (BTC +7.5pp, n=87). The evidence
+                       * is in `docs/product/TODAY.md` §9. A momentum reading is
+                       * worth showing; telling someone what it means is not
+                       * something this data supports. */
                       React.createElement(
                         RsiLabels,
                         null,
-                        React.createElement(
-                          HalvingTimeLabel,
-                          null,
-                          "Oversold",
-                        ),
-                        React.createElement(
-                          HalvingTimeLabel,
-                          null,
-                          "Overbought",
-                        ),
+                        React.createElement(HalvingTimeLabel, null, "0"),
+                        React.createElement(HalvingTimeLabel, null, "100"),
                       ),
                     )
                   : React.createElement(WidgetSubtext, null, "Loading..."),
@@ -4583,6 +5090,8 @@ class CryptoChart extends PureComponent {
             onMarketStatsChange: this.handleMarketStatsChange,
             chartGrid: this.state.chartGrid,
             onChartGridChange: this.handleChartGridChange,
+            moveNews: this.state.moveNews,
+            onMoveNewsChange: this.handleMoveNewsChange,
             moveHeadlines: this.state.moveHeadlines,
             onMoveHeadlinesChange: this.handleMoveHeadlinesChange,
             quietChrome: this.state.quietChrome,
@@ -4603,6 +5112,11 @@ class CryptoChart extends PureComponent {
                 tickerEnabled: this.state.tickerEnabled === true,
                 pageTicker: this.state.pageTicker === true,
                 newsTicker: this.state.newsTicker === true,
+                /* Named by Holder, so it has to be here: `activeAppMode`
+                 * compares only what a mode names, and a named setting missing
+                 * from this snapshot is a comparison against `undefined` that
+                 * never matches — the pill would simply never light. */
+                newsFilter: this.state.newsFilter,
                 autoRotate: this.state.autoRotate === true,
                 refreshInterval: this.state.refreshInterval,
               },

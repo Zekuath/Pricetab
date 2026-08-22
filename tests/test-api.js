@@ -124,7 +124,6 @@ const sandbox = {
     }
     return { ok: false, status: 404, json: async () => ({}) };
   },
-  NEWS_API_URL: "https://api.blockchair.com/news",
   HN_NEWS_API: "https://hn.algolia.com/api/v1/search",
   HN_NEWS_TERMS: ["bitcoin", "crypto"],
   HN_NEWS_MIN_POINTS: 30,
@@ -134,6 +133,10 @@ const sandbox = {
   COIN_NAMES: { BTC: "Bitcoin", ETH: "Ethereum", SOL: "Solana", OP: "Optimism", BAT: "Basic Attention Token", TON: "Toncoin" },
   NEWS_SPAM_RE:
     /price (prediction|analysis)|presale|pre-sale|best (coins?|cryptos?) to buy|casino|airdrop|giveaway|sponsored/i,
+  NEWS_PROMO_PATH_RE:
+    /\/(press-releases?|sponsored|sponsored-content|partner-content|advertorial|paid-content|paid-post)\//i,
+  NEWS_WIRE_RE:
+    /(chainwire|globenewswire|businesswire|accesswire|prnewswire|pressrelease|sponsored)/i,
   encodeURIComponent,
   WATCH_CHAINS: {
     BTC: { provider: "mempool", decimals: 8 },
@@ -188,14 +191,46 @@ const json = (c) => JSON.parse(JSON.stringify(run(c)));
   await run('refreshPageTickerCoin("BTC", "USD", Date.now())');
   assert.strictEqual(fetchCalls.length, 0, "fresh cache skips network");
 
-  // news: title clamped to 140, junk filtered, http link dropped
-  const news = await run("fetchBlockchairNews()");
-  assert.strictEqual(news.length, 2, "empty-title article filtered");
-  assert.strictEqual(news[0].title.length, 140, "title clamped");
-  assert.strictEqual(news[0].source, "coindesk.com", "www. stripped");
-  assert.strictEqual(news[0].url, "https://x.com/a", "https kept");
-  assert.strictEqual(news[1].source, "bitcoin.it", "en. stripped");
-  assert.strictEqual(news[1].url, null, "non-https dropped");
+  /* isPromoNews — advertising must not reach the panel, and the three signals
+   * are not equally strong. The order they are asked in is the finding:
+   * measured against live feeds on 21 Aug 2026, the wording rule caught 0 of
+   * the 5 advertisements in one CoinJournal response, while the outlet's own
+   * filing caught every one. So the path and the byline carry this, and the
+   * regex is the net under the net. */
+  const promo = (item) => {
+    sandbox.__item = item;
+    return run("isPromoNews(__item)");
+  };
+  assert.strictEqual(
+    promo({ title: "MEXC's Proof-of-Reserves Confirms User Assets Fully Backed",
+            url: "https://coinjournal.net/news/mexc-proof-of-reserves/" }),
+    false,
+    "a press release that reads like a headline is not caught by wording — this is why the WordPress category is excluded server-side instead",
+  );
+  assert.strictEqual(
+    promo({ title: "Aligned launches ALIGN, the native token of its stack",
+            url: "https://cryptoslate.com/press-releases/aligned-launches-align/" }),
+    true,
+    "the outlet filed it under press-releases",
+  );
+  assert.strictEqual(
+    promo({ title: "Some project announces a thing",
+            url: "https://cryptoslate.com/some-project-announces-a-thing/",
+            author: "Chainwire" }),
+    true,
+    "the byline is a press-release wire",
+  );
+  assert.strictEqual(
+    promo({ title: "Exchange partners with a bank",
+            url: "https://decrypt.co/1/exchange-partners-with-a-bank" }),
+    false,
+    "'partners' inside a slug is not a /partner-content/ section",
+  );
+  assert.strictEqual(
+    promo({ title: "XRP Price Prediction: to the moon", url: "https://x/a" }),
+    true,
+    "the wording rule still earns its place on the obvious ones",
+  );
 
   // Hacker News: one request per term, story-id dedupe across terms,
   // empty titles dropped, text posts link to the HN discussion

@@ -49,6 +49,7 @@ const suites = [
   "test-calls-render.js",
   "test-modes-render.js",
   "test-polish-render.js",
+  "test-transition-render.js",
 ];
 for (const suite of suites) {
   step(suite, () =>

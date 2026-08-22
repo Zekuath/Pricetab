@@ -775,6 +775,138 @@ const describeSpan = (ms) => {
   return `${Math.round(ms / 2629800e3)} months`;
 };
 
+/* The moments in a series where the price did something out of the ordinary
+ * *for that series*.
+ *
+ * Entirely local — no request decides where a mark goes, which is what makes
+ * the feature affordable: a chart nobody points at costs nothing. What the
+ * headlines cost is paid on the hover, one window at a time.
+ *
+ * Measured in standard deviations of the series' own step-to-step returns, not
+ * in a fixed percentage. A fixed threshold is wrong at both ends: 3% is an
+ * ordinary hour for DOGE and a violent year for USDC, so one number would mark
+ * everything on one coin and nothing on another. The step is whatever the
+ * range's resolution happens to be — 30 seconds on 1H, 91 days on ALL — and
+ * that is the right unit, because the question is "what stands out on the
+ * chart I am looking at".
+ *
+ * Log returns, so a fall of 20% and a rise of 25% are the same size — on a
+ * plain percentage the up moves dominate the tail and the marks drift onto one
+ * side of the chart.
+ *
+ * The first return is skipped rather than measured: `prices[0]` has nothing
+ * before it, and treating the opening level as a move from zero puts a mark on
+ * the left edge of every chart.
+ */
+const findUnusualMoves = (prices, options = {}) => {
+  const sigma = isFinite(options.sigma) ? options.sigma : 2.5;
+  const max = isFinite(options.max) ? options.max : 6;
+  if (!Array.isArray(prices) || prices.length < 12 || max < 1) return [];
+
+  const steps = [];
+  for (let i = 1; i < prices.length; i++) {
+    const a = Number(prices[i - 1].price);
+    const b = Number(prices[i].price);
+    if (!(a > 0) || !(b > 0)) {
+      steps.push(null);
+      continue;
+    }
+    steps.push(Math.log(b / a));
+  }
+  const real = steps.filter((s) => s !== null && isFinite(s));
+  if (real.length < 10) return [];
+  const mean = real.reduce((t, s) => t + s, 0) / real.length;
+  const sd = Math.sqrt(
+    real.reduce((t, s) => t + (s - mean) ** 2, 0) / real.length,
+  );
+  /* A flat or near-flat series has no unusual moment in it, and dividing by a
+   * standard deviation of zero would call every rounding error a spike. */
+  if (!(sd > 0)) return [];
+
+  const found = [];
+  for (let i = 0; i < steps.length; i++) {
+    if (steps[i] === null) continue;
+    const z = (steps[i] - mean) / sd;
+    if (Math.abs(z) < sigma) continue;
+    const at = prices[i + 1];
+    const before = prices[i];
+    const from = Number(before.price);
+    const to = Number(at.price);
+    found.push({
+      index: i + 1,
+      z,
+      // Both ends of the move, because the window the headlines come from is
+      // the span between them, not a single instant
+      startTime: +new Date(before.time),
+      time: +new Date(at.time),
+      from,
+      to,
+      pct: ((to - from) / from) * 100,
+    });
+  }
+
+  /* The biggest few, then back into time order. Sorting only by size would
+   * hand the caller a list that draws right-to-left at random, and the cap has
+   * to be applied to the *biggest*, not to the first few in the series. */
+  return found
+    .sort((a, b) => Math.abs(b.z) - Math.abs(a.z))
+    .slice(0, max)
+    .sort((a, b) => a.time - b.time);
+};
+
+/* HTML entities out of a plain string, without touching the DOM.
+ *
+ * WordPress hands back `title.rendered`, which is HTML: `&#8217;` for an
+ * apostrophe, `&amp;` for an ampersand, `&#8220;` for a quote. The usual trick
+ * is to set it as `innerHTML` and read `textContent` back, and that is exactly
+ * the pattern this repository forbids — `tests/test-invariants.js` fails on
+ * any `innerHTML` assignment, because the string came off the network.
+ *
+ * A table plus the numeric forms covers everything a headline contains. The
+ * numeric branch is clamped: `String.fromCodePoint` throws on anything above
+ * 0x10FFFF, and a malformed feed should give back a slightly wrong headline,
+ * never an exception on the way to the screen.
+ */
+const HTML_ENTITIES = {
+  amp: "&",
+  lt: "<",
+  gt: ">",
+  quot: '"',
+  apos: "'",
+  nbsp: " ",
+  hellip: "…",
+  mdash: "—",
+  ndash: "–",
+  lsquo: "‘",
+  rsquo: "’",
+  ldquo: "“",
+  rdquo: "”",
+  eacute: "é",
+  pound: "£",
+  euro: "€",
+  deg: "°",
+};
+
+const decodeEntities = (text) => {
+  if (typeof text !== "string" || text.indexOf("&") === -1) return text || "";
+  return text.replace(/&(#x?[0-9a-fA-F]+|[a-zA-Z]+);/g, (whole, body) => {
+    if (body[0] === "#") {
+      const code =
+        body[1] === "x" || body[1] === "X"
+          ? parseInt(body.slice(2), 16)
+          : parseInt(body.slice(1), 10);
+      if (!isFinite(code) || code < 0 || code > 0x10ffff) return whole;
+      try {
+        return String.fromCodePoint(code);
+      } catch (error) {
+        return whole;
+      }
+    }
+    const known = HTML_ENTITIES[body.toLowerCase()];
+    return known === undefined ? whole : known;
+  });
+};
+
 const NUMBER_REG = /\B(?=(\d{3})+(?!\d))/g;
 
 const getSign = (price, hidePlus) => {

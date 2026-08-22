@@ -142,6 +142,26 @@ const ICON_SHAPES = {
    * icon weight and stays legible at any size. */
   chevron: () => React.createElement("path", { d: "M6 9.5 12 15.5 18 9.5" }),
 
+  /* A folded newspaper: the sheet, a masthead rule, and two column rules.
+   * The obvious alternative — a bell — already means "tell me when", which is
+   * what the targets button does two icons along; news is something you go and
+   * read, not something that comes and finds you. Three lines rather than the
+   * usual five, because at button size (≈17px) five 2.4-weight strokes inside
+   * a 24 box close up into a grey block. */
+  news: () => [
+    React.createElement("rect", {
+      key: "sheet",
+      x: 3,
+      y: 5,
+      width: 18,
+      height: 14,
+      rx: 2,
+    }),
+    React.createElement("path", { key: "masthead", d: "M7 9 H13" }),
+    React.createElement("path", { key: "col1", d: "M7 13 H17" }),
+    React.createElement("path", { key: "col2", d: "M7 16 H14" }),
+  ],
+
   // Chain link: two interlocking pills. On the diagonal they read as a
   // chain; laid out horizontally they looked like a toggle switch.
   link: () =>

@@ -408,6 +408,36 @@ const loadChartGrid = () =>
 
 const saveChartGrid = (enabled) => saveSetting(CHART_GRID_KEY, enabled);
 
+const loadMoveNews = () => loadBoolSetting(MOVE_NEWS_KEY, DEFAULT_MOVE_NEWS);
+
+const saveMoveNews = (enabled) => saveSetting(MOVE_NEWS_KEY, enabled);
+
+/* Which sources the news panel is showing, as `{ "Cointelegraph": false }` —
+ * an absent key means on. Stored that way round on purpose: the set of sources
+ * grows, and a stored allow-list would silently hide every source added after
+ * it was written. Only `false` is ever recorded, so a new outlet arrives
+ * visible and an old one stays hidden. */
+const loadNewsPanelSources = () => {
+  const saved = loadJsonSetting(NEWS_PANEL_KEY);
+  if (!saved || typeof saved !== "object" || Array.isArray(saved)) return {};
+  const out = {};
+  for (const key of Object.keys(saved)) {
+    if (typeof key === "string" && saved[key] === false) out[key] = false;
+  }
+  return out;
+};
+
+const saveNewsPanelSources = (map) => saveJsonSetting(NEWS_PANEL_KEY, map);
+
+const loadNewsPanelFilter = () =>
+  loadEnumSetting(
+    NEWS_PANEL_FILTER_KEY,
+    NEWS_FILTER_OPTIONS.map((o) => o.value),
+    DEFAULT_NEWS_FILTER,
+  );
+
+const saveNewsPanelFilter = (value) => saveSetting(NEWS_PANEL_FILTER_KEY, value);
+
 /* Held per range: the reach you want on an hour chart is not the reach you want
  * on a year, and a single number would fight you every time you switched. */
 const loadBoardZoom = (period) =>
@@ -725,7 +755,7 @@ const sanitizeWatches = (list, coin) => {
 // Portfolio (tracking only): array of { coin, amount, lots, watches } where
 // `amount`/`lots` are the manually entered part and `watches` are watched
 // addresses tracked separately (see sanitizeWatches). Shared by storage load
-// and JSON import: coins whitelisted against SUGGESTED_COINS, numbers
+// and JSON import: coins whitelisted against the coins this app knows, numbers
 // coerced to finite non-negatives; anything malformed is dropped so a
 // corrupted entry (or a hand-edited import file) can't break the view.
 // Legacy shapes migrate: a `paid` total becomes one lot, and a single
@@ -738,7 +768,24 @@ const sanitizePortfolio = (list) => {
     if (!entry || typeof entry !== "object") continue;
     const coin = typeof entry.coin === "string" ? entry.coin.toUpperCase() : "";
     let amount = Number(entry.amount);
-    if (!SUGGESTED_COINS.includes(coin) || seen.has(coin)) continue;
+    /* The whitelist is what the app knows, not what it can chart.
+     *
+     * It was `SUGGESTED_COINS` alone, and that quietly deleted holdings: an
+     * Ethereum address can hold stETH, wBETH, FDUSD or TUSD — all four are
+     * read from their own contracts and priced by the ticker sweep — but
+     * neither Coinbase nor Kraken quotes a series for any of them, so putting
+     * them in the coin list would offer four chart coins that cannot draw.
+     * Kept out of that list, they were found at the address, added, saved,
+     * and dropped on the next tab open with nothing said. A token you hold is
+     * a holding whether or not there is a line to look at. `isWatchableCoin`
+     * is a closed list too — `WATCH_CHAINS` plus `ERC20_TOKENS` — so this is
+     * the same protection against a hand-edited file, over a wider set. */
+    if (
+      (!SUGGESTED_COINS.includes(coin) && !isWatchableCoin(coin)) ||
+      seen.has(coin)
+    ) {
+      continue;
+    }
     if (!isFinite(amount) || amount < 0) continue;
     let lots = sanitizeLots(entry.lots);
     if (!lots.length) {

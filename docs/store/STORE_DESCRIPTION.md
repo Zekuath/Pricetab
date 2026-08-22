@@ -151,12 +151,36 @@ English (United States)
 ## Single Purpose Description
 
 ```
-PriceTab replaces the browser's new tab page with a live cryptocurrency price chart. Every feature serves that one purpose — reading the cryptocurrency market on the new tab page — and each is a different way of reading the same data: the coin list and time ranges choose what the chart shows; comparison draws a second coin on the same axis; the optional market panels annotate it; price targets report when the chart reaches a level you named; the holdings view prices coins you own against the same feed; and calls let you record what you expect the chart to do next and score yourself against what it did. Nothing collects, transmits or sells data. The extension requests zero permissions, runs entirely from local files, and keeps every setting, holding and score in the browser's own localStorage.
+PriceTab replaces the browser's new tab page with a live cryptocurrency price chart. Every feature serves that one purpose — reading the cryptocurrency market on the new tab page — and each is a different way of reading the same data: the coin list and time ranges choose what the chart shows; comparison draws a second coin on the same axis; the optional market panels annotate it; price targets report when the chart reaches a level you named; the holdings view prices coins you own against the same feed; and calls let you record what you expect the chart to do next and score yourself against what it did. Nothing collects, transmits or sells data. The extension is installed with zero permissions granted, runs entirely from local files, and keeps every setting, holding and score in the browser's own localStorage. Six news feeds can optionally be read directly if the user turns them on from the news panel; nothing is requested until they do.
 ```
 
 ## Permission Justifications
 
-The manifest requests **no permissions and no host permissions**, so no justification fields appear. (`chrome_url_overrides.newtab` is not a permission.)
+The manifest requests **no `permissions` and no `host_permissions`**, so no
+justification field appears for either. (`chrome_url_overrides.newtab` is not a
+permission.)
+
+It does declare **`optional_host_permissions`**, and the dashboard *does* ask
+for a justification for those. Paste this:
+
+```
+PriceTab shows crypto news headlines alongside the price chart. Newsrooms serve
+their feeds without CORS headers, so the extension cannot read one from a page
+without host access to that specific feed.
+
+These six origins are optional and are never granted at install. The extension
+requests them only when the user presses "Turn on full sources" in its news
+panel, and the same panel revokes them. Until then no request is made to any of
+them.
+
+Scope is the narrowest that works: six exact origins, no wildcard hosts, no
+content scripts. The extension performs read-only GET requests for the
+publicly published feed URL and sends no user data of any kind.
+```
+
+The fuller reasoning, including the measurements that made this necessary, is
+in `docs/store/policies/PRICETAB_COMPLIANCE.md` under *Optional host
+permissions*.
 
 ## Remote Code
 

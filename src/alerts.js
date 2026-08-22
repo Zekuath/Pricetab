@@ -228,9 +228,17 @@ class AlertsPanel extends PureComponent {
        * per-tab — you opened "what is this", and switching tab changes what
        * "this" is. */
       info: false,
+      /* The coin picker's own state. `coinQuery` is null when the field is
+       * showing the chosen coin rather than being searched — which is a
+       * different thing from an empty search, and the field's value depends on
+       * which it is. `coinAt` is the highlighted row for the arrow keys. */
+      coinQuery: null,
+      coinAt: 0,
     };
     this.handleAdd = this.handleAdd.bind(this);
     this.handleKeyDown = this.handleKeyDown.bind(this);
+    this.handleCoinKey = this.handleCoinKey.bind(this);
+    this.renderCoinPicker = this.renderCoinPicker.bind(this);
     this.setInputRef = (r) => (this.inputRef = r);
   }
 
@@ -281,6 +289,46 @@ class AlertsPanel extends PureComponent {
   handleKeyDown(e) {
     if (e.key === "Enter") this.handleAdd();
     else if (e.key === "Escape") this.props.onClose();
+  }
+
+  // Every coin, ranked by the matcher the "/" jumper already uses: symbol or
+  // full name, and the coins on your own list first. One matcher, so the two
+  // pickers cannot disagree about what "sol" means.
+  coinMatches() {
+    return quickSwitchMatches(this.state.coinQuery || "", this.props.coinOptions);
+  }
+
+  pickCoin(coin) {
+    this.setState({ coin, coinQuery: null, coinAt: 0 });
+  }
+
+  /* The picker's keys. Enter takes the highlighted row rather than submitting
+   * the form — while a search is open the field is a list, and the target box
+   * below it is where Enter means "add". Escape closes the list and leaves the
+   * panel open, because the thing you are getting out of is the list; pressing
+   * it again reaches `handleKeyDown` and closes the panel. */
+  handleCoinKey(e) {
+    const open = this.state.coinQuery !== null;
+    const rows = open ? this.coinMatches() : [];
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+      if (!rows.length) return;
+      e.preventDefault();
+      const step = e.key === "ArrowDown" ? 1 : -1;
+      this.setState((s) => ({
+        coinAt: (s.coinAt + step + rows.length) % rows.length,
+      }));
+      return;
+    }
+    if (e.key === "Enter") {
+      e.preventDefault();
+      if (rows.length) this.pickCoin(rows[Math.min(this.state.coinAt, rows.length - 1)].coin);
+      return;
+    }
+    if (e.key === "Escape" && open) {
+      e.preventDefault();
+      e.stopPropagation();
+      this.setState({ coinQuery: null, coinAt: 0 });
+    }
   }
 
   // Fill the box from a distance off the current price, leaving it editable.
@@ -549,6 +597,14 @@ class AlertsPanel extends PureComponent {
      * state, so the switch is always in the same place. */
     if (predict !== true) {
       const paused = Array.isArray(calls) ? calls.length : 0;
+      const kept = callRecord || { hits: 0, total: 0, streak: 0, best: 0 };
+      const fact = (value, label, title) =>
+        React.createElement(
+          AlertsEmptyFact,
+          { title },
+          React.createElement(AlertsEmptyFactValue, null, value),
+          React.createElement(AlertsEmptyFactLabel, null, label),
+        );
       return React.createElement(
         Fragment,
         null,
@@ -566,11 +622,54 @@ class AlertsPanel extends PureComponent {
             icon("calls", 1.3),
           ),
           React.createElement(AlertsEmptyTitle, null, "Calls are off"),
+          /* Three lines, not six.
+           *
+           * This screen was carrying the whole manual — what a call is, how it
+           * settles, what the score is and is not — centred, which is fine for
+           * a line or two and hard work at six. The tab has an info ring in its
+           * head for the long version, and it reads the live state rather than
+           * repeating a paragraph. What has to stay is the sentence about the
+           * score being worth nothing: it is not decoration, it is the line
+           * between a chart and a wager, and it belongs where someone decides
+           * whether to switch this on. */
           React.createElement(
             AlertsEmptyText,
             null,
-            "Point at a square of empty future on the chart and you have said the price will be in that band, at that time. It settles itself the next time you open a tab. Nothing is announced, nothing is sent, and the score is worth nothing — it is a record of how well you read a chart.",
+            "Point at a square of empty future on the chart and you have said where the price will be, and when. It settles itself the next time you open a tab — nothing is announced, nothing is sent, and the score is worth nothing.",
           ),
+
+          /* Stored calls do not disappear when the feature is switched off,
+           * and they do not stop being judged either — settling runs whatever
+           * this switch says, or a call left open across a week off would come
+           * back with its evidence scrolled off the range and be dropped
+           * unanswered. What the switch turns off is the board: drawing it,
+           * placing on it, and being told.
+           *
+           * That used to be a sentence *under* the button, in the same grey as
+           * the explanation above it, where it read as one more thing to skip.
+           * It is the only concrete fact on the screen, so it goes above the
+           * button as a figure — with the record beside it, which survives the
+           * switch in exactly the same way and was not shown at all. */
+          (paused > 0 || kept.total > 0) &&
+            React.createElement(
+              AlertsEmptyFacts,
+              null,
+              paused > 0 &&
+                fact(
+                  paused,
+                  "still settling",
+                  "Calls you have already made are still judged while this is off — turning it back on brings the board back with them",
+                ),
+              kept.total > 0 &&
+                fact(
+                  `${Math.round((kept.hits / kept.total) * 100)}%`,
+                  `of ${kept.total}`,
+                  "Your record is kept. It lives on this device only and is worth nothing",
+                ),
+              kept.best > 0 &&
+                fact(kept.best, "best streak", "The longest run of calls you got right"),
+            ),
+
           React.createElement(
             AlertPrimaryButton,
             {
@@ -578,20 +677,6 @@ class AlertsPanel extends PureComponent {
             },
             "Turn calls on",
           ),
-          /* Stored calls do not disappear when the feature is switched off,
-           * and they do not stop being judged either — settling runs whatever
-           * this switch says, or a call left open across a week off would come
-           * back with its evidence scrolled off the range and be dropped
-           * unanswered. What the switch turns off is the board: drawing it,
-           * placing on it, and being told. So the off screen says *still
-           * running*, which is a different promise from "paused, not lost" and
-           * the true one. */
-          paused > 0 &&
-            React.createElement(
-              AlertsEmptyText,
-              null,
-              `${paused} call${paused === 1 ? "" : "s"} ${paused === 1 ? "is" : "are"} still being settled in the background — turning calls back on brings the board back with them.`,
-            ),
         ),
       );
     }
@@ -849,19 +934,80 @@ class AlertsPanel extends PureComponent {
         { on, onClick, title, "aria-pressed": Boolean(on), "aria-label": title || label },
         label,
       );
-    const action = (label, onClick, title, strong, fill, disabled) =>
+    const action = (label, onClick, title, opts) =>
       React.createElement(
         AlertActionKey,
         {
           onClick,
           title,
-          strong,
-          fill,
-          disabled,
+          strong: opts && opts.strong,
+          danger: opts && opts.danger,
+          disabled: opts && opts.disabled,
           "aria-label": title || label,
         },
         label,
       );
+
+    /* The board's place on the zoom ladder, as one control.
+     *
+     * `−`, where it stands, `+` — the chart's own pill in the panel's
+     * typeface, so the two are one thing to learn. The middle is the way back
+     * to the default and, at the default, deliberately not a control at all:
+     * no role, no tab stop, no name, no underline. It is drawn at every zoom
+     * either way, so pressing `+` never moves `−` out from under the pointer,
+     * which is exactly what the old appearing-and-disappearing `reset` did. */
+    /* Everything below reads the *resolved* zoom, never the raw prop. A value
+     * that is not on the ladder — a hand-edited storage key, a step retired in
+     * a later version — already fell back to the default for the arrows
+     * (`zoomBy` does its own `indexOf` check), and would then have been
+     * printed between them as `×undefined`: the two halves of one control
+     * disagreeing about where the board stands. */
+    const zoomNow = BOARD_ZOOM_STEPS.indexOf(boardZoom) === -1
+      ? DEFAULT_BOARD_ZOOM
+      : boardZoom;
+    const atDefault = zoomNow === DEFAULT_BOARD_ZOOM;
+    const stepper = React.createElement(
+      AlertStepper,
+      null,
+      React.createElement(
+        AlertStepperBtn,
+        {
+          onClick: () => onBoardZoomChange && onBoardZoomChange(zoomBy(-1)),
+          disabled: zoomNow <= BOARD_ZOOM_MIN,
+          title: "Zoom in: a tighter band, a shorter reach  ( ] )",
+          "aria-label": "Zoom the board in",
+        },
+        "−",
+      ),
+      atDefault
+        ? React.createElement(
+            AlertStepperValue,
+            { active: false, "aria-hidden": "true" },
+            `×${zoomNow}`,
+          )
+        : React.createElement(
+            AlertStepperReset,
+            {
+              active: true,
+              type: "button",
+              onClick: () =>
+                onBoardZoomChange && onBoardZoomChange(DEFAULT_BOARD_ZOOM),
+              title: "Back to the default board reach",
+              "aria-label": "Back to the default board reach",
+            },
+            `×${zoomNow}`,
+          ),
+      React.createElement(
+        AlertStepperBtn,
+        {
+          onClick: () => onBoardZoomChange && onBoardZoomChange(zoomBy(1)),
+          disabled: zoomNow >= BOARD_ZOOM_MAX,
+          title: "Zoom out: a wider band, far enough to call a big move  ( [ )",
+          "aria-label": "Zoom the board out",
+        },
+        "+",
+      ),
+    );
 
     return React.createElement(
       AlertCallsFoot,
@@ -915,37 +1061,7 @@ class AlertsPanel extends PureComponent {
            * reach grow with it — which is the difference between being able to
            * call a crash and having no square to point at. */
           React.createElement(AlertStripGap, null),
-          action(
-            "−",
-            () => onBoardZoomChange && onBoardZoomChange(zoomBy(-1)),
-            "Zoom in: a tighter band, a shorter reach  ( ] )",
-            false,
-            null,
-            boardZoom <= BOARD_ZOOM_MIN,
-          ),
-          action(
-            "+",
-            () => onBoardZoomChange && onBoardZoomChange(zoomBy(1)),
-            "Zoom out: a wider band, far enough to call a big move  ( [ )",
-            false,
-            null,
-            boardZoom >= BOARD_ZOOM_MAX,
-          ),
-          /* And the way back, beside the two that take you away from it.
-           *
-           * The zoom is held per range and survives the tab, so a board left
-           * eight notches out a week ago is still eight notches out — and
-           * counting clicks back is guesswork, because nothing says which
-           * notch is the ordinary one. Shown only while it leads somewhere:
-           * at the default it is not a control, it is a word that does
-           * nothing. The chart's own pill carries the same action on its
-           * readout, so whichever of the two you are looking at can undo it. */
-          boardZoom !== DEFAULT_BOARD_ZOOM &&
-            action(
-              "reset",
-              () => onBoardZoomChange && onBoardZoomChange(DEFAULT_BOARD_ZOOM),
-              "Back to the default board reach",
-            ),
+          stepper,
         ),
 
       /* What is drawn on the chart.
@@ -990,8 +1106,7 @@ class AlertsPanel extends PureComponent {
           "turn off",
           () => onPredictChange && onPredictChange(false),
           "Stop calls. Your calls and score are kept, and L does the same from the chart",
-          true,
-          "solid",
+          { strong: true },
         ),
         React.createElement(AlertStripGap, null),
         doneCount > 0 &&
@@ -1005,6 +1120,7 @@ class AlertsPanel extends PureComponent {
             "reset score",
             () => onResetCalls && onResetCalls(),
             "Set the record back to nothing. It lives on this device only and is worth nothing",
+            { danger: true },
           ),
       ),
     );
@@ -1116,8 +1232,78 @@ class AlertsPanel extends PureComponent {
     );
   }
 
+  /* The coin field: a search box with a ranked list above it.
+   *
+   * It replaced a `<select>` over all 81 coins in two optgroups. A native
+   * select only jumps by the first letter of the label, so reaching SNX meant
+   * scrolling a list the height of the panel — in a place people come to type
+   * a number. Nothing else in the form changed, and neither did any target
+   * already set.
+   *
+   * The list is only up while there is a query (`coinQuery !== null`), so the
+   * field reads as the chosen coin the rest of the time. `onMouseDown` rather
+   * than `onClick` on a row, because blur fires first and would close the menu
+   * out from under the click.
+   */
+  renderCoinPicker() {
+    const searching = this.state.coinQuery !== null;
+    const rows = searching ? this.coinMatches() : [];
+    return React.createElement(
+      AlertCoinField,
+      null,
+      React.createElement(AlertCoinInput, {
+        type: "text",
+        open: searching,
+        value: searching ? this.state.coinQuery : this.state.coin,
+        placeholder: "Search coins",
+        "aria-label": "Target coin",
+        "aria-expanded": searching,
+        autoComplete: "off",
+        spellCheck: false,
+        onFocus: (e) => {
+          this.setState({ coinQuery: "", coinAt: 0 });
+          e.target.select();
+        },
+        onBlur: () => this.setState({ coinQuery: null, coinAt: 0 }),
+        onChange: (e) => this.setState({ coinQuery: e.target.value, coinAt: 0 }),
+        onKeyDown: this.handleCoinKey,
+      }),
+      searching &&
+        React.createElement(
+          AlertCoinMenu,
+          null,
+          rows.length
+            ? rows.map((r, i) =>
+                React.createElement(
+                  AlertCoinOption,
+                  {
+                    key: r.coin,
+                    active: i === Math.min(this.state.coinAt, rows.length - 1),
+                    // Blur beats click; mousedown is the one that still lands
+                    onMouseDown: (e) => {
+                      e.preventDefault();
+                      this.pickCoin(r.coin);
+                    },
+                  },
+                  React.createElement(AlertCoin, null, r.coin),
+                  React.createElement(
+                    AlertCoinName,
+                    null,
+                    COIN_NAMES[r.coin] || "",
+                  ),
+                ),
+              )
+            : React.createElement(
+                AlertCoinEmpty,
+                null,
+                `Nothing matching \u201c${this.state.coinQuery}\u201d.`,
+              ),
+        ),
+    );
+  }
+
   render() {
-    const { alerts, currency, coinOptions, onClose } = this.props;
+    const { alerts, currency, onClose } = this.props;
     const atCap = alerts.length >= MAX_ALERTS;
     const isPercent = this.state.kind === "percent";
     const hint = this.hint();
@@ -1285,28 +1471,7 @@ class AlertsPanel extends PureComponent {
              * be told when something moves is exactly how a coin earns a
              * place on the list — requiring it to be there first had the
              * dependency backwards. Your own coins stay on top. */
-            React.createElement(
-              AlertSelect,
-              {
-                value: this.state.coin,
-                "aria-label": "Target coin",
-                onChange: (e) => this.setState({ coin: e.target.value }),
-              },
-              React.createElement(
-                "optgroup",
-                { label: "Your coins" },
-                coinOptions.map((c) =>
-                  React.createElement("option", { key: c, value: c }, c),
-                ),
-              ),
-              React.createElement(
-                "optgroup",
-                { label: "All coins" },
-                SUGGESTED_COINS.filter((c) => !coinOptions.includes(c)).map(
-                  (c) => React.createElement("option", { key: c, value: c }, c),
-                ),
-              ),
-            ),
+            this.renderCoinPicker(),
             React.createElement(
               AlertSelect,
               {
