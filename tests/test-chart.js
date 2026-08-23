@@ -986,4 +986,60 @@ for (const [name, node] of [["A", labelA], ["B", labelB]]) {
   assert.ok(x >= 0 && x <= 400, `label ${name} stays inside the chart width, got ${x}`);
 }
 
+/* ── base rates: the arithmetic behind the panel that replaced buy signals ──
+ *
+ * `docs/product/TODAY.md` §9 is why there are no buy or sell points here: 0 of
+ * 70 permutation tests survive correction, and on live daily closes the
+ * "overbought" line was followed by a better-than-ordinary month on four coins
+ * of six. What got built instead is a count, and these are the two rules that
+ * make a count honest.
+ */
+{
+  /* `dailyRsi` is Wilder's RSI on daily closes, and it is deliberately not
+   * `calculateRSI` — that one samples whatever range is on screen down to ~50
+   * points, which makes its period sixteen minutes on 1H and three and a half
+   * years on ALL. Checked here against a series with a known answer: a run of
+   * unbroken gains has no losses to divide by, which is RSI 100. */
+  const rising = Array.from({ length: 40 }, (_, i) => 100 + i);
+  const rsiUp = run(`dailyRsi(${JSON.stringify(rising)})`);
+  assert.strictEqual(rsiUp[13], null, "no value before the period is full");
+  assert.strictEqual(rsiUp[14], 100, "unbroken gains → 100, not a divide by zero");
+  const falling = Array.from({ length: 40 }, (_, i) => 140 - i);
+  const rsiDown = run(`dailyRsi(${JSON.stringify(falling)})`);
+  assert.strictEqual(rsiDown[rsiDown.length - 1], 0, "unbroken losses → 0");
+  assert.strictEqual(
+    run("dailyRsi([1, 2, 3]).filter((v) => v !== null).length"),
+    0,
+    "a series shorter than the period has no RSI at all",
+  );
+
+  /* Episodes, not days. A run of five days inside a state is **one** thing
+   * that happened; counting each day would inflate n fivefold and correlate
+   * every observation with its neighbour — which is exactly how a sample of
+   * four gets dressed up as a sample of twenty. */
+  const closes = Array.from({ length: 60 }, (_, i) => 100 + i);
+  // true on indices 10..14 and 30..34: two episodes, ten days
+  sandbox.__closes = closes;
+  sandbox.__flags = closes.map((_, i) => (i >= 10 && i <= 14) || (i >= 30 && i <= 34));
+  const r = json("baseRateFor(__closes, __flags, (v) => v === true, 5)");
+  assert.strictEqual(r.n, 2, "ten days inside two runs count as two episodes");
+  assert.strictEqual(
+    r.edge,
+    null,
+    "and two episodes is far too few to print a comparison",
+  );
+  assert.ok(r.baseN > 50, "the baseline is every ordinary window in the series");
+
+  /* The threshold is the feature, not a detail: below it the panel says so
+   * rather than printing a difference. Proved on a series with enough runs to
+   * cross it. */
+  const long = Array.from({ length: 400 }, (_, i) => 100 + i);
+  sandbox.__long = long;
+  sandbox.__many = long.map((_, i) => i % 20 === 0);
+  const many = json("baseRateFor(__long, __many, (v) => v === true, 5)");
+  assert.ok(many.n >= run("BASE_RATE_MIN_EPISODES"),
+    `enough episodes to compare (${many.n})`);
+  assert.ok(many.edge !== null, "…so the comparison is printed");
+}
+
 console.log("CHART TESTS OK");

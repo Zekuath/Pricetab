@@ -41,6 +41,26 @@ const hasPermissionsApi = () =>
   chrome.permissions &&
   typeof chrome.permissions.contains === "function";
 
+/* Read `chrome.runtime.lastError` **first**, unconditionally, then the answer.
+ *
+ * Every one of these callbacks used to say `Boolean(granted) && !lastError`,
+ * and `&&` short-circuits: on a refusal Chrome passes `undefined`, so
+ * `Boolean(undefined)` was false, the right-hand side never ran, and
+ * `lastError` was never touched. Chrome only counts an error as handled once
+ * something reads that property — so the one line written to check it was the
+ * reason the console filled with *"Unchecked runtime.lastError: Only
+ * permissions specified in the manifest may be requested."* on every load of a
+ * profile whose installed manifest predates `optional_host_permissions`.
+ * Reading it first also means the refusal is what it always should have been:
+ * "not granted", not an unhandled error.
+ */
+const readGranted = (value) => {
+  const failed = Boolean(
+    typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.lastError,
+  );
+  return !failed && Boolean(value);
+};
+
 /* Which optional sources are granted — **asked one origin at a time**.
  *
  * It used to ask about all six at once, which answers "are they all held?" and
@@ -65,7 +85,7 @@ const grantedNewsSources = () => {
           try {
             chrome.permissions.contains(
               { origins: [NEWS_SOURCE_ORIGINS[source.id]] },
-              (granted) => done(Boolean(granted) && !chrome.runtime.lastError),
+              (granted) => done(readGranted(granted)),
             );
           } catch (error) {
             done(false);
@@ -86,7 +106,7 @@ const requestNewsPermission = () =>
     try {
       chrome.permissions.request(
         { origins: newsOptionalOrigins() },
-        (granted) => resolve(Boolean(granted) && !chrome.runtime.lastError),
+        (granted) => resolve(readGranted(granted)),
       );
     } catch (error) {
       resolve(false);
@@ -100,7 +120,7 @@ const dropNewsPermission = () =>
     }
     try {
       chrome.permissions.remove({ origins: newsOptionalOrigins() }, (done) =>
-        resolve(Boolean(done)),
+        resolve(readGranted(done)),
       );
     } catch (error) {
       resolve(false);

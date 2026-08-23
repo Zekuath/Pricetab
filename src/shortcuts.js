@@ -36,6 +36,10 @@ const SHORTCUT_GROUPS = [
     items: [
       { keys: ["/"], label: "Jump to a coin by name" },
       { keys: ["A"], label: "Price targets" },
+      {
+        keys: ["B"],
+        label: "Base rates — how often this coin has been here before",
+      },
       { keys: ["K"], label: "Calls — the board, the record, the settings" },
       { keys: ["N"], label: "News — every source, filtered and dated" },
       { keys: ["P"], label: "Portfolio" },

@@ -1025,6 +1025,135 @@ const calculateRSI = (valueHistory, period = 14) => {
 };
 
 /* API FETCHING WITH CACHE & STALE-WHILE-REVALIDATE */
+/* ── BASE RATES ─────────────────────────────────────────────────────────────
+ * "This has happened before. Here is how often, and what followed."
+ *
+ * This exists in place of buy and sell signals, and the reason is measured
+ * rather than tasteful (`docs/product/TODAY.md` §9). Nine textbook rules over
+ * 21,669 daily closes on eight coins: **0 of 70 permutation tests survive
+ * Holm–Bonferroni**, in/out-of-sample rank correlation +0.42, and Donchian's
+ * median return runs +259% to +1175% across neighbouring lookbacks nobody can
+ * justify in advance. The published literature lands in the same place once
+ * data-snooping controls are applied: a 2017–2023 study of BTC and ETH under
+ * White's reality check found that *"previously profitable technical
+ * approaches… generally failed to generate profits during the subsequent
+ * out-of-sample period"*.
+ *
+ * Worse for the textbook, measured live on 22 Aug 2026: after RSI 14 crosses
+ * **70** — the "sell" signal — the next thirty days beat the coin's own
+ * ordinary month on four of six coins, BTC by 7.5 percentage points over 92
+ * episodes. The sign flips by coin, which is the finding: a rule whose
+ * direction depends on which coin you ran it on is not a rule.
+ *
+ * So nothing here says buy or sell. It counts, and it prints the count. The
+ * design rule that follows is the important one: **never a rate without its
+ * denominator.** In two years of candles these conditions fire three to nine
+ * times, so "100% of the time" is a sample of one with a percentage sign on
+ * it, and the commonest honest answer — *not enough to say anything* — has to
+ * read as the feature working rather than as it failing.
+ */
+
+// Under this many episodes, a percentage is theatre. The panel says so
+// instead of printing one.
+const BASE_RATE_MIN_EPISODES = 12;
+
+/* RSI 14 on daily closes, Wilder's smoothing — the one every published figure
+ * means by "RSI".
+ *
+ * Deliberately **not** `calculateRSI`, which samples whatever range is on
+ * screen down to ~50 points: that makes its period sixteen minutes on 1H and
+ * three and a half years on ALL, and the two must never be confused again.
+ * Returns an array the same length as `closes`, null where there is not yet
+ * enough history to have a value.
+ */
+const dailyRsi = (closes, period = 14) => {
+  const out = new Array(Array.isArray(closes) ? closes.length : 0).fill(null);
+  if (!Array.isArray(closes) || closes.length <= period) return out;
+  let gain = 0;
+  let loss = 0;
+  for (let i = 1; i <= period; i++) {
+    const d = closes[i] - closes[i - 1];
+    if (d > 0) gain += d;
+    else loss -= d;
+  }
+  gain /= period;
+  loss /= period;
+  const value = () => (loss === 0 ? 100 : 100 - 100 / (1 + gain / loss));
+  out[period] = value();
+  for (let i = period + 1; i < closes.length; i++) {
+    const d = closes[i] - closes[i - 1];
+    gain = (gain * (period - 1) + (d > 0 ? d : 0)) / period;
+    loss = (loss * (period - 1) + (d < 0 ? -d : 0)) / period;
+    out[i] = value();
+  }
+  return out;
+};
+
+// Percentage move from i to i+horizon, or null past the end of the series
+const forwardReturn = (closes, i, horizon) => {
+  const j = i + horizon;
+  if (j >= closes.length) return null;
+  const from = closes[i];
+  return from > 0 ? ((closes[j] - from) / from) * 100 : null;
+};
+
+const medianOf = (list) => {
+  if (!list.length) return null;
+  const sorted = [...list].sort((a, b) => a - b);
+  const mid = sorted.length >> 1;
+  return sorted.length % 2
+    ? sorted[mid]
+    : (sorted[mid - 1] + sorted[mid]) / 2;
+};
+
+/* What followed every time a series entered a state, against what follows an
+ * ordinary day in the same series.
+ *
+ * **Episodes, not days.** A run of eleven days above 70 is one thing that
+ * happened, not eleven — counting each day inside it would inflate n elevenfold
+ * and correlate every observation with its neighbour, which is how a sample of
+ * four is dressed up as a sample of forty.
+ *
+ * The baseline is the coin's *own* ordinary horizon, because "up 60% of the
+ * time" means nothing until you know the coin was up 57% of the time anyway.
+ * That difference is the only number on this panel worth reading, and it is
+ * still not a signal — see the note above.
+ */
+const baseRateFor = (closes, values, test, horizon) => {
+  if (!Array.isArray(closes) || closes.length <= horizon + 1) return null;
+  const episodes = [];
+  let inside = false;
+  for (let i = 0; i < values.length; i++) {
+    const now = test(values[i]);
+    if (now && !inside) {
+      const f = forwardReturn(closes, i, horizon);
+      if (f !== null) episodes.push(f);
+    }
+    inside = now;
+  }
+  const baseline = [];
+  for (let i = 0; i < closes.length; i++) {
+    const f = forwardReturn(closes, i, horizon);
+    if (f !== null) baseline.push(f);
+  }
+  if (!baseline.length) return null;
+  const upRate = (list) =>
+    list.length ? (list.filter((x) => x > 0).length / list.length) * 100 : null;
+  return {
+    n: episodes.length,
+    median: medianOf(episodes),
+    up: upRate(episodes),
+    baseN: baseline.length,
+    baseMedian: medianOf(baseline),
+    baseUp: upRate(baseline),
+    // The one number worth reading, and only when there is enough behind it
+    edge:
+      episodes.length >= BASE_RATE_MIN_EPISODES
+        ? medianOf(episodes) - medianOf(baseline)
+        : null,
+  };
+};
+
 const fetchValueHistory = async (
   coin,
   period,

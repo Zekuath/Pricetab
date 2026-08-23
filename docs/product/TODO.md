@@ -3,7 +3,10 @@
 > Development roadmap aligned with [VISION.md](VISION.md) and [MONETIZATION.md](../internal/MONETIZATION.md).
 > Tasks are organized by priority with clear status.
 >
-> **Last refreshed:** July 30, 2026 (post sector scan — see "Insights" section)
+> **Last refreshed:** 22 August 2026. The July sector scan was re-verified
+> against live Web Store listings and **Insight 3 did not survive it** — see
+> the Insights section. Statuses, codebase size and the Known Issues table were
+> re-measured rather than carried forward.
 
 ---
 
@@ -12,10 +15,10 @@
 | Metric | Value |
 |--------|-------|
 | **Live Build** | 1.3.0 on the Chrome Web Store (August 2026) |
-| **Staged Locally** | 1.4.0 — onboarding tour, portfolio tracking, collapsible settings groups |
-| **In Flight (uncommitted)** | None — working tree clean |
-| **Codebase Size** | ~11,000 lines across 18 script modules in `src/` |
-| **Testing** | Node regression suite + jsdom smoke test, CI on every push |
+| **Staged Locally** | 1.4.0 — onboarding tour, portfolio v2 (cost basis, disposals, address watching), news panel, calls board, collapsible settings groups |
+| **Uncommitted (22 Aug)** | Portfolio time-alignment + currency + coverage + undo fixes; per-range cache TTL; network-retry cap. `check` green |
+| **Codebase Size** | 31,592 lines across 26 files in `src/` (22 Aug 2026) |
+| **Testing** | 49 checks — lint, ast-grep rules, unit suites, five real-Chromium suites. CI on every push |
 | **Next Milestone** | Ship 1.4.0 (portfolio + onboarding) to the store → launch marketing |
 
 ---
@@ -23,10 +26,12 @@
 ## Active Focus (ordered)
 
 > **Everything below Phase 1 is secondary until the staged build is live.**
-> The July 2026 sector scan (see [MONETIZATION.md §2b](../internal/MONETIZATION.md)) confirmed:
-> installs are the bottleneck for every product and revenue goal — affiliate-style
-> extensions earn per active user, and we have ~0 installs on a listing that is
-> one version behind the local build.
+> The sector scan (see [MONETIZATION.md §2b](../internal/MONETIZATION.md)),
+> re-verified 22 Aug 2026, says this more strongly than it did in July:
+> installs are the bottleneck for every product and revenue goal, the feature
+> list is already ahead of every competitor found, and PriceTab appears in none
+> of the searches that return all of them. **Building more features is not what
+> is missing.**
 
 1. ~~Finish & commit the in-flight portfolio/onboarding polish~~ — done (committed August 2026)
 2. ~~Ship 1.3.0 to the store~~ — done (live August 2026)
@@ -132,7 +137,7 @@
 | Price change flash animation on update | [x] | Low | Shipped Aug 2026 |
 | Seed price data so the very first open paints a chart | [ ] (declined) | Medium | Would ship fabricated prices that read as real for a moment, and go stale — the honest cold-start note was shipped instead |
 | Quick coin switcher (`/` to search) | [x] | Low | Shipped Aug 2026 — `src/quickswitch.js` |
-| localStorage quota exceeded handling | [ ] | Medium | Rare but data-loss adjacent |
+| localStorage quota exceeded handling | [x] | Medium | Shipped: `writeStorage` drops the four `EPHEMERAL_CACHE_KEYS` cheapest-first and retries, and returns a result so an import can say it failed. Portfolio, calls, targets and preferences are never evicted — everything else was typed by a person |
 
 ---
 
@@ -184,10 +189,14 @@
 | Address watching (BTC/ETH/LTC/DOGE, read-only balance sync) | [x] | mempool.space + Blockchair, 10-min cache, opt-in (Aug 2026) |
 | Tax-season affiliate line (Jan–Apr, local date check) | [ ] | See `MONETIZATION.md` §3.5 — portfolio v2 now shipped |
 
-### 3.3 Coin Coverage Expansion — *new (July 2026)*
+### 3.3 Coin Coverage Expansion — *reframed 22 Aug 2026*
 
-> Our biggest competitive gap: ~64 Coinbase-served coins vs. 3,000–10,000+ at
-> competitors. We already fetch Coinlore's top-100 in one bulk request.
+> **Not the funnel fix this was filed as.** See Insight 3 below: the coverage
+> leaders have the fewest users in the category. What coverage actually buys is
+> the portfolio — you cannot track what the app does not support — so it is a
+> retention feature for the people most invested in it, and it is priced as
+> one. We already fetch Coinlore's top-100 in a single bulk request, so the
+> price-only tier costs no new host and no new permission.
 
 | Task | Status | Notes |
 |------|--------|-------|
@@ -245,22 +254,56 @@
 
 | Task | Status | Priority | Notes |
 |------|--------|----------|-------|
-| Test coverage for portfolio + onboarding | [ ] | High | Newest, least-tested code |
-| ESLint + Prettier config | [ ] | Medium | Cheap consistency win |
-| Keep files < 800 lines (watch `portfolio.js` growth) | [~] | Medium | In-flight diff adds ~300 lines |
-| Playwright E2E for critical paths | [ ] | Low | After launch |
+| Test coverage for portfolio + onboarding | [x] | High | `test-portfolio.js`, `test-portfolio-chart.js`, `test-onboarding.js`, plus `test-polish-render.js` §9c/§12/§13 in real Chromium (Aug 2026) |
+| ESLint + Prettier config | [x] | Medium | ESLint 9 flat config (`eslint.config.mjs`) derives ~850 cross-file globals from `src/`; `no-undef` is this project's compiler. Errors fail, warnings inform |
+| Keep files < 800 lines | [~] | Medium | Measured 22 Aug 2026: 31,592 lines across 26 modules. `app.js` 5,541 · `chart.js` 5,176 · `portfolio.js` 2,908. Six style files have already been cut out; the next cut for the top two is behavioural, not cosmetic, and genuinely risky |
+| Playwright E2E for critical paths | [x] | Low | Five real-Chromium suites in `check`; 49 checks total |
 | React 18 + hooks migration | [ ] | Low | Only with a real driver |
 | TypeScript migration | [ ] | Low | Not worth it under no-build constraint |
 
 ---
 
-## Insights — July 2026 Sector Scan
+## Insights — July 2026 Sector Scan, re-verified 22 August 2026
 
-Foresights that should shape prioritization (full data in `MONETIZATION.md` §2b):
+Foresights that should shape prioritization (full data in `MONETIZATION.md` §2b).
+**Insight 3 did not survive re-measurement** and is struck through below; the
+Chrome Web Store figures behind that are:
+
+| | users | rating | what it carries |
+|---|---|---|---|
+| **ChartsTab** — the category leader, and the closest thing to us | **1,000** | 5.0 (99) | 500 Binance pairs, sparklines, a search box, a floating widget on any page — and asks to "access website content" |
+| Crypto Pulse | 127 | 5.0 (2) | 3,000+ coins, metals, weather/notes/tasks/calculator, RSS. **56 MB**. Collects location and user activity |
+| Crypto Price Tracker | 58 | 3.8 (13) | 10,000+ coins, custom contract addresses. Handles PII **and financial information** |
+
+Two questions closed by the same scan, so they are not re-derived:
+
+- **A search box on the new tab: no.** Since Chrome 27 an extension new-tab
+  page cannot take focus from the omnibox, so the address bar is still where
+  typing goes. ChartsTab's box is a redundancy, and the extensions that fought
+  Chrome for that focus are what the long-standing complaints are about.
+- **Chrome's new-tab-hijack block does not affect us.** The August 2026 change
+  (`kBlockDseNtpOverrideExtensionsOnUnmanagedDevices`) blocks *policy-installed*
+  extensions from overriding the new tab on unmanaged devices; user-installed
+  Web Store extensions are explicitly unaffected, and it is not yet in stable.
 
 1. **Installs are the bottleneck.** Every goal (revenue, reviews, motivation) scales with users; the local build is two versions ahead of the store. Shipping beats building right now.
+   **Confirmed 22 Aug 2026, and it is now the only finding that matters:**
+   PriceTab appears in *none* of the sector searches that surface every
+   competitor below. Against them the feature list is already ahead — alerts,
+   portfolio with cost basis, charts, 37 currencies, and a calls board with no
+   equivalent anywhere in the category. Nothing on this page changes that
+   except getting it in front of people.
 2. **Price alerts are the sector's #1 requested feature** — and our sharpest retention lever. But push notifications cost our "zero permissions" claim; the in-tab-only alert variant preserves it. This trade-off deserves an explicit decision, not a default.
-3. **Coin coverage is our visible weakness** (~64 vs. thousands). The Coinlore price-only tier closes most of the perceived gap for one bulk request we already make.
+3. ~~**Coin coverage is our visible weakness** (~64 vs. thousands).~~
+   **Re-measured 22 Aug 2026 and this does not hold.** On the Web Store today
+   the extension carrying **10,000+ coins has 58 users**; the one with 3,000+
+   has **127**; and the one that leads this category — ChartsTab, **1,000
+   users, 5.0 from 99 reviews** — carries **500 pairs** and is otherwise
+   simpler than PriceTab. Coverage does not sell here, and prioritising it as a
+   funnel fix would have been work aimed at the wrong problem.
+   Coverage is still worth building, for a different reason: **you cannot track
+   what the app does not support**, so it is a portfolio and retention cost,
+   paid by the people most invested in the product. Priced accordingly in §3.3.
 4. **Portfolio tools are converging on "wealth management"** (allocation, cost basis, tax). Our tracking-only + local-only stance is a differentiator — portfolio v2 + a seasonal tax-affiliate line captures the trend without breaking privacy.
 5. **Privacy is a moat, not a constraint.** No major competitor leads with zero permissions/no tracking. Every store asset, review reply and README line should say it first.
 6. **Ratings compound.** Small frequent updates + replying to every review is the highest-ROI ongoing marketing; it's free and no competitor in the minimal-clone tier does it.
@@ -271,7 +314,14 @@ Foresights that should shape prioritization (full data in `MONETIZATION.md` §2b
 
 | Issue | Severity | Status | Notes |
 |-------|----------|--------|-------|
-| *No known issues* | - | - | Report at GitHub Issues |
+| Blocked price API left the tab blank for 7 seconds | High | Fixed 22 Aug 2026 | The retry ladder (1s → 2s → 4s) was being spent on a `TypeError` — no response at all, a CORS wall or region block — as well as on 5xx. Measured with Coinbase refusing everything: price line at **7,131 ms**, against 54 ms normally, with the tab reading "BTC PRICE" and nothing under it throughout. `NETWORK_ERROR_RETRIES = 1` → **1,063 ms** |
+| Every range revalidated on a 30-second TTL | Medium | Fixed 22 Aug 2026 | A year chart was re-fetched on every new tab and every coin switch. `HISTORY_TTL` sizes each range to one point's worth of its own time. A tab opened 2 min later: 8 requests → **3** |
+| Portfolio value chart summed series by position | High | Fixed 22 Aug 2026 | Different coins are quoted at different rates, so it added one coin's 2014 to another's 2023. The "vs BTC" stat read +15,839.5% where BTC did +190.2% over the window on screen |
+| Cost basis had no currency | High | Fixed 22 Aug 2026 | Switching display currency re-read every `paid` in the new one. Lots and sales are stamped now, and anything in another currency is set aside rather than converted |
+| Total and the change beside it covered different holdings | Medium | Fixed 22 Aug 2026 | The chart draws twelve and cannot draw an unchartable token; the header counted everything. It now says what it covers |
+| Removing a holding, or importing over one, was unrecoverable | High | Fixed 22 Aug 2026 | Both took every lot and sale with them, one click, no confirmation. Undo bar, restored through the sanitizing path |
+| "Unchecked runtime.lastError" on every new tab | Low | Fixed 22 Aug 2026 | `Boolean(x) && !chrome.runtime.lastError` short-circuits before reading the property. The underlying refusal was an installed manifest older than `8599cc3` — a reload in `chrome://extensions` clears that |
+| *Nothing else known* | - | - | Report at GitHub Issues |
 
 ---
 

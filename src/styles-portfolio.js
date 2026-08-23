@@ -45,13 +45,22 @@ const PortfolioShell = styled.section`
   ${themedScrollbar};
 `;
 
-// Full-bleed total-value chart behind the content. Fixed so the list scrolls
-// over it; muted opacity keeps the header/rows readable on top. The entrance
-// must end at the same opacity the element rests at — fading to 1 would flash
-// bright, then visibly dim when the animation hands back to the static style.
+/* Full-bleed total-value chart behind the content. Fixed so the list scrolls
+ * over it; the entrance must end at the same opacity the element rests at —
+ * fading to 1 would flash bright, then visibly dim when the animation hands
+ * back to the static style.
+ *
+ * **0.16, not 0.45.** At 0.45 this was not wallpaper: a filled area chart at
+ * that weight was the most visually dominant thing on the screen, with a hard
+ * grey stroke running straight through the holdings rows and two green
+ * mountains behind the figures people came here to read. The word for that is
+ * decoration you cannot ignore, which is the opposite of what it is for — and
+ * it is why the whole view read as cluttered. There is a chart you *can* read
+ * one button away ("Explore chart"); this one only has to suggest the shape.
+ */
 const portfolioChartIn = keyframes`
   from { opacity: 0; }
-  to { opacity: 0.45; }
+  to { opacity: 0.16; }
 `;
 
 const PortfolioChartBg = styled.div`
@@ -59,7 +68,7 @@ const PortfolioChartBg = styled.div`
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  opacity: 0.45;
+  opacity: 0.16;
   animation: ${portfolioChartIn} 0.6s ease;
 `;
 
@@ -155,11 +164,37 @@ const PortfolioStageNote = styled.div`
  * colour, so the ring is labelled by the table under it rather than by a
  * second block of keys beside it.
  */
-const DONUT_SIZE = 132;
-const DONUT_STROKE = 15;
-// Below this share a slice is thinner than its own gap, so it reads as a seam
-// rather than a holding. Those fold into Other with everything past the sixth.
+/* THE ALLOCATION STRIP
+ *
+ * It was a 132px donut, and the donut was replaced rather than tuned.
+ *
+ * Two things were wrong with it, one measurable and one not. The measurable
+ * one: the hole is 102px across, the label under the figure was 97.6px wide,
+ * and at the height that label sits the chord is 99.6px — so it filled the
+ * hole wall to wall and read as text spilling onto the ring. The other is that
+ * a circular, five-hue, fully saturated object was the **only** one in this
+ * interface. Everything else here is monospace, left-aligned, near-black on
+ * white, with green and red reserved for direction — the ring looked imported
+ * from another product, which is what the human said when they saw it.
+ *
+ * A single horizontal bar fixes both and gains three things:
+ *   - it is the same drawing as the share bar on every row of the list
+ *     directly below it, so the header and the table finally agree;
+ *   - length against length is an easier comparison than arc against arc,
+ *     which was the donut's own argument against a pie, only more so;
+ *   - it is 26px tall instead of 132, so the total gets the header back.
+ *
+ * Labels go **inside** a segment when it is wide enough to hold one — the
+ * value chart's stacked mode already does exactly this, and it means no second
+ * block of colour keys. Everything too narrow to be labelled is named by the
+ * list underneath, which carries the same ink.
+ */
+// Below this share a segment is thinner than the gap beside it, so it reads as
+// a seam rather than a holding. Those fold into Other with everything past the
+// palette's sixth colour.
 const DONUT_MIN_SHARE = 1.5;
+// A label needs this much room before it stops being a truncation
+const ALLOC_LABEL_MIN_PX = 58;
 
 const PortfolioHeadRow = styled.div`
   display: flex;
@@ -167,24 +202,15 @@ const PortfolioHeadRow = styled.div`
   justify-content: space-between;
   gap: 1.5rem;
 
-  /* The ring goes under the figures rather than shrinking beside them: at a
-     small radius the arcs stop being comparable, which is the whole point. */
   @media (max-width: ${({ theme }) => theme.breakpoint.down.sm}px) {
     flex-wrap: wrap;
   }
 `;
 
-const DonutWrap = styled.div`
-  position: relative;
-  flex: 0 0 auto;
-  width: ${DONUT_SIZE}px;
-  height: ${DONUT_SIZE}px;
-`;
-
 /* The colour is resolved **here, not in the component**, because a styled
  * block is handed the theme and `Portfolio` deliberately is not — the file
  * already refuses a `withTheme` wrapper it does not otherwise need (see the
- * sparkline's `currentColor` note). So the slice carries a palette *index*
+ * sparkline's `currentColor` note). So the segment carries a palette *index*
  * and the stylesheet turns it into ink. `tone == null` is the neutral Other:
  * index 0 is a real colour and must not be caught by a falsy test. */
 const bandInk = (theme, tone) =>
@@ -194,44 +220,81 @@ const bandInk = (theme, tone) =>
         ? PORTFOLIO_BAND_COLORS.light
         : PORTFOLIO_BAND_COLORS.dark)[tone];
 
-const DonutArc = styled.circle`
-  cursor: default;
-  stroke: ${({ theme, tone }) => bandInk(theme, tone)};
-  transition:
-    opacity 0.18s ease,
-    stroke-width 0.18s ease;
-  opacity: ${({ dim }) => (dim ? 0.28 : 1)};
+const AllocBlock = styled.div`
+  margin-top: 1.15rem;
+`;
 
+// Same treatment as PortfolioEyebrow — this is a label, and labels here look
+// like labels
+const AllocHead = styled.div`
+  display: flex;
+  align-items: baseline;
+  gap: 0.45rem;
+  margin-bottom: 0.4rem;
+  font-size: 0.66rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: ${({ theme }) => theme.color.textSecondary};
+`;
+
+const AllocNote = styled.span`
+  color: ${({ theme }) => theme.color.text};
+  font-weight: ${({ theme }) => theme.fontWeight.semibold};
+  letter-spacing: 0.06em;
+  text-transform: none;
+`;
+
+const AllocBar = styled.div`
+  display: flex;
+  gap: 2px;
+  height: 26px;
+  width: 100%;
+  border-radius: 5px;
+  overflow: hidden;
+`;
+
+/* One holding. `grow` is its share, so the row is laid out by flex rather than
+ * by percentage widths — a rounding error then lands in the gaps instead of
+ * leaving a sliver of background at the right-hand end. */
+const AllocSeg = styled.div`
+  flex: ${({ grow }) => grow} 1 0;
+  min-width: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  white-space: nowrap;
+  cursor: default;
+  background: ${({ theme, tone }) => bandInk(theme, tone)};
+  opacity: ${({ dim }) => (dim ? 0.3 : 1)};
+  transition: opacity 0.18s ease;
+
+  &:first-child {
+    border-radius: 5px 0 0 5px;
+  }
+  &:last-child {
+    border-radius: 0 5px 5px 0;
+  }
   &:focus-visible {
-    outline: none;
+    outline: 2px solid ${({ theme }) => theme.color.text};
+    outline-offset: -2px;
   }
 `;
 
-/* The centre. Two lines, and neither of them is the total — that is already
- * set 2.4rem tall an inch to the left, and a figure printed twice on one
- * screen is one of them saying nothing. */
-const DonutCentre = styled.div`
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  pointer-events: none;
-  text-align: center;
-`;
-
-const DonutCoin = styled.div`
-  font-size: 0.82rem;
+/* White on every band, not the theme's ink.
+ *
+ * `PORTFOLIO_BAND_COLORS` is validated for colour-vision deficiency against
+ * both surfaces, and three of the light steps sit under 3:1 against the page —
+ * which is legal only with relief, and this label is that relief. It has to be
+ * legible on the band, not on the background, so it does not follow the theme.
+ */
+const AllocSegLabel = styled.span`
+  font-size: 0.64rem;
   font-weight: ${({ theme }) => theme.fontWeight.semibold};
   letter-spacing: 0.04em;
-  color: ${({ theme }) => theme.color.text};
-`;
-
-const DonutShare = styled.div`
-  font-size: 0.66rem;
-  letter-spacing: 0.06em;
-  color: ${({ theme }) => theme.color.textSecondary};
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  padding: 0 0.35rem;
 `;
 
 const PortfolioHeader = styled.div`
@@ -671,6 +734,43 @@ const LotAddBtn = styled.button.attrs({ type: "button" })`
 
   &:hover {
     border-color: ${({ theme }) => theme.color.borderHover};
+  }
+`;
+
+/* The bar that offers the last destructive action back.
+ *
+ * Deliberately the same shape as `AlertUndoBar` — dashed, quiet, with the
+ * action at the far end — because it is the same promise, and a second visual
+ * language for "you can take that back" would make people learn it twice.
+ */
+const PortfolioUndoBar = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  margin: 0.9rem 0;
+  padding: 0.5rem 0.75rem;
+  background: ${({ theme }) => theme.color.bg};
+  border: 1px dashed ${({ theme }) => theme.color.border};
+  border-radius: 10px;
+  font-size: 0.72rem;
+  color: ${({ theme }) => theme.color.textSecondary};
+`;
+
+const PortfolioUndoBtn = styled.button.attrs({ type: "button" })`
+  flex: 0 0 auto;
+  padding: 0.2rem 0.5rem;
+  font-family: ${({ theme }) => theme.font.primary};
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: ${({ theme }) => theme.color.text};
+  background: transparent;
+  border: 1px solid ${({ theme }) => theme.color.border};
+  border-radius: 6px;
+  cursor: pointer;
+
+  &:hover {
+    border-color: ${({ theme }) => theme.color.text};
   }
 `;
 

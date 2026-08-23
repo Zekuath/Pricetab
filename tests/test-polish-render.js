@@ -1358,17 +1358,22 @@ const AUDIT = `(() => {
     await ctx.close();
   }
 
-  // ── 9c. the portfolio's allocation ring ────────────────────────────────
+  // ── 9c. the portfolio's allocation strip ───────────────────────────────
   /* "How much" was answered six ways in the header and "of what" was not
-   * answered at all — seven percentages down a column is a table, not a shape.
-   * The ring is a donut rather than a pie because a pie invites comparing
-   * areas, and because the hole is where the slice you are pointing at goes.
+   * answered at all — five percentages down a column is a table, not a shape.
    *
-   * The claim that matters beyond it drawing: it uses the value chart's own
-   * palette, in the same order, and the row bars in the list carry the same
-   * ink — so the list is the ring's legend and no second block of colour keys
-   * is needed. If those ever drift apart the ring becomes unreadable without
-   * hovering every arc. */
+   * It was a donut until 22 Aug 2026, and two things were wrong with it. The
+   * hole is 102px across, the label under the figure measured 97.6px, and at
+   * that label's height the chord is 99.6px — so it filled the hole wall to
+   * wall and read as text spilling onto the ring. Worse, at rest the centre
+   * fell back to `slices[0]`, so a ring nobody was touching read `BTC 46.0%`:
+   * the hovered state, for a coin the pointer was nowhere near.
+   *
+   * The strip that replaced it is the same drawing as the share bar on every
+   * row below it, which is the claim asserted here: same palette, same order,
+   * same ink, so the list is the legend and no second block of colour keys is
+   * needed. If those ever drift apart the strip becomes unreadable.
+   */
   {
     const ctx = await browser.newContext({ viewport: { width: 1440, height: 950 } });
     const T = Math.floor(Date.now() / 1000);
@@ -1403,37 +1408,62 @@ const AUDIT = `(() => {
     const page = await ctx.newPage();
     const errors = [];
     page.on("pageerror", (e) => errors.push(e.message));
+    // A React error boundary swallows the throw, so `pageerror` alone reports
+    // "errors: none" while the whole view reads "Something went wrong."
+    page.on("console", (m) => { if (m.type() === "error") errors.push(m.text()); });
     await page.goto(INDEX, { waitUntil: "load" });
     await page.waitForSelector("svg path", { timeout: 20000 });
     await page.keyboard.press("p");
     await page.waitForTimeout(3000);
 
-    const ring = await page.evaluate(`(() => {
-      const svg = [...document.querySelectorAll("svg")].find(
-        (s) => /^Allocation:/.test(s.getAttribute("aria-label") || ""));
-      if (!svg) return null;
-      const arcs = [...svg.querySelectorAll("circle")];
+    const strip = await page.evaluate(`(() => {
+      const bar = [...document.querySelectorAll("div")].find(
+        (d) => /^Allocation:/.test(d.getAttribute("aria-label") || ""));
+      if (!bar) return null;
+      const segs = [...bar.children];
       return {
-        label: svg.getAttribute("aria-label"),
-        arcs: arcs.length,
-        inks: arcs.map((a) => getComputedStyle(a).stroke),
-        reachable: arcs.every((a) => a.getAttribute("tabindex") === "0"),
-        centre: (svg.parentElement.textContent || "").trim(),
+        label: bar.getAttribute("aria-label"),
+        segments: segs.length,
+        inks: segs.map((a) => getComputedStyle(a).backgroundColor),
+        reachable: segs.every((a) => a.getAttribute("tabindex") === "0"),
+        named: segs.every((a) => (a.getAttribute("aria-label") || "").length > 2),
+        text: segs.map((a) => (a.textContent || "").trim()).filter(Boolean),
+        height: Math.round(bar.getBoundingClientRect().height),
       };
     })()`);
-    check(ring !== null, "the portfolio draws an allocation ring", JSON.stringify(ring));
-    check(ring && ring.arcs === 3,
-      "…one arc per holding", ring ? String(ring.arcs) : "none");
-    check(ring && new Set(ring.inks).size === 3,
-      "…each a different colour", ring ? JSON.stringify(ring.inks) : "none");
-    check(ring && ring.reachable,
-      "…and every arc can be reached from the keyboard");
-    check(ring && /Allocation: BTC \d/.test(ring.label),
-      "…with the whole split readable without a pointer", ring ? ring.label : "none");
+    check(strip !== null, "the portfolio draws an allocation strip", JSON.stringify(strip));
+    check(strip && strip.segments === 3,
+      "…one segment per holding", strip ? String(strip.segments) : "none");
+    check(strip && new Set(strip.inks).size === 3,
+      "…each a different colour", strip ? JSON.stringify(strip.inks) : "none");
+    check(strip && strip.reachable && strip.named,
+      "…and every segment can be reached and named from the keyboard");
+    check(strip && /Allocation: BTC \d/.test(strip.label),
+      "…with the whole split readable without a pointer", strip ? strip.label : "none");
 
-    /* The list is the legend: a row's share bar is the same ink as its arc.
-     * Checked against the ring's own colours rather than against a hard-coded
-     * palette, because the point is that they agree, not what they are. */
+    /* A segment names itself when it is wide enough to hold a label, which is
+     * the whole reason this replaced a shape you had to hover. */
+    check(strip && strip.text.some((t) => /^BTC \d+%$/.test(t)),
+      "…and a wide segment carries its own label",
+      strip ? JSON.stringify(strip.text) : "none");
+
+    /* The header must not name a coin as though it were being pointed at —
+     * the defect the donut's centre had at rest. */
+    const head = await page.evaluate(`(() => {
+      const bar = [...document.querySelectorAll("div")].find(
+        (d) => /^Allocation:/.test(d.getAttribute("aria-label") || ""));
+      const block = bar && bar.parentElement;
+      const label = block && block.firstElementChild;
+      return label ? (label.textContent || "").trim() : null;
+    })()`);
+    check(head !== null && /in one holding/.test(head) && !/BTC|ETH|SOL/.test(head),
+      "the strip's label states concentration without naming a coin",
+      String(head));
+
+    /* The list is the legend: a row's share bar is the same ink as its
+     * segment in the strip. Checked against the strip's own colours rather
+     * than against a hard-coded palette, because the point is that they
+     * agree, not what they are. */
     const bars = await page.evaluate(`(() => {
       // The share bar is the only 2px-tall absolutely-positioned strip here
       return [...document.querySelectorAll("div")]
@@ -1445,10 +1475,10 @@ const AUDIT = `(() => {
         .map((d) => getComputedStyle(d).backgroundColor);
     })()`);
     const toRgb = (s) => s.replace(/\s/g, "");
-    check(bars.length >= 3 && bars.slice(0, 3).every((b) =>
-        ring.inks.map(toRgb).includes(toRgb(b))),
-      "…and each holding's bar is its own arc's colour",
-      JSON.stringify({ bars, inks: ring.inks }));
+    check(bars.length >= 3 && strip !== null && bars.slice(0, 3).every((b) =>
+        strip.inks.map(toRgb).includes(toRgb(b))),
+      "…and each holding's bar is its own segment's colour",
+      JSON.stringify({ bars, inks: strip && strip.inks }));
 
     check(errors.length === 0, "nothing threw", errors[0]);
     await ctx.close();
@@ -1688,6 +1718,162 @@ const AUDIT = `(() => {
       const gone = !(await cardUp());
       check(gone, "…and Escape closes it");
     }
+    check(errors.length === 0, "nothing threw", errors[0]);
+    await ctx.close();
+  }
+
+  // ── 12. nothing on this screen throws data away without a way back ─────
+  /* Removing a holding takes its purchases and its recorded sales with it,
+   * and Import replaces the whole list. Both were one click, with no
+   * confirmation and no undo, on the one screen in this app holding numbers
+   * that exist nowhere else — no account, no cloud, no export unless you made
+   * one. `alerts.js` already had the pattern for a removed price target.
+   *
+   * The assertion is not that a bar appears. It is that the *records* come
+   * back: a restore that returns the coin with an empty lot list would look
+   * identical on the row and would have silently eaten the cost basis. */
+  {
+    const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+    await ctx.route("**/*", (r) => {
+      const u = r.request().url();
+      if (u.startsWith("file://")) return r.continue();
+      if (u.includes("historic")) return r.fulfill(json({ data: { prices: PRICES } }));
+      if (u.includes("spot"))
+        return r.fulfill(json({ data: { amount: "43480.00", currency: "USD" } }));
+      if (u.includes("coinlore") && u.includes("tickers"))
+        return r.fulfill(json({ data: TICKERS, info: { coins_num: 100 } }));
+      return r.fulfill(json({ data: {} }));
+    });
+    await ctx.addInitScript(() => {
+      localStorage.setItem("crypto_chart_onboarding_seen", "1");
+      localStorage.setItem("crypto_chart_portfolio", JSON.stringify([
+        {
+          coin: "BTC",
+          amount: 1,
+          lots: [
+            { amount: 1, paid: 20000, time: 1709596800, source: "manual", currency: "USD" },
+          ],
+          sales: [
+            { amount: 0.2, received: 9000, basis: 4000, basisAmount: 0.2, matched: [], time: 1720000000 },
+          ],
+          watches: [],
+        },
+        { coin: "ETH", amount: 3, lots: [], watches: [] },
+      ]));
+    });
+    const page = await ctx.newPage();
+    const errors = [];
+    page.on("pageerror", (e) => errors.push(String(e)));
+    page.on("console", (m) => { if (m.type() === "error") errors.push(m.text()); });
+    await page.goto(INDEX, { waitUntil: "load" });
+    await page.waitForSelector("svg path", { timeout: 20000 });
+    await page.keyboard.press("p");
+    await page.waitForTimeout(1200);
+
+    const shape = `(() => {
+      const raw = localStorage.getItem("crypto_chart_portfolio");
+      const list = raw ? JSON.parse(raw) : [];
+      return list.map((h) => h.coin + ":" + (h.lots || []).length + ":" + (h.sales || []).length).join("|");
+    })()`;
+    const before = await page.evaluate(shape);
+    check(before === "BTC:1:1|ETH:0:0", "the fixture holds a lot and a sale", before);
+
+    // The row's own × — found by its accessible name, not by position
+    const removed = await page.evaluate(`(() => {
+      const b = [...document.querySelectorAll("button")]
+        .find((n) => (n.getAttribute("aria-label") || "") === "Remove BTC");
+      if (!b) return false;
+      b.click();
+      return true;
+    })()`);
+    check(removed, "the holding row has a named remove control");
+    await page.waitForTimeout(400);
+    check(
+      (await page.evaluate(shape)) === "ETH:0:0",
+      "removing a holding removes it",
+    );
+
+    const undoBtn = `[...document.querySelectorAll("button")].find((n) => (n.textContent || "").trim() === "Undo")`;
+    check(
+      await page.evaluate(`Boolean(${undoBtn})`),
+      "…and offers it back",
+    );
+    await page.evaluate(`${undoBtn}.click()`);
+    await page.waitForTimeout(500);
+    const after = await page.evaluate(shape);
+    /* The lot and the sale are the point. A restore that put "BTC" back with
+     * no records would pass a coin-list check and still have destroyed the
+     * cost basis, which is the part nobody can retype. */
+    check(after === before, "…with its purchases and its sales intact", after);
+    check(
+      !(await page.evaluate(`Boolean(${undoBtn})`)),
+      "…and the offer is spent once taken",
+    );
+    check(errors.length === 0, "nothing threw", errors[0]);
+    await ctx.close();
+  }
+
+  // ── 13. the total and the change beside it cover the same portfolio ────
+  /* They did not. The header prints every holding; the percentage next to it
+   * comes from the value chart, which is built only from coins that returned
+   * a history — the twelve biggest, and nothing Coinbase and Kraken both 404
+   * on. stETH is held at plenty of Ethereum addresses, priced by the ticker
+   * sweep, and charted by neither. So a total covering three holdings sat
+   * beside a percentage covering two, and nothing said so.
+   *
+   * The fixture prices stETH and refuses it a history, which is exactly the
+   * live shape. */
+  {
+    const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+    const priced = [...TICKERS, {
+      id: 90, symbol: "STETH", name: "Lido Staked Ether",
+      price_usd: "3000", percent_change_24h: "1", market_cap_usd: "1000000", volume24: "50000",
+    }];
+    await ctx.route("**/*", (r) => {
+      const u = r.request().url();
+      if (u.startsWith("file://")) return r.continue();
+      // No exchange quotes a series for it — the failover has nowhere to go
+      if (u.includes("STETH") || u.includes("stETH")) return r.fulfill(json({ errors: [{ id: "not_found" }] }));
+      if (u.includes("historic")) return r.fulfill(json({ data: { prices: PRICES } }));
+      if (u.includes("spot"))
+        return r.fulfill(json({ data: { amount: "43480.00", currency: "USD" } }));
+      if (u.includes("coinlore") && u.includes("tickers"))
+        return r.fulfill(json({ data: priced, info: { coins_num: 100 } }));
+      return r.fulfill(json({ data: {} }));
+    });
+    await ctx.addInitScript(() => {
+      localStorage.setItem("crypto_chart_onboarding_seen", "1");
+      localStorage.setItem("crypto_chart_portfolio", JSON.stringify([
+        { coin: "BTC", amount: 1, lots: [], watches: [] },
+        { coin: "ETH", amount: 3, lots: [], watches: [] },
+        { coin: "STETH", amount: 4, lots: [], watches: [] },
+      ]));
+    });
+    const page = await ctx.newPage();
+    const errors = [];
+    page.on("pageerror", (e) => errors.push(String(e)));
+    await page.goto(INDEX, { waitUntil: "load" });
+    await page.waitForSelector("svg path", { timeout: 20000 });
+    await page.keyboard.press("p");
+    await page.waitForTimeout(3000);
+
+    const text = await page.evaluate(`document.body.innerText`);
+    check(
+      /covers?\s+2 of 3 holdings/i.test(text),
+      "the chart says how many holdings it covers",
+      text.split("\n").filter((l) => /holdings/i.test(l)).join(" / "),
+    );
+    check(
+      /STETH/i.test(text) && /no price history/i.test(text),
+      "…and names the one it cannot draw, and why",
+    );
+    // The total is still the whole portfolio — the note explains the gap, it
+    // does not shrink the figure to match the chart
+    const total = await page.evaluate(`(() => {
+      const raw = localStorage.getItem("crypto_chart_portfolio");
+      return JSON.parse(raw).length;
+    })()`);
+    check(total === 3, "…while the portfolio still holds all three");
     check(errors.length === 0, "nothing threw", errors[0]);
     await ctx.close();
   }

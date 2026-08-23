@@ -59,11 +59,153 @@ const getPortfolioHistory = async (coin, period, currency) => {
   }
 };
 
+/* ── aligning two price series ─────────────────────────────────────────────
+ * Every series here is ascending and carries its own timestamps, and **the
+ * timestamps are the only thing they have in common**. Position is not:
+ * point 40 of one coin and point 40 of another are routinely different days.
+ *
+ * They used to be aligned by position — trimmed to the shortest and summed
+ * index for index — and that is wrong wherever two series are sampled at
+ * different rates, which is most of the time:
+ *
+ *   - Coinbase's `period=all` spaces its points across each coin's own
+ *     lifetime. Measured 22 Aug 2026: BTC 351 points **13.19 days** apart,
+ *     SUI 332 points **3.64 days** apart. Trimmed to 332 and summed by
+ *     position, the chart added BTC's 2014-08-18 price to SUI's 2023-05-04
+ *     price at the same x, and took its dates from whichever holding happened
+ *     to come first in the array.
+ *   - Kraken-routed coins (`KRAKEN_PERIODS`) never match Coinbase on any
+ *     range: 60/96/168/180 points against Coinbase's 359/300/306/311 for
+ *     hour/day/week/month. BTC + XMR on a day range summed 7.7 hours of BTC
+ *     with 24 hours of XMR.
+ *
+ * So the window is the **intersection** — from the latest first point to the
+ * earliest last point, which keeps the old and correct intention that a young
+ * coin cannot fabricate a portfolio value from before it existed — and the
+ * grid is the timestamps of whichever series has the most points inside that
+ * window, so the chart keeps the best resolution anyone actually quoted
+ * without inventing more.
+ */
+const seriesTime = (point) => +point.time;
+
+/* The window every series can speak for, or null when they do not overlap. */
+const commonWindow = (list) => {
+  let from = -Infinity;
+  let to = Infinity;
+  for (const prices of list) {
+    const a = seriesTime(prices[0]);
+    const b = seriesTime(prices[prices.length - 1]);
+    if (!isFinite(a) || !isFinite(b)) return null;
+    if (a > from) from = a;
+    if (b < to) to = b;
+  }
+  return to > from ? { from, to } : null;
+};
+
+/* The timestamps to draw on: the densest series inside the window.
+ *
+ * Deliberately not a synthetic even grid. Every point returned is a moment
+ * some exchange actually quoted, so the chart's x values stay real. */
+const alignedTimes = (list, window) => {
+  let best = null;
+  for (const prices of list) {
+    const inside = prices.filter((p) => {
+      const t = seriesTime(p);
+      return t >= window.from && t <= window.to;
+    });
+    if (!best || inside.length > best.length) best = inside;
+  }
+  return best && best.length > 1 ? best.map((p) => p.time) : null;
+};
+
+/* One series read at each of `times`: the last price quoted at or before each
+ * moment. Both arrays ascend, so this is one walk rather than a search per
+ * point.
+ *
+ * Held rather than interpolated. A price between two quotes is a price nobody
+ * traded at, and this chart is read for what a holding was worth on a day.
+ * Returns null if any moment falls before the series starts — inside the
+ * intersection window that cannot happen, and drawing a hole would be worse
+ * than not drawing.
+ */
+const sampleSeriesAt = (prices, times) => {
+  const out = [];
+  let i = 0;
+  let held = null;
+  for (const time of times) {
+    const t = +time;
+    while (i < prices.length && seriesTime(prices[i]) <= t) {
+      held = prices[i].price;
+      i++;
+    }
+    if (held == null || !isFinite(held)) return null;
+    out.push(held);
+  }
+  return out;
+};
+
+/* The last price quoted at or before one moment — the single-point form of
+ * `sampleSeriesAt`, for the benchmark's two ends. */
+const priceAtOrBefore = (prices, ms) => {
+  let held = null;
+  for (const p of prices) {
+    if (seriesTime(p) > ms) break;
+    held = p.price;
+  }
+  return held != null && isFinite(held) ? held : null;
+};
+
+/* The worst peak-to-trough fall inside a series.
+ *
+ * This is here because of what the algorithm research found and what it did
+ * not (`docs/product/TODAY.md` §9.4). Nine textbook rules over 21,669 daily
+ * closes on eight coins: **0 of 70 permutation tests survive Holm–Bonferroni**,
+ * and on live daily closes the textbook labels point the wrong way — after
+ * RSI 14 crosses 70, the "sell" signal, the next thirty days beat the coin's
+ * ordinary month on four of six coins, BTC by 7.5 percentage points over 92
+ * episodes. So there are no buy points and no sell points in this app.
+ *
+ * One effect did survive, in the other column: **59 of 64 rule × coin pairs
+ * cut the worst fall**, while only 28 of 64 beat simply holding. Those are
+ * risk statements, not entries. This is the risk statement, for the one
+ * portfolio that matters to the person reading it, out of a series already in
+ * memory — no request, no rule, no claim about what happens next.
+ *
+ * Peak-to-trough within the window on screen, so it answers "how bad did this
+ * get" and never "how bad can it get".
+ */
+const maxDrawdown = (series) => {
+  if (!Array.isArray(series) || series.length < 2) return null;
+  let peak = -Infinity;
+  let peakAt = null;
+  let worst = 0;
+  let from = null;
+  let to = null;
+  for (const point of series) {
+    const v = point.price;
+    if (!isFinite(v)) continue;
+    if (v > peak) {
+      peak = v;
+      peakAt = point.time;
+    }
+    if (peak > 0) {
+      const fall = (v - peak) / peak;
+      if (fall < worst) {
+        worst = fall;
+        from = peakAt;
+        to = point.time;
+      }
+    }
+  }
+  // A series that only ever went up has no fall to report, and saying "0%"
+  // would read as a measurement rather than as an absence
+  return worst < 0 ? { pct: worst * 100, from, to } : null;
+};
+
 /* Sum per-coin histories into one total-value series, and keep the parts.
  *
- * Series are aligned from the end (latest points line up); the range trims to
- * the shortest history so a young coin can't fabricate a pre-listing portfolio
- * value.
+ * Aligned on time (see above), so every point is one moment and the bands
+ * under it are what each coin was worth at that moment.
  *
  * The per-coin values used to be summed and thrown away, because the chart was
  * a single line behind some text. They are the answer to "which of these is
@@ -83,21 +225,22 @@ const buildPortfolioParts = (histories, holdings) => {
     }
   }
   if (!held.length) return null;
-  const len = Math.min(...held.map((p) => p.prices.length));
-  if (len < 2) return null;
-  const base = held[0].prices;
-  const series = [];
-  const values = held.map(() => []);
-  for (let i = 0; i < len; i++) {
-    let total = 0;
-    for (let k = 0; k < held.length; k++) {
-      const p = held[k];
-      const v = p.prices[p.prices.length - len + i].price * p.amount;
-      values[k].push(v);
-      total += v;
-    }
-    series.push({ price: total, time: base[base.length - len + i].time });
+  const all = held.map((p) => p.prices);
+  const window = commonWindow(all);
+  if (!window) return null;
+  const times = alignedTimes(all, window);
+  if (!times) return null;
+  const values = [];
+  for (const p of held) {
+    const sampled = sampleSeriesAt(p.prices, times);
+    if (!sampled) return null;
+    values.push(sampled.map((price) => price * p.amount));
   }
+  const series = times.map((time, i) => {
+    let total = 0;
+    for (const v of values) total += v[i];
+    return { price: total, time };
+  });
   const parts = held.map((p, k) => ({ coin: p.coin, values: values[k] }));
   const last = (p) => p.values[p.values.length - 1] || 0;
   parts.sort((a, b) => last(b) - last(a));
@@ -170,6 +313,60 @@ const consumeLotsFifo = (lots, amount) => {
   return { basis, covered, matched };
 };
 
+/* ── money entered in another currency ─────────────────────────────────────
+ * A lot's `paid` and a sale's `received` are numbers of a specific currency,
+ * and every price on this screen is in whatever is selected right now. When
+ * those differ there are three things you can do, and only one of them is
+ * honest in the space available:
+ *
+ *   - **Add them anyway.** What this did until now: a purchase entered as
+ *     15,000 USD was read as 15,000 EUR the moment the display changed, and
+ *     the row P/L, the headline Unrealized, the chart's COST line and the
+ *     CSV's own "All amounts in EUR" header all repeated it.
+ *   - **Convert at today's rate.** True as far as it goes — the gain, valued
+ *     in EUR today — but it is not the return a euro buyer had, and the
+ *     figure would change every day for a purchase that never moved. It also
+ *     needs a rate we may not have, at which point there is a number on
+ *     screen that quietly stops updating.
+ *   - **Set it aside and say so.** What `alerts.js` already does with a price
+ *     target set in another currency, and what this does now.
+ *
+ * A lot with no currency at all was recorded before the field existed. It is
+ * read as "whatever is on screen", which is exactly how it has always
+ * behaved — the alternative is inventing a currency for someone's data.
+ */
+const inCurrency = (entry, currency) =>
+  !entry || !entry.currency || entry.currency === currency;
+
+/* "USD", "USD and GBP", "USD, GBP and EUR" — the currencies a set of set-aside
+ * entries was recorded in, so a note can name them instead of saying "another
+ * currency" to someone who has to go and find out which. */
+const pausedCurrencies = (entries) => {
+  const seen = [];
+  for (const e of entries || []) {
+    if (e && e.currency && !seen.includes(e.currency)) seen.push(e.currency);
+  }
+  if (seen.length <= 1) return seen[0] || "another currency";
+  return `${seen.slice(0, -1).join(", ")} and ${seen[seen.length - 1]}`;
+};
+
+/* "2 purchases", "1 purchase and 3 sales" — a count that says what was set
+ * aside, since a purchase and a sale are set aside from different figures. */
+const pausedCount = (row) => {
+  const parts = [];
+  const lots = row.paused.length;
+  const sales = row.salesPaused.length;
+  if (lots) parts.push(`${lots} purchase${lots > 1 ? "s" : ""}`);
+  if (sales) parts.push(`${sales} sale${sales > 1 ? "s" : ""}`);
+  return parts.join(" and ");
+};
+
+const lotsIn = (lots, currency) =>
+  (lots || []).filter((l) => inCurrency(l, currency));
+
+const lotsOut = (lots, currency) =>
+  (lots || []).filter((l) => !inCurrency(l, currency));
+
 /* Realized gain on one sale.
  *
  * Only the part of the sale that had a purchase behind it can produce a gain,
@@ -183,14 +380,32 @@ const saleRealized = (sale) => {
   return proceeds - sale.basis;
 };
 
-const salesRealized = (sales) =>
+/* The calendar year a disposal falls in, or null when it was never dated.
+ *
+ * Deliberately the **calendar** year and never called a tax year: the tax year
+ * ends on 5 April in the UK, 30 June in Australia and 31 December in most of
+ * the rest, and `TODO.md` already declined country-specific tax computation
+ * for exactly that reason. A calendar year is a fact this app can state; a tax
+ * year is one it would be guessing at. */
+const saleYear = (sale) =>
+  sale && sale.time > 0 ? new Date(sale.time * 1000).getFullYear() : null;
+
+/* Both sides of a disposal are in one currency, so a sale either counts
+ * toward the displayed total or it does not. `currency` is optional so the
+ * report — which prints each figure beside its own currency — can still ask
+ * for everything. */
+const salesRealized = (sales, currency) =>
   (sales || []).reduce((sum, s) => {
+    if (currency && !inCurrency(s, currency)) return sum;
     const r = saleRealized(s);
     return r == null ? sum : sum + r;
   }, 0);
 
-const hasRealized = (sales) =>
-  (sales || []).some((s) => saleRealized(s) != null);
+const hasRealized = (sales, currency) =>
+  (sales || []).some(
+    (s) =>
+      (!currency || inCurrency(s, currency)) && saleRealized(s) != null,
+  );
 
 // Below this, a difference between what you hold and what you've logged is
 // double-precision residue from adding fractions, not a real remainder
@@ -242,7 +457,9 @@ const reduceLotsFifo = (lots, amount) => {
 
 // Replay chronological balance deltas into lots: buys become lots priced by
 // priceAt(timeSec) (0 paid when the price is unknown), spends reduce FIFO.
-const buildLotsFromDeltas = (deltas, priceAt) => {
+// `currency` is what `priceAt` quoted in, and it is stamped on every lot for
+// the same reason a hand-entered one carries it.
+const buildLotsFromDeltas = (deltas, priceAt, currency) => {
   let lots = [];
   for (const { time, delta } of deltas || []) {
     if (delta > 0) {
@@ -252,6 +469,7 @@ const buildLotsFromDeltas = (deltas, priceAt) => {
         paid: price != null ? price * delta : 0,
         time,
         source: "chain",
+        currency,
       });
     } else if (delta < 0) {
       lots = reduceLotsFifo(lots, -delta);
@@ -364,9 +582,19 @@ const buildPortfolioCsv = (rows, currency) => {
   let longValue = 0;
   let undatedLots = 0;
   let estimatedLots = 0;
+  // Entered in a currency other than the one this file totals in
+  let otherCurrencyLots = 0;
+  let otherCurrencySales = 0;
 
   for (const r of rows) {
-    const lots = r.lots || [];
+    /* Every figure summed below is in `currency`, so only the lots actually
+     * entered in it can be summed. The lot table further down still lists all
+     * of them, each beside the currency it was recorded in — dropping a
+     * purchase from a tax record because a display setting changed would be
+     * far worse than leaving it out of a total that says so. */
+    const lots = lotsIn(r.lots || [], currency);
+    const otherLots = lotsOut(r.lots || [], currency);
+    if (otherLots.length) otherCurrencyLots += otherLots.length;
     const lotAmt = lotsAmount(lots);
     const basis = lotAmt > 0 ? lotsBasis(lots) : null;
     const costedValue =
@@ -392,10 +620,13 @@ const buildPortfolioCsv = (rows, currency) => {
         shortValue += d.value;
       }
     }
-    if (hasRealized(r.sales)) {
-      totalRealized += salesRealized(r.sales);
+    if (hasRealized(r.sales, currency)) {
+      totalRealized += salesRealized(r.sales, currency);
       anyRealized = true;
     }
+    otherCurrencySales += (r.sales || []).filter(
+      (sale) => !inCurrency(sale, currency),
+    ).length;
     perCoin.push({
       r,
       lotAmt,
@@ -429,7 +660,15 @@ const buildPortfolioCsv = (rows, currency) => {
     "# This is the record a tax return is worked out from, not the return itself.",
     "# It knows only what you entered in PriceTab: no exchange history, no transfers, no fees, no crypto-to-crypto trades, no staking or airdrop income. Sales appear only if you recorded them.",
     "# Nothing here is tax advice, and no tax has been calculated.",
-    `# All amounts in ${currency}. Cost basis is FIFO: within a coin, the oldest purchase is consumed first.`,
+    `# Totals are in ${currency}. Cost basis is FIFO: within a coin, the oldest purchase is consumed first.`,
+    ...(otherCurrencyLots || otherCurrencySales
+      ? [
+          /* This line used to read "All amounts in X", and it was not true:
+           * `paid` carried no currency, so a purchase entered in dollars was
+           * summed as euros and the file said so in its own header. */
+          `# ${otherCurrencyLots} purchase(s) and ${otherCurrencySales} sale(s) were entered in a different currency. They are listed below with their own currency and are NOT in the totals above — converting them at today's rate would state a gain that moves on days the purchase did not.`,
+        ]
+      : []),
     `# "Long term" here means held ${LONG_TERM_DAYS} days or more. That threshold is not the same in every country — check yours.`,
     "",
     "Summary,Value",
@@ -473,7 +712,11 @@ const buildPortfolioCsv = (rows, currency) => {
   const lotLines = [];
   for (const c of perCoin) {
     for (const lot of c.r.lots || []) {
-      const d = describeLot(lot, c.r.price, nowMs);
+      const own = inCurrency(lot, currency);
+      /* A gain is a price minus a cost, and the price is in `currency`. Where
+       * the cost is not, there is no gain to state — the columns are left
+       * empty rather than filled with a subtraction across two currencies. */
+      const d = describeLot(lot, own ? c.r.price : null, nowMs);
       lotLines.push(
         [
           c.r.coin,
@@ -482,14 +725,16 @@ const buildPortfolioCsv = (rows, currency) => {
             : "",
           num(lot.amount),
           num(lot.paid),
+          lot.currency || currency,
           num(d.unitCost),
-          num(c.r.price),
+          own ? num(c.r.price) : "",
           num(d.value),
           num(d.gain),
           num(d.gainPct, 2),
           d.held == null ? "" : d.held,
           d.longTerm == null ? "unknown" : d.longTerm ? "long" : "short",
           lot.source === "chain" ? "chain (estimated)" : "manual",
+          own ? "" : "not in totals",
         ].join(","),
       );
     }
@@ -498,7 +743,7 @@ const buildPortfolioCsv = (rows, currency) => {
     lines.push(
       "",
       "Purchase lots",
-      "Coin,Date acquired,Amount,Paid,Cost per unit,Current price,Current value,Unrealized gain,Gain %,Days held,Term,Source",
+      "Coin,Date acquired,Amount,Paid,Paid currency,Cost per unit,Current price,Current value,Unrealized gain,Gain %,Days held,Term,Source,Note",
       ...lotLines,
     );
   }
@@ -561,6 +806,10 @@ const buildPortfolioCsv = (rows, currency) => {
                 ? "long"
                 : "short",
             source,
+            // Both sides of a disposal were recorded together, so one stamp
+            // covers proceeds, basis and gain on this line
+            sale.currency || currency,
+            inCurrency(sale, currency) ? "" : "not in totals",
           ].join(","),
         );
       };
@@ -582,7 +831,7 @@ const buildPortfolioCsv = (rows, currency) => {
     lines.push(
       "",
       "Disposals (one line per purchase consumed)",
-      "Coin,Date acquired,Date sold,Amount,Proceeds,Cost basis,Gain,Gain %,Days held,Term,Source",
+      "Coin,Date acquired,Date sold,Amount,Proceeds,Cost basis,Gain,Gain %,Days held,Term,Source,Currency,Note",
       ...saleLines,
     );
   }
@@ -637,10 +886,24 @@ class Portfolio extends PureComponent {
     // value coming back from the parent.
     this.state = {
       query: "",
-      // Which allocation slice the pointer or the keyboard is on, or null
-      donutAt: null,
+      // Which allocation segment the pointer or the keyboard is on, or null
+      allocAt: null,
+      /* The strip's own width in px. A label only goes inside a segment that
+       * can actually hold one, and "can it hold one" is a pixel question — the
+       * same reason `PortfolioChart.measure()` runs on every update rather
+       * than only on resize. Null until measured, and until then no segment is
+       * labelled: an unlabelled bar for one frame is better than a bar of
+       * clipped words. */
+      allocWidth: null,
       drafts: {},
       importError: false,
+      /* The last thing that threw data away, and everything that was there
+       * before it. Removing a holding takes its purchases and its recorded
+       * sales with it, and Import replaces the whole list — both were a
+       * single click with no confirmation and no way back, on the one screen
+       * in this app holding numbers nobody else has a copy of. Kept until the
+       * view is closed, the way a removed price target is. */
+      undo: null,
       watchAddress: "",
       watchBusy: false,
       watchError: false,
@@ -669,6 +932,7 @@ class Portfolio extends PureComponent {
 
   componentDidMount() {
     this.maybeLoadHistories();
+    this.measureAllocation();
     /* Esc, taken in the capture phase.
      *
      * The app's own handler listens on `document` and closes the portfolio
@@ -684,6 +948,25 @@ class Portfolio extends PureComponent {
 
   componentDidUpdate() {
     this.maybeLoadHistories();
+    this.measureAllocation();
+  }
+
+  /* The strip's width, for deciding which segments can hold a label.
+   *
+   * Guarded on the value actually changing: this runs from
+   * `componentDidUpdate`, and a `setState` there that does not check first is
+   * an infinite loop. Rounded, so a sub-pixel reflow does not count as a
+   * change. */
+  measureAllocation() {
+    const node = this.allocNode;
+    if (!node) {
+      if (this.state.allocWidth != null) this.setState({ allocWidth: null });
+      return;
+    }
+    const width = Math.round(node.getBoundingClientRect().width);
+    if (width > 0 && width !== this.state.allocWidth) {
+      this.setState({ allocWidth: width });
+    }
   }
 
   componentWillUnmount() {
@@ -906,6 +1189,57 @@ class Portfolio extends PureComponent {
     );
   }
 
+  /* What the value chart is actually made of, when that is less than the
+   * portfolio.
+   *
+   * The header prints `totalNow` — every holding — and the change beside it
+   * comes from the chart's series, which is built only from coins that
+   * returned a history. Two things narrow that set: `PORTFOLIO_CHART_MAX_COINS`
+   * draws the twelve biggest, and a coin neither Coinbase nor Kraken quotes a
+   * series for (stETH, wBETH, FDUSD and TUSD are held at plenty of Ethereum
+   * addresses and chartable at neither) simply has no line. Nothing said so,
+   * so a total covering fifteen holdings sat beside a percentage covering
+   * twelve, and the benchmark compared the wrong portfolio.
+   *
+   * Null when the chart covers everything, which is the ordinary case — the
+   * note exists to be absent.
+   */
+  chartCoverage(built) {
+    const { holdings, prices } = this.props;
+    if (!built) return null;
+    const drawn = new Set(built.parts.map((p) => p.coin));
+    // The twelve the chart even asked about; anything outside this list is
+    // missing because of the cap, not because it has no history
+    const asked = new Set(this.chartCoins());
+    const capped = [];
+    const unchartable = [];
+    let drawnValue = 0;
+    let totalValue = 0;
+    for (const h of holdings) {
+      const amount = holdingAmount(h);
+      if (!(amount > 0)) continue;
+      const p = prices[h.coin];
+      const value = p && isFinite(p.price) ? p.price * amount : 0;
+      totalValue += value;
+      if (drawn.has(h.coin)) {
+        drawnValue += value;
+      } else if (asked.has(h.coin)) {
+        unchartable.push(h.coin);
+      } else {
+        capped.push(h.coin);
+      }
+    }
+    const missing = capped.length + unchartable.length;
+    if (!missing) return null;
+    return {
+      capped,
+      unchartable,
+      drawn: drawn.size,
+      held: drawn.size + missing,
+      share: totalValue > 0 ? (drawnValue / totalValue) * 100 : null,
+    };
+  }
+
   /* The cost-basis reference for the background chart. Memoized on the value
    * so a re-render from typing hands the chart the same object and doesn't
    * make it re-place a line that hasn't moved. */
@@ -924,19 +1258,24 @@ class Portfolio extends PureComponent {
 
   /* What the benchmark did over the same days, as a percentage.
    *
-   * Aligned from the end and trimmed to the shorter of the two, exactly the
-   * way the portfolio series aligns its own parts — otherwise a benchmark
-   * with more history than the portfolio would be measured over a longer
-   * window and quietly win (or lose) on span rather than on performance.
+   * Read at the two ends of the window actually on screen. It used to take
+   * the benchmark's last `series.length` points, which is a *count*, not a
+   * window — and the two are only the same thing while both series are
+   * sampled at the same rate. On a portfolio of BTC and SUI over the ALL
+   * range (BTC 351 points 13.19 days apart, SUI 332 at 3.64) that read BTC as
+   * **+15,839.5%**, its whole life since 2014, where BTC did **+190.2%** over
+   * the window the chart was drawing. The stat is a gap in percentage points,
+   * so it was out by about 15,650 of them.
+   *
+   * Null rather than a guess when the benchmark's own history starts after
+   * the window does: there is no honest first price to measure from.
    */
   benchmarkPct(series) {
     const bench = this.state.histories[BENCHMARK_COIN];
     if (!series || !Array.isArray(bench) || bench.length < 2) return null;
-    const len = Math.min(series.length, bench.length);
-    if (len < 2) return null;
-    const first = bench[bench.length - len].price;
-    const last = bench[bench.length - 1].price;
-    if (!(first > 0) || !isFinite(last)) return null;
+    const first = priceAtOrBefore(bench, +series[0].time);
+    const last = priceAtOrBefore(bench, +series[series.length - 1].time);
+    if (!(first > 0) || last == null) return null;
     return ((last - first) / first) * 100;
   }
 
@@ -979,7 +1318,11 @@ class Portfolio extends PureComponent {
           React.createElement(PortfolioEyebrow, null, "Portfolio · Total value"),
           React.createElement(
             PortfolioTotal,
-            null,
+            {
+              title: view.coverage
+                ? `The value of the ${view.coverage.drawn} holdings on this chart. Your portfolio total covers all ${view.coverage.held}.`
+                : undefined,
+            },
             this.fmtMoney(series[series.length - 1].price, false),
           ),
           seriesDelta != null &&
@@ -1069,11 +1412,16 @@ class Portfolio extends PureComponent {
     return String(Number(v.toPrecision(6)));
   }
 
-  fmtMoney(value, withSign) {
+  /* `as` prints a figure in the currency it was *entered* in rather than the
+   * one on screen. A purchase logged in dollars has to say so with its own
+   * symbol — printing a USD number behind a € sign is a number that was never
+   * true, which is the same rule the targets panel follows for a paused
+   * target. */
+  fmtMoney(value, withSign, as) {
     const { currency, decimalPlaces, separatorFormat } = this.props;
     return formatNumberString(
       value,
-      getCurrencySymbol(currency),
+      getCurrencySymbol(as || currency),
       !withSign,
       false,
       decimalPlaces,
@@ -1083,7 +1431,7 @@ class Portfolio extends PureComponent {
 
   // Derive totals + per-holding values from the shared price map
   computeTotals() {
-    const { holdings, prices } = this.props;
+    const { holdings, prices, currency } = this.props;
     let totalNow = 0;
     let totalAgo = 0;
     let anyPriced = false;
@@ -1096,7 +1444,22 @@ class Portfolio extends PureComponent {
     // Realized P/L across every recorded sale, whatever is held now
     let realizedTotal = 0;
     let anyRealized = false;
+    /* …and the part of it that happened this calendar year, which is the
+     * window anyone works a return out of. Undated sales are counted here as
+     * neither this year nor another — they are counted as unplaceable, so the
+     * figure can say it is incomplete rather than quietly claiming to be the
+     * whole year. */
+    let realizedThisYear = 0;
+    let anyRealizedThisYear = false;
+    let undatedSales = 0;
+    // Anything at all entered in a currency that is not the one on screen
+    let pausedAny = false;
     const nowMs = Date.now();
+    // Declared after `nowMs`, not with the counters above it: `const` is not
+    // hoisted, and reading it a few lines early threw inside render, where the
+    // error boundary swallowed it and the whole view became "Something went
+    // wrong." with nothing in `pageerror`
+    const thisYear = new Date(nowMs).getFullYear();
     const rows = holdings.map((h) => {
       const p = prices[h.coin];
       const price = p && isFinite(p.price) ? p.price : null;
@@ -1104,6 +1467,14 @@ class Portfolio extends PureComponent {
       const allLots = holdingLots(h);
       // Never let cost basis cover coins that are gone — see `heldLots`
       const lots = heldLots(allLots, amount);
+      /* Every money figure below is one of these two: `priced` is what the
+       * displayed currency can be measured against, `paused` is what was
+       * entered in another one and is therefore reported rather than added. */
+      const priced = lotsIn(lots, currency);
+      const paused = lotsOut(lots, currency);
+      const salesPaused = (h.sales || []).filter(
+        (sale) => !inCurrency(sale, currency),
+      );
       const value = price != null ? price * amount : null;
       if (value != null) {
         anyPriced = true;
@@ -1114,41 +1485,60 @@ class Portfolio extends PureComponent {
         } else {
           totalAgo += value;
         }
-        const basis = lotsBasis(lots);
+        const basis = lotsBasis(priced);
         if (basis > 0) {
           costBasis += basis;
           // P/L covers the lotted amount, which may still be less than the
           // holding — you can hold coins you never logged a purchase for
-          costValueNow += price * lotsAmount(lots);
+          costValueNow += price * lotsAmount(priced);
         }
-        for (const lot of lots) {
+        for (const lot of priced) {
           const held = lotHeldDays(lot, nowMs);
           if (held == null) continue; // no date, no holding period
           datedValue += price * lot.amount;
           if (held >= LONG_TERM_DAYS) longTermValue += price * lot.amount;
         }
       }
-      const lotAmt = lotsAmount(lots);
-      const realized = salesRealized(h.sales);
-      if (hasRealized(h.sales)) {
+      const lotAmt = lotsAmount(priced);
+      const realized = salesRealized(h.sales, currency);
+      if (hasRealized(h.sales, currency)) {
         realizedTotal += realized;
         anyRealized = true;
       }
+      for (const sale of h.sales || []) {
+        if (!inCurrency(sale, currency)) continue;
+        const gain = saleRealized(sale);
+        if (gain == null) continue;
+        const year = saleYear(sale);
+        if (year == null) {
+          undatedSales++;
+        } else if (year === thisYear) {
+          realizedThisYear += gain;
+          anyRealizedThisYear = true;
+        }
+      }
+      if (paused.length || salesPaused.length) pausedAny = true;
       return {
         ...h,
         amount, // total across sources (h.amount stays the manual part)
         manualAmount: h.amount,
         lots, // the lots still held; h.lots stays the manual part
+        priced, // …of those, the ones this currency can measure
+        paused, // …and the ones it cannot, kept so the row can say so
+        salesPaused,
+        basis: lotsBasis(priced),
         manualLots: heldLots(h.lots, h.amount),
         lotAmount: lotAmt,
         sales: h.sales || [],
-        realized: hasRealized(h.sales) ? realized : null,
+        realized: hasRealized(h.sales, currency) ? realized : null,
         /* What you hold beyond what you've logged a purchase for. The row's
          * value covers everything; its P/L can only cover this much less —
          * so the difference has to be sayable rather than left as a silent
          * mismatch between two numbers on the same line. */
         unlogged:
-          Math.max(0, amount - lotAmt) > AMOUNT_EPSILON ? amount - lotAmt : 0,
+          Math.max(0, amount - lotsAmount(lots)) > AMOUNT_EPSILON
+            ? amount - lotsAmount(lots)
+            : 0,
         price,
         value,
         change: p ? p.change : null,
@@ -1173,6 +1563,10 @@ class Portfolio extends PureComponent {
       longTermValue,
       longTermPct: datedValue > 0 ? (longTermValue / datedValue) * 100 : null,
       realized: anyRealized ? realizedTotal : null,
+      realizedThisYear: anyRealizedThisYear ? realizedThisYear : null,
+      thisYear,
+      undatedSales,
+      pausedAny,
     };
   }
 
@@ -1194,9 +1588,10 @@ class Portfolio extends PureComponent {
     }
     const key = (r) => {
       if (mode === "pl") {
-        const basis = lotsBasis(r.lots);
-        return basis > 0 && r.price != null
-          ? r.price * lotsAmount(r.lots) - basis
+        // Only what this currency can measure — a row whose purchases are
+        // all in another one has no P/L to sort on, and goes to the back
+        return r.basis > 0 && r.price != null
+          ? r.price * lotsAmount(r.priced) - r.basis
           : null;
       }
       if (mode === "change") {
@@ -1232,6 +1627,32 @@ class Portfolio extends PureComponent {
       ? `${parts.slice(0, 3).join(", ")} and ${parts.length - 3} more`
       : parts.join(", ");
   }
+
+  /* Both destructive actions go back through `onImport`, which is already the
+   * "make the portfolio be exactly this list" path and already sanitizes —
+   * so undo cannot put back something a hand-edited file could not. */
+  handleRemoveHolding = (coin) => {
+    const before = this.props.holdings;
+    // Read what is being thrown away *before* throwing it away — after the
+    // call the holding is gone and there is nothing left to describe
+    const gone = before.find((h) => h.coin === coin);
+    const records =
+      gone && (holdingLots(gone).length || (gone.sales || []).length);
+    this.props.onRemove(coin);
+    this.setState({
+      undo: {
+        label: `Removed ${coin}${records ? " and everything logged against it" : ""}`,
+        list: before,
+      },
+    });
+  };
+
+  handleUndo = () => {
+    const undo = this.state.undo;
+    if (!undo) return;
+    this.setState({ undo: null });
+    this.props.onImport(undo.list);
+  };
 
   handleSearchChange = (e) => this.setState({ query: e.target.value });
 
@@ -1288,18 +1709,23 @@ class Portfolio extends PureComponent {
     return sales.map((sale, i) => {
       const realized = saleRealized(sale);
       const partial = sale.basisAmount > 0 && sale.basisAmount < sale.amount;
+      // Recorded in another currency: shown in its own, out of the Realized
+      // figure above until that currency is selected again
+      const paused = !inCurrency(sale, this.props.currency);
       return React.createElement(
         LotLine,
         { key: `sale-${sale.time}-${i}` },
         React.createElement(
           "span",
           null,
-          `Sold ${Number(sale.amount.toPrecision(8))} ${coin} — ${this.fmtMoney(sale.received, false)}`,
+          `Sold ${Number(sale.amount.toPrecision(8))} ${coin} — ${this.fmtMoney(sale.received, false, sale.currency)}`,
         ),
         React.createElement(
           LotMeta,
           {
-            title: partial
+            title: paused
+              ? `Recorded in ${sale.currency}. Its gain is left out of Realized while another currency is shown — switch to ${sale.currency} to include it.`
+              : partial
               ? `Only ${Number(sale.basisAmount.toPrecision(6))} ${coin} of this sale had a purchase logged, so the gain covers that much of it`
               : realized == null
                 ? "No purchase was logged for these coins, so there is no cost to set the proceeds against"
@@ -1314,7 +1740,8 @@ class Portfolio extends PureComponent {
             : "date unknown") +
             (realized == null
               ? " · no cost basis"
-              : ` · ${realized >= 0 ? "+" : "−"}${this.fmtMoney(Math.abs(realized), false)}${partial ? " (part)" : ""}`),
+              : ` · ${realized >= 0 ? "+" : "−"}${this.fmtMoney(Math.abs(realized), false, sale.currency)}${partial ? " (part)" : ""}`) +
+            (paused ? ` · ${sale.currency} · paused` : ""),
         ),
         React.createElement(
           RemoveBtn,
@@ -1341,19 +1768,23 @@ class Portfolio extends PureComponent {
       // while you do nothing, and the line a tax return draws
       const held = lotHeldDays(lot, nowMs);
       const long = held != null && held >= LONG_TERM_DAYS;
+      // Entered in another currency: printed in its own, and out of every
+      // total on this screen until that currency is selected again
+      const paused = !inCurrency(lot, this.props.currency);
       return React.createElement(
         LotLine,
         { key: `${lot.time}-${i}` },
         React.createElement(
           "span",
           null,
-          `${lot.amount} ${coin} — ${this.fmtMoney(lot.paid, false)}`,
+          `${lot.amount} ${coin} — ${this.fmtMoney(lot.paid, false, lot.currency)}`,
         ),
         React.createElement(
           LotMeta,
           {
-            title:
-              held == null
+            title: paused
+              ? `Entered in ${lot.currency}. Its cost basis is left out of the P/L above while another currency is shown — switch to ${lot.currency} to include it.`
+              : held == null
                 ? undefined
                 : `Held ${held} days — ${long ? "long term" : "short term"} at the ${LONG_TERM_DAYS}-day mark used in many places`,
           },
@@ -1361,7 +1792,8 @@ class Portfolio extends PureComponent {
             ? new Date(lot.time * 1000).toLocaleDateString()
             : "date unknown") +
             (lot.source === "chain" ? " · ~on-chain" : "") +
-            (long ? " · long" : ""),
+            (long ? " · long" : "") +
+            (paused ? ` · ${lot.currency} · paused` : ""),
         ),
         editable &&
           React.createElement(
@@ -1464,11 +1896,22 @@ class Portfolio extends PureComponent {
     const file = e.target.files && e.target.files[0];
     e.target.value = ""; // allow re-picking the same file
     if (!file) return;
+    const before = this.props.holdings;
     let ok = false;
     try {
       ok = this.props.onImport(JSON.parse(await file.text())) === true;
     } catch (err) {
       ok = false; // unreadable / invalid JSON
+    }
+    // Nothing was replaced if there was nothing there, and offering to
+    // restore an empty list is an undo that does nothing
+    if (ok && before.length) {
+      this.setState({
+        undo: {
+          label: `Replaced ${before.length} holding${before.length > 1 ? "s" : ""} with the file`,
+          list: before,
+        },
+      });
     }
     this.setState({ importError: !ok });
     if (!ok) {
@@ -1493,11 +1936,11 @@ class Portfolio extends PureComponent {
   }
 
 
-  /* The ring's slices: biggest first, capped at the palette's six, with
+  /* The strip's segments: biggest first, capped at the palette's six, with
    * everything past that — and anything too thin to read — folded into a
    * neutral Other. Built from the same `rows` the table is drawn from, so the
-   * ring and the list cannot disagree about a share. Costs no request. */
-  donutSlices(rows, totalNow) {
+   * strip and the list cannot disagree about a share. Costs no request. */
+  allocationSlices(rows, totalNow) {
     if (!totalNow || !rows || !rows.length) return [];
     const priced = rows
       .filter((r) => typeof r.value === "number" && isFinite(r.value) && r.value > 0)
@@ -1531,61 +1974,75 @@ class Portfolio extends PureComponent {
    * follows both: which one is this? Everything else dims rather than the
    * hovered one brightening — dimming says "not these" without making the
    * slice you asked about a different colour from the row it matches. */
-  renderDonut(rows, totalNow) {
-    const slices = this.donutSlices(rows, totalNow);
+  /* The allocation strip.
+   *
+   * It was a donut, and the donut was replaced rather than tuned — the reasons
+   * are in `styles-portfolio.js` above `AllocBar`. What survives from it is the
+   * palette, the biggest-first order and the rule that the holdings list is the
+   * legend; what changed is that a segment names itself when it is wide enough
+   * to, so nothing has to be hovered to read the shape.
+   */
+  renderAllocation(rows, totalNow) {
+    const slices = this.allocationSlices(rows, totalNow);
     if (slices.length < 2) return null;
-    const r = (DONUT_SIZE - DONUT_STROKE) / 2;
-    const circumference = 2 * Math.PI * r;
-    const active = this.state.donutAt;
-    const shown = active != null && slices[active] ? slices[active] : slices[0];
-    let offset = 0;
+    const active = this.state.allocAt;
+    const width = this.state.allocWidth;
+    const top = slices[0];
     return React.createElement(
-      DonutWrap,
-      { onMouseLeave: () => this.setState({ donutAt: null }) },
+      AllocBlock,
+      null,
       React.createElement(
-        "svg",
+        AllocHead,
+        null,
+        React.createElement("span", null, "Allocation ·"),
+        /* The one thing a column of percentages does not give you at a glance,
+         * and what the ring's hole used to carry. Unattributed on purpose: the
+         * segment beside it already says which coin, and naming it twice is
+         * one of them saying nothing. A share, not a warning about one. */
+        React.createElement(
+          AllocNote,
+          null,
+          `${top.share >= 9.95 ? top.share.toFixed(0) : top.share.toFixed(1)}% in one holding`,
+        ),
+      ),
+      React.createElement(
+        AllocBar,
         {
-          width: DONUT_SIZE,
-          height: DONUT_SIZE,
-          viewBox: `0 0 ${DONUT_SIZE} ${DONUT_SIZE}`,
+          innerRef: (n) => (this.allocNode = n),
           role: "img",
           "aria-label":
             "Allocation: " +
             slices.map((s) => `${s.coin} ${s.share.toFixed(1)}%`).join(", "),
+          onMouseLeave: () => this.setState({ allocAt: null }),
         },
-        // Rotated so the first and largest slice starts at twelve o'clock
-        React.createElement(
-          "g",
-          { transform: `rotate(-90 ${DONUT_SIZE / 2} ${DONUT_SIZE / 2})` },
-          ...slices.map((s, i) => {
-            const len = (s.share / 100) * circumference;
-            const dash = Math.max(0, len - 2); // 2px of air between slices
-            const node = React.createElement(DonutArc, {
-              key: s.coin,
-              cx: DONUT_SIZE / 2,
-              cy: DONUT_SIZE / 2,
-              r,
-              fill: "none",
-              tone: s.tone,
-              strokeWidth: DONUT_STROKE,
-              strokeDasharray: `${dash} ${circumference - dash}`,
-              strokeDashoffset: -offset,
+        ...slices.map((slice, i) => {
+          // A label only goes where it fits; everything else is named by the
+          // list below, which carries the same ink
+          const fits =
+            width != null &&
+            (slice.share / 100) * width >= ALLOC_LABEL_MIN_PX;
+          return React.createElement(
+            AllocSeg,
+            {
+              key: slice.coin,
+              grow: slice.share,
+              tone: slice.tone,
               dim: active != null && active !== i,
               tabIndex: 0,
-              onMouseEnter: () => this.setState({ donutAt: i }),
-              onFocus: () => this.setState({ donutAt: i }),
-              onBlur: () => this.setState({ donutAt: null }),
-            });
-            offset += len;
-            return node;
-          }),
-        ),
-      ),
-      React.createElement(
-        DonutCentre,
-        null,
-        React.createElement(DonutCoin, null, shown.coin),
-        React.createElement(DonutShare, null, `${shown.share.toFixed(1)}%`),
+              title: `${slice.coin} — ${slice.share.toFixed(1)}% of what you hold`,
+              "aria-label": `${slice.coin} ${slice.share.toFixed(1)}%`,
+              onMouseEnter: () => this.setState({ allocAt: i }),
+              onFocus: () => this.setState({ allocAt: i }),
+              onBlur: () => this.setState({ allocAt: null }),
+            },
+            fits &&
+              React.createElement(
+                AllocSegLabel,
+                null,
+                `${slice.coin} ${slice.share.toFixed(0)}%`,
+              ),
+          );
+        }),
       ),
     );
   }
@@ -1604,7 +2061,11 @@ class Portfolio extends PureComponent {
       longTermValue,
       longTermPct,
       realized,
+      realizedThisYear,
+      thisYear,
+      undatedSales,
       costBasis,
+      pausedAny,
     } = this.computeTotals();
     const suggestions = this.matches();
     const sortedRows = this.sortRows(rows);
@@ -1628,6 +2089,8 @@ class Portfolio extends PureComponent {
     // How the same window treated the benchmark, and the gap in percentage
     // points. Suppressed when the portfolio is the benchmark and nothing else,
     // where the answer is always zero and says nothing.
+    const coverage = this.chartCoverage(built);
+    const drawdown = maxDrawdown(series);
     const benchPct = this.benchmarkPct(series);
     const onlyBenchmark = rows.length === 1 && rows[0].coin === BENCHMARK_COIN;
     const benchGap =
@@ -1651,7 +2114,7 @@ class Portfolio extends PureComponent {
      * ring's legend. Built from the same slices the ring draws, which is why
      * a coin folded into Other has no entry here and falls back to neutral. */
     const sliceTone = {};
-    for (const slice of this.donutSlices(rows, totalNow)) {
+    for (const slice of this.allocationSlices(rows, totalNow)) {
       if (slice.tone != null) sliceTone[slice.coin] = slice.tone;
     }
     // Flat list of every watched address across holdings, for the chips
@@ -1716,13 +2179,23 @@ class Portfolio extends PureComponent {
           seriesDelta != null
             ? React.createElement(
                 PortfolioDelta,
-                { up: seriesDelta === 0 ? null : seriesDelta > 0 },
+                {
+                  up: seriesDelta === 0 ? null : seriesDelta > 0,
+                  /* The figure above is every holding; this one is only the
+                   * ones with a line. Where they differ the label says so —
+                   * two numbers on one line that measure different things and
+                   * do not admit it is the defect, not the gap itself. */
+                  title: coverage
+                    ? `Over ${periodLabel.toLowerCase()}, across the ${coverage.drawn} holdings this chart can draw${coverage.share != null ? ` — ${coverage.share.toFixed(0)}% of your value` : ""}. The total above covers all ${coverage.held}.`
+                    : undefined,
+                },
                 // fmtMoney(delta, true) already prints a +/- sign
                 this.fmtMoney(seriesDelta, true) +
                   (seriesPct != null
                     ? ` (${seriesPct >= 0 ? "+" : ""}${seriesPct.toFixed(2)}%)`
                     : "") +
-                  ` · ${periodLabel}`,
+                  ` · ${periodLabel}` +
+                  (coverage ? ` · ${coverage.drawn} of ${coverage.held}` : ""),
               )
             : holdings.length > 0 &&
                 anyPriced &&
@@ -1736,11 +2209,13 @@ class Portfolio extends PureComponent {
                       : " 24h"),
                 ),
             ),
-            /* The ring sits opposite the total, in space the header was
-             * already leaving empty, and answers the one question the figures
-             * beside it do not: not how much, but of what. */
-            this.renderDonut(rows, totalNow),
           ),
+          /* Full width, under the total rather than opposite it. The ring that
+           * used to sit here was 132px of circle in a header whose job is the
+           * total; the strip is 26px, spans the width the way every other row
+           * on this screen does, and answers the same question — not how much,
+           * but of what. */
+          this.renderAllocation(rows, totalNow),
           /* Lead tier: the two "what have I made" figures. One is a position,
            * the other is settled — side by side, not folded together. */
           (unrealized != null || realized != null) &&
@@ -1752,9 +2227,13 @@ class Portfolio extends PureComponent {
                   StatItem,
                   {
                     lead: true,
-                    title: this.unloggedNote(rows)
-                      ? `Unrealized P/L vs what you paid — covers only the amounts you've logged a purchase for (${this.unloggedNote(rows)})`
-                      : "Unrealized P/L vs what you paid",
+                    title:
+                      (this.unloggedNote(rows)
+                        ? `Unrealized P/L vs what you paid — covers only the amounts you've logged a purchase for (${this.unloggedNote(rows)})`
+                        : "Unrealized P/L vs what you paid") +
+                      (pausedAny
+                        ? ` · purchases entered in another currency are left out rather than converted — open a holding to see which`
+                        : ""),
                   },
                   React.createElement(StatLabel, null, "Unrealized"),
                   React.createElement(
@@ -1772,7 +2251,10 @@ class Portfolio extends PureComponent {
                   {
                     lead: true,
                     title:
-                      "Gains and losses on sales you've recorded — proceeds less the cost of the purchases each sale consumed, oldest first. Unlike the figure beside it, this one is settled.",
+                      "Gains and losses on sales you've recorded — proceeds less the cost of the purchases each sale consumed, oldest first. Unlike the figure beside it, this one is settled." +
+                      (pausedAny
+                        ? " Sales recorded in another currency are left out rather than converted."
+                        : ""),
                   },
                   React.createElement(StatLabel, null, "Realized"),
                   React.createElement(
@@ -1782,7 +2264,12 @@ class Portfolio extends PureComponent {
                   ),
                 ),
             ),
-          (show24h || best || benchGap != null || longTermPct != null) &&
+          (show24h ||
+            best ||
+            benchGap != null ||
+            drawdown != null ||
+            realizedThisYear != null ||
+            longTermPct != null) &&
             React.createElement(
               PortfolioStats,
               null,
@@ -1811,6 +2298,28 @@ class Portfolio extends PureComponent {
                     );
                   })(),
                 ),
+              /* The one thing the algorithm research left standing (§9.4):
+               * rules cut the fall on 59 of 64 pairs and beat holding on 28.
+               * So the honest number to put beside a portfolio is how far it
+               * actually fell, not when to buy it. */
+              drawdown != null &&
+                React.createElement(
+                  StatItem,
+                  {
+                    title:
+                      `The deepest fall from a high to a later low inside this ${periodLabel.toLowerCase()} window` +
+                      (drawdown.from && drawdown.to
+                        ? ` — ${new Date(+drawdown.from).toLocaleDateString()} to ${new Date(+drawdown.to).toLocaleDateString()}`
+                        : "") +
+                      ". It says how bad this got, not how bad it can get.",
+                  },
+                  React.createElement(StatLabel, null, "Worst fall"),
+                  React.createElement(
+                    StatValue,
+                    { up: false },
+                    `${drawdown.pct.toFixed(1)}%`,
+                  ),
+                ),
               /* How much of what you've logged is past the one-year mark.
                * It's the split the tax report leads with, and the one thing
                * about a holding that changes on its own while you do nothing. */
@@ -1825,6 +2334,35 @@ class Portfolio extends PureComponent {
                     StatValue,
                     null,
                     `${longTermPct.toFixed(0)}%`,
+                  ),
+                ),
+              /* The window a return is worked out over. Shown only when it
+               * is not simply the Realized figure again — if every sale you
+               * recorded happened this year the two are the same number, and
+               * printing it twice is one of them saying nothing.
+               *
+               * Called the calendar year and never the tax year: that ends on
+               * 5 April in the UK and 30 June in Australia, and `TODO.md`
+               * declined country-specific tax computation for exactly this
+               * reason. A calendar year is a fact; a tax year is a guess. */
+              realizedThisYear != null &&
+                realized != null &&
+                Math.abs(realizedThisYear - realized) > 0.005 &&
+                React.createElement(
+                  StatItem,
+                  {
+                    title:
+                      `Gains and losses on sales you recorded between 1 January ${thisYear} and today. ` +
+                      "This is the calendar year — the tax year ends on a different date in many countries, so check yours." +
+                      (undatedSales
+                        ? ` ${undatedSales} sale(s) have no date and are in neither year.`
+                        : ""),
+                  },
+                  React.createElement(StatLabel, null, `Realized ${thisYear}`),
+                  React.createElement(
+                    StatValue,
+                    { up: realizedThisYear === 0 ? null : realizedThisYear > 0 },
+                    this.fmtMoney(realizedThisYear, true),
                   ),
                 ),
               show24h &&
@@ -1861,6 +2399,45 @@ class Portfolio extends PureComponent {
                     `${worst.coin} ${fmtPct(worst.change)}`,
                   ),
                 ),
+            ),
+          /* Said once, at the top, because a figure that silently covers less
+           * than you think is the failure this whole section is written
+           * against. The per-holding panels name the currency; this one only
+           * has to say the totals are not the whole story. */
+          /* Named, not just counted: "12 of 15" tells you something is out
+           * and not which, and the two reasons have different answers — one
+           * is a cap you can change by holding less, the other is a coin with
+           * no series anywhere. */
+          coverage &&
+            React.createElement(
+              LotNote,
+              {
+                title: coverage.unchartable.length
+                  ? `No price history is published for ${coverage.unchartable.join(", ")} by either exchange this app reads, so there is no line to draw. They are still in the total above.`
+                  : undefined,
+              },
+              `The chart and the change beside the total cover ${coverage.drawn} of ${coverage.held} holdings` +
+                (coverage.share != null
+                  ? `, ${coverage.share.toFixed(0)}% of your value`
+                  : "") +
+                ". " +
+                [
+                  coverage.unchartable.length
+                    ? `${coverage.unchartable.join(", ")} ${coverage.unchartable.length > 1 ? "have" : "has"} no price history to draw`
+                    : "",
+                  coverage.capped.length
+                    ? `${coverage.capped.length} smaller holding${coverage.capped.length > 1 ? "s are" : " is"} beyond the ${PORTFOLIO_CHART_MAX_COINS} this chart draws`
+                    : "",
+                ]
+                  .filter(Boolean)
+                  .join("; ") +
+                ". The total above counts everything.",
+            ),
+          pausedAny &&
+            React.createElement(
+              LotNote,
+              null,
+              `Some purchases or sales were entered in another currency. They are shown in their own currency and left out of the figures above rather than converted — open a holding to see which, or switch back to that currency.`,
             ),
         ),
 
@@ -1954,7 +2531,11 @@ class Portfolio extends PureComponent {
                     amountDraft !== undefined
                       ? amountDraft
                       : String(r.manualAmount);
-                  const basis = lotsBasis(r.lots);
+                  // What this currency can measure, and what it covers
+                  const basis = r.basis;
+                  const pricedAmt = lotsAmount(r.priced);
+                  // Coverage is a different question from currency: this is
+                  // every lot still held, whatever it was entered in
                   const lotAmt = lotsAmount(r.lots);
                   const expanded = this.state.expandedCoin === r.coin;
                   // Which side the open editor is recording
@@ -1962,7 +2543,7 @@ class Portfolio extends PureComponent {
                   // Unrealized P/L over the lotted amount (needs a price)
                   const rowPl =
                     basis > 0 && r.price != null
-                      ? r.price * lotAmt - basis
+                      ? r.price * pricedAmt - basis
                       : null;
                   const share =
                     r.value != null && totalNow > 0
@@ -2054,15 +2635,23 @@ class Portfolio extends PureComponent {
                       {
                         empty: basis <= 0,
                         open: expanded,
-                        title: watched
-                          ? "Purchases inferred from the watched address — click to view"
-                          : "Your purchases for this coin — click to view or add ('bought 0.5 for 15000')",
+                        title:
+                          basis <= 0 && r.paused.length
+                            ? `Every purchase logged for ${r.coin} was entered in ${pausedCurrencies(r.paused)}. Switch to it to see this cost basis and its P/L.`
+                            : watched
+                              ? "Purchases inferred from the watched address — click to view"
+                              : "Your purchases for this coin — click to view or add ('bought 0.5 for 15000')",
                         "aria-label": `${r.coin} purchase lots`,
                         onClick: () => this.handleToggleLots(r.coin),
                       },
                       basis > 0
                         ? this.fmtMoney(basis, false)
-                        : `+ ${r.lots.length ? "lots" : "lot"}`,
+                        : /* There *are* purchases, they are just in another
+                           * currency. "+ lot" would invite logging a second
+                           * copy of something already recorded. */
+                          r.paused.length
+                          ? "paused"
+                          : `+ ${r.lots.length ? "lots" : "lot"}`,
                     ),
                     React.createElement(
                       HoldingSparkCell,
@@ -2105,8 +2694,9 @@ class Portfolio extends PureComponent {
                       {
                         type: "button",
                         "aria-label": `Remove ${r.coin}`,
-                        title: "Remove",
-                        onClick: () => this.props.onRemove(r.coin),
+                        title:
+                          "Remove this holding, its purchases and its recorded sales. Undoable until you close the portfolio.",
+                        onClick: () => this.handleRemoveHolding(r.coin),
                       },
                       "×",
                     ),
@@ -2128,6 +2718,16 @@ class Portfolio extends PureComponent {
                             LotNote,
                             null,
                             `${Number(r.unlogged.toPrecision(6))} ${r.coin} has no purchase logged, so it counts toward the value above but not toward the P/L.`,
+                          ),
+                        /* Entered in another currency. Converting at today's
+                         * rate would give a figure that moves on days the
+                         * purchase did not, so it is set aside and named —
+                         * the answer a paused price target already gets. */
+                        (r.paused.length > 0 || r.salesPaused.length > 0) &&
+                          React.createElement(
+                            LotNote,
+                            null,
+                            `${pausedCount(r)} recorded in ${pausedCurrencies([...r.paused, ...r.salesPaused])}. Left out of the totals above while ${this.props.currency} is on screen; each is shown below in the currency it was entered in.`,
                           ),
                         React.createElement(
                           SourceBlock,
@@ -2300,6 +2900,21 @@ class Portfolio extends PureComponent {
               ),
             ),
 
+        /* Between the list and the form: a removal happens in the list above
+         * and an import at the tools below, and this is the one place both
+         * can be seen from. */
+        this.state.undo &&
+          React.createElement(
+            PortfolioUndoBar,
+            null,
+            React.createElement("span", null, this.state.undo.label),
+            React.createElement(
+              PortfolioUndoBtn,
+              { onClick: this.handleUndo },
+              "Undo",
+            ),
+          ),
+
         // Add holding
         React.createElement(
           AddSection,
@@ -2467,6 +3082,7 @@ class Portfolio extends PureComponent {
           seriesDelta,
           seriesPct,
           periodLabel,
+          coverage,
         }),
     );
   }

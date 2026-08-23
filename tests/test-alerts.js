@@ -385,4 +385,84 @@ assert.deepStrictEqual(json("alertCoinsToWatch([], 'USD')"), [], "no alerts → 
   sandbox.React.createElement = realCreate;
 }
 
+/* ── a target on the whole portfolio ────────────────────────────────────────
+ *
+ * The third kind. It exists because the algorithm research
+ * (`docs/product/TODAY.md` §9) says buy and sell signals cannot be built
+ * honestly — 0 of 70 permutation tests survive, and on live daily closes
+ * "overbought" beat the coin's ordinary month on four of six coins. What a
+ * person actually wants when they ask for a sell signal is to be told about
+ * *their own money*, and that needs no claim about the market at all.
+ */
+{
+  const arm = (over) => ({
+    id: "p1", coin: "", kind: "portfolio", direction: over ? "above" : "below",
+    target: 50000, currency: "USD", created: 1, startPrice: 47600,
+    triggeredAt: null, hitPrice: null,
+  });
+  const fire = (alert, total, currency) => {
+    sandbox.__a = [alert];
+    sandbox.__total = total;
+    // `json`, not `run`: a vm-context Array has a different prototype, and
+    // `deepStrictEqual` on one fails while printing two identical arrays
+    return json(`findTriggeredAlerts(__a, {}, ${JSON.stringify(currency || "USD")}, {}, {}, __total)`);
+  };
+
+  assert.strictEqual(fire(arm(true), 47600).length, 0, "below its target, nothing fires");
+  const hit = fire(arm(true), 51000);
+  assert.strictEqual(hit.length, 1, "the total crossing above fires it");
+  assert.strictEqual(hit[0].hitPrice, 51000, "…and the row keeps the total it fired at");
+  assert.strictEqual(fire(arm(false), 51000).length, 0, "a 'below' target is not a 'above' one");
+  assert.strictEqual(fire(arm(false), 49000).length, 1, "…and fires when the total falls under");
+
+  /* No total is not a total of zero. A held coin without a price makes the sum
+   * smaller than the truth, and a "worth less than" target that fired on that
+   * would have announced something that did not happen. */
+  assert.strictEqual(fire(arm(false), null).length, 0, "no total → nothing fires");
+  assert.strictEqual(fire(arm(false), 0).length, 0, "a zero total is treated as no total");
+
+  // Currency-scoped exactly like a price target: a total in USD is not a
+  // number you can compare with a target set in EUR
+  assert.strictEqual(fire(arm(false), 10, "EUR").length, 0,
+    "paused outside the currency it was set in");
+
+  /* Which coins the check has to price. A portfolio target has no coin of its
+   * own, so it needs every held one — and must not drag them in when no
+   * portfolio target is armed. */
+  sandbox.__holdings = [{ coin: "BTC" }, { coin: "ETH" }, { coin: "SOL" }];
+  sandbox.__pAlerts = [arm(true)];
+  assert.deepStrictEqual(
+    json("alertCoinsToWatch(__pAlerts, 'USD', __holdings)").sort(),
+    ["BTC", "ETH", "SOL"],
+    "an armed portfolio target needs a price for everything held",
+  );
+  sandbox.__oneCoin = [{ ...arm(true), kind: "price", coin: "BTC" }];
+  assert.deepStrictEqual(
+    json("alertCoinsToWatch(__oneCoin, 'USD', __holdings)"),
+    ["BTC"],
+    "…and a plain price target still asks for one coin only",
+  );
+  sandbox.__doneP = [{ ...arm(true), triggeredAt: 123 }];
+  assert.deepStrictEqual(
+    json("alertCoinsToWatch(__doneP, 'USD', __holdings)"),
+    [],
+    "a target that already fired asks for nothing",
+  );
+
+  /* Offered only when there is something to measure — a target on a total that
+   * is always zero can never fire. */
+  assert.strictEqual(run("hasHoldings([{ coin: 'BTC' }])"), true, "holdings → offer it");
+  assert.strictEqual(run("hasHoldings([])"), false, "no holdings → do not");
+  assert.strictEqual(run("hasHoldings(null)"), false, "no list at all → do not");
+
+  // It survives a save and reload with no coin, which the whitelist used to
+  // drop the record for
+  store.crypto_chart_alerts = JSON.stringify([arm(true)]);
+  const loaded = json("loadAlerts()");
+  assert.strictEqual(loaded.length, 1, "a portfolio target survives a reload");
+  assert.strictEqual(loaded[0].kind, "portfolio", "…as a portfolio target");
+  assert.strictEqual(loaded[0].coin, "", "…with no coin, which is the point of it");
+  delete store.crypto_chart_alerts;
+}
+
 console.log("ALERT TESTS OK");

@@ -35,8 +35,46 @@ const makeSandbox = (store) => {
   const run1 = (c) => vm.runInContext(c, sb1);
   assert.strictEqual(run1("cache.size"), 1, "only fresh entry hydrated");
   const got = run1('getCachedData("BTC", "day", "USD", "history")');
-  assert.ok(got && got.isStale, "hydrated entry readable and marked stale");
+  /* A minute-old day series is **not** stale any more, and that is the change
+   * rather than a slipped assertion: the TTL is now one point's worth of the
+   * series' own time (a day series is quoted about every 4.8 minutes), so a
+   * minute-old copy cannot be missing anything. */
+  assert.ok(got, "hydrated entry readable");
+  assert.strictEqual(got.isStale, false, "a 1-minute-old day series is still current");
   assert.strictEqual(got.data[0].price, 1, "hydrated data intact");
+
+  /* ── the TTL is per range ───────────────────────────────────────────────
+   * One 30-second TTL covered every series, so a year chart was re-fetched on
+   * every new tab and on every coin switch — data that cannot change more
+   * than once a day. Measured on a warm profile, a tab opened two minutes
+   * later cost 8 requests; with these it costs 3.
+   */
+  {
+    const ttlStore = {
+      crypto_chart_price_cache: JSON.stringify([
+        ["BTC-hour-USD-history", { data: [{ price: 1, time: 1 }], timestamp: NOW - 45000 }],
+        ["BTC-week-USD-history", { data: [{ price: 1, time: 1 }], timestamp: NOW - 45000 }],
+        ["BTC-year-USD-history", { data: [{ price: 1, time: 1 }], timestamp: NOW - 3600000 }],
+        ["BTC-current-USD-spot", { data: 42, timestamp: NOW - 45000 }],
+      ]),
+    };
+    const sb = makeSandbox(ttlStore);
+    const stale = (coin, period, type) =>
+      vm.runInContext(`getCachedData("${coin}", "${period}", "USD", "${type}").isStale`, sb);
+
+    assert.strictEqual(stale("BTC", "hour", "history"), true,
+      "45s-old hour series is stale — the 1H range keeps the 30s floor");
+    assert.strictEqual(stale("BTC", "week", "history"), false,
+      "45s-old week series is not: a week series gains a point every ~33 min");
+    assert.strictEqual(stale("BTC", "year", "history"), false,
+      "an hour-old year series is not stale — its points are a day apart");
+    assert.strictEqual(stale("BTC", "current", "spot"), true,
+      "a spot price is still 30 seconds, whatever the range is doing");
+    // An unknown period must not silently inherit a long TTL
+    vm.runInContext(`cache.set("BTC-bogus-USD-history", { data: 1, timestamp: ${NOW} - 45000, lastAccessed: ${NOW} })`, sb);
+    assert.strictEqual(stale("BTC", "bogus", "history"), true,
+      "an unrecognised range falls back to the flat 30 seconds");
+  }
 
   // --- corrupt JSON: no crash, empty cache ---
   const sb2 = makeSandbox({ crypto_chart_price_cache: "{{{" });

@@ -679,5 +679,60 @@ const json = (c) => JSON.parse(JSON.stringify(run(c)));
     "per-coin keys resolve to their widget's TTL",
   );
 
+  /* ── a wall is not a blip ───────────────────────────────────────────────
+   *
+   * `fetchWithRetry` climbs 1s → 2s → 4s before giving up, which is right for
+   * a 500 or a 429: the server answered, and waiting is how you let it
+   * recover. It was also being spent on a `TypeError`, which means no
+   * response arrived at all — a CORS wall, a region block, something in front
+   * of the API. That answers identically four seconds later, and every price
+   * request here has somewhere else to go.
+   *
+   * Measured in a real browser with Coinbase refusing everything: the chart
+   * took **7,131ms** to draw, against 54ms on a working Coinbase, and for
+   * seven of those seconds the tab read "BTC PRICE" with nothing under it.
+   * After: **1,063ms**. The assertion below is the mechanism — the seconds
+   * are the delays this would have slept through.
+   */
+  {
+    const delays = [];
+    let calls = 0;
+    let mode = "network";
+    const box = {
+      console, Date, JSON, Math, Array, Object, Set, Map, Promise, Number,
+      parseInt, parseFloat, isFinite, isNaN, Error, AbortController,
+      localStorage: { getItem: () => null, setItem: () => {} },
+      // Record what it *would* have waited, and don't actually wait
+      setTimeout: (fn, ms) => { delays.push(ms || 0); return fn(); },
+      clearTimeout: () => {},
+      fetch: async () => {
+        calls++;
+        if (mode === "network") throw new TypeError("Failed to fetch");
+        return { ok: false, status: 503, json: async () => ({}) };
+      },
+    };
+    vm.createContext(box);
+    vm.runInContext(
+      fs.readFileSync(path.join(__dirname, "..", "src", "api.js"), "utf8"),
+      box, { filename: "api.js" });
+
+    const attempt = async (which) => {
+      mode = which; calls = 0; delays.length = 0;
+      try { await vm.runInContext('fetchWithRetry("https://example.test/x")', box); }
+      catch (e) { /* expected */ }
+      // The debounced cache persist also books a timer; only the backoff
+      // sleeps are seconds long
+      return { calls, waited: delays.filter((d) => d >= 1000).reduce((a, b) => a + b, 0) };
+    };
+
+    const net = await attempt("network");
+    assert.strictEqual(net.calls, 2, "a network-level failure is tried twice, not four times");
+    assert.strictEqual(net.waited, 1000, "…and waits one second in total, not seven");
+
+    const server = await attempt("server");
+    assert.strictEqual(server.calls, 4, "a 5xx still gets the full ladder — the server answered");
+    assert.strictEqual(server.waited, 7000, "…and still backs off 1s + 2s + 4s");
+  }
+
   console.log("ALL API TESTS PASSED");
 })().catch((e) => { console.error(e); process.exit(1); });

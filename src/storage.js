@@ -294,8 +294,18 @@ const sanitizeAlerts = (list) => {
     const currency =
       typeof a.currency === "string" ? a.currency.toUpperCase() : "";
     const target = Number(a.target);
-    const kind = a.kind === "percent" ? "percent" : "price";
-    if (!SUGGESTED_COINS.includes(coin)) continue;
+    /* Three kinds now. A **portfolio** target watches the total of everything
+     * held rather than one coin's price, so it is the one kind with no coin —
+     * and the whitelist below has to let that through instead of dropping the
+     * record on load. Everything else about it is a price target: a number in
+     * a currency, above or below. */
+    const kind =
+      a.kind === "percent"
+        ? "percent"
+        : a.kind === "portfolio"
+          ? "portfolio"
+          : "price";
+    if (kind !== "portfolio" && !SUGGESTED_COINS.includes(coin)) continue;
     if (!CURRENCY_OPTIONS.some((c) => c.value === currency)) continue;
     if (!isFinite(target) || target <= 0) continue;
     if (kind === "percent" && target > MAX_PERCENT_TARGET) continue;
@@ -305,8 +315,8 @@ const sanitizeAlerts = (list) => {
     const triggeredAt = Number(a.triggeredAt);
     const hitPrice = Number(a.hitPrice);
     clean.push({
-      id: typeof a.id === "string" && a.id ? a.id : `${coin}-${Date.now()}-${clean.length}`,
-      coin,
+      id: typeof a.id === "string" && a.id ? a.id : `${coin || "portfolio"}-${Date.now()}-${clean.length}`,
+      coin: kind === "portfolio" ? "" : coin,
       kind,
       direction: a.direction,
       target,
@@ -642,6 +652,29 @@ const saveLastSeenEnabled = (enabled) =>
 
 // One purchase lot: amount bought, total paid for it, unix-seconds date
 // (0 = unknown) and whether it was typed in or inferred from a watched chain
+/* The currency a money figure was entered in.
+ *
+ * Kept only when it is one this app actually offers, and **left off entirely**
+ * when it is not, because absent has to keep meaning something: a lot recorded
+ * before this field existed cannot be assigned a currency without inventing
+ * one, and a lot that says nothing is read as "whatever is on screen", which
+ * is exactly how it always behaved. `null` would be a third state nobody
+ * needs.
+ */
+const sanitizeMoneyCurrency = (value) =>
+  typeof value === "string" && CURRENCY_OPTIONS.some((c) => c.value === value)
+    ? value
+    : null;
+
+/* `paid` is a number of *something*, and until now nothing recorded of what.
+ *
+ * Switching the display currency re-read every cost basis in the new one: a
+ * lot entered as 15,000 USD became 15,000 EUR, and the row P/L, the headline
+ * Unrealized, the chart's COST line and the CSV's "All amounts in EUR" all
+ * stated it. The currency is stamped at entry now, and anything wearing a
+ * different one is set aside rather than added up — the same answer
+ * `alerts.js` gives a target set in another currency.
+ */
 const sanitizeLots = (list) => {
   if (!Array.isArray(list)) return [];
   const lots = [];
@@ -652,12 +685,15 @@ const sanitizeLots = (list) => {
     const time = Number(lot.time);
     if (!isFinite(amount) || amount <= 0) continue;
     if (!isFinite(paid) || paid < 0) continue;
-    lots.push({
+    const currency = sanitizeMoneyCurrency(lot.currency);
+    const clean = {
       amount,
       paid,
       time: isFinite(time) && time > 0 ? Math.floor(time) : 0,
       source: lot.source === "chain" ? "chain" : "manual",
-    });
+    };
+    if (currency) clean.currency = currency;
+    lots.push(clean);
     if (lots.length >= MAX_LOTS_PER_HOLDING) break;
   }
   return lots;
@@ -713,7 +749,8 @@ const sanitizeSales = (list) => {
     const time = Number(sale.time);
     if (!isFinite(amount) || amount <= 0) continue;
     if (!isFinite(received) || received < 0) continue;
-    sales.push({
+    const currency = sanitizeMoneyCurrency(sale.currency);
+    const clean = {
       amount,
       received,
       basis: isFinite(basis) && basis >= 0 ? basis : 0,
@@ -724,7 +761,12 @@ const sanitizeSales = (list) => {
           : 0,
       matched: sanitizeMatched(sale.matched),
       time: isFinite(time) && time > 0 ? Math.floor(time) : 0,
-    });
+    };
+    // Both sides of a disposal are money: what it fetched and the basis it
+    // consumed. They are the same currency by construction — the lots it ate
+    // were entered in it — so one stamp covers the row.
+    if (currency) clean.currency = currency;
+    sales.push(clean);
     if (sales.length >= MAX_SALES_PER_HOLDING) break;
   }
   return sales;

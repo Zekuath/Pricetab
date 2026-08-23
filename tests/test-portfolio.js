@@ -446,7 +446,8 @@ assert.deepStrictEqual(
   "sums amount × price",
 );
 
-// different lengths: aligned from the end, trimmed to the shortest history
+// different lengths: the window is the overlap, so a young coin cannot
+// fabricate a portfolio value from before it existed
 assert.deepStrictEqual(
   series(
     {
@@ -456,8 +457,150 @@ assert.deepStrictEqual(
     [{ coin: "BTC", amount: 1 }, { coin: "ETH", amount: 1 }],
   ),
   [{ price: 12, time: 2 }, { price: 23, time: 3 }],
-  "aligned from the end, trimmed to shortest",
+  "window is the overlap",
 );
+
+/* ── series are aligned on time, never on position ──────────────────────────
+ *
+ * The defect this replaced: `period=all` spaces its points across each coin's
+ * own lifetime, so two coins have different *rates*, and summing them by
+ * index adds one coin's 2014 to another's 2023. Measured on the live API,
+ * BTC's all-range points are 13.19 days apart and SUI's 3.64.
+ *
+ * Here BTC is quoted every 10 units from t=0 and ETH every 5 from t=20.
+ * Aligned by position (trim to 3, tail of each) that produced
+ * [102, 203, 304] at times 10/20/30 — a total at t=10 including an ETH that
+ * had no price until t=20, dated from whichever holding came first in the
+ * array. On time it can only be the overlap, 20–30, at the finest resolution
+ * anything was actually quoted at.
+ */
+{
+  const built = series(
+    {
+      BTC: [
+        { price: 1, time: 0 },
+        { price: 2, time: 10 },
+        { price: 3, time: 20 },
+        { price: 4, time: 30 },
+      ],
+      ETH: [
+        { price: 100, time: 20 },
+        { price: 200, time: 25 },
+        { price: 300, time: 30 },
+      ],
+    },
+    [{ coin: "BTC", amount: 1 }, { coin: "ETH", amount: 1 }],
+  );
+  assert.deepStrictEqual(
+    built.map((p) => p.time),
+    [20, 25, 30],
+    "grid is the overlap at the densest series' own timestamps",
+  );
+  assert.deepStrictEqual(
+    built.map((p) => p.price),
+    [103, 203, 304],
+    "each coin read at the moment, not at the position",
+  );
+  // t=25 is BTC's held price (3), not an interpolation toward 4: a price
+  // between two quotes is a price nobody traded at
+  assert.strictEqual(built[1].price - 200, 3, "sparse series holds its last quote");
+}
+
+/* The same failure from the other direction: identical point counts, so
+ * position alignment looked right, but different windows. */
+{
+  const built = series(
+    {
+      BTC: [{ price: 1, time: 0 }, { price: 2, time: 100 }],
+      ETH: [{ price: 10, time: 90 }, { price: 20, time: 100 }],
+    },
+    [{ coin: "BTC", amount: 1 }, { coin: "ETH", amount: 1 }],
+  );
+  assert.deepStrictEqual(
+    built.map((p) => p.time),
+    [90, 100],
+    "equal lengths still align on time",
+  );
+  assert.deepStrictEqual(
+    built.map((p) => p.price),
+    [11, 22],
+    "BTC held at 1 through t=90, not read as its t=0 self against ETH's t=90",
+  );
+}
+
+// No overlap at all is not a chart — two holdings whose histories never share
+// a moment cannot be summed, and inventing a window would be worse
+assert.strictEqual(
+  series(
+    {
+      BTC: [{ price: 1, time: 0 }, { price: 2, time: 10 }],
+      ETH: [{ price: 10, time: 50 }, { price: 20, time: 60 }],
+    },
+    [{ coin: "BTC", amount: 1 }, { coin: "ETH", amount: 1 }],
+  ),
+  null,
+  "disjoint histories → null",
+);
+
+/* ── the benchmark reads the same window ────────────────────────────────────
+ * `benchmarkPct` is a component method, but the honesty lives in the helper
+ * it now calls: the price at or before a moment, and null before the series
+ * begins rather than a first price that is not the window's.
+ */
+{
+  const bench = [
+    { price: 10, time: 0 },
+    { price: 20, time: 10 },
+    { price: 40, time: 20 },
+  ];
+  sandbox.__bench = bench;
+  assert.strictEqual(run("priceAtOrBefore(__bench, 10)"), 20, "exact moment");
+  assert.strictEqual(run("priceAtOrBefore(__bench, 15)"), 20, "held between quotes");
+  assert.strictEqual(run("priceAtOrBefore(__bench, 99)"), 40, "past the end holds");
+  assert.strictEqual(
+    run("priceAtOrBefore(__bench, -1)"),
+    null,
+    "before the series starts there is no honest price",
+  );
+}
+
+/* ── the worst fall ─────────────────────────────────────────────────────────
+ * The one thing the algorithm research left standing: 59 of 64 rule × coin
+ * pairs cut the drawdown, 28 of 64 beat holding. So this is the risk statement
+ * that goes beside a portfolio, and there are no buy or sell points.
+ */
+{
+  const dd = (prices) => {
+    sandbox.__dd = prices.map((price, i) => ({ price, time: i }));
+    return json("maxDrawdown(__dd)");
+  };
+
+  assert.strictEqual(
+    dd([100, 110, 120]),
+    null,
+    "a series that only rose has no fall to report — not a 0% one",
+  );
+  const one = dd([100, 200, 100]);
+  assert.strictEqual(Number(one.pct.toFixed(4)), -50, "half given back is −50%");
+  assert.strictEqual(one.from, 1, "measured from the peak");
+  assert.strictEqual(one.to, 2, "…to the low that followed it");
+
+  /* Peak-to-trough, not first-to-last: a portfolio that recovers has still
+   * had its fall, and that is the number worth knowing. */
+  const back = dd([100, 200, 120, 260]);
+  assert.strictEqual(Number(back.pct.toFixed(4)), -40, "a recovered fall still counts");
+
+  // The deeper of two falls wins, even when the shallower one comes later
+  const two = dd([100, 200, 100, 150, 120]);
+  assert.strictEqual(Number(two.pct.toFixed(4)), -50, "the deepest fall, not the latest");
+
+  // A later peak resets what the fall is measured against
+  const rising = dd([100, 90, 300, 150]);
+  assert.strictEqual(Number(rising.pct.toFixed(4)), -50, "measured from the highest peak before it");
+
+  assert.strictEqual(dd([100]), null, "one point is not a window");
+  assert.strictEqual(json("maxDrawdown(null)"), null, "no series → null");
+}
 
 /* ── buildPortfolioParts ────────────────────────────────────────────────── */
 // The per-coin values used to be summed and thrown away. They are what the
@@ -526,7 +669,7 @@ const parts = (histories, holdings) => {
 }
 
 {
-  // Trimming applies to the parts as well, or a young coin's band would be
+  // The window applies to the parts as well, or a young coin's band would be
   // drawn against days it did not exist for
   const built = parts(
     {
@@ -535,9 +678,44 @@ const parts = (histories, holdings) => {
     },
     [{ coin: "BTC", amount: 1 }, { coin: "ETH", amount: 1 }],
   );
-  assert.strictEqual(built.series.length, 2, "trimmed to the shortest");
+  assert.strictEqual(built.series.length, 2, "clipped to the overlap");
   built.parts.forEach((p) =>
-    assert.strictEqual(p.values.length, 2, `${p.coin} trimmed with it`),
+    assert.strictEqual(p.values.length, 2, `${p.coin} clipped with it`),
+  );
+}
+
+{
+  // The bands are sampled on the same grid as the line, so they still sum to
+  // it when the two coins are quoted at different rates
+  const built = parts(
+    {
+      BTC: [
+        { price: 1, time: 0 },
+        { price: 2, time: 10 },
+        { price: 3, time: 20 },
+        { price: 4, time: 30 },
+      ],
+      ETH: [
+        { price: 100, time: 20 },
+        { price: 200, time: 25 },
+        { price: 300, time: 30 },
+      ],
+    },
+    [{ coin: "BTC", amount: 1 }, { coin: "ETH", amount: 1 }],
+  );
+  built.series.forEach((pt, i) =>
+    assert.strictEqual(
+      built.parts.reduce((sum, p) => sum + p.values[i], 0),
+      pt.price,
+      "bands sum to the total at a mixed sampling rate",
+    ),
+  );
+  built.parts.forEach((p) =>
+    assert.strictEqual(
+      p.values.length,
+      built.series.length,
+      `${p.coin} has one value per point`,
+    ),
   );
 }
 
@@ -598,7 +776,10 @@ assert.ok(
 );
 assert.ok(csvHas("no exchange history"), "csv: states what it cannot know");
 assert.ok(csvHas("Nothing here is tax advice"), "csv: disclaimer present");
-assert.ok(csvHas("All amounts in USD"), "csv: currency stated");
+/* Was `All amounts in USD`, and that was a false claim rather than a wording
+ * choice: `paid` carried no currency, so a purchase entered in dollars was
+ * summed as euros under a header saying they were all euros. */
+assert.ok(csvHas("Totals are in USD"), "csv: currency of the totals stated");
 assert.ok(csvHas("FIFO"), "csv: cost-basis method stated");
 
 // Summary block
@@ -631,7 +812,7 @@ assert.ok(
 );
 const btcLot = csvLines.find((l) => l.startsWith("BTC,2024-03-05,"));
 assert.ok(btcLot, "csv: dated manual lot line");
-assert.ok(btcLot.endsWith(",long,manual"), "csv: an old lot is long term");
+assert.ok(btcLot.endsWith(",long,manual,"), "csv: an old lot is long term");
 const chainLot = csvLines.find((l) => l.includes("chain (estimated)"));
 assert.ok(chainLot.startsWith("BTC,,"), "csv: an undated lot leaves the date empty");
 assert.ok(chainLot.includes(",unknown,"), "csv: no date means no holding period");
@@ -644,6 +825,68 @@ assert.ok(
   "csv: names with commas/quotes escaped",
 );
 run('COIN_NAMES.BTC = "Bitcoin"');
+
+/* ── money entered in another currency ──────────────────────────────────────
+ *
+ * `paid` and `received` used to be bare numbers. Switching the display
+ * currency re-read every one of them in the new one — a lot entered as 15,000
+ * USD became 15,000 EUR — and the row P/L, the headline Unrealized, the
+ * chart's COST line and this file's own header all repeated it. They carry
+ * the currency they were entered in now, and anything wearing a different one
+ * is reported rather than summed.
+ */
+{
+  const rows = [
+    {
+      coin: "BTC",
+      amount: 1,
+      price: 40000,
+      value: 40000,
+      lots: [
+        { amount: 0.5, paid: 10000, time: 1709596800, source: "manual", currency: "USD" },
+        { amount: 0.5, paid: 9000, time: 1709596800, source: "manual", currency: "EUR" },
+      ],
+      sales: [],
+    },
+  ];
+  sandbox.__mixRows = rows;
+  const mix = run('buildPortfolioCsv(__mixRows, "USD")');
+  const line = (p) => mix.split("\n").find((l) => l.startsWith(p));
+
+  assert.strictEqual(
+    line("Cost basis (logged"),
+    "Cost basis (logged purchases),10000",
+    "csv: only the lots in the file's own currency are summed",
+  );
+  assert.ok(
+    mix.includes("were entered in a different currency"),
+    "csv: the header says what it left out",
+  );
+  assert.ok(
+    mix.includes("NOT in the totals"),
+    "csv: and says plainly that they are not in the totals",
+  );
+
+  // Both lots are still listed — dropping a purchase from a tax record
+  // because a display setting changed would be far worse
+  const lotRows = mix.split("\n").filter((l) => /^BTC,20/.test(l));
+  assert.strictEqual(lotRows.length, 2, "csv: every lot is listed whatever its currency");
+  const eur = lotRows.find((l) => l.includes(",EUR,"));
+  const usd = lotRows.find((l) => l.includes(",USD,"));
+  assert.ok(eur && usd, "csv: each lot names the currency it was paid in");
+  assert.ok(
+    eur.endsWith(",not in totals"),
+    "csv: the foreign lot is marked as excluded",
+  );
+  // A gain is a price minus a cost. Across two currencies there is no gain to
+  // state, so the columns are empty rather than a subtraction that isn't one.
+  assert.strictEqual(
+    eur.split(",")[8],
+    "",
+    "csv: no gain is computed across two currencies",
+  );
+  assert.ok(usd.split(",")[8] !== "", "csv: the matching lot still has its gain");
+}
 
 /* ── disposals ──────────────────────────────────────────────────────────── */
 

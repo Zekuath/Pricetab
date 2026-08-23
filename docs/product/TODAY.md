@@ -209,6 +209,84 @@ declared single purpose, to investment advice, in front of a reviewer already
 reading a scoring feature carefully. If it is ever built,
 `PRICETAB_COMPLIANCE.md` needs its section written **before** submission.
 
+### 9.7b Re-asked 22 Aug 2026, and re-measured rather than re-argued
+
+**Asked again:** "portföyde RSI çizgileri vs… traderlar ne kullanıyor… alım
+zamanı satım zamanı… algoritmik al-sat sinyali… en güvenilir algoritmik
+kaynakları araştır ve extension'a ekleyelim."
+
+Two new things, neither of which moves the conclusion — both of which harden it.
+
+**1. The literature now says it independently.** A study of BTC/USDT and
+ETH/USDT from 17 Aug 2017 to 31 Oct 2023 tested EMA crossover, RSI, Bollinger
+and MACD under White's reality check and a stepwise test, with 0.1% slippage
+and 0.03% commission, split out of sample at 20 Dec 2021: *"previously
+profitable technical approaches, observed prior to December 2021, generally
+failed to generate profits during the subsequent out-of-sample period"* and
+*"it is difficult to choose specialized trading strategies with out-of-sample
+profitability"*. That is 9.3's permutation result, reached by a different
+method on different data by people with no stake in this repository.
+
+**2. The textbook labels are wrong in the direction that matters, live.**
+Re-run on 22 Aug against `api.exchange.coinbase.com` daily closes (episodes =
+the first day of each run, forward horizon 30 days, median and up-rate against
+each coin's own ordinary 30 days):
+
+| coin | closes | after RSI>70 ("sell") | after RSI<30 ("buy") | ordinary 30d |
+|---|---:|---|---|---|
+| BTC | 4,053 | n=92 · **+10.4%** · up 71% | n=40 · +4.3% · up 60% | +2.9% · up 57% |
+| ETH | 3,748 | n=86 · +1.8% · up 52% | n=43 · **−5.4%** · up 35% | +1.5% · up 53% |
+| SOL | 1,894 | n=31 · **+6.0%** · up 55% | n=19 · **−5.8%** · up 37% | −1.0% · up 48% |
+| LINK | 2,615 | n=45 · **+5.0%** · up 60% | n=22 · +0.5% · up 50% | +0.4% · up 51% |
+| DOGE | 1,908 | n=28 · −7.9% · up 46% | n=29 · +1.8% · up 55% | −4.2% · up 41% |
+| XRP | 1,138 | n=9 · −5.2% · up 33% | n=11 · −0.4% · up 45% | −2.8% · up 42% |
+
+**"Overbought" beat the coin's ordinary month on four of six**, and on BTC by
+7.5 percentage points over 92 episodes. **"Oversold" was worse than ordinary on
+two of six**, including ETH by 6.9pp over 43 episodes. The sign flips by coin,
+which is 9.3's finding again: a rule whose direction depends on which coin you
+ran it on is not a rule. And the smallest cells are n=9 and n=11 — over
+**eleven years**. On the 721 candles the app can fetch cheaply it is 3 to 9,
+exactly as 9.6 said.
+
+**3. What traders actually use, and the split that matters.** The retail set is
+RSI, EMA, MACD, Bollinger and volume profile. The reported institutional set is
+different: roughly 78% use technical analysis, but primarily **volume-based** —
+VWAP, volume profile, order flow — alongside fundamentals, and the 200-day
+moving average as a regime line rather than as an entry. That distinction is
+useful here: VWAP is not a prediction, it is **a price that happened**, and the
+candles this app already fetches from `api.exchange.coinbase.com` carry the
+volume to compute it. A reference line saying "the volume-weighted average of
+this window is $X, you are 4% above it" claims nothing about tomorrow.
+
+**Recommendation unchanged, and now with a shape.** 9.7.4 still holds: no buy
+points, no sell points. What is buildable and true — **three of the four are
+now built**:
+
+1. ~~**The base-rate panel**~~ — **built 22 Aug**, `src/baserates.js`, opened
+   with "B". 9.6's spec exactly: state, episode count, what followed, and the
+   sample size beside every figure at almost the same weight. `edge` is
+   suppressed under `BASE_RATE_MIN_EPISODES` (12), so the panel's most
+   spectacular row on live BTC — RSI>80, +15.0% median, up 90% — is the one it
+   refuses to draw a comparison from, because n=10. `dailyRsi` was verified
+   against an independent implementation on 1,726 real values with a worst
+   disagreement of **0.00e+0**. Cost measured in a browser: **0 requests before
+   the panel is opened, 7 after.**
+2. ~~**Drawdown in the portfolio**~~ — **built 22 Aug**, `maxDrawdown` in
+   `portfolio.js`, shown as "Worst fall" beside the other stats. Peak-to-trough
+   inside the window on screen, from a series already in memory; a series that
+   only rose reports nothing rather than "0%".
+3. **VWAP as a factual reference** — still open. What the professionals in (3)
+   actually read, and a statement about the past.
+4. ~~**An alert on the portfolio total**~~ — **built 22 Aug**, a third alert
+   `kind`. "Tell me when what I hold is worth less than X" is about the
+   person's own money and needs no claim about the market at all. Checked
+   **live only**, and the panel says so: the other two kinds look back through
+   a week of candles, and a total cannot do that honestly because the amounts
+   held are only known as they are now — a holding added yesterday would be
+   backdated into last week's total and the app would announce a crossing that
+   never happened.
+
 ### 9.8 Where the working is
 
 The eight price files, the rule library, the backtester and the four robustness
@@ -253,6 +331,246 @@ directory — about 300 lines of Python and 3 MB of candles.
 - **`moveNews` vs `moveHeadlines` — investigated, not a duplication.** Two
   separate features (chart marks with an archive card; a headline line under
   the price). Left alone.
+
+---
+
+## 10. The portfolio: what could be better
+
+**Asked:** "portföy kısmına yapılabilecek iyileştirmeleri ve özellik
+güncellemesi ne yapabiliriz onu araştıralım." Then, on the list that came
+back: "sırayla."
+
+**Status: remaining — the four things that were wrong are fixed and covered;
+the feature ideas below are not started.**
+
+The research found three defects before it found a single improvement, which
+is why the order ran the way it did.
+
+**10.1 The value chart summed series by position.** `buildPortfolioParts`
+trimmed every history to the shortest and added them index for index. That is
+only correct while two series are sampled at the same rate, and they routinely
+are not. Measured against the live API on 22 Aug: Coinbase's `period=all`
+spaces its points across each coin's own lifetime — BTC 351 points **13.19
+days** apart, SUI 332 at **3.64** — so a BTC+SUI portfolio added BTC's
+2014-08-18 price to SUI's 2023-05-04 price at the same x and took its dates
+from whichever holding happened to be first in the array. Kraken-routed coins
+(XMR, PI, USDE, XAUT, OKB, MNT, and anything the runtime failover has moved)
+match Coinbase on *no* range: 60/96/168/180 points against 359/300/306/311, so
+BTC + XMR on a day range summed 7.7 hours of BTC with 24 hours of XMR.
+`benchmarkPct` inherited it and was the loudest symptom — it read BTC as
+**+15,839.5%** where BTC did **+190.2%** over the window on screen, a "vs BTC"
+gap out by about 15,650 percentage points.
+
+Now: the window is the **intersection**, the grid is the densest series' own
+timestamps inside it, and a sparse series **holds its last quote** instead of
+being interpolated. `tests/test-portfolio.js` covers it; with the old
+derivation restored the new case fails at `[10,20,30]` against `[20,25,30]`.
+
+**10.2 A cost basis had no currency.** `paid` and `received` were bare
+numbers, so switching the display currency re-read every one of them in the
+new one: 15,000 USD became 15,000 EUR, and the row P/L, the headline
+Unrealized, the chart's COST line and the CSV's own `All amounts in EUR`
+header all repeated it. They are stamped at entry now, and anything in a
+different currency is **set aside rather than converted** — shown in its own
+currency, named on the row and in a note, and out of every total. Converting
+at today's rate was considered and rejected: it states a gain that moves on
+days the purchase did not. A lot with no currency is one recorded before the
+field existed and is read as "whatever is on screen", which is how it always
+behaved — the alternative is inventing a currency for someone's data. Proved
+by reverting the filter and watching the CSV total go from 10,000 to 19,000.
+
+**10.3 The total and the change beside it covered different portfolios.** The
+header prints every holding; the percentage next to it came from the chart,
+which draws the twelve biggest and silently drops anything no exchange quotes
+a series for. `chartCoverage` now names the count, the share of value, the
+coins it cannot draw and why. `test-polish-render.js` §13, with stETH priced
+and refused a history, which is the live shape.
+
+**10.4 Nothing threw data away with a way back.** Removing a holding took its
+purchases and its recorded sales with it; Import replaced the whole list. Both
+were one click, no confirmation, no undo, on the one screen holding numbers
+that exist nowhere else. Both now snapshot the previous list and offer it back
+through the same bar `alerts.js` uses for a removed target. §12 asserts the
+*records* come back, not just the coin — a restore with an empty lot list
+looks identical on the row and would have eaten the basis.
+
+**What was found and deliberately not built.** In rough order of value:
+a concentration note ("62% is in one coin"), which is one line off data
+`donutSlices` already has and is still open in `TODO.md`; realized P/L for the
+current tax year, one filter over `sales`; merge-instead-of-replace on import;
+a cost-basis method choice (FIFO/LIFO/HIFO) for the report, which is a
+reporting method and not the country-specific tax computation `TODO.md`
+declined; and folding `matches()` into `quickSwitchMatches`, which is the
+third copy of coin search and the reason the four tokens `sanitizePortfolio`
+accepts but `SUGGESTED_COINS` omits (STETH, WBETH, FDUSD, TUSD) can be added
+by watching an address and never by hand. Smaller: histories are loaded once
+per coins|currency|period signature and never refreshed while the view is
+open, so the chart's last point stands still under a total that moves every
+60s; `donutSlices` runs twice per render.
+
+**A stale claim, not a missing feature.** `CLAUDE.md`, this file's Item 7 and
+a comment in `app.js`'s `newsWanted` all describe a headline strip in the
+portfolio. There is no `renderNews` in `src/`. `test-polish-render.js` §10
+says why in its own first line — *"The panel replaced a strip inside the
+portfolio"* — so the strip was superseded, not lost. All three claims are
+corrected rather than the feature rebuilt.
+
+---
+
+## 11. Two errors from the extension console
+
+**Asked:** pasted from `chrome://newtab` — *"Unchecked runtime.lastError: Only
+permissions specified in the manifest may be requested"* and a CORS block on
+`coinbase.com/api/v2/prices/BTC-USD/historic?period=hour`.
+
+**Status: remaining — the code defect is fixed; one of the two is not a bug
+and one needs a reload that is yours to do.**
+
+**The CORS block is the failover working.** Coinbase sends
+`Access-Control-Allow-Origin` on everything it serves, successes and 404s
+alike, so a response without it did not come from the API. `noteProviderFailure`
+sends that coin to Kraken for the rest of the tab and the chart draws. Nothing
+to fix — but it does mean the machine that produced this console is being
+served by Kraken, which is exactly the mixed-sampling case §10.1 was about.
+
+**The permission error has two halves.** The origins asked for are the six in
+`NEWS_SOURCE_ORIGINS`, and all six are in `manifest.json` — but
+`optional_host_permissions` was added in `8599cc3`, the current HEAD, and an
+unpacked extension keeps the manifest it was loaded with. **Reload PriceTab in
+`chrome://extensions` and the refusal goes.** What was a real defect is that
+Chrome called it *unchecked*: every callback said
+`Boolean(granted) && !chrome.runtime.lastError`, and `&&` short-circuits — on
+a refusal `granted` is `undefined`, so the right-hand side never ran and the
+one line written to check the error never read it. `readGranted` in `news.js`
+reads it first, unconditionally, in all three callbacks.
+
+---
+
+## 12. A general improvement pass, and what the sector is doing
+
+**Asked:** "genel bir iyileştirme çalışması yapalım. Ve özellik eklemeleri
+düşünelim araştıralım sektördeki yakınları."
+
+**Status: remaining — two measured defects fixed and covered; the feature
+findings below are research, not tasks.**
+
+### 12.1 What a new tab actually costs (measured, throwaway probes)
+
+Real Chromium, network stubbed, defaults, nothing typed:
+
+| | |
+|---|---|
+| chart on screen | **~55 ms** (painted from the persisted cache) |
+| requests, cold install | **10** |
+| requests, second tab 15 s later | 0 |
+| coin switch | 7 (spot + hour + the five prefetched ranges) |
+| range switch | **0** — the prefetch does its job |
+| localStorage | 97.5 KB in 4 keys, 88 KB of it the price cache |
+| shipped zip | 462 KB at 1.4.0, against 232 KB at 1.3.0 |
+
+Two things were checked and found **not** broken, having first looked broken in
+a bad probe: the arrow keys and 1–6 work on a tab nobody has clicked, and the
+Fear & Greed / market widgets are properly cached across a coin switch. Both
+early readings were the stub's fault — an invalid widget shape throws in the
+fetcher, so nothing is cached and every call looks like a miss.
+
+### 12.2 Seven seconds of blank tab behind a blocked API — fixed
+
+The console pasted in item 11 was the clue. `fetchWithRetry` climbs 1s → 2s →
+4s before giving up, which is right for a 500 or a 429 — the server answered,
+and waiting is how you let it recover. It was also being spent on a
+`TypeError`, which means *no response arrived at all*: a CORS wall, a region
+block, something in front of the API. That answers identically four seconds
+later, and every price request here can fail over to Kraken.
+
+Measured in a real browser with Coinbase refusing everything:
+
+| | before | after |
+|---|---|---|
+| price line on screen | **7,131 ms** | **1,063 ms** |
+| Coinbase attempts before failover | 8 | 4 |
+
+For those seven seconds the tab read `BTC PRICE` with nothing under it — no
+price, no chart, no error. `NETWORK_ERROR_RETRIES = 1` keeps one retry, because
+a real blip does recover inside a second; the second and third were just the
+wall again. `tests/test-api.js` asserts the mechanism (2 calls and 1s of
+backoff for a `TypeError`, 4 and 7s for a 5xx), proved by restoring the old cap.
+
+### 12.3 One 30-second TTL for every range — fixed
+
+`CACHE_TTL` covered spot and every history series alike, so a **year** chart was
+revalidated on every new tab and every coin switch. The file already knew
+better one screen up: `WIDGET_CACHE_TTL` gives Fear & Greed an hour and open
+interest five minutes.
+
+Measured point spacing on the live API (22 Aug): hour ~10s, day ~4.8m, week
+~33m, month ~2.4h, year ~1.19d, all ~13.2d. Each `HISTORY_TTL` is one point's
+worth of that series' own time, capped at six hours, with the 1H range keeping
+the 30s floor.
+
+| tab opened | before | after |
+|---|---|---|
+| 15 s later | 0 | 0 |
+| 2 min later | 8 | **3** |
+| 10 min later | 9 | **5** |
+| 45 min later | 9 | **6** |
+
+Time to chart is unchanged (~60 ms) — this was never a speed problem on
+screen. What it saves is load on an API that is already refusing some people.
+
+### 12.4 The sector, re-checked (22 Aug 2026)
+
+`MONETIZATION.md` §2b was researched July 2026 and says to re-verify. Current
+Chrome Web Store figures:
+
+| | users | rating | what it has |
+|---|---|---|---|
+| **ChartsTab** (closest) | **1,000** | 5.0 (99) | 500+ Binance pairs, sparklines, a search box, a floating widget on any page — and asks to "access website content" |
+| Crypto Pulse | 127 | 5.0 (2) | 3,000+ coins, metals, weather/notes/tasks/calculator, RSS. **56 MB**. Collects location + user activity |
+| Crypto Price Tracker | 58 | 3.8 (13) | 10,000+ coins, custom contract addresses. Handles PII **and financial information** |
+
+**The headline finding contradicts `TODO.md`'s standing assumption.** Coin
+coverage is listed there as "our biggest funnel gap" — but the extension with
+10,000 coins has **58 users** and the one with 3,000 has **127**, while the
+one that wins the category carries **500 pairs** and is otherwise simpler than
+PriceTab. Coverage is not what sells this category. It is still worth having
+for the *portfolio*, where you cannot track what you do not support — that is
+a retention argument, not an acquisition one, and the roadmap should say so.
+
+**The search box is settled, and the answer is no.** Since Chrome 27 an
+extension new-tab page cannot take focus from the omnibox, so the address bar
+is still where typing goes; extensions that fought this are what the
+long-standing complaints are about. ChartsTab's search box is a redundancy,
+not a feature we lack.
+
+**Chrome's new-tab-hijack block does not touch us.** The August 2026 change
+(`kBlockDseNtpOverrideExtensionsOnUnmanagedDevices`) blocks *policy-installed*
+extensions from overriding the new tab on unmanaged devices; user-installed
+Web Store extensions are explicitly unaffected. Not a risk. Not yet in stable.
+
+**PriceTab does not appear in any of these searches.** That is consistent with
+`TODO.md`'s own reading — installs are the bottleneck and the local build is
+ahead of the store — and it is the finding no feature fixes.
+
+### 12.5 Features worth considering, in order of what the evidence supports
+
+Nothing here is started.
+
+1. **Nothing from the competitors is missing.** Alerts, portfolio, cost basis,
+   charts, multi-currency, themes — PriceTab has all of it and more. The
+   calls board has no equivalent anywhere in the category.
+2. The two things ChartsTab has that we do not both cost the promise: the
+   floating widget needs `content_scripts` on every site, and the search box
+   is answered above.
+3. **Coverage, reframed as a portfolio feature.** `SUGGESTED_COINS` is 81 and
+   `sanitizePortfolio` already accepts a wider set. The Coinlore price-only
+   tier in `TODO.md` §3.3 is the cheapest version and needs no new host.
+4. Smaller, and from the portfolio pass in item 10: the concentration note,
+   realized P/L for the current tax year, merge-on-import, FIFO/LIFO/HIFO for
+   the report.
+5. **Standing debt, unchanged:** `app.js` 5,541 lines and `chart.js` 5,176
+   against a ~800 guideline. Their styled-components are already split out, so
+   the next cut is behavioural and genuinely risky.
 
 ---
 

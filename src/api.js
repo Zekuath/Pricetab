@@ -38,6 +38,44 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /* CACHE MANAGEMENT */
 const CACHE_TTL = 30000; // 30 seconds cache lifetime
+
+/* One TTL for every series was wrong in the same way one TTL for every widget
+ * would be, and the file already knows that — `WIDGET_CACHE_TTL` is one screen
+ * up, giving Fear & Greed an hour and open interest five minutes.
+ *
+ * A history series is only out of date once the provider could have published
+ * another point, and how long that takes is a property of the range. Measured
+ * against the live Coinbase API on 22 Aug 2026, points per window:
+ *
+ *   hour 359 (~10s apart) · day 300 (~4.8m) · week 306 (~33m)
+ *   month 311 (~2.4h) · year 305 (~1.19d) · all 351 (~13.2d)
+ *
+ * So each TTL below is one point's worth of that series' own time, capped at
+ * six hours — a chart that has not visibly moved in six hours is still a chart
+ * somebody may be staring at, and "it looks frozen" is worse than one extra
+ * request. The 1H range keeps the 30s floor: it is the one a tab opens on and
+ * the one people watch tick.
+ *
+ * What this buys, measured on a cold open with everything default: **10
+ * requests, 5 of them re-fetching day/week/month/year/all** — series that
+ * cannot have changed — and the same 5 again on every coin switch. The chart
+ * already paints instantly from the persisted cache, so what this saves is
+ * not time on screen: it is load on an API that is already refusing some
+ * people (see the `NETWORK_ERROR_RETRIES` note).
+ */
+const HISTORY_TTL = {
+  hour: 30000, // 30s — the floor, not the point spacing
+  day: 300000, // 5 min
+  week: 1800000, // 30 min
+  month: 7200000, // 2 h
+  year: 21600000, // 6 h (cap)
+  all: 21600000, // 6 h (cap)
+};
+
+// A series goes stale when another point could exist; everything else — a spot
+// price above all — keeps the flat 30 seconds.
+const cacheTtlFor = (period, type) =>
+  (type === "history" && HISTORY_TTL[period]) || CACHE_TTL;
 const CACHE_CLEANUP_INTERVAL = 600000; // 10 minutes
 const MAX_CACHED_COINS = 10; // Only cache first 10 coins in rotation
 const MAX_COINS = 20; // Hard limit on coin list size
@@ -147,7 +185,7 @@ const getCachedData = (coin, period, currency, type) => {
   return {
     data: cached.data,
     age: age,
-    isStale: age > CACHE_TTL,
+    isStale: age > cacheTtlFor(period, type),
   };
 };
 
@@ -269,6 +307,10 @@ const cleanupCache = () => {
   keysToDelete.forEach((key) => cache.delete(key));
 };
 
+// How many times a *network-level* failure is worth repeating. See the note
+// in the catch below: this is the wall case, not the flaky-server case.
+const NETWORK_ERROR_RETRIES = 1;
+
 const fetchWithRetry = async (url, options = {}, maxRetries = 3) => {
   let lastError;
 
@@ -300,8 +342,30 @@ const fetchWithRetry = async (url, options = {}, maxRetries = 3) => {
         throw error;
       }
 
-      // Don't retry on the last attempt
-      if (attempt === maxRetries) {
+      /* A request that never reached the server is not worth waiting on.
+       *
+       * `TypeError` here means no response at all — a CORS wall, a region
+       * block, something in front of the API, DNS, offline. The ladder below
+       * was built for a 500 or a 429, where the server answered and waiting
+       * genuinely helps. A wall answers the same way in four seconds as it did
+       * in zero, and the caller usually has somewhere else to go: every price
+       * request can fail over to Kraken.
+       *
+       * Measured with Coinbase refusing everything: 4 attempts over **7.0s**
+       * per endpoint before the failover was even reached, so the chart took
+       * **7,131ms** to draw where a working Coinbase draws it in 54ms — seven
+       * seconds of a new tab reading "BTC PRICE" with nothing under it and no
+       * error. That is what the reported CORS block looked like from the other
+       * side of the screen.
+       *
+       * One retry is kept, because a real network blip does recover inside a
+       * second; a second and third are just the wall again.
+       */
+      const cap =
+        error.name === "TypeError"
+          ? Math.min(maxRetries, NETWORK_ERROR_RETRIES)
+          : maxRetries;
+      if (attempt >= cap) {
         break;
       }
 
@@ -1096,6 +1160,139 @@ const fetchKrakenCandles = async (coin, period, currency) => {
  * Rows arrive as [time, low, high, open, close, volume], newest first.
  */
 const CANDLES_API = "https://api.exchange.coinbase.com/products/";
+
+/* ── DEEP DAILY CLOSES ──────────────────────────────────────────────────────
+ * Years of daily closes for one coin, for the base-rate panel.
+ *
+ * **Why this and not the series already on screen.** `calculateRSI` samples
+ * the visible range to about fifty points, so "RSI 14" spans sixteen minutes
+ * on a 1H chart and three and a half years on ALL — measured on live BTC at
+ * one instant the six ranges read 63.8 / 63.9 / 82.2 / 80.9 / 37.8 / 54.6
+ * against 80.5 for RSI 14 on daily closes, a 43-point spread on the same coin
+ * at the same moment (`docs/product/TODAY.md` §9.5). A statement about how
+ * often something has happened has to be computed on one fixed clock, and the
+ * daily close is the clock every published figure uses.
+ *
+ * **Why the depth matters more than it looks.** Kraken's `interval=1440` caps
+ * at 721 rows — about two years — and inside two years RSI crosses 70 three to
+ * nine times. A panel whose every answer is "n=4" is a panel that can never
+ * say anything. Paging this endpoint reaches 2015: measured 22 Aug 2026, BTC
+ * 4,053 closes, ETH 3,748, SOL 1,894, and RSI>70 gives n=92 / 86 / 31. That is
+ * the difference between a feature and a placeholder.
+ *
+ * **The cost, measured, and why it is bounded.** 17 requests, 4.7 seconds and
+ * 237 KB for BTC — roughly 97 KB in `localStorage` per coin. Fine for the two
+ * or three coins somebody actually studies and absurd for 81, so: fetched only
+ * when the panel is opened, one coin at a time, `DAILY_CLOSES_MAX_COINS` kept,
+ * newest first. The host is already in `ALLOWED_HOSTS` — it serves the
+ * crosshair's candles — so this adds no remote host and no permission.
+ *
+ * A daily close changes once a day, so the TTL is twelve hours: long enough
+ * that reopening the panel is free, short enough that today's bar arrives.
+ */
+const DAILY_CLOSES_CACHE_KEY = "crypto_chart_daily_closes";
+const DAILY_CLOSES_TTL = 43200000; // 12h
+const DAILY_CLOSES_MAX_COINS = 3;
+const DAILY_CLOSES_PAGE_DAYS = 290; // the endpoint returns at most 300 rows
+const DAILY_CLOSES_MAX_PAGES = 20; // ~15 years, and a hard stop on the loop
+const DAILY_CLOSES_PAGE_GAP = 120; // ms between pages — be kind to the host
+const DAILY_CLOSES_PERSIST_DELAY = 1000;
+
+const dailyClosesCache = new Map(); // COIN → { t, closes: number[] }
+let dailyClosesPersistTimer = null;
+const dailyClosesInFlight = new Map();
+
+const persistDailyCloses = () => {
+  clearTimeout(dailyClosesPersistTimer);
+  dailyClosesPersistTimer = setTimeout(() => {
+    try {
+      const now = Date.now();
+      const entries = Array.from(dailyClosesCache.entries())
+        .filter(([, v]) => now - v.t <= DAILY_CLOSES_TTL)
+        .sort((a, b) => b[1].t - a[1].t)
+        .slice(0, DAILY_CLOSES_MAX_COINS);
+      localStorage.setItem(DAILY_CLOSES_CACHE_KEY, JSON.stringify(entries));
+    } catch (error) {
+      // Storage full or unavailable — the next open simply fetches again
+    }
+  }, DAILY_CLOSES_PERSIST_DELAY);
+};
+
+const hydrateDailyCloses = () => {
+  try {
+    const saved = JSON.parse(localStorage.getItem(DAILY_CLOSES_CACHE_KEY));
+    if (!Array.isArray(saved)) return;
+    const now = Date.now();
+    for (const entry of saved) {
+      if (!Array.isArray(entry)) continue;
+      const [coin, value] = entry;
+      if (typeof coin !== "string" || !value || typeof value.t !== "number") continue;
+      if (value.t > now || now - value.t > DAILY_CLOSES_TTL) continue;
+      // Stored is untrusted: a hand-edited file must not be able to put a
+      // string or a NaN into a median
+      const closes = Array.isArray(value.closes)
+        ? value.closes.map(Number).filter((n) => isFinite(n) && n > 0)
+        : [];
+      if (closes.length > 50) dailyClosesCache.set(coin, { t: value.t, closes });
+    }
+  } catch (error) {
+    // Corrupt entry — the next persist overwrites it
+  }
+};
+
+hydrateDailyCloses();
+
+/* Pages backwards until the endpoint stops answering or the cap is reached.
+ *
+ * Always in USD. A base rate is a count of how often something happened, and
+ * that count is a property of the market, not of the currency somebody is
+ * reading it in — converting every close through today's exchange rate would
+ * change the numbers without changing what happened.
+ */
+const fetchDailyCloses = async (coin) => {
+  const hit = dailyClosesCache.get(coin);
+  if (hit && Date.now() - hit.t < DAILY_CLOSES_TTL) return hit.closes;
+  const running = dailyClosesInFlight.get(coin);
+  if (running) return running;
+
+  const run = (async () => {
+    const byTime = new Map();
+    let end = new Date();
+    for (let page = 0; page < DAILY_CLOSES_MAX_PAGES; page++) {
+      const start = new Date(
+        end.getTime() - DAILY_CLOSES_PAGE_DAYS * 86400000,
+      );
+      const url =
+        `${CANDLES_API}${encodeURIComponent(coin)}-USD/candles` +
+        `?granularity=86400&start=${start.toISOString()}&end=${end.toISOString()}`;
+      let rows;
+      try {
+        rows = await fetchWithRetry(url, {}, 1).then((r) => r.json());
+      } catch (error) {
+        break; // whatever was collected is still worth using
+      }
+      if (!Array.isArray(rows) || !rows.length) break;
+      for (const row of rows) {
+        const time = Number(row[0]);
+        const close = Number(row[4]);
+        if (isFinite(time) && isFinite(close) && close > 0) byTime.set(time, close);
+      }
+      end = start;
+      if (page + 1 < DAILY_CLOSES_MAX_PAGES) await sleep(DAILY_CLOSES_PAGE_GAP);
+    }
+    const closes = Array.from(byTime.keys())
+      .sort((a, b) => a - b)
+      .map((t) => byTime.get(t));
+    // Under a year of history cannot carry a base rate worth printing
+    if (closes.length < 200) return null;
+    dailyClosesCache.set(coin, { t: Date.now(), closes });
+    persistDailyCloses();
+    return closes;
+  })().finally(() => dailyClosesInFlight.delete(coin));
+
+  dailyClosesInFlight.set(coin, run);
+  return run;
+};
 const ohlcCache = new Map(); // "COIN-period-currency" → { data, timestamp }
 // Requests in flight per key, so concurrent readers of a cold key share one
 const ohlcInFlight = new Map();

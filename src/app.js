@@ -138,6 +138,10 @@ class CryptoChart extends PureComponent {
        * inside another view: headlines are something you go and read, and the
        * ticker can only be read in the order it scrolls past. */
       showNews: false,
+      /* "Has this happened before?" — the base-rate panel ("B"). Its data is
+       * years of daily closes and costs about seventeen requests, so nothing is
+       * fetched until this is true. */
+      showBaseRates: false,
       newsSources: loadNewsPanelSources(), // { source: false } — absent is on
       newsPanelScope: loadNewsPanelFilter(), // its own scope, not the ticker's
       // A real in-flight flag. What stood in for it was `newsItems.length === 0`,
@@ -938,6 +942,9 @@ class CryptoChart extends PureComponent {
                     // each acquisition with this disposal
                     matched,
                     time: Math.floor(Date.now() / 1000),
+                    // Proceeds and the basis it consumed are both in the
+                    // currency that was on screen when it was recorded
+                    currency: prevState.currency,
                   },
                 ],
               }
@@ -980,6 +987,9 @@ class CryptoChart extends PureComponent {
                 paid: cost,
                 time: Math.floor(Date.now() / 1000),
                 source: "manual",
+                // What `paid` is a number of. Without it, switching the
+                // display currency re-read every basis in the new one.
+                currency: prevState.currency,
               },
             ],
           };
@@ -1023,7 +1033,7 @@ class CryptoChart extends PureComponent {
                   ...deltas,
                 ]
               : deltas;
-          return buildLotsFromDeltas(all, priceAt);
+          return buildLotsFromDeltas(all, priceAt, this.state.currency);
         }
       }
       if (!(balance > 0)) return [];
@@ -1034,6 +1044,9 @@ class CryptoChart extends PureComponent {
           paid: price != null ? price * balance : 0,
           time: nowSec,
           source: "chain",
+          // `priceAt` priced this in the display currency, so that is what
+          // `paid` is a number of
+          currency: this.state.currency,
         },
       ];
     });
@@ -1328,6 +1341,9 @@ class CryptoChart extends PureComponent {
         } else if (this.state.showQuickSwitch) {
           e.preventDefault();
           this.setState({ showQuickSwitch: false, quickSwitchCompare: false });
+        } else if (this.state.showBaseRates) {
+          e.preventDefault();
+          this.toggleBaseRates();
         } else if (this.state.showNews) {
           e.preventDefault();
           this.toggleNews();
@@ -1401,6 +1417,21 @@ class CryptoChart extends PureComponent {
       ) {
         e.preventDefault();
         this.toggleNews();
+        return;
+      }
+
+      /* B opens the base rates for the coin on screen. Same exclusions as the
+       * other panels: one card in the middle of the screen at a time. */
+      if (
+        (e.key === "b" || e.key === "B") &&
+        !this.state.showPortfolio &&
+        !this.state.showSettings &&
+        !this.state.alertsView &&
+        !this.state.showNews &&
+        !this.state.showQuickSwitch
+      ) {
+        e.preventDefault();
+        this.toggleBaseRates();
         return;
       }
 
@@ -1572,7 +1603,10 @@ class CryptoChart extends PureComponent {
             created: Date.now(),
             // Where the price was when this was set, so the panel can show
             // how far it has come rather than only how far is left
-            startPrice: this.alertPriceFor(coin, prev),
+            startPrice:
+              kind === "portfolio"
+                ? this.portfolioTotalFrom(this.alertPriceMap(prev))
+                : this.alertPriceFor(coin, prev),
             triggeredAt: null,
             hitPrice: null,
           },
@@ -1592,7 +1626,10 @@ class CryptoChart extends PureComponent {
             ? {
                 ...a,
                 created: Date.now(),
-                startPrice: this.alertPriceFor(a.coin, prev),
+                startPrice:
+                  a.kind === "portfolio"
+                    ? this.portfolioTotalFrom(this.alertPriceMap(prev))
+                    : this.alertPriceFor(a.coin, prev),
                 triggeredAt: null,
                 hitPrice: null,
               }
@@ -1618,6 +1655,22 @@ class CryptoChart extends PureComponent {
       return entry && isFinite(entry.price) && entry.price > 0
         ? entry.price
         : null;
+    });
+
+    /* Prices for everything held, in the shape `portfolioTotalFrom` wants.
+     * Built out of `alertPriceFor`, so the active coin still contributes the
+     * chart's own live value and everything else comes from the ticker
+     * snapshot — no request, and one definition of "the price" rather than
+     * two that can disagree. */
+    _defineProperty(this, "alertPriceMap", (state) => {
+      const s = state || this.state;
+      const prices = {};
+      for (const h of s.portfolio || []) {
+        if (!h || !h.coin) continue;
+        const price = this.alertPriceFor(h.coin, s);
+        if (price != null) prices[h.coin] = price;
+      }
+      return prices;
     });
 
     _defineProperty(this, "handleRemoveAlert", (id) => {
@@ -1769,7 +1822,7 @@ class CryptoChart extends PureComponent {
       ) {
         prices[activeCoin] = Number(this.state.currentValue);
       }
-      const watched = alertCoinsToWatch(alerts, currency);
+      const watched = alertCoinsToWatch(alerts, currency, this.state.portfolio);
       // Percent targets compare against the 24h change, which the ticker
       // snapshot already carries — no request of their own
       const changes = {};
@@ -1796,6 +1849,7 @@ class CryptoChart extends PureComponent {
         currency,
         candlesByCoin,
         changes,
+        this.portfolioTotalFrom(prices),
       );
       if (!fired.length) return;
       // Record when it was actually hit, not when we noticed, and what it was
@@ -1815,6 +1869,30 @@ class CryptoChart extends PureComponent {
         saveAlerts(updated);
         return { alerts: updated, firedAlerts: [...prev.firedAlerts, ...fired] };
       });
+    });
+
+    /* What everything held is worth right now, from the prices this check has
+     * already gathered — no request of its own.
+     *
+     * Null rather than a partial sum when a held coin has no price: a total
+     * missing one holding is a smaller number than the truth, and a target
+     * that fires because a price was briefly unavailable is a target that
+     * announced something that did not happen. `holdingAmount` covers the
+     * hand-entered part plus every watched address, and lives in
+     * `portfolio.js` — which loads after this file, so this may only be called
+     * at runtime, never at module level. */
+    _defineProperty(this, "portfolioTotalFrom", (prices) => {
+      const holdings = this.state.portfolio;
+      if (!holdings || !holdings.length) return null;
+      let total = 0;
+      for (const h of holdings) {
+        const amount = holdingAmount(h);
+        if (!(amount > 0)) continue;
+        const price = Number(prices ? prices[h.coin] : NaN);
+        if (!isFinite(price) || price <= 0) return null;
+        total += price * amount;
+      }
+      return total > 0 ? total : null;
     });
 
     /* What price, 24h move and market cap we currently know for every
@@ -2052,12 +2130,18 @@ class CryptoChart extends PureComponent {
     });
 
     /* Who wants the feed. Three consumers now — the scrolling row, the
-     * move-headlines line under the price, and the portfolio's own strip —
-     * and the loader and the poller have to agree about it or one of them is
-     * always wrong. That was not hypothetical: the poller once asked only
-     * about the row, so a tab with headlines on and the ticker off made no
-     * news request at all on load. Two copies of the condition became three,
-     * which is where a condition stops being a condition and becomes a name. */
+     * move-headlines line under the price, and the news panel — and the loader
+     * and the poller have to agree about it or one of them is always wrong.
+     * That was not hypothetical: the poller once asked only about the row, so
+     * a tab with headlines on and the ticker off made no news request at all
+     * on load. Two copies of the condition became three, which is where a
+     * condition stops being a condition and becomes a name.
+     *
+     * It named "the portfolio's own strip" as the third until 22 Aug 2026.
+     * That strip was replaced by the panel and the comment outlived it — as
+     * did the same claim in `CLAUDE.md` and in `docs/product/TODAY.md`. A
+     * comment naming a caller that no longer exists is worse than no comment:
+     * it is the thing the next reader trusts instead of grepping. */
     _defineProperty(this, "newsWanted", () =>
       Boolean(
         this.state.newsTicker ||
@@ -2198,6 +2282,13 @@ class CryptoChart extends PureComponent {
           this.startNewsTicker();
         },
       );
+    });
+
+    /* The base-rate panel. Nothing is fetched until it opens: the deep daily
+     * series behind it is about seventeen requests and 237 KB, which is right
+     * for a coin somebody is studying and absurd for all 81. */
+    _defineProperty(this, "toggleBaseRates", () => {
+      this.setState((prev) => ({ showBaseRates: !prev.showBaseRates }));
     });
 
     /* The headline row's own list. "My coins" is the list on the chart; "what
@@ -3854,6 +3945,12 @@ class CryptoChart extends PureComponent {
             onClose: this.toggleNews,
           }),
 
+        this.state.showBaseRates &&
+          React.createElement(BaseRatesPanel, {
+            coin: activeCoin,
+            onClose: this.toggleBaseRates,
+          }),
+
         // "What happened here?" — the headlines from around one marked move
         this.renderMoveCard(),
 
@@ -5318,6 +5415,11 @@ class CryptoChart extends PureComponent {
             // Live prices and 24h moves, so each row can say where it stands
             // instead of only what was asked for
             stats: this.coinStats(),
+            /* A portfolio target is only worth offering when there is a
+             * portfolio, and its row needs the live total to say how far away
+             * it is — both come from data already on hand. */
+            holdings: this.state.portfolio,
+            portfolioTotal: this.portfolioTotalFrom(this.alertPriceMap()),
             onAdd: this.handleAddAlert,
             onRemove: this.handleRemoveAlert,
             onRestore: this.handleRestoreAlert,

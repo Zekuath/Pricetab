@@ -127,11 +127,31 @@ const findTriggeredAlerts = (
   currency,
   candlesByCoin,
   changes,
+  portfolioTotal,
 ) => {
   const fired = [];
   for (const a of alerts || []) {
     if (a.triggeredAt) continue;
     if (!targetApplies(a, currency)) continue;
+
+    /* A portfolio target is checked **live only**, and the row says so.
+     *
+     * The other two kinds look back through a week of candles so a crossing
+     * that happened with no tab open is still reported. A total cannot do
+     * that honestly: it would mean fetching a week of candles for every coin
+     * held and summing them at each step, and the amounts held are only known
+     * as they are *now* — a holding added yesterday would be backdated into
+     * last week's total and the app would announce a crossing that never
+     * happened. Live-only is the answer that is true. */
+    if (a.kind === "portfolio") {
+      const total = Number(portfolioTotal);
+      if (!isFinite(total) || total <= 0) continue;
+      if (a.direction === "above" ? total >= a.target : total <= a.target) {
+        fired.push({ ...a, hitAt: null, hitPrice: total });
+      }
+      continue;
+    }
+
     const candles = candlesByCoin ? candlesByCoin[a.coin] : null;
     const price = prices ? Number(prices[a.coin]) : NaN;
     const livePrice = isFinite(price) && price > 0 ? price : null;
@@ -164,15 +184,39 @@ const findTriggeredAlerts = (
   return fired;
 };
 
-// Which coins need a price for the alert check (unfired, and either a percent
-// target or a price target in the currency on display)
-const alertCoinsToWatch = (alerts, currency) => {
+/* Which coins need a price for the alert check (unfired, and either a percent
+ * target or a price target in the currency on display).
+ *
+ * `holdings` is passed in because a **portfolio** target needs a price for
+ * everything held, not for one coin — it has no coin of its own. Passed rather
+ * than reached for: `portfolio.js` loads after this file, and the caller
+ * already has the list. */
+const alertCoinsToWatch = (alerts, currency, holdings) => {
   const coins = new Set();
+  let wantsPortfolio = false;
   for (const a of alerts || []) {
-    if (!a.triggeredAt && targetApplies(a, currency)) coins.add(a.coin);
+    if (a.triggeredAt || !targetApplies(a, currency)) continue;
+    if (a.kind === "portfolio") {
+      wantsPortfolio = true;
+      continue;
+    }
+    coins.add(a.coin);
+  }
+  if (wantsPortfolio) {
+    for (const h of holdings || []) {
+      if (h && typeof h.coin === "string" && h.coin) coins.add(h.coin);
+    }
   }
   return [...coins];
 };
+
+/* Is a portfolio target worth offering at all?
+ *
+ * A target on a total that is always zero can never fire, and a control that
+ * cannot change anything in the state it is offered in is one this codebase
+ * removes rather than ships. */
+const hasHoldings = (holdings) =>
+  Array.isArray(holdings) && holdings.some((h) => h && h.coin);
 
 /* How far a target has to go, as a fraction of the whole journey from where
  * the price was when it was set. 0 = just set, 1 = hit. Null when there is
@@ -261,7 +305,7 @@ class AlertsPanel extends PureComponent {
     if (this.state.kind === "percent" && target > MAX_PERCENT_TARGET) return;
     if (this.duplicate()) return;
     this.props.onAdd(
-      this.state.coin,
+      this.state.kind === "portfolio" ? "" : this.state.coin,
       this.state.kind,
       this.state.direction,
       target,
@@ -337,7 +381,10 @@ class AlertsPanel extends PureComponent {
     if (this.state.kind === "percent") {
       this.setState({ target: String(step) });
     } else {
-      const price = this.priceOf(this.state.coin);
+      const price = this.valueOf({
+        kind: this.state.kind,
+        coin: this.state.coin,
+      });
       if (price === null) return;
       const factor =
         this.state.direction === "above" ? 1 + step / 100 : 1 - step / 100;
@@ -355,7 +402,7 @@ class AlertsPanel extends PureComponent {
     return (this.props.alerts || []).find(
       (a) =>
         !a.triggeredAt &&
-        a.coin === coin &&
+        (kind === "portfolio" || a.coin === coin) &&
         a.kind === kind &&
         a.direction === direction &&
         a.target === target &&
@@ -375,6 +422,17 @@ class AlertsPanel extends PureComponent {
     return isFinite(price) && price > 0 ? price : null;
   }
 
+  /* What a target is measured against: a coin's price, or — for a portfolio
+   * target — the total of everything held. One reading, so the row's distance,
+   * its meter and the quick chips cannot disagree about what "now" means. */
+  valueOf(a) {
+    if (a && a.kind === "portfolio") {
+      const total = Number(this.props.portfolioTotal);
+      return isFinite(total) && total > 0 ? total : null;
+    }
+    return this.priceOf(a ? a.coin : null);
+  }
+
   changeOf(coin) {
     const stat = this.statOf(coin);
     const change = stat ? Number(stat.change) : NaN;
@@ -388,6 +446,11 @@ class AlertsPanel extends PureComponent {
       return `${a.direction === "above" ? "rises" : "falls"} ${formatPercentValue(a.target)} in 24h`;
     }
     const price = this.props.formatPrice(a.target, a.currency);
+    if (a.kind === "portfolio") {
+      // "is worth more than", not "rises above": a total is worth something,
+      // it does not have a price
+      return `${a.direction === "above" ? "is worth more than" : "is worth less than"} ${price}`;
+    }
     return `${a.direction === "above" ? "rises above" : "drops below"} ${price}`;
   }
 
@@ -413,7 +476,7 @@ class AlertsPanel extends PureComponent {
       const way = change >= 0 ? "up" : "down";
       return `24h move ${moved} ${way} · needs ${formatPercentValue(a.target)} ${a.direction === "above" ? "up" : "down"}`;
     }
-    const price = this.priceOf(a.coin);
+    const price = this.valueOf(a);
     if (price === null) return null;
     const away = targetDistancePercent(a, price);
     const now = this.props.formatPrice(price, a.currency);
@@ -497,7 +560,7 @@ class AlertsPanel extends PureComponent {
     const up = a.direction === "above";
     const hit = Boolean(a.triggeredAt);
     const detail = this.detail(a);
-    const progress = hit ? null : targetProgress(a, this.priceOf(a.coin));
+    const progress = hit ? null : targetProgress(a, this.valueOf(a));
     return React.createElement(
       AlertRow,
       { key: a.id, up, muted: hit },
@@ -512,7 +575,11 @@ class AlertsPanel extends PureComponent {
         React.createElement(
           AlertText,
           { muted: hit },
-          React.createElement(AlertCoin, null, a.coin),
+          React.createElement(
+            AlertCoin,
+            null,
+            a.kind === "portfolio" ? "Portfolio" : a.coin,
+          ),
           " ",
           this.describe(a),
         ),
@@ -534,7 +601,7 @@ class AlertsPanel extends PureComponent {
             AlertRearm,
             {
               title: "Arm this target again",
-              "aria-label": `Re-arm ${a.coin} target`,
+              "aria-label": `Re-arm ${a.kind === "portfolio" ? "portfolio" : a.coin} target`,
               onClick: () => this.props.onRearm && this.props.onRearm(a.id),
             },
             "Re-arm",
@@ -1306,6 +1373,12 @@ class AlertsPanel extends PureComponent {
     const { alerts, currency, onClose } = this.props;
     const atCap = alerts.length >= MAX_ALERTS;
     const isPercent = this.state.kind === "percent";
+    /* A target on the total of everything held. Offered only when there is
+     * something held: a target on a total that is always zero can never fire,
+     * and a control that cannot change anything in the state it is offered in
+     * is one this codebase removes rather than ships. */
+    const isPortfolio = this.state.kind === "portfolio";
+    const canPortfolio = hasHoldings(this.props.holdings);
     const hint = this.hint();
     // Already-hit targets are history: they get their own section under the
     // live ones instead of trailing the same list, so a full panel still
@@ -1335,7 +1408,7 @@ class AlertsPanel extends PureComponent {
     const quickUp = this.state.direction === "above";
     const quickSteps = isPercent
       ? QUICK_PERCENT_STEPS
-      : this.priceOf(this.state.coin) !== null
+      : this.valueOf({ kind: this.state.kind, coin: this.state.coin }) !== null
         ? QUICK_PRICE_STEPS
         : null;
     return React.createElement(
@@ -1463,6 +1536,17 @@ class AlertsPanel extends PureComponent {
               },
               "A move in 24h",
             ),
+            canPortfolio &&
+              React.createElement(
+                AlertKindButton,
+                {
+                  active: isPortfolio,
+                  title:
+                    "Watch the total of everything you hold, rather than one coin. Checked whenever a tab is open — a total cannot be reconstructed from candles, because the amounts held are only known as they are now.",
+                  onClick: () => this.setState({ kind: "portfolio", target: "" }),
+                },
+                "My portfolio",
+              ),
           ),
           React.createElement(
             AlertForm,
@@ -1471,7 +1555,8 @@ class AlertsPanel extends PureComponent {
              * be told when something moves is exactly how a coin earns a
              * place on the list — requiring it to be there first had the
              * dependency backwards. Your own coins stay on top. */
-            this.renderCoinPicker(),
+            // A portfolio target has no coin to pick — the whole point of it
+            isPortfolio ? null : this.renderCoinPicker(),
             React.createElement(
               AlertSelect,
               {
@@ -1482,12 +1567,20 @@ class AlertsPanel extends PureComponent {
               React.createElement(
                 "option",
                 { value: "above" },
-                isPercent ? "rises" : "rises above",
+                isPercent
+                  ? "rises"
+                  : isPortfolio
+                    ? "worth more than"
+                    : "rises above",
               ),
               React.createElement(
                 "option",
                 { value: "below" },
-                isPercent ? "falls" : "drops below",
+                isPercent
+                  ? "falls"
+                  : isPortfolio
+                    ? "worth less than"
+                    : "drops below",
               ),
             ),
             React.createElement(AlertInput, {
@@ -1495,10 +1588,16 @@ class AlertsPanel extends PureComponent {
               inputMode: "decimal",
               innerRef: this.setInputRef,
               value: this.state.target,
-              placeholder: isPercent ? "% in 24h" : `target in ${currency}`,
+              placeholder: isPercent
+                ? "% in 24h"
+                : isPortfolio
+                  ? `total in ${currency}`
+                  : `target in ${currency}`,
               "aria-label": isPercent
                 ? "Target move in percent"
-                : "Target price",
+                : isPortfolio
+                  ? "Target portfolio total"
+                  : "Target price",
               onChange: (e) => this.setState({ target: e.target.value }),
               onKeyDown: this.handleKeyDown,
             }),
