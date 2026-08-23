@@ -213,12 +213,15 @@ const PortfolioHeadRow = styled.div`
  * sparkline's `currentColor` note). So the segment carries a palette *index*
  * and the stylesheet turns it into ink. `tone == null` is the neutral Other:
  * index 0 is a real colour and must not be caught by a falsy test. */
-const bandInk = (theme, tone) =>
-  tone == null
-    ? theme.color.textSecondary
-    : (isLightTheme(theme)
-        ? PORTFOLIO_BAND_COLORS.light
-        : PORTFOLIO_BAND_COLORS.dark)[tone];
+const bandInk = (theme, tone) => {
+  const palette = isLightTheme(theme)
+    ? PORTFOLIO_BAND_COLORS.light
+    : PORTFOLIO_BAND_COLORS.dark;
+  // `tone == null` is Other, which is the ramp's faintest step rather than a
+  // separate grey — against a neutral ramp a grey would be a seventh shade of
+  // the same thing, and as the last step it is exactly what it means
+  return palette[tone == null ? palette.length - 1 : tone];
+};
 
 const AllocBlock = styled.div`
   margin-top: 1.15rem;
@@ -281,19 +284,22 @@ const AllocSeg = styled.div`
   }
 `;
 
-/* White on every band, not the theme's ink.
+/* The ink follows the band it is written on, not the theme.
  *
- * `PORTFOLIO_BAND_COLORS` is validated for colour-vision deficiency against
- * both surfaces, and three of the light steps sit under 3:1 against the page —
- * which is legal only with relief, and this label is that relief. It has to be
- * legible on the band, not on the background, so it does not follow the theme.
+ * It was white with a drop shadow, which worked while the palette was six
+ * hues of roughly one lightness. The palette is a ramp now
+ * (`PORTFOLIO_BAND_COLORS`), and a ramp crosses the point where white stops
+ * being legible and black starts — so one fixed ink is unreadable at one end
+ * of it whichever end you choose. `PORTFOLIO_BAND_INK` carries the answer per
+ * step, every entry measured at 4.7:1 or better against its own band, which is
+ * also why the shadow has gone: it was propping up a contrast that is now
+ * there on its own.
  */
 const AllocSegLabel = styled.span`
   font-size: 0.64rem;
   font-weight: ${({ theme }) => theme.fontWeight.semibold};
   letter-spacing: 0.04em;
-  color: #fff;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  color: ${({ theme, tone }) => bandLabelInk(theme, tone)};
   padding: 0 0.35rem;
 `;
 
@@ -743,6 +749,45 @@ const LotAddBtn = styled.button.attrs({ type: "button" })`
  * action at the far end — because it is the same promise, and a second visual
  * language for "you can take that back" would make people learn it twice.
  */
+/* The cost-basis method picker. Same shape as the sort buttons above the
+ * list — this is a choice between three named things, and the app already has
+ * one drawing for that. */
+const MethodRow = styled.div`
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.6rem;
+  margin: 1.2rem 0 0.4rem;
+`;
+
+const MethodLabel = styled.div`
+  font-size: 0.66rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: ${({ theme }) => theme.color.textSecondary};
+`;
+
+const MethodBtn = styled.button.attrs({ type: "button" })`
+  padding: 0.18rem 0.5rem;
+  font-family: ${({ theme }) => theme.font.primary};
+  font-size: 0.7rem;
+  font-weight: ${({ theme }) => theme.fontWeight.semibold};
+  letter-spacing: 0.04em;
+  color: ${({ theme, active }) =>
+    active ? theme.color.bg : theme.color.textSecondary};
+  background: ${({ theme, active }) =>
+    active ? theme.color.text : "transparent"};
+  border: 1px solid
+    ${({ theme, active }) => (active ? theme.color.text : theme.color.border)};
+  border-radius: 6px;
+  cursor: pointer;
+
+  &:hover {
+    color: ${({ theme, active }) => (active ? theme.color.bg : theme.color.text)};
+    border-color: ${({ theme }) => theme.color.text};
+  }
+`;
+
 const PortfolioUndoBar = styled.div`
   display: flex;
   align-items: center;

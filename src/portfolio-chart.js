@@ -50,12 +50,99 @@
  * its coin wherever it is tall enough, the legend under the chart names all of
  * them, and the holdings table is one key away.
  */
+/* THE BAND PALETTE — one ramp, ordered, biggest first.
+ *
+ * It was six saturated hues (blue, orange, green, amber, pink, green), and the
+ * complaint that replaced them was exact: they were neither this app's colours
+ * nor the coins' own. They were arbitrary labels pretending to be identities.
+ *
+ * What replaced them is a **sequential green ramp**, which says the thing that
+ * is actually true of the order it is drawn in — so the strip can be read
+ * without a legend. The interface is monospaced near-black on near-white with
+ * green and red reserved for *direction*; six competing hues were the only
+ * object breaking that.
+ *
+ * **The largest holding is the greenest, and that direction is the point.**
+ * The first version ran the other way on the dark theme — biggest was a pale
+ * near-white mint and the slivers were vivid — because on black the brightest
+ * step is the most prominent one. That is true of *luminance* and wrong about
+ * what the eye reads here: a saturated green is stronger than a washed-out
+ * pale, whatever their luminances say, and "the majority should be the green
+ * one" is what anybody looking at a share bar expects. So index 0 is the
+ * deepest, most saturated green in both themes and the ramp fades toward pale
+ * as the holdings get smaller. Flipping it also **gained** separation rather
+ * than costing any: worst-case adjacent ΔE went 12.7 → 13.1 (dark).
+ *
+ * **Green, and the two hard parts of making it green.**
+ *
+ * The first is that green is exactly the hue red-green deficiency compresses:
+ * a flat brand-green ramp measured ΔE **6.9** (dark) / **7.5** (light) between
+ * adjacent steps, the worst of everything tried. The way out is that
+ * deficiency preserves the **blue–yellow** axis, so the ramp travels *within*
+ * green — teal-green at the strong end to a yellow-green at the faint end
+ * (hue 85→135 dark, 95→135 light — deep and saturated at the big end, pale at the small) — which is separation a red-green-deficient
+ * eye can still see. That is what takes it from 6.9 to **10.9**.
+ *
+ * **And then the saturation was pulled back, deliberately.** At full chroma
+ * this ramp separated best (worst ΔE 13.1) and read as a lime gradient — the
+ * loudest object on a screen whose entire complaint about the six hues was
+ * that they were loud. Measured: dropping peak chroma from 98 to **69** costs
+ * 2.2 ΔE and nothing else. Below about chroma 58 the separation stops falling
+ * at all (10.2), so there are two quieter notches available for free if this
+ * still shouts: saturation 0.48→0.22 and 0.36→0.18.
+ *
+ * Reversing the hue journey — deep emerald at the big end instead of a deep
+ * yellow-green — was tried for the same reason and is a worse trade: the best
+ * emerald-first ramp measured 11.4 at chroma 73, so it buys less quiet for
+ * more separation.
+ *
+ * The second is that **green already means "up" on this screen**, two inches
+ * from the P/L figures. Every step is held at least ΔE 20 from the app's own
+ * up-green (measured: 24.5 dark, 18.8 light), so a large holding cannot read
+ * as a gain.
+ *
+ * **The trade against the old palette is stated, not hidden.** Adjacent-step
+ * CIE ΔE, under normal vision and under simulated deuteranopia and protanopia:
+ *
+ *   | | normal | deuteranopia | protanopia |
+ *   |---|---|---|---|
+ *   | the old six hues | 73–75 | 43–46 | **22–24** |
+ *   | a flat green ramp | 10.8–13.6 | 6.9–7.5 | 7.2–7.7 |
+ *   | this ramp | 13.7 / 19.8 | 12.7 / 15.3 | 13.5 / 16.6 |
+ *
+ * Lower in absolute terms, and **the same for everybody** where the old set
+ * lost two thirds of its separation to protanopia. What pays for the drop is
+ * that a ramp is read as an order rather than as six labels, the strip writes
+ * the coin's name inside every segment wide enough to hold one, and the
+ * holdings list repeats the same ink on every row.
+ *
+ * Also constrained: every step clears 3.36:1 (dark) / 1.38:1 (light) against
+ * its own ground — these are large filled areas, not text.
+ *
+ * **"Other" is the last step of the ramp, not a separate grey.** It used to be
+ * `textSecondary`, which against a neutral ramp would be a seventh shade of
+ * the same thing; as the faintest step it is exactly what it means — the
+ * smallest, last, and already named in the list and the legend.
+ *
+ * `PORTFOLIO_BAND_INK` is the label colour **per step**, and it has to be: a
+ * ramp crosses the point where white stops being legible and black starts, so
+ * one fixed ink is unreadable at one end of it whichever end you choose. Every
+ * entry clears 4.8:1 against its own band, which is why the label that used to
+ * carry a drop shadow no longer needs one.
+ */
 const PORTFOLIO_BAND_COLORS = {
-  light: ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300"],
-  dark: ["#3987e5", "#d95926", "#199e70", "#c98500", "#d55181", "#008300"],
+  light: ["#1c310c", "#305e1c", "#40882f", "#4faf46", "#73bf75", "#a1cea7", "#cce1d1"],
+  dark: ["#496a1b", "#59922b", "#63b63f", "#78c369", "#98cf96", "#bfdec3", "#e5f0e8"],
 };
-// Six named bands and one "Other". Past about seven classes adjacent bands
-// stop being tellable apart, whatever the palette does.
+const PORTFOLIO_BAND_INK = {
+  light: ["#ffffff", "#ffffff", "#000000", "#000000", "#000000", "#000000", "#000000"],
+  dark: ["#ffffff", "#000000", "#000000", "#000000", "#000000", "#000000", "#000000"],
+};
+// The ramp's faintest step, which is what "Other" is drawn in
+const bandPalette = (theme) =>
+  isLightTheme(theme) ? PORTFOLIO_BAND_COLORS.light : PORTFOLIO_BAND_COLORS.dark;
+const bandOtherIndex = (theme) => bandPalette(theme).length - 1;
+
 const PORTFOLIO_MAX_BANDS = 6;
 
 const PC_PAD = { top: 22, right: 14, bottom: 30, left: 8 };
@@ -68,6 +155,20 @@ const PC_EVENT_REACH = 26;
 const PC_LABEL_MIN = 16;
 
 const isLightTheme = (theme) => theme.color.bg === lightColors.bg;
+
+/* What a label written *on* a band should be. `tone == null` is the neutral
+ * Other, whose grey takes the theme's own background as ink the way the bands
+ * used to. Anything else reads its step's entry — a ramp crosses the point
+ * where white stops being legible and black starts, and one fixed ink for the
+ * whole palette is illegible at one end of it whichever end you choose. */
+const bandLabelInk = (theme, tone) => {
+  const ink = isLightTheme(theme)
+    ? PORTFOLIO_BAND_INK.light
+    : PORTFOLIO_BAND_INK.dark;
+  // `tone == null` is Other, which is the ramp's last step — so its label
+  // follows that step like every other band's does
+  return ink[tone == null ? ink.length - 1 : tone];
+};
 
 const PcWrap = styled.div`
   display: flex;
@@ -357,7 +458,8 @@ class PortfolioChartBase extends Component {
       named.push({
         coin: rest[0].coin,
         values: rest[0].values,
-        color: theme.color.textSecondary,
+        // The ramp's faintest step, not a separate grey — see the palette note
+        color: bandPalette(theme)[bandOtherIndex(theme)],
       });
     } else if (rest.length > 1) {
       const values = rest[0].values.map((_, i) =>
@@ -366,7 +468,7 @@ class PortfolioChartBase extends Component {
       named.push({
         coin: "Other",
         values,
-        color: theme.color.textSecondary,
+        color: bandPalette(theme)[bandOtherIndex(theme)],
         other: true,
         count: rest.length,
       });
@@ -777,9 +879,14 @@ class PortfolioChartBase extends Component {
         }),
       );
       /* Direct label, and only where it fits with room to spare. A coin symbol
-       * clipped by the band it sits inside is worse than no label — and on the
-       * light surface these labels are what earns the palette its sub-3:1
-       * steps. */
+       * clipped by the band it sits inside is worse than no label — and these
+       * labels are what earns the palette its faintest steps.
+       *
+       * The ink is **per band**, not the surface colour. It used to be
+       * `theme.color.bg` for every band, which worked while the palette was
+       * six hues of similar lightness; a ramp crosses the point where white
+       * stops being legible and black starts, so one fixed ink is unreadable
+       * at one end of it whichever end you pick. */
       const height = floors[last] - tops[last];
       if (height >= PC_LABEL_MIN) {
         out.push(
@@ -790,7 +897,7 @@ class PortfolioChartBase extends Component {
               x: geo.right - 6,
               y: tops[last] + height / 2 + 3,
               textAnchor: "end",
-              fill: surface,
+              fill: bandLabelInk(theme, band.other ? null : b),
               fontSize: 9,
               fontWeight: 700,
               fontFamily: theme.font.primary,

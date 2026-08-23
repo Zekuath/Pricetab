@@ -173,7 +173,20 @@ const T = Date.now();
     await ctx.close();
   }
 
-  // ── 3. a lock cannot be undone ─────────────────────────────────────────
+  // ── 3. a lock takes two clicks, and so does taking it back ─────────────
+  /* This asserted that clicking a locked square could not replace or clear it,
+   * and the chart's own comment called a locked call final. Both were true of
+   * *this surface* and false of the app: the calls panel has carried a `×`
+   * that withdraws an open call with no confirmation since calls shipped. So
+   * the rule was never "a call is final" — it was "a call is final unless you
+   * know where the panel is", which is worse, because the person most likely
+   * to have locked the wrong square by accident is the one looking at the
+   * chart.
+   *
+   * What is asserted now is the pair: a lock is two clicks, an unlock is two
+   * clicks, and one click alone does neither. A **settled** call stays final,
+   * which is the line that actually matters — withdrawing an answered call
+   * would be editing the record rather than correcting a slip. */
   {
     const { ctx, page } = await newCtx(browser, 0.3);
     const g = await page.evaluate(`(() => {
@@ -201,11 +214,34 @@ const T = Date.now();
     await page.waitForTimeout(900);
     check((await count()) === 1, "the second click locks it");
 
+    // One click on the locked box asks; it must not remove anything yet
+    await page.mouse.click(px, py);
+    await page.waitForTimeout(250);
+    check((await count()) === 1, "one click on a locked square removes nothing");
+    const asking = await page.evaluate(`(() => {
+      const t = [...${CHART}.querySelectorAll("text")].filter(${VIS})
+        .map((n) => (n.textContent || "").trim());
+      return t.includes("UNLOCK?");
+    })()`);
+    check(asking, "…it asks first");
+
+    // A click somewhere else is a change of subject, not a confirmation
+    await page.mouse.click(g.x + g.w * 0.1, g.y + g.h * 0.8);
+    await page.waitForTimeout(250);
+    check((await count()) === 1, "clicking away abandons the question");
+    const stillAsking = await page.evaluate(`(() => {
+      const t = [...${CHART}.querySelectorAll("text")].filter(${VIS})
+        .map((n) => (n.textContent || "").trim());
+      return t.includes("UNLOCK?");
+    })()`);
+    check(!stillAsking, "…and puts it away");
+
+    // Ask again, then confirm
     await page.mouse.click(px, py);
     await page.waitForTimeout(250);
     await page.mouse.click(px, py);
     await page.waitForTimeout(700);
-    check((await count()) === 1, "clicking a locked square cannot replace or clear it");
+    check((await count()) === 0, "the second click on a locked square takes it back");
     await ctx.close();
   }
 
@@ -1819,6 +1855,75 @@ const T = Date.now();
     const sparks = await page.evaluate(`${CHART}.querySelectorAll(".pt-burst line").length`);
     check(sparks === 0, "the show has finished and cleaned up after itself",
       `${sparks} left behind`);
+    await ctx.close();
+  }
+
+  // ── 26b. a win announces itself and then gets out of the way ───────────
+  /* The "Called it" card had a × and nothing else, so a call that settled
+   * while the tab was in the background left it sitting over the chart until
+   * somebody closed it — and on a new tab page that can be days.
+   *
+   * A hit **target** is different and keeps its ×: it is a thing you asked to
+   * be told, and dismissing it is how you acknowledge it. A settled call was
+   * not requested at that moment — it is news, and news that has been read
+   * should leave on its own. The record is untouched either way: the call is
+   * in `done` and the tally has it. This closes a card, not an outcome.
+   *
+   * **What is asserted is the mechanism, not the wall clock.** The dismissal
+   * was measured end to end in a throwaway probe — armed on announce, and the
+   * card gone after 24 seconds of real time — but `page.clock.runFor` does not
+   * fire this timer, and putting a real 22-second wait in a suite that already
+   * runs for minutes buys one number that is a constant anyway. What can
+   * actually regress is a card that arms nothing, or a timer left behind by a
+   * card dismissed by hand, and both are checked here. */
+  {
+    const at = T - 60000;
+    const call = JSON.stringify({
+      record: { hits: 0, total: 0, streak: 0, best: 0 },
+      open: [{
+        id: "won-1", coin: "BTC", currency: "USD", period: "hour",
+        target: at, span: 60000, lo: 43000, hi: 44000, placed: at - 600000,
+      }],
+      done: [],
+    });
+    const { ctx, page } = await newCtx(browser, 0.3, call, 2500);
+    const REACH = `(() => {
+      const host = document.querySelector("[data-tour='portfolio']") || document.body;
+      const k = Object.keys(host).find((x) => x.startsWith("__reactInternalInstance") || x.startsWith("__reactFiber"));
+      let f = k ? host[k] : null;
+      while (f) { if (f.stateNode && f.stateNode.state && "wonCalls" in f.stateNode.state) return f.stateNode; f = f.return; }
+      return null; })()`;
+    /* The toast, and only the toast. `/Called it/i` also matches the SVG
+     * `CALLED IT` tag on the settled box — which is on the chart the whole
+     * time and made this look like a card that would not close. Matched on
+     * the card's own wording, and never inside the SVG. */
+    const showing = () => page.evaluate(`(() => [...document.querySelectorAll("*")]
+      .some((e) => e.children.length === 0 && !(e.ownerSVGElement)
+        && /Called it —/.test(e.textContent || "")))()`);
+    const armed = () => page.evaluate(`(() => { const a = ${REACH};
+      return a && a.wonCallTimers ? a.wonCallTimers.size : -1; })()`);
+
+    check(await showing(), "a settled hit is announced");
+    check((await armed()) === 1, "…and the card arms its own dismissal",
+      `timers: ${await armed()}`);
+
+    // Closing it by hand must take the timer with it, or a card that has
+    // already gone leaves one running
+    await page.evaluate(`(() => { const a = ${REACH};
+      a.dismissWonCall(a.state.wonCalls[0].id); })()`);
+    await page.waitForTimeout(300);
+    check(!(await showing()), "…the × still closes it at once");
+    check((await armed()) === 0, "…and takes its timer with it",
+      `timers: ${await armed()}`);
+
+    // The outcome is untouched: this closed a card, not a record
+    const kept = await page.evaluate(() => {
+      const c = JSON.parse(localStorage.getItem("crypto_chart_calls") || "{}");
+      return { done: (c.done || []).length, hits: (c.record || {}).hits };
+    });
+    check(kept.done === 1 && kept.hits === 1,
+      "…and the call it announced is still in the record",
+      JSON.stringify(kept));
     await ctx.close();
   }
 

@@ -27,6 +27,11 @@ class ErrorBoundary extends Component {
  * every styled descendant and for `LineBase`, which takes it via `withTheme`.
  * Built here rather than in `render` because there are only two palettes and
  * neither depends on state. */
+/* How long a "Called it" card stays before it lets itself go. Long enough to
+ * read twice and notice which square it was, short enough that a win settling
+ * while you were away is not still on the chart tomorrow. */
+const WON_CALL_TOAST_MS = 22000;
+
 const LIGHT_THEME = { ...theme, color: lightColors };
 const DARK_THEME = { ...theme, color: darkColors };
 
@@ -41,6 +46,9 @@ class CryptoChart extends PureComponent {
     // Tracks which coin|currency pairs we've already background-prefetched all
     // periods for, so period switches are instant instead of a cold fetch.
     this.prefetchedKeys = new Set();
+    // One dismissal timer per announced win, so clearing one by hand does not
+    // leave a timer running for a card that has already gone
+    this.wonCallTimers = new Map();
 
     _defineProperty(this, "state", {
       coinIndex: 0,
@@ -85,6 +93,8 @@ class CryptoChart extends PureComponent {
       fireworks: 0, // bumped on a hit worth the big show — see `settleDueCalls`
       moveHeadlines: loadMoveHeadlines(), // headlines beside an unusual move
       portfolio: loadPortfolioFromStorage(), // [{ coin, amount, lots, watches }]
+      // Which purchase a *new* sale consumes, and what `heldLots` assumes went
+      costMethod: loadCostMethod(),
       portfolioPrices: {}, // { COIN: { price, change, up } } from pageTickerCache
       portfolioReady: false, // true after first portfolio price fetch
       themePreference: loadThemeFromStorage(), // 'auto', 'light', or 'dark'
@@ -166,6 +176,8 @@ class CryptoChart extends PureComponent {
       fearGreedData: null, // { value, classification, timestamp }
       marketOverviewData: null, // { totalMarketCap, totalVolume, btcDominance, ... }
       halvingData: null, // { days, hours, minutes, blocksLeft, nextHalvingBlock }
+      ethGasData: null, // { gwei, baseGwei, tipGwei, transferEth }
+      btcFeesData: null, // { rate, fastest, hour, transferBtc }
       rsiValue: null, // RSI calculated from current valueHistory (0-100)
       ohlcData: null, // Candles for the crosshair; fetched on first hover
       fundingRateData: null, // { rate, percent, annualized }
@@ -421,6 +433,8 @@ class CryptoChart extends PureComponent {
         ["fearGreed", fetchFearGreedIndex, "fearGreedData", false],
         ["marketOverview", fetchMarketOverview, "marketOverviewData", false],
         ["halvingCountdown", fetchHalvingData, "halvingData", false],
+        ["ethGas", fetchEthGas, "ethGasData", false],
+        ["btcFees", fetchBtcFees, "btcFeesData", false],
         ["altcoinSeason", fetchAltcoinSeason, "altcoinSeasonData", false],
         ["fundingRate", fetchFundingRate, "fundingRateData", true],
         ["longShortRatio", fetchLongShortRatio, "longShortData", true],
@@ -559,6 +573,15 @@ class CryptoChart extends PureComponent {
         this.pendingVisibilityRefresh = true;
         return;
       }
+
+      /* When the series on screen was last asked for. Read by
+       * `handleVisibilityChange` to decide whether coming back to this tab
+       * should refresh it, which is a question about the data's age and not
+       * about whether a timer happened to fire. Stamped on the attempt rather
+       * than on success: a failed fetch has already told the user through the
+       * error state, and retrying it on every visibility change would hammer a
+       * provider that is down. */
+      this.lastFetchAt = Date.now();
 
       // Cancel any ongoing requests
       if (this.abortController) {
@@ -845,471 +868,17 @@ class CryptoChart extends PureComponent {
       return done.some((c) => isFinite(c.settledAt) && c.settledAt > seen);
     });
 
-    _defineProperty(this, "togglePortfolio", () => {
-      this.setState(
-        (prevState) => ({ showPortfolio: !prevState.showPortfolio }),
-        () => {
-          if (this.state.showPortfolio) {
-            this.fetchPortfolioPrices();
-            // Refresh prices while the view stays open
-            if (!this.portfolioInterval) {
-              this.portfolioInterval = setInterval(
-                () => this.fetchPortfolioPrices(),
-                60000,
-              );
-            }
-          } else if (this.portfolioInterval) {
-            clearInterval(this.portfolioInterval);
-            this.portfolioInterval = null;
-          }
-        },
-      );
-    });
-
-    _defineProperty(this, "handleAddHolding", (coin, amount) => {
-      const normalized = (coin || "").trim().toUpperCase();
-      if (!SUGGESTED_COINS.includes(normalized)) return;
-      this.setState((prevState) => {
-        if (prevState.portfolio.some((h) => h.coin === normalized)) {
-          return null; // already tracked
-        }
-        const amt = isFinite(Number(amount)) ? Math.max(0, Number(amount)) : 0;
-        const portfolio = [
-          ...prevState.portfolio,
-          { coin: normalized, amount: amt, lots: [], watches: [] },
-        ];
-        savePortfolioToStorage(portfolio);
-        return { portfolio };
-      }, this.fetchPortfolioPrices);
-    });
-
-    _defineProperty(this, "handleUpdateHoldingAmount", (coin, amount) => {
-      const amt = isFinite(Number(amount)) ? Math.max(0, Number(amount)) : 0;
-      this.setState((prevState) => {
-        const portfolio = prevState.portfolio.map((h) =>
-          h.coin === coin ? { ...h, amount: amt } : h,
-        );
-        savePortfolioToStorage(portfolio);
-        return { portfolio };
-      });
-    });
-
-    /* Record a sale: "sold `amount` for `received` in total".
+    /* Everything the portfolio does — fifteen handlers and its fetch loop,
+     * 517 lines — lives in `app-portfolio.js`. It is the one cohesive run in
+     * this class: it touched almost nothing else, which is what made it the
+     * only honest cut available (95 members in `chart.js` touch `this` and
+     * all but three of them; 146 here and all of them, so there was never a
+     * block of pure helpers to lift out).
      *
-     * One action, not two. Before this, selling meant editing the amount down
-     * by hand, which left the purchase lots untouched — so a position sold in
-     * half still reported the whole position's gain, on coins that were gone.
-     * Recording it does all three things that have to happen together: takes
-     * the coins off the manual amount, consumes the matching cost basis FIFO
-     * (oldest first), and keeps the disposal so the gain it produced survives
-     * the lots it consumed.
-     *
-     * Only the hand-entered part can be sold here. A watched address reports
-     * its own balance from the chain and reconciles itself; what it cannot
-     * know is the price you sold at, so a sale out of a watched address is
-     * still just a balance going down.
-     */
-    _defineProperty(this, "handleAddSale", (coin, amount, received) => {
-      const amt = Number(amount);
-      const got = Number(received);
-      if (!isFinite(amt) || amt <= 0 || !isFinite(got) || got < 0) return;
-      this.setState((prevState) => {
-        const holding = prevState.portfolio.find((h) => h.coin === coin);
-        if (!holding) return null;
-        const sales = holding.sales || [];
-        if (sales.length >= MAX_SALES_PER_HOLDING) return null;
-        // Can't sell what the hand-entered part doesn't hold
-        const sold = Math.min(amt, holding.amount || 0);
-        if (!(sold > 0)) return null;
-        const lots = holding.lots || [];
-        const { basis, covered, matched } = consumeLotsFifo(lots, sold);
-        const portfolio = prevState.portfolio.map((h) =>
-          h.coin === coin
-            ? {
-                ...h,
-                amount: Math.max(0, h.amount - sold),
-                lots: reduceLotsFifo(lots, sold),
-                sales: [
-                  ...sales,
-                  {
-                    amount: sold,
-                    // Proceeds scale with what was actually sold, in case the
-                    // entry asked for more than the holding had
-                    received: got * (sold / amt),
-                    basis,
-                    basisAmount: covered,
-                    // Which purchases it consumed, so the report can pair
-                    // each acquisition with this disposal
-                    matched,
-                    time: Math.floor(Date.now() / 1000),
-                    // Proceeds and the basis it consumed are both in the
-                    // currency that was on screen when it was recorded
-                    currency: prevState.currency,
-                  },
-                ],
-              }
-            : h,
-        );
-        savePortfolioToStorage(portfolio);
-        return { portfolio };
-      });
-    });
-
-    _defineProperty(this, "handleRemoveSale", (coin, index) => {
-      this.setState((prevState) => {
-        const portfolio = prevState.portfolio.map((h) =>
-          h.coin === coin
-            ? { ...h, sales: (h.sales || []).filter((_, i) => i !== index) }
-            : h,
-        );
-        savePortfolioToStorage(portfolio);
-        return { portfolio };
-      });
-    });
-
-    // Log a purchase lot: "bought `amount` for `paid` in total" (dated now —
-    // the date only matters for chain-inferred lots and the tax report)
-    _defineProperty(this, "handleAddLot", (coin, amount, paid) => {
-      const amt = Number(amount);
-      const cost = Number(paid);
-      if (!isFinite(amt) || amt <= 0 || !isFinite(cost) || cost < 0) return;
-      this.setState((prevState) => {
-        const portfolio = prevState.portfolio.map((h) => {
-          if (h.coin !== coin || h.lots.length >= MAX_LOTS_PER_HOLDING) {
-            return h;
-          }
-          return {
-            ...h,
-            lots: [
-              ...h.lots,
-              {
-                amount: amt,
-                paid: cost,
-                time: Math.floor(Date.now() / 1000),
-                source: "manual",
-                // What `paid` is a number of. Without it, switching the
-                // display currency re-read every basis in the new one.
-                currency: prevState.currency,
-              },
-            ],
-          };
-        });
-        savePortfolioToStorage(portfolio);
-        return { portfolio };
-      });
-    });
-
-    _defineProperty(this, "handleRemoveLot", (coin, index) => {
-      this.setState((prevState) => {
-        const portfolio = prevState.portfolio.map((h) =>
-          h.coin === coin
-            ? { ...h, lots: h.lots.filter((_, i) => i !== index) }
-            : h,
-        );
-        savePortfolioToStorage(portfolio);
-        return { portfolio };
-      });
-    });
-
-    // Chain lots for a watched address. BTC: replay the real transfer
-    // history (plus a synthetic opening lot when the 50-tx page doesn't
-    // reach back to the full balance). Other chains expose no cheap history,
-    // so the whole balance becomes one lot priced at the watch date.
-    _defineProperty(this, "buildChainLots", async (coin, address, balance) => {
-      const priceAt = await makePortfolioPriceAt(coin, this.state.currency);
-      const nowSec = Math.floor(Date.now() / 1000);
-      if (coin === "BTC") {
-        const deltas = await fetchBtcAddressDeltas(address);
-        if (deltas) {
-          const seen = deltas.reduce((sum, d) => sum + d.delta, 0);
-          const opening = balance - seen;
-          const all =
-            opening > 1e-8
-              ? [
-                  {
-                    time: deltas.length ? deltas[0].time : nowSec,
-                    delta: opening,
-                  },
-                  ...deltas,
-                ]
-              : deltas;
-          return buildLotsFromDeltas(all, priceAt, this.state.currency);
-        }
-      }
-      if (!(balance > 0)) return [];
-      const price = priceAt(nowSec);
-      return [
-        {
-          amount: balance,
-          paid: price != null ? price * balance : 0,
-          time: nowSec,
-          source: "chain",
-          // `priceAt` priced this in the display currency, so that is what
-          // `paid` is a number of
-          currency: this.state.currency,
-        },
-      ];
-    });
-
-    // Watch an on-chain address: reads its public balance and keeps the
-    // holding's amount synced to it. Returns false when the coin/address is
-    // unsupported or the provider can't resolve it (caller shows an error).
-    /* Watch an address. The address says which chain it is on, so there is
-     * nothing to pick: paste it and every positive balance it holds becomes
-     * a holding — the native coin plus, on Ethereum, its tokens. Returns
-     * false when nothing could be read, so the panel can say so. */
-    _defineProperty(this, "handleWatchAddress", async (address) => {
-      const addr = (address || "").trim();
-      const chain = detectAddressChain(addr);
-      if (!chain || !WATCH_ADDRESS_RE.test(addr)) return false;
-
-      // The native balance, and on Ethereum every token in one batched call
-      const [native, tokens] = await Promise.all([
-        fetchAddressBalance(chain, addr),
-        chain === "ETH"
-          ? fetchErc20Balances(addr, Object.keys(ERC20_TOKENS))
-          : Promise.resolve({}),
-      ]);
-
-      const found = [];
-      if (native != null && native > 0) found.push({ coin: chain, amount: native });
-      for (const coin of Object.keys(tokens)) {
-        if (tokens[coin] > 0) found.push({ coin, amount: tokens[coin] });
-      }
-      // An address we can't read, or one holding nothing, isn't worth adding
-      if (!found.length) return false;
-
-      /* The native coin's lots come from its transfer history where the
-       * chain exposes one; tokens start without lots, so their cost basis
-       * is the user's to fill in. */
-      const lotsByCoin = {};
-      const nativeEntry = found.find((f) => f.coin === chain);
-      if (nativeEntry) {
-        try {
-          lotsByCoin[chain] = await this.buildChainLots(
-            chain,
-            addr,
-            nativeEntry.amount,
-          );
-        } catch (e) {
-          lotsByCoin[chain] = [];
-        }
-      }
-
-      this.setState((prevState) => {
-        let portfolio = prevState.portfolio;
-        for (const { coin, amount } of found) {
-          const watch = { address: addr, amount, lots: lotsByCoin[coin] || [] };
-          const existing = portfolio.find((h) => h.coin === coin);
-          if (!existing) {
-            if (portfolio.length >= PORTFOLIO_MAX_HOLDINGS) break;
-            portfolio = [
-              ...portfolio,
-              { coin, amount: 0, lots: [], watches: [watch] },
-            ];
-            continue;
-          }
-          if (
-            !existing.watches.some((w) => w.address === addr) &&
-            existing.watches.length >= MAX_WATCHES_PER_HOLDING
-          ) {
-            continue;
-          }
-          portfolio = portfolio.map((h) =>
-            h.coin === coin
-              ? {
-                  ...h,
-                  watches: h.watches.some((w) => w.address === addr)
-                    ? h.watches.map((w) =>
-                        w.address === addr ? watch : w,
-                      )
-                    : [...h.watches, watch],
-                }
-              : h,
-          );
-        }
-        savePortfolioToStorage(portfolio);
-        return { portfolio };
-      }, this.fetchPortfolioPrices);
-      return true;
-    });
-
-    // Stop watching one address. What it contributed folds into the manual
-    // part, so the totals and P/L stay exactly as they were.
-    _defineProperty(this, "handleUnwatchAddress", (coin, address) => {
-      this.setState((prevState) => {
-        const portfolio = prevState.portfolio.map((h) => {
-          if (h.coin !== coin) return h;
-          const gone = h.watches.find((w) => w.address === address);
-          if (!gone) return h;
-          return {
-            ...h,
-            amount: h.amount + gone.amount,
-            lots: [...h.lots, ...gone.lots].slice(0, MAX_LOTS_PER_HOLDING),
-            watches: h.watches.filter((w) => w.address !== address),
-          };
-        });
-        savePortfolioToStorage(portfolio);
-        return { portfolio };
-      });
-    });
-
-    // JSON restore: replaces current holdings. Runs through the same
-    // whitelist validation as storage, so a hand-edited file can't inject
-    // junk. Returns false when nothing valid survives (caller shows an error).
-    _defineProperty(this, "handleImportPortfolio", (list) => {
-      const portfolio = sanitizePortfolio(list).slice(0, PORTFOLIO_MAX_HOLDINGS);
-      if (!portfolio.length) return false;
-      savePortfolioToStorage(portfolio);
-      this.setState({ portfolio }, this.fetchPortfolioPrices);
-      return true;
-    });
-
-    _defineProperty(this, "handleRemoveHolding", (coin) => {
-      this.setState((prevState) => {
-        const portfolio = prevState.portfolio.filter((h) => h.coin !== coin);
-        savePortfolioToStorage(portfolio);
-        return { portfolio };
-      });
-    });
-
-    // Ensure every held coin has a fresh price in the shared pageTickerCache,
-    // then publish a coin→price map into state for the Portfolio view.
-    /* One refresh at a time, and never a request that is simply dropped.
-     *
-     * A run takes as long as its slowest address lookup, and the two things
-     * that ask for a refresh — opening the view and adding a holding — both
-     * land inside that window. The in-flight guard used to return and leave
-     * nothing behind, so a coin added while a refresh was running had no price
-     * until the sixty-second interval came round: measured, BTC priced and ETH
-     * blank six seconds after the refresh finished. The ask is remembered now
-     * and honoured once the current run ends.
-     *
-     * The generation counter answers the other half: a run publishes a
-     * snapshot of the coins and the currency it *started* with, so a slow run
-     * finishing after the currency changed would overwrite the newer prices
-     * with older ones. A run that is no longer the newest publishes nothing. */
-    _defineProperty(this, "fetchPortfolioPrices", async () => {
-      if (document.hidden) return;
-      if (this._portfolioFetching) {
-        this._portfolioPending = true;
-        return;
-      }
-      const generation = ++this._portfolioRun;
-      const holdings = this.state.portfolio;
-      if (!holdings.length) {
-        this.setState({ portfolioPrices: {}, portfolioReady: true });
-        return;
-      }
-      this._portfolioFetching = true;
-      const curr = this.state.currency;
-      const coins = holdings.map((h) => h.coin);
-
-      // Re-sync every watched address so values use fresh balances.
-      // fetchAddressBalance caches per address (10 min), so this is usually
-      // free; failures keep the last synced amount. On a change the lots
-      // update too: BTC replays the real transfer history, other chains log
-      // the delta as a buy at today's price (or FIFO-consume on a decrease).
-      /* Token balances for one address all come from one batched call, so
-       * a portfolio watching a dozen tokens costs a single request instead
-       * of a dozen. The per-watch loop below then reads them from cache. */
-      const tokensByAddress = new Map();
-      for (const h of holdings) {
-        if (!ERC20_TOKENS[h.coin]) continue;
-        for (const w of h.watches) {
-          if (!tokensByAddress.has(w.address)) tokensByAddress.set(w.address, []);
-          tokensByAddress.get(w.address).push(h.coin);
-        }
-      }
-      for (const [addr, coins] of tokensByAddress) {
-        await fetchErc20Balances(addr, coins);
-      }
-
-      for (const h of holdings) {
-        if (!isWatchableCoin(h.coin)) continue;
-        for (const w of h.watches) {
-          const balance = await fetchAddressBalance(h.coin, w.address);
-          if (balance == null || balance === w.amount) continue;
-          let lots = w.lots;
-          try {
-            if (h.coin === "BTC") {
-              lots = await this.buildChainLots(h.coin, w.address, balance);
-            } else if (balance > w.amount) {
-              const priceAt = await makePortfolioPriceAt(h.coin, curr);
-              const nowSec = Math.floor(Date.now() / 1000);
-              const price = priceAt(nowSec);
-              const delta = balance - w.amount;
-              lots = [
-                ...w.lots,
-                {
-                  amount: delta,
-                  paid: price != null ? price * delta : 0,
-                  time: nowSec,
-                  source: "chain",
-                },
-              ].slice(0, MAX_LOTS_PER_HOLDING);
-            } else {
-              lots = reduceLotsFifo(w.lots, w.amount - balance);
-            }
-          } catch (e) {
-            // keep the existing lots — the amount still updates below
-          }
-          this.setState((prevState) => {
-            const portfolio = prevState.portfolio.map((p) =>
-              p.coin === h.coin
-                ? {
-                    ...p,
-                    watches: p.watches.map((pw) =>
-                      pw.address === w.address
-                        ? { ...pw, amount: balance, lots }
-                        : pw,
-                    ),
-                  }
-                : p,
-            );
-            savePortfolioToStorage(portfolio);
-            return { portfolio };
-          });
-        }
-      }
-
-      try {
-        // Bulk path (Coinlore top-100) covers most coins in one request
-        await bulkRefreshPageTickerCache(coins, curr);
-
-        // Per-coin fallback for anything still missing/stale (Coinbase)
-        const stale = coins.filter((c) => {
-          const e = pageTickerCache.get(`${c}-${curr}`);
-          return !e || Date.now() - e.timestamp > PAGE_TICKER_TTL;
-        });
-        for (let i = 0; i < stale.length; i += 4) {
-          await Promise.all(
-            stale
-              .slice(i, i + 4)
-              .map((c) => refreshPageTickerCoin(c, curr, Date.now())),
-          );
-        }
-      } catch (e) {
-        // Best-effort — show whatever the cache already has
-      }
-
-      const prices = {};
-      coins.forEach((c) => {
-        const e = pageTickerCache.get(`${c}-${curr}`);
-        if (e) prices[c] = { price: e.price, change: e.change, up: e.up };
-      });
-      this._portfolioFetching = false;
-      // A newer run has already started: this snapshot is the older answer to
-      // a question that has since changed, and publishing it would undo theirs
-      if (generation === this._portfolioRun) {
-        this.setState({ portfolioPrices: prices, portfolioReady: true });
-      }
-      if (this._portfolioPending) {
-        this._portfolioPending = false;
-        this.fetchPortfolioPrices();
-      }
-    });
-
+     * Same idiom as `settings-preferences.js`: a plain function handed the
+     * component. `Object.assign` puts every name back exactly where it was,
+     * so nothing that calls them changed. */
+    Object.assign(this, portfolioHandlers(this));
     _defineProperty(this, "handleKeyDown", (e) => {
       // Ignore shortcuts with modifiers or while typing in a field
       if (e.ctrlKey || e.metaKey || e.altKey) return;
@@ -2757,9 +2326,39 @@ class CryptoChart extends PureComponent {
     });
 
     _defineProperty(this, "dismissWonCall", (id) => {
+      const timer = this.wonCallTimers.get(id);
+      if (timer) {
+        clearTimeout(timer);
+        this.wonCallTimers.delete(id);
+      }
       this.setState((prev) => ({
         wonCalls: prev.wonCalls.filter((c) => c.id !== id),
       }));
+    });
+
+    /* A win announces itself and then gets out of the way.
+     *
+     * It had a × and nothing else, so a call that settled while the tab was
+     * in the background left a card sitting over the chart until somebody
+     * closed it — and on a new tab page that can be days. A hit **target** is
+     * different and keeps its ×: it is a thing you asked to be told, and
+     * dismissing it is how you acknowledge it. A settled call was not
+     * requested at that moment; it is news, and news that has been read should
+     * leave on its own.
+     *
+     * The record itself is untouched either way — the call is in `done` and
+     * the tally has it. This closes a card, not an outcome. */
+    _defineProperty(this, "armWonCallDismiss", (id) => {
+      if (this.wonCallTimers.has(id)) return;
+      this.wonCallTimers.set(
+        id,
+        setTimeout(() => {
+          this.wonCallTimers.delete(id);
+          this.setState((prev) => ({
+            wonCalls: prev.wonCalls.filter((c) => c.id !== id),
+          }));
+        }, WON_CALL_TOAST_MS),
+      );
     });
 
     _defineProperty(this, "handleClearSettled", () => {
@@ -3509,7 +3108,19 @@ class CryptoChart extends PureComponent {
       if (document.hidden) {
         return;
       }
-      if (this.pendingVisibilityRefresh) {
+      /* Refresh what is on screen if it is out of date — not only if a tick
+       * happened to fire while you were away.
+       *
+       * The condition used to be `pendingVisibilityRefresh`, set when the
+       * interval fired on a hidden tab. Chrome freezes timers in background
+       * tabs, so on the tab this extension actually lives in — one you opened
+       * and left — the tick often never fires at all, the flag is never set,
+       * and coming back showed the prices from whenever you left until the
+       * next interval, which can be minutes. "Did we try while you were away"
+       * is the wrong question; "is what you are looking at stale" is the one
+       * the person asked. */
+      const age = Date.now() - (this.lastFetchAt || 0);
+      if (this.pendingVisibilityRefresh || age >= this.state.refreshInterval) {
         this.pendingVisibilityRefresh = false;
         this.fetchData();
       }
@@ -3606,6 +3217,8 @@ class CryptoChart extends PureComponent {
     window.removeEventListener("offline", this.handleOffline);
 
     document.removeEventListener("visibilitychange", this.handleVisibilityChange);
+    for (const t of this.wonCallTimers.values()) clearTimeout(t);
+    this.wonCallTimers.clear();
 
     document.removeEventListener("keydown", this.handleKeyDown);
   }
@@ -3625,6 +3238,12 @@ class CryptoChart extends PureComponent {
     // stops the announcement
     if (prevState.firedAlerts !== this.state.firedAlerts) {
       this.syncAlertTitle();
+    }
+    /* Every announced win gets its own dismissal timer, armed once. Here
+     * rather than where the win is found, because a card can also arrive from
+     * a settle that happened on load — one place that sees them all. */
+    if (prevState.wonCalls !== this.state.wonCalls) {
+      for (const c of this.state.wonCalls) this.armWonCallDismiss(c.id);
     }
     // Setting a first target, or the last one firing, decides whether there is
     // anything left to check for while the tab is away
@@ -3825,6 +3444,8 @@ class CryptoChart extends PureComponent {
       fearGreedData,
       marketOverviewData,
       halvingData,
+      ethGasData,
+      btcFeesData,
       rsiValue,
       fundingRateData,
       longShortData,
@@ -3836,10 +3457,6 @@ class CryptoChart extends PureComponent {
       widgetOrder,
       dragWidget,
     } = this.state;
-    // 0 → needle left, 100 → needle right; 1.8° per point of the index
-    const fgNeedleAngle = fearGreedData
-      ? (Math.min(Math.max(fearGreedData.value, 0), 100) * 1.8).toFixed(1)
-      : 90;
     const activeCoin = coinOptions[coinIndex] || coinOptions[0] || "BTC";
     /* There is a drawing on screen, so a switch is a transition and not a
      * first paint: the skeleton stands down for the chart and the range
@@ -4237,14 +3854,36 @@ class CryptoChart extends PureComponent {
                       ? formatCompactAmount(ticker.volume24, symbol)
                       : null;
                     if (vol) stats.push(["24h Vol", vol]);
+                    /* VWAP, on this row's own terms: shown when the candles
+                     * happen to be loaded — candlestick mode, or any crosshair
+                     * hover — and never fetched for. It is the one thing the
+                     * sector scan turned up that institutions actually read
+                     * and that claims nothing about the future: the average
+                     * price actually paid across this window, weighted by how
+                     * much changed hands at each level. */
+                    const vwap = vwapOf(this.state.ohlcData);
+                    if (vwap) {
+                      const live = Number(currentValue);
+                      const away =
+                        isFinite(live) && vwap > 0
+                          ? ((live - vwap) / vwap) * 100
+                          : null;
+                      stats.push([
+                        "VWAP",
+                        money(vwap),
+                        away == null
+                          ? `The volume-weighted average price across this ${periodLabel.toLowerCase()} window. A price that happened, not a forecast.`
+                          : `The volume-weighted average price across this ${periodLabel.toLowerCase()} window — ${Math.abs(away).toFixed(1)}% ${away >= 0 ? "below" : "above"} the price now. A price that happened, not a forecast.`,
+                      ]);
+                    }
                     if (!stats.length) return null;
                     return React.createElement(
                       PriceStatsRow,
                       null,
-                      stats.map(([key, value]) =>
+                      stats.map(([key, value, title]) =>
                         React.createElement(
                           PriceStatItem,
-                          { key },
+                          { key, title },
                           React.createElement(PriceStatKey, null, key),
                           React.createElement(PriceStatValue, null, value),
                         ),
@@ -4381,6 +4020,11 @@ class CryptoChart extends PureComponent {
                         ? 0
                         : this.state.fireworks,
                     onPlaceCall: this.handlePlaceCall,
+                    /* Taking one back, from the chart rather than only from
+                     * the panel — where a `×` has withdrawn open calls with no
+                     * confirmation all along. Two clicks here, and never on a
+                     * settled one. */
+                    onWithdrawCall: this.handleWithdrawCall,
                     onGeometry: this.handleChartGeometry,
                     /* "What happened here?" — where the marks go is worked out
                      * from the series on screen, so it costs no request; what
@@ -4499,7 +4143,103 @@ class CryptoChart extends PureComponent {
         (() => {
           if (showPortfolio) return null;
           const hidden = this.state.hiddenWidgets;
-          const widgetDefs = {
+      
+    /* Every card waits in the same shape — see `WidgetSkeletonLine`. A
+     * function rather than a constant because styled-components memoises the
+     * element, and two cards sharing one element instance would share one
+     * animation phase, which reads as a single blinking block rather than a
+     * column of cards each filling in. */
+    const widgetSkeleton = () =>
+      React.createElement(
+        Fragment,
+        null,
+        React.createElement(WidgetSkeletonLine, { tall: true, "aria-hidden": true }),
+        React.createElement(WidgetSkeletonLine, { "aria-hidden": true }),
+        React.createElement(WidgetSkeletonReader, null, "Loading"),
+      );
+    /* TITLE POLICY — four rules, and each one was a card breaking it.
+     *
+     *  1. **The name in full, never an abbreviation.** `BTC OPEN INT.` and
+     *     `BTC LIQS 24H` sat in the same column as `FEAR & GREED`, so the
+     *     panel read as assembled rather than made. The card's font size is a
+     *     user setting (`WIDGET_SIZE_OPTIONS`): a title that has to be decoded
+     *     is not shorter, it is slower.
+     *  2. **A coin-scoped card leads with the coin; a market-wide one names
+     *     none.** The coin under the chart changes; which cards followed it
+     *     was otherwise guesswork.
+     *  3. **A window in the title, a venue in the subtext.** A 24h figure is
+     *     meaningless without the window, and an open interest figure is one
+     *     exchange's book — printing it unattributed is the defect the RSI
+     *     widget's missing clock was.
+     *  4. **Never the same words twice.** The open interest card was titled
+     *     `BTC OPEN INT.` with `Open Interest` directly beneath it: the
+     *     abbreviation existed to save room the expansion then spent. A
+     *     subtext that repeats the title is not a subtext.
+     */
+    /* What a transfer costs, in the currency on screen.
+     *
+     * The two network-fee cards quote the unit the chain quotes — gwei,
+     * sat/vB — and neither is a number anyone prices a transfer from in their
+     * head. The price comes from `alertPriceFor`, which reads the ticker
+     * snapshot and issues no request, so this is free. Where the ticker has
+     * no price for the coin the money is **left off** rather than guessed at,
+     * and the card falls back to saying only how soon. */
+    const feeMoney = (amount, coin) => {
+      const price = this.alertPriceFor(coin);
+      if (!isFinite(amount) || price == null) return null;
+      const cost = amount * price;
+      const sym = getCurrencySymbol(currency);
+      // Both chains are genuinely under a cent at times, and "$0.00" reads as
+      // a broken card rather than as cheap
+      if (cost < 0.01) return `under ${sym}0.01`;
+      return sym + cost.toFixed(2);
+    };
+    const feeSubtext = (amount, coin, when) => {
+      const money = feeMoney(amount, coin);
+      /* "~", not "≈". The subtext renders around 9px, and at that size the
+       * two waves of U+2248 flatten into two bars — measured, it is
+       * indistinguishable from "=", which is the one thing this line must not
+       * claim. (U+2248 is also outside the bundled font's unicode-range, so it
+       * is a fallback glyph rather than Roboto Mono's.) */
+      return money
+        ? `~${money} to send · ${when}`
+        : when.charAt(0).toUpperCase() + when.slice(1);
+    };
+    // Two significant figures wherever the scale lands: 0.29, 12.4, 143
+    const gweiText = (v) =>
+      v >= 100 ? v.toFixed(0) : v >= 10 ? v.toFixed(1) : v.toFixed(2);
+
+    /* The deepest peak-to-trough fall inside the range on screen, out of the
+     * series already drawn — no request, and nothing fetched to have it on.
+     *
+     * It is the one thing the algorithm research left standing
+     * (`docs/product/TODAY.md` §9.4): of 64 rule × coin pairs, 59 cut the
+     * worst fall and only 28 beat simply holding. So this is a risk figure and
+     * it is worded as one — "how bad did this get", never "how bad can it get"
+     * — and it carries no colour, because red here would read as an alarm
+     * about a fall that has already finished. */
+    const fall = maxDrawdown(valueHistory);
+    const fallWhen = (from, to) => {
+      const a = +from;
+      const b = +to;
+      if (!isFinite(a) || !isFinite(b)) return null;
+      // Inside one day the dates are the same string twice, which says
+      // nothing; the clock is what separates them
+      const sameDay = new Date(a).toDateString() === new Date(b).toDateString();
+      const fmt = (ms) =>
+        sameDay
+          ? new Date(ms).toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            })
+          : new Date(ms).toLocaleDateString([], {
+              month: "short",
+              day: "numeric",
+            });
+      return `${fmt(a)} to ${fmt(b)}`;
+    };
+
+    const widgetDefs = {
             watchlist: {
               label: "Watchlist",
               visible: widgets.watchlist && !hidden.watchlist,
@@ -4512,7 +4252,7 @@ class CryptoChart extends PureComponent {
                         .slice(0, 12)
                         .map((c) => this.renderCoinRow(c, true)),
                     )
-                  : React.createElement(WidgetSubtext, null, "Loading..."),
+                  : widgetSkeleton(),
             },
             topMovers: {
               label: "Top Movers 24h",
@@ -4525,7 +4265,7 @@ class CryptoChart extends PureComponent {
                     React.createElement(WidgetListDivider, { key: "split" }),
                     topMoversData.losers.map((m) => this.renderCoinRow(m)),
                   )
-                : React.createElement(WidgetSubtext, null, "Loading..."),
+                : widgetSkeleton(),
             },
             fearGreed: {
               label: "Fear & Greed",
@@ -4534,52 +4274,27 @@ class CryptoChart extends PureComponent {
                 ? React.createElement(
                     Fragment,
                     null,
+                    React.createElement(WidgetValue, null, fearGreedData.value),
+                    /* The same meter the RSI card uses, and no traffic light.
+                     *
+                     * It drew a red-amber-green arc with a needle, which is two
+                     * things at once: a second drawing for a fact that is only
+                     * a position on a 0-100 scale, and a **claim** — the ramp
+                     * says low is bad and high is good. That is the same claim
+                     * the RSI widget's bar was removed for on 20 August, and it
+                     * is no better supported here.
+                     *
+                     * What stays is the number and the word beneath it, and the
+                     * word is the *source's* own classification rather than
+                     * ours. Reporting somebody else's label is not the same as
+                     * inventing one; the colours were the only part this app
+                     * was asserting, so the colours are what go. */
                     React.createElement(
-                      "svg",
-                      {
-                        viewBox: "0 8 100 44",
-                        style: {
-                          display: "block",
-                          margin: "0 auto",
-                          // em, so the gauge grows with the card
-                          width: "5.75em",
-                          height: "2.5em",
-                          overflow: "visible",
-                        },
-                      },
-                      React.createElement(GaugeTrackPath, { d: GAUGE_ARC }),
-                      GAUGE_SEGS.map((seg, i) =>
-                        React.createElement("path", {
-                          key: "seg-" + i,
-                          d: GAUGE_ARC,
-                          fill: "none",
-                          stroke: seg.color,
-                          strokeWidth: "7",
-                          strokeLinecap:
-                            i === 0 || i === 4 ? "round" : "butt",
-                          strokeDasharray: seg.len + " " + GAUGE_LEN,
-                          strokeDashoffset: -seg.offset,
-                        }),
-                      ),
-                      React.createElement(GaugeNeedle, {
-                        x1: "50",
-                        y1: "50",
-                        // Fixed endpoint at the 0 position; the angle does
-                        // the work so the needle can swing to it
-                        x2: "20",
-                        y2: "50",
-                        angle: fgNeedleAngle,
+                      WidgetMeter,
+                      null,
+                      React.createElement(WidgetMeterMark, {
+                        value: Math.min(Math.max(fearGreedData.value, 2), 98),
                       }),
-                      React.createElement(GaugeCenterDot, {
-                        cx: "50",
-                        cy: "50",
-                        r: "3",
-                      }),
-                    ),
-                    React.createElement(
-                      WidgetValue,
-                      { style: { marginTop: "0.2em" } },
-                      fearGreedData.value,
                     ),
                     React.createElement(
                       WidgetSubtext,
@@ -4587,10 +4302,14 @@ class CryptoChart extends PureComponent {
                       fearGreedData.classification,
                     ),
                   )
-                : React.createElement(WidgetSubtext, null, "Loading..."),
+                : widgetSkeleton(),
             },
             marketOverview: {
-              label: "Market",
+              /* The card's own title says what the figure is, so the figure
+               * does not repeat it. It read "Market" above and "Cap $2.31T"
+               * inside — the only card in the column prefixing its own number,
+               * and a label doing the job twice. */
+              label: "Market Cap",
               visible: widgets.marketOverview && !hidden.marketOverview,
               content: marketOverviewData
                 ? React.createElement(
@@ -4599,7 +4318,6 @@ class CryptoChart extends PureComponent {
                     React.createElement(
                       WidgetValue,
                       { style: { fontSize: "0.9em" } },
-                      React.createElement(MarketStatLabel, null, "Cap"),
                       "$" +
                         (marketOverviewData.totalMarketCap / 1e12).toFixed(
                           2,
@@ -4611,12 +4329,12 @@ class CryptoChart extends PureComponent {
                       null,
                       React.createElement(MarketStatLabel, null, "BTC"),
                       marketOverviewData.btcDominance.toFixed(1) + "%",
-                      " ",
+                      " · ",
                       React.createElement(MarketStatLabel, null, "ETH"),
                       marketOverviewData.ethDominance.toFixed(1) + "%",
                     ),
                   )
-                : React.createElement(WidgetSubtext, null, "Loading..."),
+                : widgetSkeleton(),
             },
             halvingCountdown: {
               label: "BTC Halving",
@@ -4672,36 +4390,111 @@ class CryptoChart extends PureComponent {
                         React.createElement(HalvingTimeLabel, null, "Min"),
                       ),
                     ),
-                    React.createElement(
-                      "div",
-                      {
-                        style: {
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "0.4em",
-                          marginTop: "0.35em",
-                        },
-                      },
-                      React.createElement(
-                        HalvingProgressBar,
-                        { style: { flex: 1, marginTop: 0 } },
-                        React.createElement(HalvingProgressFill, {
-                          percent: halvingData.progressPercent,
-                        }),
-                      ),
-                      React.createElement(
-                        HalvingTimeLabel,
-                        null,
-                        halvingData.progressPercent + "%",
-                      ),
-                    ),
+                    /* The progress bar has gone, and it is the third reading
+                     * of one fact that went with it: the clock said how long
+                     * is left, the date said when, and the bar said 24% of a
+                     * cycle nobody is counting in percent. The clock earns its
+                     * exception to the one-figure grammar because a countdown
+                     * genuinely needs its units; the bar did not. */
                     React.createElement(
                       HalvingEta,
                       null,
                       "ETA: " + halvingData.etaFormatted,
                     ),
                   )
-                : React.createElement(WidgetSubtext, null, "Loading..."),
+                : widgetSkeleton(),
+            },
+            /* The pair share one grammar and it is the point of them: the
+             * figure is what the chain quotes, the subtext is what that means
+             * in your money and how soon. */
+            ethGas: {
+              label: "ETH Gas",
+              visible: widgets.ethGas && !hidden.ethGas,
+              content: ethGasData
+                ? React.createElement(
+                    Fragment,
+                    null,
+                    React.createElement(
+                      WidgetValue,
+                      null,
+                      gweiText(ethGasData.gwei) + " gwei",
+                    ),
+                    React.createElement(
+                      WidgetSubtext,
+                      null,
+                      feeSubtext(ethGasData.transferEth, "ETH", "next block"),
+                    ),
+                  )
+                : widgetSkeleton(),
+            },
+            btcFees: {
+              label: "BTC Fees",
+              visible: widgets.btcFees && !hidden.btcFees,
+              content: btcFeesData
+                ? React.createElement(
+                    Fragment,
+                    null,
+                    React.createElement(
+                      WidgetValue,
+                      null,
+                      btcFeesData.rate + " sat/vB",
+                    ),
+                    React.createElement(
+                      WidgetSubtext,
+                      null,
+                      feeSubtext(
+                        btcFeesData.transferBtc,
+                        "BTC",
+                        "~30 min",
+                      ),
+                    ),
+                    /* The other two tiers, because the spread between them is
+                     * the reading: three tiers all at 1 sat/vB is an empty
+                     * mempool, and no single figure says that. */
+                    React.createElement(
+                      WidgetSubtext,
+                      null,
+                      React.createElement(MarketStatLabel, null, "Fast"),
+                      btcFeesData.fastest,
+                      " · ",
+                      React.createElement(MarketStatLabel, null, "Hour"),
+                      btcFeesData.hour,
+                    ),
+                  )
+                : widgetSkeleton(),
+            },
+            worstFall: {
+              label: `${activeCoin} Worst Fall · ${periodLabel}`,
+              visible: widgets.worstFall && !hidden.worstFall,
+              content: !valueHistory.length
+                ? widgetSkeleton()
+                : fall
+                  ? React.createElement(
+                      Fragment,
+                      null,
+                      React.createElement(
+                        WidgetValue,
+                        null,
+                        `−${Math.abs(fall.pct).toFixed(1)}%`,
+                      ),
+                      React.createElement(
+                        WidgetSubtext,
+                        null,
+                        fallWhen(fall.from, fall.to) || "peak to trough",
+                      ),
+                    )
+                  : /* A range that only ever rose has no fall in it, and "0.0%"
+                     * would read as a measurement rather than as an absence */
+                    React.createElement(
+                      Fragment,
+                      null,
+                      React.createElement(WidgetValue, null, "None"),
+                      React.createElement(
+                        WidgetSubtext,
+                        null,
+                        "it only rose across this range",
+                      ),
+                    ),
             },
             rsiWidget: {
               // RSI is computed from the chart's current series, so the same
@@ -4716,9 +4509,9 @@ class CryptoChart extends PureComponent {
                       null,
                       React.createElement(WidgetValue, null, rsiValue),
                       React.createElement(
-                        RsiBar,
+                        WidgetMeter,
                         null,
-                        React.createElement(RsiMarker, {
+                        React.createElement(WidgetMeterMark, {
                           value: Math.min(Math.max(rsiValue, 2), 98),
                         }),
                       ),
@@ -4750,10 +4543,10 @@ class CryptoChart extends PureComponent {
                         React.createElement(HalvingTimeLabel, null, "100"),
                       ),
                     )
-                  : React.createElement(WidgetSubtext, null, "Loading..."),
+                  : widgetSkeleton(),
             },
             fundingRate: {
-              label: activeCoin + " Funding",
+              label: activeCoin + " Funding Rate",
               visible: widgets.fundingRate && !hidden.fundingRate,
               content: fundingRateData
                 ? React.createElement(
@@ -4775,10 +4568,10 @@ class CryptoChart extends PureComponent {
                         "%",
                     ),
                   )
-                : React.createElement(WidgetSubtext, null, "Loading..."),
+                : widgetSkeleton(),
             },
             longShortRatio: {
-              label: activeCoin + " L/S Ratio",
+              label: activeCoin + " Long / Short",
               visible: widgets.longShortRatio && !hidden.longShortRatio,
               content: longShortData
                 ? React.createElement(
@@ -4807,10 +4600,10 @@ class CryptoChart extends PureComponent {
                       ),
                     ),
                   )
-                : React.createElement(WidgetSubtext, null, "Loading..."),
+                : widgetSkeleton(),
             },
             openInterest: {
-              label: activeCoin + " Open Int.",
+              label: activeCoin + " Open Interest",
               visible: widgets.openInterest && !hidden.openInterest,
               content: openInterestData
                 ? React.createElement(
@@ -4821,16 +4614,16 @@ class CryptoChart extends PureComponent {
                       null,
                       openInterestData.formatted,
                     ),
-                    React.createElement(
-                      WidgetSubtext,
-                      null,
-                      "Open Interest",
-                    ),
+                    /* The venue, not the reading's own name again. Open
+                     * interest is one exchange's book — OKX's swap here — and
+                     * a figure printed without it is the same defect the RSI
+                     * widget's missing clock was. */
+                    React.createElement(WidgetSubtext, null, "OKX perpetual"),
                   )
-                : React.createElement(WidgetSubtext, null, "Loading..."),
+                : widgetSkeleton(),
             },
             liquidations: {
-              label: activeCoin + " Liqs 24h",
+              label: activeCoin + " Liquidations 24h",
               visible: widgets.liquidations && !hidden.liquidations,
               content: liquidationsData
                 ? React.createElement(
@@ -4866,10 +4659,10 @@ class CryptoChart extends PureComponent {
                       ),
                     ),
                   )
-                : React.createElement(WidgetSubtext, null, "Loading..."),
+                : widgetSkeleton(),
             },
             altcoinSeason: {
-              label: "Alt Season",
+              label: "Altcoin Season",
               visible: widgets.altcoinSeason && !hidden.altcoinSeason,
               content: altcoinSeasonData
                 ? React.createElement(
@@ -4898,7 +4691,7 @@ class CryptoChart extends PureComponent {
                       "BTC Dom " + altcoinSeasonData.btcDom + "%",
                     ),
                   )
-                : React.createElement(WidgetSubtext, null, "Loading..."),
+                : widgetSkeleton(),
             },
           };
 
@@ -5239,6 +5032,8 @@ class CryptoChart extends PureComponent {
         showPortfolio &&
           React.createElement(Portfolio, {
             holdings: portfolio,
+            // Ranking only — the coins you follow come first in the add search
+            coinOptions,
             prices: portfolioPrices,
             ready: portfolioReady,
             currency,
@@ -5253,6 +5048,9 @@ class CryptoChart extends PureComponent {
             onRemoveSale: this.handleRemoveSale,
             onRemove: this.handleRemoveHolding,
             onImport: this.handleImportPortfolio,
+            onMerge: this.handleMergePortfolio,
+            costMethod: this.state.costMethod,
+            onCostMethodChange: this.handleCostMethodChange,
             onWatch: this.handleWatchAddress,
             onUnwatch: this.handleUnwatchAddress,
             onClose: this.togglePortfolio,

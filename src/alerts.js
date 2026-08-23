@@ -477,6 +477,29 @@ class AlertsPanel extends PureComponent {
       return `24h move ${moved} ${way} · needs ${formatPercentValue(a.target)} ${a.direction === "above" ? "up" : "down"}`;
     }
     const price = this.valueOf(a);
+    /* A portfolio target with no total is a target that cannot fire, and it
+     * has to say so.
+     *
+     * `portfolioTotalFrom` returns **null rather than a partial sum** when a
+     * held coin has no price — a smaller-than-true total would fire a "worth
+     * less than" target on something that did not happen. That is the right
+     * refusal, and until now its consequence was silent: the row showed the
+     * target, no distance, no meter, and no reason, which is a row that looks
+     * armed and never will be. It names the holdings it is waiting on. */
+    if (price === null && a.kind === "portfolio") {
+      const missing = (this.props.holdings || [])
+        .map((h) => h && h.coin)
+        .filter((c) => c && this.priceOf(c) === null);
+      if (missing.length) {
+        const named = missing.slice(0, 3).join(", ");
+        return (
+          `Waiting on a price for ${named}` +
+          (missing.length > 3 ? ` and ${missing.length - 3} more` : "") +
+          " — the total is left unmeasured rather than counted short"
+        );
+      }
+      return "No holdings to total yet";
+    }
     if (price === null) return null;
     const away = targetDistancePercent(a, price);
     const now = this.props.formatPrice(price, a.currency);

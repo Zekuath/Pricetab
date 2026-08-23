@@ -91,7 +91,11 @@ const sandbox = {
   }),
 };
 vm.createContext(sandbox);
-for (const f of ["config.js", "utils.js", "chart.js"]) {
+/* `chart-board.js` first, for the same reason `index.html` loads it first:
+ * `chart.js` calls `chartBoardGeometry` from the constructor, and a sandbox
+ * that omits it fails at the first `new LineBase()` rather than at an
+ * assertion. */
+for (const f of ["config.js", "utils.js", "chart-board.js", "chart.js"]) {
   vm.runInContext(fs.readFileSync(path.join(__dirname, "..", "src", f), "utf8"), sandbox, {
     filename: f,
   });
@@ -984,6 +988,44 @@ for (const [name, node] of [["A", labelA], ["B", labelB]]) {
   const x = Number(node.attrs.x);
   assert.ok(y >= 0 && y <= 200, `label ${name} stays inside the chart height, got ${y}`);
   assert.ok(x >= 0 && x <= 400, `label ${name} stays inside the chart width, got ${x}`);
+}
+
+/* ── VWAP ───────────────────────────────────────────────────────────────────
+ * The one thing the sector scan turned up that institutions actually read and
+ * that claims nothing about the future: the average price actually paid,
+ * weighted by how much changed hands at each level.
+ */
+{
+  // Ten units at a typical price of 10, then one unit at 100: the weighted
+  // answer is nearer 10, the unweighted mean would be 55
+  sandbox.__c = [
+    { high: 10, low: 10, close: 10, volume: 10 },
+    { high: 100, low: 100, close: 100, volume: 1 },
+  ];
+  const v = run("vwapOf(__c)");
+  assert.strictEqual(Number(v.toFixed(6)), Number(((10 * 10 + 100) / 11).toFixed(6)),
+    "weighted by volume, not a plain mean");
+  assert.ok(v < 20, `the heavy end wins (${v})`);
+
+  // The typical price is (high + low + close) / 3, not the close alone
+  sandbox.__t = [{ high: 12, low: 6, close: 9, volume: 5 }];
+  assert.strictEqual(run("vwapOf(__t)"), 9, "typical price of a symmetric bar");
+  sandbox.__t2 = [{ high: 30, low: 0, close: 0, volume: 5 }];
+  assert.strictEqual(run("vwapOf(__t2)"), 10, "…and not the close, which would be 0");
+
+  /* No volume is not zero volume. An unweighted average of prices is a
+   * different number wearing the same name, and printing it under this label
+   * would be exactly the kind of claim this codebase removes. */
+  sandbox.__z = [{ high: 10, low: 10, close: 10, volume: 0 }];
+  assert.strictEqual(run("vwapOf(__z)"), null, "no volume to weight by → null");
+  assert.strictEqual(run("vwapOf([])"), null, "no candles → null");
+  assert.strictEqual(run("vwapOf(null)"), null, "nothing at all → null");
+  // A single unusable bar must not drag the answer, it must be skipped
+  sandbox.__mixed = [
+    { high: 10, low: 10, close: 10, volume: 5 },
+    { high: NaN, low: 1, close: 1, volume: 99 },
+  ];
+  assert.strictEqual(run("vwapOf(__mixed)"), 10, "an unreadable bar is skipped, not counted");
 }
 
 /* ── base rates: the arithmetic behind the panel that replaced buy signals ──

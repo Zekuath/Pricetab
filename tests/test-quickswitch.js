@@ -41,6 +41,10 @@ for (const f of ["config.js", "quickswitch.js"]) {
   vm.runInContext(fs.readFileSync(`${base}/${f}`, "utf8"), sandbox, { filename: f });
 }
 const run = (code) => vm.runInContext(code, sandbox);
+// Cross-realm: a vm-context Array has a different prototype, so anything
+// compared with deepStrictEqual (or iterated with host helpers) comes back
+// through JSON first
+const json = (code) => JSON.parse(JSON.stringify(run(code)));
 const match = (q, owned) => {
   sandbox.__q = q;
   sandbox.__owned = owned;
@@ -119,5 +123,48 @@ assert.deepStrictEqual(
   match("", OWNED),
   "no exclusion behaves exactly like the plain jumper",
 );
+
+/* ── the one matcher, and the two things folding the portfolio in needed ────
+ *
+ * There were three coin searches: this one, the targets panel's (folded in on
+ * 21 Aug) and the portfolio's own substring filter (22 Aug). The portfolio
+ * needed two things this did not do, and both are now part of it rather than
+ * a fourth copy.
+ */
+{
+  // 1. `exclude` takes a list, not only one symbol. The compare picker means
+  //    "not the coin already on the chart"; the portfolio means "none of the
+  //    coins I already hold", and they are the same idea.
+  const many = json('quickSwitchMatches("", ["BTC", "ETH", "LTC"], ["ETH"])');
+  assert.ok(
+    many.every((m) => m.coin !== "ETH"),
+    "a list of exclusions is honoured, not just a single symbol",
+  );
+  assert.ok(many.some((m) => m.coin === "BTC"), "…and the rest still come back");
+  const one = json('quickSwitchMatches("", ["BTC", "ETH"], "ETH")');
+  assert.ok(one.every((m) => m.coin !== "ETH"), "a single symbol still works");
+
+  /* 2. The pool is what may be offered at all. `sanitizePortfolio` accepts
+   *    anything `isWatchableCoin` knows, so searching only `SUGGESTED_COINS`
+   *    offered **less than the storage layer would keep** — stETH and friends
+   *    could be acquired by watching an address and never typed in. */
+  const narrow = json('quickSwitchMatches("steth", [])');
+  assert.strictEqual(narrow.length, 0, "stETH is not a coin this app can chart");
+  const wide = json('quickSwitchMatches("steth", [], null, HOLDABLE_COINS)');
+  assert.ok(
+    wide.some((m) => m.coin === "STETH"),
+    `…and is a coin it can hold (${JSON.stringify(wide.map((m) => m.coin))})`,
+  );
+  // The wider pool must not lose anything the narrow one had
+  assert.ok(
+    json('quickSwitchMatches("bit", [], null, HOLDABLE_COINS)').some((m) => m.coin === "BTC"),
+    "the wider pool still finds an ordinary coin by name",
+  );
+
+  // 3. Ranking is the point of folding it in: the portfolio's old filter was
+  //    a substring test that ranked nothing
+  const ranked = json('quickSwitchMatches("ET", [], null, HOLDABLE_COINS)').map((m) => m.coin);
+  assert.strictEqual(ranked[0], "ETH", `an exact-prefix symbol leads (${ranked.join(",")})`);
+}
 
 console.log("QUICK SWITCH TESTS OK");

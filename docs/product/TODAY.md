@@ -276,8 +276,11 @@ now built**:
    `portfolio.js`, shown as "Worst fall" beside the other stats. Peak-to-trough
    inside the window on screen, from a series already in memory; a series that
    only rose reports nothing rather than "0%".
-3. **VWAP as a factual reference** — still open. What the professionals in (3)
-   actually read, and a statement about the past.
+3. ~~**VWAP as a factual reference**~~ — **built 22 Aug**, `vwapOf` in
+   `utils.js`, on the under-price stats row. It joins that row **on the row's
+   own terms**: shown when the candles happen to be loaded — candlestick mode,
+   or any crosshair hover — and never fetched for, which is the rule that row
+   already followed for every other figure on it.
 4. ~~**An alert on the portfolio total**~~ — **built 22 Aug**, a third alert
    `kind`. "Tell me when what I hold is worth less than X" is about the
    person's own money and needs no claim about the market at all. Checked
@@ -394,16 +397,22 @@ through the same bar `alerts.js` uses for a removed target. §12 asserts the
 *records* come back, not just the coin — a restore with an empty lot list
 looks identical on the row and would have eaten the basis.
 
-**What was found and deliberately not built.** In rough order of value:
-a concentration note ("62% is in one coin"), which is one line off data
-`donutSlices` already has and is still open in `TODO.md`; realized P/L for the
-current tax year, one filter over `sales`; merge-instead-of-replace on import;
-a cost-basis method choice (FIFO/LIFO/HIFO) for the report, which is a
-reporting method and not the country-specific tax computation `TODO.md`
-declined; and folding `matches()` into `quickSwitchMatches`, which is the
-third copy of coin search and the reason the four tokens `sanitizePortfolio`
-accepts but `SUGGESTED_COINS` omits (STETH, WBETH, FDUSD, TUSD) can be added
-by watching an address and never by hand. Smaller: histories are loaded once
+**What was found, and what has since been built.** All four of the portfolio
+items are done as of 22 Aug: the **concentration note** (it is the allocation
+strip's label — "46% in one holding", deliberately unattributed, because naming
+the coin there was the donut's own bug), **realized P/L for the current
+calendar year** (shown only when it differs from the total realized figure —
+if every sale was this year the two are the same number), **merge-on-import**,
+and the **FIFO/LIFO/HIFO** choice. **`matches()` is folded into `quickSwitchMatches` too** (22 Aug) —
+the third copy of coin search is gone. It needed two things the shared matcher
+did not do, and both are now part of it rather than a fourth copy: `exclude`
+takes a whole list (the portfolio means "none of the coins I hold"; the compare
+picker means "not the coin on the chart" — the same idea), and a `pool`
+argument, defaulting to what can be charted. The portfolio passes
+`HOLDABLE_COINS`, so the four tokens `sanitizePortfolio` accepts but
+`SUGGESTED_COINS` omits (STETH, WBETH, FDUSD, TUSD) **can now be typed in**
+rather than only arriving by watching an address — the search was offering less
+than the storage layer would keep. Results are ranked now instead of filtered. Smaller: histories are loaded once
 per coins|currency|period signature and never refreshed while the view is
 open, so the chart's last point stands still under a total that moves every
 60s; `donutSlices` runs twice per render.
@@ -568,9 +577,322 @@ Nothing here is started.
 4. Smaller, and from the portfolio pass in item 10: the concentration note,
    realized P/L for the current tax year, merge-on-import, FIFO/LIFO/HIFO for
    the report.
-5. **Standing debt, unchanged:** `app.js` 5,541 lines and `chart.js` 5,176
-   against a ~800 guideline. Their styled-components are already split out, so
-   the next cut is behavioural and genuinely risky.
+5. **Standing debt — three cuts made, and the measurement that chose them.**
+   Both headline files had already spent the usual first cut (the
+   styled-components), so the next had to come out of behaviour. Measured
+   first: `chart.js` has 95 members and **three** touch no `this`; `app.js` has
+   146 and **none** do. "Extract the pure helpers" was therefore not available,
+   and saying so is the finding rather than an excuse. What both had was a
+   cohesive contiguous run:
+
+   | file | was | now | cut |
+   |---|---:|---:|---|
+   | `chart.js` | 5,176 | **3,982** | `chart-controls.js` (423) + `chart-board.js` (782) |
+   | `app.js` | 5,707 | **5,203** | `app-portfolio.js` (517) |
+
+   `chart-board.js`'s seam is the one `CLAUDE.md` already described in its own
+   words — the geometry `updateGrid` needs *first*. The idiom is
+   `settings-preferences.js`'s, so nothing new was invented: a plain function
+   handed the component, `Object.assign` in the constructor, no caller changed,
+   and no `this` in the new files. Still over the ~800 guideline and still
+   honest about it: what is left in each is one class doing one thing.
+
+   ~~`chart-controls.js` took 423 lines
+   of `PeriodSwitcher` and `Overview` out of `chart.js` — measured before the
+   cut to share **no symbol in either direction** with `LineBase`, which is why
+   it was safe. `chart.js` 5,176 → 4,753, and it is now the chart and nothing
+   else. That is an improvement and not a solved problem: what is left there is
+   one 4,500-line class, `app.js` is one 5,700-line class, and cutting into
+   either is a behavioural refactor rather than moving a block. It deserves its
+   own session and its own review.~~ — superseded by the table above.
+
+---
+
+## 13. Taking a call back, a card that overstays, a tab that does not catch up
+
+**Asked:** four things in a row — undo a lock before it is too late; the chart
+sometimes not refreshing as time passes; the "Called it" banner closing itself
+after 20–25s; and the squares changing shape in calls mode even at the same
+zoom.
+
+**Status: three built and covered. The fourth is measured only in part and is
+written up below rather than guessed at.**
+
+**13.1 A locked call can be taken back — two clicks, like everything else.**
+Click a called square once and it asks (`UNLOCK?`), click again and it lets go.
+The chart used to refuse outright, and its comment said a record you cannot
+edit is the whole point — **true of that surface and false of the app**: the
+calls panel has carried a `×` that withdraws an open call with no confirmation
+since calls shipped. So the rule was really "final unless you know where the
+panel is", which is worse, because the person most likely to have locked the
+wrong square by accident is the one looking at the chart. A **settled** call is
+still final. Held by `unlockId` — an **id, not a pointer position** unlike
+`draftAt`, because a call is a stored record and there is nothing to re-derive
+between the clicks. `release()` opens the walls in the burst layer, which
+`updateCalls` does not clear and which therefore outlives the redraw that
+removes the box; neutral ink, because green and red already mean the *answer*.
+`test-calls-render.js` §3 was rewritten — it was called "a lock cannot be
+undone" — and now asserts the pair: one click removes nothing and asks, a click
+away abandons it, the second click takes it back.
+
+**13.2 The win card puts itself away** after `WON_CALL_TOAST_MS` (22s). A hit
+*target* keeps its ×: that is something you asked to be told, and dismissing it
+is how you acknowledge it. A settled call was not requested at that moment — it
+is news, and a card that settled while the tab was in the background otherwise
+sat over the chart until somebody closed it, which on a new tab page is days.
+The record is untouched either way. §26b asserts the mechanism (armed on
+announce, and the timer taken with the card when the × is used); the wall clock
+is deliberately not asserted — `page.clock.runFor` does not fire this timer and
+a real 22-second wait buys one number that is a constant. It **was** measured
+end to end in a throwaway probe: armed on announce, card gone after 24s.
+
+**13.3 Coming back to a tab refreshes it if it is stale.** The condition was
+`pendingVisibilityRefresh`, set when the interval fired on a hidden tab —
+but Chrome freezes timers in background tabs, so on the tab this extension
+actually lives in the tick often never fires, the flag is never set, and you
+came back to the prices from whenever you left. "Did we try while you were
+away" is the wrong question; `lastFetchAt` and the refresh interval answer the
+one the person is actually asking.
+
+**13.4 The squares changing shape — the first half of the measurement.**
+*(13.5 finishes it.)*
+
+Not guessed at, and not finished. What was established:
+
+| | |
+|---|---|
+| series' time span held steady, 100s, calls on | pitch **85.60 → 85.60px, spread 0.00** |
+| same, but the series grows a point per refresh | **85.30 → 83.10px, spread 2.20px** |
+| the live API, `period=hour`, three snapshots 40s apart | 359 points, span 3580s, **Δ 0s** |
+
+So the mechanism is real — the square's pixel size is `cellMs ÷ msPerPx`, and
+`msPerPx` comes from the span of whatever the last response covered — but on
+1H that span does not move, so it is **not** what is being seen. The remaining
+suspect is `boardStep` re-picking under a large price move: the pixel pitch is
+a function of chart height alone, so a call's fixed price band would then
+occupy a different number of squares. **That has not been measured** — the
+probe for it timed out and was abandoned rather than reported. Next session:
+lock a call, drive a widening band through `newCtx`'s `series` hook, and read
+the box's height in units of the lattice pitch.
+
+**13.5 The drag, measured six ways — the square does not move.**
+
+Reported again as "dragging left and right changes the square's size", with
+the extra detail that it happens on a profile where the zoom has been left off
+its default. Measured rather than assumed, and the answer was the same every
+time:
+
+| what was varied | square |
+|---|---|
+| pointer drag, 1H, sampled *during* the drag and after release | **64.21 × 64.21, one distinct value** |
+| the same drag on all six ranges | 64.21, unchanged |
+| keyboard drag on the grip (it is a real slider) | 64.21, unchanged |
+| what a square is *worth* (`callGeometry.step`) through the drag | constant |
+| a series whose volatility jumps 36× between its halves | constant |
+| a profile with a stored board zoom **and** a live call | constant (the zoom moved the step 100 → 1000; the drag did not) |
+
+So the three knobs each own exactly one thing and none of them leaks:
+**`CELL_SPANS`** decides how much time a square is (held per range — this is
+what welds a locked call to its square), **`boardPitch`** decides its pixels (a
+function of chart height alone), **`boardStep`** decides its price (the ± zoom's
+job, sticky per range), and **the drag decides only how many squares there
+are** — 1 to 9 in these runs.
+
+**The likeliest cure is something this session shipped for another reason.**
+§12.3's per-range `HISTORY_TTL` means the series is refetched far less often on
+every range but 1H — and §13.4 measured that the pitch drifts *only* when the
+series' time span changes. Fewer refetches, fewer span changes, a lattice that
+sits still. That connection is inferred from two measurements rather than
+demonstrated end to end, and it is written down as inference.
+
+**Verified:** `npm --prefix tests run check` — green, exit 0, 54 checks, on a
+quiet machine. An earlier run of the same tree failed one check
+(`the show has finished and cleaned up after itself — 76 left behind`,
+`test-calls-render.js` §26) while several browser suites and probes were
+running alongside it; the suite passes alone and the full check passes when
+nothing else is running. Same family as the load flakes already recorded, and
+now with a fourth member.
+
+---
+
+## 14. Widgets: what is wrong with them, and what could be added
+
+**Asked:** "peki widget'larda ne yapılabilir, yeni ve tasarımsal olarak, çünkü
+biraz parlatmak istiyorum özellik olarak."
+
+**Status: built on 23 Aug. One of item 5's three shipped and the other two
+were rejected with reasons — see §14.6. This section is closed.**
+
+### 14.1 The defect, measured
+
+With all eleven widgets on, the desktop rail is **1,153px tall and has no
+overflow handling at all**. `WidgetPanel` is `position: fixed` with a
+scrollable row **only** under the 1024px breakpoint; above it, the column just
+runs off the bottom of the screen and the widgets below the fold cannot be
+reached by any means.
+
+| viewport | rail overflows by |
+|---|---|
+| 1280 × 800 | **353px** |
+| 1440 × 900 | 253px |
+| 1440 × 1000 | 153px |
+| 1920 × 1080 | 73px |
+
+It is off-screen on **every** common laptop, and cut even at 1080p. Turning a
+widget on can therefore silently push another one out of reach.
+
+### 14.2 Design, from looking at all eleven together
+
+- **Six visual languages in one column**: a gauge arc (Fear & Greed), a
+  flip-clock (halving), a slider (RSI), a split bar (L/S), full-bleed coloured
+  rows (watchlist) and plain rows (top movers). Card heights vary about 3×.
+- **The Fear & Greed gauge is the last rainbow object in the app** — a
+  red→amber→green arc. It is also the same claim the RSI widget's ramp was
+  removed for on 20 Aug (§9.5): the traffic light says low is bad and high is
+  good. Either it earns that or it goes the same way.
+- **`Loading...` is bare text**, so the column jumps when data lands. Every
+  other surface in the app has a shape to wait in.
+- **Titles have no policy**: `MARKET`, `WATCHLIST`, `BTC OPEN INT.`,
+  `BTC LIQS 24H` — some carry the coin, some abbreviate hard, some do neither.
+
+### 14.3 New widgets, verified today rather than proposed
+
+Both of these need **no new remote host and no permission** — the origins are
+already in `ALLOWED_HOSTS` for other features:
+
+- **ETH gas.** `ethereum-rpc.publicnode.com` (already used for ERC-20
+  balances) answers `eth_gasPrice` **and** `eth_feeHistory` in one **batched**
+  request, `access-control-allow-origin: *`. Measured 23 Aug: base fee
+  0.202 gwei, gasPrice 0.186 gwei, priority-fee percentiles included.
+  `TODO.md` §3.4 lists this as "verify CORS + no-key access first" — verified.
+- **BTC fees.** `mempool.space/api/v1/fees/recommended` (already used for the
+  halving countdown and BTC balances) returns
+  `{fastestFee, halfHourFee, hourFee, economyFee, minimumFee}` in 71 bytes with
+  CORS.
+
+And three that need **no request at all**, from data already in memory:
+
+- **Worst fall** for the coin on screen — `maxDrawdown` already exists, and
+  §9.4 makes it the one thing the algorithm research left standing.
+- **Stablecoin peg** — USDT/USDC deviation from $1, straight off the ticker
+  sweep.
+- **Realised volatility** over the visible range — the same measurement
+  `cellVolatility` already makes for the board.
+
+**Whale Alert stays not viable** (`TODO.md` §3.4 guessed right): it needs a key,
+which changes the privacy story and the listing.
+
+### 14.4 The order worth doing it in
+
+1. **The overflow** — it is a defect, not polish, and it makes every other
+   widget improvement invisible below the fold.
+2. **One card grammar** — eyebrow, one figure, one supporting line; the gauge,
+   flip-clock and slider each have to earn their exception or lose it. Mostly
+   deletion, and it is what "parlatmak" actually buys.
+3. **Skeletons and a title policy** — small, and they are what makes a column
+   of eleven cards look made rather than assembled.
+4. **ETH gas and BTC fees** — the two new ones that cost nothing to reach.
+5. The three zero-request ones, if more are wanted.
+
+### 14.5 What was found while building 1–4 (23 Aug)
+
+**1. Overflow.** `WidgetPanel` now takes `max-height: calc(100vh - 6rem)`
+(`9rem` with the page ticker at the top), `overflow-y: auto` and
+`themedScrollbar`, with `max-height: none` restored under the 1024px
+breakpoint where the rail is already a horizontal row. The 3px padding/negative
+margin pair is there so a card's focus ring is not clipped by the new scroll
+box. Measured after, with all thirteen cards on: rail bottom 781 / 881 / 981 /
+1061 against viewports of 800 / 900 / 1000 / 1080 — inside the window in every
+case, `scrollable: true`, every card reachable.
+
+**2. One card grammar.** The Fear & Greed gauge is gone — arc, needle, segment
+table and all — and the reading sits on the same `WidgetMeter` the RSI widget
+uses. It went for the reason the RSI ramp went on 20 Aug (§9.5): a red→amber→
+green arc is a traffic light saying which end is the good end, and neither
+widget has earned that. The number and the source's own classification word
+stay. The halving card lost its progress bar as the third reading of one fact
+(the clock says how long, the date says when, the bar said 24% of a cycle
+nobody counts in percent); the clock keeps its exception because a countdown
+genuinely needs its units. `MARKET` became `Market Cap`.
+
+**3. Skeletons and titles.** Eleven bare `Loading...` strings became
+`widgetSkeleton()` — two pulsing blocks plus a visually-hidden "Loading" for
+screen readers. It is a **function, not a constant**: styled-components
+memoises the element, so two cards sharing one instance would share one
+animation phase and read as a single blinking block rather than a column
+filling in. The title policy is written out above `widgetDefs` in `app.js` as
+four rules. The one that found a real defect: **never the same words twice** —
+`BTC OPEN INT.` printed `Open Interest` directly beneath itself, the
+abbreviation spending the room it had just saved. That subtext is now the
+venue (`OKX perpetual`), which the figure genuinely needs and did not have.
+
+Two things fell out of the title work that were not on the list:
+
+- **`WidgetSubtext` was `text-transform: capitalize`.** Invisible while every
+  subtext was one already-capitalised word from an API ("Greed", "Neutral"),
+  and wrong the moment one became a sentence: the fee card read `≈ $0.21 To
+  Send · Next Block`. Nothing depended on it — every string is cased correctly
+  in the source, which is where a reader looks — so the rule was deleted
+  rather than given an exception.
+- **`≈` is unusable at this size.** The subtext renders around 9px, and at
+  that size the two waves of U+2248 flatten into two bars: measured on the
+  rendered card, it is indistinguishable from `=`, which is the one thing an
+  approximation must not say. (It is also outside the bundled font's
+  `unicode-range`, so it was a fallback glyph rather than Roboto Mono's.) The
+  cards use `~`. A general invariant was considered and **rejected**: a sweep
+  of `src/*.js` finds 28 characters outside that range, nearly all of them in
+  comments (`─`, `→`, emoji) and the rest — `←`, `→` in the shortcut list, the
+  ฿/﷼/د.إ currency symbols — falling back to glyphs that read correctly. The
+  defect is specific to characters whose fallback *looks like a different
+  character*, and a test cannot tell those apart.
+
+**4. The two fee widgets.** Both endpoints re-verified live on 23 Aug with a
+`chrome-extension://` Origin: `eth_feeHistory` and
+`mempool.space/api/v1/fees/recommended` each answer
+`access-control-allow-origin: *`. Neither adds a host, a key or a permission.
+Design notes are in `CLAUDE.md`; the arithmetic is asserted in
+`tests/test-api.js` — the base fee is the **last** entry of `baseFeePerGas`
+(the next block's, which is why `eth_feeHistory` is asked rather than
+`eth_gasPrice`), the tip is the **median** of the window rather than the mean
+or the last block's, and Bitcoin's headline is the half-hour rate rather than
+the fastest. They went into a new **Network** settings group, and the halving
+countdown moved there with them: it is a block height, and the group it was in
+is about what things trade at.
+
+### 14.6 Item 5: one built, two rejected
+
+**Worst fall — built.** `${COIN} WORST FALL · ${RANGE}`, the deepest
+peak-to-trough drop inside the range on screen, out of the series already
+drawn. It reuses `maxDrawdown`, which the portfolio has had since §9.4, and
+that function stays in `portfolio.js` rather than moving to `utils.js`: the
+tidier home costs a d3 stub in three test sandboxes to keep asking a question
+about a list of numbers, and `index.html` already loads `portfolio.js` before
+`app.js`. No colour on the figure — red would read as an alarm about a fall
+that has already finished — and a range that only rose says **None** rather
+than `0.0%`, which would read as a measurement instead of an absence.
+
+**Stablecoin peg — rejected.** The card reads `$1.0000` essentially always. A
+widget whose honest output is "nothing to report" almost every time it is
+looked at is a slot in a *bounded* column spent on silence, and bounding that
+column was item 1. Someone who wants to know about a depeg wants to be told,
+not to check: that is a price target, which the app already has and which
+announces itself.
+
+**Realised volatility — rejected**, under `CLAUDE.md`'s own rule about labels
+that make a claim. Annualising is the problem: a 1H range's minute-returns
+scaled to a year produce a figure built from an hour of data on the assumption
+that the hour persists, which is the same extrapolation the RSI labels were
+removed for on 20 Aug. The honest version — the typical move over one step —
+already exists as `cellVolatility` inside the board, where it sizes a square,
+and it does not carry a card on its own.
+
+**One structural test came out of building all three.**
+`tests/test-storage.js` now asserts that `DEFAULT_WIDGETS`,
+`DEFAULT_WIDGET_ORDER`, `WIDGET_GROUPS` and `WIDGET_DESCRIPTIONS` name exactly
+the same set. Adding a widget means touching four lists across two files, and a
+card wired into three of them is invisible with nothing on screen saying why —
+which happened while these were being built. Proved by deleting one key from
+the order and watching it fail.
 
 ---
 

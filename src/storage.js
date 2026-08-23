@@ -144,6 +144,14 @@ const loadNewsTickerFromStorage = () =>
 const saveNewsTickerToStorage = (enabled) =>
   saveSetting(NEWS_TICKER_STORAGE_KEY, enabled);
 
+const loadCostMethod = () =>
+  loadEnumSetting(
+    COST_METHOD_KEY,
+    COST_METHODS.map((m) => m.value),
+    DEFAULT_COST_METHOD,
+  );
+const saveCostMethod = (value) => saveSetting(COST_METHOD_KEY, value);
+
 const loadNewsFilter = () =>
   loadEnumSetting(
     NEWS_FILTER_KEY,
@@ -766,6 +774,12 @@ const sanitizeSales = (list) => {
     // consumed. They are the same currency by construction — the lots it ate
     // were entered in it — so one stamp covers the row.
     if (currency) clean.currency = currency;
+    /* Which purchase this sale ate, decided when it was recorded and never
+     * afterwards. A sale from before the setting existed has no stamp and the
+     * report says FIFO for it, because FIFO is what it actually used. */
+    if (COST_METHODS.some((m) => m.value === sale.method)) {
+      clean.method = sale.method;
+    }
     sales.push(clean);
     if (sales.length >= MAX_SALES_PER_HOLDING) break;
   }

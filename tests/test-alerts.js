@@ -449,6 +449,40 @@ assert.deepStrictEqual(json("alertCoinsToWatch([], 'USD')"), [], "no alerts → 
     "a target that already fired asks for nothing",
   );
 
+  /* A target that cannot fire has to say why.
+   *
+   * The refusal to sum a partial total is right — a total missing one holding
+   * is smaller than the truth, and a "worth less than" target firing on that
+   * would announce something that did not happen. What was wrong was that the
+   * consequence was silent: the row showed a target, no distance, no meter and
+   * no reason. */
+  {
+    /* Built on the real prototype, not as a plain object. `detail` calls
+     * `this.valueOf(a)`, and on a bare `{}` that silently resolves to
+     * `Object.prototype.valueOf`, which returns the object itself — so the row
+     * rendered "Now $[object Object]" and the test looked like a product bug. */
+    sandbox.__props = {
+      currency: "USD",
+      portfolioTotal: null,
+      holdings: [{ coin: "BTC" }, { coin: "STETH" }],
+      stats: { BTC: { price: 68000 } },
+      formatPrice: (v) => `$${v}`,
+    };
+    run("__panel = Object.create(AlertsPanel.prototype); __panel.props = __props;");
+    sandbox.__row = arm(false);
+    const detail = run(
+      "AlertsPanel.prototype.detail.call(__panel, __row)",
+    );
+    assert.ok(
+      /Waiting on a price for STETH/.test(detail),
+      `it names the holding it is waiting on (${detail})`,
+    );
+    assert.ok(
+      /rather than counted short/.test(detail),
+      "…and says the total is refused rather than guessed",
+    );
+  }
+
   /* Offered only when there is something to measure — a target on a total that
    * is always zero can never fire. */
   assert.strictEqual(run("hasHoldings([{ coin: 'BTC' }])"), true, "holdings → offer it");

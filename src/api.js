@@ -10,17 +10,6 @@ const FEAR_GREED_API = "https://api.alternative.me/fng/?limit=1";
 const COINLORE_GLOBAL_API = "https://api.coinlore.com/api/global/";
 const MEMPOOL_API = "https://mempool.space/api/blocks/tip/height";
 
-/* FEAR & GREED GAUGE CONSTANTS */
-const GAUGE_ARC = "M 12 50 A 38 38 0 0 1 88 50";
-const GAUGE_LEN = Math.PI * 38; // semicircle arc length ≈ 119.38
-const GAUGE_SEGS = [
-  { color: "#ea3943", len: GAUGE_LEN * 0.25, offset: 0 },
-  { color: "#f5a623", len: GAUGE_LEN * 0.2, offset: GAUGE_LEN * 0.25 },
-  { color: "#c9c9c9", len: GAUGE_LEN * 0.1, offset: GAUGE_LEN * 0.45 },
-  { color: "#93d572", len: GAUGE_LEN * 0.2, offset: GAUGE_LEN * 0.55 },
-  { color: "#16c784", len: GAUGE_LEN * 0.25, offset: GAUGE_LEN * 0.75 },
-];
-
 /* WIDGET CACHE TTL */
 const WIDGET_CACHE_TTL = {
   fearGreed: 3600000, // 1 hour (updates every 12h, so 1h cache is fine)
@@ -28,6 +17,11 @@ const WIDGET_CACHE_TTL = {
   halvingCountdown: 3600000, // 1 hour (block height changes slowly)
   coinloreGlobal: 300000, // 5 minutes — shared by market overview + alt season
   fundingRate: 900000, // 15 min (funding settles 3x/day; the rate barely drifts)
+  // The two fastest-moving readings on the panel: a gas price is a per-block
+  // auction and Bitcoin's fee market turns over with the mempool. Five
+  // minutes would print a number nobody could act on.
+  ethGas: 60000, // 1 minute
+  btcFees: 60000, // 1 minute
   // openInterest / longShortRatio / liquidations track live positioning and
   // fall through to the default below, matching the widget refresh cycle.
 };

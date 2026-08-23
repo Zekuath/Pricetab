@@ -171,6 +171,14 @@ const priceAtOrBefore = (prices, ms) => {
  * portfolio that matters to the person reading it, out of a series already in
  * memory — no request, no rule, no claim about what happens next.
  *
+ * The chart asks it too — the `worstFall` widget is the same question about
+ * one coin over the range on screen — so it is deliberately general: the
+ * portfolio's times are numbers and the chart's are `Date`s, and a time comes
+ * back out exactly as it went in for the caller to read. It stays in this
+ * file rather than moving to `utils.js` because `utils.js` touches d3 at load
+ * time, and three test sandboxes would have to grow a chart stub to keep
+ * asking a question about a list of numbers.
+ *
  * Peak-to-trough within the window on screen, so it answers "how bad did this
  * get" and never "how bad can it get".
  */
@@ -291,12 +299,41 @@ const holdingLots = (h) => {
  * part simply has no basis, and saying so is better than pretending the whole
  * sale had one. Pairs with `reduceLotsFifo`, which removes exactly this.
  */
-const consumeLotsFifo = (lots, amount) => {
+/* The order a method eats them in, as indices into the original array.
+ *
+ * Indices rather than a sorted copy, because what is left over must come back
+ * in the order it was stored: the lot list on screen is a record of what was
+ * entered, and re-ordering it every time the method changes would make the
+ * setting look like it had rewritten history — which is the one thing it must
+ * never appear to do.
+ *
+ * FIFO is the array's own order, deliberately, and that is not the same as
+ * "by date": chain lots arrive in chronological order and hand-entered ones in
+ * the order they were typed, undated ones included. Sorting by `time` here
+ * would silently move undated lots (`time: 0`) to the front and change the
+ * cost basis of holdings that predate this function.
+ */
+const lotOrderFor = (lots, method) => {
+  const order = (lots || []).map((_, i) => i);
+  if (method === "lifo") return order.reverse();
+  if (method === "hifo") {
+    const unit = (i) => {
+      const lot = lots[i];
+      return lot.amount > 0 ? lot.paid / lot.amount : 0;
+    };
+    // Ties keep the array's order, so HIFO on equally-priced lots is FIFO
+    return order.sort((a, b) => unit(b) - unit(a) || a - b);
+  }
+  return order;
+};
+
+const consumeLots = (lots, amount, method) => {
   let left = amount;
   let basis = 0;
   let covered = 0;
   const matched = [];
-  for (const lot of lots || []) {
+  for (const index of lotOrderFor(lots, method)) {
+    const lot = lots[index];
     if (left <= 0) break;
     const take = Math.min(lot.amount, left);
     const cost = lot.amount > 0 ? lot.paid * (take / lot.amount) : 0;
@@ -312,6 +349,10 @@ const consumeLotsFifo = (lots, amount) => {
   }
   return { basis, covered, matched };
 };
+
+// The name every existing caller used, kept as the FIFO case rather than
+// rewritten at forty call sites
+const consumeLotsFifo = (lots, amount) => consumeLots(lots, amount, "fifo");
 
 /* ── money entered in another currency ─────────────────────────────────────
  * A lot's `paid` and a sale's `received` are numbers of a specific currency,
@@ -409,6 +450,16 @@ const hasRealized = (sales, currency) =>
 
 // Below this, a difference between what you hold and what you've logged is
 // double-precision residue from adding fractions, not a real remainder
+/* "First in, first out — the oldest purchase is sold first." One sentence for
+ * whichever method is on, so the note under the picker never has to be kept in
+ * sync with `COST_METHODS` by hand. */
+const methodTitle = (method) => {
+  const m =
+    COST_METHODS.find((x) => x.value === method) ||
+    COST_METHODS.find((x) => x.value === DEFAULT_COST_METHOD);
+  return `${m.label} — ${m.title.toLowerCase()}`;
+};
+
 const AMOUNT_EPSILON = 1e-9;
 
 /* The lots you still hold.
@@ -421,23 +472,27 @@ const AMOUNT_EPSILON = 1e-9;
  * clamp holds whatever caused the mismatch: a recorded sale, a hand edit, or
  * an import.
  *
- * FIFO decides which lots survive: the oldest are the ones disposed of first,
- * so what remains is the newest.
+ * Which lots survive is the chosen method's answer (`COST_METHODS`), because
+ * nobody said which coins left — it is an assumption either way, and it should
+ * be the assumption you picked. A past *sale* is different: that recorded the
+ * lots it ate at the time and is never re-decided.
  */
-const heldLots = (lots, amount) => {
+const heldLots = (lots, amount, method) => {
   const total = lotsAmount(lots);
   if (!(total > amount + AMOUNT_EPSILON)) return lots || [];
-  return reduceLotsFifo(lots || [], total - amount);
+  return reduceLots(lots || [], total - amount, method);
 };
 
-// Remove `amount` from the oldest lots first (FIFO), shrinking a partially
-// consumed lot's paid proportionally. Returns a new array.
-const reduceLotsFifo = (lots, amount) => {
+/* Remove `amount` from the lots the method eats first, shrinking a partially
+ * consumed lot's paid proportionally. Returns a new array **in the original
+ * order** — see `lotOrderFor` for why that matters. */
+const reduceLots = (lots, amount, method) => {
   let left = amount;
-  const out = [];
-  for (const lot of lots) {
+  const kept = new Map();
+  for (const index of lotOrderFor(lots, method)) {
+    const lot = lots[index];
     if (left <= 0) {
-      out.push(lot);
+      kept.set(index, lot);
       continue;
     }
     if (lot.amount <= left) {
@@ -445,15 +500,14 @@ const reduceLotsFifo = (lots, amount) => {
       continue;
     }
     const keep = lot.amount - left;
-    out.push({
-      ...lot,
-      amount: keep,
-      paid: lot.paid * (keep / lot.amount),
-    });
+    kept.set(index, { ...lot, amount: keep, paid: lot.paid * (keep / lot.amount) });
     left = 0;
   }
-  return out;
+  // Back in storage order, whatever order they were eaten in
+  return lots.map((_, i) => kept.get(i)).filter(Boolean);
 };
+
+const reduceLotsFifo = (lots, amount) => reduceLots(lots, amount, "fifo");
 
 // Replay chronological balance deltas into lots: buys become lots priced by
 // priceAt(timeSec) (0 paid when the price is unknown), spends reduce FIFO.
@@ -567,7 +621,7 @@ const describeLot = (lot, price, nowMs) => {
  * amount it applies to, and the unlogged remainder is reported as its own
  * column rather than left to be inferred from a mismatch.
  */
-const buildPortfolioCsv = (rows, currency) => {
+const buildPortfolioCsv = (rows, currency, costMethod) => {
   const nowMs = Date.now();
   const stamp = new Date(nowMs).toISOString().slice(0, 10);
   const perCoin = [];
@@ -660,7 +714,13 @@ const buildPortfolioCsv = (rows, currency) => {
     "# This is the record a tax return is worked out from, not the return itself.",
     "# It knows only what you entered in PriceTab: no exchange history, no transfers, no fees, no crypto-to-crypto trades, no staking or airdrop income. Sales appear only if you recorded them.",
     "# Nothing here is tax advice, and no tax has been calculated.",
-    `# Totals are in ${currency}. Cost basis is FIFO: within a coin, the oldest purchase is consumed first.`,
+    `# Totals are in ${currency}. The method now selected is ${methodTitle(costMethod)}.`,
+    /* Per line, not once at the top. The setting can only apply to sales made
+     * after it was chosen — a disposal recorded under FIFO consumed those lots
+     * and they are gone — so a single header claim would be false the moment
+     * anybody changed it. Each disposal below carries the method it was
+     * actually made with. */
+    "# A sale keeps the method it was recorded with. The Method column on each disposal says which, and sales made before PriceTab offered a choice say FIFO, because that is what they used.",
     ...(otherCurrencyLots || otherCurrencySales
       ? [
           /* This line used to read "All amounts in X", and it was not true:
@@ -806,6 +866,8 @@ const buildPortfolioCsv = (rows, currency) => {
                 ? "long"
                 : "short",
             source,
+            // The method this sale actually ate by, not the one selected now
+            sale.method || DEFAULT_COST_METHOD,
             // Both sides of a disposal were recorded together, so one stamp
             // covers proceeds, basis and gain on this line
             sale.currency || currency,
@@ -831,7 +893,7 @@ const buildPortfolioCsv = (rows, currency) => {
     lines.push(
       "",
       "Disposals (one line per purchase consumed)",
-      "Coin,Date acquired,Date sold,Amount,Proceeds,Cost basis,Gain,Gain %,Days held,Term,Source,Currency,Note",
+      "Coin,Date acquired,Date sold,Amount,Proceeds,Cost basis,Gain,Gain %,Days held,Term,Source,Method,Currency,Note",
       ...saleLines,
     );
   }
@@ -897,6 +959,8 @@ class Portfolio extends PureComponent {
       allocWidth: null,
       drafts: {},
       importError: false,
+      // What a merge just did, said in words for a few seconds
+      mergeNote: null,
       /* The last thing that threw data away, and everything that was there
        * before it. Removing a holding takes its purchases and its recorded
        * sales with it, and Import replaces the whole list — both were a
@@ -972,6 +1036,7 @@ class Portfolio extends PureComponent {
   componentWillUnmount() {
     this._chartToken++; // drop any in-flight load's setState
     if (this._importErrTimer) clearTimeout(this._importErrTimer);
+    if (this._mergeNoteTimer) clearTimeout(this._mergeNoteTimer);
     document.removeEventListener("keydown", this.handleChartKey, true);
   }
 
@@ -1431,7 +1496,7 @@ class Portfolio extends PureComponent {
 
   // Derive totals + per-holding values from the shared price map
   computeTotals() {
-    const { holdings, prices, currency } = this.props;
+    const { holdings, prices, currency, costMethod } = this.props;
     let totalNow = 0;
     let totalAgo = 0;
     let anyPriced = false;
@@ -1466,7 +1531,7 @@ class Portfolio extends PureComponent {
       const amount = holdingAmount(h); // manual + every watched address
       const allLots = holdingLots(h);
       // Never let cost basis cover coins that are gone — see `heldLots`
-      const lots = heldLots(allLots, amount);
+      const lots = heldLots(allLots, amount, costMethod);
       /* Every money figure below is one of these two: `priced` is what the
        * displayed currency can be measured against, `paused` is what was
        * entered in another one and is therefore reported rather than added. */
@@ -1527,7 +1592,7 @@ class Portfolio extends PureComponent {
         paused, // …and the ones it cannot, kept so the row can say so
         salesPaused,
         basis: lotsBasis(priced),
-        manualLots: heldLots(h.lots, h.amount),
+        manualLots: heldLots(h.lots, h.amount, costMethod),
         lotAmount: lotAmt,
         sales: h.sales || [],
         realized: hasRealized(h.sales, currency) ? realized : null,
@@ -1883,12 +1948,16 @@ class Portfolio extends PureComponent {
     const rows = this.sortRows(this.computeTotals().rows);
     downloadTextFile(
       `pricetab-cost-basis-${new Date().toISOString().slice(0, 10)}.csv`,
-      buildPortfolioCsv(rows, this.props.currency),
+      buildPortfolioCsv(rows, this.props.currency, this.props.costMethod),
       "text/csv",
     );
   };
 
-  handleImportClick = () => {
+  /* One file picker, two things it can do. The mode is an instance field
+   * rather than state: it is decided by the click and read by the change
+   * event that follows it, and nothing renders differently in between. */
+  handleImportClick = (mode) => {
+    this.importMode = mode === "merge" ? "merge" : "replace";
     if (this.fileInput.current) this.fileInput.current.click();
   };
 
@@ -1896,22 +1965,57 @@ class Portfolio extends PureComponent {
     const file = e.target.files && e.target.files[0];
     e.target.value = ""; // allow re-picking the same file
     if (!file) return;
+    const merging = this.importMode === "merge";
     const before = this.props.holdings;
     let ok = false;
+    let merged = null;
     try {
-      ok = this.props.onImport(JSON.parse(await file.text())) === true;
+      const parsed = JSON.parse(await file.text());
+      if (merging) {
+        merged = this.props.onMerge ? this.props.onMerge(parsed) : null;
+        ok = Boolean(merged);
+      } else {
+        ok = this.props.onImport(parsed) === true;
+      }
     } catch (err) {
       ok = false; // unreadable / invalid JSON
     }
-    // Nothing was replaced if there was nothing there, and offering to
-    // restore an empty list is an undo that does nothing
-    if (ok && before.length) {
+    /* Nothing was replaced if there was nothing there, and offering to restore
+     * an empty list is an undo that does nothing. A merge that added nothing
+     * changed nothing either, so it gets no undo — an Undo button that undoes
+     * a no-op is a button that makes people doubt what just happened. */
+    if (ok && before.length && (!merging || merged.added > 0)) {
       this.setState({
         undo: {
-          label: `Replaced ${before.length} holding${before.length > 1 ? "s" : ""} with the file`,
+          label: merging
+            ? `Added ${merged.added} holding${merged.added > 1 ? "s" : ""} from the file`
+            : `Replaced ${before.length} holding${before.length > 1 ? "s" : ""} with the file`,
           list: before,
         },
       });
+    }
+    if (ok && merging) {
+      /* Say what happened. "Nothing was added" is the commonest outcome of
+       * merging a backup you have already merged, and it has to read as the
+       * rule working rather than as a failure. */
+      const parts = [];
+      if (merged.added) {
+        parts.push(`Added ${merged.added} holding${merged.added > 1 ? "s" : ""}`);
+      }
+      if (merged.kept) {
+        parts.push(
+          `${merged.kept} ${merged.kept > 1 ? "were" : "was"} already here and ${merged.kept > 1 ? "were" : "was"} left untouched`,
+        );
+      }
+      if (merged.dropped) {
+        parts.push(`${merged.dropped} did not fit — the list is full`);
+      }
+      this.setState({ mergeNote: parts.join(" · ") || "Nothing to add" });
+      if (this._mergeNoteTimer) clearTimeout(this._mergeNoteTimer);
+      this._mergeNoteTimer = setTimeout(
+        () => this.setState({ mergeNote: null }),
+        8000,
+      );
     }
     this.setState({ importError: !ok });
     if (!ok) {
@@ -1923,16 +2027,24 @@ class Portfolio extends PureComponent {
     }
   };
 
-  // Coin matches for the add search: symbol or full name, excluding held coins
+  /* Coin matches for the add search.
+   *
+   * This was a fourth idea of what "matches BTC" means — a plain substring
+   * filter over `SUGGESTED_COINS`, which ranked nothing and offered less than
+   * `sanitizePortfolio` would keep. Two things changed by folding it into
+   * `quickSwitchMatches`: the results are **ranked** (exact symbol, then
+   * symbol prefix, then name prefix, then anywhere), and the pool is
+   * `HOLDABLE_COINS`, so the four tokens you could only acquire by watching an
+   * address can now be typed in. Coins already held are excluded — the whole
+   * list, not one symbol, which is why that argument takes either. */
   matches() {
-    const q = this.state.query.trim().toUpperCase();
-    if (!q) return [];
-    const held = new Set(this.props.holdings.map((h) => h.coin));
-    return SUGGESTED_COINS.filter((sym) => {
-      if (held.has(sym)) return false;
-      const name = (COIN_NAMES[sym] || "").toUpperCase();
-      return sym.includes(q) || name.includes(q);
-    }).slice(0, 8);
+    if (!this.state.query.trim()) return [];
+    return quickSwitchMatches(
+      this.state.query,
+      this.props.coinOptions,
+      this.props.holdings.map((h) => h.coin),
+      HOLDABLE_COINS,
+    ).map((m) => m.coin);
   }
 
 
@@ -2038,7 +2150,7 @@ class Portfolio extends PureComponent {
             fits &&
               React.createElement(
                 AllocSegLabel,
-                null,
+                { tone: slice.tone },
                 `${slice.coin} ${slice.share.toFixed(0)}%`,
               ),
           );
@@ -3019,6 +3131,40 @@ class Portfolio extends PureComponent {
             ),
         ),
 
+        /* Which purchase a sale consumes. It lives here rather than in
+         * Settings for the same reason the calls panel keeps its own switch:
+         * this is the screen where the choice has a visible consequence, and
+         * the report it governs is two rows below it. */
+        holdings.length > 0 &&
+          React.createElement(
+            Fragment,
+            null,
+            React.createElement(
+              MethodRow,
+              null,
+              React.createElement(MethodLabel, null, "Cost basis method"),
+              ...COST_METHODS.map((m) =>
+                React.createElement(
+                  MethodBtn,
+                  {
+                    key: m.value,
+                    active: this.props.costMethod === m.value,
+                    title: `${m.title} — ${m.note}`,
+                    onClick: () =>
+                      this.props.onCostMethodChange &&
+                      this.props.onCostMethodChange(m.value),
+                  },
+                  m.label,
+                ),
+              ),
+            ),
+            React.createElement(
+              LotNote,
+              null,
+              `${methodTitle(this.props.costMethod)}. It decides which purchase the next sale consumes, and which is assumed gone when you reduce an amount by hand. Sales you have already recorded keep the method they were made with — the purchases they consumed are gone, so nothing here can honestly re-decide them.`,
+            ),
+          ),
+
         // Backup / restore / tax report. Import is always available (restore
         // on a fresh device); exports need something to export.
         React.createElement(
@@ -3036,11 +3182,24 @@ class Portfolio extends PureComponent {
           React.createElement(
             ToolBtn,
             {
-              onClick: this.handleImportClick,
+              onClick: () => this.handleImportClick("replace"),
               title: "Restore holdings from a JSON backup (replaces the current list)",
             },
             "Import JSON",
           ),
+          /* Only with something to merge into: against an empty list this
+           * button and the one beside it would do exactly the same thing, and
+           * two controls with one behaviour is one of them lying. */
+          holdings.length > 0 &&
+            React.createElement(
+              ToolBtn,
+              {
+                onClick: () => this.handleImportClick("merge"),
+                title:
+                  "Add holdings from a backup without touching the ones you already have. A coin already in the list is left exactly as it is, so merging the same file twice changes nothing the second time.",
+              },
+              "Merge JSON",
+            ),
           holdings.length > 0 &&
             React.createElement(
               ToolBtn,
@@ -3065,6 +3224,8 @@ class Portfolio extends PureComponent {
             null,
             "Import failed — the file is not a valid PriceTab portfolio backup.",
           ),
+        this.state.mergeNote &&
+          React.createElement(LotNote, null, this.state.mergeNote),
 
         React.createElement(
           PrivacyNote,
@@ -3090,7 +3251,10 @@ class Portfolio extends PureComponent {
 
 Portfolio.defaultProps = {
   holdings: [],
+  // Only for ranking: the coins you follow come first in the add search
+  coinOptions: [],
   prices: {},
   ready: false,
   chartColorize: true,
+  costMethod: DEFAULT_COST_METHOD,
 };

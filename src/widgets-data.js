@@ -49,7 +49,10 @@ const DEFAULT_WIDGETS = {
   fearGreed: false,
   marketOverview: false,
   halvingCountdown: false,
+  ethGas: false,
+  btcFees: false,
   rsiWidget: false,
+  worstFall: false,
   fundingRate: false,
   longShortRatio: false,
   openInterest: false,
@@ -130,14 +133,35 @@ const WIDGET_GROUPS = [
         desc: "Total market cap and BTC/ETH dominance",
       },
       {
-        key: "halvingCountdown",
-        label: "BTC Halving Countdown",
-        desc: "Time until the next Bitcoin halving",
-      },
-      {
         key: "altcoinSeason",
         label: "Altcoin Season",
         desc: "Are altcoins outperforming Bitcoin?",
+      },
+    ],
+  },
+  /* What the chain costs and where it is in its own schedule — none of these
+   * is a price. Halving moved here from Market for that reason: it is a block
+   * height, and the group it was in is about what things trade at. */
+  {
+    title: "Network",
+    items: [
+      {
+        key: "ethGas",
+        label: "ETH Gas",
+        desc: "Gas price now, and what a plain ETH transfer costs",
+      },
+      {
+        key: "btcFees",
+        // The vsize is an assumption and it is stated here rather than on the
+        // card: 141 vB is a one-in-two-out native SegWit spend, the ordinary
+        // wallet transaction. Yours may be bigger.
+        label: "BTC Fees",
+        desc: "Fee rate now, and what a typical 141 vB transfer costs",
+      },
+      {
+        key: "halvingCountdown",
+        label: "BTC Halving Countdown",
+        desc: "Time until the next Bitcoin halving",
       },
     ],
   },
@@ -150,6 +174,14 @@ const WIDGET_GROUPS = [
         // Not "overbought above 70, oversold below 30": that describes the
         // daily RSI, and this one's period follows the range on screen
         desc: "Momentum on a 0–100 scale, over the range you are looking at",
+      },
+      {
+        key: "worstFall",
+        label: "Worst Fall",
+        // The risk column, and the only survivor of the algorithm research:
+        // 59 of 64 rule x coin pairs cut the worst fall while only 28 beat
+        // holding. A description of what happened, never an entry.
+        desc: "The deepest peak-to-trough fall inside the range on screen",
       },
       {
         key: "fundingRate",
@@ -354,6 +386,127 @@ const fetchAltcoinSeason = async () => {
   }
 };
 
+/* NETWORK FEES — what it costs to use the chain, not what the coin costs.
+ *
+ * These are the only two cards on the panel about *doing* something rather
+ * than about a price, and they are the number people actually wait for: "is
+ * it cheap enough to move it yet". Both sources were already reachable and
+ * neither adds a host, a key or a permission — `ETH_RPC` is the node the
+ * portfolio reads ERC-20 balances from, and mempool.space is where the
+ * halving countdown gets its block height. Verified live 23 Aug 2026: both
+ * answer a `chrome-extension://` Origin with `access-control-allow-origin: *`.
+ *
+ * They are also the fastest-moving readings here, so the cache is a minute
+ * rather than the panel's usual five (`WIDGET_CACHE_TTL`, api.js).
+ *
+ * The pair share one grammar, and it is the point of them: **the figure is
+ * what the chain quotes, the subtext is what that means in your money and how
+ * soon**. A gwei price is not something anyone can price a transfer from in
+ * their head, and the money is the reason the card is being read at all. The
+ * money comes from the ticker snapshot the app already holds, so it costs no
+ * request — and where the ticker has no price for the coin, the money line is
+ * simply left off rather than guessed at.
+ */
+
+// A one-in-two-out native SegWit spend: the ordinary wallet transaction.
+// Stated in the widget's own description, because it is an assumption and the
+// figure it produces is not true of every transfer.
+const BTC_TYPICAL_VBYTES = 141;
+// A plain ETH transfer. Not an assumption — the protocol's own floor.
+const ETH_TRANSFER_GAS = 21000;
+
+const medianWei = (values) => {
+  const nums = values
+    .map((v) => Number(v))
+    .filter((v) => isFinite(v) && v >= 0)
+    .sort((a, b) => a - b);
+  if (!nums.length) return null;
+  const mid = Math.floor(nums.length / 2);
+  return nums.length % 2 ? nums[mid] : (nums[mid - 1] + nums[mid]) / 2;
+};
+
+/* Gas, in one request.
+ *
+ * `eth_feeHistory` answers both halves of the price at once: the last entry of
+ * `baseFeePerGas` is the **next** block's base fee (the array is one longer
+ * than the window, which is the whole reason to ask this rather than
+ * `eth_gasPrice`), and `reward` carries the tip actually paid at the
+ * percentiles asked for. The tip is the median of the 50th percentile across
+ * the window — one block's median tip is a single block's luck.
+ */
+const fetchEthGas = async () => {
+  const cached = getWidgetCache("ethGas");
+  if (cached) return cached;
+  try {
+    const res = await fetch(ETH_RPC, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: 1,
+        method: "eth_feeHistory",
+        params: ["0x5", "latest", [50]],
+      }),
+    });
+    if (!res.ok) return null;
+    const json = await res.json();
+    const result = json && json.result;
+    const bases = result && result.baseFeePerGas;
+    if (!Array.isArray(bases) || !bases.length) return null;
+    const base = Number(bases[bases.length - 1]);
+    if (!isFinite(base) || base < 0) return null;
+    const tip =
+      medianWei(
+        (Array.isArray(result.reward) ? result.reward : [])
+          .map((row) => (Array.isArray(row) ? row[0] : null))
+          .filter((v) => v != null),
+      ) || 0;
+    const gwei = (base + tip) / 1e9;
+    const data = {
+      gwei,
+      baseGwei: base / 1e9,
+      tipGwei: tip / 1e9,
+      // What it costs to send, in ETH. Turning that into money needs a price,
+      // which belongs to the app, not to a fetcher.
+      transferEth: ((base + tip) * ETH_TRANSFER_GAS) / 1e18,
+    };
+    setWidgetCache("ethGas", data);
+    return data;
+  } catch (e) {
+    return null;
+  }
+};
+
+/* Bitcoin's fee market, from mempool.space's own recommendation.
+ *
+ * The headline is the **half-hour** rate rather than the fastest: the fastest
+ * is what you pay when you cannot wait, and a card read at a glance should
+ * quote the ordinary case. The other two tiers ride along, because the spread
+ * between them is the reading — three tiers at 1 sat/vB is an empty mempool,
+ * and no single figure says that.
+ */
+const fetchBtcFees = async () => {
+  const cached = getWidgetCache("btcFees");
+  if (cached) return cached;
+  try {
+    const res = await fetch("https://mempool.space/api/v1/fees/recommended");
+    if (!res.ok) return null;
+    const json = await res.json();
+    const rate = Number(json && json.halfHourFee);
+    if (!isFinite(rate) || rate <= 0) return null;
+    const data = {
+      rate,
+      fastest: Number(json.fastestFee) || rate,
+      hour: Number(json.hourFee) || rate,
+      transferBtc: (rate * BTC_TYPICAL_VBYTES) / 1e8,
+    };
+    setWidgetCache("btcFees", data);
+    return data;
+  } catch (e) {
+    return null;
+  }
+};
+
 const WIDGET_ORDER_KEY = "crypto_chart_widget_order";
 const DEFAULT_WIDGET_ORDER = [
   "watchlist",
@@ -361,7 +514,10 @@ const DEFAULT_WIDGET_ORDER = [
   "fearGreed",
   "marketOverview",
   "halvingCountdown",
+  "ethGas",
+  "btcFees",
   "rsiWidget",
+  "worstFall",
   "fundingRate",
   "longShortRatio",
   "openInterest",

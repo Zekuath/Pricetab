@@ -161,10 +161,29 @@ const WidgetPanel = styled.div`
   pointer-events: ${({ visible }) => (visible ? "auto" : "none")};
   transition: opacity 0.3s ease, top 0.4s cubic-bezier(0.22, 1, 0.36, 1);
 
-  /* Desktop: a column down the left */
+  /* Desktop: a column down the left, **bounded by the window**.
+   *
+   * It was unbounded, and with every widget on the column measured 1,153px —
+   * off the bottom of every common laptop: 353px past a 1280×800, 253px past
+   * 1440×900, and still 73px past a 1080p screen. Below the fold there was no
+   * way to reach them at all, because the only overflow rule in this block
+   * lived under the 1024px breakpoint. Turning one widget on could silently
+   * push another out of reach.
+   *
+   * The padding-and-negative-margin pair is not decoration: a vertical
+   * overflow rule makes the box a scroll container, which clips the cards' own
+   * box-shadow at the edges. The padding gives the shadow room and the margin takes the position
+   * back, so left: 1rem still means what it says. */
   top: ${({ tickerTop }) => (tickerTop ? "8rem" : "5rem")};
   left: 1rem;
   flex-direction: column;
+  max-height: ${({ tickerTop }) =>
+    tickerTop ? "calc(100vh - 9rem)" : "calc(100vh - 6rem)"};
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 3px 0.5rem;
+  margin: -3px -0.5rem;
+  ${themedScrollbar};
 
   /* Tablet: a scrollable row along the bottom */
   @media (max-width: 1024px) {
@@ -174,6 +193,8 @@ const WidgetPanel = styled.div`
     transform: translateX(-50%);
     flex-direction: row;
     max-width: calc(100vw - 2rem);
+    /* The desktop bound is a *column* height and would clip this row */
+    max-height: none;
     overflow-x: auto;
     overflow-y: hidden;
     padding-bottom: 0.35rem;
@@ -449,78 +470,18 @@ const WidgetSubtext = styled.div`
   font-size: 0.72em;
   color: ${({ theme }) => theme.color.textSecondary};
   margin-top: 0.15em;
-  text-transform: capitalize;
-`;
-
-const FearGreedGauge = styled.div`
-  display: flex;
-  justify-content: center;
-  gap: 0.15em;
-  margin-top: 0.25em;
-`;
-
-const GaugeDot = styled.span`
-  width: 0.35em;
-  height: 0.35em;
-  min-width: 4px;
-  min-height: 4px;
-  border-radius: 50%;
-  background: ${({ active, value, theme }) => {
-    if (!active) return theme.color.border;
-    if (value <= 25) return "#ea3943";
-    if (value <= 45) return "#f5a623";
-    if (value <= 55) return "#c9c9c9";
-    if (value <= 75) return "#93d572";
-    return "#16c784";
-  }};
-`;
-
-const GaugeTrackPath = styled.path`
-  fill: none;
-  stroke: ${({ theme }) => theme.color.border};
-  stroke-width: 7;
-  stroke-linecap: round;
-`;
-
-const GaugeNeedle = styled.line`
-  stroke: ${({ theme }) => theme.color.text};
-  stroke-width: 1.5;
-  stroke-linecap: round;
-  /* Drawn pointing at 0 and rotated into place: SVG line endpoints are
-     attributes, not animatable CSS properties, but a transform is — and a
-     swinging needle is what a gauge should do anyway. */
-  transform: rotate(${({ angle }) => angle}deg);
-  transform-box: view-box;
-  transform-origin: 50px 50px;
-  transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
-`;
-
-const GaugeCenterDot = styled.circle`
-  fill: ${({ theme }) => theme.color.text};
+  /* No text-transform. It used to capitalize, which was invisible while every
+   * subtext was one word from an API that already capitalised it ("Greed",
+   * "Neutral") and wrong the moment one of them became a sentence: the
+   * network-fee cards read "≈ $0.21 To Send · Next Block". Nothing here
+   * depended on it — the strings are cased correctly in the source, which is
+   * where a reader looks. */
 `;
 
 const MarketStatLabel = styled.span`
   color: ${({ theme }) => theme.color.textSecondary};
   margin-right: 0.15em;
   font-size: 0.68em;
-`;
-
-const HalvingProgressBar = styled.div`
-  width: 100%;
-  height: 0.3em;
-  min-height: 3px;
-  background: ${({ theme }) => theme.color.border};
-  border-radius: 0.15em;
-  margin-top: 0.35em;
-  overflow: hidden;
-`;
-
-const HalvingProgressFill = styled.div`
-  height: 100%;
-  width: ${({ percent }) => percent}%;
-  background: ${({ theme }) => theme.color.text};
-  border-radius: 0.15em;
-  transition: width 0.4s ease;
 `;
 
 const HalvingTimeGrid = styled.div`
@@ -574,7 +535,48 @@ const HalvingEta = styled.div`
  * §9. Removing the two words and leaving the traffic light would have moved
  * the claim rather than dropped it. Theme colours, too, per CLAUDE.md: the
  * three hex values were drawn on both a white and a black card. */
-const RsiBar = styled.div`
+/* The one meter.
+ *
+ * It was the RSI card's own track, and Fear & Greed drew a rainbow arc with a
+ * needle beside it — two drawings for the same shape of fact, a position on a
+ * 0–100 scale. One track, used by both, is one visual language instead of two.
+ */
+/* A shape to wait in.
+ *
+ * Eleven cards said the bare word "Loading..." while their data was in flight,
+ * which is not a state so much as an absence of one — and because the word is
+ * one short line and the answer is usually two, the column visibly jumped as
+ * each card filled. This is the card's own grammar with the ink taken out: a
+ * figure-sized block and a subtext-sized one, pulsing, occupying exactly the
+ * room the answer will need.
+ *
+ * `aria-hidden` on the blocks and the real word kept for screen readers — a
+ * pulsing rectangle says nothing out loud.
+ */
+const widgetSkeletonPulse = keyframes`
+  0%, 100% { opacity: 0.20; }
+  50% { opacity: 0.42; }
+`;
+
+const WidgetSkeletonLine = styled.div`
+  height: ${({ tall }) => (tall ? "1.15em" : "0.7em")};
+  width: ${({ tall }) => (tall ? "62%" : "44%")};
+  margin: ${({ tall }) => (tall ? "0.15em auto 0.3em" : "0 auto")};
+  border-radius: 0.25em;
+  background: ${({ theme }) => theme.color.text};
+  animation: ${widgetSkeletonPulse} 1.4s ease-in-out infinite;
+`;
+
+const WidgetSkeletonReader = styled.span`
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+`;
+
+const WidgetMeter = styled.div`
   width: 100%;
   height: 0.3em;
   min-height: 3px;
@@ -588,7 +590,7 @@ const RsiBar = styled.div`
   position: relative;
 `;
 
-const RsiMarker = styled.div`
+const WidgetMeterMark = styled.div`
   position: absolute;
   top: 50%;
   left: ${({ value }) => value}%;

@@ -28,6 +28,25 @@ const sandbox = {
         { price: "80", time: 1 }, { price: "90", time: 2 },
       ] } }) };
     }
+    /* The gas card asks the same node the ERC-20 sweep does, but with a
+     * single (non-batched) call, so the stub branches on the method rather
+     * than on the host. Base fees run 0x70fe2a2 → 0x864dcbe: the LAST entry
+     * is the next block's, which is the reason `eth_feeHistory` is asked at
+     * all rather than `eth_gasPrice`. Tips are 0.15 gwei ×3 then 0.2 ×2, so
+     * the median is 0.15 and a mean would be wrong. */
+    if (url.includes("ethereum-rpc") && options && String(options.body).includes("eth_feeHistory")) {
+      return { ok: true, status: 200, json: async () => ({ jsonrpc: "2.0", id: 1, result: {
+        oldestBlock: "0x1",
+        baseFeePerGas: ["0x70fe2a2", "0x787448f", "0x7793a70", "0x75ded4d", "0x7e255a7", "0x864dcbe"],
+        reward: [["0x8f0d180"], ["0x8f0d180"], ["0x8f0d180"], ["0xbebc200"], ["0xbebc200"]],
+        gasUsedRatio: [0.5, 0.5, 0.5, 0.5, 0.5],
+      } }) };
+    }
+    if (url.includes("fees/recommended")) {
+      return { ok: true, status: 200, json: async () => (
+        { fastestFee: 7, halfHourFee: 3, hourFee: 1, economyFee: 1, minimumFee: 1 }
+      ) };
+    }
     if (url.includes("ethereum-rpc")) {
       // 1 LINK (18 decimals) and 2.5 USDC (6 decimals)
       return { ok: true, status: 200, json: async () => ([
@@ -732,6 +751,44 @@ const json = (c) => JSON.parse(JSON.stringify(run(c)));
     const server = await attempt("server");
     assert.strictEqual(server.calls, 4, "a 5xx still gets the full ladder — the server answered");
     assert.strictEqual(server.waited, 7000, "…and still backs off 1s + 2s + 4s");
+  }
+
+  /* NETWORK FEES — the two cards that are about using the chain rather than
+   * about a price. Both readings are arithmetic on someone else's numbers, and
+   * both are printed to the cent, so the arithmetic is the test. */
+  {
+    const gas = JSON.parse(JSON.stringify(await run("fetchEthGas()")));
+    // 0x864dcbe = 140,827,838 wei base; median tip 0x8f0d180 = 150,000,000
+    assert.strictEqual(
+      Math.round(gas.baseGwei * 1e4) / 1e4, 0.1408,
+      "the base fee is the LAST entry — the next block's, not the newest mined one",
+    );
+    assert.strictEqual(gas.tipGwei, 0.15, "the tip is the median of the window, not the mean (0.17) or the last (0.2)");
+    assert.strictEqual(Math.round(gas.gwei * 1e4) / 1e4, 0.2908, "the quoted price is base + tip");
+    // 21,000 gas is the protocol's own floor for a plain transfer, not a guess
+    assert.strictEqual(
+      Math.round(gas.transferEth * 1e10) / 1e10,
+      Math.round(((140827838 + 150000000) * 21000) / 1e18 * 1e10) / 1e10,
+      "a transfer is 21,000 gas at that price",
+    );
+
+    const fees = JSON.parse(JSON.stringify(await run("fetchBtcFees()")));
+    assert.strictEqual(fees.rate, 3, "the headline is the half-hour rate, not the fastest (7)");
+    assert.strictEqual(fees.fastest, 7, "…and the other tiers ride along, because the spread is the reading");
+    assert.strictEqual(fees.hour, 1);
+    assert.strictEqual(
+      fees.transferBtc, (3 * 141) / 1e8,
+      "a typical transfer is 141 vB — a one-in-two-out native SegWit spend",
+    );
+
+    // Both are cached, and the cache is a minute rather than the panel's five:
+    // a gas price is a per-block auction
+    assert.strictEqual(run("WIDGET_CACHE_TTL.ethGas"), 60000);
+    assert.strictEqual(run("WIDGET_CACHE_TTL.btcFees"), 60000);
+    fetchCalls = [];
+    await run("fetchEthGas()");
+    await run("fetchBtcFees()");
+    assert.strictEqual(fetchCalls.length, 0, "a fresh widget cache skips the network for both");
   }
 
   console.log("ALL API TESTS PASSED");

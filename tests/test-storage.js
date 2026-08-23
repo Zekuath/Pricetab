@@ -134,6 +134,29 @@ assert.strictEqual(order[1], "watchlist", "order: saved order respected");
 assert.ok(!order.includes("bogusKey"), "order: unknown keys dropped");
 assert.strictEqual(order.length, run("DEFAULT_WIDGET_ORDER.length"), "order: missing keys appended");
 
+/* Adding a widget means touching four lists in two files, and a card wired
+ * into three of them is invisible with nothing to say why. Each of these was
+ * a real step while the network-fee and worst-fall cards were built. */
+{
+  const keys = Object.keys(run("DEFAULT_WIDGETS"));
+  const order = run("DEFAULT_WIDGET_ORDER").slice();
+  const listed = run("WIDGET_GROUPS").flatMap((g) => g.items.map((i) => i.key));
+  const described = Object.keys(run("WIDGET_DESCRIPTIONS"));
+  for (const k of keys) {
+    assert.ok(order.includes(k), `${k}: missing from DEFAULT_WIDGET_ORDER — it would never draw`);
+    assert.ok(listed.includes(k), `${k}: missing from WIDGET_GROUPS — no way to switch it on`);
+    assert.ok(described.includes(k), `${k}: no description, so the card has no tooltip`);
+  }
+  for (const k of order) {
+    assert.ok(keys.includes(k), `${k}: in the order but not in DEFAULT_WIDGETS`);
+  }
+  for (const k of listed) {
+    assert.ok(keys.includes(k), `${k}: offered in Settings but not a real widget`);
+  }
+  assert.strictEqual(order.length, keys.length, "the order lists every widget exactly once");
+  assert.strictEqual(new Set(order).size, order.length, "no widget appears twice in the order");
+}
+
 // --- JSON: coin options ---
 assert.strictEqual(JSON.stringify(run("loadCoinOptionsFromStorage()")), JSON.stringify(["BTC", "ETH", "XRP", "LTC"]), "coins default");
 run('saveCoinOptionsToStorage(["SOL", "BTC"])');

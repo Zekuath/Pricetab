@@ -7,13 +7,30 @@
 
 const QUICK_SWITCH_MAX_RESULTS = 8;
 
-// Matches on symbol or full name. Coins already on the user's list rank
-// first (switching is the common case, adding is the exception).
-// `exclude` drops the coin already on the chart when picking one to compare
-// against it — a coin against itself is a flat line at zero.
-const quickSwitchMatches = (query, coinOptions, exclude) => {
+/* Matches on symbol or full name. Coins already on the user's list rank first
+ * (switching is the common case, adding is the exception).
+ *
+ * `exclude` drops what must not be offered: a single symbol for the compare
+ * picker — a coin against itself is a flat line at zero — or a whole list for
+ * the portfolio, which must not offer a coin already held.
+ *
+ * `pool` is what may be offered at all, defaulting to the coins this app can
+ * chart. The portfolio widens it: `sanitizePortfolio` accepts anything
+ * `isWatchableCoin` knows, so stETH, wBETH, FDUSD and TUSD are things you can
+ * *hold* and not things you can chart — and before this they could be added by
+ * watching an address and never by hand.
+ *
+ * **This is the one coin matcher.** There were three: this, the targets panel's
+ * (folded in on 21 Aug) and the portfolio's own substring filter (folded in on
+ * 22 Aug). A fourth would be a fourth idea of what "matches BTC" means. */
+const quickSwitchMatches = (query, coinOptions, exclude, pool) => {
   const q = query.trim().toUpperCase();
   const owned = new Set(coinOptions);
+  // One symbol or many — the callers mean the same thing by it
+  const dropped =
+    exclude == null
+      ? null
+      : new Set(typeof exclude === "string" ? [exclude] : exclude);
   const score = (sym) => {
     const name = (COIN_NAMES[sym] || "").toUpperCase();
     if (!q) return owned.has(sym) ? 0 : -1; // empty query lists the user's coins
@@ -25,8 +42,8 @@ const quickSwitchMatches = (query, coinOptions, exclude) => {
     return -1;
   };
   const results = [];
-  for (const sym of SUGGESTED_COINS) {
-    if (exclude && sym === exclude) continue;
+  for (const sym of pool || SUGGESTED_COINS) {
+    if (dropped && dropped.has(sym)) continue;
     const s = score(sym);
     if (s < 0) continue;
     results.push({ coin: sym, owned: owned.has(sym), score: s });

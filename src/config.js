@@ -656,6 +656,48 @@ const noteProviderFailure = (coin, error) => {
   return true;
 };
 
+/* WHICH PURCHASE A SALE CONSUMES
+ *
+ * Every tax authority lets you pick, and they do not agree on which they
+ * allow — so this is a reporting method, not a computed liability, and it is
+ * the one part of `TODO.md`'s declined "country-specific tax computation" that
+ * can be offered honestly.
+ *
+ * **It cannot apply backwards, and the code must not pretend otherwise.** A
+ * sale already recorded wrote down the lots it consumed and the basis it took
+ * (`sale.basis`, `sale.matched`) at the moment it happened; those lots are
+ * gone afterwards and cannot be un-consumed. So the method is stamped on each
+ * disposal as it is recorded, and the report prints it per line. Changing the
+ * setting changes what the *next* sale eats, never what a past one ate.
+ *
+ * What it does change immediately is which lots are assumed gone when a
+ * holding's amount is reduced by hand — `heldLots`. That is a live derivation
+ * rather than a record: nobody said which coins left, so it is an assumption
+ * either way, and it should be the assumption you have chosen.
+ */
+const COST_METHODS = [
+  {
+    value: "fifo",
+    label: "FIFO",
+    title: "First in, first out",
+    note: "The oldest purchase is sold first. The default nearly everywhere, and the only method some countries accept.",
+  },
+  {
+    value: "lifo",
+    label: "LIFO",
+    title: "Last in, first out",
+    note: "The newest purchase is sold first. Allowed in some places and not others — check yours.",
+  },
+  {
+    value: "hifo",
+    label: "HIFO",
+    title: "Highest in, first out",
+    note: "The most expensive purchase is sold first, which reports the smallest gain. Not accepted everywhere.",
+  },
+];
+const DEFAULT_COST_METHOD = "fifo";
+const COST_METHOD_KEY = "crypto_chart_cost_method";
+
 const KRAKEN_API = "https://api.kraken.com/0/public/";
 // Kraken returns at most 720 candles; the interval per period is chosen so
 // one request covers the whole window, and the tail is sliced to size.
@@ -1112,6 +1154,19 @@ const ERC20_BALANCE_SELECTOR = "0x70a08231"; // balanceOf(address)
 // Watchable when the coin is its own chain, or a token on a watched one
 const isWatchableCoin = (coin) =>
   Boolean(WATCH_CHAINS[coin] || ERC20_TOKENS[coin]);
+
+/* Everything the portfolio will accept, which is wider than what can be
+ * charted. `sanitizePortfolio` takes `SUGGESTED_COINS` **or** anything
+ * `isWatchableCoin` knows, so a search that offered only the first was
+ * offering less than the storage layer would keep: stETH, wBETH, FDUSD and
+ * TUSD are held at plenty of Ethereum addresses and quoted by the ticker
+ * sweep, and neither Coinbase nor Kraken publishes a series for any of them.
+ * They arrived by watching an address and could not be typed in. */
+const HOLDABLE_COINS = [
+  ...SUGGESTED_COINS,
+  ...Object.keys(WATCH_CHAINS).filter((c) => !SUGGESTED_COINS.includes(c)),
+  ...Object.keys(ERC20_TOKENS).filter((c) => !SUGGESTED_COINS.includes(c)),
+];
 
 /* Which chain an address belongs to, from its own shape — so pasting one is
  * all it takes; there is nothing for the user to tell us that the address

@@ -425,6 +425,8 @@ assert.ok(
   "PORTFOLIO_CHART_PERIODS excludes hour",
 );
 
+const lotsBasisOf = (lots) => lots.reduce((sum, l) => sum + l.paid, 0);
+
 /* ── buildPortfolioSeries ───────────────────────────────────────────────── */
 
 const series = (histories, holdings) => {
@@ -561,6 +563,68 @@ assert.strictEqual(
     run("priceAtOrBefore(__bench, -1)"),
     null,
     "before the series starts there is no honest price",
+  );
+}
+
+/* ── which purchase a sale consumes ─────────────────────────────────────────
+ *
+ * A reporting method, not a computed liability — the part of "country-specific
+ * tax computation" that can be offered honestly. The rule that matters is that
+ * it **cannot apply backwards**: a recorded sale wrote down the lots it ate,
+ * and those lots are gone.
+ */
+{
+  // Three lots, deliberately in an order where all three methods differ:
+  // oldest is cheapest, newest is middling, the dearest sits in between
+  const lots = [
+    { amount: 1, paid: 100, time: 1, source: "manual" }, // unit 100 · oldest
+    { amount: 1, paid: 300, time: 2, source: "manual" }, // unit 300 · dearest
+    { amount: 1, paid: 200, time: 3, source: "manual" }, // unit 200 · newest
+  ];
+  const eat = (method) => {
+    sandbox.__lots = lots;
+    return json(`consumeLots(__lots, 1, ${JSON.stringify(method)})`);
+  };
+  assert.strictEqual(eat("fifo").basis, 100, "FIFO eats the first one stored");
+  assert.strictEqual(eat("lifo").basis, 200, "LIFO eats the last one stored");
+  assert.strictEqual(eat("hifo").basis, 300, "HIFO eats the dearest");
+  assert.strictEqual(
+    eat(undefined).basis,
+    100,
+    "an unknown method is FIFO, not a crash and not a silent LIFO",
+  );
+
+  /* What is left comes back in **storage order**, whatever order it was eaten
+   * in. The lot list on screen is a record of what was entered; re-ordering it
+   * when the method changes would make the setting look like it had rewritten
+   * history, which is the one thing it must never appear to do. */
+  sandbox.__lots = lots;
+  const left = json('reduceLots(__lots, 1, "hifo")');
+  assert.deepStrictEqual(
+    left.map((l) => l.paid),
+    [100, 200],
+    "HIFO removed the 300 and left the rest in the order they were stored",
+  );
+
+  // A partial bite shrinks one lot proportionally and keeps its place
+  sandbox.__lots = [{ amount: 2, paid: 200, time: 1, source: "manual" }, ...lots.slice(1)];
+  const part = json('reduceLots(__lots, 0.5, "fifo")');
+  assert.strictEqual(part.length, 3, "a partial bite removes nothing");
+  assert.strictEqual(Number(part[0].amount.toFixed(6)), 1.5, "…it shrinks the amount");
+  assert.strictEqual(Number(part[0].paid.toFixed(6)), 150, "…and the cost with it");
+
+  /* `heldLots` follows the chosen method, because nobody said which coins left
+   * when an amount was reduced by hand — it is an assumption either way. */
+  sandbox.__lots = lots;
+  assert.strictEqual(
+    lotsBasisOf(json("heldLots(__lots, 2, 'hifo')")),
+    300,
+    "under HIFO the dearest is the one assumed gone",
+  );
+  assert.strictEqual(
+    lotsBasisOf(json("heldLots(__lots, 2, 'fifo')")),
+    500,
+    "under FIFO the oldest is",
   );
 }
 
