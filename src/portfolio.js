@@ -970,7 +970,8 @@ class Portfolio extends PureComponent {
       undo: null,
       watchAddress: "",
       watchBusy: false,
-      watchError: false,
+      // Null, or the reason the last attempt failed — see `watchErrorText`
+      watchError: null,
       expandedCoin: null, // coin whose lot editor is open
       lotAmount: "", // lot form drafts (one editor open at a time)
       lotPaid: "",
@@ -1878,7 +1879,7 @@ class Portfolio extends PureComponent {
   /* ── address watching ── */
 
   handleWatchAddressChange = (e) =>
-    this.setState({ watchAddress: e.target.value, watchError: false });
+    this.setState({ watchAddress: e.target.value, watchError: null });
 
   handleWatchKeyDown = (e) => {
     if (e.key === "Enter") this.handleWatchSubmit();
@@ -1887,15 +1888,41 @@ class Portfolio extends PureComponent {
   handleWatchSubmit = async () => {
     const { watchAddress, watchBusy } = this.state;
     if (watchBusy || !watchAddress.trim()) return;
-    this.setState({ watchBusy: true, watchError: false });
+    this.setState({ watchBusy: true, watchError: null });
     // The address identifies its own chain — nothing to choose
-    const ok = await this.props.onWatch(watchAddress);
+    const result = await this.props.onWatch(watchAddress);
     this.setState({
       watchBusy: false,
-      watchError: !ok,
-      watchAddress: ok ? "" : watchAddress,
+      watchError: result === "ok" ? null : result,
+      watchAddress: result === "ok" ? "" : watchAddress,
     });
   };
+
+  /* One sentence per outcome, and the point of each is that it is *not* the
+   * others. The old single message told a person with a good Solana address
+   * to go and check it. */
+  watchErrorText(reason) {
+    if (!reason) return null;
+    if (reason.startsWith("foreign:")) {
+      const chain = reason.slice(8);
+      return (
+        `That is ${/^[AEIOU]/.test(chain) ? "an" : "a"} ${chain} address. ` +
+        "PriceTab reads Bitcoin, Ethereum and its tokens, Litecoin, Dogecoin, " +
+        "Bitcoin Cash and Zcash — the amount can still be typed in above."
+      );
+    }
+    if (reason === "unreachable") {
+      return (
+        "The balance service did not answer just now. It limits how often it " +
+        "can be asked, so this usually clears on its own — try again in a few " +
+        "minutes. Nothing is wrong with the address."
+      );
+    }
+    if (reason === "empty") {
+      return "That address holds nothing PriceTab can price right now.";
+    }
+    return "That does not look like an address. Paste the whole thing, with no spaces.";
+  }
 
   handleFieldChange = (coin, field, raw) => {
     const key = `${coin}:${field}`;
@@ -2269,7 +2296,7 @@ class Portfolio extends PureComponent {
         ),
       React.createElement(
         PortfolioInner,
-        null,
+        { empty: holdings.length === 0 },
         // Header: total value + change over the chart period (24h fallback)
         React.createElement(
           PortfolioHeader,
@@ -2280,14 +2307,35 @@ class Portfolio extends PureComponent {
             React.createElement(
               "div",
               null,
-              React.createElement(PortfolioEyebrow, null, "Portfolio · Total value"),
-          React.createElement(
-            PortfolioTotal,
-            null,
-            !holdings.length || !anyPriced
-              ? this.fmtMoney(0, false)
-              : this.fmtMoney(totalNow, false),
-          ),
+              /* **A total of nothing is not zero.**
+               *
+               * This screen used to open on `$0.00` in the largest type it
+               * has, under the words "Total value" — a statement about a
+               * person's money, made about a portfolio that does not exist
+               * yet. It is the same mistake the `worstFall` widget avoids by
+               * saying "None" rather than `0.0%`, and the base-rate panel
+               * avoids by refusing to print a comparison it cannot support: a
+               * figure of zero reads as a measurement, and an absence is not
+               * one.
+               *
+               * The two empty cases are also not the same case. Nothing held
+               * is *nothing tracked yet*. Holdings held but none of them
+               * priced — the ticker has not answered, or every coin is one no
+               * exchange quotes — is *we cannot value this right now*, and
+               * printing `$0.00` there is worse still: it says your holdings
+               * are worthless. Each now says its own thing. */
+              React.createElement(
+                PortfolioEyebrow,
+                null,
+                holdings.length ? "Portfolio · Total value" : "Portfolio",
+              ),
+          holdings.length === 0
+            ? React.createElement(PortfolioEmptyTitle, null, "Nothing tracked yet")
+            : React.createElement(
+                PortfolioTotal,
+                null,
+                anyPriced ? this.fmtMoney(totalNow, false) : "—",
+              ),
           seriesDelta != null
             ? React.createElement(
                 PortfolioDelta,
@@ -2578,17 +2626,22 @@ class Portfolio extends PureComponent {
           ),
 
         // Holdings list or empty state
+        /* The empty state is a line under the title now, not a dashed box
+         * above the form.
+         *
+         * It was a 160px bordered island holding two sentences, sitting
+         * between the heading and the two fields that are the only thing to
+         * do on this screen — furniture in the one place where there is
+         * nothing else to look at. And the second of its two sentences was
+         * the privacy promise, which the footer of the same screen prints
+         * again twenty lines below: on a populated portfolio you see it once,
+         * on an empty one you saw it twice. One says what to do, the footer
+         * says what it promises. */
         holdings.length === 0
           ? React.createElement(
-              EmptyState,
+              PortfolioEmptyLine,
               null,
-              React.createElement(EmptyIcon, null, icon("portfolio", 1.8, 1.7)),
-              "No holdings yet. Search a coin below to start tracking.",
-              React.createElement(
-                EmptyHint,
-                null,
-                "Amounts only — no wallet, no account, nothing leaves this device.",
-              ),
+              "Search a coin below, or paste an address to watch.",
             )
           : React.createElement(
               Fragment,
@@ -3127,7 +3180,7 @@ class Portfolio extends PureComponent {
             React.createElement(
               ImportError,
               null,
-              "Nothing found for that address — check it, or it may hold no balance we can read.",
+              this.watchErrorText(this.state.watchError),
             ),
         ),
 
@@ -3169,7 +3222,7 @@ class Portfolio extends PureComponent {
         // on a fresh device); exports need something to export.
         React.createElement(
           ToolsRow,
-          null,
+          { empty: holdings.length === 0 },
           holdings.length > 0 &&
             React.createElement(
               ToolBtn,
@@ -3182,6 +3235,7 @@ class Portfolio extends PureComponent {
           React.createElement(
             ToolBtn,
             {
+              empty: holdings.length === 0,
               onClick: () => this.handleImportClick("replace"),
               title: "Restore holdings from a JSON backup (replaces the current list)",
             },
@@ -3229,7 +3283,7 @@ class Portfolio extends PureComponent {
 
         React.createElement(
           PrivacyNote,
-          null,
+          { empty: holdings.length === 0 },
           "Tracking only · no wallet connection · stored locally on this device. Watched addresses are used solely for public balance lookups.",
         ),
       ),

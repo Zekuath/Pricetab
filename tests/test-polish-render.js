@@ -1878,6 +1878,87 @@ const AUDIT = `(() => {
     await ctx.close();
   }
 
+  /* §14 — the empty portfolio.
+   *
+   * It opened on `$0.00` in the largest type on the screen, under the words
+   * "Total value": a statement about a person's money made about a portfolio
+   * that does not exist. Zero is a measurement and an absence is not one — the
+   * same rule the `worstFall` widget follows by saying "None", and the
+   * base-rate panel by refusing a comparison it cannot support.
+   *
+   * Two further things this pins down, both of which were true on that screen
+   * and are easy to undo by accident: the privacy promise is printed **once**
+   * (the empty state repeated the footer's sentence four lines above it), and
+   * all three ways to get data in are real controls — the two fields plus
+   * Import JSON, which was a borderless label in secondary ink. */
+  {
+    const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+    await ctx.route("**/*", (r) => {
+      const u = r.request().url();
+      if (u.startsWith("file://")) return r.continue();
+      if (u.includes("historic")) return r.fulfill(json({ data: { prices: PRICES } }));
+      if (u.includes("spot"))
+        return r.fulfill(json({ data: { amount: "43480.00", currency: "USD" } }));
+      if (u.includes("coinlore") && u.includes("tickers"))
+        return r.fulfill(json({ data: TICKERS, info: { coins_num: 100 } }));
+      return r.fulfill(json({ data: {} }));
+    });
+    await ctx.addInitScript(() => {
+      localStorage.setItem("crypto_chart_onboarding_seen", "1");
+      localStorage.removeItem("crypto_chart_portfolio");
+    });
+    const page = await ctx.newPage();
+    const errors = [];
+    page.on("pageerror", (e) => errors.push(String(e)));
+    await page.goto(INDEX, { waitUntil: "load" });
+    await page.waitForSelector("svg path", { timeout: 20000 });
+    await page.keyboard.press("p");
+    await page.waitForTimeout(2500);
+
+    const empty = await page.evaluate(`(() => {
+      /* Scoped to the overlay, not the document: the chart page stays mounted
+         underneath and its own price is a currency figure, so document-wide
+         text answers a different question than the one being asked. */
+      const shell = [...document.querySelectorAll("section, div")]
+        .filter((n) => getComputedStyle(n).position === "fixed"
+          && n.getBoundingClientRect().width > 900
+          && /nothing tracked|add a holding/i.test(n.innerText || ""))
+        .pop();
+      if (!shell) return { missing: true };
+      const text = shell.innerText;
+      /* Any currency figure at all, not just "$0.00": the point is that no
+         total is claimed, in whichever currency is selected. */
+      const money = /[$€£¥₺]\\s?[0-9]/.test(text);
+      const privacy = (text.match(/no wallet/gi) || []).length;
+      /* The three routes in. A control is one you can reach and name: the two
+         inputs by their labels, the import by being a button with a
+         discernible box rather than a run of text. */
+      const inputs = [...shell.querySelectorAll("input")]
+        .filter((i) => i.offsetParent !== null).length;
+      const importBtn = [...shell.querySelectorAll("button")]
+        .find((b) => /import/i.test(b.textContent || ""));
+      const box = importBtn && getComputedStyle(importBtn);
+      return {
+        money,
+        privacy,
+        says: /nothing tracked yet/i.test(text),
+        inputs,
+        importFound: !!importBtn,
+        importTabbable: !!importBtn && importBtn.tabIndex >= 0,
+        importHasBox: !!box && box.borderStyle !== "none" && parseFloat(box.borderTopWidth) > 0,
+      };
+    })()`);
+    check(!empty.missing, "the empty portfolio is on screen");
+    check(!empty.money, "the empty portfolio prints no money total at all", JSON.stringify(empty));
+    check(empty.says, "…it says what the state is instead", JSON.stringify(empty));
+    check(empty.privacy === 1, "the privacy promise is made once, not twice", "found " + empty.privacy);
+    check(empty.inputs >= 2, "both ways to type something in are on screen", "inputs " + empty.inputs);
+    check(empty.importFound && empty.importTabbable, "…and Import JSON is a reachable button");
+    check(empty.importHasBox, "…that looks like one, next to two obvious fields");
+    check(errors.length === 0, "nothing threw", errors[0]);
+    await ctx.close();
+  }
+
   await browser.close();
   if (failed) {
     console.error(`\n✘ ${failed} POLISH CHECK(S) FAILED`);

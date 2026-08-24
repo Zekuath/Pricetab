@@ -26,10 +26,25 @@ const src = fs.readFileSync(path.join(ROOT, "src", "config.js"), "utf8");
 const RPC = (src.match(/const ETH_RPC = "([^"]+)"/) || [])[1];
 const table = (src.match(/const ERC20_TOKENS = \{([\s\S]*?)\n\};/) || [])[1] || "";
 const TOKENS = {};
+/* The key may be quoted, and one of them has to be: `1INCH` starts with a
+ * digit, so it cannot be a bare identifier. `\w+` did not match it, so the
+ * one guard that stops a mistyped contract address shipping had been quietly
+ * checking 55 of 56 entries and reporting success — found 23 Aug 2026 by
+ * diffing what it swept against what is declared. The count assertion below
+ * is the part that matters: a key form this regex does not understand now
+ * fails loudly instead of being skipped. */
 for (const m of table.matchAll(
-  /(\w+):\s*\{\s*address:\s*"(0x[0-9a-fA-F]{40})",\s*decimals:\s*(\d+)/g,
+  /"?([\w$]+)"?:\s*\{\s*address:\s*"(0x[0-9a-fA-F]{40})",\s*decimals:\s*(\d+)/g,
 )) {
   TOKENS[m[1]] = { address: m[2], decimals: Number(m[3]) };
+}
+const declared = (table.match(/address:\s*"0x[0-9a-fA-F]{40}"/g) || []).length;
+if (Object.keys(TOKENS).length !== declared) {
+  console.error(
+    `\u2718 parsed ${Object.keys(TOKENS).length} of ${declared} declared entries — ` +
+      "a key shape this sweep cannot read is a contract it cannot check",
+  );
+  process.exit(1);
 }
 
 const SYMBOL = "0x95d89b41"; // symbol()

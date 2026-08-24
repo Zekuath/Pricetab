@@ -1015,6 +1015,83 @@ assert.strictEqual(
     "failure with no cache → null",
   );
 
+  /* ADDRESSES — telling the four failures apart is the feature.
+   *
+   * Every one of these used to arrive as the same sentence: "check it, or it
+   * may hold no balance we can read". For a good Solana address that is wrong
+   * twice — nothing to check, and the balance is not the problem. */
+  {
+    const ours = (a) => run(`detectAddressChain(normalizeWatchAddress(${JSON.stringify(a)}))`);
+    const foreign = (a) => run(`detectForeignChain(${JSON.stringify(a)})`);
+
+    // Chains PriceTab reads claim their own addresses first
+    assert.strictEqual(ours("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa"), "BTC");
+    assert.strictEqual(ours("bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4"), "BTC");
+    assert.strictEqual(ours("0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045"), "ETH");
+    assert.strictEqual(ours("LQ3NBFhsLoBs9pyN9KX8Cf1kzTFuoWQ6r7"), "LTC");
+    assert.strictEqual(ours("DH5yaieqoZN36fDVciNyRueRGvGLR3mr7L"), "DOGE");
+    assert.strictEqual(ours("t1KjSaAyGqmDMbxdcYUSbYCUCJUDvKGnGCP"), "ZEC");
+
+    /* A `bitcoincash:` prefix is what most Bitcoin Cash wallets put on the
+     * clipboard. It matched the chain pattern and was then thrown out by
+     * `WATCH_ADDRESS_RE`, which is alphanumeric-only — so a correct address
+     * was refused as if it were nonsense. */
+    const cash = "bitcoincash:qpm2qsznhks23z7629mms6s4cwef74vcwvy22gdx6a";
+    assert.strictEqual(ours(cash), "BCH", "a prefixed cashaddr finds its chain");
+    assert.strictEqual(
+      run(`WATCH_ADDRESS_RE.test(normalizeWatchAddress(${JSON.stringify(cash)}))`),
+      true,
+      "…and survives the shape check once the prefix is off",
+    );
+
+    // Chains it cannot read are named rather than blamed
+    for (const [addr, name] of [
+      ["5Q544fKrFoe6tsEbD7S8EmxGTJYAKtTVhAW5Q5pge4j1", "Solana"],
+      ["TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t", "TRON"],
+      ["rN7n7otQDd6FczFgLdSqtcsAUxDkw6fzRH", "XRP"],
+      ["GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN", "Stellar"],
+      ["XdAUmwtig27HBG6WfYyHAzP8n6XCbBmiav", "Dash"],
+      [
+        "44AFFq5kSiGBoZ4NMDwYtN18obc8AemS33DBLWs3H7otXft3XjrpDtQGv7SqSsaBYBb98uNbr2VBBEt7f2wfn3RVGQBEP3A",
+        "Monero",
+      ],
+    ]) {
+      assert.strictEqual(foreign(addr), name, `${name} is named, not rejected`);
+      assert.strictEqual(ours(addr), null, `…and is not mistaken for one of ours`);
+    }
+
+    /* The dangerous direction: a chain we DO read must never be claimed by the
+     * foreign list, or a working address would start reporting the wrong chain
+     * back at the person holding it. */
+    for (const addr of [
+      "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa",
+      "bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4",
+      "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+      "LQ3NBFhsLoBs9pyN9KX8Cf1kzTFuoWQ6r7",
+      "DH5yaieqoZN36fDVciNyRueRGvGLR3mr7L",
+      "t1KjSaAyGqmDMbxdcYUSbYCUCJUDvKGnGCP",
+      cash,
+    ]) {
+      assert.strictEqual(foreign(addr), null, `${addr.slice(0, 10)}… stays ours`);
+    }
+
+    // Nonsense is nonsense, and says so rather than naming a chain
+    assert.strictEqual(foreign("hello there friend"), null);
+    assert.strictEqual(ours("hello there friend"), null);
+
+    /* Every token is holdable and every one has a name — the search matches on
+     * names as well as symbols, so a token without one can only be found by
+     * typing its ticker exactly. Four had been in the table for three days
+     * with no name at all. */
+    const tokens = Object.keys(json("ERC20_TOKENS"));
+    const names = json("COIN_NAMES");
+    const holdable = new Set(json("HOLDABLE_COINS"));
+    for (const t of tokens) {
+      assert.ok(holdable.has(t), `${t} is offered as a holding`);
+      assert.ok(names[t], `${t} has a name to search by`);
+    }
+  }
+
   console.log("PORTFOLIO TESTS OK");
 })().catch((e) => {
   console.error(e);

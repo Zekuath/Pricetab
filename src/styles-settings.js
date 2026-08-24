@@ -5,7 +5,11 @@ const panelLift = keyframes`
 
 const SettingsCard = styled.div`
   width: min(92vw, 32rem);
-  height: min(92vh, 40rem);
+  /* 40rem left 1,488px of preferences scrolling through a 396px window on an
+     ordinary 900px screen, with 92vh (828px) of room going unused. The cap is
+     what keeps the card from becoming a full-height sheet on a tall monitor;
+     it does not have to be this far below the room available. */
+  height: min(92vh, 46rem);
   display: flex;
   flex-direction: column;
   border-radius: ${({ theme }) => theme.scale * 8}rem;
@@ -255,19 +259,30 @@ const TabContent = styled.div`
    * treatment the news list and the targets panel already use at their foot —
    * this is the first surface here that needed it at the head as well, since
    * it is the only one whose content scrolls up into furniture. */
+  /* **rem, not px.** theme.scale is PIXEL_SCALE / 16 — a multiplier for
+     rem values, which is how every other measurement in this file uses it
+     (theme.spacing.large is scale * 8 and is written …rem). Written
+     …px it resolved to **5.5px**, a quarter of the 22 the comment claimed,
+     and 5.5px under a 16px line is not a fade — it is a slice with a soft
+     edge. That is what "the top swallows part of the text" was: a description
+     line arriving at the top edge became an unreadable smear directly under
+     the tab strip, and a toggle row leaving at the foot was cut through the
+     middle. Measured on screen, not inferred: mask-image computed to
+     rgb(0,0,0) 5.5px. 1.75rem (28px at the default root) clears a full line
+     of the smallest type on this panel. */
   mask-image: linear-gradient(
     to bottom,
     transparent 0,
-    #000 ${({ theme }) => theme.scale * 22}px,
-    #000 calc(100% - ${({ theme }) => theme.scale * 22}px),
+    #000 ${({ theme }) => theme.scale * 7}rem,
+    #000 calc(100% - ${({ theme }) => theme.scale * 7}rem),
     transparent 100%
   );
 
   /* And the fade is only honest if nothing lands *inside* it. Without this a
      heading scrolled into view stops half-faded, which is a slice by another
      means. */
-  scroll-padding-top: ${({ theme }) => theme.scale * 24}px;
-  scroll-padding-bottom: ${({ theme }) => theme.scale * 24}px;
+  scroll-padding-top: ${({ theme }) => theme.scale * 8}rem;
+  scroll-padding-bottom: ${({ theme }) => theme.scale * 8}rem;
 `;
 
 /* A setting that only applies while another one is on. Kept mounted so it

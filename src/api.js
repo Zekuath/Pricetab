@@ -927,13 +927,26 @@ const BLOCKCHAIR_DASHBOARD_API = "https://api.blockchair.com/";
 
 const addressBalanceCache = new Map(); // "COIN:address" → { balance, timestamp }
 
-/* ERC-20 balances for one Ethereum address.
+/* Balances for one Ethereum address — the ether and every token, together.
  *
  * Every token asked for goes into a single JSON-RPC batch, so checking a
  * whole portfolio's worth of tokens costs one request rather than one each.
  * Balances come back as 32-byte hex and are scaled by the token's own
  * decimals — parsed via BigInt, since a raw 18-decimal balance overflows a
  * double long before it reaches the decimal point.
+ *
+ * **`ETH` itself rides in that batch** (`eth_getBalance` rather than an
+ * `eth_call`), and that is not a tidy-up: the ether balance used to come from
+ * Blockchair, so watching an Ethereum address meant two requests to two
+ * providers, one of which is the one with a tight anonymous rate limit.
+ * Blockchair answers a burst with **HTTP 430 — "your IP address is
+ * temporarily blacklisted"** for the whole origin, not a per-request 429, and
+ * measured on 23 Aug 2026 it took only a handful of quick calls to earn one.
+ * Ethereum is also the chain most worth watching, because it is the one with
+ * tokens in it. So the chain PriceTab asks about most now costs **one request
+ * to one host**, and the rate-limited provider is out of that path entirely —
+ * it is left serving LTC, DOGE, BCH and ZEC, which have no token batch to
+ * ride along with.
  */
 const erc20Cache = new Map(); // "address:COIN" → { amount, timestamp }
 
@@ -960,7 +973,8 @@ const fetchErc20Balances = async (address, coins) => {
   const now = Date.now();
   const wanted = [];
   for (const coin of coins || []) {
-    if (!ERC20_TOKENS[coin]) continue;
+    // "ETH" is the ether itself; everything else has to be a known contract
+    if (coin !== "ETH" && !ERC20_TOKENS[coin]) continue;
     const hit = erc20Cache.get(`${address}:${coin}`);
     if (hit && now - hit.timestamp < WATCH_BALANCE_TTL) out[coin] = hit.amount;
     else wanted.push(coin);
@@ -968,18 +982,27 @@ const fetchErc20Balances = async (address, coins) => {
   if (!wanted.length) return out;
 
   const padded = address.toLowerCase().replace(/^0x/, "").padStart(64, "0");
-  const batch = wanted.map((coin, i) => ({
-    jsonrpc: "2.0",
-    id: i,
-    method: "eth_call",
-    params: [
-      {
-        to: ERC20_TOKENS[coin].address,
-        data: ERC20_BALANCE_SELECTOR + padded,
-      },
-      "latest",
-    ],
-  }));
+  const batch = wanted.map((coin, i) =>
+    coin === "ETH"
+      ? {
+          jsonrpc: "2.0",
+          id: i,
+          method: "eth_getBalance",
+          params: [address, "latest"],
+        }
+      : {
+          jsonrpc: "2.0",
+          id: i,
+          method: "eth_call",
+          params: [
+            {
+              to: ERC20_TOKENS[coin].address,
+              data: ERC20_BALANCE_SELECTOR + padded,
+            },
+            "latest",
+          ],
+        },
+  );
   try {
     const res = await fetch(ETH_RPC, {
       method: "POST",
@@ -994,7 +1017,7 @@ const fetchErc20Balances = async (address, coins) => {
       if (!coin || !row.result) continue;
       const amount = decodeErc20Balance(
         row.result,
-        ERC20_TOKENS[coin].decimals,
+        coin === "ETH" ? 18 : ERC20_TOKENS[coin].decimals,
       );
       if (amount === null) continue;
       erc20Cache.set(`${address}:${coin}`, { amount, timestamp: Date.now() });
@@ -1011,8 +1034,11 @@ const fetchErc20Balances = async (address, coins) => {
 };
 
 const fetchAddressBalance = async (coin, address) => {
-  // Tokens live on someone else's chain — ask their contract
-  if (ERC20_TOKENS[coin]) {
+  /* Tokens live on someone else's chain — ask their contract. Ether goes the
+   * same way (see the note above `fetchErc20Balances`): the node that answers
+   * for the tokens answers for the ether too, in the same batch, and keeps
+   * the rate-limited provider out of Ethereum entirely. */
+  if (coin === "ETH" || ERC20_TOKENS[coin]) {
     const balances = await fetchErc20Balances(address, [coin]);
     return coin in balances ? balances[coin] : null;
   }

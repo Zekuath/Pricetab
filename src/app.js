@@ -748,6 +748,8 @@ class CryptoChart extends PureComponent {
             apiError: false,
           },
           () => {
+            // The provider answered — the ladder in `nextFetchDelay` starts over
+            this.fetchFailures = 0;
             // Update tab title after state is set
             // Always update normal title first (ticker will override when it starts)
             this.setTabTitle(
@@ -814,6 +816,8 @@ class CryptoChart extends PureComponent {
           newState.currentValue = cachedSpot.data;
         }
 
+        this.fetchFailures = (this.fetchFailures || 0) + 1;
+
         this.setState(newState, () => {
           // Update tab title with cached data if available
           if (newState.currentValue || newState.valueHistory) {
@@ -827,7 +831,34 @@ class CryptoChart extends PureComponent {
         });
       }
 
-      this.fetchTimeout = setTimeout(this.fetchData, refreshInterval);
+      this.fetchTimeout = setTimeout(this.fetchData, this.nextFetchDelay());
+    });
+
+    /* How long to wait before trying again.
+     *
+     * The refresh interval while things work, and a doubling ladder while they
+     * do not. Measured on a working tab, an open new tab asks for two things
+     * every thirty seconds and pauses completely when hidden — that part is
+     * right and is left alone. What was missing is the other case: a provider
+     * that is reachable but refusing. `fetchWithRetry` caps the retries
+     * *within* one attempt, and then this loop made another attempt thirty
+     * seconds later, forever — a tab left open all day against a region-blocked
+     * or throttled endpoint is thousands of requests that were never going to
+     * be answered, and Blockchair's response to exactly that is to blacklist
+     * the whole IP.
+     *
+     * It costs nothing when things work: one success resets the count, and the
+     * three things that mean "the person is here and wants this now" — coming
+     * back to the tab, coming back online, changing coin or range — all call
+     * `fetchData` directly rather than waiting out the ladder. */
+    _defineProperty(this, "nextFetchDelay", () => {
+      const base = this.state.refreshInterval;
+      const failures = this.fetchFailures || 0;
+      if (!failures) return base;
+      return Math.min(
+        base * Math.pow(2, Math.min(failures, FETCH_BACKOFF_STEPS)),
+        FETCH_BACKOFF_MAX_MS,
+      );
     });
 
     _defineProperty(this, "toggleSettings", () => {
@@ -2711,6 +2742,10 @@ class CryptoChart extends PureComponent {
 
     _defineProperty(this, "handleOnline", () => {
       this.setState({ isOffline: false });
+      /* A new network is a new chance: whatever the ladder had climbed to was
+       * about the old one. Reset before fetching, or the first attempt on a
+       * working connection would still be followed by a five-minute wait. */
+      this.fetchFailures = 0;
       // Refetch data when coming back online
       this.fetchData();
     });
@@ -3436,7 +3471,6 @@ class CryptoChart extends PureComponent {
       separatorFormat,
       currency,
       isOffline,
-      isLoading,
       showSkeleton,
       invalidCoin,
       apiError,

@@ -247,26 +247,56 @@ const portfolioHandlers = (app) => ({
      * nothing to pick: paste it and every positive balance it holds becomes
      * a holding — the native coin plus, on Ethereum, its tokens. Returns
      * false when nothing could be read, so the panel can say so. */
+    /* Watch an address, and say **which** way it went wrong when it does.
+     *
+     * This returned a bare `false` for four situations that have nothing in
+     * common, and the panel printed one sentence for all of them: "check it,
+     * or it may hold no balance we can read". For the likeliest of the four —
+     * a perfectly good address on a chain PriceTab cannot read — that sentence
+     * is untrue twice over: there is nothing to check, and the balance is not
+     * the problem. The four are now told apart and each says its own thing,
+     * the same way `emptyReason()` in `news.js` distinguishes the four ways a
+     * headline list can be empty.
+     *
+     * `"unreachable"` matters as much as the rest: Blockchair answers a burst
+     * by blacklisting the whole IP for a while (HTTP 430), and a provider
+     * refusing to talk to us is not a fact about the person's address. */
     handleWatchAddress: async (address) => {
-      const addr = (address || "").trim();
+      const raw = (address || "").trim();
+      if (!raw) return "shape";
+      // A `bitcoincash:` prefix matched the chain pattern and was then thrown
+      // out by the alphanumeric shape check — copied straight from a wallet
+      const addr = normalizeWatchAddress(raw);
       const chain = detectAddressChain(addr);
-      if (!chain || !WATCH_ADDRESS_RE.test(addr)) return false;
+      if (!chain || !WATCH_ADDRESS_RE.test(addr)) {
+        const foreign = detectForeignChain(raw);
+        return foreign ? `foreign:${foreign}` : "shape";
+      }
 
-      // The native balance, and on Ethereum every token in one batched call
-      const [native, tokens] = await Promise.all([
-        fetchAddressBalance(chain, addr),
-        chain === "ETH"
-          ? fetchErc20Balances(addr, Object.keys(ERC20_TOKENS))
-          : Promise.resolve({}),
-      ]);
+      /* One request for Ethereum, not two: the ether goes in the same batch as
+       * the tokens (see `fetchErc20Balances`). It used to ask Blockchair for
+       * the ether and the node for the tokens — two providers for one address,
+       * one of them rate-limited. */
+      const [native, tokens] = await (chain === "ETH"
+        ? fetchErc20Balances(addr, ["ETH", ...Object.keys(ERC20_TOKENS)]).then(
+            (all) => [all.ETH == null ? null : all.ETH, all],
+          )
+        : Promise.all([fetchAddressBalance(chain, addr), Promise.resolve({})]));
 
       const found = [];
       if (native != null && native > 0) found.push({ coin: chain, amount: native });
       for (const coin of Object.keys(tokens)) {
+        if (coin === chain) continue; // already counted as the native balance
         if (tokens[coin] > 0) found.push({ coin, amount: tokens[coin] });
       }
-      // An address we can't read, or one holding nothing, isn't worth adding
-      if (!found.length) return false;
+      /* Nothing read at all is a provider problem; a zero that was actually
+       * read is an empty address. Telling someone to check a correct address
+       * because a rate limit was hit is the failure this separates. */
+      if (!found.length) {
+        const readSomething =
+          native != null || Object.keys(tokens).length > 0;
+        return readSomething ? "empty" : "unreachable";
+      }
 
       /* The native coin's lots come from its transfer history where the
        * chain exposes one; tokens start without lots, so their cost basis
@@ -320,7 +350,7 @@ const portfolioHandlers = (app) => ({
         savePortfolioToStorage(portfolio);
         return { portfolio };
       }, app.fetchPortfolioPrices);
-      return true;
+      return "ok";
     },
 
     // Stop watching one address. What it contributed folds into the manual

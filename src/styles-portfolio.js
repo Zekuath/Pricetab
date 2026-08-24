@@ -78,6 +78,14 @@ const PortfolioInner = styled.div`
   width: 100%;
   max-width: 760px;
   animation: ${portfolioLift} 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  /* With nothing held the content is about 480px of a 900px window and it all
+     sat against the top, so over half the screen was empty black beneath it —
+     the void, rather than the two fields, was what you saw. margin: auto 0
+     inside the shell column centres it, and unlike justify-content: center
+     on the shell it degrades correctly: once the content is taller than the
+     window the auto margins collapse to zero and the top stays reachable
+     instead of being clipped above the scroll. */
+  ${({ empty }) => (empty ? "margin: auto 0;" : "")}
 `;
 
 /* ── the chart brought forward ─────────────────────────────────────────────
@@ -1117,29 +1125,36 @@ const SuggestionName = styled.span`
   font-size: 0.78rem;
 `;
 
-const EmptyState = styled.div`
-  text-align: center;
-  padding: 2.75rem 1.5rem;
-  color: ${({ theme }) => theme.color.textSecondary};
-  border: 1px dashed ${({ theme }) => theme.color.border};
-  border-radius: 12px;
-  font-size: 0.9rem;
-`;
-
-const EmptyIcon = styled.div`
+/* Where the total goes when there is no total.
+ *
+ * Same place as `PortfolioTotal` — this is still the headline of the screen —
+ * but in the secondary ink, because it is a state rather than a figure, and a
+ * little smaller than the money it stands in for: three words at 2.6rem is a
+ * slogan, and this is a caption.
+ */
+const PortfolioEmptyTitle = styled.div`
   font-size: 1.6rem;
-  margin-bottom: 0.75rem;
+  font-weight: ${({ theme }) => theme.fontWeight.medium};
+  letter-spacing: 0.01em;
+  color: ${({ theme }) => theme.color.textSecondary};
+  margin: 0.15rem 0 0;
 `;
 
-const EmptyHint = styled.div`
-  margin-top: 0.4rem;
-  font-size: 0.75rem;
+// The one instruction. The privacy promise is the footer's job on every other
+// state of this screen, and it stays the footer's job here.
+const PortfolioEmptyLine = styled.div`
+  margin-top: 1.25rem;
+  font-size: 0.85rem;
+  color: ${({ theme }) => theme.color.textSecondary};
 `;
 
 // Backup / restore / report actions — quiet text buttons in the eyebrow voice
 const ToolsRow = styled.div`
   display: flex;
-  justify-content: center;
+  /* Centred under a full-width list, but the empty screen is a single
+     left-aligned column of about 410px inside a 760px box, and a centred
+     footer under it reads as belonging to something else. */
+  justify-content: ${({ empty }) => (empty ? "flex-start" : "center")};
   flex-wrap: wrap;
   gap: 0.5rem 1.5rem;
   margin-top: 1.5rem;
@@ -1160,6 +1175,29 @@ const ToolBtn = styled.button.attrs({ type: "button" })`
   &:hover {
     color: ${({ theme }) => theme.color.text};
   }
+
+  /* On the empty screen this is one of only three ways to get data in, and
+     the other two are obvious input fields — a borderless label in secondary
+     ink was the odd one out and did not read as something you could press.
+     It takes the address field's own button shape, so the three routes in
+     look like three routes in. Only when empty: alongside Export and Merge
+     under a populated list, three pills would be heavier than that footer
+     wants. */
+  ${({ empty, theme }) =>
+    empty
+      ? `
+    padding: 0.5rem 0.9rem;
+    color: ${theme.color.text};
+    background: ${theme.color.bgSecondary};
+    border: 1px solid ${theme.color.border};
+    border-radius: 10px;
+    transition: border-color 0.15s ease;
+
+    &:hover {
+      border-color: ${theme.color.borderHover};
+    }
+  `
+      : ""}
 `;
 
 const ImportError = styled.div`
@@ -1173,5 +1211,6 @@ const PrivacyNote = styled.div`
   margin-top: 1.5rem;
   font-size: 0.72rem;
   color: ${({ theme }) => theme.color.textSecondary};
-  text-align: center;
+  text-align: ${({ empty }) => (empty ? "left" : "center")};
+  ${({ empty }) => (empty ? "max-width: 30rem;" : "")}
 `;

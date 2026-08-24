@@ -48,11 +48,24 @@ const sandbox = {
       ) };
     }
     if (url.includes("ethereum-rpc")) {
-      // 1 LINK (18 decimals) and 2.5 USDC (6 decimals)
-      return { ok: true, status: 200, json: async () => ([
-        { jsonrpc: "2.0", id: 0, result: "0x0de0b6b3a7640000" },
-        { jsonrpc: "2.0", id: 1, result: "0x2625a0" },
-      ]) };
+      /* Answers the batch it was actually given, by method — the ether now
+       * rides in the same request as the tokens (`eth_getBalance` beside the
+       * `eth_call`s), so a stub returning two fixed rows would be testing a
+       * request shape the code no longer sends.
+       *
+       * 2 ETH, then 1 LINK (18 decimals) and 2.5 USDC (6 decimals). */
+      const sent = JSON.parse(String(options && options.body));
+      const batch = Array.isArray(sent) ? sent : [sent];
+      let token = 0;
+      const token18 = "0x0de0b6b3a7640000"; // 1 × 10^18
+      const token6 = "0x2625a0"; // 2.5 × 10^6
+      return { ok: true, status: 200, json: async () => batch.map((call) => ({
+        jsonrpc: "2.0",
+        id: call.id,
+        result: call.method === "eth_getBalance"
+          ? "0x1bc16d674ec80000" // 2 × 10^18 wei = 2 ETH
+          : (token++ === 0 ? token18 : token6),
+      })) };
     }
     if (url.includes("coinlore.com/api/global")) {
       return { ok: true, status: 200, json: async () => ([
@@ -404,11 +417,23 @@ const json = (c) => JSON.parse(JSON.stringify(run(c)));
   );
   await run(`fetchAddressBalance("BTC", "${btcAddr}")`);
   assert.strictEqual(fetchCalls.length, 1, "second lookup within TTL is cached");
+  /* The ether comes from the node the tokens come from, not from Blockchair —
+   * one request to one host for an Ethereum address, and the provider whose
+   * anonymous limit blacklists a whole IP is out of that path. The previous
+   * version of this assertion checked Blockchair's re-cased response key,
+   * which was correct about the design it was written for. */
+  fetchCalls = [];
   assert.strictEqual(
     await run(`fetchAddressBalance("ETH", "${ethAddr}")`),
     2,
-    "ETH: wei → coins, re-cased response key handled",
+    "ETH: wei → coins",
   );
+  assert.strictEqual(
+    fetchCalls.filter((u) => u.includes("blockchair")).length,
+    0,
+    "…and Blockchair is never asked about an Ethereum address",
+  );
+  assert.strictEqual(fetchCalls.length, 1, "…one request, not one per balance");
   assert.strictEqual(
     await run(`fetchAddressBalance("SOL", "${ethAddr}")`),
     null,
@@ -419,7 +444,7 @@ const json = (c) => JSON.parse(JSON.stringify(run(c)));
     null,
     "junk address shape → null (no request)",
   );
-  assert.strictEqual(fetchCalls.length, 2, "guarded lookups never hit the network");
+  assert.strictEqual(fetchCalls.length, 1, "guarded lookups never hit the network");
 
   // BTC tx history → chronological net deltas (receive +1 at t=100, then
   // the 0.25 spend at t=200); second call served from cache
@@ -533,7 +558,9 @@ const json = (c) => JSON.parse(JSON.stringify(run(c)));
 
   // provider failure → stale cache wins; no cache → null
   chainFail = true;
-  run(`addressBalanceCache.get("ETH:${ethAddr}").timestamp = Date.now() - WATCH_BALANCE_TTL - 1`);
+  /* Ether is cached beside the tokens now, keyed the way that cache keys
+   * things (`address:COIN`), because it comes back in the same batch. */
+  run(`erc20Cache.get("${ethAddr}:ETH").timestamp = Date.now() - WATCH_BALANCE_TTL - 1`);
   assert.strictEqual(
     await run(`fetchAddressBalance("ETH", "${ethAddr}")`),
     2,

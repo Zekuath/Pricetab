@@ -943,3 +943,292 @@ One line each, so the next session knows where they went. The record itself is
   `test-polish-render.js` §11 asserts the economics — no request to draw, one
   to hover, none to hover the same mark again — and that the word "because"
   appears nowhere on the card.
+
+---
+
+## 15. The optimisation pass — the plan
+
+**Asked (23 Aug):** "bütün projeyi optimize et … parça parça extension'ı
+mükemmelleştir, bir plan yaz ve tek tek en iyi haline getir."
+
+**Status: plan only. Nothing measured yet, nothing built.** Each item below is
+written as *measure → fix → re-measure*, and no item may be reported as done
+without both numbers. That is the whole discipline of this section: "optimised"
+without a before and an after is a claim, not a result.
+
+### The order, and why it is this order
+
+**15.1 The startup path — first, because everyone pays it every tab.**
+26 files and ~31,600 lines parse before anything draws, and `index.html` is a
+new JS context on every new tab. Measure: parse+eval time per `src/` file,
+time to first paint, time to first drawn path, and the request count on a cold
+profile and a warm one. Only then decide whether anything moves. Candidates
+already visible: `theme-init.js` runs before React deliberately (do not touch),
+and the widget `jobs` list fires on mount for cards that may all be off.
+
+**15.2 Runtime hot paths — second, because they are paid continuously.**
+The page ticker writes the tab title every 250ms; the chart redraws on every
+price refresh; `componentDidUpdate` in `LineBase` decides several things at
+once. Measure: elements created/destroyed per frame (the chart's own pooling
+already took this from 42 to 3 — check the rest), `setState` calls per refresh,
+and any allocation inside a `requestAnimationFrame`.
+
+**15.3 Storage — third, because it fails silently and takes typed data with it.**
+Five persisted caches. `dailyClosesCache` is ~97 KB per coin and keeps three.
+Measure the real byte footprint of a well-used profile against the quota, and
+confirm `writeStorage`'s eviction order actually holds under pressure — the
+rule that portfolio, calls, targets and preferences are never evicted is the
+one that matters and it should be proved, not assumed.
+
+**15.4 Dead weight — fourth, cheap and low-risk.**
+Unreferenced helpers, duplicated logic, branches nothing reaches, styled
+components nobody renders. `no-unused-vars` is a warning here, not an error, so
+this has never been swept. Measure: count and bytes before removing anything.
+
+**15.5 The file-size debt — last, because it is a refactor, not an optimisation.**
+`app.js` 5,203 lines, `chart.js` 3,982, `portfolio.js` ~3,252 against a ~800
+target. The three cuts already made (`chart-board.js`, `chart-controls.js`,
+`app-portfolio.js`) were chosen by measuring cohesion first, and the next one
+has to be too. It changes no behaviour and buys no speed, so it goes after
+everything that does.
+
+### The rule for the whole pass
+
+**No optimisation lands without a number on both sides of it, and no
+optimisation lands that makes the code harder to read for a gain nobody can
+measure.** `npm --prefix tests run check` green after each piece, separately.
+
+### 15.1 The startup path — measured, and there is nothing to do
+
+Playwright, 1440×900, the network stubbed, three tabs in one profile:
+
+| | to first drawn path | requests |
+|---|---:|---:|
+| cold profile | **54ms** | 9 |
+| second tab | 51ms | **0** |
+| third tab, everything cached | 52ms | **0** |
+
+`DOMContentLoaded` 54ms, first contentful paint 56ms. The CPU profile over the
+whole load attributes **~40ms** of self time to named files — 11ms
+styled-components, 11ms react-dom, 8ms `chart.js`, 8ms d3, 7ms `app.js` — and
+nothing else reaches 3ms. So 1,277 KB of `src/` across 26 files parses and runs
+in well under a tenth of a second, and **the persistent caches make a warm tab
+free**: zero requests, prices and widgets both.
+
+The nine cold requests are the spot price, all six ranges prefetched, and the
+two enabled starter widgets. The prefetch pays for itself in one tab — it is
+why the second tab is 0 and why switching range is instant.
+
+**Nothing here should be touched.** Any change would be risk against a number
+that is already good. Recorded so the next agent does not "optimise" it.
+
+*(One false alarm, worth writing down: the first run showed 2 requests on every
+warm tab and looked like the widget cache never being hydrated. It was the
+probe — `alternative.me` and `coinlore/api/global` were falling through to a
+catch-all stub returning `{data:{}}`, so both fetchers returned null and never
+cached anything. The fetchers are fine. A probe that disagrees with this
+codebase is usually the probe.)*
+
+### 15.2 The idle tab — one line was 95% of the bill
+
+A new-tab page's normal state is *open and doing nothing*, possibly for hours
+and in several tabs, and nobody had ever measured what that costs. Over 30
+seconds of an idle tab: **2 DOM nodes created, 0 appended, 2 removed**, 101
+`setAttribute` calls, 39 `requestAnimationFrame`s, 2 requests (the 30s price
+refresh), 2 `document.title` writes. The pooling in `LineBase` is doing exactly
+what its comments claim.
+
+But the CPU said **2.1% of a core** while JS self-time added up to about 6ms —
+so nearly all of it was browser-internal paint. `document.getAnimations()` on a
+settled tab returned **one** running animation: `.pt-live-dot`, an infinite
+1.8s pulse. It animated `r: 3.5 → 5`. `r` is SVG *geometry*: every frame
+invalidates layout and repaints, and none of it can run on the compositor.
+
+Measured as three CSS states on one page, 20s each:
+
+| | CPU |
+|---|---:|
+| as it was, `r: 3.5 → 5` | **3.12% of a core** |
+| animation switched off entirely | 0.15% |
+| same look as `transform: scale(1 → 1.4286)` | **0.13%** |
+
+The transform form is indistinguishable from having no animation at all. It was
+**~95% of everything an idle tab did**, and it was being paid *even with calls
+off*, when `updateLiveDot` keeps the circle `visibility: hidden` — a hidden
+element is not painted, but its geometry is still invalidated.
+
+Fixed by expressing the same two sizes as a scale, with the
+`transform-box: fill-box` / `transform-origin: center` pair the draft square
+two rules below already uses. Verified after the change on the real source, not
+the injected override: the computed origin is the circle's own centre
+(`3.5px 3.5px`), the dot grows **in place** (width 7.06 → 8.97px across the
+pulse while `cx`/`cy` hold at 1180.8 / 425.6), opacity travels 0.64 → 0.99, and
+20s idle **with calls on** — the more expensive configuration — costs 0.54% of
+a core against the old 3.12% with calls off.
+
+Nothing else animates on a settled tab: `.pt-draft-fill` exists only while a
+draft square is armed, and the widget skeletons only while a card is loading.
+
+### 15.3 Storage — measured, and nothing to change
+
+A well-used profile (fourteen widgets on, twelve coins met, all six ranges
+visited) holds **8 keys, 775 KB**, of which `crypto_chart_price_cache` is
+**747 KB — 96% of everything**. That is bounded and not a problem: the cache is
+capped at 30 entries, a series is ~25 KB, and Chrome's origin quota is ~5 MB.
+Add the deep daily closes (3 coins, ~97 KB each) and the move-news archive and
+a fully-exercised profile is still around a fifth of the quota.
+
+**The promise under pressure was already tested; what had never been checked is
+that a real Chrome quota behaves the way the stub models it.** Now it has been.
+Filling the origin to the byte with foreign keys and then importing a 153.7 KB
+portfolio: the write **succeeded** and stored exactly what was typed;
+`crypto_chart_price_cache` — first in `EPHEMERAL_CACHE_KEYS` and much the
+largest — was dropped; the widget and ticker caches were **left alone**, so it
+spent no more than it had to; and portfolio, calls, targets and currency all
+survived byte-identical.
+
+*(Two false starts, both worth knowing. Filling with 64 KB chunks leaves room
+for a 150-byte write, so the quota was never actually full. And even on a full
+quota, **overwriting an existing key needs no new space** — a same-size rewrite
+succeeds without ever reaching the eviction path. The write has to grow before
+any of this is exercised, which is exactly the case that matters: importing a
+backup.)*
+
+### 15.4 Dead weight — there is almost none
+
+My own scanner claimed 225 unreferenced top-level declarations and was **wrong**
+— it strips comments and string literals to avoid counting prose, and that
+mangles styled-components' template literals, so it flagged things like
+`PortfolioChart` and a fetcher wired in an hour earlier. The repo's own
+compiler is the answer here: `no-unused-vars` reported **four** unused
+identifiers across 31,600 lines.
+
+Removed: `isLoading` (`app.js`, destructured and never read), `top` / `bottom`
+(`chart.js`, taken off `geo` and unused), and the `cycleCoinIndex` binding in
+`chart-controls.js` — the prop itself is live, reached through `this.props` at
+the click handler, so only the redundant destructure went. Lint: **11 warnings
+→ 7**, and every remaining one is a style or security-plugin note rather than
+dead code.
+
+**One security warning chased down and dismissed with numbers.**
+`NUMBER_REG = /\B(?=(\d{3})+(?!\d))/g` (the thousands separator) is flagged
+`detect-unsafe-regex`. Measured on the worst-case shape — a run of digits with
+no separator — it costs 0.03ms at 200 digits, 0.56ms at 1,000 and 13.5ms at
+5,000. It is superlinear and it does not matter: the input is a number this
+codebase formatted itself, never user text, and a price is under thirty
+characters. Left as it is, recorded so nobody "fixes" it.
+
+---
+
+## 16. The empty portfolio
+
+**Asked (23 Aug):** "portföyde bir şey yokken çok kötü duruyor."
+
+Looked at rather than guessed at, and the screenshot had five separate faults:
+
+1. **`$0.00`** in the largest type on the screen, under "Total value" — a
+   statement about a person's money, about a portfolio that does not exist.
+2. **`!anyPriced` printed the same `$0.00`** — a different situation saying the
+   same false thing, and worse: you hold coins and it says they are worth
+   nothing, when the truth is that no price arrived.
+3. **The briefcase icon was left-aligned inside a centred box** — the icon at
+   x≈380, the text centred at x≈720.
+4. **Everything sat against the top**, about 480px of content in a 900px
+   window, so more than half the screen was empty black beneath it. On the one
+   screen with nothing on it, the void was the thing you saw.
+5. **The privacy promise was printed twice** — the dashed box said "Amounts
+   only — no wallet, no account, nothing leaves this device" and the footer
+   four lines below said "Tracking only · no wallet connection · stored locally
+   on this device". Two sentences, one meaning, on an otherwise empty screen.
+   That is the panel's own "never the same words twice" rule.
+
+And one more found while fixing: **Import JSON was a borderless uppercase label
+in secondary ink** — on the empty screen it is one of only three ways to get
+data in and the other two are obvious input fields, so the odd one out was the
+one that did not look like anything.
+
+**What it is now.** No money figure at all when there is nothing: the header
+says `Nothing tracked yet`, and `!anyPriced` says `—`. The dashed box is gone
+— the message is one line under the title, and the icon went with the box. The
+column is centred with `margin: auto 0` on `PortfolioInner`, deliberately not
+`justify-content: center` on the shell: the shell scrolls, and centring there
+clips the top once the content is taller than the window, while auto margins
+collapse to zero and leave it reachable. The footer keeps the privacy sentence
+and the empty state drops its copy. Import JSON takes the address field's own
+button shape while empty, so the three routes in look like three routes in, and
+the tools row and footer left-align to match the column instead of centring
+under a list that is not there.
+
+**Pinned by `tests/test-polish-render.js` §14**, proved by restoring the old
+header and watching two checks fail. It asserts *no currency figure at all*
+rather than the string `$0.00` — the point is that no total is claimed, in
+whichever of the 37 currencies is selected. Scoped to the overlay, because the
+chart page stays mounted underneath and its own price is a currency figure: the
+first version of the check read `document.body.innerText` and failed on the
+price behind the panel.
+
+---
+
+## 17. The refresh loop while a tab is open
+
+**Asked (23 Aug):** "sekme kendi kendine açıkken yenileme işini de optimize
+edelim."
+
+**Measured first.** Playwright, network stubbed, 150s visible → 120s hidden →
+60s visible again, on the default 1H range:
+
+| | requests |
+|---|---:|
+| visible, 150s | 9 — 4 spot, 4 hour history, 1 Coinlore sweep |
+| **hidden, 120s** | **0** |
+| back, 60s | 4 |
+
+**The hidden-tab pause is complete and needs nothing.** `fetchData` returns
+early on `document.hidden` without rescheduling, and `handleVisibilityChange`
+restarts it on the data's *age* rather than on whether a tick happened to fire.
+Zero requests over two minutes hidden. Recorded so nobody "optimises" it.
+
+*(A wrong fixture, caught: the second run set `crypto_chart_period` to compare
+a long range, and there is no such key — the chart's range is not persisted at
+all. Both runs were on 1H. The measurement stands for 1H, which is the default
+and the most-used, and claims nothing about the others.)*
+
+### 17.1 What was missing: a provider that refuses
+
+The loop rescheduled at a fixed `refreshInterval` whether the fetch succeeded
+or failed. `fetchWithRetry` caps the repeats *within* one attempt
+(`NETWORK_ERROR_RETRIES`), and then this loop made another attempt thirty
+seconds later, forever. A tab left open all day against a region-blocked or
+throttled endpoint is thousands of requests that were never going to be
+answered — and Blockchair's answer to exactly that pattern is to blacklist the
+whole IP (see §16 and `CLAUDE.md`).
+
+`nextFetchDelay()` doubles from the refresh interval on consecutive failures
+and caps at five minutes: at the default 30s that is 60s, 2m, 4m, 5m. It costs
+nothing when things work — one success resets the count — and the three things
+that mean *the person is here and wants this now* (coming back to the tab,
+coming back online, changing coin or range) all call `fetchData` directly
+rather than waiting the ladder out.
+
+**Measured with every price request aborted**, reading the counter off the live
+component: failures 1 at t=20s, 2 by t=80s, still 2 at t=180s — 30s, then 60s,
+then 120s, exactly the ladder. The first attempt at measuring this was **wrong
+and nearly reported as a failure**: it grouped raw requests into "attempts" by
+a 5-second gap, and a much larger burst from another part of the app landed
+every ~60s and swamped the signal.
+
+### 17.2 Found while measuring, not yet fixed: the sweep's fallback fans out
+
+That larger burst is the finding. With the Coinlore bulk sweep failing, three
+minutes produced **336 price requests**, including two requests each (spot +
+history) for coins nobody is holding or watching — WETH, PYUSD, ONDO, PAXG,
+CRO, ENA, ETHFI, FET and the rest of the token table — plus 32 Kraken OHLC
+calls.
+
+`bulkRefreshPageTickerCache` exists precisely so one request serves everything.
+When it fails, the per-coin path appears to run over a far wider list than the
+screen needs. **This is the shape that earns a rate limit**, and it is the
+opposite of what the bulk sweep was built for. Not investigated further and
+deliberately not fixed here — it needs its own measurement of which list is
+being walked and why, on a *working* sweep as well as a failing one.
+

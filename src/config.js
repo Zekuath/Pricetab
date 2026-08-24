@@ -172,6 +172,26 @@ const COIN_NAMES = {
   ENA: "Ethena",
   ETHFI: "Ether.fi",
   FET: "Artificial Superintelligence Alliance",
+
+  /* Tokens an Ethereum address can hold. They are not in `SUGGESTED_COINS` —
+   * no exchange this app talks to quotes a *series* for them, so they are
+   * holdable and not chartable — but they are priced by the ticker sweep and
+   * they need a name here all the same: `quickSwitchMatches` searches names as
+   * well as symbols, so a token with no entry can only be found by typing its
+   * ticker exactly. The first four had been in `ERC20_TOKENS` since 20 Aug
+   * with no name at all. */
+  STETH: "Lido Staked Ether",
+  WBETH: "Wrapped Beacon ETH",
+  FDUSD: "First Digital USD",
+  TUSD: "TrueUSD",
+  PENDLE: "Pendle",
+  GNO: "Gnosis",
+  MORPHO: "Morpho",
+  NEXO: "Nexo",
+  CBETH: "Coinbase Wrapped Staked ETH",
+  WLD: "Worldcoin",
+  SPX: "SPX6900",
+  RLUSD: "Ripple USD",
 };
 
 const PERIOD_OPTIONS = [
@@ -182,6 +202,14 @@ const PERIOD_OPTIONS = [
   { value: "year", label: "1Y", title: "1 Year" },
   { value: "all", label: "ALL", title: "All Time" },
 ];
+
+/* Backing off a provider that keeps refusing. Doubling from the refresh
+ * interval, capped: at the default 30s that is 60s, 2m, 4m, then 5m. Five
+ * minutes is short enough that a tab nobody is watching recovers on its own,
+ * and the moment somebody *is* watching, the visibility handler refetches
+ * without waiting for it. */
+const FETCH_BACKOFF_STEPS = 5;
+const FETCH_BACKOFF_MAX_MS = 300000; // 5 minutes
 
 const REFRESH_INTERVAL_OPTIONS = [
   { value: 10000, label: "10 seconds" },
@@ -1070,7 +1098,11 @@ const PORTFOLIO_STORAGE_KEY = "crypto_chart_portfolio";
 // Blockchair are both already-trusted PriceTab data sources (CORS, no key).
 const WATCH_CHAINS = {
   BTC: { provider: "mempool", decimals: 8 },
-  ETH: { provider: "blockchair", chain: "ethereum", decimals: 18 },
+  // The ether rides in the same JSON-RPC batch as this address's tokens, so
+  // watching an Ethereum address is one request to one host — and never to
+  // the provider whose anonymous limit answers a burst by blacklisting the
+  // whole IP. See the note above `fetchErc20Balances` in api.js.
+  ETH: { provider: "eth-rpc", decimals: 18 },
   LTC: { provider: "blockchair", chain: "litecoin", decimals: 8 },
   DOGE: { provider: "blockchair", chain: "dogecoin", decimals: 8 },
   BCH: { provider: "blockchair", chain: "bitcoin-cash", decimals: 8 },
@@ -1148,6 +1180,27 @@ const ERC20_TOKENS = {
   ENA: { address: "0x57e114B691Db790C35207b2e685D4A43181e6061", decimals: 18 },
   ETHFI: { address: "0xFe0c30065B384F05761f15d0CC899D4F9F9Cc0eB", decimals: 18 },
   FET: { address: "0xaea46A60368A7bD060eec7DF8CBa43b7EF41Ad85", decimals: 18 },
+
+  /* Added 23 Aug 2026. Same rule as the batch above and the same check —
+   * symbol() and decimals() asked of each contract, 16 calls in 133ms, all
+   * eight agreeing with the entry. **SPX answers 8 decimals, not 18**, which
+   * is the whole reason the check exists: assumed, its balances would have
+   * come out ten billion times too large.
+   *
+   * Chosen the same way too: Ethereum-native tokens inside Coinlore's top 100,
+   * so the ticker sweep already prices every one of them and none costs a
+   * request. Deliberately **not** bridged or wrapped versions of the L1s this
+   * app charts — a bridged SOL on Ethereum is a different asset wearing the
+   * same three letters, which is the exact confusion this table exists to
+   * prevent. */
+  PENDLE: { address: "0x808507121B80c02388fAd14726482e061B8da827", decimals: 18 },
+  GNO: { address: "0x6810e776880C02933D47DB1b9fc05908e5386b96", decimals: 18 },
+  MORPHO: { address: "0x58D97B57BB95320F9a05dC918Aef65434969c2B2", decimals: 18 },
+  NEXO: { address: "0xB62132e35a6c13ee1EE0f84dC5d40bad8d815206", decimals: 18 },
+  CBETH: { address: "0xBe9895146f7AF43049ca1c1AE358B0541Ea49704", decimals: 18 },
+  WLD: { address: "0x163f8C2467924be0ae7B5347228CABF260318753", decimals: 18 },
+  SPX: { address: "0xE0f63A424a4439cBE457D80E4f4b51aD25b2c56C", decimals: 8 },
+  RLUSD: { address: "0x8292Bb45bf1Ee4d140127049757C2E0fF06317eD", decimals: 18 },
 };
 const ETH_RPC = "https://ethereum-rpc.publicnode.com";
 const ERC20_BALANCE_SELECTOR = "0x70a08231"; // balanceOf(address)
@@ -1189,6 +1242,55 @@ const ADDRESS_PATTERNS = [
   { coin: "LTC", re: /^[LM][1-9A-HJ-NP-Za-km-z]{25,34}$/ },
   { coin: "BTC", re: /^[13][1-9A-HJ-NP-Za-km-z]{25,34}$/ },
 ];
+
+/* Addresses PriceTab can recognise but cannot read.
+ *
+ * These exist so the panel can tell the truth. Every failure used to arrive as
+ * one sentence — "Nothing found for that address — check it, or it may hold no
+ * balance we can read" — and for much the most likely case, a perfectly good
+ * Solana or TRON address, that sentence is simply wrong: there is nothing to
+ * check, and the person is being told to look for a mistake they did not make.
+ * Naming the chain costs one regex each and turns a dead end into an answer.
+ *
+ * Only shapes distinct enough to name. Solana is held at 43-44 base58
+ * characters rather than the full 32-44 the encoding allows, because the short
+ * end of that range collides with Bitcoin's legacy form; a chain guessed wrong
+ * would be worse than no guess at all. Sui and Aptos share one shape — 32
+ * bytes of hex — so the message names both rather than picking.
+ */
+const FOREIGN_ADDRESS_CHAINS = [
+  { name: "Solana", re: /^[1-9A-HJ-NP-Za-km-z]{43,44}$/ },
+  { name: "TRON", re: /^T[1-9A-HJ-NP-Za-km-z]{33}$/ },
+  { name: "XRP", re: /^r[1-9A-HJ-NP-Za-km-z]{24,34}$/ },
+  { name: "Cardano", re: /^addr1[02-9ac-hj-np-z]{50,}$/i },
+  { name: "Cosmos", re: /^cosmos1[02-9ac-hj-np-z]{38}$/i },
+  { name: "Monero", re: /^4[0-9AB][1-9A-HJ-NP-Za-km-z]{93}$/ },
+  { name: "Stellar", re: /^G[A-Z2-7]{55}$/ },
+  { name: "Algorand", re: /^[A-Z2-7]{58}$/ },
+  { name: "Polkadot", re: /^1[1-9A-HJ-NP-Za-km-z]{46,47}$/ },
+  { name: "Sui or Aptos", re: /^0[xX][0-9a-fA-F]{64}$/ },
+  { name: "TON", re: /^[EU]Q[A-Za-z0-9_-]{46}$/ },
+  { name: "NEAR", re: /^[a-z0-9._-]{2,62}\.near$/ },
+  { name: "Dash", re: /^X[1-9A-HJ-NP-Za-km-z]{33}$/ },
+];
+
+const detectForeignChain = (address) => {
+  const value = String(address || "").trim();
+  for (const { name, re } of FOREIGN_ADDRESS_CHAINS) {
+    if (re.test(value)) return name;
+  }
+  return null;
+};
+
+/* Bitcoin Cash writes its address with an optional `bitcoincash:` prefix, and
+ * everything downstream of the pattern match wants it gone: `WATCH_ADDRESS_RE`
+ * is alphanumeric-only, so a prefixed address matched its chain pattern and
+ * was then thrown out by the shape check as if it were nonsense. Copying an
+ * address out of most Bitcoin Cash wallets gives you the prefixed form. */
+const normalizeWatchAddress = (address) =>
+  String(address || "")
+    .trim()
+    .replace(/^bitcoincash:/i, "");
 
 const detectAddressChain = (address) => {
   const value = String(address || "").trim();

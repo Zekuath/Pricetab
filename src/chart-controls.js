@@ -373,7 +373,6 @@ class Overview extends PureComponent {
     const {
       coin,
       currentValue,
-      cycleCoinIndex,
       valueHistory,
       decimalPlaces,
       separatorFormat,
