@@ -52,6 +52,20 @@ const lightColors = {
   chartLine: "#3b82f6",
   chartLineGreen: "#10b981",
   chartLineRed: "#ef4444",
+  /* The interaction colour: "you are on this", "this one is on".
+   *
+   * It exists because hover and active states were borrowing `chartLine`,
+   * which is a **blue** — the one hue in this palette that belongs to nothing
+   * else in the interface, and reads as a link the moment it lands on a word.
+   * Hovering a coin in the portfolio turned its symbol Tailwind-blue.
+   *
+   * Green-family, so it belongs; **not** `chartLineGreen`, and that is the
+   * careful part. That green means "up" a few centimetres away on the same
+   * row, next to the money — an accent identical to it would make hovering a
+   * coin look like a reading about it. This is a deeper green in light and a
+   * paler one in dark: unmistakably the same family, unmistakably not the
+   * figure. */
+  accent: "#059669",
   shadow: "rgba(0, 0, 0, 0.1)",
 };
 
@@ -65,6 +79,8 @@ const darkColors = {
   chartLine: "#60a5fa",
   chartLineGreen: "#34d399",
   chartLineRed: "#f87171",
+  // Lighter than the up-green here, for the reason it is darker in light.
+  accent: "#6ee7b7",
   shadow: "rgba(0, 0, 0, 0.5)",
 };
 

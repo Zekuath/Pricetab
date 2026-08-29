@@ -15,11 +15,11 @@
 | Metric | Value |
 |--------|-------|
 | **Live Build** | 1.3.0 on the Chrome Web Store (August 2026) |
-| **Staged Locally** | 1.4.0 — onboarding tour, portfolio v2 (cost basis, disposals, address watching), news panel, calls board, collapsible settings groups |
+| **Staged Locally** | 1.5.0 — the travel band, network-fee and worst-fall widgets, headline summaries, one honest rating ask, a twenty-step tour, and the performance work (measured coin and range switches: 25–59ms and 12–22ms, no long tasks, no layout shift). 1.4.0 (onboarding tour, portfolio v2, news panel, calls board) was packaged and never submitted, so this supersedes it |
 | **Uncommitted (22 Aug)** | Portfolio time-alignment + currency + coverage + undo fixes; per-range cache TTL; network-retry cap. `check` green |
 | **Codebase Size** | 31,592 lines across 26 files in `src/` (22 Aug 2026) |
 | **Testing** | 49 checks — lint, ast-grep rules, unit suites, five real-Chromium suites. CI on every push |
-| **Next Milestone** | Ship 1.4.0 (portfolio + onboarding) to the store → launch marketing |
+| **Next Milestone** | Ship 1.5.0 to the store → launch marketing |
 
 ---
 
@@ -141,6 +141,39 @@
 
 ---
 
+## Phase 2.5: Language, and following the browser
+
+**Priority:** `HIGH` | **Started:** 27 Aug 2026
+
+The theme half is already true — `auto` is the default and reads
+`prefers-color-scheme` before React exists. What is missing is language.
+
+Mechanism, decided by measurement rather than taste: **`chrome.i18n` +
+`_locales/`** for the automatic case, because Chrome then loads only the
+matching locale at no cost to this page and localises the store listing's own
+name and description as a side effect; **one fetched file** only when someone
+overrides the browser's language from Settings. Both read the same
+`_locales/<code>/messages.json`, so there is a single source of truth.
+
+- [x] Plan, with the count that decides the mechanism (839 string literals in
+      `src/`, 674 distinct)
+- [ ] `src/i18n.js`: detection (stored → `chrome.i18n.getUILanguage()` →
+      `navigator.language` → English), `t()`, the `Intl` formatters,
+      `documentElement.lang`
+- [ ] Settings → Preferences: **Auto (follow Chrome)** plus the twelve locales
+- [ ] Locale-aware numbers, dates and relative times — worth more than the
+      strings and carries no translation debt, so it goes first
+- [ ] Strings by traffic: chart chrome and price row → settings → panels →
+      onboarding
+- [ ] Translations per surface as it lands. **A surface is either English or
+      fully its language** — never half
+
+Left-to-right only in this pass: `en es pt_BR de fr it ru tr id ja ko zh_CN`.
+Arabic, Hebrew and Persian are a layout project, not a translation, and a
+half-mirrored UI is worse than English.
+
+---
+
 ## Phase 3: Power User Features
 
 **Priority:** `HIGH` (alerts) / `MEDIUM` (rest) | **Target:** Q3–Q4 2026
@@ -232,7 +265,7 @@
 - [ ] Firefox WebExtension port (minor API differences)
 - [ ] Safari Web Extension (Xcode required)
 - [ ] `chrome.storage.sync` option (multi-device settings)
-- [ ] i18n: Turkish first, then Spanish/German
+- [ ] ~~i18n~~ — **moved up and started**, see Phase 2.5 below
 
 ---
 

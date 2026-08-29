@@ -50,7 +50,7 @@ vm.createContext(sandbox);
 const base = path.join(__dirname, "..", "src");
 // Same order as index.html — settings.js reads DEFAULT_WIDGET_SIZE and
 // WIDGET_SIZE_OPTIONS from widgets-data.js at definition time
-for (const f of ["config.js", "storage.js", "widgets-data.js", "shortcuts.js", "settings.js"]) {
+for (const f of ["storage.js", "i18n.js", "config.js", "widgets-data.js", "shortcuts.js", "settings.js"]) {
   vm.runInContext(fs.readFileSync(`${base}/${f}`, "utf8"), sandbox, { filename: f });
 }
 const run = (code) => vm.runInContext(code, sandbox);
@@ -108,7 +108,10 @@ const sectionNames = (prefs.match(/^ {4}(\w+): \(\) =>/gm) || []).map((m) =>
   m.trim().replace(/: \(\) =>$/, ""),
 );
 const grouped = [];
-for (const block of prefs.match(/group\(\s*"[^"]*",\s*(?:true|false),\s*\[[\s\S]*?\]\s*\)/g) || []) {
+/* The group's own name goes through `msg()` now, so the first argument is a
+ * call rather than a bare string — matched loosely for that reason. What is
+ * read is the list in the brackets, which has not changed. */
+for (const block of prefs.match(/group\([\s\S]{0,120}?(?:true|false),\s*\[[\s\S]*?\]\s*\)/g) || []) {
   const list = block.slice(block.indexOf("["));
   for (const q of list.match(/"(\w+)"/g) || []) grouped.push(q.slice(1, -1));
 }
@@ -127,7 +130,7 @@ assert.deepStrictEqual(twice, [], `a setting is placed in more than one group: $
 
 /* ── A key that works but is not advertised does not exist ──────────────
  *
- * `CLAUDE.md` states the rule and nothing enforced it: the "?" list is what
+ * The codebase guide states the rule and nothing enforced it: the "?" list is what
  * tells anyone a shortcut is there, so a key handled in `handleKeyDown` and
  * missing from `SHORTCUT_GROUPS` is a feature only its author can reach.
  * Letters only — Esc, the arrows and the digits are described in the list in

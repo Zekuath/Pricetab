@@ -1,0 +1,3355 @@
+{
+  "al_a_pct_move": {
+    "message": "A $1% move",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "al_about_panel": {
+    "message": "About this panel"
+  },
+  "al_above_by": {
+    "message": "Above by"
+  },
+  "al_above_current": {
+    "message": "$1 above the current $2.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "al_add": {
+    "message": "Add"
+  },
+  "al_already_above": {
+    "message": "$1 is already above that — this fires straight away.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "al_already_below": {
+    "message": "$1 is already below that — this fires straight away.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "al_already_hit": {
+    "message": "Already hit"
+  },
+  "al_already_moved": {
+    "message": "$1 has already moved that far today — this fires straight away.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "al_and_more": {
+    "message": " and $1 more",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "al_armed_hit_used": {
+    "message": "$1 armed · $2 hit · $3 of $4 used",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      },
+      "arg4": {
+        "content": "$4"
+      }
+    }
+  },
+  "al_armed_summary": {
+    "message": "$1 armed$2 · $3/$4",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      },
+      "arg4": {
+        "content": "$4"
+      }
+    }
+  },
+  "al_below_by": {
+    "message": "Below by"
+  },
+  "al_below_current": {
+    "message": "$1 below the current $2.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "al_best_streak": {
+    "message": "best streak"
+  },
+  "al_best_streak_hint": {
+    "message": "The longest run of calls you got right"
+  },
+  "al_best_streak_suffix": {
+    "message": " · best streak $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "al_board": {
+    "message": "Board"
+  },
+  "al_board_hint": {
+    "message": "Drag the now line on the chart to resize the board"
+  },
+  "al_board_readout": {
+    "message": "$1 ahead$2 · square $3 × $4",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      },
+      "arg4": {
+        "content": "$4"
+      }
+    }
+  },
+  "al_burst_hint": {
+    "message": "A burst on the chart the first time you open a tab after getting one right"
+  },
+  "al_call_belongs": {
+    "message": "A call belongs to the coin, range and currency it was made on, and only settles there. Calls stand down while two coins share the chart."
+  },
+  "al_called": {
+    "message": "Called"
+  },
+  "al_called_at": {
+    "message": "Called at $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "al_called_at_suffix": {
+    "message": " · called at $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "al_called_it": {
+    "message": "Called it"
+  },
+  "al_called_right": {
+    "message": "$1 of $2 called right$3. The score is on this device only and is worth nothing.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      }
+    }
+  },
+  "al_calls": {
+    "message": "Calls"
+  },
+  "al_calls_info": {
+    "message": "A call is a claim: not “tell me when”, but “I say where”. Point at a square in the empty strip to the right of the chart and you are naming a price band and a moment — one click drafts it, a second locks it. It settles itself the next time you open a tab, against the price at that moment, and the box stays on the chart saying whether you were right. How far that strip reaches is yours to set: drag the “now” line left for more board, right for more history."
+  },
+  "al_calls_off": {
+    "message": "Calls are off"
+  },
+  "al_calls_off_body": {
+    "message": "Point at a square of empty future on the chart and you have said where the price will be, and when. It settles itself the next time you open a tab — nothing is announced, nothing is sent, and the score is worth nothing."
+  },
+  "al_clear_settled": {
+    "message": "clear settled"
+  },
+  "al_clear_settled_hint": {
+    "message": "Remove settled calls from the chart and from this list"
+  },
+  "al_closed_at": {
+    "message": " · closed at $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "al_common": {
+    "message": "Common"
+  },
+  "al_direction": {
+    "message": "Target direction"
+  },
+  "al_drag_hint": {
+    "message": "Drag the dotted line itself to make the board bigger or smaller."
+  },
+  "al_drops_below": {
+    "message": "drops below"
+  },
+  "al_drops_below_price": {
+    "message": "drops below $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "al_due": {
+    "message": "Due — settles next time this range loads"
+  },
+  "al_duplicate": {
+    "message": "You already have this target."
+  },
+  "al_falls_pct_24h": {
+    "message": "falls $1 in 24h",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "al_hit_announced": {
+    "message": "A hit is announced in the tab title, and targets are checked while this tab is hidden."
+  },
+  "al_hit_at": {
+    "message": " at $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "al_hit_here_only": {
+    "message": "A hit is reported here only — announcing it in the tab title is off in Settings, which also stops the background checking."
+  },
+  "al_hit_when": {
+    "message": "Hit $1$2",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "al_in_band": {
+    "message": " · in the band now"
+  },
+  "al_info_calls": {
+    "message": "What calls are, where they stand, and the keys"
+  },
+  "al_info_targets": {
+    "message": "What targets are, where they stand, and the keys"
+  },
+  "al_it_resumes": {
+    "message": "it resumes"
+  },
+  "al_keep_settled_hint": {
+    "message": "Keep settled calls on the chart, marked called it or missed"
+  },
+  "al_keep_under": {
+    "message": "Keep it under $1% — larger moves don't happen in a day.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "al_key_add": {
+    "message": "add"
+  },
+  "al_key_calls_toggle": {
+    "message": "calls on / off"
+  },
+  "al_key_close": {
+    "message": "close"
+  },
+  "al_key_grid": {
+    "message": "grid on the plain chart"
+  },
+  "al_key_this_panel": {
+    "message": "this panel"
+  },
+  "al_kind_percent": {
+    "message": "A move in 24h"
+  },
+  "al_kind_portfolio": {
+    "message": "My portfolio"
+  },
+  "al_kind_price": {
+    "message": "A price"
+  },
+  "al_limit_reached": {
+    "message": "Target limit reached ($1). Remove one to add another.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "al_missed": {
+    "message": "Missed"
+  },
+  "al_missed_by": {
+    "message": " · missed by $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "al_move_needs": {
+    "message": "24h move $1 $2 · needs $3 $4",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      },
+      "arg4": {
+        "content": "$4"
+      }
+    }
+  },
+  "al_n_hit": {
+    "message": " · $1 hit",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "al_n_open": {
+    "message": "$1 open$2",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "al_needs_pct": {
+    "message": " · needs $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "al_new_target": {
+    "message": "New target"
+  },
+  "al_no_calls": {
+    "message": "No calls yet"
+  },
+  "al_no_holdings": {
+    "message": "No holdings to total yet"
+  },
+  "al_no_targets": {
+    "message": "No targets yet"
+  },
+  "al_now": {
+    "message": "Now $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "al_now_away": {
+    "message": "Now $1 · $2 away",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "al_of_settled": {
+    "message": " of $1 settled",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "al_of_total": {
+    "message": "of $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "al_off_kept": {
+    "message": "Off · $1 kept and still settling in the background — what is off is the board: nothing is drawn, nothing can be placed, and a win is not announced",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "al_on_open_settled": {
+    "message": "On · $1 open · $2 settled",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "al_on_range": {
+    "message": " · on $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "al_open_n": {
+    "message": "Open · $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "al_paused_currency": {
+    "message": "paused · $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "al_paused_info": {
+    "message": "$1 paused — set in another currency, so $2 when you switch back to it. A move target never pauses: a percentage means the same thing everywhere.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "al_paused_set_in": {
+    "message": " · paused — set in $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "al_pct_above_current": {
+    "message": "$1% above the current price",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "al_pct_below_current": {
+    "message": "$1% below the current price",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "al_portfolio": {
+    "message": "Portfolio"
+  },
+  "al_progress_title": {
+    "message": "$1% of the way from where it was when you set this",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "al_rearm": {
+    "message": "Re-arm"
+  },
+  "al_rearm_aria": {
+    "message": "Re-arm $1 target",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "al_rearm_hint": {
+    "message": "Arm this target again"
+  },
+  "al_record_kept": {
+    "message": "Your record is kept. It lives on this device only and is worth nothing"
+  },
+  "al_remove_aria": {
+    "message": "Remove $1 target",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "al_remove_target": {
+    "message": "Remove target"
+  },
+  "al_removed_target": {
+    "message": "Removed the $1 target",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "al_reset_score": {
+    "message": "reset score"
+  },
+  "al_reset_score_hint": {
+    "message": "Set the record back to nothing. It lives on this device only and is worth nothing"
+  },
+  "al_rises_above": {
+    "message": "rises above"
+  },
+  "al_rises_above_price": {
+    "message": "rises above $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "al_rises_pct_24h": {
+    "message": "rises $1 in 24h",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "al_search_coins": {
+    "message": "Search coins"
+  },
+  "al_set_in_currency": {
+    "message": "Set in $1 — resumes when you display $1 again",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "al_settled_n": {
+    "message": "Settled · $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "al_settles_in": {
+    "message": "Settles $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "al_show": {
+    "message": "Show"
+  },
+  "al_still_judged": {
+    "message": "Calls you have already made are still judged while this is off — turning it back on brings the board back with them"
+  },
+  "al_still_settling": {
+    "message": "still settling"
+  },
+  "al_stop_calls_hint": {
+    "message": "Stop calls. Your calls and score are kept, and L does the same from the chart"
+  },
+  "al_streak_best": {
+    "message": "streak $1 · best $2",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "al_target_coin": {
+    "message": "Target coin"
+  },
+  "al_target_in": {
+    "message": "target in $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "al_target_percent": {
+    "message": "Target move in percent"
+  },
+  "al_target_price": {
+    "message": "Target price"
+  },
+  "al_target_total": {
+    "message": "Target portfolio total"
+  },
+  "al_targets_info": {
+    "message": "A target is a request: tell me when. Name a price (“BTC rises above 80,000”) or a move (“BTC falls 5% in 24h”) and it is reported here the next time you open a tab — including one that happened overnight, because every target is checked against the last week of hourly candles rather than only against the price right now."
+  },
+  "al_they_resume": {
+    "message": "they resume"
+  },
+  "al_total_in": {
+    "message": "total in $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "al_total_unmeasured": {
+    "message": " — the total is left unmeasured rather than counted short"
+  },
+  "al_travel_band": {
+    "message": "travel band"
+  },
+  "al_turn_calls_on": {
+    "message": "Turn calls on"
+  },
+  "al_turn_off": {
+    "message": "turn off"
+  },
+  "al_waiting_price": {
+    "message": "Waiting on a price for $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "al_way_down": {
+    "message": "down"
+  },
+  "al_way_up": {
+    "message": "up"
+  },
+  "al_withdraw": {
+    "message": "Withdraw"
+  },
+  "al_withdraw_hint": {
+    "message": "Withdraw this call"
+  },
+  "al_worth_less": {
+    "message": "worth less than"
+  },
+  "al_worth_less_than": {
+    "message": "is worth less than $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "al_worth_more": {
+    "message": "worth more than"
+  },
+  "al_worth_more_than": {
+    "message": "is worth more than $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "al_zoom_in": {
+    "message": "Zoom the board in"
+  },
+  "al_zoom_in_hint": {
+    "message": "Zoom in: a tighter band, a shorter reach  ( ] )"
+  },
+  "al_zoom_out": {
+    "message": "Zoom the board out"
+  },
+  "al_zoom_out_hint": {
+    "message": "Zoom out: a wider band, far enough to call a big move  ( [ )"
+  },
+  "al_zoom_reset": {
+    "message": "Back to the default board reach"
+  },
+  "app_close": {
+    "message": "Close"
+  },
+  "app_dismiss": {
+    "message": "Dismiss"
+  },
+  "app_dismiss_rating": {
+    "message": "Dismiss rating request"
+  },
+  "app_error": {
+    "message": "Something went wrong."
+  },
+  "app_fetching_prices": {
+    "message": "Fetching prices…"
+  },
+  "app_looking_headlines": {
+    "message": "Looking for headlines…"
+  },
+  "app_move_note": {
+    "message": "Headlines published around this move — what was being written at the time, not why the price moved."
+  },
+  "app_new_tab": {
+    "message": "New Tab"
+  },
+  "app_no_archive": {
+    "message": "Nothing in the archive for those days."
+  },
+  "app_offline": {
+    "message": "You are offline. Data will update when connection is restored."
+  },
+  "app_offline_short": {
+    "message": "Offline — waiting for a connection"
+  },
+  "app_rate_ask": {
+    "message": "Liking PriceTab? A rating is how other people find it — it takes a few seconds and helps more than anything else."
+  },
+  "app_read_on": {
+    "message": "Read on "
+  },
+  "app_reload": {
+    "message": "Reload"
+  },
+  "app_remove": {
+    "message": "Remove"
+  },
+  "app_retry": {
+    "message": "Retry"
+  },
+  "app_retrying": {
+    "message": "Retrying…"
+  },
+  "app_skip": {
+    "message": "Skip"
+  },
+  "app_unreachable": {
+    "message": "Couldn't reach the price service. Showing the last prices we have."
+  },
+  "br_above_200d": {
+    "message": "Above its 200-day average"
+  },
+  "br_across_episodes": {
+    "message": " across $1 episodes. ",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "br_across_one_episode": {
+    "message": " across 1 episode. "
+  },
+  "br_close": {
+    "message": "Close base rates"
+  },
+  "br_daily_closes": {
+    "message": "$1 daily closes",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "br_edge_better": {
+    "message": "$1 points better than an ordinary stretch",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "br_edge_none": {
+    "message": "no different from an ordinary stretch"
+  },
+  "br_edge_worse": {
+    "message": "$1 points worse than an ordinary stretch",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "br_failed": {
+    "message": "No daily history came back for $1. Nothing can be counted without it, and a count made up would be worse than none.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "br_loading_body": {
+    "message": "Reading this coin's daily closes. It goes back as far as the exchange publishes, which is what makes the counts below worth printing."
+  },
+  "br_n_times": {
+    "message": "$1 times",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "br_next_30": {
+    "message": "next 30 days"
+  },
+  "br_next_7": {
+    "message": "next 7 days"
+  },
+  "br_no_states": {
+    "message": "$1 is not in any of the states below. That is the ordinary case, and it is the honest answer far more often than any of them.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "br_note_1": {
+    "message": "This counts what happened after a state, against what happened after an ordinary day in the same coin. It is not a signal and there is nothing to act on here. "
+  },
+  "br_note_2": {
+    "message": "Nine textbook rules tested over 21,669 daily closes on eight coins produced 0 of 70 results that survived correction for multiple testing, and on live data the “overbought” line was followed by a better-than-ordinary month on four coins of six. "
+  },
+  "br_note_200d": {
+    "message": "the line institutions read as a regime, not as an entry"
+  },
+  "br_note_3": {
+    "message": "Where a count is small the comparison is left out rather than dressed up: a rate needs its denominator to mean anything."
+  },
+  "br_note_further": {
+    "message": "the same line, further out"
+  },
+  "br_note_overbought": {
+    "message": "the line usually called overbought"
+  },
+  "br_note_oversold": {
+    "message": "the line usually called oversold"
+  },
+  "br_nothing_unusual": {
+    "message": "Nothing unusual right now"
+  },
+  "br_now_suffix": {
+    "message": " · now"
+  },
+  "br_one_time": {
+    "message": "1 time"
+  },
+  "br_ordinary_days": {
+    "message": "An ordinary $1 days: $2, up $3% ($4 of them). ",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      },
+      "arg4": {
+        "content": "$4"
+      }
+    }
+  },
+  "br_reading": {
+    "message": "Reading the daily closes…"
+  },
+  "br_rsi_above_70": {
+    "message": "RSI above 70"
+  },
+  "br_rsi_above_80": {
+    "message": "RSI above 80"
+  },
+  "br_rsi_below_20": {
+    "message": "RSI below 20"
+  },
+  "br_rsi_below_30": {
+    "message": "RSI below 30"
+  },
+  "br_rsi_label": {
+    "message": "RSI 14 · daily closes · 0–100"
+  },
+  "br_that_is": {
+    "message": "That is $1.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "br_the_rest": {
+    "message": "The rest, for reference"
+  },
+  "br_title": {
+    "message": "$1 · has this happened before?",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "br_too_few": {
+    "message": "$1 episodes is too few to compare — the difference is not printed.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "br_true_now": {
+    "message": "True right now"
+  },
+  "br_try_again": {
+    "message": "Try again"
+  },
+  "br_typically": {
+    "message": "$1 typically, up $2% of the time",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "ch_band": {
+    "message": "Band"
+  },
+  "ch_close": {
+    "message": "Close"
+  },
+  "ch_default_reach": {
+    "message": "Back to the default reach"
+  },
+  "ch_drag_now": {
+    "message": "Drag to change how far ahead you can call"
+  },
+  "ch_drag_or_keys": {
+    "message": "Drag, or use the arrow keys, to change how far ahead you can call"
+  },
+  "ch_high": {
+    "message": "High"
+  },
+  "ch_low": {
+    "message": "Low"
+  },
+  "ch_now_label": {
+    "message": "How far ahead you can call"
+  },
+  "ch_open": {
+    "message": "Open"
+  },
+  "ch_reach_title": {
+    "message": "How far the board reaches, up and down"
+  },
+  "ch_span": {
+    "message": "Span"
+  },
+  "ch_volume": {
+    "message": "Volume"
+  },
+  "ch_zoom_hint": {
+    "message": " — scroll over the chart, or [ and ]"
+  },
+  "ch_zoom_in": {
+    "message": "Zoom in"
+  },
+  "ch_zoom_in_label": {
+    "message": "Zoom the board in — a tighter band"
+  },
+  "ch_zoom_out": {
+    "message": "Zoom out"
+  },
+  "ch_zoom_out_label": {
+    "message": "Zoom the board out — a wider band, far enough to call a big move"
+  },
+  "chart_coin_price": {
+    "message": "$1 Price",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "chart_next_coin": {
+    "message": "Next coin"
+  },
+  "chart_percent_change": {
+    "message": "Percent Change"
+  },
+  "chart_price_change": {
+    "message": "Price Change"
+  },
+  "chart_switch_to_percent": {
+    "message": "Switch to percent change"
+  },
+  "chart_switch_to_price": {
+    "message": "Switch to price change"
+  },
+  "chart_your_cost": {
+    "message": "YOUR COST"
+  },
+  "chrome_calls": {
+    "message": "Calls"
+  },
+  "chrome_calls_close": {
+    "message": "Close calls"
+  },
+  "chrome_news": {
+    "message": "News"
+  },
+  "chrome_news_close": {
+    "message": "Close news"
+  },
+  "chrome_news_new": {
+    "message": "News — new about your coins"
+  },
+  "chrome_portfolio": {
+    "message": "Portfolio"
+  },
+  "chrome_portfolio_close": {
+    "message": "Close portfolio"
+  },
+  "chrome_portfolio_open": {
+    "message": "Open portfolio"
+  },
+  "chrome_refresh": {
+    "message": "Fetch the latest prices again"
+  },
+  "chrome_settings": {
+    "message": "Settings"
+  },
+  "chrome_settings_close": {
+    "message": "Close settings"
+  },
+  "chrome_settings_open": {
+    "message": "Open settings"
+  },
+  "chrome_targets": {
+    "message": "Price targets"
+  },
+  "chrome_targets_close": {
+    "message": "Close price targets"
+  },
+  "chrome_targets_short": {
+    "message": "Targets"
+  },
+  "chrome_ticker_hide": {
+    "message": "Hide ticker"
+  },
+  "chrome_ticker_show": {
+    "message": "Show ticker"
+  },
+  "dec_2": {
+    "message": "2 decimals (e.g. 1,234.56)"
+  },
+  "dec_4": {
+    "message": "4 decimals (e.g. 1,234.5678)"
+  },
+  "dec_6": {
+    "message": "6 decimals (e.g. 0.001234)"
+  },
+  "dec_8": {
+    "message": "8 decimals (e.g. 0.00001234)"
+  },
+  "every_10s": {
+    "message": "Every 10 seconds"
+  },
+  "every_15m": {
+    "message": "Every 15 minutes"
+  },
+  "every_1m": {
+    "message": "Every minute"
+  },
+  "every_30s": {
+    "message": "Every 30 seconds"
+  },
+  "every_5m": {
+    "message": "Every 5 minutes"
+  },
+  "method_fifo": {
+    "message": "First in, first out"
+  },
+  "method_fifo_note": {
+    "message": "The oldest purchase is sold first. The default nearly everywhere, and the only method some countries accept."
+  },
+  "method_hifo": {
+    "message": "Highest in, first out"
+  },
+  "method_hifo_note": {
+    "message": "The most expensive purchase is sold first, which reports the smallest gain. Not accepted everywhere."
+  },
+  "method_lifo": {
+    "message": "Last in, first out"
+  },
+  "method_lifo_note": {
+    "message": "The newest purchase is sold first. Allowed in some places and not others — check yours."
+  },
+  "mins_1": {
+    "message": "1 minute"
+  },
+  "mins_5": {
+    "message": "5 minutes"
+  },
+  "news_allow_rest": {
+    "message": "Allow the rest"
+  },
+  "news_also_count": {
+    "message": "+$1 more",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "news_also_rest": {
+    "message": "and $1 more",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "news_also_title": {
+    "message": "$1 newsrooms ran this story",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "news_ask_body_1": {
+    "message": "Cointelegraph, Decrypt, CryptoSlate, Bitcoin Magazine, CoinJournal and BBC Business publish feeds that a browser will not let a page read without your say-so. Chrome will ask you to allow it."
+  },
+  "news_ask_body_2": {
+    "message": "Nothing is sent to them and nothing is stored anywhere but this device — PriceTab only reads what they publish. You can turn it off here again at any time."
+  },
+  "news_asking": {
+    "message": "Asking Chrome…"
+  },
+  "news_fetching": {
+    "message": "Fetching headlines…"
+  },
+  "news_granted_silent": {
+    "message": "Granted, but none of the $1 newsrooms answered. Reloading this tab usually fixes it.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "news_n_stories": {
+    "message": "$1 stories",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "news_no_match": {
+    "message": "Nothing matching “$1”.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "news_none_at_all": {
+    "message": "No headlines came back. Nothing was reachable this time."
+  },
+  "news_none_blocked": {
+    "message": "No headlines came back. The newsrooms are allowed but did not answer — reloading this tab usually fixes it."
+  },
+  "news_none_filtered": {
+    "message": "Nothing here with those filters. Widen the scope, or switch a source back on below."
+  },
+  "news_one_click": {
+    "message": "$1 newsrooms are one click away",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "news_one_story": {
+    "message": "1 story"
+  },
+  "news_reading_all": {
+    "message": "Reading $1 newsrooms directly.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "news_reading_some": {
+    "message": "Reading $1 of $2 newsrooms.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "news_scope_all": {
+    "message": "Everything"
+  },
+  "news_scope_held": {
+    "message": "What I hold"
+  },
+  "news_scope_mine": {
+    "message": "My coins"
+  },
+  "news_search_label": {
+    "message": "Search headlines"
+  },
+  "news_search_placeholder": {
+    "message": "Search headlines…"
+  },
+  "news_since_last": {
+    "message": "New since you last looked"
+  },
+  "news_stale_note": {
+    "message": "A source with an age beside its name has published nothing since then. That is the feed being quiet, not PriceTab failing to ask."
+  },
+  "news_turn_off": {
+    "message": "Turn off"
+  },
+  "news_turn_on": {
+    "message": "Turn on full sources"
+  },
+  "news_unusual_head": {
+    "message": "$1 moved unusually for itself, $2",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "news_unusual_none": {
+    "message": "Nothing in the loaded feed mentions it."
+  },
+  "news_unusual_note": {
+    "message": "Measured against this coin's own typical step on the range you are looking at. These are headlines from the same window, not a cause."
+  },
+  "pc_bought": {
+    "message": "▲ Bought"
+  },
+  "pc_break_even": {
+    "message": "BREAK EVEN"
+  },
+  "pc_cost": {
+    "message": "COST $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "pc_more": {
+    "message": "+$1 more",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "pc_other_upper": {
+    "message": "OTHER"
+  },
+  "pc_plot_hint": {
+    "message": "Use the left and right arrow keys to move through the chart, Home and End for the first and last point, and Escape to let go."
+  },
+  "pc_plot_label": {
+    "message": "Portfolio value chart"
+  },
+  "pc_sold": {
+    "message": "▼ Sold"
+  },
+  "pc_title": {
+    "message": "Portfolio value over time"
+  },
+  "pcb_empty": {
+    "message": "Not enough history to say what moved this."
+  },
+  "pcb_note": {
+    "message": "How much of this $1's move each holding accounted for, using the amounts you hold now. It adds up to the change above it. This is what happened, not what happens next.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "pcb_other_members": {
+    "message": "Other: $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "pcb_row_label": {
+    "message": "$1: $2, $3% of the movement",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      }
+    }
+  },
+  "period_all": {
+    "message": "All Time"
+  },
+  "po_add_holding": {
+    "message": "Add a holding"
+  },
+  "po_added_by_hand": {
+    "message": "Added by hand"
+  },
+  "po_added_from_file": {
+    "message": "Added $1 holdings from the file",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "po_added_holdings": {
+    "message": "Added $1 holdings",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "po_address_label": {
+    "message": "Address to watch"
+  },
+  "po_allocation_prefix": {
+    "message": "Allocation: "
+  },
+  "po_alphabetical": {
+    "message": "Alphabetical"
+  },
+  "po_amount": {
+    "message": "Amount"
+  },
+  "po_amount_aria": {
+    "message": "$1 amount",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "po_amount_placeholder": {
+    "message": "amount (e.g. 0.5 $1)",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "po_amount_sold": {
+    "message": "Amount sold"
+  },
+  "po_and_records": {
+    "message": " and everything logged against it"
+  },
+  "po_another_currency": {
+    "message": "another currency"
+  },
+  "po_back_to_list": {
+    "message": "Back to the holdings list (Esc)"
+  },
+  "po_bands_note": {
+    "message": "Bands add up to the line. The scale starts at zero, so the heights are comparable — which costs the zoom."
+  },
+  "po_best_24h": {
+    "message": "Best 24h"
+  },
+  "po_bought": {
+    "message": "Bought"
+  },
+  "po_by_coin": {
+    "message": "By coin"
+  },
+  "po_by_coin_hint": {
+    "message": "The coins the total is made of, stacked. The scale starts at zero — that is what makes the bands comparable"
+  },
+  "po_calendar_year": {
+    "message": "This is the calendar year — the tax year ends on a different date in many countries, so check yours."
+  },
+  "po_chain_estimated": {
+    "message": "chain (estimated)"
+  },
+  "po_chart_covers": {
+    "message": "The chart and the change beside the total cover $1 of $2 holdings",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "po_chart_title": {
+    "message": "Portfolio · Total value"
+  },
+  "po_chart_value_note": {
+    "message": "The value of the $1 holdings on this chart. Your portfolio total covers all $2.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "po_cost_basis": {
+    "message": "Cost basis"
+  },
+  "po_cost_method": {
+    "message": "Cost basis method"
+  },
+  "po_coverage_note": {
+    "message": "Over $1, across the $2 holdings this chart can draw$3. The total above covers all $4.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      },
+      "arg4": {
+        "content": "$4"
+      }
+    }
+  },
+  "po_csv": {
+    "message": "Cost basis report (CSV)"
+  },
+  "po_currency_paused": {
+    "message": " · $1 · paused",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "po_date_unknown": {
+    "message": "date unknown"
+  },
+  "po_drawdown": {
+    "message": "Peak"
+  },
+  "po_drawdown_hint": {
+    "message": "The deepest fall from a high to a later low inside this $1 window",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "po_drawdown_mode_hint": {
+    "message": "How far below its own highest point the total has been, all the way along — depth and how long it took to come back, which one 'worst fall' number cannot show"
+  },
+  "po_drawdown_note": {
+    "message": "Zero is a new high. Everything below it is how far under its own peak the total was at that moment — the depth, and how long it took to get back. It says how bad this got, not how bad it can get."
+  },
+  "po_drawdown_range": {
+    "message": " — $1 to $2",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "po_drawn_of_held": {
+    "message": " · $1 of $2",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "po_dropped": {
+    "message": "$1 did not fit — the list is full",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "po_empty_hint": {
+    "message": "Search a coin below, or paste an address to watch."
+  },
+  "po_explore": {
+    "message": "Explore chart"
+  },
+  "po_explore_hint": {
+    "message": "Open the value chart — read it at any moment, with your purchases and sales on it"
+  },
+  "po_export": {
+    "message": "Export JSON"
+  },
+  "po_export_hint": {
+    "message": "Download holdings as a JSON backup"
+  },
+  "po_footer": {
+    "message": "Tracking only · no wallet connection · stored locally on this device. Watched addresses are used solely for public balance lookups."
+  },
+  "po_held_long": {
+    "message": "Held $1 days — long term at the $2-day mark used in many places",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "po_held_short": {
+    "message": "Held $1 days — short term at the $2-day mark used in many places",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "po_holdings": {
+    "message": "Holdings"
+  },
+  "po_holdings_n": {
+    "message": "Holdings · $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "po_hover_note": {
+    "message": "Hover, tap or focus the chart to read the total, what it was made of, and how far it sat above or below what you paid."
+  },
+  "po_import": {
+    "message": "Import JSON"
+  },
+  "po_import_failed": {
+    "message": "Import failed — the file is not a valid PriceTab portfolio backup."
+  },
+  "po_import_hint": {
+    "message": "Restore holdings from a JSON backup (replaces the current list)"
+  },
+  "po_inferred": {
+    "message": "Purchases inferred from the watched address — click to view"
+  },
+  "po_largest_first": {
+    "message": "Largest $1 first",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "po_limit_reached": {
+    "message": "Holding limit reached"
+  },
+  "po_long_suffix": {
+    "message": " · long"
+  },
+  "po_long_term": {
+    "message": "Long term"
+  },
+  "po_lot_amount": {
+    "message": "Lot amount"
+  },
+  "po_lot_line": {
+    "message": "$1 $2 — $3",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      }
+    }
+  },
+  "po_lot_total_paid": {
+    "message": "Lot total paid"
+  },
+  "po_lots_aria": {
+    "message": "$1 purchase lots",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "po_lots_cover": {
+    "message": "Lots cover $1 of $2 $3 — P/L is computed on the logged part.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      }
+    }
+  },
+  "po_manual_amount_aria": {
+    "message": "$1 hand-entered amount",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "po_merge": {
+    "message": "Merge JSON"
+  },
+  "po_method_line": {
+    "message": "$1 — $2",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "po_model_note": {
+    "message": "Today's amounts priced across this range. Purchases and sales are marked, but they do not change the historical quantities."
+  },
+  "po_moved": {
+    "message": "What moved it"
+  },
+  "po_moved_hint": {
+    "message": "Which holdings account for this range's change, biggest first. The bars add up to the figure above them"
+  },
+  "po_n_purchases": {
+    "message": "$1 purchases",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "po_n_sales": {
+    "message": "$1 sales",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "po_n_watched": {
+    "message": "$1 watched addresses",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "po_no_basis_suffix": {
+    "message": " · no cost basis"
+  },
+  "po_no_purchase": {
+    "message": "no purchase"
+  },
+  "po_no_purchases": {
+    "message": "No purchases logged yet — add one below."
+  },
+  "po_no_transfers": {
+    "message": "No incoming transfers detected yet."
+  },
+  "po_nothing_to_add": {
+    "message": "Nothing to add"
+  },
+  "po_nothing_to_sell": {
+    "message": "Nothing hand-entered to sell — a watched address reconciles itself from the chain"
+  },
+  "po_nothing_tracked": {
+    "message": "Nothing tracked yet"
+  },
+  "po_on_chain": {
+    "message": " · ~on-chain"
+  },
+  "po_one_purchase": {
+    "message": "1 purchase"
+  },
+  "po_one_sale": {
+    "message": "1 sale"
+  },
+  "po_one_watched": {
+    "message": "1 watched address"
+  },
+  "po_other": {
+    "message": "Other"
+  },
+  "po_other_count": {
+    "message": "Other ($1)",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "po_paid_placeholder": {
+    "message": "paid in total (e.g. 15000)"
+  },
+  "po_paste_address": {
+    "message": "Paste any BTC, ETH, LTC, DOGE, BCH or ZEC address…"
+  },
+  "po_paused_basis": {
+    "message": "Every purchase logged for $1 was entered in $2. Switch to it to see this cost basis and its P/L.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "po_pnl_hint": {
+    "message": "The same total, re-based so zero is what you paid. Above the line is profit, below it is loss — the one thing the value chart cannot show when the cost sits off the scale"
+  },
+  "po_pnl_note": {
+    "message": "Zero is what you paid, so the line crossing it is the moment this became a profit or a loss. It uses the whole cost basis, not the cost as it stood on each day — the amounts are today's."
+  },
+  "po_proceeds_less": {
+    "message": "Proceeds less the cost of the purchase it consumed"
+  },
+  "po_realized": {
+    "message": "Realized"
+  },
+  "po_realized_paused": {
+    "message": " Sales recorded in another currency are left out rather than converted."
+  },
+  "po_realized_year": {
+    "message": "Realized $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "po_realized_year_hint": {
+    "message": "Gains and losses on sales you recorded between 1 January $1 and today. ",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "po_received_placeholder": {
+    "message": "received in total (e.g. 45000)"
+  },
+  "po_record": {
+    "message": "Record"
+  },
+  "po_record_sale_hint": {
+    "message": "Record a sale: takes the coins off, consumes the oldest purchases, and keeps the gain"
+  },
+  "po_remove_coin": {
+    "message": "Remove $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "po_remove_holding_hint": {
+    "message": "Remove this holding, its purchases and its recorded sales. Undoable until you close the portfolio."
+  },
+  "po_remove_lot": {
+    "message": "Remove lot"
+  },
+  "po_remove_lot_aria": {
+    "message": "Remove this $1 lot",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "po_remove_sale": {
+    "message": "Remove this $1 sale",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "po_remove_sale_hint": {
+    "message": "Remove this record. It does not give the coins back — adjust the amount if you need to."
+  },
+  "po_removed": {
+    "message": "Removed $1$2",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "po_replaced_with_file": {
+    "message": "Replaced $1 holdings with the file",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "po_return_pa": {
+    "message": "Return p.a."
+  },
+  "po_sale_no_basis": {
+    "message": "No purchase was logged for these coins, so there is no cost to set the proceeds against"
+  },
+  "po_sale_partial": {
+    "message": "Only $1 $2 of this sale had a purchase logged, so the gain covers that much of it",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "po_sale_paused": {
+    "message": "Recorded in $1. Its gain is left out of Realized while another currency is shown — switch to $1 to include it.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "po_search_coin": {
+    "message": "Search coin (e.g. BTC or Bitcoin)…"
+  },
+  "po_search_coin_label": {
+    "message": "Search coin to add"
+  },
+  "po_sell_hint": {
+    "message": "Takes the coins off your $1 and consumes the oldest purchases first. The gain is kept even after those purchases are gone.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "po_share_in_one": {
+    "message": "$1% in one holding",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "po_share_of_value": {
+    "message": ", $1% of your value",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "po_share_of_value_dash": {
+    "message": " — $1% of your value",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "po_show": {
+    "message": "Show"
+  },
+  "po_show_origin": {
+    "message": "Show where these coins came from and what you paid"
+  },
+  "po_show_purchases": {
+    "message": "Show your purchases for this coin"
+  },
+  "po_slice_title": {
+    "message": "$1 — $2% of what you hold",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "po_sold": {
+    "message": "Sold"
+  },
+  "po_sold_line": {
+    "message": "Sold $1 $2 — $3",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      }
+    }
+  },
+  "po_sort": {
+    "message": "Sort"
+  },
+  "po_stop": {
+    "message": "Stop"
+  },
+  "po_stop_sync_hint": {
+    "message": "Stop syncing this address (its coins and purchases move to the hand-entered part)"
+  },
+  "po_stop_watch_aria": {
+    "message": "Stop watching this $1 address",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "po_total": {
+    "message": "Total"
+  },
+  "po_total_across": {
+    "message": "Total across the hand-entered part and every watched address — click for the breakdown"
+  },
+  "po_total_amount_aria": {
+    "message": "$1 total amount",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "po_total_counts_all": {
+    "message": ". The total above counts everything."
+  },
+  "po_total_hint": {
+    "message": "One line: the total, on the range it actually moved in"
+  },
+  "po_total_received": {
+    "message": "Total received"
+  },
+  "po_undated_sales": {
+    "message": " $1 sale(s) have no date and are in neither year.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "po_unlogged_note": {
+    "message": "$1 $2 has no purchase logged, so it counts toward the value above but not toward the P/L.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "po_unrealized": {
+    "message": "Unrealized"
+  },
+  "po_unrealized_hint": {
+    "message": "Unrealized P/L vs what you paid"
+  },
+  "po_unrealized_partial": {
+    "message": "Unrealized P/L vs what you paid — covers only the amounts you've logged a purchase for ($1)",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "po_unrealized_paused": {
+    "message": " · purchases entered in another currency are left out rather than converted — open a holding to see which"
+  },
+  "po_value": {
+    "message": "Value"
+  },
+  "po_vs_benchmark": {
+    "message": "vs $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "po_vs_btc": {
+    "message": "vs BTC"
+  },
+  "po_vs_btc_hint": {
+    "message": "Your basket and BTC over exactly the same dates, both starting at 0% — where you pulled ahead, and where you only followed the market"
+  },
+  "po_vs_btc_none": {
+    "message": "No BTC history covering these dates, so there is nothing to compare against. The line above is your basket alone."
+  },
+  "po_vs_btc_note": {
+    "message": "Both from 0% at the same first date, on one scale — never two axes, which is what makes any two lines look related. Yours $1, BTC $2: a gap of $3 points. Holding BTC instead is the comparison, not a suggestion.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      }
+    }
+  },
+  "po_watch_address": {
+    "message": "Watch an address"
+  },
+  "po_watch_chains": {
+    "message": "PriceTab reads Bitcoin, Ethereum and its tokens, Litecoin, Dogecoin, Bitcoin Cash and Zcash — the amount can still be typed in above."
+  },
+  "po_watch_chip_title": {
+    "message": "$1 · $2 — click for the breakdown",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "po_watch_empty": {
+    "message": "That address holds nothing PriceTab can price right now."
+  },
+  "po_watch_foreign": {
+    "message": "That is a $1 address. ",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "po_watch_note": {
+    "message": "Reads the address's public balances and keeps the holdings synced (checked every 10 minutes while the portfolio is open)"
+  },
+  "po_watch_shape": {
+    "message": "That does not look like an address. Paste the whole thing, with no spaces."
+  },
+  "po_watch_unreachable": {
+    "message": "The balance service did not answer just now. It limits how often it can be asked, so this usually clears on its own — try again in a few minutes. Nothing is wrong with the address."
+  },
+  "po_watched_address": {
+    "message": "Watched address"
+  },
+  "po_watched_select": {
+    "message": "Watched address (click to select)"
+  },
+  "po_watching_n": {
+    "message": "Watching · $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "po_worst_24h": {
+    "message": "Worst 24h"
+  },
+  "po_worst_fall": {
+    "message": "Worst fall"
+  },
+  "po_worst_fall_note": {
+    "message": ". It says how bad this got, not how bad it can get."
+  },
+  "po_your_purchases": {
+    "message": "Your purchases for this coin — click to view or add ('bought 0.5 for 15000')"
+  },
+  "pref_alert_tab_title_aria": {
+    "message": "Toggle price target announcements in the tab title"
+  },
+  "pref_alert_tab_title_desc": {
+    "message": "Say so in the tab title when a target is hit, so a tab you are not looking at can tell you"
+  },
+  "pref_alert_tab_title_heading": {
+    "message": "Announce Targets In The Tab Title"
+  },
+  "pref_alert_tab_title_note": {
+    "message": "It also keeps checking your targets while the tab is in the background — the only thing PriceTab fetches while you are elsewhere, and only when you have a target armed. Switching this off stops the announcement and the background checking together."
+  },
+  "pref_alerts_keywords": {
+    "message": "alert target tab title notify background announce armed"
+  },
+  "pref_alerts_title": {
+    "message": "Price Target Alerts"
+  },
+  "pref_auto_rotate_aria": {
+    "message": "Toggle auto rotate"
+  },
+  "pref_auto_rotate_aria_2": {
+    "message": "Auto rotate interval"
+  },
+  "pref_auto_rotate_desc": {
+    "message": "Switch to the next coin in your list automatically"
+  },
+  "pref_auto_rotate_heading": {
+    "message": "Auto Rotate"
+  },
+  "pref_auto_rotate_keywords": {
+    "message": "cycle coins rotate interval pause panel"
+  },
+  "pref_auto_rotate_note": {
+    "message": "Holds still while any panel is open, so it cannot move the chart out from under you in the middle of reading it."
+  },
+  "pref_auto_rotate_title": {
+    "message": "Auto Rotate"
+  },
+  "pref_candlesticks_aria": {
+    "message": "Toggle candlestick chart"
+  },
+  "pref_candlesticks_desc": {
+    "message": "Draw open/high/low/close bars instead of a price line. Ranges without candle data stay on the line"
+  },
+  "pref_candlesticks_heading": {
+    "message": "Candlesticks"
+  },
+  "pref_candlesticks_keywords": {
+    "message": "candle ohlc bars japanese kraken request cost"
+  },
+  "pref_candlesticks_note": {
+    "message": "Cheaper than it looks: the candles are the only request the chart makes, because the price line is derived from their closes. The ALL range comes from Kraken — no other source reaches back years, and BTC goes to 2013. A coin or currency with no candle data stays on the line rather than showing you an empty chart."
+  },
+  "pref_candlesticks_title": {
+    "message": "Candlesticks"
+  },
+  "pref_chart_color_aria": {
+    "message": "Toggle chart color"
+  },
+  "pref_chart_color_desc": {
+    "message": "Green when up, red when down — turn off for a plain line"
+  },
+  "pref_chart_color_heading": {
+    "message": "Chart Color"
+  },
+  "pref_chart_color_keywords": {
+    "message": "green red fill trend colour"
+  },
+  "pref_chart_color_title": {
+    "message": "Chart Color"
+  },
+  "pref_chart_details_aria": {
+    "message": "Toggle chart detail readout"
+  },
+  "pref_chart_details_desc": {
+    "message": "Show open/high/low/close and volume when you hover the chart (one extra request per chart, only on hover)"
+  },
+  "pref_chart_details_heading": {
+    "message": "Chart Details"
+  },
+  "pref_chart_details_keywords": {
+    "message": "ohlc volume crosshair hover open high low close request cost"
+  },
+  "pref_chart_details_note": {
+    "message": "Open, high, low and close: the four prices that describe one period, plus what was traded in it. It costs one extra request per chart, made the first time you hover and not before."
+  },
+  "pref_chart_details_title": {
+    "message": "Chart Details"
+  },
+  "pref_chart_grid_aria": {
+    "message": "Toggle chart grid"
+  },
+  "pref_chart_grid_desc": {
+    "message": "Price levels and time divisions behind the chart, so you can read a level off it. Hover a cell to light it up"
+  },
+  "pref_chart_grid_heading": {
+    "message": "Chart Grid"
+  },
+  "pref_chart_grid_keywords": {
+    "message": "grid mesh levels gridlines price time axis estimate target calls squares"
+  },
+  "pref_chart_grid_note": {
+    "message": "This governs the plain chart, and the G key does the same thing. With calls switched on the mesh is drawn either way — the squares you point at are the grid — so there is nothing for this switch to change while you are playing."
+  },
+  "pref_chart_grid_title": {
+    "message": "Chart Grid"
+  },
+  "pref_currency_about": {
+    "message": "About Currency"
+  },
+  "pref_currency_all": {
+    "message": "All currencies"
+  },
+  "pref_currency_aria_2": {
+    "message": "Currency"
+  },
+  "pref_currency_keywords": {
+    "message": "usd eur fiat money exchange rate pause paused targets calls"
+  },
+  "pref_currency_note": {
+    "message": "Converted with the exchange rate the ticker already fetches, so switching costs no extra request. Price targets and calls made in another currency pause while you are in this one — they are not lost, and they pick up again when you switch back. A target on a percentage move never pauses: a percentage means the same thing in every currency."
+  },
+  "pref_currency_popular": {
+    "message": "Popular"
+  },
+  "pref_currency_title": {
+    "message": "Currency"
+  },
+  "pref_group_chart": {
+    "message": "Chart"
+  },
+  "pref_group_look": {
+    "message": "Look"
+  },
+  "pref_group_numbers": {
+    "message": "Numbers"
+  },
+  "pref_group_tickers": {
+    "message": "Tickers"
+  },
+  "pref_group_under_price": {
+    "message": "Under the price"
+  },
+  "pref_group_updating": {
+    "message": "Updating"
+  },
+  "pref_language_aria": {
+    "message": "Language"
+  },
+  "pref_language_auto": {
+    "message": "Auto (follow Chrome)"
+  },
+  "pref_language_chosen": {
+    "message": "Chosen by you. The page reloads when you change it."
+  },
+  "pref_language_following": {
+    "message": "Following Chrome — $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "pref_language_keywords": {
+    "message": "language locale translate english turkish spanish german french chinese japanese auto"
+  },
+  "pref_language_label": {
+    "message": "Language"
+  },
+  "pref_language_title": {
+    "message": "Language"
+  },
+  "pref_last_seen_aria": {
+    "message": "Toggle since your last visit line"
+  },
+  "pref_last_seen_desc": {
+    "message": "Show how the coin moved since you last opened a tab"
+  },
+  "pref_last_seen_heading": {
+    "message": "Since Your Last Visit"
+  },
+  "pref_last_seen_keywords": {
+    "message": "delta change visit last seen device"
+  },
+  "pref_last_seen_note": {
+    "message": "Compares the price now with the price the last time you opened a tab. The mark is kept on this device only, so a new browser starts counting again."
+  },
+  "pref_last_seen_title": {
+    "message": "Since Your Last Visit"
+  },
+  "pref_market_stats_aria": {
+    "message": "Toggle market stats"
+  },
+  "pref_market_stats_desc": {
+    "message": "Show the range high and low, market cap and 24h volume under the price"
+  },
+  "pref_market_stats_heading": {
+    "message": "Market Stats"
+  },
+  "pref_market_stats_keywords": {
+    "message": "stats high low market cap volume range free"
+  },
+  "pref_market_stats_note": {
+    "message": "Free. The high and low are read off the series already on screen, and the market cap and volume arrive with the ticker data — nothing extra is fetched for this line."
+  },
+  "pref_market_stats_title": {
+    "message": "Market Stats"
+  },
+  "pref_modes": {
+    "message": "Modes"
+  },
+  "pref_modes_own": {
+    "message": "Your own arrangement. A mode sets a dozen of the settings below at once — currency, number format and theme are always left as you have them."
+  },
+  "pref_move_headlines_aria": {
+    "message": "Toggle move headlines"
+  },
+  "pref_move_headlines_desc": {
+    "message": "When a coin makes an unusual move, show headlines that mention it from the same window. Uses the same news feed as the ticker"
+  },
+  "pref_move_headlines_heading": {
+    "message": "Move Headlines"
+  },
+  "pref_move_headlines_keywords": {
+    "message": "news headlines big move story context unusual source"
+  },
+  "pref_move_headlines_note": {
+    "message": "Unusual is measured against the range you are looking at, so a 2% day counts on the hour chart and not on the year. Only stories that name the coin qualify, and the label says where they came from rather than claiming they explain the move."
+  },
+  "pref_move_headlines_title": {
+    "message": "Move Headlines"
+  },
+  "pref_move_news_aria": {
+    "message": "Toggle what happened here"
+  },
+  "pref_move_news_desc": {
+    "message": "Marks the moments the price did something unusual for the range you are on. Click one for the headlines published around that day"
+  },
+  "pref_move_news_heading": {
+    "message": "What Happened Here"
+  },
+  "pref_move_news_keywords": {
+    "message": "news headlines moves spikes crash rally why history archive events"
+  },
+  "pref_move_news_note": {
+    "message": "The marks cost nothing — where they go is worked out from the series already on screen. Only opening one asks for anything, and the answer is cached, so the same moment is free afterwards. What it cannot tell you is why: headlines from the day of a move are what was being written, not the cause, and the card says so. Off while two coins share the chart, like the grid."
+  },
+  "pref_move_news_title": {
+    "message": "What Happened Here"
+  },
+  "pref_news_headlines": {
+    "message": "News Headlines"
+  },
+  "pref_number_format_aria": {
+    "message": "Decimal places"
+  },
+  "pref_number_format_aria_2": {
+    "message": "Number format"
+  },
+  "pref_number_format_keywords": {
+    "message": "decimals separator thousands format"
+  },
+  "pref_number_format_label": {
+    "message": "Decimal Places"
+  },
+  "pref_number_format_label_2": {
+    "message": "Number Format"
+  },
+  "pref_number_format_title": {
+    "message": "Number Format"
+  },
+  "pref_page_ticker_aria": {
+    "message": "Toggle page ticker"
+  },
+  "pref_page_ticker_aria_2": {
+    "message": "Price ticker bar position"
+  },
+  "pref_page_ticker_aria_3": {
+    "message": "Toggle news headlines row"
+  },
+  "pref_page_ticker_aria_4": {
+    "message": "Which headlines the news row carries"
+  },
+  "pref_page_ticker_desc": {
+    "message": "Scrolling price bar across the page (top or bottom)"
+  },
+  "pref_page_ticker_heading": {
+    "message": "Price Ticker Bar"
+  },
+  "pref_page_ticker_keywords": {
+    "message": "scrolling bar news headlines position every coin all filter my coins portfolio hold"
+  },
+  "pref_page_ticker_news_desc": {
+    "message": "Headlines come from public feeds — Hacker News, Bitcoin.com and three financial newsrooms, plus any you have allowed in the news panel. Clicking one opens the story in a new tab."
+  },
+  "pref_page_ticker_note": {
+    "message": "Shows every coin PriceTab supports, not only the ones on your list — one request serves all of them. The headlines row underneath uses the same feed as Move Headlines."
+  },
+  "pref_page_ticker_position": {
+    "message": "Position"
+  },
+  "pref_page_ticker_scope_desc": {
+    "message": "A story counts as yours when it names the coin — its ticker or its full name. Quiet weeks leave the row empty rather than filling it with everything else."
+  },
+  "pref_page_ticker_title": {
+    "message": "Price Ticker Bar"
+  },
+  "pref_position_bottom": {
+    "message": "Bottom"
+  },
+  "pref_position_top": {
+    "message": "Top"
+  },
+  "pref_quiet_chrome_aria": {
+    "message": "Toggle quiet controls"
+  },
+  "pref_quiet_chrome_desc": {
+    "message": "Let the corner buttons rest almost invisible and come back when you point at them. Nothing is hidden and nothing stops working — the keys still do what they did"
+  },
+  "pref_quiet_chrome_heading": {
+    "message": "Quiet Controls"
+  },
+  "pref_quiet_chrome_keywords": {
+    "message": "quiet minimal fade hide corner buttons chrome opacity keyboard focus"
+  },
+  "pref_quiet_chrome_note": {
+    "message": "The gear rests brightest of the five, because it is the way back to this setting. Every one of them comes to full under the pointer and on keyboard focus, and the shortcuts work whatever they look like."
+  },
+  "pref_quiet_chrome_title": {
+    "message": "Quiet Controls"
+  },
+  "pref_rate": {
+    "message": "Rate PriceTab"
+  },
+  "pref_rate_hint": {
+    "message": "Open the Chrome Web Store listing in a new tab"
+  },
+  "pref_refresh_about": {
+    "message": "About Refresh Interval"
+  },
+  "pref_refresh_interval_aria_2": {
+    "message": "Refresh interval"
+  },
+  "pref_refresh_interval_keywords": {
+    "message": "update poll seconds frequency hidden background cost"
+  },
+  "pref_refresh_interval_note": {
+    "message": "How often the chart asks for a new price. A hidden tab does not poll at all and catches up when you look at it, so a short interval costs nothing while you are somewhere else."
+  },
+  "pref_refresh_interval_title": {
+    "message": "Refresh Interval"
+  },
+  "pref_replay_hint": {
+    "message": "Run the first-run tour again"
+  },
+  "pref_replay_tour": {
+    "message": "Replay tour"
+  },
+  "pref_rotate_every": {
+    "message": "Switch Every"
+  },
+  "pref_search": {
+    "message": "Search settings…"
+  },
+  "pref_search_label": {
+    "message": "Search settings"
+  },
+  "pref_show": {
+    "message": "Show"
+  },
+  "pref_show_shortcuts": {
+    "message": "Show the keyboard shortcuts"
+  },
+  "pref_tab_ticker_aria": {
+    "message": "Toggle tab ticker"
+  },
+  "pref_tab_ticker_aria_2": {
+    "message": "Tab ticker format"
+  },
+  "pref_tab_ticker_desc": {
+    "message": "Show live prices in the browser tab title"
+  },
+  "pref_tab_ticker_format": {
+    "message": "Title Format"
+  },
+  "pref_tab_ticker_heading": {
+    "message": "Browser Tab Title"
+  },
+  "pref_tab_ticker_keywords": {
+    "message": "browser tab title price strip hidden"
+  },
+  "pref_tab_ticker_note": {
+    "message": "Writes into the browser tab's title, so you can read the price from the tab strip with the page hidden. The title is shared: a hit price target takes it over while it is announcing, then hands it back."
+  },
+  "pref_tab_ticker_title": {
+    "message": "Tab Ticker"
+  },
+  "pref_theme_auto": {
+    "message": "Auto"
+  },
+  "pref_theme_dark": {
+    "message": "Dark"
+  },
+  "pref_theme_heading": {
+    "message": "Theme"
+  },
+  "pref_theme_keywords": {
+    "message": "dark light auto system colour"
+  },
+  "pref_theme_light": {
+    "message": "Light"
+  },
+  "pref_theme_title": {
+    "message": "Theme"
+  },
+  "pref_theme_using": {
+    "message": "Using $1 mode",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "pref_theme_using_auto": {
+    "message": "Using $1 mode (system preference)",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "pref_volume_bars_aria": {
+    "message": "Toggle volume bars"
+  },
+  "pref_volume_bars_desc": {
+    "message": "Show traded volume as a band along the bottom of the chart"
+  },
+  "pref_volume_bars_heading": {
+    "message": "Volume Bars"
+  },
+  "pref_volume_bars_keywords": {
+    "message": "volume band bars traded activity"
+  },
+  "pref_volume_bars_title": {
+    "message": "Volume Bars"
+  },
+  "qs_compare_label": {
+    "message": "Compare with a coin"
+  },
+  "qs_compare_with": {
+    "message": "Compare $1 with…",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "qs_jump_label": {
+    "message": "Jump to a coin"
+  },
+  "qs_jump_placeholder": {
+    "message": "Jump to a coin…"
+  },
+  "qs_no_match": {
+    "message": "No coin matches that."
+  },
+  "sc_base_rates": {
+    "message": "Base rates — how often this coin has been here before"
+  },
+  "sc_board_zoom": {
+    "message": "Board reach: zoom out / in (calls on)"
+  },
+  "sc_calls": {
+    "message": "Calls on / off"
+  },
+  "sc_calls_panel": {
+    "message": "Calls — the board, the record, the settings"
+  },
+  "sc_chart_type": {
+    "message": "Line / candlestick chart"
+  },
+  "sc_close_open": {
+    "message": "Close whatever is open"
+  },
+  "sc_compare": {
+    "message": "Compare with a second coin"
+  },
+  "sc_grid": {
+    "message": "Price / time grid on the chart"
+  },
+  "sc_group_anywhere": {
+    "message": "Anywhere"
+  },
+  "sc_group_chart": {
+    "message": "Chart"
+  },
+  "sc_group_open": {
+    "message": "Open"
+  },
+  "sc_group_view": {
+    "message": "View"
+  },
+  "sc_jump": {
+    "message": "Jump to a coin by name"
+  },
+  "sc_news_panel": {
+    "message": "News — every source, filtered and dated"
+  },
+  "sc_note": {
+    "message": "Shortcuts pause while you're typing in a field. Press ? again, or Esc, to close this."
+  },
+  "sc_percent": {
+    "message": "Percent / price change"
+  },
+  "sc_prev_next_coin": {
+    "message": "Previous / next coin"
+  },
+  "sc_refresh": {
+    "message": "Refresh now"
+  },
+  "sc_rotate": {
+    "message": "Auto-rotate coins on / off"
+  },
+  "sc_switch_range": {
+    "message": "Switch range, 1H through ALL"
+  },
+  "sc_theme": {
+    "message": "Dark / light theme"
+  },
+  "sc_this_list": {
+    "message": "This list"
+  },
+  "sc_title": {
+    "message": "Keyboard shortcuts"
+  },
+  "sc_widgets": {
+    "message": "Hide / show widgets"
+  },
+  "secs_10": {
+    "message": "10 seconds"
+  },
+  "secs_30": {
+    "message": "30 seconds"
+  },
+  "sep_auto": {
+    "message": "Auto (match your language)"
+  },
+  "sep_eu": {
+    "message": "EU Format (1.234,56)"
+  },
+  "sep_space": {
+    "message": "Space Format (1 234.56)"
+  },
+  "sep_us": {
+    "message": "US Format (1,234.56)"
+  },
+  "set_add_coin": {
+    "message": "Add coin"
+  },
+  "set_add_failed": {
+    "message": "Could not add coin"
+  },
+  "set_already_listed": {
+    "message": "This symbol is already listed"
+  },
+  "set_bundle_holder": {
+    "message": "Holder"
+  },
+  "set_bundle_minimal": {
+    "message": "Minimal"
+  },
+  "set_bundle_trader": {
+    "message": "Trader"
+  },
+  "set_bundles": {
+    "message": "Bundles"
+  },
+  "set_coins_help": {
+    "message": "Search to add coins. Drag the chips to reorder, hit × to remove."
+  },
+  "set_coins_reset": {
+    "message": "Coins reset to defaults"
+  },
+  "set_coins_restored": {
+    "message": "Previous coins restored"
+  },
+  "set_drag_hint": {
+    "message": "Drag to reorder"
+  },
+  "set_keep_one_coin": {
+    "message": "Keep at least one coin in the rotation"
+  },
+  "set_max_coins": {
+    "message": "Max $1 coins reached",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "set_no_coins": {
+    "message": "No coins yet"
+  },
+  "set_not_recognized": {
+    "message": "$1 not recognized",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "set_quick_add": {
+    "message": "Quick add"
+  },
+  "set_rate": {
+    "message": "Rate"
+  },
+  "set_rate_dismiss": {
+    "message": "Dismiss rating reminder"
+  },
+  "set_remove_coin": {
+    "message": "Remove $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "set_reset_defaults": {
+    "message": "Reset to defaults"
+  },
+  "set_search_placeholder": {
+    "message": "Search name or symbol"
+  },
+  "set_selected": {
+    "message": "Selected"
+  },
+  "set_show_widgets": {
+    "message": "Show data widgets below chart"
+  },
+  "set_size": {
+    "message": "Size"
+  },
+  "set_size_note": {
+    "message": " — applies to every widget"
+  },
+  "set_sort": {
+    "message": "Sort"
+  },
+  "set_sort_az_hint": {
+    "message": "Order the list alphabetically"
+  },
+  "set_sort_cap": {
+    "message": "Market cap"
+  },
+  "set_sort_cap_hint": {
+    "message": "Largest market cap first"
+  },
+  "set_sort_cap_wait": {
+    "message": "Waiting for market data"
+  },
+  "set_sort_move": {
+    "message": "24h move"
+  },
+  "set_sort_move_hint": {
+    "message": "Biggest 24h move first"
+  },
+  "set_sort_move_wait": {
+    "message": "Waiting for today's prices"
+  },
+  "set_sorted_az": {
+    "message": "Sorted A–Z"
+  },
+  "set_sorted_cap": {
+    "message": "Sorted by market cap"
+  },
+  "set_sorted_move": {
+    "message": "Sorted by today's move"
+  },
+  "set_symbol": {
+    "message": "Symbol"
+  },
+  "set_symbol_empty": {
+    "message": "Enter a symbol first"
+  },
+  "set_symbol_shape": {
+    "message": "Use 2-10 letters/numbers only"
+  },
+  "set_tab_coins": {
+    "message": "Coins"
+  },
+  "set_tab_preferences": {
+    "message": "Preferences"
+  },
+  "set_tab_widgets": {
+    "message": "Widgets"
+  },
+  "set_toggle_widget": {
+    "message": "Toggle $1 widget",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "set_undo": {
+    "message": "Undo"
+  },
+  "sort_az": {
+    "message": "A–Z"
+  },
+  "stats_high": {
+    "message": "High"
+  },
+  "stats_low": {
+    "message": "Low"
+  },
+  "stats_mkt_cap": {
+    "message": "Mkt Cap"
+  },
+  "stats_vol_24h": {
+    "message": "24h Vol"
+  },
+  "ticker_compact": {
+    "message": "Compact (43.2K)"
+  },
+  "ticker_full": {
+    "message": "Full (43,250)"
+  },
+  "toggle_off": {
+    "message": "Off"
+  },
+  "toggle_on": {
+    "message": "On"
+  },
+  "tour_back": {
+    "message": "Back"
+  },
+  "tour_chapter_calling_a_square": {
+    "message": "Calling a square"
+  },
+  "tour_chapter_making_it_yours": {
+    "message": "Making it yours"
+  },
+  "tour_chapter_reading_the_market": {
+    "message": "Reading the market"
+  },
+  "tour_chapter_start_here": {
+    "message": "Start here"
+  },
+  "tour_chapter_the_chart": {
+    "message": "The chart"
+  },
+  "tour_chapter_your_money": {
+    "message": "Your money"
+  },
+  "tour_done": {
+    "message": "Done"
+  },
+  "tour_key_rotate": {
+    "message": "Rotate through your coins"
+  },
+  "tour_keys_intro": {
+    "message": "Press ? at any time for the full list. A few worth knowing now:"
+  },
+  "tour_next": {
+    "message": "Next"
+  },
+  "tour_skip": {
+    "message": "Skip tour"
+  },
+  "tour_text_01": {
+    "message": "Live crypto charts on every new tab, asking for nothing — no account, no permissions, and nothing about you leaving this device. This tour is twenty short steps in five chapters. Skip it whenever you like; Settings → Preferences can replay it."
+  },
+  "tour_text_02": {
+    "message": "Your active coin and its live price, refreshed while the tab is open and paused while it is not. Click it, or use the arrow keys, to move through your coin list."
+  },
+  "tour_text_03": {
+    "message": "How the price moved across the range on screen — not a fixed 24 hours. Click it to flip between a percentage and an amount."
+  },
+  "tour_text_04": {
+    "message": "The last hour through all time. Each range keeps its own settings — the board you set up on 1H is still there when you come back to it."
+  },
+  "tour_text_05": {
+    "message": "Type a symbol or a name. Your own coins rank first, and picking one you do not track yet adds it. The same search chooses a coin for a price target."
+  },
+  "tour_text_06": {
+    "message": "Both drawn as percent change from the start of the range, on one shared scale — never two axes, which is the trick that makes any two lines look related. Press C again or Esc to drop it."
+  },
+  "tour_text_07": {
+    "message": "T swaps the line for candlesticks. G puts a price and time mesh behind the chart so you can read a level off it. Under the price sits the range high and low, and the volume-weighted average price when the candle data happens to be loaded — it is never fetched just for that."
+  },
+  "tour_text_08": {
+    "message": "Off by default, in Settings → Chart. It marks the moments the price did something unusual for this coin — measured against its own volatility, so it is right on a quiet stablecoin and on a wild one — and a click shows the headlines published around that day. It never claims they are the cause, because nobody knows that."
+  },
+  "tour_text_09": {
+    "message": "A call is a claim: this coin, in this price band, at this time. It settles itself on a later tab and goes on a record you keep. Nothing is scored, nothing is worth anything, and nothing leaves the device — it is a way to find out whether you are actually any good."
+  },
+  "tour_text_10": {
+    "message": "Turn calls on and the chart grows a board of squares to the right of now. Hover one, click once to draft it, click again to lock it — two clicks, because one stray click should not commit a prediction. Drag the dotted now line to trade history for board, and use the pill at its top right to change what one square is worth."
+  },
+  "tour_text_11": {
+    "message": "In the calls panel under Show there is a travel band. It shades the distances this coin has actually covered over each square's worth of time — the middle half and the middle 80%. It is deliberately not a forecast: the direction is stripped out of the figures before they are drawn, so a coin that rose all week still gets a band that leans neither way. It answers whether a square is a near-certainty or a long shot, which is a different question on every coin."
+  },
+  "tour_text_12": {
+    "message": "Amounts you type in, with purchases and sales if you want cost basis and profit. FIFO, LIFO or HIFO — a reporting method, not a tax calculation, and the report says which method every line used. Everything is stored on this device and there is no wallet to connect."
+  },
+  "tour_text_13": {
+    "message": "Paste a public Bitcoin, Ethereum, Litecoin, Dogecoin, Bitcoin Cash or Zcash address and the balance is read for you — including the ERC-20 tokens an Ethereum address holds, in one request. The address is only ever sent to the balance service, and if a chain cannot be read PriceTab says which chain it is rather than telling you to check a perfectly good address."
+  },
+  "tour_text_14": {
+    "message": "Tell me when BTC rises above a number, or moves 5% in a day, or when everything I hold is worth less than X. You are told on your next new tab, and a hit overnight is still found because the check looks back through the week. Nothing is pushed at you, which is how the extension stays permission-free."
+  },
+  "tour_text_15": {
+    "message": "Every headline with its source, its age and a summary, newest first, narrowed by coin or by source or by typing. A source that has stopped publishing shows its own age in red — a dead feed looking exactly like a live one is the thing this was built for. Advertising is dropped rather than badged."
+  },
+  "tour_text_16": {
+    "message": "Reads years of this coin's daily closes and counts what followed each time it was in a given state. Every figure carries how many times it is based on, and where that number is small it refuses to draw a conclusion. It will never tell you to buy or sell — nine textbook rules tested over 21,669 daily closes produced nothing that survived proper correction, and saying so is more useful than an arrow."
+  },
+  "tour_text_17": {
+    "message": "Watchlist, Fear & Greed, funding, open interest, network fees, the worst fall in the range and more. Switch them on in Settings → Widgets, where there are ready-made bundles, then drag to reorder or hover one and click its × to hide that card."
+  },
+  "tour_text_18": {
+    "message": "Clears every widget at once and brings them all back. Nothing is switched off, so they return exactly as you arranged them."
+  },
+  "tour_text_19": {
+    "message": "Coins, currency, theme, widgets and the tickers, with a search box at the top of Preferences. The modes row sets a dozen of them at once — Minimal, Fast, Trader, Holder — and never touches your currency, number format or theme."
+  },
+  "tour_title_change": {
+    "message": "Change"
+  },
+  "tour_title_clear_the_row": {
+    "message": "Clear the row"
+  },
+  "tour_title_compare_two_coins": {
+    "message": "Compare two coins"
+  },
+  "tour_title_everything_else_lives_here": {
+    "message": "Everything else lives here"
+  },
+  "tour_title_has_this_happened_before": {
+    "message": "Has this happened before?"
+  },
+  "tour_title_how_far_it_usually_travels": {
+    "message": "How far it usually travels"
+  },
+  "tour_title_it_is_faster_from_the_keyboard": {
+    "message": "It is faster from the keyboard"
+  },
+  "tour_title_jump_to_any_coin": {
+    "message": "Jump to any coin"
+  },
+  "tour_title_live_price": {
+    "message": "Live price"
+  },
+  "tour_title_news": {
+    "message": "News"
+  },
+  "tour_title_or_watch_an_address": {
+    "message": "Or watch an address"
+  },
+  "tour_title_portfolio": {
+    "message": "Portfolio"
+  },
+  "tour_title_price_targets": {
+    "message": "Price targets"
+  },
+  "tour_title_say_where_you_think_it_goes": {
+    "message": "Say where you think it goes"
+  },
+  "tour_title_the_board": {
+    "message": "The board"
+  },
+  "tour_title_time_range": {
+    "message": "Time range"
+  },
+  "tour_title_two_more_ways_to_read_it": {
+    "message": "Two more ways to read it"
+  },
+  "tour_title_welcome_to_pricetab": {
+    "message": "Welcome to PriceTab"
+  },
+  "tour_title_what_happened_here": {
+    "message": "What happened here?"
+  },
+  "tour_title_widgets": {
+    "message": "Widgets"
+  },
+  "wdesc_altcoin_season": {
+    "message": "Are altcoins outperforming Bitcoin?"
+  },
+  "wdesc_btc_fees": {
+    "message": "Fee rate now, and what a typical 141 vB transfer costs"
+  },
+  "wdesc_eth_gas": {
+    "message": "Gas price now, and what a plain ETH transfer costs"
+  },
+  "wdesc_fear_greed": {
+    "message": "Market sentiment score from 0 to 100"
+  },
+  "wdesc_funding_rate": {
+    "message": "What longs pay shorts on perpetual futures"
+  },
+  "wdesc_halving_countdown": {
+    "message": "Time until the next Bitcoin halving"
+  },
+  "wdesc_liquidations": {
+    "message": "Forced position closures, last 24 hours"
+  },
+  "wdesc_long_short_ratio": {
+    "message": "How traders are positioned right now"
+  },
+  "wdesc_market_overview": {
+    "message": "Total market cap and BTC/ETH dominance"
+  },
+  "wdesc_open_interest": {
+    "message": "Value of open futures contracts"
+  },
+  "wdesc_rsi_widget": {
+    "message": "Momentum on a 0–100 scale, over the range you are looking at"
+  },
+  "wdesc_top_movers": {
+    "message": "Today's biggest gainers and losers"
+  },
+  "wdesc_watchlist": {
+    "message": "Your coins as a colour-coded 24h grid"
+  },
+  "wdesc_worst_fall": {
+    "message": "The deepest peak-to-trough fall inside the range on screen"
+  },
+  "wgroup_market": {
+    "message": "Market"
+  },
+  "wgroup_network": {
+    "message": "Network"
+  },
+  "wgroup_portfolio": {
+    "message": "Portfolio"
+  },
+  "wgroup_trader": {
+    "message": "Trader"
+  },
+  "widget_about_30_min": {
+    "message": "~30 min"
+  },
+  "widget_altcoin_season": {
+    "message": "Altcoin Season"
+  },
+  "widget_annualized": {
+    "message": "Ann. $1%",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "widget_btc_dom": {
+    "message": "BTC Dom $1%",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "widget_btc_fees": {
+    "message": "BTC Fees"
+  },
+  "widget_btc_halving": {
+    "message": "BTC Halving"
+  },
+  "widget_eta": {
+    "message": "ETA: $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "widget_eth_gas": {
+    "message": "ETH Gas"
+  },
+  "widget_fear_greed": {
+    "message": "Fear & Greed"
+  },
+  "widget_fee_fast": {
+    "message": "Fast"
+  },
+  "widget_fee_hour": {
+    "message": "Hour"
+  },
+  "widget_fee_to_send": {
+    "message": "~$1 to send · $2",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "widget_from_to": {
+    "message": "$1 to $2",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "widget_funding_rate": {
+    "message": "$1 Funding Rate",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "widget_hide_all": {
+    "message": "Hide all widgets"
+  },
+  "widget_hide_one": {
+    "message": "Hide $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "widget_liquidations": {
+    "message": "$1 Liquidations 24h",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "widget_loading": {
+    "message": "Loading"
+  },
+  "widget_long_short": {
+    "message": "$1 Long / Short",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "widget_market_cap": {
+    "message": "Market Cap"
+  },
+  "widget_next_block": {
+    "message": "next block"
+  },
+  "widget_none": {
+    "message": "None"
+  },
+  "widget_only_rose": {
+    "message": "it only rose across this range"
+  },
+  "widget_open_interest": {
+    "message": "$1 Open Interest",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "widget_peak_to_trough": {
+    "message": "peak to trough"
+  },
+  "widget_rsi": {
+    "message": "$1 RSI · $2",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "widget_show_hidden": {
+    "message": "Show hidden widgets"
+  },
+  "widget_top_movers": {
+    "message": "Top Movers 24h"
+  },
+  "widget_under_a_cent": {
+    "message": "under $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "widget_unit_days": {
+    "message": "Days"
+  },
+  "widget_unit_hours": {
+    "message": "Hrs"
+  },
+  "widget_unit_minutes": {
+    "message": "Min"
+  },
+  "widget_unit_years": {
+    "message": "Yrs"
+  },
+  "widget_watchlist": {
+    "message": "Watchlist"
+  },
+  "widget_worst_fall": {
+    "message": "$1 Worst Fall · $2",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "wname_altcoin_season": {
+    "message": "Altcoin Season"
+  },
+  "wname_btc_fees": {
+    "message": "BTC Fees"
+  },
+  "wname_eth_gas": {
+    "message": "ETH Gas"
+  },
+  "wname_fear_greed": {
+    "message": "Fear & Greed"
+  },
+  "wname_funding_rate": {
+    "message": "Funding Rate"
+  },
+  "wname_halving_countdown": {
+    "message": "BTC Halving Countdown"
+  },
+  "wname_liquidations": {
+    "message": "Liquidations 24h"
+  },
+  "wname_long_short_ratio": {
+    "message": "Long / Short Ratio"
+  },
+  "wname_market_overview": {
+    "message": "Market Overview"
+  },
+  "wname_open_interest": {
+    "message": "Open Interest"
+  },
+  "wname_rsi_widget": {
+    "message": "RSI"
+  },
+  "wname_top_movers": {
+    "message": "Top Movers"
+  },
+  "wname_watchlist": {
+    "message": "Watchlist"
+  },
+  "wname_worst_fall": {
+    "message": "Worst Fall"
+  },
+  "wsize_compact": {
+    "message": "Compact"
+  },
+  "wsize_default": {
+    "message": "Default"
+  },
+  "wsize_large": {
+    "message": "Large"
+  },
+  "wsize_xlarge": {
+    "message": "Extra large"
+  }
+}

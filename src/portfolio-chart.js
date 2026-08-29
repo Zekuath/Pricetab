@@ -17,7 +17,7 @@
  *
  * ── Why its own file and its own component ─────────────────────────────────
  * `LineBase` already draws lines, candles and a comparison overlay and picks
- * between them inside one `componentDidUpdate`. `docs/product/TODAY.md` (Piece 4) says
+ * between them inside one `componentDidUpdate`. the working notes (Piece 4) says
  * plainly what a fourth axis of state on that component would do to it, and a
  * stacked composition is a fourth. This one shares what is genuinely shared —
  * the theme, `formatAxisPrice`, `crosshairDate`, the d3 scales — and owns its
@@ -138,14 +138,28 @@ const PORTFOLIO_BAND_INK = {
   light: ["#ffffff", "#ffffff", "#000000", "#000000", "#000000", "#000000", "#000000"],
   dark: ["#ffffff", "#000000", "#000000", "#000000", "#000000", "#000000", "#000000"],
 };
-// The ramp's faintest step, which is what "Other" is drawn in
+// The ramp's faintest step, which is what msg("po_other", "Other") is drawn in
 const bandPalette = (theme) =>
   isLightTheme(theme) ? PORTFOLIO_BAND_COLORS.light : PORTFOLIO_BAND_COLORS.dark;
 const bandOtherIndex = (theme) => bandPalette(theme).length - 1;
 
 const PORTFOLIO_MAX_BANDS = 6;
 
-const PC_PAD = { top: 22, right: 14, bottom: 30, left: 8 };
+/* The left padding is the **axis gutter**, and it was 8px.
+ *
+ * The price labels were drawn at `geo.left + 2` — two pixels *inside* the
+ * plot — so a five-character label like $4.0K ran off the left edge of the
+ * SVG and was clipped, and what survived sat on top of the data. On the
+ * stacked mode that meant grey type on a saturated green band, which is why
+ * the code below had grown a special case to paint it in full ink instead.
+ * Both problems are the same problem: the labels had nowhere of their own to
+ * be. 46px holds the longest label this axis produces ($999.9K) at 9px with
+ * room to breathe, and the plot simply starts after it. */
+const PC_PAD = { top: 22, right: 14, bottom: 30, left: 46 };
+
+/* Long enough to read as movement, short enough that a range switch still
+ * feels immediate. The price chart's own morph sits in the same range. */
+const PC_MORPH_MS = 420;
 // Events closer together than this share one marker — see `clusterEvents`
 const PC_MARKER_GAP = 16;
 // How near the pointer has to be to a marker to be reading it. Generous on
@@ -347,8 +361,12 @@ class PortfolioChartBase extends Component {
     const uid = Math.random().toString(36).slice(2, 9);
     this.clipUpId = "pcUp_" + uid;
     this.clipDownId = "pcDown_" + uid;
+    this.hintId = "pcHint_" + uid;
 
     this.frameRef = createRef();
+    /* The total line, so an update can morph it from the shape on screen to
+     * the one React just rendered. See `morphLine`. */
+    this.lineRef = createRef();
     this.hoverRef = createRef();
     this.hoverLineRef = createRef();
     this.hoverDotRef = createRef();
@@ -376,6 +394,20 @@ class PortfolioChartBase extends Component {
     this.hoverRaf = 0;
     this.hoverX = -1;
     this.hoverY = 0;
+    /* The sample the keyboard is sitting on, or -1 for "the pointer decides".
+     *
+     * The crosshair was driven by a pixel alone, which is why it was reachable
+     * only by a pointer: there was nowhere for a key press to put an answer.
+     * Holding an **index** instead lets both inputs feed the same drawing —
+     * the pointer converts a pixel to an index, the arrows move the index
+     * directly — so the readout is identical either way rather than a second
+     * implementation that can drift from it. */
+    this.keyIndex = -1;
+    /* The shape currently on screen, so an update can morph *from* it. React
+     * has already written the new `d` onto the node by the time
+     * `componentDidUpdate` runs, so the outgoing one has to be kept here or
+     * there is nothing left to interpolate from. */
+    this._drawnD = null;
     this._geo = null;
     this._bands = [];
     this._clusters = [];
@@ -384,18 +416,68 @@ class PortfolioChartBase extends Component {
     this.handleResize = debounce(this.measure, 150);
     this.handlePointerMove = this.handlePointerMove.bind(this);
     this.handlePointerLeave = this.handlePointerLeave.bind(this);
+    this.handleKeyDown = this.handleKeyDown.bind(this);
+    this.release = this.release.bind(this);
+    this.handleBlur = this.handleBlur.bind(this);
     this.drawHover = this.drawHover.bind(this);
   }
 
   componentDidMount() {
+    /* Seeded here, or the first range switch would have nothing to morph from
+     * and would snap while every later one animated. */
+    const first = this.lineRef.current;
+    if (first) this._drawnD = first.getAttribute("d");
+
     this.measure();
     window.addEventListener("resize", this.handleResize);
   }
 
   componentWillUnmount() {
+    // Never leave the stage thinking the chart still owns Escape.
+    this.reportHolding(false);
     window.removeEventListener("resize", this.handleResize);
     this.handleResize.cancel();
     if (this.hoverRaf) cancelAnimationFrame(this.hoverRaf);
+  }
+
+  /* THE LINE MOVES TO ITS NEW SHAPE INSTEAD OF BEING REPLACED BY IT.
+   *
+   * Two kinds of change reach this chart and they want opposite treatments:
+   *
+   *   - **Same drawing, new data** — a range switch, a price refresh. There is
+   *     a shape to travel to, so the line morphs and you can see the old
+   *     reading become the new one. `interpolatePath` is already vendored for
+   *     exactly this; the price chart has morphed on every coin and range
+   *     switch since long before this.
+   *   - **A different drawing** — Total to By coin, or to the ranked bars.
+   *     There is nothing to morph *between*: a line and a stack of bands are
+   *     not two states of one shape, and interpolating them produces a
+   *     writhing mess rather than a transition. Those cross-fade instead, and
+   *     the morph deliberately stands down.
+   *
+   * It is one-shot on an explicit action, never a loop: `document.getAnimations()`
+   * is empty again once it lands, which is the rule this project holds itself
+   * to on a page that opens in every new tab.
+   */
+  morphLine() {
+    const node = this.lineRef.current;
+    const next = node && node.getAttribute("d");
+    const from = this._drawnD;
+    this._drawnD = next;
+    if (!node || !next || !from || from === next) return;
+    if (typeof interpolatePath !== "function" || typeof select !== "function") return;
+    /* Somebody who asked not to be moved is not shown a morph — they get the
+     * new shape, which is the thing they came for. */
+    if (prefersReducedMotion()) return;
+    select(node)
+      .interrupt()
+      .attr("d", from)
+      .transition()
+      .duration(PC_MORPH_MS)
+      .attrTween("d", () => interpolatePath(from, next))
+      /* Land on the exact string React rendered rather than on the tween's
+       * last frame, so the DOM and the virtual DOM agree once it is over. */
+      .on("end", () => node.setAttribute("d", next));
   }
 
   componentDidUpdate(prevProps) {
@@ -410,13 +492,24 @@ class PortfolioChartBase extends Component {
      * pixel, so this settles in one extra pass and cannot loop. */
     this.measure();
 
+    /* Morph only when the drawing is the same one. A mode change is a
+     * different chart and cross-fades instead — see `morphLine`. Recording
+     * the shape either way, so the *next* change has something to travel
+     * from rather than snapping once after every mode switch. */
+    if (prevProps.mode !== this.props.mode) {
+      const node = this.lineRef.current;
+      this._drawnD = node ? node.getAttribute("d") : null;
+    } else {
+      this.morphLine();
+    }
+
     /* New data moves every scale under the readout, so what it is saying is
      * about a chart that is no longer there. Cheaper and more honest to put it
      * away than to try to keep it true. */
     if (
       prevProps.series !== this.props.series ||
       prevProps.parts !== this.props.parts ||
-      prevProps.stacked !== this.props.stacked
+      prevProps.mode !== this.props.mode
     ) {
       this.handlePointerLeave();
     }
@@ -466,7 +559,7 @@ class PortfolioChartBase extends Component {
         rest.reduce((sum, p) => sum + (p.values[i] || 0), 0),
       );
       named.push({
-        coin: "Other",
+        coin: msg("po_other", "Other"),
         values,
         color: bandPalette(theme)[bandOtherIndex(theme)],
         other: true,
@@ -486,7 +579,8 @@ class PortfolioChartBase extends Component {
    * the zoom, deliberately, and the toggle says so.
    */
   geometry() {
-    const { series, costBasis, stacked, theme } = this.props;
+    const { series, costBasis, theme } = this.props;
+    const stacked = this.props.mode === "bycoin";
     const { w, h } = this.state;
     if (!Array.isArray(series) || series.length < 2) return null;
     if (!(w > 40) || !(h > 60)) return null;
@@ -499,8 +593,25 @@ class PortfolioChartBase extends Component {
       .range([PC_PAD.left, w - PC_PAD.right])
       .domain([new Date(t0), new Date(t1)]);
 
-    const [dataLo, dataHi] = extent(series, (d) => d.price);
+    let [dataLo, dataHi] = extent(series, (d) => d.price);
     if (!isFinite(dataLo) || !isFinite(dataHi)) return null;
+
+    /* A benchmark shares this scale or it says nothing.
+     *
+     * The whole point of the comparison is that both lines are read against
+     * one axis — a second y-axis is the trick that makes any two series look
+     * related, and this chart refuses it the same way the coin comparison
+     * does. So the benchmark's range is folded into the domain before it is
+     * fixed, and both lines fit by construction rather than one being clipped
+     * at the top. */
+    const compare = Array.isArray(this.props.compare) ? this.props.compare : null;
+    if (compare && compare.length > 1) {
+      const [cLo, cHi] = extent(compare, (d) => d.price);
+      if (isFinite(cLo) && isFinite(cHi)) {
+        dataLo = Math.min(dataLo, cLo);
+        dataHi = Math.max(dataHi, cHi);
+      }
+    }
     const span = dataHi - dataLo || Math.abs(dataHi) * 0.02 || 1;
 
     let lo = stacked ? 0 : dataLo - span * 0.1;
@@ -518,16 +629,43 @@ class PortfolioChartBase extends Component {
      * tiny span and would otherwise never be allowed to show its cost at all.
      * Out of reach, the level is not drawn and nothing is implied about a
      * crossing the window doesn't contain. */
-    const cost = isFinite(costBasis) && costBasis > 0 ? costBasis : null;
+    /* In the P/L view the level is zero — break-even — and it is never out of
+     * reach, because the domain above was widened to hold it. Everything below
+     * (the dashed line, the green-above / red-below wash, the readout) then
+     * works unchanged: this mode is the value chart with the cost subtracted,
+     * so the cost level is 0 by construction. */
+    const pnl = this.props.mode === "pnl";
+    const cost = pnl
+      ? 0
+      : isFinite(costBasis) && costBasis > 0
+        ? costBasis
+        : null;
     const room = Math.max(span * 2.5, Math.abs(dataHi) * 0.25);
     const reachable =
       cost != null &&
-      Math.max(dataHi, cost) - Math.min(dataLo, cost) <= room;
+      (pnl || Math.max(dataHi, cost) - Math.min(dataLo, cost) <= room);
     if (reachable) {
       lo = Math.min(lo, cost - span * 0.06);
       hi = Math.max(hi, cost + span * 0.06);
     }
     if (stacked) lo = 0;
+
+    /* **Zero is always on the P/L scale, and it has to be.**
+     *
+     * The value chart zooms on the data, which is right when the question is
+     * "what is it worth" and fatal when the question is "am I up": a holding
+     * bought for $9,000 and now worth $100 has a P/L that varies by $25 across
+     * the window, so a scale fitted to the data lands between −$8,950 and
+     * −$8,925 and the break-even line is nowhere near it. Every point on that
+     * chart is a loss and nothing on screen says so.
+     *
+     * So this mode trades the zoom for the one line that matters, exactly as
+     * the stacked mode trades it for honest proportions, and the note under
+     * the chart says so. */
+    if (this.props.mode === "pnl") {
+      lo = Math.min(lo, 0 - span * 0.08);
+      hi = Math.max(hi, 0 + span * 0.08);
+    }
     if (!(hi > lo)) return null;
 
     const y = scaleLinear()
@@ -553,6 +691,13 @@ class PortfolioChartBase extends Component {
       step,
       columns,
       points,
+      /* The benchmark's own points, on the very same x and y — computed here
+       * so nothing downstream can accidentally place it on a scale of its
+       * own. Null when there is nothing to compare against. */
+      comparePoints:
+        compare && compare.length > 1
+          ? compare.map((d) => ({ x: x(new Date(+d.time)), y: y(d.price) }))
+          : null,
       cost: reachable ? cost : null,
       costY: reachable ? y(cost) : null,
       top: PC_PAD.top,
@@ -586,8 +731,15 @@ class PortfolioChartBase extends Component {
   }
 
   handlePointerMove(e) {
+    /* The glance has no crosshair: the pointer is over it in order to click
+     * through to the stage, and a readout appearing under a cursor that is
+     * about to open something else is noise. */
+    if (this.props.compact) return;
     const box = this.frameRef.current;
     if (!box) return;
+    // Moving the pointer hands control back to it; two inputs fighting over
+    // one crosshair is worse than either alone.
+    this.keyIndex = -1;
     const rect = box.getBoundingClientRect();
     this.hoverX = e.clientX - rect.left;
     this.hoverY = e.clientY - rect.top;
@@ -596,15 +748,103 @@ class PortfolioChartBase extends Component {
   }
 
   handlePointerLeave() {
+    /* A keyboard reader's crosshair must survive the pointer wandering off —
+     * the mouse leaving the box is not them letting go of it. */
+    if (this.keyIndex >= 0) return;
+    this.hoverX = -1;
+    this.clearHover();
+  }
+
+  /* Arrow keys walk the samples, Home/End jump to the ends, Escape lets go.
+   *
+   * The samples, not pixels: `series[i]` is what the readout describes, so a
+   * key press lands on exactly the point a pointer would have found, and no
+   * amount of arrowing can stop between two real values.
+   *
+   * Escape clears the readout and stops there — it does not close the chart.
+   * The stage's own Escape is still behind it, so the order is: let go of the
+   * point, then leave. Getting out of the thing you are in before the thing
+   * around it is the same order the panels already use. */
+  handleKeyDown(e) {
+    const series = Array.isArray(this.props.series) ? this.props.series : [];
+    if (!series.length) return;
+    const last = series.length - 1;
+    const at = this.keyIndex >= 0 ? this.keyIndex : last;
+    let next = null;
+
+    if (e.key === "ArrowRight") next = Math.min(last, at + 1);
+    else if (e.key === "ArrowLeft") next = Math.max(0, at - 1);
+    else if (e.key === "Home") next = 0;
+    else if (e.key === "End") next = last;
+    else if (e.key === "Escape") {
+      if (this.keyIndex < 0) return; // nothing held: let the stage have it
+      e.stopPropagation();
+      e.preventDefault();
+      this.release();
+      return;
+    } else return;
+
+    e.preventDefault();
+    this.keyIndex = next;
+    this.drawHoverAt(next);
+    this.reportHolding(true);
+  }
+
+  /* Focus alone shows nothing: arriving on the chart with Tab should not fire
+   * a readout nobody asked for. Leaving, though, puts it away — a crosshair
+   * left behind on a control nobody is on is a stale reading. */
+  handleBlur() {
+    if (this.keyIndex < 0) return;
+    this.release();
+  }
+
+  /* Let go of the point, and say so.
+   *
+   * The saying-so is the part that matters: the stage closes on Escape from a
+   * **capture-phase** document listener, which runs before this component ever
+   * sees the key. `stopPropagation` here is therefore too late by design, and
+   * the fix is the one the tour already uses — the thing that owns the key
+   * reports it, and the outer handler stands down while that is true. So the
+   * first Escape lets go of the point and the second closes the chart. */
+  release() {
+    this.keyIndex = -1;
+    this.hoverX = -1;
+    this.clearHover();
+    this.reportHolding(false);
+  }
+
+  reportHolding(held) {
+    if (this._held === held) return;
+    this._held = held;
+    if (typeof this.props.onHoldingChange === "function") {
+      /* The release goes up with the flag. Escape is decided by the stage's
+       * capture-phase listener — the only handler that runs before everything
+       * else — so it needs a way to let go of the crosshair itself rather
+       * than hoping a `stopPropagation` from here lands first. */
+      this.props.onHoldingChange(held, this.release);
+    }
+  }
+
+  clearHover() {
     if (this.hoverRaf) {
       cancelAnimationFrame(this.hoverRaf);
       this.hoverRaf = 0;
     }
-    this.hoverX = -1;
     const hover = this.hoverRef.current;
     const readout = this.readoutRef.current;
     if (hover) hover.setAttribute("visibility", "hidden");
     if (readout) readout.style.opacity = "0";
+  }
+
+  /* Put the crosshair on a known sample. `drawHover` derives its index from
+   * `hoverX`, so the keyboard sets the pixel that index sits at and lets the
+   * one drawing path do the rest — rather than a parallel copy of it. */
+  drawHoverAt(i) {
+    const geo = this._geo;
+    if (!geo || !geo.points || !geo.points[i]) return;
+    this.hoverX = geo.points[i].x;
+    if (this.hoverRaf) cancelAnimationFrame(this.hoverRaf);
+    this.hoverRaf = requestAnimationFrame(this.drawHover);
   }
 
   write(ref, text) {
@@ -704,7 +944,7 @@ class PortfolioChartBase extends Component {
       node.style.display = "";
       shown++;
       if (row.dot.current) row.dot.current.style.background = band.color;
-      this.write(row.name, band.other ? `Other (${band.count})` : band.coin);
+      this.write(row.name, band.other ? msg("po_other_count", "Other ($1)", band.count) : band.coin);
       this.write(row.value, formatMoney(value, false));
       this.write(
         row.share,
@@ -728,12 +968,12 @@ class PortfolioChartBase extends Component {
       );
       if (near) {
         const lines = near.items.slice(0, 3).map((ev) => {
-          const what = `${ev.kind === "buy" ? "▲ Bought" : "▼ Sold"} ${formatAmount(
+          const what = `${ev.kind === "buy" ? msg("pc_bought", "▲ Bought") : msg("pc_sold", "▼ Sold")} ${formatAmount(
             ev.amount,
           )} ${ev.coin}`;
           return ev.cash > 0 ? `${what} · ${formatMoney(ev.cash, false)}` : what;
         });
-        if (near.items.length > 3) lines.push(`+${near.items.length - 3} more`);
+        if (near.items.length > 3) lines.push(msg("pc_more", "+$1 more", near.items.length - 3));
         eventNode.textContent = lines.join("\n");
         eventNode.style.display = "";
       } else {
@@ -803,16 +1043,17 @@ class PortfolioChartBase extends Component {
           stroke: theme.color.border,
           strokeWidth: 1,
         }),
-        /* Recessive on the plain chart, full ink over the bands. The axis
-         * should stay quiet, but quiet grey at 9px on a saturated field is
-         * not quiet, it is unreadable — and the halo alone does not fix a
-         * mid-grey glyph. */
+        /* In the gutter, right-aligned against the plot, on the gridline it
+         * belongs to. It used to be painted in full ink over the stacked
+         * bands because grey at 9px on saturated green is unreadable — that
+         * special case is gone with the reason for it: nothing is drawn over
+         * the data any more, so the axis can be as quiet here as anywhere. */
         this.axisLabel(
           {
             key: `gt${k}`,
-            x: geo.left + 2,
-            y: ly - 5,
-            fill: this.props.stacked ? theme.color.text : theme.color.textSecondary,
+            x: geo.left - 8,
+            y: ly + 3,
+            textAnchor: "end",
           },
           formatAxisPrice(v, geo.step, symbol),
         ),
@@ -903,7 +1144,7 @@ class PortfolioChartBase extends Component {
               fontFamily: theme.font.primary,
               letterSpacing: "0.08em",
             },
-            band.other ? "OTHER" : band.coin,
+            band.other ? msg("pc_other_upper", "OTHER") : band.coin,
           ),
         );
       }
@@ -1027,6 +1268,18 @@ class PortfolioChartBase extends Component {
   renderLegend(bands) {
     const { formatMoney } = this.props;
     if (bands.length < 2) return null;
+    /* Not on the glance.
+     *
+     * Inline, the chart sits directly under the allocation strip, and the two
+     * would print different breakdowns of the same basket a few pixels apart
+     * — the strip is today's spot values, the legend is the value at the end
+     * of the drawn series, and on live data those are close but never equal.
+     * Measured on a five-holding fixture: the strip read BTC 36% / ETH 27% /
+     * SOL 18% while the legend read BTC 42% / SOL 27% / ETH 26%. Two answers
+     * to one question is worse than one answer, and the compact chart draws
+     * only the total line anyway, so the legend is naming bands nobody can
+     * see. In the stage, where the bands are drawn, it stays. */
+    if (this.props.compact) return null;
     const last = (band) => {
       const v = band.values[band.values.length - 1];
       return isFinite(v) ? v : 0;
@@ -1043,7 +1296,7 @@ class PortfolioChartBase extends Component {
           React.createElement(
             PcLegendName,
             null,
-            band.other ? `Other (${band.count})` : band.coin,
+            band.other ? msg("po_other_count", "Other ($1)", band.count) : band.coin,
           ),
           total > 0 ? `${((last(band) / total) * 100).toFixed(0)}%` : "",
           React.createElement("span", null, formatMoney(last(band), false)),
@@ -1053,7 +1306,8 @@ class PortfolioChartBase extends Component {
   }
 
   render() {
-    const { theme, stacked } = this.props;
+    const { theme } = this.props;
+    const stacked = this.props.mode === "bycoin";
     const geo = this.geometry();
     const bands = this.bands();
     this._geo = geo;
@@ -1078,12 +1332,56 @@ class PortfolioChartBase extends Component {
     return React.createElement(
       PcWrap,
       null,
+      /* What the arrows do, for a screen reader — not on screen, because the
+       * chart is not a place to print instructions nobody needs. It is what
+       * `aria-describedby` on the plot points at. */
+      React.createElement(
+        "span",
+        {
+          id: this.hintId,
+          style: {
+            position: "absolute",
+            width: "1px",
+            height: "1px",
+            overflow: "hidden",
+            clip: "rect(0 0 0 0)",
+            whiteSpace: "nowrap",
+          },
+        },
+        msg(
+          "pc_plot_hint",
+          "Use the left and right arrow keys to move through the chart, Home and End for the first and last point, and Escape to let go.",
+        ),
+      ),
       React.createElement(
         PcFrame,
         {
           innerRef: this.frameRef,
           onMouseMove: this.handlePointerMove,
           onMouseLeave: this.handlePointerLeave,
+          /* The plot is a control, so it is one focus stop with a name and a
+           * described operation — not a decorative box the mouse happens to
+           * work on. Everything the crosshair says was pointer-only until
+           * this existed. `group`, not `application`: the arrows are the only
+           * keys it claims, and swallowing the rest would trap the reader. */
+          onKeyDown: this.props.compact ? undefined : this.handleKeyDown,
+          onBlur: this.props.compact ? undefined : this.handleBlur,
+          /* One focus stop, not two: on the glance the frame around this is
+           * itself the button that opens the stage, and a plot inside it that
+           * also takes focus would be a tab stop that does nothing. */
+          tabIndex: this.props.compact ? undefined : 0,
+          role: this.props.compact ? "img" : "group",
+          /* The attribute means "the plot you can drive", so the glance does
+           * not carry it — it has no crosshair, no keys and no focus. There
+           * are two of these on screen now (the inline chart and the stage),
+           * and anything selecting on `[data-pc-plot]` was finding the wrong
+           * one: the browser suite focused the glance, got no keyboard, and
+           * reported the stage as broken. */
+          ...(this.props.compact
+            ? { "data-pc-glance": "1" }
+            : { "data-pc-plot": "1" }),
+          "aria-label": msg("pc_plot_label", "Portfolio value chart"),
+          "aria-describedby": this.hintId,
         },
         React.createElement(
           "svg",
@@ -1091,7 +1389,7 @@ class PortfolioChartBase extends Component {
             width: "100%",
             height: "100%",
             role: "img",
-            "aria-label": "Portfolio value over time",
+            "aria-label": msg("pc_title", "Portfolio value over time"),
           },
           geo.costY != null &&
             React.createElement(
@@ -1125,6 +1423,7 @@ class PortfolioChartBase extends Component {
           // The total, always drawn — in composition mode it is the roof the
           // bands add up to, which is the one thing that proves they do
           React.createElement("path", {
+            ref: this.lineRef,
             d,
             fill: "none",
             stroke: showBands ? theme.color.text : geo.tint,
@@ -1133,6 +1432,24 @@ class PortfolioChartBase extends Component {
             strokeLinecap: "round",
             opacity: showBands ? 0.9 : 1,
           }),
+          /* The benchmark, under the basket and told apart by its **dash**
+           * rather than by its colour — a comparison whose only difference is
+           * a hue is unreadable to a red-green reader and in a screenshot.
+           * Drawn first in document order so the basket sits on top: the
+           * question is how yours did, and the other line is the ground it is
+           * read against. */
+          geo.comparePoints &&
+            React.createElement("path", {
+              d: this.linePath(geo.comparePoints),
+              fill: "none",
+              stroke: theme.color.textSecondary,
+              strokeWidth: 1.5,
+              strokeDasharray: "5 4",
+              strokeLinejoin: "round",
+              strokeLinecap: "round",
+              opacity: 0.85,
+              "aria-hidden": true,
+            }),
           geo.costY != null &&
             React.createElement(
               Fragment,
@@ -1147,9 +1464,26 @@ class PortfolioChartBase extends Component {
                 strokeDasharray: "4 4",
                 opacity: 0.9,
               }),
+              /* At the **right** end of the line, not the left.
+               *
+               * It sat at `geo.left + 6`, immediately beside the y-axis
+               * gutter — so whenever the cost level landed near a gridline the
+               * two labels ended up on the same baseline a few pixels apart
+               * and read as one run of text ("$40K COST $36,900.00"). Rendered
+               * with a cost close to a round level, that is most of the time.
+               * Anchored to the right end it cannot meet the axis labels at
+               * all, and it lands where the eye already is: the end of the
+               * line is where the price is now. */
               this.axisLabel(
-                { x: geo.left + 2, y: geo.costY - 5 },
-                `COST ${this.props.formatMoney(geo.cost, false)}`,
+                {
+                  x: geo.right - 4,
+                  y: geo.costY - 5,
+                  textAnchor: "end",
+                },
+                // The same line, named for the question each view is asking
+                this.props.mode === "pnl"
+                  ? msg("pc_break_even", "BREAK EVEN")
+                  : msg("pc_cost", "COST $1", this.props.formatMoney(geo.cost, false)),
               ),
             ),
           this.renderEvents(geo, clusters, surface),

@@ -64,7 +64,7 @@ const saveCoinOptionsToStorage = (coinOptions) =>
 const updateTabTitle = (coinOptions, coinIndex, currentValue, valueHistory) => {
   try {
     if (!coinOptions || coinOptions.length === 0) {
-      document.title = "New Tab";
+      document.title = msg("app_new_tab", "New Tab");
       return;
     }
 
@@ -87,7 +87,7 @@ const updateTabTitle = (coinOptions, coinIndex, currentValue, valueHistory) => {
       document.title = activeCoin;
     }
   } catch (e) {
-    document.title = "New Tab";
+    document.title = msg("app_new_tab", "New Tab");
   }
 };
 
@@ -625,6 +625,93 @@ const formatAxisPrice = (value, step, symbol = "") => {
  * what actually happened, and this record's only job is to be true.
  */
 
+/* MONEY-WEIGHTED RETURN — the rate your own timing actually earned.
+ *
+ * This is the figure a bank statement and a fund factsheet report and a crypto
+ * tracker almost never does. The percentage everything else shows is
+ * `(value - cost) / cost`: it treats money put in this morning exactly like
+ * money put in two years ago, so buying more near a low — the thing a person
+ * did on purpose — is invisible in it. The internal rate of return is the one
+ * number that answers "what rate, compounded, would have turned my payments
+ * into what I have", and it is annualised by construction, which is what makes
+ * two positions of different ages comparable at all.
+ *
+ * Flows are `{ when, amount }` with `when` in unix seconds: **money leaving
+ * you is negative** (a purchase), money coming back is positive (a sale, and
+ * the position's value now, which is treated as a final notional sale).
+ *
+ * Solved by bisection rather than Newton's method. Newton is faster and is
+ * the usual choice, and it diverges on exactly the shapes this app will hand
+ * it — a flow set with several sign changes, or a rate near -100% where the
+ * derivative collapses. Bisection cannot diverge: the NPV is monotonic in the
+ * discount factor over each interval here, so bracketing and halving 200
+ * times is both exact enough and impossible to get wrong. This runs once per
+ * render of a panel, not per frame.
+ *
+ * Returns null rather than a number whenever the answer would be a fiction:
+ * fewer than two flows, no money actually paid in, no sign change to bracket,
+ * or a span too short to annualise (see `MIN_XIRR_DAYS`).
+ */
+const MIN_XIRR_DAYS = 14;
+const XIRR_MAX_RATE = 1e6; // beyond this the answer is a rounding artefact
+
+const xirrNpv = (flows, rate, t0) => {
+  let npv = 0;
+  for (const f of flows) {
+    const years = (f.when - t0) / 31557600; // 365.25 days
+    npv += f.amount / Math.pow(1 + rate, years);
+  }
+  return npv;
+};
+
+const xirr = (flows) => {
+  if (!Array.isArray(flows) || flows.length < 2) return null;
+  const clean = flows
+    .filter((f) => f && isFinite(f.when) && isFinite(f.amount) && f.amount !== 0)
+    .sort((a, b) => a.when - b.when);
+  if (clean.length < 2) return null;
+
+  const paidIn = clean.reduce((t, f) => t + (f.amount < 0 ? -f.amount : 0), 0);
+  if (!(paidIn > 0)) return null;
+  // Both signs have to be present or there is nothing to solve for
+  if (!clean.some((f) => f.amount > 0)) return null;
+
+  const t0 = clean[0].when;
+  const spanDays = (clean[clean.length - 1].when - t0) / 86400;
+  /* **Under a fortnight, no annual rate is printed**, and that is the whole
+   * discipline of this figure rather than a detail. Annualising compounds:
+   * three days at +2% is +1,036% a year, which is arithmetic rather than
+   * information, and printing it beside a real one-year figure invites the
+   * comparison it cannot survive. The panel says the position is too new. */
+  if (!(spanDays >= MIN_XIRR_DAYS)) return null;
+
+  let lo = -0.9999;
+  let hi = 1;
+  let fLo = xirrNpv(clean, lo, t0);
+  let fHi = xirrNpv(clean, hi, t0);
+  // Widen upward until the sign flips — a position that multiplied needs room
+  let guard = 0;
+  while (fLo * fHi > 0 && hi < XIRR_MAX_RATE && guard++ < 80) {
+    hi *= 4;
+    fHi = xirrNpv(clean, hi, t0);
+  }
+  if (fLo * fHi > 0) return null;
+
+  for (let i = 0; i < 200; i++) {
+    const mid = (lo + hi) / 2;
+    const fMid = xirrNpv(clean, mid, t0);
+    if (fLo * fMid <= 0) {
+      hi = mid;
+      fHi = fMid;
+    } else {
+      lo = mid;
+      fLo = fMid;
+    }
+  }
+  const rate = (lo + hi) / 2;
+  return isFinite(rate) ? rate : null;
+};
+
 const settleCall = (call, prices, now) => {
   const out = (status, price) => ({ status, price: price == null ? null : price });
   if (!call || !isFinite(call.target) || !isFinite(call.span)) return out("expired");
@@ -929,6 +1016,15 @@ const formatNumberStringCore = (
     const string = Math.abs(price).toFixed(decimalPlaces);
     const parts = string.split(".");
 
+    /* `auto` is resolved here rather than at the forty call sites: the three
+     * branches below are an exhaustive list, and a value that matches none of
+     * them falls through and returns **null**, which on this page is a price
+     * that silently does not print. */
+    if (separatorFormat === "auto") {
+      separatorFormat =
+        typeof localeSeparatorFormat === "function" ? localeSeparatorFormat() : "us";
+    }
+
     // Apply separator format
     if (separatorFormat === "us") {
       // US: 1,234.56
@@ -1065,7 +1161,7 @@ const vwapOf = (candles) => {
  * "This has happened before. Here is how often, and what followed."
  *
  * This exists in place of buy and sell signals, and the reason is measured
- * rather than tasteful (`docs/product/TODAY.md` §9). Nine textbook rules over
+ * rather than tasteful (the working notes §9). Nine textbook rules over
  * 21,669 daily closes on eight coins: **0 of 70 permutation tests survive
  * Holm–Bonferroni**, in/out-of-sample rank correlation +0.42, and Donchian's
  * median return runs +259% to +1175% across neighbouring lookbacks nobody can
@@ -1140,6 +1236,68 @@ const medianOf = (list) => {
   return sorted.length % 2
     ? sorted[mid]
     : (sorted[mid - 1] + sorted[mid]) / 2;
+};
+
+/* One quantile of an already-sorted list, interpolated between neighbours.
+ * `p` is 0–1. Interpolated rather than nearest-rank because these are read off
+ * a few dozen samples, where nearest-rank makes the answer jump as the window
+ * grows by one point. */
+const quantileOf = (sorted, p) => {
+  if (!sorted.length) return null;
+  if (sorted.length === 1) return sorted[0];
+  const at = Math.min(Math.max(p, 0), 1) * (sorted.length - 1);
+  const lo = Math.floor(at);
+  const hi = Math.ceil(at);
+  return lo === hi ? sorted[lo] : sorted[lo] + (sorted[hi] - sorted[lo]) * (at - lo);
+};
+
+/* HOW FAR THIS SERIES HAS TRAVELLED over a given number of its own steps —
+ * and deliberately **not which way**.
+ *
+ * This is the honest half of "where might the price go", and the dishonest
+ * half is left out on purpose. the working notes §9 is the working: nine
+ * textbook rules over 21,669 daily closes produced 0 of 70 results surviving
+ * Holm–Bonferroni, and on live data the textbook labels pointed the wrong way.
+ * So nothing here forecasts. What it reports is the *dispersion* of what
+ * already happened, which is a description of the coin and makes no claim
+ * about the future at all. It is the same object professionals call a
+ * volatility cone, and it is on this panel for the same reason `vwapOf` is on
+ * the stats row: it states a fact rather than an intention.
+ *
+ * **The median is subtracted and thrown away, and that is the whole design.**
+ * The raw distribution of h-step returns carries the window's drift — in a
+ * rising month every horizon leans up — and drawing that would be a direction,
+ * which is exactly the claim this refuses to make. What is left after removing
+ * it is "how far from wherever it started", applied to the price now.
+ *
+ * Log returns, so a −20% and a +25% are the same distance and the band comes
+ * back as multiplicative factors: an honest band around a price is not
+ * symmetric in dollars. Overlapping windows are used — with a few hundred
+ * points on screen, non-overlapping ones would leave three or four samples at
+ * the longer horizons — and the count comes back with the answer so the caller
+ * can refuse to draw, the way the base-rate panel refuses to compare.
+ */
+const MIN_TRAVEL_SAMPLES = 12; // the same floor as BASE_RATE_MIN_EPISODES
+
+const travelBand = (prices, steps, lo, hi) => {
+  if (!Array.isArray(prices) || !(steps >= 1)) return null;
+  const span = Math.round(steps);
+  const rs = [];
+  for (let i = span; i < prices.length; i++) {
+    const a = Number(prices[i - span].price);
+    const b = Number(prices[i].price);
+    if (a > 0 && b > 0) {
+      const r = Math.log(b / a);
+      if (isFinite(r)) rs.push(r);
+    }
+  }
+  if (rs.length < MIN_TRAVEL_SAMPLES) return null;
+  const drift = medianOf(rs);
+  const dev = rs.map((r) => r - drift).sort((a, b) => a - b);
+  const qLo = quantileOf(dev, lo);
+  const qHi = quantileOf(dev, hi);
+  if (qLo == null || qHi == null) return null;
+  return { lo: Math.exp(qLo), hi: Math.exp(qHi), n: rs.length };
 };
 
 /* What followed every time a series entered a state, against what follows an

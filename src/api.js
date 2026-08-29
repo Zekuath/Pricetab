@@ -78,6 +78,25 @@ const cache = new Map();
 // Separate cache for page ticker (all suggested coins, bypasses the 10-coin limit)
 const pageTickerCache = new Map(); // key: "COIN-CURRENCY" → { price, timestamp }
 const PAGE_TICKER_TTL = 60000; // 60s TTL per coin (still < refresh, so prices update)
+/* How many coins the per-coin fallback may fetch in one sweep.
+ *
+ * The bulk request exists so that one call serves every coin. When it answers,
+ * this number is never reached — there is nothing stale left. When it does
+ * *not* answer, the fallback used to walk all 81 supported coins, two requests
+ * each: measured over three minutes with the bulk provider returning an empty
+ * list, **333 requests against 75 distinct coins**, against **21 requests and
+ * 1 coin** on the healthy path. Sixteen times the traffic, on a timer, aimed
+ * at the provider that had not failed.
+ *
+ * That is the shape that earns a rate limit, and the provider being hammered
+ * is the one drawing the chart — so the cost of reconstructing a scrolling bar
+ * would be paid by the product. Twelve is what the screen can use: this
+ * person's own coins first (exactly what the watchlist wants), then the
+ * largest of the rest so the bar and the movers are not empty. 24 requests
+ * instead of 162, and during someone else's outage the ticker shows a dozen
+ * coins rather than taking the chart down with it. */
+const PAGE_TICKER_FALLBACK_MAX = 12;
+
 const PAGE_TICKER_BATCH_SIZE = 4; // coins per batch (each does 2 reqs) — keeps bursts gentle
 const PAGE_TICKER_BATCH_DELAY = 500; // ms between batches — avoids hammering Coinbase
 const PAGE_TICKER_REFRESH_MS = 120000; // full refresh every 2 min (background ticker, no need faster)
@@ -646,7 +665,7 @@ const parseNewsTime = (value) => {
  * profile — same host, same endpoint, one request per window, and only when
  * somebody points at a mark.
  *
- * Cached like the other three (`CLAUDE.md`, *Caching System*): a window that
+ * Cached like the other three (the codebase guide, *Caching System*): a window that
  * has already been asked about is answered from memory, and the cache survives
  * the tab. It has to — a mark on a chart is exactly the thing someone hovers,
  * loses, and hovers again, and every new tab is a fresh JS context. The TTL is
@@ -1189,7 +1208,7 @@ const CANDLES_API = "https://api.exchange.coinbase.com/products/";
  * on a 1H chart and three and a half years on ALL — measured on live BTC at
  * one instant the six ranges read 63.8 / 63.9 / 82.2 / 80.9 / 37.8 / 54.6
  * against 80.5 for RSI 14 on daily closes, a 43-point spread on the same coin
- * at the same moment (`docs/product/TODAY.md` §9.5). A statement about how
+ * at the same moment (the working notes §9.5). A statement about how
  * often something has happened has to be computed on one fixed clock, and the
  * daily close is the clock every published figure uses.
  *
@@ -1574,6 +1593,14 @@ const sanitizeNewsItems = (list) =>
         title,
         time: typeof item.time === "number" && isFinite(item.time) ? item.time : null,
         tags: typeof item.tags === "string" ? item.tags.slice(0, 200) : "",
+        /* The feed's own summary, kept and length-capped like everything else
+         * here. `author` and `categories` are deliberately **not** kept: they
+         * are read by `isPromoNews` on the way in and nothing renders them, so
+         * carrying them into storage would be storing what we do not use. */
+        summary:
+          typeof item.summary === "string"
+            ? item.summary.slice(0, NEWS_SUMMARY_MAX)
+            : "",
         // https only, and nothing else — the same test the fetchers apply
         url:
           typeof item.url === "string" && /^https:\/\//.test(item.url)
@@ -1614,6 +1641,45 @@ const feedAuthor = (node) => {
   return author ? (author.textContent || "").trim() : "";
 };
 
+/* The summary a feed already carries, cleaned up.
+ *
+ * Free detail: `description` in RSS and `excerpt.rendered` in WordPress arrive
+ * in bytes the panel was downloading and throwing away. Tags are stripped with
+ * a regex over the text rather than by assigning to `innerHTML` — the
+ * invariants forbid that, and this is untrusted text from someone else's
+ * server. Entities go through `decodeEntities` for the same reason the titles
+ * do.
+ *
+ * Clamped at 220 characters: two lines on the row, which is a summary. More is
+ * an article, and the panel is a list. */
+const NEWS_SUMMARY_MAX = 220;
+
+const cleanFeedSummary = (raw) => {
+  if (typeof raw !== "string" || !raw) return "";
+  const text = decodeEntities(
+    raw
+      .replace(/<script[\s\S]*?<\/script>/gi, " ")
+      .replace(/<[^>]*>/g, " "),
+  )
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!text) return "";
+  if (text.length <= NEWS_SUMMARY_MAX) return text;
+  // Cut on a word so the ellipsis does not land mid-word
+  const cut = text.slice(0, NEWS_SUMMARY_MAX);
+  const space = cut.lastIndexOf(" ");
+  return (space > NEWS_SUMMARY_MAX * 0.6 ? cut.slice(0, space) : cut) + "…";
+};
+
+/* Every `<category>` on an item, lower-cased. Read by `isPromoNews` only.
+ * `getElementsByTagName` rather than `querySelectorAll` for the same reason
+ * `feedAuthor` uses it: consistency with the one prefixed name in this file,
+ * and it returns every match rather than the first. */
+const feedCategories = (node) =>
+  Array.from(node.getElementsByTagName("category"))
+    .map((el) => (el.textContent || "").trim())
+    .filter(Boolean);
+
 /* Is this an advertisement rather than a story?
  *
  * One predicate, asked by every path that can put a headline on screen — the
@@ -1639,7 +1705,19 @@ const isPromoNews = (item) => {
    * "CS Press Release" are one pattern rather than three. */
   const by =
     typeof item.author === "string" ? item.author.replace(/[^a-z]/gi, "") : "";
-  return Boolean(by) && NEWS_WIRE_RE.test(by);
+  if (by && NEWS_WIRE_RE.test(by)) return true;
+  /* The outlet's own category, and the disclosure the piece opens with. Both
+   * are stronger than the wording rule below them and neither existed until
+   * the summary was read onto the row — see `NEWS_PROMO_CATEGORY_RE`. */
+  if (
+    Array.isArray(item.categories) &&
+    item.categories.some((c) => NEWS_PROMO_CATEGORY_RE.test(String(c).trim()))
+  ) {
+    return true;
+  }
+  return (
+    typeof item.summary === "string" && NEWS_PROMO_LEAD_RE.test(item.summary)
+  );
 };
 
 const parseRssFeed = (text, source) => {
@@ -1668,9 +1746,15 @@ const parseRssFeed = (text, source) => {
       time: isFinite(ms) ? ms : null,
       tags: "",
       url: /^https:\/\//.test(url) ? url : null,
+      summary: cleanFeedSummary(
+        feedText(node, "description") ||
+          feedText(node, "summary") ||
+          feedText(node, "content"),
+      ),
       // Read for `isPromoNews` only, and dropped by `sanitizeNewsItems`
       // before anything stores or renders the item
       author: feedAuthor(node),
+      categories: feedCategories(node),
     });
   }
   return out;
@@ -1689,6 +1773,11 @@ const parseWpFeed = (json, source) =>
       title: title.slice(0, 140),
       time: isFinite(ms) ? ms : null,
       tags: "",
+      summary: cleanFeedSummary(
+        post && post.excerpt && typeof post.excerpt.rendered === "string"
+          ? post.excerpt.rendered
+          : "",
+      ),
       url:
         post && typeof post.link === "string" && /^https:\/\//.test(post.link)
           ? post.link
@@ -1721,6 +1810,179 @@ const fetchNewsSource = async (source) => {
   } catch (error) {
     return null; // null is "did not answer", which is not the same as "empty"
   }
+};
+
+/* THE SAME STORY, TOLD BY FOUR NEWSROOMS, IS ONE ROW.
+ *
+ * `mergeNewsItems` already drops exact repeats — it keys on the first 60
+ * characters of the normalised title, which catches syndication, where one
+ * outlet runs another's headline verbatim. What it cannot catch is the same
+ * event *written up separately*, and that is the common case. Measured on six
+ * realistic headlines from one afternoon: six in, five out, and four of those
+ * five were one ETF story. On a panel you scan fifteen rows of, a single event
+ * takes a quarter of the screen and the variety collapses.
+ *
+ * **How two headlines are judged the same story**, and every part of it was
+ * arrived at by measuring a first version that failed:
+ *
+ *   1. Content words only, singularised, with a number and its unit glued
+ *      together — "$1.2 billion" is one fact, and leaving it as two tokens was
+ *      why the clearest duplicate in the sample scored lowest of all.
+ *   2. Each shared word weighted by how **rare** it is in this feed. "bitcoin"
+ *      is in half the rows and separates nothing; "$1.2b" separates a lot.
+ *      Unweighted, "Bitcoin ETF inflows" and "Bitcoin miners sell" looked as
+ *      similar as two write-ups of one story.
+ *   3. At least two shared words, which is what stops short headlines pairing
+ *      off on a single one — "Fed holds rates steady" and "Fed signals rate
+ *      cut" are not the same story.
+ *   4. Published within `NEWS_CLUSTER_WINDOW_MS` of each other. The same words
+ *      months apart are a different event.
+ *
+ *   5. Two shared words are not enough when the shorter headline only has
+ *      four. `Fed holds rates steady` and `Fed signals rate cut in December`
+ *      share "fed" and "rate" — half of one of them — and are opposite
+ *      stories. Under six content words the floor rises to
+ *      `NEWS_CLUSTER_SHORT_SHARED`.
+ *   6. The shorter headline's weight is not allowed below a fraction of the
+ *      feed's own median. Dividing by the *smaller* of the two is what lets a
+ *      short write-up of a long story still count as the same story, and it
+ *      also means a headline with almost no content in it scores high against
+ *      anything it happens to touch. Measured over 116 live headlines, the
+ *      worst false pair in the whole feed was `Here's what happened in crypto
+ *      today` — a daily round-up, and the lowest-weight headline present at
+ *      16.5 against a median of 33 — scoring 0.405 against a story about
+ *      options expiry it has nothing to do with. **A fraction of the median,
+ *      not a fixed number**: the weights are `log(1 + n/df)`, so their scale
+ *      moves with the size of the feed, and an absolute floor that is right
+ *      for a hundred headlines silently disables clustering in a feed of ten.
+ *
+ * **Where the numbers come from.** 116 real headlines from five newsrooms in
+ * one poll (28 Aug 2026) give 22 candidate pairs, labelled by hand: 11 the
+ * same event told twice, 11 not. The two groups **overlap** — the hardest true
+ * pair (two write-ups of one Ledger advisory, sharing almost no wording)
+ * scores 0.291, below four of the false ones — so nothing separates them
+ * cleanly, and a rule that claimed to would be fitted to one afternoon's news.
+ * What is used merges **8 of the 11 true pairs and none of the 11 false ones**
+ * there, and on the small hand-built fixture in `tests/test-api.js` it folds
+ * the four write-ups of one story and leaves the two Fed stories apart.
+ *
+ * **Both samples had to be clean, and that is the point.** Every rule here was
+ * checked against both, because each one caught something the other could not:
+ * the live feed found the round-up that a fixed threshold could not survive,
+ * and the seven-item fixture found that an *absolute* weight floor stops
+ * working entirely in a small feed — it merged nothing at all — and then that
+ * two shared words out of four is not evidence. Tuning against either alone
+ * produced a rule that failed on the other.
+ *
+ * **The threshold is not the best-scoring one.** 0.36 merges 10 of the 11 with
+ * nothing false, and sits 0.028 above the worst false pair — close enough that
+ * a different day's news is likely to put something across it, and what lands
+ * across it is a story taken off the panel. 0.38 keeps 0.048 of daylight and
+ * still catches nearly three times what a first version at 0.55 was catching.
+ * The failures are not equal: merging two different stories hides one of them,
+ * while failing to merge two versions of one leaves exactly what was on screen
+ * before any of this existed. It errs the way the advertising filter errs, for
+ * the same reason.
+ *
+ * Nothing is discarded. The others ride along on `also`, so the row can say
+ * how many newsrooms ran it — which is a fact worth having, since four outlets
+ * covering something is the story being big.
+ */
+const NEWS_CLUSTER_MIN_SCORE = 0.38;
+const NEWS_CLUSTER_MIN_SHARED = 2;
+const NEWS_CLUSTER_SHORT_WORDS = 6;
+const NEWS_CLUSTER_SHORT_SHARED = 3;
+const NEWS_CLUSTER_MIN_MASS_RATIO = 0.7;
+const NEWS_CLUSTER_WINDOW_MS = 36 * 60 * 60 * 1000;
+
+const NEWS_STOP_WORDS = new Set(
+  ("a an the of to in on for at by with from as is are was were be been and or " +
+    "but not no its it this that these those after amid over under into out up " +
+    "down new say said report could would will may might than more most about " +
+    "hit hits").split(" "),
+);
+
+const newsWords = (title) => {
+  const words = String(title || "")
+    .toLowerCase()
+    .replace(/([0-9.]+)\s*(billion|bn)\b/g, "$1b")
+    .replace(/([0-9.]+)\s*million\b/g, "$1m")
+    .replace(/[^a-z0-9$%. ]+/g, " ")
+    .split(/\s+/)
+    .filter((w) => w.length > 2 && !NEWS_STOP_WORDS.has(w))
+    .map((w) => {
+      const t = w.replace(/\.$/, "");
+      // Crude singular, and crude is enough: it only has to make "inflow" and
+      // "inflows" the same token, not to be a stemmer.
+      return t.length > 3 && t.endsWith("s") && !t.endsWith("ss") ? t.slice(0, -1) : t;
+    });
+  return new Set(words);
+};
+
+const clusterNewsItems = (items) => {
+  const list = Array.isArray(items) ? items : [];
+  if (list.length < 2) return list;
+
+  const words = list.map((i) => newsWords(i && i.title));
+  /* How many rows each word appears in — the whole feed is the corpus, which
+   * is the right one: a word is uninformative here if it is common *here*. */
+  const df = new Map();
+  for (const set of words) for (const w of set) df.set(w, (df.get(w) || 0) + 1);
+  const n = list.length;
+  const weight = (w) => Math.log(1 + n / (1 + (df.get(w) || 0)));
+  const mass = (set) => {
+    let sum = 0;
+    for (const w of set) sum += weight(w);
+    return sum;
+  };
+  const masses = words.map(mass);
+  /* The feed's own middle, so the floor below travels with the corpus instead
+   * of being a number that only suits a feed of a hundred — see rule 6. */
+  const ranked = masses.slice().sort((a, b) => a - b);
+  const floorMass =
+    NEWS_CLUSTER_MIN_MASS_RATIO * (ranked[Math.floor(ranked.length / 2)] || 0);
+
+  const taken = new Array(list.length).fill(false);
+  const out = [];
+  for (let i = 0; i < list.length; i++) {
+    if (taken[i]) continue;
+    taken[i] = true;
+    const head = list[i];
+    const also = [];
+    for (let j = i + 1; j < list.length; j++) {
+      if (taken[j]) continue;
+      if (
+        head.time &&
+        list[j].time &&
+        Math.abs(head.time - list[j].time) > NEWS_CLUSTER_WINDOW_MS
+      ) {
+        continue;
+      }
+      let shared = 0;
+      let sum = 0;
+      for (const w of words[i]) {
+        if (words[j].has(w)) {
+          shared++;
+          sum += weight(w);
+        }
+      }
+      /* How much agreement this pair has to show, which depends on how much
+       * there was to agree about — see rule 5. */
+      const shortest = Math.min(words[i].size, words[j].size);
+      const need =
+        shortest < NEWS_CLUSTER_SHORT_WORDS
+          ? NEWS_CLUSTER_SHORT_SHARED
+          : NEWS_CLUSTER_MIN_SHARED;
+      if (shared < need) continue;
+      /* The smaller of the two, but never below the feed's floor — rule 6. */
+      const floor = Math.max(Math.min(masses[i], masses[j]), floorMass);
+      if (!(floor > 0) || sum / floor < NEWS_CLUSTER_MIN_SCORE) continue;
+      taken[j] = true;
+      also.push({ source: list[j].source, title: list[j].title, url: list[j].url });
+    }
+    out.push(also.length ? { ...head, also } : head);
+  }
+  return out;
 };
 
 const mergeNewsItems = (...lists) => {

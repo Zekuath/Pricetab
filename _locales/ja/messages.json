@@ -1,0 +1,2434 @@
+{
+  "al_a_pct_move": {
+    "message": "$1% の変動"
+  },
+  "al_about_panel": {
+    "message": "このパネルについて"
+  },
+  "al_above_by": {
+    "message": "上に"
+  },
+  "al_above_current": {
+    "message": "現在の $2 より $1 上。"
+  },
+  "al_add": {
+    "message": "追加"
+  },
+  "al_already_above": {
+    "message": "$1 はすでに上回っています — すぐに発動します。"
+  },
+  "al_already_below": {
+    "message": "$1 はすでに下回っています — すぐに発動します。"
+  },
+  "al_already_hit": {
+    "message": "到達済み"
+  },
+  "al_already_moved": {
+    "message": "$1 は今日すでにそれだけ動いています — すぐに発動します。"
+  },
+  "al_and_more": {
+    "message": "、他 $1 件"
+  },
+  "al_armed_hit_used": {
+    "message": "有効 $1 · 到達 $2 · $4 中 $3 使用"
+  },
+  "al_armed_summary": {
+    "message": "有効 $1$2 · $3/$4"
+  },
+  "al_below_by": {
+    "message": "下に"
+  },
+  "al_below_current": {
+    "message": "現在の $2 より $1 下。"
+  },
+  "al_best_streak": {
+    "message": "最高連続"
+  },
+  "al_best_streak_hint": {
+    "message": "的中した予想の最長連続"
+  },
+  "al_best_streak_suffix": {
+    "message": " · 最高連続 $1"
+  },
+  "al_board": {
+    "message": "ボード"
+  },
+  "al_board_hint": {
+    "message": "チャートの「現在」の線をドラッグしてボードの大きさを変えます"
+  },
+  "al_board_readout": {
+    "message": "$1 先$2 · 1マス $3 × $4"
+  },
+  "al_burst_hint": {
+    "message": "予想が的中したあと初めてタブを開いたときの、チャート上の演出"
+  },
+  "al_call_belongs": {
+    "message": "予想は、それを行ったコイン・期間・通貨に属し、そこでのみ判定されます。2つのコインがチャートを共有している間、予想は待機します。"
+  },
+  "al_called": {
+    "message": "予想済み"
+  },
+  "al_called_at": {
+    "message": "予想時 $1"
+  },
+  "al_called_at_suffix": {
+    "message": " · 予想時 $1"
+  },
+  "al_called_it": {
+    "message": "的中！"
+  },
+  "al_called_right": {
+    "message": "$2 件中 $1 件的中$3。スコアはこの端末にのみあり、何の価値もありません。"
+  },
+  "al_calls": {
+    "message": "予想"
+  },
+  "al_calls_info": {
+    "message": "予想とは主張です。「いつか教えて」ではなく「どこになるかを私が言う」。チャート右側の空白帯にあるマスを指すと、価格帯と時刻を指定したことになります — 1回目のクリックで下書き、2回目で確定。次にタブを開いたとき、その時刻の価格に対して自動で判定され、ボックスはチャートに残って的中したかどうかを示します。その帯がどこまで届くかはあなた次第です。「現在」の線を左へドラッグすればボードが広がり、右へドラッグすれば履歴が伸びます。"
+  },
+  "al_calls_off": {
+    "message": "予想はオフです"
+  },
+  "al_calls_off_body": {
+    "message": "チャートの空白の未来のマスを指せば、価格がどこに、いつあるかを言ったことになります。次にタブを開いたとき自動で判定されます — 何も通知されず、何も送信されず、スコアには何の価値もありません。"
+  },
+  "al_clear_settled": {
+    "message": "判定済みを消す"
+  },
+  "al_clear_settled_hint": {
+    "message": "判定済みの予想をチャートとこのリストから削除"
+  },
+  "al_closed_at": {
+    "message": " · 終値 $1"
+  },
+  "al_common": {
+    "message": "よく使う"
+  },
+  "al_direction": {
+    "message": "ターゲットの向き"
+  },
+  "al_drag_hint": {
+    "message": "点線そのものをドラッグして、ボードを大きく／小さくします。"
+  },
+  "al_drops_below": {
+    "message": "を下回る"
+  },
+  "al_drops_below_price": {
+    "message": "$1 を下回る"
+  },
+  "al_due": {
+    "message": "期限到来 — この期間を次に読み込んだときに判定されます"
+  },
+  "al_duplicate": {
+    "message": "このターゲットはすでにあります。"
+  },
+  "al_falls_pct_24h": {
+    "message": "24時間で $1 下落"
+  },
+  "al_hit_announced": {
+    "message": "到達したターゲットはタブのタイトルで知らされ、このタブが隠れている間もターゲットは確認されます。"
+  },
+  "al_hit_at": {
+    "message": " $1 で"
+  },
+  "al_hit_here_only": {
+    "message": "到達したターゲットはここでのみ知らされます — タブのタイトルでの通知は設定でオフになっており、バックグラウンド確認も止まります。"
+  },
+  "al_hit_when": {
+    "message": "$1$2 に到達"
+  },
+  "al_in_band": {
+    "message": " · 現在バンド内"
+  },
+  "al_info_calls": {
+    "message": "予想とは何か、現状、そしてキー操作"
+  },
+  "al_info_targets": {
+    "message": "ターゲットとは何か、現状、そしてキー操作"
+  },
+  "al_it_resumes": {
+    "message": "再開します"
+  },
+  "al_keep_settled_hint": {
+    "message": "判定済みの予想を、的中／はずれの印付きでチャートに残す"
+  },
+  "al_keep_under": {
+    "message": "$1% 未満にしてください — それ以上の変動は1日では起きません。"
+  },
+  "al_key_add": {
+    "message": "追加"
+  },
+  "al_key_calls_toggle": {
+    "message": "予想のオン / オフ"
+  },
+  "al_key_close": {
+    "message": "閉じる"
+  },
+  "al_key_grid": {
+    "message": "通常チャートのグリッド"
+  },
+  "al_key_this_panel": {
+    "message": "このパネル"
+  },
+  "al_kind_percent": {
+    "message": "24時間の変動"
+  },
+  "al_kind_portfolio": {
+    "message": "自分のポートフォリオ"
+  },
+  "al_kind_price": {
+    "message": "価格"
+  },
+  "al_limit_reached": {
+    "message": "ターゲットの上限に達しました（$1）。追加するには1つ削除してください。"
+  },
+  "al_missed": {
+    "message": "はずれ"
+  },
+  "al_missed_by": {
+    "message": " · $1 差ではずれ"
+  },
+  "al_move_needs": {
+    "message": "24時間の変動 $1 $2 · 必要 $3 $4"
+  },
+  "al_n_hit": {
+    "message": " · $1 件到達"
+  },
+  "al_n_open": {
+    "message": "未判定 $1$2"
+  },
+  "al_needs_pct": {
+    "message": " · 必要 $1"
+  },
+  "al_new_target": {
+    "message": "新しいターゲット"
+  },
+  "al_no_calls": {
+    "message": "予想はまだありません"
+  },
+  "al_no_holdings": {
+    "message": "合計するものがまだありません"
+  },
+  "al_no_targets": {
+    "message": "ターゲットはまだありません"
+  },
+  "al_now": {
+    "message": "現在 $1"
+  },
+  "al_now_away": {
+    "message": "現在 $1 · あと $2"
+  },
+  "al_of_settled": {
+    "message": " / $1 件判定済み"
+  },
+  "al_of_total": {
+    "message": "/ $1"
+  },
+  "al_off_kept": {
+    "message": "オフ · $1 件は保持され、バックグラウンドで判定が続きます — オフなのはボードです。何も描かれず、何も置けず、的中も知らされません"
+  },
+  "al_on_open_settled": {
+    "message": "オン · 未判定 $1 · 判定済み $2"
+  },
+  "al_on_range": {
+    "message": " · $1 で"
+  },
+  "al_open_n": {
+    "message": "未判定 · $1"
+  },
+  "al_paused_currency": {
+    "message": "一時停止 · $1"
+  },
+  "al_paused_info": {
+    "message": "$1 件が一時停止中 — 別の通貨で設定されているため、その通貨に戻すと$2。変動のターゲットは決して停止しません。パーセントはどこでも同じ意味だからです。"
+  },
+  "al_paused_set_in": {
+    "message": " · 一時停止 — $1 で設定"
+  },
+  "al_pct_above_current": {
+    "message": "現在価格より $1% 上"
+  },
+  "al_pct_below_current": {
+    "message": "現在価格より $1% 下"
+  },
+  "al_portfolio": {
+    "message": "ポートフォリオ"
+  },
+  "al_progress_title": {
+    "message": "設定時の位置からの道のりの $1%"
+  },
+  "al_rearm": {
+    "message": "再設定"
+  },
+  "al_rearm_aria": {
+    "message": "$1 のターゲットを再設定"
+  },
+  "al_rearm_hint": {
+    "message": "このターゲットを再設定する"
+  },
+  "al_record_kept": {
+    "message": "記録は保持されます。この端末にのみ存在し、何の価値もありません"
+  },
+  "al_remove_aria": {
+    "message": "$1 のターゲットを削除"
+  },
+  "al_remove_target": {
+    "message": "ターゲットを削除"
+  },
+  "al_removed_target": {
+    "message": "$1 のターゲットを削除しました"
+  },
+  "al_reset_score": {
+    "message": "スコアをリセット"
+  },
+  "al_reset_score_hint": {
+    "message": "記録をゼロに戻します。この端末にのみ存在し、何の価値もありません"
+  },
+  "al_rises_above": {
+    "message": "を上回る"
+  },
+  "al_rises_above_price": {
+    "message": "$1 を上回る"
+  },
+  "al_rises_pct_24h": {
+    "message": "24時間で $1 上昇"
+  },
+  "al_search_coins": {
+    "message": "コインを検索"
+  },
+  "al_set_in_currency": {
+    "message": "$1 で設定 — 再び $1 を表示すると再開します"
+  },
+  "al_settled_n": {
+    "message": "判定済み · $1"
+  },
+  "al_settles_in": {
+    "message": "$1 後に判定"
+  },
+  "al_show": {
+    "message": "表示"
+  },
+  "al_still_judged": {
+    "message": "すでに行った予想は、これがオフの間も判定され続けます — 再びオンにすると、ボードがそれらとともに戻ります"
+  },
+  "al_still_settling": {
+    "message": "判定中"
+  },
+  "al_stop_calls_hint": {
+    "message": "予想を止めます。予想とスコアは保持され、L キーでもチャートから同じことができます"
+  },
+  "al_streak_best": {
+    "message": "連続 $1 · 最高 $2"
+  },
+  "al_target_coin": {
+    "message": "ターゲットのコイン"
+  },
+  "al_target_in": {
+    "message": "ターゲット（$1）"
+  },
+  "al_target_percent": {
+    "message": "ターゲットの変動率"
+  },
+  "al_target_price": {
+    "message": "ターゲット価格"
+  },
+  "al_target_total": {
+    "message": "ターゲットのポートフォリオ合計"
+  },
+  "al_targets_info": {
+    "message": "ターゲットとは依頼です。「いつか教えて」。価格（「BTC が 80,000 を上回る」）や変動（「BTC が24時間で5%下落」）を指定すると、次にタブを開いたときにここで知らされます — 夜間に起きたものも含まれます。各ターゲットは今の価格だけでなく、直近1週間の1時間足に対して確認されるからです。"
+  },
+  "al_they_resume": {
+    "message": "再開します"
+  },
+  "al_total_in": {
+    "message": "合計（$1）"
+  },
+  "al_total_unmeasured": {
+    "message": "（合計は少なく数えるのではなく、測らないままにします）"
+  },
+  "al_travel_band": {
+    "message": "移動幅バンド"
+  },
+  "al_turn_calls_on": {
+    "message": "予想をオンにする"
+  },
+  "al_turn_off": {
+    "message": "オフにする"
+  },
+  "al_waiting_price": {
+    "message": "$1 の価格を待っています"
+  },
+  "al_way_down": {
+    "message": "下落"
+  },
+  "al_way_up": {
+    "message": "上昇"
+  },
+  "al_withdraw": {
+    "message": "取り下げる"
+  },
+  "al_withdraw_hint": {
+    "message": "この予想を取り下げる"
+  },
+  "al_worth_less": {
+    "message": "を下回る価値"
+  },
+  "al_worth_less_than": {
+    "message": "$1 を下回る価値になる"
+  },
+  "al_worth_more": {
+    "message": "を上回る価値"
+  },
+  "al_worth_more_than": {
+    "message": "$1 を上回る価値になる"
+  },
+  "al_zoom_in": {
+    "message": "ボードをズームイン"
+  },
+  "al_zoom_in_hint": {
+    "message": "ズームイン：バンドは狭く、届く範囲も短く  ( ] )"
+  },
+  "al_zoom_out": {
+    "message": "ボードをズームアウト"
+  },
+  "al_zoom_out_hint": {
+    "message": "ズームアウト：バンドは広く、大きな値動きも予想できる  ( [ )"
+  },
+  "al_zoom_reset": {
+    "message": "ボードの範囲を既定に戻す"
+  },
+  "app_close": {
+    "message": "閉じる"
+  },
+  "app_dismiss": {
+    "message": "閉じる"
+  },
+  "app_dismiss_rating": {
+    "message": "評価のお願いを閉じる"
+  },
+  "app_error": {
+    "message": "問題が発生しました。"
+  },
+  "app_fetching_prices": {
+    "message": "価格を取得中…"
+  },
+  "app_looking_headlines": {
+    "message": "見出しを探しています…"
+  },
+  "app_move_note": {
+    "message": "この値動きの前後に公開された見出し — 当時書かれていた内容であって、価格が動いた理由ではありません。"
+  },
+  "app_new_tab": {
+    "message": "新しいタブ"
+  },
+  "app_no_archive": {
+    "message": "その日付のアーカイブには何もありません。"
+  },
+  "app_offline": {
+    "message": "オフラインです。接続が戻ると更新されます。"
+  },
+  "app_offline_short": {
+    "message": "オフライン — 接続待ち"
+  },
+  "app_rate_ask": {
+    "message": "PriceTab は気に入りましたか。評価は他の人が見つけるきっかけになります。数秒で終わり、何よりも助けになります。"
+  },
+  "app_read_on": {
+    "message": "記事を読む: "
+  },
+  "app_reload": {
+    "message": "再読み込み"
+  },
+  "app_remove": {
+    "message": "削除"
+  },
+  "app_retry": {
+    "message": "再試行"
+  },
+  "app_retrying": {
+    "message": "再試行中…"
+  },
+  "app_skip": {
+    "message": "あとで"
+  },
+  "app_unreachable": {
+    "message": "価格サービスに接続できませんでした。手元にある最後の価格を表示しています。"
+  },
+  "br_above_200d": {
+    "message": "200日平均を上回る"
+  },
+  "br_across_episodes": {
+    "message": "（$1 回）"
+  },
+  "br_across_one_episode": {
+    "message": "（1 回）"
+  },
+  "br_close": {
+    "message": "ベースレートを閉じる"
+  },
+  "br_daily_closes": {
+    "message": "日足終値 $1 本"
+  },
+  "br_edge_better": {
+    "message": "通常の期間より $1 ポイント良い"
+  },
+  "br_edge_none": {
+    "message": "通常の期間と変わらない"
+  },
+  "br_edge_worse": {
+    "message": "通常の期間より $1 ポイント悪い"
+  },
+  "br_failed": {
+    "message": "$1 の日足履歴が取得できませんでした。これなしでは何も数えられず、作った数字は無いより悪いものです。"
+  },
+  "br_loading_body": {
+    "message": "このコインの日足終値を読み込んでいます。取引所が公開する限りさかのぼるため、下の集計に意味があります。"
+  },
+  "br_n_times": {
+    "message": "$1 回"
+  },
+  "br_next_30": {
+    "message": "次の30日"
+  },
+  "br_next_7": {
+    "message": "次の7日"
+  },
+  "br_no_states": {
+    "message": "$1 は下のいずれの状態にもありません。これが普通の状態で、どの状態よりもはるかに多い正直な答えです。"
+  },
+  "br_note_1": {
+    "message": "ある状態の後に何が起きたかを、同じコインの普通の一日の後と比べて数えています。シグナルではなく、ここに行動すべきものはありません。 "
+  },
+  "br_note_2": {
+    "message": "8銘柄・21,669本の日足終値で検証した教科書的な9つのルールは、多重検定の補正を通ったものが70件中0件でした。実データでは「買われすぎ」の線の後、6銘柄中4銘柄で通常より良い1か月が続きました。 "
+  },
+  "br_note_200d": {
+    "message": "機関投資家がエントリーではなく相場の局面として読む線"
+  },
+  "br_note_3": {
+    "message": "件数が少ない場合は比較を飾らず省きます。割合は分母があって初めて意味を持ちます。"
+  },
+  "br_note_further": {
+    "message": "同じ線の、さらに外側"
+  },
+  "br_note_overbought": {
+    "message": "一般に買われすぎと呼ばれる線"
+  },
+  "br_note_oversold": {
+    "message": "一般に売られすぎと呼ばれる線"
+  },
+  "br_nothing_unusual": {
+    "message": "今のところ特筆すべき点はありません"
+  },
+  "br_now_suffix": {
+    "message": " · 現在"
+  },
+  "br_one_time": {
+    "message": "1 回"
+  },
+  "br_ordinary_days": {
+    "message": "通常の $1 日間: $2、うち $3% が上昇（$4 件）。 "
+  },
+  "br_reading": {
+    "message": "日足終値を読み込み中…"
+  },
+  "br_rsi_above_70": {
+    "message": "RSI が70超"
+  },
+  "br_rsi_above_80": {
+    "message": "RSI が80超"
+  },
+  "br_rsi_below_20": {
+    "message": "RSI が20未満"
+  },
+  "br_rsi_below_30": {
+    "message": "RSI が30未満"
+  },
+  "br_rsi_label": {
+    "message": "RSI 14 · 日足終値 · 0–100"
+  },
+  "br_that_is": {
+    "message": "つまり $1。"
+  },
+  "br_the_rest": {
+    "message": "その他（参考）"
+  },
+  "br_title": {
+    "message": "$1 · これは過去にもあったか"
+  },
+  "br_too_few": {
+    "message": "$1 回では比較に足りないため、差は表示しません。"
+  },
+  "br_true_now": {
+    "message": "現在該当"
+  },
+  "br_try_again": {
+    "message": "再試行"
+  },
+  "br_typically": {
+    "message": "通常 $1、$2% の確率で上昇"
+  },
+  "ch_band": {
+    "message": "バンド"
+  },
+  "ch_close": {
+    "message": "終値"
+  },
+  "ch_default_reach": {
+    "message": "既定の範囲に戻す"
+  },
+  "ch_drag_now": {
+    "message": "どこまで先を予想できるかをドラッグで変更"
+  },
+  "ch_drag_or_keys": {
+    "message": "ドラッグまたは矢印キーで、どこまで先を予想できるかを変更"
+  },
+  "ch_high": {
+    "message": "高値"
+  },
+  "ch_low": {
+    "message": "安値"
+  },
+  "ch_now_label": {
+    "message": "どこまで先を予想できるか"
+  },
+  "ch_open": {
+    "message": "始値"
+  },
+  "ch_reach_title": {
+    "message": "ボードが上下にどこまで届くか"
+  },
+  "ch_span": {
+    "message": "期間"
+  },
+  "ch_volume": {
+    "message": "出来高"
+  },
+  "ch_zoom_hint": {
+    "message": "：チャート上でスクロール、または [ と ]"
+  },
+  "ch_zoom_in": {
+    "message": "ズームイン"
+  },
+  "ch_zoom_in_label": {
+    "message": "ボードをズームイン — より狭いバンド"
+  },
+  "ch_zoom_out": {
+    "message": "ズームアウト"
+  },
+  "ch_zoom_out_label": {
+    "message": "ボードをズームアウト — 大きな値動きを予想できる広いバンド"
+  },
+  "chart_coin_price": {
+    "message": "$1 価格"
+  },
+  "chart_next_coin": {
+    "message": "次のコイン"
+  },
+  "chart_percent_change": {
+    "message": "変化率"
+  },
+  "chart_price_change": {
+    "message": "価格変化"
+  },
+  "chart_switch_to_percent": {
+    "message": "変化率に切り替え"
+  },
+  "chart_switch_to_price": {
+    "message": "価格変化に切り替え"
+  },
+  "chart_your_cost": {
+    "message": "取得原価"
+  },
+  "chrome_calls": {
+    "message": "予想"
+  },
+  "chrome_calls_close": {
+    "message": "予想を閉じる"
+  },
+  "chrome_news": {
+    "message": "ニュース"
+  },
+  "chrome_news_close": {
+    "message": "ニュースを閉じる"
+  },
+  "chrome_news_new": {
+    "message": "ニュース — 保有コインに新着"
+  },
+  "chrome_portfolio": {
+    "message": "ポートフォリオ"
+  },
+  "chrome_portfolio_close": {
+    "message": "ポートフォリオを閉じる"
+  },
+  "chrome_portfolio_open": {
+    "message": "ポートフォリオを開く"
+  },
+  "chrome_refresh": {
+    "message": "最新の価格を再取得"
+  },
+  "chrome_settings": {
+    "message": "設定"
+  },
+  "chrome_settings_close": {
+    "message": "設定を閉じる"
+  },
+  "chrome_settings_open": {
+    "message": "設定を開く"
+  },
+  "chrome_targets": {
+    "message": "価格ターゲット"
+  },
+  "chrome_targets_close": {
+    "message": "価格ターゲットを閉じる"
+  },
+  "chrome_targets_short": {
+    "message": "ターゲット"
+  },
+  "chrome_ticker_hide": {
+    "message": "ティッカーを隠す"
+  },
+  "chrome_ticker_show": {
+    "message": "ティッカーを表示"
+  },
+  "dec_2": {
+    "message": "小数点以下2桁（例: 1,234.56）"
+  },
+  "dec_4": {
+    "message": "小数点以下4桁（例: 1,234.5678）"
+  },
+  "dec_6": {
+    "message": "小数点以下6桁（例: 0.001234）"
+  },
+  "dec_8": {
+    "message": "小数点以下8桁（例: 0.00001234）"
+  },
+  "every_10s": {
+    "message": "10秒ごと"
+  },
+  "every_15m": {
+    "message": "15分ごと"
+  },
+  "every_1m": {
+    "message": "1分ごと"
+  },
+  "every_30s": {
+    "message": "30秒ごと"
+  },
+  "every_5m": {
+    "message": "5分ごと"
+  },
+  "method_fifo": {
+    "message": "先入れ先出し"
+  },
+  "method_fifo_note": {
+    "message": "最も古い購入から売却されます。ほぼ全ての国で既定であり、一部の国ではこれしか認められません。"
+  },
+  "method_hifo": {
+    "message": "高value先出し"
+  },
+  "method_hifo_note": {
+    "message": "最も高い購入から売却され、利益が最も小さく計上されます。すべての国で認められるわけではありません。"
+  },
+  "method_lifo": {
+    "message": "後入れ先出し"
+  },
+  "method_lifo_note": {
+    "message": "最も新しい購入から売却されます。認められる国とそうでない国があります。お住まいの制度をご確認ください。"
+  },
+  "mins_1": {
+    "message": "1分"
+  },
+  "mins_5": {
+    "message": "5分"
+  },
+  "news_allow_rest": {
+    "message": "残りも許可"
+  },
+  "news_also_count": {
+    "message": "他$1件",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "news_also_rest": {
+    "message": "ほか$1件",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "news_also_title": {
+    "message": "$1媒体がこのニュースを報じました",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "news_ask_body_1": {
+    "message": "Cointelegraph、Decrypt、CryptoSlate、Bitcoin Magazine、CoinJournal、BBC Business のフィードは、あなたの許可なしにページから読み取ることをブラウザが認めていません。Chrome が許可を尋ねます。"
+  },
+  "news_ask_body_2": {
+    "message": "相手に何も送信せず、この端末の外には何も保存しません。PriceTab は公開されたものを読むだけです。いつでもここで無効にできます。"
+  },
+  "news_asking": {
+    "message": "Chrome に確認中…"
+  },
+  "news_fetching": {
+    "message": "見出しを取得中…"
+  },
+  "news_granted_silent": {
+    "message": "許可されていますが、$1 のニュースルームはどれも応答しませんでした。タブの再読み込みでたいてい直ります。"
+  },
+  "news_n_stories": {
+    "message": "$1 件"
+  },
+  "news_no_match": {
+    "message": "「$1」に一致するものはありません。"
+  },
+  "news_none_at_all": {
+    "message": "見出しは取得できませんでした。今回はどこにも到達できませんでした。"
+  },
+  "news_none_blocked": {
+    "message": "見出しは取得できませんでした。ニュースルームは許可されていますが応答がありません。タブの再読み込みでたいてい直ります。"
+  },
+  "news_none_filtered": {
+    "message": "このフィルターでは何もありません。範囲を広げるか、下のソースを再度オンにしてください。"
+  },
+  "news_one_click": {
+    "message": "$1 のニュースルームはワンクリック先"
+  },
+  "news_one_story": {
+    "message": "1 件"
+  },
+  "news_reading_all": {
+    "message": "$1 のニュースルームを直接読み込み中。"
+  },
+  "news_reading_some": {
+    "message": "$2 のうち $1 のニュースルームを読み込み中。"
+  },
+  "news_scope_all": {
+    "message": "すべて"
+  },
+  "news_scope_held": {
+    "message": "保有中のもの"
+  },
+  "news_scope_mine": {
+    "message": "自分のコイン"
+  },
+  "news_search_label": {
+    "message": "見出しを検索"
+  },
+  "news_search_placeholder": {
+    "message": "見出しを検索…"
+  },
+  "news_since_last": {
+    "message": "前回見てからの新着"
+  },
+  "news_stale_note": {
+    "message": "名前の横に経過時間が付いたソースは、それ以降何も公開していません。フィードが静かなのであって、PriceTab が尋ねていないわけではありません。"
+  },
+  "news_turn_off": {
+    "message": "オフにする"
+  },
+  "news_turn_on": {
+    "message": "すべてのソースを有効にする"
+  },
+  "news_unusual_head": {
+    "message": "$1 は自身の基準で異例の動き、$2",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "news_unusual_none": {
+    "message": "読み込み済みのフィードには言及がありません。"
+  },
+  "news_unusual_note": {
+    "message": "表示中のレンジにおける、このコイン自身の通常の変動幅と比べた結果です。同じ期間の見出しであり、原因ではありません。"
+  },
+  "pc_bought": {
+    "message": "▲ 購入"
+  },
+  "pc_break_even": {
+    "message": "損益分岐"
+  },
+  "pc_cost": {
+    "message": "取得 $1"
+  },
+  "pc_more": {
+    "message": "他 $1 件"
+  },
+  "pc_other_upper": {
+    "message": "その他"
+  },
+  "pc_plot_hint": {
+    "message": "左右の矢印キーでチャート内を移動し、Home と End で最初と最後の点へ、Escape で解除します。"
+  },
+  "pc_plot_label": {
+    "message": "ポートフォリオ価値チャート"
+  },
+  "pc_sold": {
+    "message": "▼ 売却"
+  },
+  "pc_title": {
+    "message": "ポートフォリオ価値の推移"
+  },
+  "pcb_empty": {
+    "message": "何がこれを動かしたか言えるだけの履歴がありません。"
+  },
+  "pcb_note": {
+    "message": "この$1の変動のうち、各保有がどれだけを占めたか（今日の数量で計算）。上の変化額と一致します。これは起きたことであり、これから起きることではありません。"
+  },
+  "pcb_other_members": {
+    "message": "その他: $1"
+  },
+  "pcb_row_label": {
+    "message": "$1: $2、変動の $3%"
+  },
+  "period_all": {
+    "message": "全期間"
+  },
+  "po_add_holding": {
+    "message": "保有を追加"
+  },
+  "po_added_by_hand": {
+    "message": "手入力"
+  },
+  "po_added_from_file": {
+    "message": "ファイルから $1 件を追加しました"
+  },
+  "po_added_holdings": {
+    "message": "$1 件を追加しました"
+  },
+  "po_address_label": {
+    "message": "監視するアドレス"
+  },
+  "po_allocation_prefix": {
+    "message": "構成: "
+  },
+  "po_alphabetical": {
+    "message": "名前順"
+  },
+  "po_amount": {
+    "message": "数量"
+  },
+  "po_amount_aria": {
+    "message": "$1 の数量"
+  },
+  "po_amount_placeholder": {
+    "message": "数量（例: 0.5 $1）"
+  },
+  "po_amount_sold": {
+    "message": "売却数量"
+  },
+  "po_and_records": {
+    "message": "（およびそれに紐づく記録すべて）"
+  },
+  "po_another_currency": {
+    "message": "別の通貨"
+  },
+  "po_back_to_list": {
+    "message": "保有一覧に戻る（Esc）"
+  },
+  "po_bands_note": {
+    "message": "帯を足し合わせると線になります。スケールはゼロから始まるので高さを比較できますが、その代わりズームを失います。"
+  },
+  "po_best_24h": {
+    "message": "24時間の最良"
+  },
+  "po_bought": {
+    "message": "購入"
+  },
+  "po_by_coin": {
+    "message": "コイン別"
+  },
+  "po_by_coin_hint": {
+    "message": "合計を構成するコインを積み上げて表示します。スケールはゼロから始まり、だからこそ帯を比較できます"
+  },
+  "po_calendar_year": {
+    "message": "これは暦年です。税年度の終わりは国によって異なるため、ご自身の制度をご確認ください。"
+  },
+  "po_chain_estimated": {
+    "message": "チェーン（推定）"
+  },
+  "po_chart_covers": {
+    "message": "チャートと合計の横の変化は、$2 件中 $1 件をカバーしています"
+  },
+  "po_chart_title": {
+    "message": "ポートフォリオ · 合計評価額"
+  },
+  "po_chart_value_note": {
+    "message": "このチャートにある $1 件の評価額です。ポートフォリオ合計は $2 件すべてを含みます。"
+  },
+  "po_cost_basis": {
+    "message": "取得原価"
+  },
+  "po_cost_method": {
+    "message": "取得原価の方法"
+  },
+  "po_coverage_note": {
+    "message": "$1 の期間、このチャートが描ける $2 件について$3。上の合計は $4 件すべてを含みます。"
+  },
+  "po_csv": {
+    "message": "取得原価レポート（CSV）"
+  },
+  "po_currency_paused": {
+    "message": " · $1 · 一時停止"
+  },
+  "po_date_unknown": {
+    "message": "日付不明"
+  },
+  "po_drawdown": {
+    "message": "ピーク"
+  },
+  "po_drawdown_hint": {
+    "message": "この $1 の期間における、高値からその後の安値までの最大下落"
+  },
+  "po_drawdown_mode_hint": {
+    "message": "合計が自身の最高値からどれだけ下にあったか、期間全体で — 深さと回復までの時間。「最大下落」の一つの数字では示せないもの"
+  },
+  "po_drawdown_note": {
+    "message": "ゼロは新高値です。その下はすべて、その時点で合計が自身の最高値からどれだけ下にあったか — 深さと戻るまでの時間です。どこまで悪くなったかを示すもので、どこまで悪くなりうるかではありません。"
+  },
+  "po_drawdown_range": {
+    "message": " — $1 〜 $2"
+  },
+  "po_drawn_of_held": {
+    "message": " · $2 件中 $1 件"
+  },
+  "po_dropped": {
+    "message": "$1 件は入りませんでした — リストが満杯です"
+  },
+  "po_empty_hint": {
+    "message": "下でコインを検索するか、監視するアドレスを貼り付けてください。"
+  },
+  "po_explore": {
+    "message": "チャートを見る"
+  },
+  "po_explore_hint": {
+    "message": "評価額チャートを開きます — 購入と売却を重ねた状態で、任意の時点を読み取れます"
+  },
+  "po_export": {
+    "message": "JSON をエクスポート"
+  },
+  "po_export_hint": {
+    "message": "保有を JSON バックアップとしてダウンロード"
+  },
+  "po_footer": {
+    "message": "追跡のみ · ウォレット接続なし · この端末にローカル保存。監視アドレスは公開残高の照会だけに使われます。"
+  },
+  "po_held_long": {
+    "message": "$1 日保有 — 多くの国で使われる $2 日の基準では長期"
+  },
+  "po_held_short": {
+    "message": "$1 日保有 — 多くの国で使われる $2 日の基準では短期"
+  },
+  "po_holdings": {
+    "message": "保有"
+  },
+  "po_holdings_n": {
+    "message": "保有 · $1"
+  },
+  "po_hover_note": {
+    "message": "チャートにカーソルを合わせる、タップする、またはフォーカスすると、合計・その内訳・支払額に対する上下の差が読めます。"
+  },
+  "po_import": {
+    "message": "JSON をインポート"
+  },
+  "po_import_failed": {
+    "message": "インポートに失敗しました — このファイルは有効な PriceTab のポートフォリオバックアップではありません。"
+  },
+  "po_import_hint": {
+    "message": "JSON バックアップから保有を復元します（現在のリストを置き換えます）"
+  },
+  "po_inferred": {
+    "message": "監視アドレスから推定された購入 — クリックで表示"
+  },
+  "po_largest_first": {
+    "message": "$1 の大きい順"
+  },
+  "po_limit_reached": {
+    "message": "保有の上限に達しました"
+  },
+  "po_long_suffix": {
+    "message": " · 長期"
+  },
+  "po_long_term": {
+    "message": "長期"
+  },
+  "po_lot_amount": {
+    "message": "ロットの数量"
+  },
+  "po_lot_line": {
+    "message": "$1 $2 — $3"
+  },
+  "po_lot_total_paid": {
+    "message": "ロットの支払総額"
+  },
+  "po_lots_aria": {
+    "message": "$1 の購入ロット"
+  },
+  "po_lots_cover": {
+    "message": "ロットは $2 $3 のうち $1 をカバーしています — 損益は記録済みの部分について計算されます。"
+  },
+  "po_manual_amount_aria": {
+    "message": "手入力した $1 の数量"
+  },
+  "po_merge": {
+    "message": "JSON をマージ"
+  },
+  "po_method_line": {
+    "message": "$1 — $2"
+  },
+  "po_model_note": {
+    "message": "今日の数量を、この期間にわたって価格付けしたものです。購入と売却は印が付きますが、過去の数量は変えません。"
+  },
+  "po_moved": {
+    "message": "何が動かしたか"
+  },
+  "po_moved_hint": {
+    "message": "この期間の変化をどの保有が説明するか、大きい順に。棒の合計は上の数字になります"
+  },
+  "po_n_purchases": {
+    "message": "購入 $1 件"
+  },
+  "po_n_sales": {
+    "message": "売却 $1 件"
+  },
+  "po_n_watched": {
+    "message": "監視アドレス $1 件"
+  },
+  "po_no_basis_suffix": {
+    "message": " · 取得原価なし"
+  },
+  "po_no_purchase": {
+    "message": "購入なし"
+  },
+  "po_no_purchases": {
+    "message": "購入の記録はまだありません — 下から追加してください。"
+  },
+  "po_no_transfers": {
+    "message": "入金はまだ検出されていません。"
+  },
+  "po_nothing_to_add": {
+    "message": "追加するものはありません"
+  },
+  "po_nothing_to_sell": {
+    "message": "手入力の売却対象はありません — 監視アドレスはチェーンから自動で照合されます"
+  },
+  "po_nothing_tracked": {
+    "message": "まだ何も記録されていません"
+  },
+  "po_on_chain": {
+    "message": " · ~オンチェーン"
+  },
+  "po_one_purchase": {
+    "message": "購入 1 件"
+  },
+  "po_one_sale": {
+    "message": "売却 1 件"
+  },
+  "po_one_watched": {
+    "message": "監視アドレス 1 件"
+  },
+  "po_other": {
+    "message": "その他"
+  },
+  "po_other_count": {
+    "message": "その他（$1）"
+  },
+  "po_paid_placeholder": {
+    "message": "支払総額（例: 15000）"
+  },
+  "po_paste_address": {
+    "message": "BTC・ETH・LTC・DOGE・BCH・ZEC のアドレスを貼り付け…"
+  },
+  "po_paused_basis": {
+    "message": "$1 について記録されたすべての購入は $2 で入力されています。この取得原価と損益を見るには、その通貨に切り替えてください。"
+  },
+  "po_pnl_hint": {
+    "message": "同じ合計を、ゼロが支払額になるように基準を取り直したもの。線より上が利益、下が損失 — 取得原価がスケールの外に出たとき、価値チャートが示せない唯一のものです"
+  },
+  "po_pnl_note": {
+    "message": "ゼロはあなたが支払った金額です。線がそこを横切る瞬間が、利益か損失に変わった時点です。各日の取得原価ではなく取得原価の全体を使い、数量は今日のものです。"
+  },
+  "po_proceeds_less": {
+    "message": "売却額から、消費した購入の取得原価を差し引いた額"
+  },
+  "po_realized": {
+    "message": "実現"
+  },
+  "po_realized_paused": {
+    "message": "（別の通貨で記録された売却は、換算せずに除外します）"
+  },
+  "po_realized_year": {
+    "message": "$1 年の実現"
+  },
+  "po_realized_year_hint": {
+    "message": "$1 年1月1日から今日までに記録した売却の損益。 "
+  },
+  "po_received_placeholder": {
+    "message": "受取総額（例: 45000）"
+  },
+  "po_record": {
+    "message": "記録"
+  },
+  "po_record_sale_hint": {
+    "message": "売却を記録します。コインを減らし、最も古い購入から消費し、損益を保存します"
+  },
+  "po_remove_coin": {
+    "message": "$1 を削除"
+  },
+  "po_remove_holding_hint": {
+    "message": "この保有と、その購入・記録済みの売却を削除します。ポートフォリオを閉じるまでは取り消せます。"
+  },
+  "po_remove_lot": {
+    "message": "ロットを削除"
+  },
+  "po_remove_lot_aria": {
+    "message": "この $1 のロットを削除"
+  },
+  "po_remove_sale": {
+    "message": "この $1 の売却を削除"
+  },
+  "po_remove_sale_hint": {
+    "message": "この記録を削除します。コインは戻りません — 必要なら数量を調整してください。"
+  },
+  "po_removed": {
+    "message": "$1$2 を削除しました"
+  },
+  "po_replaced_with_file": {
+    "message": "$1 件をファイルの内容で置き換えました"
+  },
+  "po_return_pa": {
+    "message": "年率リターン"
+  },
+  "po_sale_no_basis": {
+    "message": "これらのコインには購入の記録がないため、売却額と突き合わせる取得原価がありません"
+  },
+  "po_sale_partial": {
+    "message": "この売却のうち購入記録があるのは $1 $2 だけなので、損益はその分のみを対象としています"
+  },
+  "po_sale_paused": {
+    "message": "$1 で記録されています。別の通貨を表示している間、その損益は「実現」から除外されます — 含めるには $1 に切り替えてください。"
+  },
+  "po_search_coin": {
+    "message": "コインを検索（例: BTC / Bitcoin）…"
+  },
+  "po_search_coin_label": {
+    "message": "追加するコインを検索"
+  },
+  "po_sell_hint": {
+    "message": "$1 の保有からコインを減らし、最も古い購入から順に消費します。損益はそのロットが無くなった後も保持されます。"
+  },
+  "po_share_in_one": {
+    "message": "$1% が単一の保有"
+  },
+  "po_share_of_value": {
+    "message": "（評価額の $1%）"
+  },
+  "po_share_of_value_dash": {
+    "message": " — 評価額の $1%"
+  },
+  "po_show": {
+    "message": "表示"
+  },
+  "po_show_origin": {
+    "message": "これらのコインの出どころと支払額を表示"
+  },
+  "po_show_purchases": {
+    "message": "このコインの購入を表示"
+  },
+  "po_slice_title": {
+    "message": "$1 — 保有全体の $2%"
+  },
+  "po_sold": {
+    "message": "売却"
+  },
+  "po_sold_line": {
+    "message": "$1 $2 を売却 — $3"
+  },
+  "po_sort": {
+    "message": "並べ替え"
+  },
+  "po_stop": {
+    "message": "停止"
+  },
+  "po_stop_sync_hint": {
+    "message": "このアドレスの同期を停止します（コインと購入は手入力の分に移ります）"
+  },
+  "po_stop_watch_aria": {
+    "message": "この $1 のアドレスの監視をやめる"
+  },
+  "po_total": {
+    "message": "合計"
+  },
+  "po_total_across": {
+    "message": "手入力の分と、監視中の全アドレスの合計 — 内訳はクリック"
+  },
+  "po_total_amount_aria": {
+    "message": "$1 の合計数量"
+  },
+  "po_total_counts_all": {
+    "message": "。上の合計はすべてを含みます。"
+  },
+  "po_total_hint": {
+    "message": "1本の線：合計を、実際に動いた範囲で表示"
+  },
+  "po_total_received": {
+    "message": "受取総額"
+  },
+  "po_undated_sales": {
+    "message": " 日付のない売却が $1 件あり、どちらの年にも入りません。"
+  },
+  "po_unlogged_note": {
+    "message": "$1 $2 には購入の記録がないため、上の評価額には含まれますが損益には含まれません。"
+  },
+  "po_unrealized": {
+    "message": "含み"
+  },
+  "po_unrealized_hint": {
+    "message": "支払額に対する含み損益"
+  },
+  "po_unrealized_partial": {
+    "message": "支払額に対する含み損益 — 購入を記録した数量のみが対象です（$1）"
+  },
+  "po_unrealized_paused": {
+    "message": "（別の通貨で入力した購入は換算せずに除外します — どれかは保有を開くと分かります）"
+  },
+  "po_value": {
+    "message": "評価額"
+  },
+  "po_vs_benchmark": {
+    "message": "$1 比"
+  },
+  "po_vs_btc": {
+    "message": "BTC比"
+  },
+  "po_vs_btc_hint": {
+    "message": "あなたのバスケットとBTCを、まったく同じ日付で、どちらも0%から — どこで上回り、どこで市場に追随しただけかが分かります"
+  },
+  "po_vs_btc_none": {
+    "message": "これらの日付をカバーするBTCの履歴がないため、比較する対象がありません。上の線はあなたのバスケットのみです。"
+  },
+  "po_vs_btc_note": {
+    "message": "どちらも同じ最初の日付の0%から、1つのスケールで — 2軸は決して使いません。任意の2本の線を関係あるように見せるのがそれだからです。あなた $1、BTC $2：差は $3 ポイント。代わりにBTCを持つことは比較対象であって、提案ではありません。"
+  },
+  "po_watch_address": {
+    "message": "アドレスを監視"
+  },
+  "po_watch_chains": {
+    "message": "PriceTab が読めるのは Bitcoin、Ethereum とそのトークン、Litecoin、Dogecoin、Bitcoin Cash、Zcash です — 数量は上から手入力できます。"
+  },
+  "po_watch_chip_title": {
+    "message": "$1 · $2 — 内訳はクリック"
+  },
+  "po_watch_empty": {
+    "message": "そのアドレスには、PriceTab が現在価格を付けられるものがありません。"
+  },
+  "po_watch_foreign": {
+    "message": "これは $1 のアドレスです。 "
+  },
+  "po_watch_note": {
+    "message": "アドレスの公開残高を読み取り、保有を同期します（ポートフォリオを開いている間、10分ごとに確認）"
+  },
+  "po_watch_shape": {
+    "message": "アドレスのように見えません。空白を入れず、全体を貼り付けてください。"
+  },
+  "po_watch_unreachable": {
+    "message": "残高サービスが今回応答しませんでした。問い合わせ頻度に制限があるため、たいていは自然に解消します — 数分後にもう一度お試しください。アドレスに問題はありません。"
+  },
+  "po_watched_address": {
+    "message": "監視アドレス"
+  },
+  "po_watched_select": {
+    "message": "監視アドレス（クリックで選択）"
+  },
+  "po_watching_n": {
+    "message": "監視中 · $1"
+  },
+  "po_worst_24h": {
+    "message": "24時間の最悪"
+  },
+  "po_worst_fall": {
+    "message": "最大下落"
+  },
+  "po_worst_fall_note": {
+    "message": "。どこまで悪くなったかを示すもので、どこまで悪くなりうるかではありません。"
+  },
+  "po_your_purchases": {
+    "message": "このコインの購入 — クリックで表示・追加（「15000 で 0.5 購入」）"
+  },
+  "pref_alert_tab_title_aria": {
+    "message": "タブのタイトルでの価格ターゲット通知の切り替え"
+  },
+  "pref_alert_tab_title_desc": {
+    "message": "ターゲットに到達したらタブのタイトルで知らせます。見ていないタブからでも伝わります"
+  },
+  "pref_alert_tab_title_heading": {
+    "message": "タブのタイトルでターゲットを知らせる"
+  },
+  "pref_alert_tab_title_note": {
+    "message": "タブがバックグラウンドの間もターゲットを確認し続けます。あなたが別の場所にいる間に PriceTab が取得する唯一のもので、ターゲットが設定されているときだけです。オフにすると通知とバックグラウンド確認の両方が止まります。"
+  },
+  "pref_alerts_keywords": {
+    "message": "アラート ターゲット 価格 タブ タイトル 通知 バックグラウンド"
+  },
+  "pref_alerts_title": {
+    "message": "価格ターゲットの通知"
+  },
+  "pref_auto_rotate_aria": {
+    "message": "自動切り替えの切り替え"
+  },
+  "pref_auto_rotate_aria_2": {
+    "message": "自動切り替えの間隔"
+  },
+  "pref_auto_rotate_desc": {
+    "message": "リストの次のコインへ自動的に切り替えます"
+  },
+  "pref_auto_rotate_heading": {
+    "message": "自動切り替え"
+  },
+  "pref_auto_rotate_keywords": {
+    "message": "循環 コイン 切り替え 間隔 一時停止 パネル"
+  },
+  "pref_auto_rotate_note": {
+    "message": "パネルが開いている間は停止します。読んでいる最中にチャートが動いてしまわないためです。"
+  },
+  "pref_auto_rotate_title": {
+    "message": "自動切り替え"
+  },
+  "pref_candlesticks_aria": {
+    "message": "ローソク足チャートの切り替え"
+  },
+  "pref_candlesticks_desc": {
+    "message": "価格ラインの代わりに始値・高値・安値・終値のバーを描きます。ローソク足データのない期間はラインのままです"
+  },
+  "pref_candlesticks_heading": {
+    "message": "ローソク足"
+  },
+  "pref_candlesticks_keywords": {
+    "message": "ローソク足 ohlc バー 日本 kraken リクエスト コスト"
+  },
+  "pref_candlesticks_note": {
+    "message": "見た目より安価です。価格ラインはローソク足の終値から導かれるため、チャートが行うリクエストはローソク足だけです。ALL の期間は Kraken から取得します。数年前まで遡れるのは他にありません（BTC は2013年まで）。ローソク足データのないコインや通貨は、空のチャートを見せる代わりにラインのままにします。"
+  },
+  "pref_candlesticks_title": {
+    "message": "ローソク足"
+  },
+  "pref_chart_color_aria": {
+    "message": "チャートの色の切り替え"
+  },
+  "pref_chart_color_desc": {
+    "message": "上昇で緑、下落で赤 — オフにすると単色のラインになります"
+  },
+  "pref_chart_color_heading": {
+    "message": "チャートの色"
+  },
+  "pref_chart_color_keywords": {
+    "message": "緑 赤 塗り トレンド 色"
+  },
+  "pref_chart_color_title": {
+    "message": "チャートの色"
+  },
+  "pref_chart_details_aria": {
+    "message": "チャート詳細の切り替え"
+  },
+  "pref_chart_details_desc": {
+    "message": "チャートにカーソルを合わせたとき、始値・高値・安値・終値と出来高を表示します（チャートごとに追加1リクエスト、ホバー時のみ）"
+  },
+  "pref_chart_details_heading": {
+    "message": "チャートの詳細"
+  },
+  "pref_chart_details_keywords": {
+    "message": "ohlc 出来高 十字線 ホバー 始値 高値 安値 終値 コスト"
+  },
+  "pref_chart_details_note": {
+    "message": "始値・高値・安値・終値: 一つの期間を表す4つの価格と、その間に取引された量です。チャートごとに追加1リクエストで、最初にホバーしたときに行われ、それ以前には行われません。"
+  },
+  "pref_chart_details_title": {
+    "message": "チャートの詳細"
+  },
+  "pref_chart_grid_aria": {
+    "message": "チャートのグリッドの切り替え"
+  },
+  "pref_chart_grid_desc": {
+    "message": "チャートの背後に価格の水準と時間の区切りを引き、水準を読み取れるようにします。マスにカーソルを合わせると点灯します"
+  },
+  "pref_chart_grid_heading": {
+    "message": "チャートのグリッド"
+  },
+  "pref_chart_grid_keywords": {
+    "message": "グリッド 罫線 価格 時間 軸 ターゲット 予想 マス"
+  },
+  "pref_chart_grid_note": {
+    "message": "これは通常のチャートに効き、G キーも同じ働きをします。予想がオンのときはメッシュがいずれにせよ描かれ、指し示すマスがそのグリッドなので、その間このスイッチが変えられるものはありません。"
+  },
+  "pref_chart_grid_title": {
+    "message": "チャートのグリッド"
+  },
+  "pref_currency_about": {
+    "message": "通貨について"
+  },
+  "pref_currency_all": {
+    "message": "すべての通貨"
+  },
+  "pref_currency_aria_2": {
+    "message": "通貨"
+  },
+  "pref_currency_keywords": {
+    "message": "usd eur 法定通貨 為替 レート 一時停止 ターゲット 予想"
+  },
+  "pref_currency_note": {
+    "message": "ティッカーが既に取得している為替レートで換算するため、切り替えに追加のリクエストはかかりません。別の通貨で設定した価格ターゲットや予想は、この通貨にいる間は一時停止します。失われることはなく、戻れば再開します。変化率に対するターゲットは決して停止しません。パーセントはどの通貨でも同じ意味だからです。"
+  },
+  "pref_currency_popular": {
+    "message": "よく使う"
+  },
+  "pref_currency_title": {
+    "message": "通貨"
+  },
+  "pref_group_chart": {
+    "message": "チャート"
+  },
+  "pref_group_look": {
+    "message": "見た目"
+  },
+  "pref_group_numbers": {
+    "message": "数値"
+  },
+  "pref_group_tickers": {
+    "message": "ティッカー"
+  },
+  "pref_group_under_price": {
+    "message": "価格の下"
+  },
+  "pref_group_updating": {
+    "message": "更新"
+  },
+  "pref_language_aria": {
+    "message": "言語"
+  },
+  "pref_language_auto": {
+    "message": "自動（Chrome に合わせる）"
+  },
+  "pref_language_chosen": {
+    "message": "あなたが選択。変更するとページが再読み込みされます。"
+  },
+  "pref_language_following": {
+    "message": "Chrome に合わせています — $1"
+  },
+  "pref_language_keywords": {
+    "message": "言語 ロケール 翻訳 英語 トルコ語 スペイン語 ドイツ語 フランス語 中国語 日本語 自動"
+  },
+  "pref_language_label": {
+    "message": "言語"
+  },
+  "pref_language_title": {
+    "message": "言語"
+  },
+  "pref_last_seen_aria": {
+    "message": "「前回の訪問から」行の切り替え"
+  },
+  "pref_last_seen_desc": {
+    "message": "前回タブを開いてから、そのコインがどう動いたかを表示します"
+  },
+  "pref_last_seen_heading": {
+    "message": "前回の訪問から"
+  },
+  "pref_last_seen_keywords": {
+    "message": "差分 変化 訪問 前回 端末"
+  },
+  "pref_last_seen_note": {
+    "message": "現在の価格を、前回タブを開いたときの価格と比べます。その目印はこの端末にのみ保存されるため、新しいブラウザでは数え直しになります。"
+  },
+  "pref_last_seen_title": {
+    "message": "前回の訪問から"
+  },
+  "pref_market_stats_aria": {
+    "message": "マーケット指標の切り替え"
+  },
+  "pref_market_stats_desc": {
+    "message": "価格の下に、期間の高値・安値、時価総額、24時間出来高を表示します"
+  },
+  "pref_market_stats_heading": {
+    "message": "マーケット指標"
+  },
+  "pref_market_stats_keywords": {
+    "message": "指標 高値 安値 時価総額 出来高 期間 無料"
+  },
+  "pref_market_stats_note": {
+    "message": "無料です。高値と安値は既に画面にある系列から読み取り、時価総額と出来高はティッカーのデータと一緒に届きます。この行のために追加取得は行いません。"
+  },
+  "pref_market_stats_title": {
+    "message": "マーケット指標"
+  },
+  "pref_modes": {
+    "message": "モード"
+  },
+  "pref_modes_own": {
+    "message": "あなた自身の設定です。モードは下の設定を十数個まとめて変更しますが、通貨・数値の形式・テーマは常にあなたのままです。"
+  },
+  "pref_move_headlines_aria": {
+    "message": "変動時の見出しの切り替え"
+  },
+  "pref_move_headlines_desc": {
+    "message": "コインが異常な値動きをしたとき、同じ時間帯にそのコインに言及した見出しを表示します。ティッカーと同じニュースフィードを使います"
+  },
+  "pref_move_headlines_heading": {
+    "message": "変動時の見出し"
+  },
+  "pref_move_headlines_keywords": {
+    "message": "ニュース 見出し 大きな変動 文脈 異常 ソース"
+  },
+  "pref_move_headlines_note": {
+    "message": "「異常」は今見ている期間を基準に測るため、2% の一日は1時間チャートでは該当し、年チャートでは該当しません。コイン名を挙げた記事だけが対象で、ラベルは出所を示すだけで、値動きを説明するとは主張しません。"
+  },
+  "pref_move_headlines_title": {
+    "message": "変動時の見出し"
+  },
+  "pref_move_news_aria": {
+    "message": "「ここで何があったか」の切り替え"
+  },
+  "pref_move_news_desc": {
+    "message": "表示中の期間にとって異常な値動きをした瞬間に印を付けます。印をクリックすると、その日前後に公開された見出しが出ます"
+  },
+  "pref_move_news_heading": {
+    "message": "ここで何があったか"
+  },
+  "pref_move_news_keywords": {
+    "message": "ニュース 見出し 変動 急騰 急落 なぜ 履歴 アーカイブ 出来事"
+  },
+  "pref_move_news_note": {
+    "message": "印そのものは無料です。位置は既に画面にある系列から計算します。開いたときだけ取得が発生し、結果はキャッシュされるので同じ瞬間は次から無料です。言えないのは理由です。値動きの日の見出しは「何が書かれていたか」であって原因ではなく、カードもそう明記します。グリッドと同様、2つのコインがチャートを共有している間はオフになります。"
+  },
+  "pref_move_news_title": {
+    "message": "ここで何があったか"
+  },
+  "pref_news_headlines": {
+    "message": "ニュース見出し"
+  },
+  "pref_number_format_aria": {
+    "message": "小数点以下の桁数"
+  },
+  "pref_number_format_aria_2": {
+    "message": "数値の形式"
+  },
+  "pref_number_format_keywords": {
+    "message": "小数 区切り 桁 形式"
+  },
+  "pref_number_format_label": {
+    "message": "小数点以下の桁数"
+  },
+  "pref_number_format_label_2": {
+    "message": "数値の形式"
+  },
+  "pref_number_format_title": {
+    "message": "数値の形式"
+  },
+  "pref_page_ticker_aria": {
+    "message": "価格ティッカーの切り替え"
+  },
+  "pref_page_ticker_aria_2": {
+    "message": "価格ティッカーの位置"
+  },
+  "pref_page_ticker_aria_3": {
+    "message": "見出し行の切り替え"
+  },
+  "pref_page_ticker_aria_4": {
+    "message": "見出し行に載せる内容"
+  },
+  "pref_page_ticker_desc": {
+    "message": "ページを流れる価格ティッカー（上部または下部）"
+  },
+  "pref_page_ticker_heading": {
+    "message": "価格ティッカー"
+  },
+  "pref_page_ticker_keywords": {
+    "message": "スクロール バー ニュース 見出し 位置 全コイン フィルター 自分のコイン ポートフォリオ"
+  },
+  "pref_page_ticker_news_desc": {
+    "message": "見出しは公開フィード（Hacker News、Bitcoin.com と3つの金融ニュースルーム、加えてニュースパネルで許可したもの）から取得します。クリックすると新しいタブで記事が開きます。"
+  },
+  "pref_page_ticker_note": {
+    "message": "リストにあるものだけでなく、PriceTab が対応する全コインを表示します。1回のリクエストで全部まかなえます。その下の見出し行は「変動時の見出し」と同じフィードを使います。"
+  },
+  "pref_page_ticker_position": {
+    "message": "位置"
+  },
+  "pref_page_ticker_scope_desc": {
+    "message": "記事がそのコイン（ティッカーまたは正式名称）に言及していれば「あなたの」記事として数えます。動きの少ない週は、他のもので埋める代わりに行を空のままにします。"
+  },
+  "pref_page_ticker_title": {
+    "message": "価格ティッカー"
+  },
+  "pref_position_bottom": {
+    "message": "下"
+  },
+  "pref_position_top": {
+    "message": "上"
+  },
+  "pref_quiet_chrome_aria": {
+    "message": "控えめなコントロールの切り替え"
+  },
+  "pref_quiet_chrome_desc": {
+    "message": "隅のボタンをほとんど見えない状態で休ませ、指し示すと戻ってくるようにします。何も隠さず、何も動作しなくなりません。キー操作はこれまで通りです"
+  },
+  "pref_quiet_chrome_heading": {
+    "message": "控えめなコントロール"
+  },
+  "pref_quiet_chrome_keywords": {
+    "message": "控えめ 最小 フェード 非表示 隅 ボタン 不透明度 キーボード フォーカス"
+  },
+  "pref_quiet_chrome_note": {
+    "message": "歯車は5つの中で最も明るく休みます。この設定に戻る道だからです。ポインタを合わせたときとキーボードフォーカス時にはすべて完全な濃さに戻り、ショートカットは見た目に関わらず動作します。"
+  },
+  "pref_quiet_chrome_title": {
+    "message": "控えめなコントロール"
+  },
+  "pref_rate": {
+    "message": "PriceTab を評価する"
+  },
+  "pref_rate_hint": {
+    "message": "Chrome ウェブストアのページを新しいタブで開く"
+  },
+  "pref_refresh_about": {
+    "message": "更新間隔について"
+  },
+  "pref_refresh_interval_aria_2": {
+    "message": "更新間隔"
+  },
+  "pref_refresh_interval_keywords": {
+    "message": "更新 ポーリング 秒 頻度 非表示 バックグラウンド コスト"
+  },
+  "pref_refresh_interval_note": {
+    "message": "チャートが新しい価格を要求する頻度です。非表示のタブはまったく問い合わせず、見たときに追いつくので、あなたが別の場所にいる間は短い間隔でもコストはかかりません。"
+  },
+  "pref_refresh_interval_title": {
+    "message": "更新間隔"
+  },
+  "pref_replay_hint": {
+    "message": "初回ツアーをもう一度実行"
+  },
+  "pref_replay_tour": {
+    "message": "ツアーを再表示"
+  },
+  "pref_rotate_every": {
+    "message": "切り替え間隔"
+  },
+  "pref_search": {
+    "message": "設定を検索…"
+  },
+  "pref_search_label": {
+    "message": "設定を検索"
+  },
+  "pref_show": {
+    "message": "表示"
+  },
+  "pref_show_shortcuts": {
+    "message": "キーボードショートカットを表示"
+  },
+  "pref_tab_ticker_aria": {
+    "message": "タブのティッカーの切り替え"
+  },
+  "pref_tab_ticker_aria_2": {
+    "message": "タブのティッカーの形式"
+  },
+  "pref_tab_ticker_desc": {
+    "message": "ブラウザタブのタイトルにライブ価格を表示します"
+  },
+  "pref_tab_ticker_format": {
+    "message": "タイトルの形式"
+  },
+  "pref_tab_ticker_heading": {
+    "message": "ブラウザタブのタイトル"
+  },
+  "pref_tab_ticker_keywords": {
+    "message": "ブラウザ タブ タイトル 価格 帯 非表示"
+  },
+  "pref_tab_ticker_note": {
+    "message": "ブラウザタブのタイトルに書き込むため、ページが隠れていてもタブバーから価格を読めます。タイトルは共有されます。到達した価格ターゲットは通知の間タイトルを引き取り、その後返します。"
+  },
+  "pref_tab_ticker_title": {
+    "message": "タブのティッカー"
+  },
+  "pref_theme_auto": {
+    "message": "自動"
+  },
+  "pref_theme_dark": {
+    "message": "ダーク"
+  },
+  "pref_theme_heading": {
+    "message": "テーマ"
+  },
+  "pref_theme_keywords": {
+    "message": "ダーク ライト 自動 システム 色"
+  },
+  "pref_theme_light": {
+    "message": "ライト"
+  },
+  "pref_theme_title": {
+    "message": "テーマ"
+  },
+  "pref_theme_using": {
+    "message": "$1 モードを使用中"
+  },
+  "pref_theme_using_auto": {
+    "message": "$1 モードを使用中（システム設定）"
+  },
+  "pref_volume_bars_aria": {
+    "message": "出来高バーの切り替え"
+  },
+  "pref_volume_bars_desc": {
+    "message": "取引された出来高をチャート下部の帯として表示します"
+  },
+  "pref_volume_bars_heading": {
+    "message": "出来高バー"
+  },
+  "pref_volume_bars_keywords": {
+    "message": "出来高 帯 バー 取引 活動"
+  },
+  "pref_volume_bars_title": {
+    "message": "出来高バー"
+  },
+  "qs_compare_label": {
+    "message": "コインと比較"
+  },
+  "qs_compare_with": {
+    "message": "$1 と比較…"
+  },
+  "qs_jump_label": {
+    "message": "コインへ移動"
+  },
+  "qs_jump_placeholder": {
+    "message": "コインへ移動…"
+  },
+  "qs_no_match": {
+    "message": "一致するコインはありません。"
+  },
+  "sc_base_rates": {
+    "message": "ベースレート — このコインが過去に何度ここにいたか"
+  },
+  "sc_board_zoom": {
+    "message": "ボードの範囲：ズームアウト / イン（予想オン時）"
+  },
+  "sc_calls": {
+    "message": "予想のオン / オフ"
+  },
+  "sc_calls_panel": {
+    "message": "予想 — ボード、記録、設定"
+  },
+  "sc_chart_type": {
+    "message": "ライン / ローソク足"
+  },
+  "sc_close_open": {
+    "message": "開いているものを閉じる"
+  },
+  "sc_compare": {
+    "message": "2つ目のコインと比較"
+  },
+  "sc_grid": {
+    "message": "チャートの価格 / 時間グリッド"
+  },
+  "sc_group_anywhere": {
+    "message": "どこでも"
+  },
+  "sc_group_chart": {
+    "message": "チャート"
+  },
+  "sc_group_open": {
+    "message": "開く"
+  },
+  "sc_group_view": {
+    "message": "表示"
+  },
+  "sc_jump": {
+    "message": "名前でコインへ移動"
+  },
+  "sc_news_panel": {
+    "message": "ニュース — 全ソース、絞り込みと日付つき"
+  },
+  "sc_note": {
+    "message": "入力欄に文字を打っている間、ショートカットは一時停止します。閉じるにはもう一度 ? か Esc を押してください。"
+  },
+  "sc_percent": {
+    "message": "変化率 / 価格変化"
+  },
+  "sc_prev_next_coin": {
+    "message": "前 / 次のコイン"
+  },
+  "sc_refresh": {
+    "message": "今すぐ更新"
+  },
+  "sc_rotate": {
+    "message": "自動切り替えのオン / オフ"
+  },
+  "sc_switch_range": {
+    "message": "期間を切り替え（1H〜ALL）"
+  },
+  "sc_theme": {
+    "message": "ダーク / ライトテーマ"
+  },
+  "sc_this_list": {
+    "message": "このリスト"
+  },
+  "sc_title": {
+    "message": "キーボードショートカット"
+  },
+  "sc_widgets": {
+    "message": "ウィジェットの表示 / 非表示"
+  },
+  "secs_10": {
+    "message": "10秒"
+  },
+  "secs_30": {
+    "message": "30秒"
+  },
+  "sep_auto": {
+    "message": "自動（言語に合わせる）"
+  },
+  "sep_eu": {
+    "message": "欧州式 (1.234,56)"
+  },
+  "sep_space": {
+    "message": "スペース区切り (1 234.56)"
+  },
+  "sep_us": {
+    "message": "米国式 (1,234.56)"
+  },
+  "set_add_coin": {
+    "message": "コインを追加"
+  },
+  "set_add_failed": {
+    "message": "コインを追加できませんでした"
+  },
+  "set_already_listed": {
+    "message": "そのシンボルはすでにあります"
+  },
+  "set_bundle_holder": {
+    "message": "ホルダー"
+  },
+  "set_bundle_minimal": {
+    "message": "ミニマル"
+  },
+  "set_bundle_trader": {
+    "message": "トレーダー"
+  },
+  "set_bundles": {
+    "message": "セット"
+  },
+  "set_coins_help": {
+    "message": "検索してコインを追加。チップをドラッグで並べ替え、×で削除。"
+  },
+  "set_coins_reset": {
+    "message": "コインをリセットしました"
+  },
+  "set_coins_restored": {
+    "message": "前のコインを復元しました"
+  },
+  "set_drag_hint": {
+    "message": "ドラッグで並べ替え"
+  },
+  "set_keep_one_coin": {
+    "message": "少なくとも1つのコインを残してください"
+  },
+  "set_max_coins": {
+    "message": "最大 $1 コインまで"
+  },
+  "set_no_coins": {
+    "message": "コインがまだありません"
+  },
+  "set_not_recognized": {
+    "message": "$1 は認識できません"
+  },
+  "set_quick_add": {
+    "message": "クイック追加"
+  },
+  "set_rate": {
+    "message": "評価する"
+  },
+  "set_rate_dismiss": {
+    "message": "評価のお願いを閉じる"
+  },
+  "set_remove_coin": {
+    "message": "$1 を削除"
+  },
+  "set_reset_defaults": {
+    "message": "初期状態に戻す"
+  },
+  "set_search_placeholder": {
+    "message": "名前かシンボルで検索"
+  },
+  "set_selected": {
+    "message": "選択中"
+  },
+  "set_show_widgets": {
+    "message": "チャートの下にデータウィジェットを表示"
+  },
+  "set_size": {
+    "message": "サイズ"
+  },
+  "set_size_note": {
+    "message": " — すべてのウィジェットに適用"
+  },
+  "set_sort": {
+    "message": "並べ替え"
+  },
+  "set_sort_az_hint": {
+    "message": "リストをアルファベット順に"
+  },
+  "set_sort_cap": {
+    "message": "時価総額"
+  },
+  "set_sort_cap_hint": {
+    "message": "時価総額の大きい順"
+  },
+  "set_sort_cap_wait": {
+    "message": "市場データを待っています"
+  },
+  "set_sort_move": {
+    "message": "24時間の変動"
+  },
+  "set_sort_move_hint": {
+    "message": "24時間の変動が大きい順"
+  },
+  "set_sort_move_wait": {
+    "message": "本日の価格を待っています"
+  },
+  "set_sorted_az": {
+    "message": "A〜Z順に並べ替え"
+  },
+  "set_sorted_cap": {
+    "message": "時価総額順に並べ替え"
+  },
+  "set_sorted_move": {
+    "message": "本日の変動順に並べ替え"
+  },
+  "set_symbol": {
+    "message": "シンボル"
+  },
+  "set_symbol_empty": {
+    "message": "先にシンボルを入力してください"
+  },
+  "set_symbol_shape": {
+    "message": "2〜10文字の英数字のみ"
+  },
+  "set_tab_coins": {
+    "message": "コイン"
+  },
+  "set_tab_preferences": {
+    "message": "環境設定"
+  },
+  "set_tab_widgets": {
+    "message": "ウィジェット"
+  },
+  "set_toggle_widget": {
+    "message": "$1 ウィジェットの表示切り替え"
+  },
+  "set_undo": {
+    "message": "元に戻す"
+  },
+  "sort_az": {
+    "message": "A–Z"
+  },
+  "stats_high": {
+    "message": "高値"
+  },
+  "stats_low": {
+    "message": "安値"
+  },
+  "stats_mkt_cap": {
+    "message": "時価総額"
+  },
+  "stats_vol_24h": {
+    "message": "24時間出来高"
+  },
+  "ticker_compact": {
+    "message": "短縮 (43.2K)"
+  },
+  "ticker_full": {
+    "message": "詳細 (43,250)"
+  },
+  "toggle_off": {
+    "message": "オフ"
+  },
+  "toggle_on": {
+    "message": "オン"
+  },
+  "tour_back": {
+    "message": "戻る"
+  },
+  "tour_chapter_calling_a_square": {
+    "message": "マスを予想する"
+  },
+  "tour_chapter_making_it_yours": {
+    "message": "自分好みに"
+  },
+  "tour_chapter_reading_the_market": {
+    "message": "市場を読む"
+  },
+  "tour_chapter_start_here": {
+    "message": "はじめに"
+  },
+  "tour_chapter_the_chart": {
+    "message": "チャート"
+  },
+  "tour_chapter_your_money": {
+    "message": "あなたのお金"
+  },
+  "tour_done": {
+    "message": "完了"
+  },
+  "tour_key_rotate": {
+    "message": "コインを順に切り替え"
+  },
+  "tour_keys_intro": {
+    "message": "いつでも ? を押すと全一覧が出ます。まず知っておくと便利なもの:"
+  },
+  "tour_next": {
+    "message": "次へ"
+  },
+  "tour_skip": {
+    "message": "ツアーをスキップ"
+  },
+  "tour_text_01": {
+    "message": "新しいタブを開くたびにライブの暗号資産チャート。何も要求しません — アカウント不要、権限不要、あなたに関する情報がこの端末を出ることもありません。このツアーは5章・全20ステップの短いものです。いつでもスキップでき、設定 → 環境設定から再生できます。"
+  },
+  "tour_text_02": {
+    "message": "選択中のコインとそのライブ価格。タブが開いている間は更新され、閉じている間は停止します。クリックするか矢印キーで、コインリストを移動できます。"
+  },
+  "tour_text_03": {
+    "message": "表示中の期間で価格がどう動いたか — 固定の24時間ではありません。クリックすると割合と金額を切り替えられます。"
+  },
+  "tour_text_04": {
+    "message": "直近1時間から全期間まで。各期間は独自の設定を保持します — 1H で組んだボードは、戻ってきてもそのままです。"
+  },
+  "tour_text_05": {
+    "message": "シンボルか名前を入力します。自分のコインが上位に並び、まだ追っていないコインを選ぶと追加されます。同じ検索で価格ターゲットのコインも選べます。"
+  },
+  "tour_text_06": {
+    "message": "どちらも期間の開始からの変化率として、1つの共通スケールで描きます — 2軸は決して使いません。任意の2本の線を関係あるように見せるのがその手口だからです。もう一度 C か Esc で解除します。"
+  },
+  "tour_text_07": {
+    "message": "T でラインをローソク足に切り替えます。G はチャートの背後に価格と時間のメッシュを敷き、水準を読み取れるようにします。価格の下には期間の高値と安値、そしてローソク足データが既に読み込まれている場合は出来高加重平均価格が並びます — そのためだけに取得することはありません。"
+  },
+  "tour_text_08": {
+    "message": "既定ではオフで、設定 → チャートにあります。そのコインにとって異常な値動きをした瞬間に印を付けます — そのコイン自身のボラティリティを基準にするため、静かなステーブルコインでも荒いコインでも適切です — クリックするとその日前後の見出しが出ます。それが原因だとは決して主張しません。誰にも分からないからです。"
+  },
+  "tour_text_09": {
+    "message": "予想とは主張です。このコインが、この価格帯に、この時刻に。後で開いたタブで自動的に判定され、あなたの記録に残ります。価値のあるスコアはなく、何の価値もなく、端末の外に出るものもありません — 自分が本当に当てられるのかを知るための仕組みです。"
+  },
+  "tour_text_10": {
+    "message": "予想をオンにすると、チャートの「現在」より右にマスのボードが現れます。マスにカーソルを合わせ、1回目のクリックで下書き、2回目で確定 — 2回にしているのは、うっかりの1クリックで予想を確定させないためです。点線をドラッグすると履歴とボードを配分でき、右上のピルで1マスの価値を変えられます。"
+  },
+  "tour_text_11": {
+    "message": "予想パネルの「表示」に移動幅バンドがあります。1マス分の時間でこのコインが実際に動いた距離 — 中央半分と中央80% — を陰影で示します。これは意図的に予測ではありません。描く前に数値から方向を取り除くので、一週間ずっと上げたコインでもどちらにも傾かないバンドになります。答えるのは、そのマスがほぼ確実か、それとも遠い賭けかであり、コインごとに違う問いです。"
+  },
+  "tour_text_12": {
+    "message": "金額は自分で入力します。取得原価と損益が必要なら購入と売却も記録できます。FIFO・LIFO・HIFO は報告方法であって税額計算ではなく、レポートには行ごとに使った方法が書かれます。すべてこの端末に保存され、接続するウォレットはありません。"
+  },
+  "tour_text_13": {
+    "message": "Bitcoin、Ethereum、Litecoin、Dogecoin、Bitcoin Cash、Zcash の公開アドレスを貼り付ければ残高を読み取ります — Ethereum アドレスが保有する ERC-20 トークンも、1回のリクエストで含めて。アドレスは残高サービスにのみ送られ、読み取れないチェーンの場合は「どのチェーンか」を伝えます。正しいアドレスを疑わせることはしません。"
+  },
+  "tour_text_14": {
+    "message": "「BTC がこの数値を超えたら」「1日で5%動いたら」「保有全体が X を下回ったら」教えて、と設定できます。次に新しいタブを開いたときに知らされ、夜間に達成された場合も見つかります。チェックは1週間さかのぼるからです。通知が押し付けられることはなく、だからこの拡張は権限なしでいられます。"
+  },
+  "tour_text_15": {
+    "message": "すべての見出しに出典・経過時間・要約が付き、新しい順に並びます。コイン別・ソース別・入力での絞り込みが可能です。更新が止まったソースは自身の経過時間を赤で示します — 生きているように見える死んだフィードこそ、これを作った理由です。広告はラベルを付けるのではなく除外します。"
+  },
+  "tour_text_16": {
+    "message": "このコインの日足終値を何年分も読み込み、ある状態にあったそれぞれの後に何が起きたかを数えます。すべての数値は「何件に基づくか」を伴い、その件数が少なければ結論を出すことを拒みます。買え・売れとは決して言いません — 21,669本の日足終値で検証した教科書的な9つのルールは、正しい補正を通ったものを一つも残しませんでした。それを言うほうが矢印より役に立ちます。"
+  },
+  "tour_text_17": {
+    "message": "ウォッチリスト、恐怖と強欲、ファンディング、建玉、ネットワーク手数料、期間内の最大下落など。設定 → ウィジェットで有効にできます（すぐ使えるセットもあります）。並べ替えはドラッグ、カードを隠すにはカードにカーソルを合わせて × を押します。"
+  },
+  "tour_text_18": {
+    "message": "すべてのウィジェットを一度に片付け、まとめて戻します。オフにはならないので、並べたとおりに戻ってきます。"
+  },
+  "tour_text_19": {
+    "message": "コイン、通貨、テーマ、ウィジェット、ティッカー。環境設定の上部には検索があります。モードの行はそれらを十数個まとめて設定します（ミニマル／高速／トレーダー／ホルダー）が、通貨・数値の形式・テーマには決して触れません。"
+  },
+  "tour_title_change": {
+    "message": "変化"
+  },
+  "tour_title_clear_the_row": {
+    "message": "列を空にする"
+  },
+  "tour_title_compare_two_coins": {
+    "message": "2つのコインを比較"
+  },
+  "tour_title_everything_else_lives_here": {
+    "message": "その他はすべてここに"
+  },
+  "tour_title_has_this_happened_before": {
+    "message": "これは過去にもあったか"
+  },
+  "tour_title_how_far_it_usually_travels": {
+    "message": "普段どれくらい動くか"
+  },
+  "tour_title_it_is_faster_from_the_keyboard": {
+    "message": "キーボードのほうが速い"
+  },
+  "tour_title_jump_to_any_coin": {
+    "message": "任意のコインへ移動"
+  },
+  "tour_title_live_price": {
+    "message": "ライブ価格"
+  },
+  "tour_title_news": {
+    "message": "ニュース"
+  },
+  "tour_title_or_watch_an_address": {
+    "message": "またはアドレスを見張る"
+  },
+  "tour_title_portfolio": {
+    "message": "ポートフォリオ"
+  },
+  "tour_title_price_targets": {
+    "message": "価格ターゲット"
+  },
+  "tour_title_say_where_you_think_it_goes": {
+    "message": "どこへ行くと思うか言う"
+  },
+  "tour_title_the_board": {
+    "message": "ボード"
+  },
+  "tour_title_time_range": {
+    "message": "期間"
+  },
+  "tour_title_two_more_ways_to_read_it": {
+    "message": "もう2つの読み方"
+  },
+  "tour_title_welcome_to_pricetab": {
+    "message": "PriceTab へようこそ"
+  },
+  "tour_title_what_happened_here": {
+    "message": "ここで何があったか"
+  },
+  "tour_title_widgets": {
+    "message": "ウィジェット"
+  },
+  "wdesc_altcoin_season": {
+    "message": "アルトコインはビットコインを上回っているか"
+  },
+  "wdesc_btc_fees": {
+    "message": "現在の手数料と、一般的な141 vB送金の費用"
+  },
+  "wdesc_eth_gas": {
+    "message": "現在のガス価格と、単純なETH送金の費用"
+  },
+  "wdesc_fear_greed": {
+    "message": "市場心理を0〜100で表した指数"
+  },
+  "wdesc_funding_rate": {
+    "message": "無期限先物でロングがショートに支払う額"
+  },
+  "wdesc_halving_countdown": {
+    "message": "次のビットコイン半減期までの時間"
+  },
+  "wdesc_liquidations": {
+    "message": "過去24時間の強制決済"
+  },
+  "wdesc_long_short_ratio": {
+    "message": "今トレーダーがどちらに寄っているか"
+  },
+  "wdesc_market_overview": {
+    "message": "時価総額の合計とBTC/ETHのドミナンス"
+  },
+  "wdesc_open_interest": {
+    "message": "未決済の先物契約の総額"
+  },
+  "wdesc_rsi_widget": {
+    "message": "表示中の期間における0〜100のモメンタム"
+  },
+  "wdesc_top_movers": {
+    "message": "本日の上昇・下落トップ"
+  },
+  "wdesc_watchlist": {
+    "message": "保有コインを24時間の色分けグリッドで"
+  },
+  "wdesc_worst_fall": {
+    "message": "表示中の期間で最も深い高値から安値への下落"
+  },
+  "wgroup_market": {
+    "message": "マーケット"
+  },
+  "wgroup_network": {
+    "message": "ネットワーク"
+  },
+  "wgroup_portfolio": {
+    "message": "ポートフォリオ"
+  },
+  "wgroup_trader": {
+    "message": "トレード"
+  },
+  "widget_about_30_min": {
+    "message": "約30分"
+  },
+  "widget_altcoin_season": {
+    "message": "アルトコインシーズン"
+  },
+  "widget_annualized": {
+    "message": "年率 $1%"
+  },
+  "widget_btc_dom": {
+    "message": "BTCドミナンス $1%"
+  },
+  "widget_btc_fees": {
+    "message": "BTC手数料"
+  },
+  "widget_btc_halving": {
+    "message": "BTC半減期"
+  },
+  "widget_eta": {
+    "message": "予定: $1"
+  },
+  "widget_eth_gas": {
+    "message": "ETHガス"
+  },
+  "widget_fear_greed": {
+    "message": "恐怖と強欲"
+  },
+  "widget_fee_fast": {
+    "message": "最速"
+  },
+  "widget_fee_hour": {
+    "message": "1時間"
+  },
+  "widget_fee_to_send": {
+    "message": "送金 約$1 · $2"
+  },
+  "widget_from_to": {
+    "message": "$1〜$2"
+  },
+  "widget_funding_rate": {
+    "message": "$1 ファンディングレート"
+  },
+  "widget_hide_all": {
+    "message": "すべてのウィジェットを隠す"
+  },
+  "widget_hide_one": {
+    "message": "$1 を隠す"
+  },
+  "widget_liquidations": {
+    "message": "$1 清算 24時間"
+  },
+  "widget_loading": {
+    "message": "読み込み中"
+  },
+  "widget_long_short": {
+    "message": "$1 ロング / ショート"
+  },
+  "widget_market_cap": {
+    "message": "時価総額"
+  },
+  "widget_next_block": {
+    "message": "次のブロック"
+  },
+  "widget_none": {
+    "message": "なし"
+  },
+  "widget_only_rose": {
+    "message": "この期間は上昇のみ"
+  },
+  "widget_open_interest": {
+    "message": "$1 建玉"
+  },
+  "widget_peak_to_trough": {
+    "message": "高値から安値まで"
+  },
+  "widget_rsi": {
+    "message": "$1 RSI · $2"
+  },
+  "widget_show_hidden": {
+    "message": "隠したウィジェットを表示"
+  },
+  "widget_top_movers": {
+    "message": "変動トップ 24時間"
+  },
+  "widget_under_a_cent": {
+    "message": "$1 未満"
+  },
+  "widget_unit_days": {
+    "message": "日"
+  },
+  "widget_unit_hours": {
+    "message": "時"
+  },
+  "widget_unit_minutes": {
+    "message": "分"
+  },
+  "widget_unit_years": {
+    "message": "年"
+  },
+  "widget_watchlist": {
+    "message": "ウォッチリスト"
+  },
+  "widget_worst_fall": {
+    "message": "$1 最大下落 · $2"
+  },
+  "wname_altcoin_season": {
+    "message": "アルトコインシーズン"
+  },
+  "wname_btc_fees": {
+    "message": "BTC手数料"
+  },
+  "wname_eth_gas": {
+    "message": "ETHガス"
+  },
+  "wname_fear_greed": {
+    "message": "恐怖と強欲"
+  },
+  "wname_funding_rate": {
+    "message": "ファンディングレート"
+  },
+  "wname_halving_countdown": {
+    "message": "BTC半減期カウントダウン"
+  },
+  "wname_liquidations": {
+    "message": "清算 24時間"
+  },
+  "wname_long_short_ratio": {
+    "message": "ロング/ショート比率"
+  },
+  "wname_market_overview": {
+    "message": "マーケット概況"
+  },
+  "wname_open_interest": {
+    "message": "建玉"
+  },
+  "wname_rsi_widget": {
+    "message": "RSI"
+  },
+  "wname_top_movers": {
+    "message": "変動トップ"
+  },
+  "wname_watchlist": {
+    "message": "ウォッチリスト"
+  },
+  "wname_worst_fall": {
+    "message": "最大下落"
+  },
+  "wsize_compact": {
+    "message": "コンパクト"
+  },
+  "wsize_default": {
+    "message": "標準"
+  },
+  "wsize_large": {
+    "message": "大"
+  },
+  "wsize_xlarge": {
+    "message": "特大"
+  }
+}

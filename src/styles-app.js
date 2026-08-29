@@ -196,6 +196,37 @@ const PriceStatsRow = styled.div`
   margin-top: ${({ theme }) => theme.spacing.small}rem;
   font-size: 0.7rem;
   color: ${({ theme }) => theme.color.textSecondary};
+  /* The row's height, held whether or not there is anything in it yet.
+   *
+   * The stats need a series, so on the first frame there is nothing to print
+   * and the row is not rendered at all — then the prices land and everything
+   * below it drops. Measured with a layout-shift observer: **the range
+   * switcher moved 27px at 64ms, and that single shift was 0.0138 of a total
+   * CLS of 0.0173** — eighty per cent of every shift this page makes, in the
+   * first tenth of a second, and the one a person actually sees because the
+   * chart is what they are looking at.
+   *
+   * One line of this type is 1.2rem; the row is one line until it wraps.
+   * Reserving it costs nothing when the stats are on and is the honest thing
+   * when they are: the space belongs to them either way. */
+  min-height: 1.2rem;
+`;
+
+/* Each stat arrives on its own schedule — the range comes off the series as
+ * soon as the chart has one, the market cap and 24h volume ride in with the
+ * ticker's bulk sweep a moment later, and VWAP only when candles happen to be
+ * loaded. The row's height is already reserved (see `PriceStatsRow`), so what
+ * is left is the pop: figures appearing mid-sentence in a row that is already
+ * there. They fade up instead.
+ *
+ * It plays **once per element, on mount**, which is exactly the event worth
+ * marking: React keeps the same node when a value merely changes, so a price
+ * refresh does not re-run it and the row does not flicker every thirty
+ * seconds. Opacity and transform only — this is the new-tab page, and those
+ * two are the properties that never cost a layout. */
+const priceStatIn = keyframes`
+  from { opacity: 0; transform: translateY(3px); }
+  to   { opacity: 1; transform: translateY(0); }
 `;
 
 const PriceStatItem = styled.span`
@@ -203,6 +234,18 @@ const PriceStatItem = styled.span`
   align-items: baseline;
   gap: 0.35rem;
   white-space: nowrap;
+  /* The fill mode is backwards, not both. Both holds the end state after it
+     finishes, which keeps it in the page's animation list for good — measured
+     as two finished entries still sitting there at idle. It costs no frames,
+     but the rule this project holds itself to is that a settled tab has
+     nothing animating, and a list that never empties makes that impossible to
+     check. Backwards holds the from-state before it starts, which is the half
+     that was actually wanted. (No backticks here: template literal.) */
+  animation: ${priceStatIn} 260ms ease-out backwards;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
 `;
 
 const PriceStatKey = styled.span`
@@ -1158,10 +1201,20 @@ const MoveCardNote = styled.div`
 
 /* News, one slot further left than calls. Same corner family as the other
  * four: same travel, same resting weight, same × when it is the panel that is
- * open. No unread dot — the calls button has one because a call settling is
- * something that happened to you, while headlines are something you go and
- * read, and a permanently-lit dot on a feed that never stops is just a mark
- * that means "the world still exists". */
+ * open.
+ *
+ * **The dot is narrower than the calls one, deliberately.** This comment used
+ * to say there would be no dot at all, and the reason it gave still stands:
+ * headlines are something you go and read, and a mark that lights whenever
+ * anything has been published is a mark that means "the world still exists" —
+ * it is lit permanently, so it says nothing and teaches you to ignore it.
+ * What changed is not the rule but what the dot is asked to report. It lights
+ * only for a headline about **a coin you are tracking**, published since you
+ * last opened the panel, which is a fact about you rather than about the
+ * world, and it goes dark most of the time. That is the same test the calls
+ * dot passes — a call settling is something that happened to you — so this
+ * satisfies the objection rather than overruling it. If it is ever widened to
+ * "any headline", it should be deleted instead. */
 const NewsToggleButton = styled.button.attrs({ type: "button" })`
   position: absolute;
   top: ${({ theme, tickerTop }) =>
@@ -1207,6 +1260,22 @@ const NewsToggleButton = styled.button.attrs({ type: "button" })`
   &:focus {
     outline: none;
     animation: ${settingsPulse} 1s ease;
+  }
+
+
+  /* The same mark the calls button carries, in the same place and the same
+     ink: two dots in one corner meaning "look at this" should not be two
+     different drawings. What differs is only what lights it — see above. */
+  &::after {
+    content: "";
+    display: ${({ hasFired }) => (hasFired ? "block" : "none")};
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 0.4rem;
+    height: 0.4rem;
+    border-radius: 50%;
+    background: ${({ theme }) => theme.color.chartLineGreen};
   }
 
 

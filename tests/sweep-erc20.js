@@ -7,7 +7,7 @@
 //
 //   node tests/sweep-erc20.js
 //
-// Why it exists. CLAUDE.md's rule is that a token is identified by its
+// Why it exists. The codebase guide's rule is that a token is identified by its
 // contract address and never by its symbol — anyone can deploy a contract
 // calling itself USDC — and the way that rule was enforced was "the person
 // adding the entry checks by hand". That is how a candidate quoted as TON got

@@ -200,7 +200,7 @@ const PERIOD_OPTIONS = [
   { value: "week", label: "1W", title: "1 Week" },
   { value: "month", label: "1M", title: "1 Month" },
   { value: "year", label: "1Y", title: "1 Year" },
-  { value: "all", label: "ALL", title: "All Time" },
+  { value: "all", label: "ALL", title: msg("period_all", "All Time") },
 ];
 
 /* Backing off a provider that keeps refusing. Doubling from the refresh
@@ -212,25 +212,40 @@ const FETCH_BACKOFF_STEPS = 5;
 const FETCH_BACKOFF_MAX_MS = 300000; // 5 minutes
 
 const REFRESH_INTERVAL_OPTIONS = [
-  { value: 10000, label: "10 seconds" },
-  { value: 30000, label: "30 seconds" },
-  { value: 60000, label: "1 minute" },
-  { value: 300000, label: "5 minutes" },
+  { value: 10000, label: msg("secs_10", "10 seconds") },
+  { value: 30000, label: msg("secs_30", "30 seconds") },
+  { value: 60000, label: msg("mins_1", "1 minute") },
+  { value: 300000, label: msg("mins_5", "5 minutes") },
 ];
 
 const DEFAULT_REFRESH_INTERVAL = 30000; // 30 seconds
 
 const DECIMAL_PLACES_OPTIONS = [
-  { value: 2, label: "2 decimals (e.g. $1,234.56)" },
-  { value: 4, label: "4 decimals (e.g. $1,234.5678)" },
-  { value: 6, label: "6 decimals (e.g. $0.001234)" },
-  { value: 8, label: "8 decimals (e.g. $0.00001234)" },
+  { value: 2, label: msg("dec_2", "2 decimals (e.g. 1,234.56)") },
+  { value: 4, label: msg("dec_4", "4 decimals (e.g. 1,234.5678)") },
+  { value: 6, label: msg("dec_6", "6 decimals (e.g. 0.001234)") },
+  { value: 8, label: msg("dec_8", "8 decimals (e.g. 0.00001234)") },
 ];
 
+/* The examples carry no currency symbol, and that is not a style choice.
+ *
+ * `msg()` and `chrome.i18n.getMessage` both read `$1` as a placeholder, so
+ * "e.g. $1,234.56" is a sample that the localisation layer eats — Chrome would
+ * substitute or strip the `$1` and print "e.g. ,234.56". `tests/test-i18n.js`
+ * caught it by comparing placeholders between English and each translation.
+ * A bare number is also the more honest sample here: this setting governs the
+ * separators, not the currency, which has a setting of its own. */
 const SEPARATOR_FORMAT_OPTIONS = [
-  { value: "us", label: "US Format (1,234.56)" },
-  { value: "eu", label: "EU Format (1.234,56)" },
-  { value: "space", label: "Space Format (1 234.56)" },
+  /* Auto is first and is the default, and it means what the theme's Auto
+   * means: follow the browser. `localeSeparatorFormat()` asks `Intl` what the
+   * active locale actually writes rather than guessing from a country list —
+   * a space-grouped locale (French, Russian) is a real third case and one of
+   * the three styles offered here. Before this, every install outside the US
+   * read `1,234.56` until somebody found this setting. */
+  { value: "auto", label: msg("sep_auto", "Auto (match your language)") },
+  { value: "us", label: msg("sep_us", "US Format (1,234.56)") },
+  { value: "eu", label: msg("sep_eu", "EU Format (1.234,56)") },
+  { value: "space", label: msg("sep_space", "Space Format (1 234.56)") },
 ];
 
 // Shown first in the currency dropdown for quick access
@@ -277,7 +292,7 @@ const CURRENCY_OPTIONS = [
 ];
 
 const DEFAULT_DECIMAL_PLACES = 2;
-const DEFAULT_SEPARATOR_FORMAT = "us";
+const DEFAULT_SEPARATOR_FORMAT = "auto";
 const DEFAULT_CURRENCY = "USD";
 
 // Helper to get currency symbol
@@ -289,6 +304,10 @@ const getCurrencySymbol = (currencyCode) => {
 /* LOCALSTORAGE */
 const STORAGE_KEY = "crypto_chart_coin_options";
 const THEME_STORAGE_KEY = "crypto_chart_theme";
+/* The language keys live in `src/i18n.js`, not here, and that is a load-order
+ * fact rather than a preference: this file builds translated option labels
+ * while it runs, so `i18n.js` has to have been read first — and it cannot
+ * depend on a constant defined in a file that comes after it. */
 const REFRESH_INTERVAL_STORAGE_KEY = "crypto_chart_refresh_interval";
 const DECIMAL_PLACES_STORAGE_KEY = "crypto_chart_decimal_places";
 const SEPARATOR_FORMAT_STORAGE_KEY = "crypto_chart_separator_format";
@@ -324,9 +343,9 @@ const NEWS_REFRESH_MS = 600000; // 10 minutes
 const NEWS_FILTER_KEY = "crypto_chart_news_filter";
 const DEFAULT_NEWS_FILTER = "all";
 const NEWS_FILTER_OPTIONS = [
-  { value: "all", label: "Everything" },
-  { value: "coins", label: "My coins" },
-  { value: "portfolio", label: "What I hold" },
+  { value: "all", label: msg("news_scope_all", "Everything") },
+  { value: "coins", label: msg("news_scope_mine", "My coins") },
+  { value: "portfolio", label: msg("news_scope_held", "What I hold") },
 ];
 const MAX_NEWS_ITEMS = 50;
 
@@ -448,7 +467,9 @@ const NEWS_SOURCES = [
    * fresh install on Hacker News alone — discussion, not reporting. These are
    * three financial newsrooms, dated, and they cost nothing to add. Yields on
    * the crypto beat in one poll, measured the same day: Yahoo 11 of 50, CNBC
-   * 1 of 30, MarketWatch 1 of 10.
+   * 1 of 30, MarketWatch 1 of 10 — 13 of 90, which is why a crypto desk was
+   * still worth looking for afterwards. Bitcoin.com, below, is the one that
+   * was found.
    *
    * All three are `cryptoOnly` for the reason BBC Business is: they are
    * finance desks, not crypto desks, and an unfiltered markets feed in a
@@ -477,6 +498,44 @@ const NEWS_SOURCES = [
     url: "https://feeds.content.dowjones.io/public/rss/mw_topstories",
     optional: false,
     cryptoOnly: true,
+  },
+  /* The fourth always-on source, and the first of them that is a crypto desk.
+   *
+   * It answers `Access-Control-Allow-Origin: *` — measured 28 Aug 2026 by
+   * sending a `chrome-extension://` Origin — which is the whole reason it is
+   * here rather than in the opt-in list below. A sweep of sixteen candidates
+   * that day found exactly one: The Block, CoinDesk, Protos, BeInCrypto,
+   * Cryptonews, U.Today, Coinpedia, The Defiant and Bankless all answer 200
+   * and send no CORS header, Blockworks and Kaiko redirect to feeds that send
+   * none either, and CryptoBriefing, CoinGape and AmbCrypto answer 403 to an
+   * extension Origin outright. Its own `wp-json` is a 403 as well, so this is
+   * the RSS for the reason CryptoSlate's is.
+   *
+   * What it fixes is the fresh install. The three sources above are finance
+   * desks filtered down to whatever they happen to say about crypto — 13 of 90
+   * items in one poll — so someone who has granted nothing is reading a
+   * discussion board and the crypto column of the business pages. This is a
+   * newsroom on the beat: 10 of 10 items in one poll, roughly one story every
+   * 1.2 hours, and every one of them carries a `<description>`, so the row's
+   * summary costs nothing extra.
+   *
+   * **Not `cryptoOnly`**, unlike the three above it, because the whole feed is
+   * already the beat; narrowing it would drop its regulation and security
+   * coverage on a keyword test it has no reason to pass.
+   *
+   * It segregates its advertising and `isPromoNews` had to be taught the word.
+   * Measured on the same poll: 1 of the 10 was a paid post, filed three ways
+   * at once — a `Branded Spotlight` category, a `/branded-spotlight/` path and
+   * `Media` as the byline — and it slipped through **all three** of the
+   * existing signals, since none of them knew that word. The path and category
+   * patterns above now carry it. This is the check the house rule asks for
+   * before a source is added, and this time it came back positive. */
+  {
+    id: "bitcoincom",
+    name: "Bitcoin.com",
+    kind: "rss",
+    url: "https://news.bitcoin.com/feed/",
+    optional: false,
   },
   // Opt-in: real newsrooms, reachable only with host access
   {
@@ -509,13 +568,18 @@ const NEWS_SOURCES = [
     /* `_fields` is not a nicety: the same twenty posts are 186 KB with the
      * bodies and 4 KB without them, and nothing here renders a body.
      *
+     * `excerpt` is asked for and the body still is not: measured 23 Aug 2026,
+     * the same twenty posts are 4.5 KB without it and 9.2 KB with — twice the
+     * bytes, and still a twentieth of the unfiltered response. It buys the
+     * summary line on every row, and a second signal for `isPromoNews`.
+     *
      * `categories_exclude=39` is this outlet's own `press-releases` category.
      * Filtering server-side is the strongest form of this available: the
      * advertising is never fetched, never parsed, and never has to be
      * recognised by a rule of ours. It cost nothing — no extra request, no
      * extra bytes. (39 was empty the week this was added; the category exists
      * and will not stay empty.) */
-    url: "https://bitcoinmagazine.com/wp-json/wp/v2/posts?per_page=20&categories_exclude=39&_fields=title,link,date_gmt",
+    url: "https://bitcoinmagazine.com/wp-json/wp/v2/posts?per_page=20&categories_exclude=39&_fields=title,link,date_gmt,excerpt",
     optional: true,
   },
   {
@@ -527,7 +591,7 @@ const NEWS_SOURCES = [
      * consecutive MEXC press releases, a KuCoin piece and a prop-firm ad.
      * Verified against the live endpoint: with the exclusion, twenty posts
      * still come back and none of the three MEXC items is among them. */
-    url: "https://coinjournal.net/wp-json/wp/v2/posts?per_page=20&categories_exclude=40&_fields=title,link,date_gmt",
+    url: "https://coinjournal.net/wp-json/wp/v2/posts?per_page=20&categories_exclude=40&_fields=title,link,date_gmt,excerpt",
     optional: true,
   },
   {
@@ -591,7 +655,7 @@ const NEWS_PANEL_FILTER_KEY = "crypto_chart_news_panel_filter"; // coin scope
  * Anchored on both sides by `/` so a slug that merely contains the word — a
  * story about a company that "partners with" someone — is not a match. */
 const NEWS_PROMO_PATH_RE =
-  /\/(press-releases?|sponsored|sponsored-content|partner-content|advertorial|paid-content|paid-post)\//i;
+  /\/(press-releases?|sponsored|sponsored-content|partner-content|advertorial|paid-content|paid-post|branded-spotlight|branded-content)\//i;
 
 /* The byline gives it away too, and earlier than the path does: press releases
  * are distributed by wire services, and the wire signs them. CryptoSlate's
@@ -602,6 +666,27 @@ const NEWS_PROMO_PATH_RE =
 const NEWS_WIRE_RE =
   /(chainwire|globenewswire|businesswire|accesswire|prnewswire|pressrelease|sponsored)/i;
 
+/* The outlet's own filing, in two more places it does it.
+ *
+ * Measured 23 Aug 2026 on CryptoSlate's live feed, where the newest item was
+ * `category: Guest Post` with a summary opening "The following is a guest post
+ * and opinion from Vincent Maliepaard, VP of Marketing at Sentora." Neither
+ * signal existed here: the title ("The next phase of tokenization is utility")
+ * is unremarkable, and the byline is a person rather than a wire, so the
+ * article was reaching the panel. **Both of these arrived in bytes already
+ * being downloaded** — reading the summary onto the row is what exposed them.
+ *
+ * This is the same principle the path and the byline rules rest on: an outlet
+ * marks its own promotional material, and reading that mark beats guessing at
+ * the wording. */
+const NEWS_PROMO_CATEGORY_RE =
+  /^(guest ?post|press ?release|sponsored|advertorial|partner ?content|paid ?(post|content)|branded ?(spotlight|content))/i;
+
+/* The disclosure a guest post opens with. Anchored to the start, because a
+ * story *about* press releases is not one. */
+const NEWS_PROMO_LEAD_RE =
+  /^(the following is|this is) a (guest post|sponsored|paid|press release)|^(sponsored|press release|guest post)[\s:—-]/i;
+
 // Low-signal SEO/promo headlines — the last of the three, and the weakest
 const NEWS_SPAM_RE =
   /price (prediction|analysis)|presale|pre-sale|best (coins?|cryptos?) to buy|casino|airdrop|giveaway|sponsored/i;
@@ -610,17 +695,29 @@ const AUTO_ROTATE_INTERVAL_STORAGE_KEY = "crypto_chart_auto_rotate_interval";
 const DEFAULT_AUTO_ROTATE = false;
 const DEFAULT_AUTO_ROTATE_INTERVAL = 30000;
 const AUTO_ROTATE_OPTIONS = [
-  { value: 10000, label: "Every 10 seconds" },
-  { value: 30000, label: "Every 30 seconds" },
-  { value: 60000, label: "Every minute" },
-  { value: 300000, label: "Every 5 minutes" },
-  { value: 900000, label: "Every 15 minutes" },
+  { value: 10000, label: msg("every_10s", "Every 10 seconds") },
+  { value: 30000, label: msg("every_30s", "Every 30 seconds") },
+  { value: 60000, label: msg("every_1m", "Every minute") },
+  { value: 300000, label: msg("every_5m", "Every 5 minutes") },
+  { value: 900000, label: msg("every_15m", "Every 15 minutes") },
 ];
 const RATE_PROMPT_DISMISSED_KEY = "crypto_chart_rate_prompt_dismissed";
-// Main-screen rating ask: shown once after ~2 days of use, then never again
+/* The rating ask: **once**, a day after first use, and never again.
+ *
+ * A day rather than two because a new-tab extension is used many times a day —
+ * by the second day somebody either likes it or has uninstalled it, and asking
+ * later mostly means asking the people who already stopped noticing. What has
+ * to stay true is the *once*: both surfaces read `RATE_PROMPT_SHOWN_KEY` and
+ * both stamp it, so whichever is reached first is the only time this extension
+ * asks. `tests/test-polish-render.js` §15 holds that to exactly one ask.
+ *
+ * Never at install, which is the worst possible moment — the bar in Settings
+ * used to appear the first time it was ever opened. And dismissing it does not
+ * take the option away: Preferences carries a permanent, quiet "Rate PriceTab"
+ * link, because asking less is only honest if the door stays open. */
 const FIRST_USE_KEY = "crypto_chart_first_use";
 const RATE_PROMPT_SHOWN_KEY = "crypto_chart_rate_prompt_shown";
-const RATE_PROMPT_DELAY_MS = 2 * 24 * 60 * 60 * 1000;
+const RATE_PROMPT_DELAY_MS = 24 * 60 * 60 * 1000;
 /* PRICE PROVIDERS
  * Coinbase serves everything by default. Coins it doesn't list are routed
  * to Kraken, whose public OHLC endpoint is keyless and CORS-enabled and
@@ -707,20 +804,29 @@ const COST_METHODS = [
   {
     value: "fifo",
     label: "FIFO",
-    title: "First in, first out",
-    note: "The oldest purchase is sold first. The default nearly everywhere, and the only method some countries accept.",
+    title: msg("method_fifo", "First in, first out"),
+    note: msg(
+      "method_fifo_note",
+      "The oldest purchase is sold first. The default nearly everywhere, and the only method some countries accept.",
+    ),
   },
   {
     value: "lifo",
     label: "LIFO",
-    title: "Last in, first out",
-    note: "The newest purchase is sold first. Allowed in some places and not others — check yours.",
+    title: msg("method_lifo", "Last in, first out"),
+    note: msg(
+      "method_lifo_note",
+      "The newest purchase is sold first. Allowed in some places and not others — check yours.",
+    ),
   },
   {
     value: "hifo",
     label: "HIFO",
-    title: "Highest in, first out",
-    note: "The most expensive purchase is sold first, which reports the smallest gain. Not accepted everywhere.",
+    title: msg("method_hifo", "Highest in, first out"),
+    note: msg(
+      "method_hifo_note",
+      "The most expensive purchase is sold first, which reports the smallest gain. Not accepted everywhere.",
+    ),
   },
 ];
 const DEFAULT_COST_METHOD = "fifo";
@@ -1006,6 +1112,14 @@ const MAX_FUTURE_SHARE = 0.95;
  * feedback loop. Both can be turned off, because a chart someone reads for
  * prices should not be permanently decorated by a game they have stopped
  * playing. */
+/* The travel band on the board — how far this coin has moved over each
+ * square's worth of clock, drawn as a cone and making no claim about
+ * direction. Off by default like every other addition: the plain board is
+ * what ships. See `updateTravelBand` in chart.js for why it is a description
+ * rather than a forecast, and `travelBand` in utils.js for the arithmetic. */
+const TRAVEL_BAND_KEY = "crypto_chart_travel_band";
+const DEFAULT_TRAVEL_BAND = false;
+
 const CALLS_SHOW_SETTLED_KEY = "crypto_chart_calls_show_settled";
 const DEFAULT_CALLS_SHOW_SETTLED = true;
 const CALLS_CELEBRATE_KEY = "crypto_chart_calls_celebrate";
@@ -1018,6 +1132,11 @@ const DEFAULT_CALLS_CELEBRATE = true;
  * comes back on every new tab for a result you have already seen — which is
  * the fastest way to teach someone to ignore it. */
 const CALLS_SEEN_KEY = "crypto_chart_calls_seen";
+/* When the news panel was last opened, for the same reason and read the same
+ * way. It has to outlive the tab or "new since you last looked" would mean
+ * "new since this tab opened", which on a new-tab page is every headline
+ * there is. */
+const NEWS_SEEN_KEY = "crypto_chart_news_seen";
 
 const CALLS_KEY = "crypto_chart_calls";
 const MAX_OPEN_CALLS = 40;              // ten squares across a few coins
@@ -1321,6 +1440,31 @@ const PORTFOLIO_PERIOD_KEY = "crypto_chart_portfolio_period";
  * read, and a portfolio opens on its holdings. */
 const PORTFOLIO_STACKED_KEY = "crypto_chart_portfolio_stacked";
 
+/* Which of the three the value chart is showing.
+ *
+ * It was a boolean — stacked or not — until the P/L view was added on 26 Aug
+ * 2026, and the old key is still read so nobody's choice is thrown away:
+ * `true` was the by-coin view and `false` was the total.
+ *
+ * **P/L exists because the value chart cannot show a loss.** The cost level is
+ * drawn as a horizontal line, and a line off the top of the scale is not drawn
+ * at all: a portfolio worth $4,372 against $12,200 paid renders as a cheerful
+ * green wave with nothing on it saying you are down 64%. Re-based so that zero
+ * *is* what you paid, the same series answers the question people actually
+ * open a portfolio to ask, and the answer is above or below one line. */
+const PORTFOLIO_CHART_MODE_KEY = "crypto_chart_portfolio_chart_mode";
+/* Four views of one basket, and each answers what the other three cannot:
+ * what is it worth (`total`), what is it made of (`bycoin`), am I up
+ * (`pnl`), **which holding moved it** (`moved`) and **how far below its own
+ * peak it has been** (`drawdown`).
+ *
+ * `moved` is a ranked bar chart rather than a time series, so it is a separate
+ * component. `drawdown` is still a time series — it is the same line measured
+ * against its running high — so it is a transform of the data on the way in,
+ * exactly as `pnl` is, and the chart itself grows no new branch. */
+const PORTFOLIO_CHART_MODES = ["total", "bycoin", "pnl", "moved", "drawdown", "vsbtc"];
+const DEFAULT_PORTFOLIO_CHART_MODE = "total";
+
 /* Holdings order. The list used to render in the order coins were added,
  * which meant the biggest position could sit at the bottom — while the chart
  * behind it was already ranking the same holdings by value to decide which
@@ -1329,10 +1473,10 @@ const PORTFOLIO_STACKED_KEY = "crypto_chart_portfolio_stacked";
 const PORTFOLIO_SORT_KEY = "crypto_chart_portfolio_sort";
 const DEFAULT_PORTFOLIO_SORT = "value";
 const PORTFOLIO_SORT_OPTIONS = [
-  { value: "value", label: "Value" },
+  { value: "value", label: msg("po_value", "Value") },
   { value: "pl", label: "P/L" },
   { value: "change", label: "24h" },
-  { value: "name", label: "A–Z" },
+  { value: "name", label: msg("sort_az", "A–Z") },
 ];
 const STORE_LISTING_URL =
   "https://chromewebstore.google.com/detail/pricetab/dobkidjmhpnniiipliollbaefpppalaf";
@@ -1345,8 +1489,8 @@ const TICKER_SCROLL_CHARS = 1; // Characters to scroll each interval
 
 // Ticker format options
 const TICKER_FORMAT_OPTIONS = [
-  { value: "compact", label: "Compact (43.2K)" },
-  { value: "full", label: "Full ($43,250)" },
+  { value: "compact", label: msg("ticker_compact", "Compact (43.2K)") },
+  { value: "full", label: msg("ticker_full", "Full (43,250)") },
 ];
 
 // Page ticker constants

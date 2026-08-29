@@ -226,7 +226,15 @@ const CROSSHAIR_COL_GAP = 14; // px between a row's label and its value
  * coins in the same slots, and with calls on the last two carry the square
  * the pointer is standing in. Seven because OHLC+volume (5) and the square's
  * two lines can be on screen together. */
-const CROSSHAIR_ROWS = ["Open", "High", "Low", "Close", "Volume", "Band", "Span"];
+const CROSSHAIR_ROWS = [
+  msg("ch_open", "Open"),
+  msg("ch_high", "High"),
+  msg("ch_low", "Low"),
+  msg("ch_close", "Close"),
+  msg("ch_volume", "Volume"),
+  msg("ch_band", "Band"),
+  msg("ch_span", "Span"),
+];
 
 // Comparison-mode direct labels: how far above its line a label sits, and how
 // far apart two of them must stay when the coins finish level
@@ -314,6 +322,7 @@ class LineBase extends PureComponent {
      * overlay here works — React renders the container once and never has to
      * diff a hundred short-lived <line> nodes on every resize. */
     _defineProperty(this, "gridRef", createRef());
+    _defineProperty(this, "bandLayerRef", createRef());
     // The stop that decides where the top fade finishes — moved with the pitch
     _defineProperty(this, "fadeStopRef", createRef());
     _defineProperty(this, "gridCellRef", createRef());
@@ -2057,7 +2066,13 @@ class LineBase extends PureComponent {
           formatSignedPercent(this.compareScaled.b[compareIndex].percent),
         ];
       } else if (candle && !cellBox) {
-        labels = ["Open", "High", "Low", "Close", "Volume"];
+        labels = [
+          msg("ch_open", "Open"),
+          msg("ch_high", "High"),
+          msg("ch_low", "Low"),
+          msg("ch_close", "Close"),
+          msg("ch_volume", "Volume"),
+        ];
         values = [
           fmt(candle.open),
           fmt(candle.high),
@@ -2561,10 +2576,117 @@ class LineBase extends PureComponent {
        * the boxes and the live marker stayed on a chart that no longer had a
        * game on it. Drawing is conditional; clearing must not be. */
       this.updateGrid();
+      this.updateTravelBand();
       this.updateCalls();
       this.updateLiveDot();
       this.updateMoveMarks();
       this.updateReference();
+    });
+
+    /* THE TRAVEL BAND — how far this coin has moved over each square's worth
+     * of clock, and **deliberately not which way**.
+     *
+     * What the board asks you for is a price band at a moment. What it never
+     * told you is the one thing that decides whether any square is worth
+     * naming: how far this coin actually travels in that much time. Someone
+     * pointing at a square four hours out on Dogecoin and on USDC is making
+     * two completely different bets, and the chart said nothing about it.
+     *
+     * It is a description and never a forecast, and the difference is
+     * structural rather than a matter of wording. `travelBand` throws the
+     * median of the historical returns away before it measures anything, so a
+     * window that rose all week produces a band that leans neither way —
+     * measured on a series drifting +0.4% a step, the lean is 0.0017 in log,
+     * which is nothing. What is left is dispersion: the middle half and the
+     * middle 80% of the distances this series has covered over that horizon,
+     * applied to the price now. It is the object professionals call a
+     * volatility cone, and it belongs here for the reason `vwapOf` belongs on
+     * the stats row — it reports what happened rather than what to do.
+     *
+     * **Neutral ink, never green or red.** Those two already mean up and down
+     * on this chart, two inches from the P/L figures, and a coloured cone is a
+     * direction whatever the code intends. Same rule the portfolio's buy/sell
+     * markers follow.
+     *
+     * It costs nothing: the series is already on screen, so there is no
+     * request, no state field and no entry in any fetch list. And it refuses
+     * rather than guesses — below `MIN_TRAVEL_SAMPLES` observations at a
+     * horizon, that column and everything past it is simply not drawn, the way
+     * the base-rate panel refuses to print a comparison it cannot support. */
+    _defineProperty(this, "updateTravelBand", () => {
+      const layer = this.bandLayerRef.current;
+      if (!layer) return;
+      const clear = () => {
+        while (layer.firstChild) layer.removeChild(layer.firstChild);
+      };
+      /* Stands down exactly where the board does: with no board there is no
+       * horizon to measure against, and under comparison the y axis is percent
+       * change from two series, so a band built from this coin's prices would
+       * sit at a level nothing on screen is drawn in. */
+      if (!this.props.predict || !this.props.travelBand || this.props.compare) {
+        return clear();
+      }
+      const geo = this.gridGeometry();
+      const future = this.futureWidth();
+      const cellMs = this.cellSpan();
+      const pitch = this.boardPitch();
+      if (!geo || !(future > 0) || !(cellMs > 0) || !(pitch > 0)) return clear();
+
+      const data = safePrices(this.props.prices);
+      if (data.length < 3) return clear();
+      const last = Number(data[data.length - 1].price);
+      if (!(last > 0)) return clear();
+      // One step of this series, in clock. The horizon of column c is c
+      // squares of time, and that is what has to be expressed in steps.
+      const stepMs =
+        (+data[data.length - 1].time - +data[0].time) / (data.length - 1);
+      if (!(stepMs > 0)) return clear();
+
+      const nowX = this.width - future;
+      const columns = Math.floor(future / pitch);
+      if (columns < 1) return clear();
+
+      const inner = [];
+      const outer = [];
+      for (let c = 1; c <= columns; c++) {
+        const steps = Math.max(1, Math.round((c * cellMs) / stepMs));
+        const wide = travelBand(data, steps, 0.1, 0.9);
+        const tight = travelBand(data, steps, 0.25, 0.75);
+        // The first horizon that cannot be measured ends the cone. Drawing
+        // past it would be extrapolating, which is the one thing this is not.
+        if (!wide || !tight) break;
+        const x = nowX + c * pitch;
+        inner.push({ x, lo: tight.lo * last, hi: tight.hi * last });
+        outer.push({ x, lo: wide.lo * last, hi: wide.hi * last });
+      }
+      if (!inner.length) return clear();
+
+      clear();
+      const y0 = geo.priceToY(last);
+      const band = (points, opacity) => {
+        // Up one edge and back down the other, from a single point at "now" —
+        // the cone opens out of the price rather than starting at a width
+        const up = points.map((p) => `${p.x},${geo.priceToY(p.hi)}`);
+        const down = points
+          .slice()
+          .reverse()
+          .map((p) => `${p.x},${geo.priceToY(p.lo)}`);
+        const d = [`M${nowX},${y0}`, `L${up.join("L")}`, `L${down.join("L")}`, "Z"].join(
+          "",
+        );
+        // Every drawn attribute is a number — the polish suite asserts it, and
+        // a NaN here would silently draw nothing at all
+        if (/NaN|Infinity/.test(d)) return;
+        const node = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        node.setAttribute("d", d);
+        node.setAttribute("fill", this.props.theme.color.textSecondary);
+        node.setAttribute("fill-opacity", String(opacity));
+        node.setAttribute("stroke", "none");
+        node.setAttribute("class", "pt-travel-band");
+        layer.appendChild(node);
+      };
+      band(outer, 0.07);
+      band(inner, 0.07);
     });
 
     /* The square cell size, and the round levels that set it.
@@ -2890,7 +3012,10 @@ class LineBase extends PureComponent {
           el.setAttribute("stroke-dasharray", "2 3");
           el.setAttribute("class", "pt-now-line");
           const title = document.createElementNS(ns, "title");
-          title.textContent = "Drag to change how far ahead you can call";
+          title.textContent = msg(
+            "ch_drag_now",
+            "Drag to change how far ahead you can call",
+          );
           el.appendChild(title);
           this._nowLine = el;
           g.appendChild(el);
@@ -2931,7 +3056,7 @@ class LineBase extends PureComponent {
             grip.setAttribute("class", "pt-now-grip");
             grip.setAttribute("tabindex", "0");
             grip.setAttribute("role", "slider");
-            grip.setAttribute("aria-label", "How far ahead you can call");
+            grip.setAttribute("aria-label", msg("ch_now_label", "How far ahead you can call"));
             const tab = document.createElementNS(ns, "rect");
             tab.setAttribute("y", 1);
             tab.setAttribute("width", 26);
@@ -2949,7 +3074,10 @@ class LineBase extends PureComponent {
             }
             const gripTitle = document.createElementNS(ns, "title");
             gripTitle.textContent =
-              "Drag, or use the arrow keys, to change how far ahead you can call";
+              msg(
+                "ch_drag_or_keys",
+                "Drag, or use the arrow keys, to change how far ahead you can call",
+              );
             grip.appendChild(gripTitle);
             grip.addEventListener("keydown", this.handleNowKey);
             this._nowGrip = grip;
@@ -3081,8 +3209,11 @@ class LineBase extends PureComponent {
             b.setAttribute(
               "aria-label",
               dir > 0
-                ? "Zoom the board out — a wider band, far enough to call a big move"
-                : "Zoom the board in — a tighter band",
+                ? msg(
+                    "ch_zoom_out_label",
+                    "Zoom the board out — a wider band, far enough to call a big move",
+                  )
+                : msg("ch_zoom_in_label", "Zoom the board in — a tighter band"),
             );
             const hit = document.createElementNS(ns, "rect");
             hit.setAttribute("y", 5);
@@ -3098,8 +3229,10 @@ class LineBase extends PureComponent {
             b.appendChild(glyph);
             const title = document.createElementNS(ns, "title");
             title.textContent =
-              (dir > 0 ? "Zoom out" : "Zoom in") +
-              " — scroll over the chart, or [ and ]";
+              (dir > 0
+                ? msg("ch_zoom_out", "Zoom out")
+                : msg("ch_zoom_in", "Zoom in")) +
+              msg("ch_zoom_hint", " — scroll over the chart, or [ and ]");
             b.appendChild(title);
             const go = () => this.zoomBoard(dir);
             b.addEventListener("click", (e) => {
@@ -3227,12 +3360,18 @@ class LineBase extends PureComponent {
           home.removeAttribute("tabindex");
           home.removeAttribute("role");
           home.removeAttribute("aria-label");
-          homeTitle.textContent = "How far the board reaches, up and down";
+          homeTitle.textContent = msg(
+            "ch_reach_title",
+            "How far the board reaches, up and down",
+          );
         } else {
           home.setAttribute("tabindex", "0");
           home.setAttribute("role", "button");
-          home.setAttribute("aria-label", "Back to the default board reach");
-          homeTitle.textContent = "Back to the default reach";
+          home.setAttribute(
+            "aria-label",
+            msg("al_zoom_reset", "Back to the default board reach"),
+          );
+          homeTitle.textContent = msg("ch_default_reach", "Back to the default reach");
         }
         for (const b of buttons) {
           const zoom = this.props.boardZoom > 0 ? this.props.boardZoom : 1;
@@ -3865,6 +4004,17 @@ class LineBase extends PureComponent {
           },
           "",
         ),
+        /* The travel band, under the mesh and under everything else on the
+           board. It is context, not furniture: the squares are what you point
+           at, and a band drawn over them would compete with the thing it is
+           there to inform. Masked with the lattice so it does not run up into
+           the range switcher. */
+        React.createElement("g", {
+          ref: this.bandLayerRef,
+          "aria-hidden": "true",
+          pointerEvents: "none",
+          mask: `url(#${this.fadeId})`,
+        }),
         React.createElement("g", {
           ref: this.gridRef,
           "aria-hidden": "true",

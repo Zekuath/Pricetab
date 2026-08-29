@@ -1,9 +1,9 @@
 # React 16.5 is bundled in vendor/ and hooks do not exist in it.
 #
-# This is the single most likely thing for an AI agent to get wrong in this
+# This is the single most likely thing to get wrong in this
 # codebase: every model has been trained on years of function components, and
 # hook code looks completely correct right up until it throws at runtime on a
-# new tab. CLAUDE.md says "Why class components? React 16.5 (hooks not
+# new tab. The codebase guide says "Why class components? React 16.5 (hooks not
 # available)" — this makes that a build failure instead of a blank page.
 id: no-react-hooks
 language: JavaScript

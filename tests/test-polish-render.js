@@ -990,8 +990,46 @@ const AUDIT = `(() => {
           { title: "GreatChain unveils its next-generation settlement layer",
             link: "https://cointelegraph.com/news/greatchain-settlement", hoursAgo: 3,
             author: "Chainwire" },
-          ...Array.from({ length: 26 }, (_, i) => ({
-            title: `Filler story ${i} on flows and positioning`,
+          /* Twenty-six distinct stories, and *distinct* is now load-bearing.
+           *
+           * These were `Filler story ${i} on flows and positioning` — twenty-
+           * six headlines differing only by a number, which is a duplicate by
+           * any measure. `clusterNewsItems` correctly folded all of them into
+           * one row, the list stopped overflowing, and the scrollbar check
+           * below failed with `scroll: null` — the feature working exactly as
+           * designed against a fixture that predated it. Each one now carries
+           * its own subject, so the filler is filler rather than one story
+           * repeated. None of them names a coin, by symbol or by name, so the
+           * coin-scope assertion below is unaffected. */
+          ...[
+            "Regulators publish long-awaited custody guidance",
+            "Payment processor opens a European settlement desk",
+            "Central bank pilot enters its second phase",
+            "Exchange volumes thin out ahead of the holiday",
+            "Miners in Texas renegotiate power contracts",
+            "A stablecoin issuer files for a banking charter",
+            "Treasury desks report wider bid-ask spreads",
+            "Custody insurer raises its underwriting limits",
+            "Layer-two sequencer outage resolved after an hour",
+            "Institutional desks shift to options for hedging",
+            "A dormant wallet from 2013 moves its balance",
+            "Court dismisses a long-running class action",
+            "Hardware wallet maker recalls a firmware release",
+            "Auditors flag reserve reporting at two venues",
+            "Retail brokerage adds fractional settlement",
+            "A market maker withdraws from three venues",
+            "Tax authority clarifies staking income rules",
+            "Data centre operator announces a cooling retrofit",
+            "Pension consultant publishes an allocation study",
+            "Cross-border remittance corridor opens in Asia",
+            "Derivatives clearing house raises margin",
+            "An index provider revises its inclusion rules",
+            "Security firm reports a phishing campaign",
+            "Venture funding falls for a fourth quarter",
+            "Two custodians announce a merger",
+            "Trading venue extends its weekend hours",
+          ].map((title, i) => ({
+            title,
             link: `https://cointelegraph.com/news/f${i}`,
             hoursAgo: 100 + i,
           })),
@@ -1001,6 +1039,16 @@ const AUDIT = `(() => {
           { objectID: "1", title: "Ethereum rollup costs fall again",
             url: "https://example.com/c", points: 200,
             created_at_i: Math.floor(Date.now() / 1000) - 1800 },
+          /* A second write-up of the newsroom's Solana story, from a different
+           * source. `clusterNewsItems` must fold these two into one row —
+           * that is the only place in the suite where the fold is exercised
+           * against real rendering rather than against a unit fixture. The
+           * wording is deliberately not the newsroom's: the near-duplicate
+           * title key in `mergeNewsItems` would already have caught a copy,
+           * and what is being tested is the case it cannot catch. */
+          { objectID: "2", title: "Validators on Solana finish the network upgrade",
+            url: "https://example.com/d", points: 150,
+            created_at_i: Math.floor(Date.now() / 1000) - 79 * 3600 },
         ] }));
       if (u.includes("coinlore") && u.includes("tickers"))
         return r.fulfill(json({ data: TICKERS, info: { coins_num: 100 } }));
@@ -1023,6 +1071,13 @@ const AUDIT = `(() => {
       localStorage.setItem("crypto_chart_move_headlines", "false");
       localStorage.removeItem("crypto_chart_news_cache");
       localStorage.setItem("crypto_chart_coin_options", JSON.stringify(["BTC", "ETH"]));
+      /* Ninety hours ago, which puts the divider at a knowable place rather
+         than wherever the clock happens to fall: the three real stories are
+         2h–80h old and every filler item is 100h+, so "new since you last
+         looked" must land between them — after the stories, before the
+         filler, and at neither end of the list. Without a stamp there is no
+         divider at all, which is the first-visit case. */
+      localStorage.setItem("crypto_chart_news_seen", String(Date.now() - 90 * 3600 * 1000));
     `);
     const page = await ctx.newPage();
     const errors = [];
@@ -1054,11 +1109,64 @@ const AUDIT = `(() => {
           return { width: cs.scrollbarWidth, color: cs.scrollbarColor };
         })(),
         access: /newsrooms are one click away/i.test(card.textContent),
+        /* The fold. Two newsrooms wrote up the Solana upgrade in different
+           words, so exactly one row must carry the other's name and a count,
+           and the folded story must still be reachable — the whole promise is
+           that nothing is discarded. */
+        foldedCount: (card.textContent.match(/\\+\\d+ more/) || [""])[0],
+        /* The divider, and where it sits. Its position is the assertion: drawn
+           at the top it would have nothing above it to divide from, and at the
+           foot it would be a rule under the whole list announcing that nothing
+           is new. Counted in rows either side rather than by pixel. */
+        divider: (() => {
+          const line = [...card.querySelectorAll("div")]
+            .find((d) => /New since you last looked/i.test(d.textContent) &&
+                         d.children.length === 1);
+          if (!line) return null;
+          const rows = [...card.querySelectorAll("a[target=_blank]")];
+          const before = rows.filter((a) =>
+            line.compareDocumentPosition(a) & Node.DOCUMENT_POSITION_PRECEDING).length;
+          return { before, after: rows.length - before };
+        })(),
+        /* Addressed by the **head's** title, and which one that is, is not
+           obvious: the head is the newest member, and here the aggregator's
+           write-up is an hour newer than the newsroom's, so the row on screen
+           carries the aggregator's wording and the newsroom is the one folded
+           under it. Selecting on the newsroom's headline found nothing at all
+           and the check failed before it ever ran. */
+        foldRow: (() => {
+          const head = [...card.querySelectorAll("a[target=_blank]")]
+            .find((a) => /Validators on Solana/.test(a.textContent));
+          if (!head) return null;
+          /* The cluster wrapper is the row's parent: the also-line cannot live
+             inside the anchor, so it is its sibling. */
+          const wrap = head.parentElement;
+          return {
+            names: /Cointelegraph/i.test(wrap.textContent),
+            /* Double-escaped: this whole object is the body of a template literal
+               handed to page.evaluate, so JS eats one level of backslash
+               before the regex is ever compiled. Written singly it reached
+               the page as /+1 more/ and threw "Nothing to repeat". */
+            count: /\\+1 more/.test(wrap.textContent),
+            reachable: [...wrap.querySelectorAll("a[href]")].length,
+            /* The folded story must not *also* still be a row of its own —
+               that would be the panel showing it twice and calling it once. */
+            once: [...card.querySelectorAll("a[target=_blank]")]
+              .filter((a) => /Solana validators complete upgrade/.test(a.textContent))
+              .length === 0,
+          };
+        })(),
       };
     })()`);
     const at = await read();
     check(at !== null, "N opens the news panel", JSON.stringify(at));
-    const named = ["drifts sideways", "Solana validators", "rollup costs"];
+    /* One fragment per source. The Solana entry is the **aggregator's**
+     * wording rather than the newsroom's, and deliberately so: two sources
+     * wrote that story up, `clusterNewsItems` folds them into one row, and the
+     * row carries the newer of the two headlines. The newsroom's version is
+     * still reachable — asserted three checks below — but it is no longer a
+     * row of its own, which is the whole point of the fold. */
+    const named = ["drifts sideways", "Validators on Solana", "rollup costs"];
     check(at && named.every((t) => at.rows.some((r) => r.includes(t))),
       "…listing every story from every source",
       at ? `${at.rows.length} rows` : "none");
@@ -1069,6 +1177,30 @@ const AUDIT = `(() => {
       "…each with its age against it", at ? JSON.stringify(at.rows.map((r) => r.slice(0, 6))) : "none");
     check(at && at.stale,
       "…and a source that has gone quiet is called out rather than left looking live");
+    /* The fold, rendered. Two newsrooms wrote up one upgrade in different
+     * words; the unit tests in `tests/test-api.js` prove the scoring, and this
+     * proves the row. All three parts are asserted because each can fail on
+     * its own: the count without the names is a row that says four outlets ran
+     * it and shows none of them, and the names without a working link are the
+     * folded story discarded with extra steps. */
+    check(at && at.foldRow && at.foldRow.names,
+      "the same story from two newsrooms folds into one row, naming the other",
+      at ? JSON.stringify(at.foldRow) : "none");
+    check(at && at.foldRow && at.foldRow.count,
+      "…and says how many ran it",
+      at ? at.foldedCount : "none");
+    check(at && at.foldRow && at.foldRow.once,
+      "…and the folded write-up is not still sitting in the list as well",
+      at && at.foldRow ? String(at.foldRow.once) : "none");
+    check(at && at.foldRow && at.foldRow.reachable >= 2,
+      "…and the folded write-up is still one click away",
+      at && at.foldRow ? String(at.foldRow.reachable) : "none");
+    check(at && at.divider,
+      "the list marks what arrived since the panel was last opened",
+      at ? JSON.stringify(at.divider) : "none");
+    check(at && at.divider && at.divider.before > 0 && at.divider.after > 0,
+      "…with rows on both sides of it, never at either end",
+      at && at.divider ? JSON.stringify(at.divider) : "none");
     check(at && at.scroll && at.scroll.width === "thin",
       "…and the list it scrolls in uses the theme's scrollbar, not the OS one",
       at ? JSON.stringify(at.scroll) : "none");
@@ -1084,7 +1216,13 @@ const AUDIT = `(() => {
       const card = document.querySelector('[role="dialog"][aria-label="News"]');
       const row = card && card.querySelector("a[target=_blank]");
       if (!row) return null;
-      const title = row.lastElementChild;
+      /* By name, not by position: the headline was the row's last child until
+         it gained a summary and coin chips under it, and asking for the last
+         child then measured the wrapper — default link blue, no underline,
+         two checks failing for a reason that had nothing to do with the rule
+         they protect. */
+      const title = row.querySelector(".pt-news-title");
+      if (!title) return { missing: true };
       const cs = getComputedStyle(title);
       return { color: cs.textDecorationColor, line: cs.textDecorationLine,
                offset: cs.textUnderlineOffset };
@@ -1957,6 +2095,97 @@ const AUDIT = `(() => {
     check(empty.importHasBox, "…that looks like one, next to two obvious fields");
     check(errors.length === 0, "nothing threw", errors[0]);
     await ctx.close();
+  }
+
+  /* §15 — how often this extension asks for a rating.
+   *
+   * The main-screen card was genuinely once. The Settings bar was gated on
+   * "has it been dismissed" alone, so it appeared on a brand-new install the
+   * first time Settings was ever opened, and again on every open after that —
+   * while the comment beside it called it a one-time reminder. Asking before
+   * anybody has used the thing is the worst moment to ask; asking every visit
+   * is nagging; and the two prompts were the only routes to the listing, so
+   * dismissing them left no way to rate at all. */
+  {
+    const DAY = 86400000;
+    const openSettings = async (page) => {
+      await page.keyboard.press("s");
+      await page.waitForTimeout(700);
+      await page.evaluate(`(() => {
+        const b = [...document.querySelectorAll("button")]
+          .find((x) => /^preferences$/i.test((x.textContent || "").trim()));
+        if (b) b.click();
+      })()`);
+      await page.waitForTimeout(500);
+      const seen = await page.evaluate(`(() => {
+        const t = [...document.querySelectorAll("h2")]
+          .find((h) => /settings/i.test(h.textContent || ""));
+        const txt = t ? t.closest("div").innerText : "";
+        /* Matched on what the thing *is* — a request for a rating — not on
+           the sentence it currently uses. Rewording the copy broke this once
+           already, which is a test failing for a reason unrelated to the rule
+           it protects. The permanent link says "Rate PriceTab" and never
+           "rating", so the two cannot be confused. */
+        return { bar: /rating/i.test(txt), link: /Rate PriceTab/i.test(txt) };
+      })()`);
+      await page.keyboard.press("Escape");
+      await page.waitForTimeout(300);
+      return seen;
+    };
+    const profile = async (ageDays) => {
+      const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+      await ctx.route("**/*", (r) => {
+        const u = r.request().url();
+        if (u.startsWith("file://")) return r.continue();
+        if (u.includes("historic")) return r.fulfill(json({ data: { prices: PRICES } }));
+        if (u.includes("spot"))
+          return r.fulfill(json({ data: { amount: "43480.00", currency: "USD" } }));
+        return r.fulfill(json({ data: {} }));
+      });
+      await ctx.addInitScript(`
+        localStorage.setItem("crypto_chart_onboarding_seen", "1");
+        localStorage.setItem("crypto_chart_first_use", String(Date.now() - ${ageDays} * ${DAY}));
+      `);
+      const page = await ctx.newPage();
+      await page.goto(INDEX, { waitUntil: "load" });
+      await page.waitForSelector("svg path", { timeout: 20000 });
+      await page.waitForTimeout(1500);
+      const card = await page.evaluate(`/rating/i.test(document.body.innerText)`);
+      const opens = [];
+      for (let i = 0; i < 3; i++) opens.push(await openSettings(page));
+      await ctx.close();
+      return { card, opens };
+    };
+
+    const fresh = await profile(0);
+    check(!fresh.card, "a brand-new install is not asked to rate");
+    check(
+      fresh.opens.every((o) => !o.bar),
+      "…and is not asked on any visit to Settings either",
+      JSON.stringify(fresh.opens),
+    );
+    check(
+      fresh.opens.every((o) => o.link),
+      "…but the way to the listing is there from the start",
+    );
+
+    /* Two days old, whatever `RATE_PROMPT_DELAY_MS` currently is — read from
+     * the source rather than restated, so shortening the delay cannot leave
+     * this test asserting the old one. */
+    const delay = Number(
+      (require("fs").readFileSync(path.join(__dirname, "..", "src", "config.js"), "utf8")
+        .match(/const RATE_PROMPT_DELAY_MS = ([^;]+);/) || [])[1]
+        .split("*")
+        .reduce((a, b) => a * Number(b.trim()), 1),
+    );
+    check(delay > 0 && delay <= 2 * DAY, `the ask waits a day or two (${delay}ms)`);
+    const used = await profile(delay / DAY + 1);
+    const asks = (used.card ? 1 : 0) + used.opens.filter((o) => o.bar).length;
+    check(asks === 1, `past the delay it asks exactly once, not ${asks} times`);
+    check(
+      used.opens.every((o) => o.link),
+      "…and the permanent link survives the ask",
+    );
   }
 
   await browser.close();

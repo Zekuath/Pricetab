@@ -253,9 +253,10 @@ pricetab/
 `index.html` defines the load order, and it matters — a file may only execute
 references to bindings from files loaded before it.
 
-**Read [CLAUDE.md](CLAUDE.md) before changing anything.** It carries the
-architecture, the conventions and the reasoning behind decisions that look
-arbitrary until you know why.
+**Read the architecture notes in this file and the invariants in
+`tests/test-invariants.js` before changing anything.** Between them they carry
+the conventions and the reasoning behind decisions that look arbitrary until
+you know why.
 
 ---
 
@@ -277,7 +278,6 @@ external CDN requests.**
 
 | Document | Description |
 |----------|-------------|
-| [CLAUDE.md](CLAUDE.md) | Architecture and conventions — start here |
 | [VISION.md](docs/product/VISION.md) | Feature roadmap |
 | [TODO.md](docs/product/TODO.md) | Tasks and progress |
 | [CHANGELOG.md](docs/CHANGELOG.md) | Version history |
@@ -292,7 +292,7 @@ external CDN requests.**
 
 Issues and pull requests are welcome.
 
-1. Read [CLAUDE.md](CLAUDE.md)
+1. Read this file and `tests/test-invariants.js`
 2. Branch, change, and run `cd tests && npm test`
 3. Open a PR describing what changed and why
 

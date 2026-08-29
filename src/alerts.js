@@ -443,15 +443,21 @@ class AlertsPanel extends PureComponent {
   // can carry weight — the symbol is what you scan the list for
   describe(a) {
     if (a.kind === "percent") {
-      return `${a.direction === "above" ? "rises" : "falls"} ${formatPercentValue(a.target)} in 24h`;
+      return a.direction === "above"
+        ? msg("al_rises_pct_24h", "rises $1 in 24h", formatPercentValue(a.target))
+        : msg("al_falls_pct_24h", "falls $1 in 24h", formatPercentValue(a.target));
     }
     const price = this.props.formatPrice(a.target, a.currency);
     if (a.kind === "portfolio") {
       // "is worth more than", not "rises above": a total is worth something,
       // it does not have a price
-      return `${a.direction === "above" ? "is worth more than" : "is worth less than"} ${price}`;
+      return a.direction === "above"
+        ? msg("al_worth_more_than", "is worth more than $1", price)
+        : msg("al_worth_less_than", "is worth less than $1", price);
     }
-    return `${a.direction === "above" ? "rises above" : "drops below"} ${price}`;
+    return a.direction === "above"
+      ? msg("al_rises_above_price", "rises above $1", price)
+      : msg("al_drops_below_price", "drops below $1", price);
   }
 
   /* The second line of a row: what the target is worth knowing right now.
@@ -462,19 +468,32 @@ class AlertsPanel extends PureComponent {
       const when = describeElapsed(Date.now() - a.triggeredAt);
       const at =
         a.hitPrice != null
-          ? ` at ${this.props.formatPrice(a.hitPrice, a.currency)}`
+          ? msg("al_hit_at", " at $1", this.props.formatPrice(a.hitPrice, a.currency))
           : "";
-      return `Hit ${when}${at}`;
+      return msg("al_hit_when", "Hit $1$2", when, at);
     }
     if (!targetApplies(a, this.props.currency)) {
-      return `Set in ${a.currency} — resumes when you display ${a.currency} again`;
+      return msg(
+        "al_set_in_currency",
+        "Set in $1 — resumes when you display $1 again",
+        a.currency,
+      );
     }
     if (a.kind === "percent") {
       const change = this.changeOf(a.coin);
       if (change === null) return null;
       const moved = formatPercentValue(Math.abs(change));
-      const way = change >= 0 ? "up" : "down";
-      return `24h move ${moved} ${way} · needs ${formatPercentValue(a.target)} ${a.direction === "above" ? "up" : "down"}`;
+      const way = change >= 0 ? msg("al_way_up", "up") : msg("al_way_down", "down");
+      const need =
+        a.direction === "above" ? msg("al_way_up", "up") : msg("al_way_down", "down");
+      return msg(
+        "al_move_needs",
+        "24h move $1 $2 · needs $3 $4",
+        moved,
+        way,
+        formatPercentValue(a.target),
+        need,
+      );
     }
     const price = this.valueOf(a);
     /* A portfolio target with no total is a target that cannot fire, and it
@@ -493,18 +512,28 @@ class AlertsPanel extends PureComponent {
       if (missing.length) {
         const named = missing.slice(0, 3).join(", ");
         return (
-          `Waiting on a price for ${named}` +
-          (missing.length > 3 ? ` and ${missing.length - 3} more` : "") +
-          " — the total is left unmeasured rather than counted short"
+          msg("al_waiting_price", "Waiting on a price for $1", named) +
+          (missing.length > 3
+            ? msg("al_and_more", " and $1 more", missing.length - 3)
+            : "") +
+          msg(
+            "al_total_unmeasured",
+            " — the total is left unmeasured rather than counted short",
+          )
         );
       }
-      return "No holdings to total yet";
+      return msg("al_no_holdings", "No holdings to total yet");
     }
     if (price === null) return null;
     const away = targetDistancePercent(a, price);
     const now = this.props.formatPrice(price, a.currency);
-    if (away === null) return `Now ${now}`;
-    return `Now ${now} · ${formatPercentValue(Math.abs(away))} away`;
+    if (away === null) return msg("al_now", "Now $1", now);
+    return msg(
+      "al_now_away",
+      "Now $1 · $2 away",
+      now,
+      formatPercentValue(Math.abs(away)),
+    );
   }
 
   /* Nearest to firing first, so the list answers "what is about to happen"
@@ -542,23 +571,31 @@ class AlertsPanel extends PureComponent {
       if (target > MAX_PERCENT_TARGET) {
         return {
           warn: true,
-          text: `Keep it under ${MAX_PERCENT_TARGET}% — larger moves don't happen in a day.`,
+          text: msg(
+            "al_keep_under",
+            "Keep it under $1% — larger moves don't happen in a day.",
+            MAX_PERCENT_TARGET,
+          ),
         };
       }
       if (this.duplicate()) {
-        return { warn: true, text: "You already have this target." };
+        return { warn: true, text: msg("al_duplicate", "You already have this target.") };
       }
       const change = this.changeOf(coin);
       if (change !== null && percentReached({ direction, target }, change)) {
         return {
           warn: true,
-          text: `${coin} has already moved that far today — this fires straight away.`,
+          text: msg(
+            "al_already_moved",
+            "$1 has already moved that far today — this fires straight away.",
+            coin,
+          ),
         };
       }
       return null;
     }
     if (this.duplicate()) {
-      return { warn: true, text: "You already have this target." };
+      return { warn: true, text: msg("al_duplicate", "You already have this target.") };
     }
     const price = this.priceOf(coin);
     if (price === null) return null;
@@ -566,13 +603,37 @@ class AlertsPanel extends PureComponent {
     if (already) {
       return {
         warn: true,
-        text: `${coin} is already ${direction === "above" ? "above" : "below"} that — this fires straight away.`,
+        text:
+          direction === "above"
+            ? msg(
+                "al_already_above",
+                "$1 is already above that — this fires straight away.",
+                coin,
+              )
+            : msg(
+                "al_already_below",
+                "$1 is already below that — this fires straight away.",
+                coin,
+              ),
       };
     }
     const away = ((target - price) / price) * 100;
     return {
       warn: false,
-      text: `${formatPercentValue(Math.abs(away))} ${away >= 0 ? "above" : "below"} the current ${this.props.formatPrice(price, this.props.currency)}.`,
+      text:
+        away >= 0
+          ? msg(
+              "al_above_current",
+              "$1 above the current $2.",
+              formatPercentValue(Math.abs(away)),
+              this.props.formatPrice(price, this.props.currency),
+            )
+          : msg(
+              "al_below_current",
+              "$1 below the current $2.",
+              formatPercentValue(Math.abs(away)),
+              this.props.formatPrice(price, this.props.currency),
+            ),
     };
   }
 
@@ -601,7 +662,7 @@ class AlertsPanel extends PureComponent {
           React.createElement(
             AlertCoin,
             null,
-            a.kind === "portfolio" ? "Portfolio" : a.coin,
+            a.kind === "portfolio" ? msg("al_portfolio", "Portfolio") : a.coin,
           ),
           " ",
           this.describe(a),
@@ -611,7 +672,11 @@ class AlertsPanel extends PureComponent {
           React.createElement(
             AlertProgressTrack,
             {
-              title: `${Math.round(progress * 100)}% of the way from where it was when you set this`,
+              title: msg(
+                "al_progress_title",
+                "$1% of the way from where it was when you set this",
+                Math.round(progress * 100),
+              ),
             },
             React.createElement(AlertProgressFill, {
               up,
@@ -623,20 +688,24 @@ class AlertsPanel extends PureComponent {
         ? React.createElement(
             AlertRearm,
             {
-              title: "Arm this target again",
-              "aria-label": `Re-arm ${a.kind === "portfolio" ? "portfolio" : a.coin} target`,
+              title: msg("al_rearm_hint", "Arm this target again"),
+              "aria-label": msg(
+                "al_rearm_aria",
+                "Re-arm $1 target",
+                a.kind === "portfolio" ? msg("al_portfolio", "Portfolio") : a.coin,
+              ),
               onClick: () => this.props.onRearm && this.props.onRearm(a.id),
             },
-            "Re-arm",
+            msg("al_rearm", "Re-arm"),
           )
         : !targetApplies(a, currency)
-          ? React.createElement(AlertMeta, null, `paused · ${a.currency}`)
+          ? React.createElement(AlertMeta, null, msg("al_paused_currency", "paused · $1", a.currency))
           : null,
       React.createElement(
         AlertRemove,
         {
-          title: "Remove target",
-          "aria-label": `Remove ${a.coin} target`,
+          title: msg("al_remove_target", "Remove target"),
+          "aria-label": msg("al_remove_aria", "Remove $1 target", a.coin),
           onClick: () => this.handleRemove(a),
         },
         "×",
@@ -711,7 +780,7 @@ class AlertsPanel extends PureComponent {
              * are in the wrong place. */
             icon("calls", 1.3),
           ),
-          React.createElement(AlertsEmptyTitle, null, "Calls are off"),
+          React.createElement(AlertsEmptyTitle, null, msg("al_calls_off", "Calls are off")),
           /* Three lines, not six.
            *
            * This screen was carrying the whole manual — what a call is, how it
@@ -725,7 +794,10 @@ class AlertsPanel extends PureComponent {
           React.createElement(
             AlertsEmptyText,
             null,
-            "Point at a square of empty future on the chart and you have said where the price will be, and when. It settles itself the next time you open a tab — nothing is announced, nothing is sent, and the score is worth nothing.",
+            msg(
+              "al_calls_off_body",
+              "Point at a square of empty future on the chart and you have said where the price will be, and when. It settles itself the next time you open a tab — nothing is announced, nothing is sent, and the score is worth nothing.",
+            ),
           ),
 
           /* Stored calls do not disappear when the feature is switched off,
@@ -747,17 +819,23 @@ class AlertsPanel extends PureComponent {
               paused > 0 &&
                 fact(
                   paused,
-                  "still settling",
-                  "Calls you have already made are still judged while this is off — turning it back on brings the board back with them",
+                  msg("al_still_settling", "still settling"),
+                  msg(
+                    "al_still_judged",
+                    "Calls you have already made are still judged while this is off — turning it back on brings the board back with them",
+                  ),
                 ),
               kept.total > 0 &&
                 fact(
                   `${Math.round((kept.hits / kept.total) * 100)}%`,
-                  `of ${kept.total}`,
-                  "Your record is kept. It lives on this device only and is worth nothing",
+                  msg("al_of_total", "of $1", kept.total),
+                  msg(
+                    "al_record_kept",
+                    "Your record is kept. It lives on this device only and is worth nothing",
+                  ),
                 ),
               kept.best > 0 &&
-                fact(kept.best, "best streak", "The longest run of calls you got right"),
+                fact(kept.best, msg("al_best_streak", "best streak"), msg("al_best_streak_hint", "The longest run of calls you got right")),
             ),
 
           React.createElement(
@@ -765,7 +843,7 @@ class AlertsPanel extends PureComponent {
             {
               onClick: () => this.props.onPredictChange(true),
             },
-            "Turn calls on",
+            msg("al_turn_calls_on", "Turn calls on"),
           ),
         ),
       );
@@ -800,12 +878,12 @@ class AlertsPanel extends PureComponent {
               null,
               `${Math.round((record.hits / record.total) * 100)}%`,
             ),
-            ` of ${record.total} settled`,
+            msg("al_of_settled", " of $1 settled", record.total),
           ),
           React.createElement(
             "span",
             null,
-            `streak ${record.streak} · best ${record.best}`,
+            msg("al_streak_best", "streak $1 · best $2", record.streak, record.best),
           ),
         ),
 
@@ -829,7 +907,7 @@ class AlertsPanel extends PureComponent {
             { "aria-hidden": "true" },
             icon("calls", 1.3),
           ),
-          React.createElement(AlertsEmptyTitle, null, "No calls yet"),
+          React.createElement(AlertsEmptyTitle, null, msg("al_no_calls", "No calls yet")),
           React.createElement(
             AlertsEmptyText,
             null,
@@ -838,7 +916,7 @@ class AlertsPanel extends PureComponent {
           React.createElement(
             AlertsEmptyText,
             null,
-            "Drag the dotted line itself to make the board bigger or smaller.",
+            msg("al_drag_hint", "Drag the dotted line itself to make the board bigger or smaller."),
           ),
         ),
 
@@ -846,7 +924,11 @@ class AlertsPanel extends PureComponent {
         React.createElement(
           Fragment,
           null,
-          React.createElement(AlertsSectionLabel, null, `Open · ${open.length}`),
+          React.createElement(
+            AlertsSectionLabel,
+            null,
+            msg("al_open_n", "Open · $1", open.length),
+          ),
           React.createElement(
             AlertsList,
             null,
@@ -874,17 +956,25 @@ class AlertsPanel extends PureComponent {
                      * and the row said "Settles now" for as long as the call
                      * sat there, which is a promise the panel cannot keep. */
                     c.target <= Date.now()
-                      ? "Due — settles next time this range loads"
-                      : `Settles ${describeAhead(c.target - Date.now())}`,
+                      ? msg("al_due", "Due — settles next time this range loads")
+                      : msg(
+                          "al_settles_in",
+                          "Settles $1",
+                          describeAhead(c.target - Date.now()),
+                        ),
                     d &&
                       (d.inside
-                        ? " · in the band now"
-                        : ` · needs ${formatSignedPercent(d.percent)}`),
+                        ? msg("al_in_band", " · in the band now")
+                        : msg(
+                            "al_needs_pct",
+                            " · needs $1",
+                            formatSignedPercent(d.percent),
+                          )),
                     /* The price when the call was made. Stored since the
                      * beginning and never shown — it is what turns a band
                      * into a decision you can look back on. */
                     c.placedPrice != null
-                      ? ` · called at ${money(c.placedPrice, c)}`
+                      ? msg("al_called_at_suffix", " · called at $1", money(c.placedPrice, c))
                       : "",
                     /* A call belongs to the range it was made on — that is
                      * what keeps it from being settled against a series that
@@ -892,13 +982,13 @@ class AlertsPanel extends PureComponent {
                      * different range is not on the chart in front of you,
                      * and the row has to say which one, or it looks lost. */
                     c.period !== this.props.period
-                      ? ` · on ${periodLabel(c.period)}`
+                      ? msg("al_on_range", " · on $1", periodLabel(c.period))
                       : "",
                     /* Same for the currency, and it matters more: settling
                      * only ever runs in the currency a call was made in, so
                      * this row is not merely elsewhere, it is stopped. */
                     c.currency !== currency
-                      ? ` · paused — set in ${c.currency}`
+                      ? msg("al_paused_set_in", " · paused — set in $1", c.currency)
                       : "",
                   ),
                 ),
@@ -906,8 +996,8 @@ class AlertsPanel extends PureComponent {
                   AlertRemove,
                   {
                     onClick: () => onWithdrawCall && onWithdrawCall(c.id),
-                    "aria-label": "Withdraw this call",
-                    title: "Withdraw",
+                    "aria-label": msg("al_withdraw_hint", "Withdraw this call"),
+                    title: msg("al_withdraw", "Withdraw"),
                   },
                   "×",
                 ),
@@ -920,7 +1010,11 @@ class AlertsPanel extends PureComponent {
         React.createElement(
           Fragment,
           null,
-          React.createElement(AlertsSectionLabel, null, `Settled · ${done.length}`),
+          React.createElement(
+            AlertsSectionLabel,
+            null,
+            msg("al_settled_n", "Settled · $1", done.length),
+          ),
           React.createElement(
             AlertsList,
             null,
@@ -949,18 +1043,20 @@ class AlertsPanel extends PureComponent {
                     AlertDetail,
                     null,
                     c.placedPrice != null
-                      ? `Called at ${money(c.placedPrice, c)}`
-                      : "Called",
+                      ? msg("al_called_at", "Called at $1", money(c.placedPrice, c))
+                      : msg("al_called", "Called"),
                     c.settledPrice != null
-                      ? ` · closed at ${money(c.settledPrice, c)}`
+                      ? msg("al_closed_at", " · closed at $1", money(c.settledPrice, c))
                       : "",
-                    by != null && by > 0 ? ` · missed by ${money(by, c)}` : "",
+                    by != null && by > 0
+                      ? msg("al_missed_by", " · missed by $1", money(by, c))
+                      : "",
                   ),
                 ),
                 React.createElement(
                   AlertVerdict,
                   { hit },
-                  hit ? "Called it" : "Missed",
+                  hit ? msg("al_called_it", "Called it") : msg("al_missed", "Missed"),
                 ),
               );
             }),
@@ -993,6 +1089,8 @@ class AlertsPanel extends PureComponent {
     const {
       onPredictChange,
       callsShowSettled,
+      travelBand,
+      onTravelBandChange,
       onCallsShowSettledChange,
       callsCelebrate,
       onCallsCelebrateChange,
@@ -1064,8 +1162,8 @@ class AlertsPanel extends PureComponent {
         {
           onClick: () => onBoardZoomChange && onBoardZoomChange(zoomBy(-1)),
           disabled: zoomNow <= BOARD_ZOOM_MIN,
-          title: "Zoom in: a tighter band, a shorter reach  ( ] )",
-          "aria-label": "Zoom the board in",
+          title: msg("al_zoom_in_hint", "Zoom in: a tighter band, a shorter reach  ( ] )"),
+          "aria-label": msg("al_zoom_in", "Zoom the board in"),
         },
         "−",
       ),
@@ -1082,8 +1180,8 @@ class AlertsPanel extends PureComponent {
               type: "button",
               onClick: () =>
                 onBoardZoomChange && onBoardZoomChange(DEFAULT_BOARD_ZOOM),
-              title: "Back to the default board reach",
-              "aria-label": "Back to the default board reach",
+              title: msg("al_zoom_reset", "Back to the default board reach"),
+              "aria-label": msg("al_zoom_reset", "Back to the default board reach"),
             },
             `×${zoomNow}`,
           ),
@@ -1092,8 +1190,8 @@ class AlertsPanel extends PureComponent {
         {
           onClick: () => onBoardZoomChange && onBoardZoomChange(zoomBy(1)),
           disabled: zoomNow >= BOARD_ZOOM_MAX,
-          title: "Zoom out: a wider band, far enough to call a big move  ( [ )",
-          "aria-label": "Zoom the board out",
+          title: msg("al_zoom_out_hint", "Zoom out: a wider band, far enough to call a big move  ( [ )"),
+          "aria-label": msg("al_zoom_out", "Zoom the board out"),
         },
         "+",
       ),
@@ -1119,8 +1217,8 @@ class AlertsPanel extends PureComponent {
           null,
           React.createElement(
             AlertStripLabel,
-            { title: "Drag the now line on the chart to resize the board" },
-            "Board",
+            { title: msg("al_board_hint", "Drag the now line on the chart to resize the board") },
+            msg("al_board", "Board"),
           ),
           React.createElement(
             AlertStripFigures,
@@ -1131,19 +1229,24 @@ class AlertsPanel extends PureComponent {
              * rather than "Reach" because the row describes the thing, and
              * because a row named after a quantity in a column of settings
              * reads like a setting you can change here. */
-            `${describeSpan(callGeometry.reachMs)} ahead${
+            msg(
+              "al_board_readout",
+              "$1 ahead$2 · square $3 × $4",
+              describeSpan(callGeometry.reachMs),
               callGeometry.covers
                 ? ` · ±${formatAxisPrice(
                     callGeometry.covers,
                     callGeometry.step,
                     getCurrencySymbol(currency),
                   )}`
-                : ""
-            } · square ${formatAxisPrice(
-              callGeometry.step,
-              callGeometry.step,
-              getCurrencySymbol(currency),
-            )} × ${describeSpan(callGeometry.spanMs)}`,
+                : "",
+              formatAxisPrice(
+                callGeometry.step,
+                callGeometry.step,
+                getCurrencySymbol(currency),
+              ),
+              describeSpan(callGeometry.spanMs),
+            ),
           ),
           /* The strip was a readout with nothing to press, and the one thing it
            * describes that you *cannot* set by dragging the now line is how far
@@ -1167,14 +1270,24 @@ class AlertsPanel extends PureComponent {
       React.createElement(
         AlertCallsStrip,
         null,
-        React.createElement(AlertStripLabel, null, "Show"),
+        React.createElement(AlertStripLabel, null, msg("al_show", "Show")),
         toggle(
           "settled",
           callsShowSettled !== false,
           () =>
             onCallsShowSettledChange &&
             onCallsShowSettledChange(callsShowSettled === false),
-          "Keep settled calls on the chart, marked called it or missed",
+          msg("al_keep_settled_hint", "Keep settled calls on the chart, marked called it or missed"),
+        ),
+        /* What the board could never say by itself: how far this coin
+         * actually travels in a square's worth of time. Worded as what it is —
+         * a record of distances, with the direction deliberately removed — so
+         * nothing here can be read as a call the app is making. */
+        toggle(
+          msg("al_travel_band", "travel band"),
+          travelBand === true,
+          () => onTravelBandChange && onTravelBandChange(travelBand !== true),
+          "Shade how far this coin has moved over each square's worth of time — the middle half and the middle 80% of past distances, with the direction taken out. It is a record, not a forecast",
         ),
         toggle(
           "celebrate",
@@ -1182,7 +1295,7 @@ class AlertsPanel extends PureComponent {
           () =>
             onCallsCelebrateChange &&
             onCallsCelebrateChange(callsCelebrate === false),
-          "A burst on the chart the first time you open a tab after getting one right",
+          msg("al_burst_hint", "A burst on the chart the first time you open a tab after getting one right"),
         ),
       ),
 
@@ -1191,25 +1304,25 @@ class AlertsPanel extends PureComponent {
       React.createElement(
         AlertCallsStrip,
         null,
-        React.createElement(AlertStripLabel, null, "Calls"),
+        React.createElement(AlertStripLabel, null, msg("al_calls", "Calls")),
         action(
-          "turn off",
+          msg("al_turn_off", "turn off"),
           () => onPredictChange && onPredictChange(false),
-          "Stop calls. Your calls and score are kept, and L does the same from the chart",
+          msg("al_stop_calls_hint", "Stop calls. Your calls and score are kept, and L does the same from the chart"),
           { strong: true },
         ),
         React.createElement(AlertStripGap, null),
         doneCount > 0 &&
           action(
-            "clear settled",
+            msg("al_clear_settled", "clear settled"),
             () => onClearSettled && onClearSettled(),
-            "Remove settled calls from the chart and from this list",
+            msg("al_clear_settled_hint", "Remove settled calls from the chart and from this list"),
           ),
         record.total > 0 &&
           action(
-            "reset score",
+            msg("al_reset_score", "reset score"),
             () => onResetCalls && onResetCalls(),
-            "Set the record back to nothing. It lives on this device only and is worth nothing",
+            msg("al_reset_score_hint", "Set the record back to nothing. It lives on this device only and is worth nothing"),
             { danger: true },
           ),
       ),
@@ -1245,17 +1358,34 @@ class AlertsPanel extends PureComponent {
         (a) => !a.triggeredAt && !targetApplies(a, currency),
       ).length;
       const state = [
-        `${lists.armed.length} armed · ${lists.done.length} hit · ${alerts.length} of ${MAX_ALERTS} used`,
+        msg(
+          "al_armed_hit_used",
+          "$1 armed · $2 hit · $3 of $4 used",
+          lists.armed.length,
+          lists.done.length,
+          alerts.length,
+          MAX_ALERTS,
+        ),
       ];
       if (paused) {
         state.push(
-          `${paused} paused — set in another currency, so ${paused === 1 ? "it resumes" : "they resume"} when you switch back to it. A move target never pauses: a percentage means the same thing everywhere.`,
+          msg(
+            "al_paused_info",
+            "$1 paused — set in another currency, so $2 when you switch back to it. A move target never pauses: a percentage means the same thing everywhere.",
+            paused,
+            paused === 1
+              ? msg("al_it_resumes", "it resumes")
+              : msg("al_they_resume", "they resume"),
+          ),
         );
       }
       state.push(
         this.props.alertTabTitle !== false
-          ? "A hit is announced in the tab title, and targets are checked while this tab is hidden."
-          : "A hit is reported here only — announcing it in the tab title is off in Settings, which also stops the background checking.",
+          ? msg("al_hit_announced", "A hit is announced in the tab title, and targets are checked while this tab is hidden.")
+          : msg(
+              "al_hit_here_only",
+              "A hit is reported here only — announcing it in the tab title is off in Settings, which also stops the background checking.",
+            ),
       );
       return React.createElement(
         AlertsInfo,
@@ -1263,15 +1393,18 @@ class AlertsPanel extends PureComponent {
         React.createElement(
           AlertsInfoText,
           null,
-          "A target is a request: tell me when. Name a price (“BTC rises above 80,000”) or a move (“BTC falls 5% in 24h”) and it is reported here the next time you open a tab — including one that happened overnight, because every target is checked against the last week of hourly candles rather than only against the price right now.",
+          msg(
+            "al_targets_info",
+            "A target is a request: tell me when. Name a price (“BTC rises above 80,000”) or a move (“BTC falls 5% in 24h”) and it is reported here the next time you open a tab — including one that happened overnight, because every target is checked against the last week of hourly candles rather than only against the price right now.",
+          ),
         ),
         React.createElement(AlertsInfoState, null, ...state.map(line)),
         React.createElement(
           AlertsInfoKeys,
           null,
-          key(["A"], "this panel"),
-          key(["Enter"], "add"),
-          key(["Esc"], "close"),
+          key(["A"], msg("al_key_this_panel", "this panel")),
+          key(["Enter"], msg("al_key_add", "add")),
+          key(["Esc"], msg("al_key_close", "close")),
         ),
       );
     }
@@ -1285,12 +1418,22 @@ class AlertsPanel extends PureComponent {
     const state = [];
     state.push(
       on
-        ? `On · ${open} open · ${settled} settled`
-        : `Off · ${open} kept and still settling in the background — what is off is the board: nothing is drawn, nothing can be placed, and a win is not announced`,
+        ? msg("al_on_open_settled", "On · $1 open · $2 settled", open, settled)
+        : msg(
+            "al_off_kept",
+            "Off · $1 kept and still settling in the background — what is off is the board: nothing is drawn, nothing can be placed, and a win is not announced",
+            open,
+          ),
     );
     if (rec.total > 0) {
       state.push(
-        `${rec.hits} of ${rec.total} called right${rec.best > 1 ? ` · best streak ${rec.best}` : ""}. The score is on this device only and is worth nothing.`,
+        msg(
+          "al_called_right",
+          "$1 of $2 called right$3. The score is on this device only and is worth nothing.",
+          rec.hits,
+          rec.total,
+          rec.best > 1 ? msg("al_best_streak_suffix", " · best streak $1", rec.best) : "",
+        ),
       );
     }
     /* No board numbers here. How far it reaches and what a square is worth are
@@ -1300,7 +1443,10 @@ class AlertsPanel extends PureComponent {
      * with no control, so what this adds is where the control is. */
     if (on) {
       state.push(
-        "A call belongs to the coin, range and currency it was made on, and only settles there. Calls stand down while two coins share the chart.",
+        msg(
+          "al_call_belongs",
+          "A call belongs to the coin, range and currency it was made on, and only settles there. Calls stand down while two coins share the chart.",
+        ),
       );
     }
     return React.createElement(
@@ -1309,15 +1455,18 @@ class AlertsPanel extends PureComponent {
       React.createElement(
         AlertsInfoText,
         null,
-        "A call is a claim: not “tell me when”, but “I say where”. Point at a square in the empty strip to the right of the chart and you are naming a price band and a moment — one click drafts it, a second locks it. It settles itself the next time you open a tab, against the price at that moment, and the box stays on the chart saying whether you were right. How far that strip reaches is yours to set: drag the “now” line left for more board, right for more history.",
+        msg(
+          "al_calls_info",
+          "A call is a claim: not “tell me when”, but “I say where”. Point at a square in the empty strip to the right of the chart and you are naming a price band and a moment — one click drafts it, a second locks it. It settles itself the next time you open a tab, against the price at that moment, and the box stays on the chart saying whether you were right. How far that strip reaches is yours to set: drag the “now” line left for more board, right for more history.",
+        ),
       ),
       React.createElement(AlertsInfoState, null, ...state.map(line)),
       React.createElement(
         AlertsInfoKeys,
         null,
-        key(["K"], "this panel"),
-        key(["L"], "calls on / off"),
-        key(["G"], "grid on the plain chart"),
+        key(["K"], msg("al_key_this_panel", "this panel")),
+        key(["L"], msg("al_key_calls_toggle", "calls on / off")),
+        key(["G"], msg("al_key_grid", "grid on the plain chart")),
       ),
     );
   }
@@ -1345,8 +1494,8 @@ class AlertsPanel extends PureComponent {
         type: "text",
         open: searching,
         value: searching ? this.state.coinQuery : this.state.coin,
-        placeholder: "Search coins",
-        "aria-label": "Target coin",
+        placeholder: msg("al_search_coins", "Search coins"),
+        "aria-label": msg("al_target_coin", "Target coin"),
         "aria-expanded": searching,
         autoComplete: "off",
         spellCheck: false,
@@ -1386,7 +1535,7 @@ class AlertsPanel extends PureComponent {
             : React.createElement(
                 AlertCoinEmpty,
                 null,
-                `Nothing matching \u201c${this.state.coinQuery}\u201d.`,
+                msg("news_no_match", "Nothing matching “$1”.", this.state.coinQuery),
               ),
         ),
     );
@@ -1423,10 +1572,24 @@ class AlertsPanel extends PureComponent {
     const tally = onCalls
       ? this.props.predict !== true
         ? "off"
-        : `${openCalls} open${callRec.total ? ` · ${Math.round((callRec.hits / callRec.total) * 100)}%` : ""}`
+        : msg(
+            "al_n_open",
+            "$1 open$2",
+            openCalls,
+            callRec.total
+              ? ` · ${Math.round((callRec.hits / callRec.total) * 100)}%`
+              : "",
+          )
       : alerts.length === 0
         ? `0 / ${MAX_ALERTS}`
-        : `${armed.length} armed${done.length ? ` · ${done.length} hit` : ""} · ${alerts.length}/${MAX_ALERTS}`;
+        : msg(
+            "al_armed_summary",
+            "$1 armed$2 · $3/$4",
+            armed.length,
+            done.length ? msg("al_n_hit", " · $1 hit", done.length) : "",
+            alerts.length,
+            MAX_ALERTS,
+          );
 
     const quickUp = this.state.direction === "above";
     const quickSteps = isPercent
@@ -1450,7 +1613,7 @@ class AlertsPanel extends PureComponent {
           React.createElement(
             AlertsHeadTitle,
             null,
-            onCalls ? "Calls" : "Targets",
+            onCalls ? msg("al_calls", "Calls") : msg("chrome_targets_short", "Targets"),
           ),
           React.createElement(
             AlertsHeadRight,
@@ -1462,9 +1625,9 @@ class AlertsPanel extends PureComponent {
                 active: this.state.info,
                 onClick: () => this.setState((p) => ({ info: !p.info })),
                 title: onCalls
-                  ? "What calls are, where they stand, and the keys"
-                  : "What targets are, where they stand, and the keys",
-                "aria-label": "About this panel",
+                  ? msg("al_info_calls", "What calls are, where they stand, and the keys")
+                  : msg("al_info_targets", "What targets are, where they stand, and the keys"),
+                "aria-label": msg("al_about_panel", "About this panel"),
                 "aria-expanded": this.state.info ? "true" : "false",
               },
               icon("info", 0.95),
@@ -1486,7 +1649,7 @@ class AlertsPanel extends PureComponent {
                 { "aria-hidden": "true" },
                 icon("target", 1.3),
               ),
-              React.createElement(AlertsEmptyTitle, null, "No targets yet"),
+              React.createElement(AlertsEmptyTitle, null, msg("al_no_targets", "No targets yet")),
               React.createElement(
                 AlertsEmptyText,
                 null,
@@ -1505,7 +1668,7 @@ class AlertsPanel extends PureComponent {
             React.createElement(
               Fragment,
               null,
-              React.createElement(AlertsSectionLabel, null, "Already hit"),
+              React.createElement(AlertsSectionLabel, null, msg("al_already_hit", "Already hit")),
               React.createElement(
                 AlertsList,
                 null,
@@ -1520,12 +1683,12 @@ class AlertsPanel extends PureComponent {
               React.createElement(
                 "span",
                 null,
-                `Removed the ${this.state.undo.coin} target`,
+                msg("al_removed_target", "Removed the $1 target", this.state.undo.coin),
               ),
               React.createElement(
                 AlertUndoButton,
                 { onClick: () => this.handleUndo() },
-                "Undo",
+                msg("set_undo", "Undo"),
               ),
             ),
         ),
@@ -1537,7 +1700,7 @@ class AlertsPanel extends PureComponent {
         React.createElement(
           AlertFormBlock,
           null,
-          React.createElement(AlertsSectionLabelTight, null, "New target"),
+          React.createElement(AlertsSectionLabelTight, null, msg("al_new_target", "New target")),
           // Kind first: it changes what the rest of the row means, so it
           // reads wrong underneath the inputs it governs
           React.createElement(
@@ -1549,7 +1712,7 @@ class AlertsPanel extends PureComponent {
                 active: !isPercent,
                 onClick: () => this.setState({ kind: "price", target: "" }),
               },
-              "A price",
+              msg("al_kind_price", "A price"),
             ),
             React.createElement(
               AlertKindButton,
@@ -1557,7 +1720,7 @@ class AlertsPanel extends PureComponent {
                 active: isPercent,
                 onClick: () => this.setState({ kind: "percent", target: "" }),
               },
-              "A move in 24h",
+              msg("al_kind_percent", "A move in 24h"),
             ),
             canPortfolio &&
               React.createElement(
@@ -1568,7 +1731,7 @@ class AlertsPanel extends PureComponent {
                     "Watch the total of everything you hold, rather than one coin. Checked whenever a tab is open — a total cannot be reconstructed from candles, because the amounts held are only known as they are now.",
                   onClick: () => this.setState({ kind: "portfolio", target: "" }),
                 },
-                "My portfolio",
+                msg("al_kind_portfolio", "My portfolio"),
               ),
           ),
           React.createElement(
@@ -1584,7 +1747,7 @@ class AlertsPanel extends PureComponent {
               AlertSelect,
               {
                 value: this.state.direction,
-                "aria-label": "Target direction",
+                "aria-label": msg("al_direction", "Target direction"),
                 onChange: (e) => this.setState({ direction: e.target.value }),
               },
               React.createElement(
@@ -1593,8 +1756,8 @@ class AlertsPanel extends PureComponent {
                 isPercent
                   ? "rises"
                   : isPortfolio
-                    ? "worth more than"
-                    : "rises above",
+                    ? msg("al_worth_more", "worth more than")
+                    : msg("al_rises_above", "rises above"),
               ),
               React.createElement(
                 "option",
@@ -1602,8 +1765,8 @@ class AlertsPanel extends PureComponent {
                 isPercent
                   ? "falls"
                   : isPortfolio
-                    ? "worth less than"
-                    : "drops below",
+                    ? msg("al_worth_less", "worth less than")
+                    : msg("al_drops_below", "drops below"),
               ),
             ),
             React.createElement(AlertInput, {
@@ -1614,20 +1777,20 @@ class AlertsPanel extends PureComponent {
               placeholder: isPercent
                 ? "% in 24h"
                 : isPortfolio
-                  ? `total in ${currency}`
-                  : `target in ${currency}`,
+                  ? msg("al_total_in", "total in $1", currency)
+                  : msg("al_target_in", "target in $1", currency),
               "aria-label": isPercent
-                ? "Target move in percent"
+                ? msg("al_target_percent", "Target move in percent")
                 : isPortfolio
-                  ? "Target portfolio total"
-                  : "Target price",
+                  ? msg("al_target_total", "Target portfolio total")
+                  : msg("al_target_price", "Target price"),
               onChange: (e) => this.setState({ target: e.target.value }),
               onKeyDown: this.handleKeyDown,
             }),
             React.createElement(
               AlertAdd,
               { onClick: this.handleAdd, disabled: atCap },
-              "Add",
+              msg("al_add", "Add"),
             ),
           ),
           quickSteps &&
@@ -1637,7 +1800,7 @@ class AlertsPanel extends PureComponent {
               React.createElement(
                 AlertQuickLabel,
                 null,
-                isPercent ? "Common" : quickUp ? "Above by" : "Below by",
+                isPercent ? msg("al_common", "Common") : quickUp ? msg("al_above_by", "Above by") : msg("al_below_by", "Below by"),
               ),
               quickSteps.map((step) =>
                 React.createElement(
@@ -1646,8 +1809,10 @@ class AlertsPanel extends PureComponent {
                     key: step,
                     up: quickUp,
                     title: isPercent
-                      ? `A ${step}% move`
-                      : `${step}% ${quickUp ? "above" : "below"} the current price`,
+                      ? msg("al_a_pct_move", "A $1% move", step)
+                      : quickUp
+                        ? msg("al_pct_above_current", "$1% above the current price", step)
+                        : msg("al_pct_below_current", "$1% below the current price", step),
                     onClick: () => this.applyQuick(step),
                   },
                   `${quickUp ? "+" : "−"}${step}%`,
@@ -1662,7 +1827,11 @@ class AlertsPanel extends PureComponent {
             AlertsNote,
             null,
             atCap
-              ? `Target limit reached (${MAX_ALERTS}). Remove one to add another.`
+              ? msg(
+                  "al_limit_reached",
+                  "Target limit reached ($1). Remove one to add another.",
+                  MAX_ALERTS,
+                )
               : "Checked when you open a tab, including targets hit while you were away — the last week of candles is searched, so a move that reverted overnight is still reported. Nothing is pushed and nothing leaves your device.",
           ),
         ),

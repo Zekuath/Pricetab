@@ -77,9 +77,27 @@ class SettingsPanel extends PureComponent {
       pendingCoin: "",
       suggestions: [],
       searching: false,
-      activeTab: "coins", // 'coins' | 'preferences' | 'widgets'
+      /* "coins", unless a language change just reloaded us out of
+       * Preferences — see `reopenSettingsTab` in `i18n.js`. */
+      activeTab: reopenSettingsTab || "coins", // 'coins' | 'preferences' | 'widgets'
       query: "", // settings search
-      showRatePrompt: !loadRatePromptDismissed(),
+      /* **Not just "has it been dismissed".**
+       *
+       * On that alone this bar appeared on a brand-new install, the first time
+       * Settings was ever opened, and again on **every** open after that until
+       * someone dismissed it — while the comment beside it called it a
+       * one-time reminder and the main-screen card it shares a flag with was
+       * genuinely once. Asking before anyone has used the thing is the worst
+       * moment to ask, and asking on every visit is the definition of nagging.
+       *
+       * Same two gates as the card now, and the same flags: at least
+       * `RATE_PROMPT_DELAY_MS` of use, and never if either surface has already
+       * asked. Whichever is reached first is the one ask there is. The way to
+       * the listing when it is gone is the permanent link in Preferences. */
+      showRatePrompt:
+        !loadRatePromptDismissed() &&
+        !loadRatePromptShown() &&
+        Date.now() - getOrInitFirstUse() >= RATE_PROMPT_DELAY_MS,
       undoCoins: null,
       /* Which mode the pointer is over, so the line under the row can say what
        * a mode would do *before* it is clicked — which is the only moment that
@@ -134,7 +152,7 @@ class SettingsPanel extends PureComponent {
       onResetCoins();
       this.setState({
         undoCoins: previous,
-        feedback: "Coins reset to defaults",
+        feedback: msg("set_coins_reset", "Coins reset to defaults"),
         status: "info",
       });
     });
@@ -151,7 +169,7 @@ class SettingsPanel extends PureComponent {
       }
       this.setState({
         undoCoins: null,
-        feedback: "Previous coins restored",
+        feedback: msg("set_coins_restored", "Previous coins restored"),
         status: "success",
       });
     });
@@ -192,10 +210,10 @@ class SettingsPanel extends PureComponent {
         undoCoins: previous,
         feedback:
           mode === "alpha"
-            ? "Sorted A–Z"
+            ? msg("set_sorted_az", "Sorted A–Z")
             : mode === "cap"
-              ? "Sorted by market cap"
-              : "Sorted by today's move",
+              ? msg("set_sorted_cap", "Sorted by market cap")
+              : msg("set_sorted_move", "Sorted by today's move"),
         status: "info",
       });
     });
@@ -232,7 +250,7 @@ class SettingsPanel extends PureComponent {
       if (activeCoins.includes(normalized)) {
         if (activeCoins.length <= 1) {
           this.setState({
-            feedback: "Keep at least one coin in the rotation",
+            feedback: msg("set_keep_one_coin", "Keep at least one coin in the rotation"),
             status: "error",
           });
           return;
@@ -249,7 +267,7 @@ class SettingsPanel extends PureComponent {
 
       if (!SUGGESTED_COINS.includes(normalized)) {
         this.setState({
-          feedback: `${normalized || "Symbol"} not recognized`,
+          feedback: msg("set_not_recognized", "$1 not recognized", normalized || msg("set_symbol", "Symbol")),
           status: "error",
         });
         return;
@@ -263,15 +281,15 @@ class SettingsPanel extends PureComponent {
           status: "success",
         });
       } else {
-        let feedback = "Could not add coin";
+        let feedback = msg("set_add_failed", "Could not add coin");
         if (result && result.reason === "duplicate") {
-          feedback = "This symbol is already listed";
+          feedback = msg("set_already_listed", "This symbol is already listed");
         } else if (result && result.reason === "format") {
-          feedback = "Use 2-10 letters/numbers only";
+          feedback = msg("set_symbol_shape", "Use 2-10 letters/numbers only");
         } else if (result && result.reason === "empty") {
-          feedback = "Enter a symbol first";
+          feedback = msg("set_symbol_empty", "Enter a symbol first");
         } else if (result && result.reason === "limit") {
-          feedback = "Max " + MAX_COINS + " coins reached";
+          feedback = msg("set_max_coins", "Max $1 coins reached", MAX_COINS);
         }
 
         this.setState({ feedback, status: "error" });
@@ -300,7 +318,7 @@ class SettingsPanel extends PureComponent {
 
       if (!SUGGESTED_COINS.includes(normalized)) {
         this.setState({
-          feedback: `${normalized || "Symbol"} not recognized`,
+          feedback: msg("set_not_recognized", "$1 not recognized", normalized || msg("set_symbol", "Symbol")),
           status: "error",
         });
         return;
@@ -317,15 +335,15 @@ class SettingsPanel extends PureComponent {
         // the added coin drops out of the refreshed suggestions
         this.updateSuggestions(this.state.pendingCoin);
       } else {
-        let feedback = "Could not add coin";
+        let feedback = msg("set_add_failed", "Could not add coin");
         if (result && result.reason === "duplicate") {
-          feedback = "This symbol is already listed";
+          feedback = msg("set_already_listed", "This symbol is already listed");
         } else if (result && result.reason === "format") {
-          feedback = "Use 2-10 letters/numbers only";
+          feedback = msg("set_symbol_shape", "Use 2-10 letters/numbers only");
         } else if (result && result.reason === "empty") {
-          feedback = "Enter a symbol first";
+          feedback = msg("set_symbol_empty", "Enter a symbol first");
         } else if (result && result.reason === "limit") {
-          feedback = "Max " + MAX_COINS + " coins reached";
+          feedback = msg("set_max_coins", "Max $1 coins reached", MAX_COINS);
         }
         this.setState({ feedback, status: "error" });
       }
@@ -501,6 +519,12 @@ class SettingsPanel extends PureComponent {
 
   componentDidMount() {
     document.addEventListener("keydown", this.handleKeyDown);
+    /* The panel is only mounted when it is opened (app.js renders it behind
+     * `showSettings`), so mounting *is* being seen. Stamped here rather than
+     * in the constructor, where a side effect does not belong, and stamped at
+     * all so the two surfaces share one ask: whichever is reached first is the
+     * only time this extension asks for a rating. */
+    if (this.state.showRatePrompt) saveRatePromptShown();
   }
 
   componentWillUnmount() {
@@ -560,10 +584,10 @@ class SettingsPanel extends PureComponent {
       React.createElement(
         SettingsCard,
         { visible: visible },
-        React.createElement(SettingsTitle, null, "Settings"),
+        React.createElement(SettingsTitle, null, msg("chrome_settings", "Settings")),
         React.createElement(
           SettingsClose,
-          { onClick: onClose, "aria-label": "Close settings" },
+          { onClick: onClose, "aria-label": msg("chrome_settings_close", "Close settings") },
           "×",
         ),
 
@@ -575,7 +599,15 @@ class SettingsPanel extends PureComponent {
             React.createElement(
               RatePromptText,
               null,
-              "Enjoying PriceTab? A quick rating helps others find it.",
+              /* Asks for the rating on the one honest ground there is: the
+               * store's ranking is how anybody else finds this, and a rating
+               * is the only thing a user can give that helps. It stays a
+               * question rather than a claim — "if you like it" — because the
+               * app does not know whether they do. */
+              msg(
+                "app_rate_ask",
+                "Liking PriceTab? A rating is how other people find it — it takes a few seconds and helps more than anything else.",
+              ),
             ),
             React.createElement(
               RatePromptLink,
@@ -585,13 +617,13 @@ class SettingsPanel extends PureComponent {
                 rel: "noreferrer",
                 onClick: this.handleRatePromptDismiss,
               },
-              "Rate",
+              msg("set_rate", "Rate"),
             ),
             React.createElement(
               RatePromptClose,
               {
                 onClick: this.handleRatePromptDismiss,
-                "aria-label": "Dismiss rating reminder",
+                "aria-label": msg("set_rate_dismiss", "Dismiss rating reminder"),
               },
               "×",
             ),
@@ -607,7 +639,7 @@ class SettingsPanel extends PureComponent {
               active: activeTab === "coins",
               onClick: () => this.handleTabChange("coins"),
             },
-            "Coins",
+            msg("set_tab_coins", "Coins"),
           ),
           React.createElement(
             TabButton,
@@ -615,7 +647,7 @@ class SettingsPanel extends PureComponent {
               active: activeTab === "preferences",
               onClick: () => this.handleTabChange("preferences"),
             },
-            "Preferences",
+            msg("set_tab_preferences", "Preferences"),
           ),
           React.createElement(
             TabButton,
@@ -623,7 +655,7 @@ class SettingsPanel extends PureComponent {
               active: activeTab === "widgets",
               onClick: () => this.handleTabChange("widgets"),
             },
-            "Widgets",
+            msg("set_tab_widgets", "Widgets"),
           ),
         ),
 
@@ -635,7 +667,10 @@ class SettingsPanel extends PureComponent {
             React.createElement(
               SettingsDescription,
               null,
-              "Search to add coins. Drag the chips to reorder, hit × to remove.",
+              msg(
+                  "set_coins_help",
+                  "Search to add coins. Drag the chips to reorder, hit × to remove.",
+                ),
             ),
 
             React.createElement(
@@ -644,7 +679,7 @@ class SettingsPanel extends PureComponent {
               React.createElement(
                 CoinSectionTitle,
                 { style: { margin: 0 } },
-                "Selected",
+                msg("set_selected", "Selected"),
               ),
               React.createElement(
                 CoinCounter,
@@ -656,12 +691,12 @@ class SettingsPanel extends PureComponent {
               React.createElement(
                 CoinSortRow,
                 null,
-                React.createElement(CoinSortLabel, null, "Sort"),
+                React.createElement(CoinSortLabel, null, msg("set_sort", "Sort")),
                 React.createElement(
                   CoinSortButton,
                   {
                     onClick: () => this.handleSort("alpha"),
-                    title: "Order the list alphabetically",
+                    title: msg("set_sort_az_hint", "Order the list alphabetically"),
                   },
                   "A–Z",
                 ),
@@ -671,10 +706,10 @@ class SettingsPanel extends PureComponent {
                     onClick: () => this.handleSort("change"),
                     disabled: !hasStats,
                     title: hasStats
-                      ? "Biggest 24h move first"
-                      : "Waiting for today's prices",
+                      ? msg("set_sort_move_hint", "Biggest 24h move first")
+                      : msg("set_sort_move_wait", "Waiting for today's prices"),
                   },
-                  "24h move",
+                  msg("set_sort_move", "24h move"),
                 ),
                 React.createElement(
                   CoinSortButton,
@@ -682,10 +717,10 @@ class SettingsPanel extends PureComponent {
                     onClick: () => this.handleSort("cap"),
                     disabled: !hasStats,
                     title: hasStats
-                      ? "Largest market cap first"
-                      : "Waiting for market data",
+                      ? msg("set_sort_cap_hint", "Largest market cap first")
+                      : msg("set_sort_cap_wait", "Waiting for market data"),
                   },
-                  "Market cap",
+                  msg("set_sort_cap", "Market cap"),
                 ),
               ),
             React.createElement(
@@ -722,8 +757,8 @@ class SettingsPanel extends PureComponent {
                             e.stopPropagation();
                             this.handleChipClick(coin);
                           },
-                          title: "Remove " + coin,
-                          "aria-label": "Remove " + coin,
+                          title: msg("set_remove_coin", "Remove $1", coin),
+                          "aria-label": msg("set_remove_coin", "Remove $1", coin),
                         },
                         "×",
                       ),
@@ -731,19 +766,19 @@ class SettingsPanel extends PureComponent {
                   )
                 : React.createElement(CoinChip, {
                     disabled: true,
-                    children: "No coins yet",
+                    children: msg("set_no_coins", "No coins yet"),
                   }),
             ),
             activeCoins.length > 1 &&
-              React.createElement(CoinDragHint, null, "Drag to reorder"),
-            React.createElement(CoinSectionTitle, null, "Quick add"),
+              React.createElement(CoinDragHint, null, msg("set_drag_hint", "Drag to reorder")),
+            React.createElement(CoinSectionTitle, null, msg("set_quick_add", "Quick add")),
             React.createElement(
               SettingsForm,
               { onSubmit: this.handleSubmit },
               React.createElement(SettingsInput, {
                 maxLength: 24,
                 onChange: this.handleInputChange,
-                placeholder: "Search name or symbol",
+                placeholder: msg("set_search_placeholder", "Search name or symbol"),
                 autoComplete: "off",
                 value: pendingCoin,
               }),
@@ -787,7 +822,7 @@ class SettingsPanel extends PureComponent {
               React.createElement(
                 SettingsActionButton,
                 { type: "submit" },
-                "Add coin",
+                msg("set_add_coin", "Add coin"),
               ),
             ),
             feedback
@@ -808,7 +843,9 @@ class SettingsPanel extends PureComponent {
                     : this.handleResetClick,
                 },
                 // Covers a reset and a sort, both of which replace the order
-                undoCoins ? "Undo" : "Reset to defaults",
+                undoCoins
+                    ? msg("set_undo", "Undo")
+                    : msg("set_reset_defaults", "Reset to defaults"),
               ),
             ),
           ),
@@ -827,12 +864,12 @@ class SettingsPanel extends PureComponent {
               React.createElement(
                 ToggleSectionDesc,
                 null,
-                "Show data widgets below chart",
+                msg("set_show_widgets", "Show data widgets below chart"),
               ),
               /* Size. The cards were built small and everything in them was
                * fixed to the root font size, so there was no way to make
                * them readable short of zooming the whole page. */
-              React.createElement(WidgetGroupTitle, null, "Size"),
+              React.createElement(WidgetGroupTitle, null, msg("set_size", "Size")),
               React.createElement(
                 PresetRow,
                 null,
@@ -860,9 +897,9 @@ class SettingsPanel extends PureComponent {
                   WIDGET_SIZE_OPTIONS.find(
                     (o) => o.value === (widgetSize || DEFAULT_WIDGET_SIZE),
                   ) || WIDGET_SIZE_OPTIONS[1]
-                ).label + " — applies to every widget",
+                ).label + msg("set_size_note", " — applies to every widget"),
               ),
-              React.createElement(WidgetGroupTitle, null, "Bundles"),
+              React.createElement(WidgetGroupTitle, null, msg("set_bundles", "Bundles")),
               React.createElement(
                 PresetRow,
                 null,
@@ -873,7 +910,7 @@ class SettingsPanel extends PureComponent {
                     active: isPresetActive(widgets, "holder"),
                     onClick: () => onWidgetPreset && onWidgetPreset("holder"),
                   },
-                  "Holder",
+                  msg("set_bundle_holder", "Holder"),
                 ),
                 React.createElement(
                   PresetButton,
@@ -882,7 +919,7 @@ class SettingsPanel extends PureComponent {
                     active: isPresetActive(widgets, "trader"),
                     onClick: () => onWidgetPreset && onWidgetPreset("trader"),
                   },
-                  "Trader",
+                  msg("set_bundle_trader", "Trader"),
                 ),
                 React.createElement(
                   PresetButton,
@@ -891,7 +928,7 @@ class SettingsPanel extends PureComponent {
                     active: isPresetActive(widgets, "minimal"),
                     onClick: () => onWidgetPreset && onWidgetPreset("minimal"),
                   },
-                  "Minimal",
+                  msg("set_bundle_minimal", "Minimal"),
                 ),
               ),
               ...WIDGET_GROUPS.map((group) =>
@@ -913,7 +950,7 @@ class SettingsPanel extends PureComponent {
                         active: widgets[item.key],
                         onClick: () =>
                           onWidgetToggle && onWidgetToggle(item.key),
-                        "aria-label": "Toggle " + item.label + " widget",
+                        "aria-label": msg("set_toggle_widget", "Toggle $1 widget", item.label),
                       }),
                     ),
                   ),

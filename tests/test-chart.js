@@ -95,7 +95,7 @@ vm.createContext(sandbox);
  * `chart.js` calls `chartBoardGeometry` from the constructor, and a sandbox
  * that omits it fails at the first `new LineBase()` rather than at an
  * assertion. */
-for (const f of ["config.js", "utils.js", "chart-board.js", "chart.js"]) {
+for (const f of ["i18n.js", "config.js", "utils.js", "chart-board.js", "chart.js"]) {
   vm.runInContext(fs.readFileSync(path.join(__dirname, "..", "src", f), "utf8"), sandbox, {
     filename: f,
   });
@@ -1030,7 +1030,7 @@ for (const [name, node] of [["A", labelA], ["B", labelB]]) {
 
 /* ── base rates: the arithmetic behind the panel that replaced buy signals ──
  *
- * `docs/product/TODAY.md` §9 is why there are no buy or sell points here: 0 of
+ * the working notes §9 is why there are no buy or sell points here: 0 of
  * 70 permutation tests survive correction, and on live daily closes the
  * "overbought" line was followed by a better-than-ordinary month on four coins
  * of six. What got built instead is a count, and these are the two rules that
@@ -1082,6 +1082,182 @@ for (const [name, node] of [["A", labelA], ["B", labelB]]) {
   assert.ok(many.n >= run("BASE_RATE_MIN_EPISODES"),
     `enough episodes to compare (${many.n})`);
   assert.ok(many.edge !== null, "…so the comparison is printed");
+}
+
+/* UNUSUAL MOVES — the marks on the chart, and now the news panel's own
+ * "this coin just did something" section. It had **no test at all** until that
+ * section was built on top of it, which is how a function ends up carrying two
+ * features and no assertions.
+ *
+ * Three properties, and the second is the one the news panel depends on. */
+{
+  // A quiet series with one violent step at index 60, and a smaller one at 20.
+  const quiet = Array.from({ length: 100 }, (_, i) => ({
+    price: 100 * (1 + Math.sin(i / 5) * 0.002),
+    time: 1700000000000 + i * 60000,
+  }));
+  sandbox.__flat = quiet.map((p) => ({ ...p }));
+  const spiked = quiet.map((p) => ({ ...p }));
+  for (let i = 20; i < 100; i++) spiked[i].price *= 1.3;
+  for (let i = 60; i < 100; i++) spiked[i].price *= 1.4;
+  sandbox.__spiked = spiked;
+
+  /* 1. A series that never does anything unusual has no unusual moments. A
+   *    threshold in standard deviations of the series' own steps always finds
+   *    an outlier if it is asked to rank; this one has to be able to say no,
+   *    or the news panel grows a permanent section. */
+  assert.strictEqual(
+    json("findUnusualMoves(__flat).length"),
+    0,
+    "a series with nothing unusual in it reports nothing",
+  );
+
+  /* 2. **The cap is applied to the biggest, and the result is in time order.**
+   *    So the last element of a capped list is the largest, not the latest —
+   *    which is exactly the mistake the news panel made first, asking for one
+   *    move and getting the window's biggest instead of its most recent. Both
+   *    halves are asserted, because the two orderings look identical on a
+   *    series whose biggest move happens to be its last. */
+  const capped = json("findUnusualMoves(__spiked, { max: 1 })");
+  assert.strictEqual(capped.length, 1, "the cap is respected");
+  assert.strictEqual(
+    capped[0].index,
+    60,
+    "…and what survives it is the biggest move, not the last one",
+  );
+  const all = json("findUnusualMoves(__spiked, { max: 200 })");
+  assert.ok(all.length >= 2, `both moves are found uncapped (${all.length})`);
+  assert.deepStrictEqual(
+    all.map((m) => m.time),
+    all.map((m) => m.time).slice().sort((a, b) => a - b),
+    "…and the list comes back in time order",
+  );
+  assert.strictEqual(
+    all[all.length - 1].index,
+    60,
+    "…so the last element is the most recent move, which is what the news panel reads",
+  );
+
+  /* 3. Both ends of the move are reported, because the window headlines are
+   *    fetched for is the span between them rather than a single instant. */
+  assert.ok(
+    capped[0].startTime < capped[0].time,
+    "a move has a before and an after, not just a moment",
+  );
+  assert.ok(capped[0].pct > 0, "…and its direction is signed");
+}
+
+/* THE TRAVEL BAND — the one property that matters is that it says nothing
+ * about direction. Everything else about this feature follows from that. */
+{
+  /* A series climbing 0.4% a step: over 400 steps it more than quadruples.
+   * If the band carried the window's drift, every horizon would lean up and
+   * the chart would be making a call. The median is subtracted precisely so
+   * it does not. */
+  sandbox.__rise = Array.from({ length: 400 }, (_, i) => ({
+    price: 100 * Math.exp(i * 0.004 + Math.sin(i / 7) * 0.02),
+  }));
+  const b = json("travelBand(__rise, 10, 0.25, 0.75)");
+  assert.ok(b.lo < 1, `the band reaches below the price (${b.lo})`);
+  assert.ok(b.hi > 1, `…and above it (${b.hi})`);
+  const lean = Math.abs(Math.log(b.hi) + Math.log(b.lo));
+  assert.ok(
+    lean < 0.01,
+    `no lean either way on a series that quadrupled — log lean ${lean.toFixed(5)}`,
+  );
+
+  // Scale is not information: the same shape ten times the price is the same band
+  sandbox.__rise10 = sandbox.__rise.map((p) => ({ price: p.price * 10 }));
+  const b10 = json("travelBand(__rise10, 10, 0.25, 0.75)");
+  assert.ok(
+    Math.abs(b.lo - b10.lo) < 1e-12 && Math.abs(b.hi - b10.hi) < 1e-12,
+    "the band is a set of factors, not an amount",
+  );
+
+  // Nested: the middle 80% contains the middle half
+  const wide = json("travelBand(__rise, 10, 0.1, 0.9)");
+  assert.ok(wide.lo < b.lo && wide.hi > b.hi, "the outer band contains the inner");
+
+  /* Refuses rather than guesses. At a horizon this series cannot cover there
+   * are fewer than `MIN_TRAVEL_SAMPLES` observations, and the chart stops the
+   * cone there instead of extrapolating — the same discipline the base-rate
+   * panel applies to a comparison it cannot support. */
+  assert.strictEqual(
+    run("travelBand(__rise, 396, 0.25, 0.75)"),
+    null,
+    "below the sample floor it returns nothing to draw",
+  );
+  assert.strictEqual(run("travelBand([], 5, 0.25, 0.75)"), null, "no series, no band");
+  assert.strictEqual(run("travelBand(__rise, 0, 0.25, 0.75)"), null, "no horizon, no band");
+
+  // A flat series has travelled nowhere, and says so rather than dividing by it
+  sandbox.__flat = Array.from({ length: 100 }, () => ({ price: 100 }));
+  const flat = json("travelBand(__flat, 5, 0.1, 0.9)");
+  assert.strictEqual(flat.lo, 1, "a flat series has no spread below");
+  assert.strictEqual(flat.hi, 1, "…and none above");
+}
+
+/* MONEY-WEIGHTED RETURN. It lives in `utils.js`, so it is tested here beside
+ * the other maths that does — and it is the piece of arithmetic on this screen
+ * most worth pinning, because a wrong rate looks exactly like a right one. */
+{
+  const D = 86400;
+  const now = Math.floor(Date.now() / 1000);
+  const rate = (flows) => {
+    sandbox.__flows = flows;
+    return run("xirr(__flows)");
+  };
+  const near = (got, want, label) =>
+    assert.ok(
+      got != null && Math.abs(got - want) < 0.005,
+      `${label}: got ${got == null ? "null" : (got * 100).toFixed(2) + "%"}, wanted ${(want * 100).toFixed(0)}%`,
+    );
+
+  near(rate([{ when: now - 365.25 * D, amount: -1000 }, { when: now, amount: 2000 }]),
+    1, "doubling in a year is 100% a year");
+  near(rate([{ when: now - 365.25 * D, amount: -1000 }, { when: now, amount: 1000 }]),
+    0, "flat is zero");
+  near(rate([{ when: now - 365.25 * D, amount: -1000 }, { when: now, amount: 500 }]),
+    -0.5, "halving is -50%");
+
+  /* The whole reason this figure exists. Both of these are "+20%" to every
+   * other percentage on the screen: same money in, same value now. They are
+   * not the same piece of work, and only a money-weighted rate says so. */
+  const early = rate([{ when: now - 730 * D, amount: -1000 }, { when: now, amount: 1200 }]);
+  const late = rate([
+    { when: now - 730 * D, amount: -500 },
+    { when: now - 30 * D, amount: -500 },
+    { when: now, amount: 1200 },
+  ]);
+  assert.ok(
+    late > early + 0.05,
+    `topping up late earns a higher rate for the same money (${(late * 100).toFixed(2)}% vs ${(early * 100).toFixed(2)}%)`,
+  );
+
+  // A sale in the middle is money coming back, and counts from its own date
+  assert.ok(
+    rate([
+      { when: now - 400 * D, amount: -1000 },
+      { when: now - 200 * D, amount: 600 },
+      { when: now, amount: 700 },
+    ]) > 0,
+    "a part sale plus what is still held is a positive return",
+  );
+
+  /* Refuses rather than invents. The fortnight floor is the one that matters:
+   * three days at +2% annualises to over a thousand per cent, which is
+   * arithmetic wearing the clothes of information. */
+  assert.strictEqual(
+    rate([{ when: now - 3 * D, amount: -1000 }, { when: now, amount: 1020 }]),
+    null,
+    "a position younger than MIN_XIRR_DAYS is not annualised at all",
+  );
+  assert.strictEqual(rate([{ when: now - 400 * D, amount: -1000 }]), null,
+    "one flow is not a return");
+  assert.strictEqual(rate([{ when: now - 400 * D, amount: 1000 }, { when: now, amount: 500 }]),
+    null, "nothing paid in, nothing to earn a rate on");
+  assert.strictEqual(rate([]), null, "no flows, no answer");
+  assert.strictEqual(run("MIN_XIRR_DAYS"), 14);
 }
 
 console.log("CHART TESTS OK");

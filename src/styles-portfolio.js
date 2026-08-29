@@ -63,20 +63,68 @@ const portfolioChartIn = keyframes`
   to { opacity: 0.16; }
 `;
 
+/* THE WALLPAPER CHART, AND THE RULE IT WAS BREAKING.
+ *
+ * It is `position: fixed; inset: 0` at a flat 16% — a full-viewport line with
+ * nothing keeping it away from anything. Rendered with five holdings, the
+ * trace ran straight through the holdings rows, crossed the headline figures
+ * and left the screen through the top-right corner. At that size it is not
+ * ambient, it is a second drawing competing with the one you opened, and it
+ * reads as a rendering fault rather than a decision.
+ *
+ * The fix is a rule rather than a smaller number: **nothing is drawn inside
+ * the reading column.** A horizontal mask takes the wallpaper to nothing
+ * across the width the content occupies and lets it back in only out in the
+ * margins, so what remains is the tail of a chart passing behind the card —
+ * which is a device, where a line through a table is a mistake.
+ *
+ * It degrades in the right direction, which is why the mask is in percentages
+ * of the viewport rather than a fixed inset: on a window no wider than the
+ * column there is no margin left, the mask covers everything, and the
+ * wallpaper is simply absent. A background that has nowhere to go should go
+ * nowhere, not squeeze itself over the text.
+ *
+ * `mask-image` composites and never lays out, so this costs nothing on a page
+ * whose whole argument is what it does not do on open. */
+const PORTFOLIO_COL = 760;
+
 const PortfolioChartBg = styled.div`
   position: fixed;
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  opacity: 0.16;
+  /* Quieter as well as masked: in the margins it is decoration, and 16% was
+     set when it was competing with the whole screen for attention. */
+  opacity: 0.11;
   animation: ${portfolioChartIn} 0.6s ease;
+
+  --pf-half: ${PORTFOLIO_COL / 2}px;
+  --pf-fade: 96px;
+  mask-image: linear-gradient(
+    to right,
+    #000 0,
+    #000 calc(50% - var(--pf-half) - var(--pf-fade)),
+    transparent calc(50% - var(--pf-half) + 16px),
+    transparent calc(50% + var(--pf-half) - 16px),
+    #000 calc(50% + var(--pf-half) + var(--pf-fade)),
+    #000 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    to right,
+    #000 0,
+    #000 calc(50% - var(--pf-half) - var(--pf-fade)),
+    transparent calc(50% - var(--pf-half) + 16px),
+    transparent calc(50% + var(--pf-half) - 16px),
+    #000 calc(50% + var(--pf-half) + var(--pf-fade)),
+    #000 100%
+  );
 `;
 
 const PortfolioInner = styled.div`
   position: relative;
   z-index: 1;
   width: 100%;
-  max-width: 760px;
+  max-width: ${PORTFOLIO_COL}px;
   animation: ${portfolioLift} 0.4s cubic-bezier(0.22, 1, 0.36, 1);
   /* With nothing held the content is about 480px of a 900px window and it all
      sat against the top, so over half the screen was empty black beneath it —
@@ -146,7 +194,16 @@ const PortfolioStageNote = styled.div`
   font-size: 0.62rem;
   letter-spacing: 0.06em;
   color: ${({ theme }) => theme.color.textSecondary};
-  margin-top: 0.5rem;
+  /* The quiet variant is the standing model sentence rather than the note
+   * about the mode you are in: it belongs under both, sits closer to the line
+   * above it and steps back a shade, because it is the same on every mode and
+   * should not compete with the one thing that changed. It is still real text
+   * at a real size — the whole point is that it is read once.
+   *
+   * No backticks in this comment: it lives inside a template literal, and one
+   * would end the literal here rather than quote a word. */
+  margin-top: ${({ quiet }) => (quiet ? "0.25rem" : "0.5rem")};
+  ${({ quiet }) => (quiet ? "opacity: 0.75;" : "")}
 `;
 
 /* THE ALLOCATION RING
@@ -359,10 +416,40 @@ const PortfolioStatsLead = styled.div`
   margin-top: 0.75rem;
 `;
 
+/* Grouped, not just aligned.
+ *
+ * The grid already lined the seven figures into columns; what it could not do
+ * was say which belonged together. Read straight across, "vs BTC · Worst fall
+ * · Return p.a. · Long term" is four unrelated facts in a row, and the reader
+ * has to sort them. They are really three subjects — how it went wrong, what
+ * it returned, and what today did — so the columns are now those subjects,
+ * each a stack, with a hairline between them. Nothing was added or removed;
+ * the same numbers are simply standing next to the ones they belong with. */
+const PortfolioStatGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding-left: 1.2rem;
+  border-left: 1px solid ${({ theme }) => theme.color.border};
+
+  &:first-child {
+    padding-left: 0;
+    border-left: none;
+  }
+
+  /* One column on a narrow screen: three stacks side by side in a 320px
+     column is three characters wide each. The rules go with them, or every
+     group would grow a stray line above it. */
+  @media (max-width: 620px) {
+    padding-left: 0;
+    border-left: none;
+  }
+`;
+
 const PortfolioStats = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
-  gap: 0.35rem 1.2rem;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: 0.9rem 1.2rem;
   margin-top: 0.7rem;
   padding-top: 0.7rem;
   border-top: 1px solid ${({ theme }) => theme.color.border};
@@ -383,7 +470,13 @@ const StatItem = styled.span`
       flex-direction: column;
       align-items: flex-start;
       gap: 0.1rem;
-      font-size: 1.05rem;
+      /* 1.05rem was the same weight as the period change under the total, so
+         the screen carried two large green figures one above the other and
+         nothing said which was the headline — they answer different questions
+         (what the basket did over the range; what it is worth against what
+         you paid). The total keeps the headline; this is the second rank, and
+         being visibly second is the whole job. */
+      font-size: 0.92rem;
     `}
 `;
 
@@ -402,6 +495,73 @@ const StatValue = styled.span`
       : up
         ? theme.color.chartLineGreen
         : theme.color.chartLineRed};
+`;
+
+/* THE CHART, IN THE PLACE IT WAS ALREADY LEAVING EMPTY.
+ *
+ * Between the stats and the holdings list there was a band with nothing in it
+ * but the range switcher and a button — measured at roughly 200px on a 900px
+ * window, in the middle of the screen. Meanwhile the only chart on the page
+ * was the wallpaper, which is deliberately unreadable, and seeing a real one
+ * took a click.
+ *
+ * The data was already loaded for the wallpaper, so putting a bounded chart
+ * here costs nothing but the pixels. `Explore chart` still opens the full
+ * stage — this is the glance, that is the instrument. It is the difference
+ * between a form with figures on it and something that reads as a dashboard.
+ *
+ * Fixed height rather than an aspect ratio: the band it fills is a fixed gap,
+ * and a chart that grows with the window would push the holdings list off the
+ * fold on a short one. */
+/* It has to pass the height straight through.
+ *
+ * The chart measures its own frame and draws nothing at all when that comes
+ * back zero — it renders a bare box with no plot in it. Dropped in as a plain
+ * `div`, this wrapper broke the flex chain from the stage down to the chart,
+ * so every mode rendered an empty frame: the browser suite could not find the
+ * plot at all, on a page that looked to me like it was working. A wrapper that
+ * animates must be invisible to layout. */
+const PortfolioChartSwap = styled.div`
+  display: flex;
+  flex-direction: column;
+  /* A percentage height, not a flex item property: the parent it sits in is
+     not a flex container, so flex:1 on this did nothing and the box collapsed
+     to zero — measured at 1100x0, which the chart inside then read as "no
+     room" and drew nothing at all. (No backticks in this comment: it lives in
+     a template literal and one would end it here.) */
+  height: 100%;
+  width: 100%;
+`;
+
+const PortfolioInlineChart = styled.div`
+  position: relative;
+  height: 8.5rem;
+  margin-top: 1.1rem;
+  cursor: pointer;
+
+  /* A frame, not a card: the surrounding screen is already a stack of
+     panels, and one more filled box would make the chart the heaviest thing
+     on a page whose headline is the total. */
+  border: 1px solid ${({ theme }) => theme.color.border};
+  border-radius: ${({ theme }) => theme.scale * 6}px;
+  padding: 0.5rem 0.35rem 0.2rem;
+  transition: border-color 140ms ease;
+
+  &:hover,
+  &:focus-visible {
+    border-color: ${({ theme }) => theme.color.text};
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px ${({ theme }) => theme.color.border};
+  }
+
+  /* Under about 560px the holdings rows already drop their sparklines; a
+     chart in a column that narrow is a smear, and the stage is one tap away. */
+  @media (max-width: 560px) {
+    display: none;
+  }
 `;
 
 // Pulls the (generously padded) PeriodSwitcher into the portfolio's rhythm
@@ -543,9 +703,24 @@ const HoldingSpark = styled.svg`
   height: 1.6rem;
   overflow: visible;
   /* The polyline strokes currentColor, so the theme reaches it here rather
-     than through a withTheme wrapper the component does not otherwise need */
-  color: ${({ theme, up }) =>
-    up ? theme.color.chartLineGreen : theme.color.chartLineRed};
+     than through a withTheme wrapper the component does not otherwise need.
+
+     **Neutral ink, not green or red**, and that is this project's own rule
+     rather than a preference: on this row those two colours already mean
+     "up on what you paid" and "down on it", printed as a figure two inches to
+     the right. The sparkline was colouring itself by a different question —
+     the trend across the displayed range — so a holding could show a red line
+     beside a green +$2,448, which is two colour signals contradicting each
+     other about the same coin. Measured on a five-holding portfolio, two of
+     the five rows did exactly that.
+
+     Nothing is lost by dropping the colour, because the line's own slope
+     already says which way the range went; what goes is a second meaning
+     borrowing a channel that was spoken for. The chart's buy/sell markers and
+     the travel band were both made neutral for this reason, and each says so
+     in its own comment. */
+  color: ${({ theme }) => theme.color.textSecondary};
+  opacity: 0.75;
 
   @media (max-width: 560px) {
     display: none;
@@ -574,23 +749,55 @@ const HoldingShareBar = styled.div`
   bottom: 0;
   height: 2px;
   border-radius: 0 1px 0 0;
+  /* Neutral for Other, never the blue it used to fall back to: the palette's
+     own rule is that Other stays the secondary ink so it reads as *not one of
+     these*, and a blue bar under a row made it look like a seventh identity
+     rather than the absence of one. (No backticks: template literal.) */
   background: ${({ theme, tone }) =>
-    tone == null ? theme.color.chartLine : bandInk(theme, tone)};
+    tone == null ? theme.color.textSecondary : bandInk(theme, tone)};
   opacity: ${({ tone }) => (tone == null ? 0.55 : 0.85)};
   transition: width 0.3s ease;
 `;
 
 // Clicking the coin opens/closes the row's source + purchases breakdown
+/* Hovering a coin says two things: this is the interactive part of the row,
+ * and pressing it opens something.
+ *
+ * It used to say them by turning the symbol `chartLine` — a **blue**, and the
+ * only blue in this interface. On a word, at that saturation, it reads as a
+ * hyperlink, which is the one thing it is not. The accent is green-family now
+ * and deliberately not the up-green: that colour means "up" beside the money
+ * on the same row, and an accent identical to it would make hovering a coin
+ * look like a reading about the coin.
+ *
+ * And it moves, which is the half that was missing entirely — the colour
+ * swapped instantly. The chevron slides a little way towards where it is
+ * about to point, so the row hints at what the click does rather than only
+ * lighting up. `transform` and `color` only: neither touches layout, so a
+ * pointer running down five rows costs nothing. */
 const HoldingCoin = styled.div`
   display: flex;
   flex-direction: column;
   min-width: 0;
   cursor: pointer;
   user-select: none;
+  transition: color 0.16s ease;
 
   /* HoldingSym inherits this; HoldingName sets its own colour */
   &:hover {
-    color: ${({ theme }) => theme.color.chartLine};
+    color: ${({ theme }) => theme.color.accent};
+  }
+
+  &:hover > * > span:first-child {
+    transform: translateX(2px);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+
+    &:hover > * > span:first-child {
+      transform: none;
+    }
   }
 `;
 
@@ -598,9 +805,14 @@ const Chevron = styled.span`
   display: inline-block;
   margin-right: 0.35rem;
   font-size: 0.6rem;
-  color: ${({ theme }) => theme.color.textSecondary};
+  /* Takes the accent with the rest of the row on hover, rather than staying
+     grey while the symbol beside it lights up. */
+  color: inherit;
+  opacity: 0.65;
   transform: rotate(${({ open }) => (open ? "90deg" : "0deg")});
-  transition: transform 0.15s ease;
+  transition:
+    transform 0.16s ease,
+    opacity 0.16s ease;
 `;
 
 const HoldingSym = styled.div`

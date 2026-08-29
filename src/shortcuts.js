@@ -10,46 +10,49 @@
 
 const SHORTCUT_GROUPS = [
   {
-    title: "Chart",
+    title: msg("sc_group_chart", "Chart"),
     items: [
-      { keys: ["←", "→"], label: "Previous / next coin" },
-      { keys: ["1", "–", "6"], label: "Switch range, 1H through ALL" },
-      { keys: ["C"], label: "Compare with a second coin" },
-      { keys: ["R"], label: "Refresh now" },
+      { keys: ["←", "→"], label: msg("sc_prev_next_coin", "Previous / next coin") },
+      { keys: ["1", "–", "6"], label: msg("sc_switch_range", "Switch range, 1H through ALL") },
+      { keys: ["C"], label: msg("sc_compare", "Compare with a second coin") },
+      { keys: ["R"], label: msg("sc_refresh", "Refresh now") },
     ],
   },
   {
-    title: "View",
+    title: msg("sc_group_view", "View"),
     items: [
-      { keys: ["T"], label: "Line / candlestick chart" },
-      { keys: ["G"], label: "Price / time grid on the chart" },
-      { keys: ["L"], label: "Calls on / off" },
-      { keys: ["[", "–", "]"], label: "Board reach: zoom out / in (calls on)" },
-      { keys: ["X"], label: "Percent / price change" },
-      { keys: ["W"], label: "Hide / show widgets" },
-      { keys: ["D"], label: "Dark / light theme" },
-      { keys: ["Space"], label: "Auto-rotate coins on / off" },
+      { keys: ["T"], label: msg("sc_chart_type", "Line / candlestick chart") },
+      { keys: ["G"], label: msg("sc_grid", "Price / time grid on the chart") },
+      { keys: ["L"], label: msg("sc_calls", "Calls on / off") },
+      { keys: ["[", "–", "]"], label: msg("sc_board_zoom", "Board reach: zoom out / in (calls on)") },
+      { keys: ["X"], label: msg("sc_percent", "Percent / price change") },
+      { keys: ["W"], label: msg("sc_widgets", "Hide / show widgets") },
+      { keys: ["D"], label: msg("sc_theme", "Dark / light theme") },
+      { keys: ["Space"], label: msg("sc_rotate", "Auto-rotate coins on / off") },
     ],
   },
   {
-    title: "Open",
+    title: msg("sc_group_open", "Open"),
     items: [
-      { keys: ["/"], label: "Jump to a coin by name" },
-      { keys: ["A"], label: "Price targets" },
+      { keys: ["/"], label: msg("sc_jump", "Jump to a coin by name") },
+      { keys: ["A"], label: msg("chrome_targets", "Price targets") },
       {
         keys: ["B"],
-        label: "Base rates — how often this coin has been here before",
+        label: msg(
+          "sc_base_rates",
+          "Base rates — how often this coin has been here before",
+        ),
       },
-      { keys: ["K"], label: "Calls — the board, the record, the settings" },
-      { keys: ["N"], label: "News — every source, filtered and dated" },
-      { keys: ["P"], label: "Portfolio" },
-      { keys: ["S"], label: "Settings" },
-      { keys: ["?"], label: "This list" },
+      { keys: ["K"], label: msg("sc_calls_panel", "Calls — the board, the record, the settings") },
+      { keys: ["N"], label: msg("sc_news_panel", "News — every source, filtered and dated") },
+      { keys: ["P"], label: msg("chrome_portfolio", "Portfolio") },
+      { keys: ["S"], label: msg("chrome_settings", "Settings") },
+      { keys: ["?"], label: msg("sc_this_list", "This list") },
     ],
   },
   {
-    title: "Anywhere",
-    items: [{ keys: ["Esc"], label: "Close whatever is open" }],
+    title: msg("sc_group_anywhere", "Anywhere"),
+    items: [{ keys: ["Esc"], label: msg("sc_close_open", "Close whatever is open") }],
   },
 ];
 
@@ -165,7 +168,11 @@ const ShortcutsPanel = ({ onClose }) =>
     React.createElement(
       ShortcutsCard,
       null,
-      React.createElement(ShortcutsTitle, null, "Keyboard shortcuts"),
+      React.createElement(
+        ShortcutsTitle,
+        null,
+        msg("sc_title", "Keyboard shortcuts"),
+      ),
       SHORTCUT_GROUPS.map((group) =>
         React.createElement(
           Fragment,
@@ -193,7 +200,10 @@ const ShortcutsPanel = ({ onClose }) =>
       React.createElement(
         ShortcutsNote,
         null,
-        "Shortcuts pause while you're typing in a field. Press ? again, or Esc, to close this.",
+        msg(
+          "sc_note",
+          "Shortcuts pause while you're typing in a field. Press ? again, or Esc, to close this.",
+        ),
       ),
     ),
   );

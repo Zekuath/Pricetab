@@ -29,6 +29,7 @@ const suites = [
   "test-invariants.js",
   "test-load.js",
   "test-storage.js",
+  "test-i18n.js",
   "test-api.js",
   "test-provider.js",
   "test-cache.js",
@@ -49,8 +50,17 @@ const suites = [
   "test-calls-render.js",
   "test-modes-render.js",
   "test-polish-render.js",
+  "test-i18n-render.js",
+  "test-portfolio-chart-render.js",
   "test-transition-render.js",
 ];
+/* Suites a checkout may or may not have: `tests/local-*.js` is git-ignored, so
+ * these guard local working material rather than the extension and are simply
+ * absent in CI. Sorted so the run order is the same everywhere. */
+for (const f of fs.readdirSync(__dirname).sort()) {
+  if (/^local-.*\.js$/.test(f)) suites.push(f);
+}
+
 for (const suite of suites) {
   step(suite, () =>
     execFileSync("node", [path.join(__dirname, suite)], { stdio: "pipe" }),

@@ -129,7 +129,7 @@ const makeRealSandbox = (store) => {
   const base2 = ROOT;
   vm.runInContext(fs.readFileSync(`${base2}/vendor/d3-custom.min.js`, "utf8"), sb, { filename: "d3-custom" });
   vm.runInContext("const { easeCubicOut, extent, line, scaleLinear, scaleTime, select } = d3;", sb);
-  for (const f of ["config.js", "api.js", "storage.js", "widgets-data.js", "utils.js"]) {
+  for (const f of ["storage.js", "i18n.js", "config.js", "api.js", "widgets-data.js", "utils.js"]) {
     vm.runInContext(fs.readFileSync(`${base2}/src/${f}`, "utf8"), sb, { filename: f });
   }
   return sb;

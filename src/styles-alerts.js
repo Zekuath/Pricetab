@@ -522,65 +522,6 @@ const AlertPrimaryButton = styled.button.attrs({ type: "button" })`
   }
 `;
 
-/* The live consequence of the squares setting, under its chips. */
-const AlertGeometryLine = styled.div`
-  margin-top: 0.55rem;
-  padding: 0.45rem 0.6rem;
-  border-radius: 7px;
-  background: ${({ theme }) => theme.color.bgSecondary};
-  font-size: 0.66rem;
-  line-height: 1.5;
-  color: ${({ theme }) => theme.color.textSecondary};
-`;
-
-const AlertGeometryFigure = styled.span`
-  color: ${({ theme }) => theme.color.text};
-  font-variant-numeric: tabular-nums;
-`;
-
-/* The settings group on the calls tab: separated from the list above by a
- * rule and some air, so it reads as controls rather than as more rows. */
-const AlertCallSettings = styled.div`
-  margin-top: 0.9rem;
-  padding-top: 0.4rem;
-  border-top: 1px solid ${({ theme }) => theme.color.border};
-`;
-
-const AlertSettingRow = styled.div`
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 0.9rem;
-  padding: 0.5rem 0;
-
-  & + & {
-    border-top: 1px solid ${({ theme }) => theme.color.border};
-  }
-`;
-
-const AlertSettingText = styled.div`
-  min-width: 0;
-`;
-
-const AlertSettingName = styled.div`
-  font-size: 0.72rem;
-  color: ${({ theme }) => theme.color.text};
-`;
-
-const AlertSettingHint = styled.div`
-  margin-top: 0.15rem;
-  font-size: 0.64rem;
-  line-height: 1.45;
-  color: ${({ theme }) => theme.color.textSecondary};
-`;
-
-const AlertsTitle = styled.div`
-  font-size: 0.66rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: ${({ theme }) => theme.color.textSecondary};
-`;
-
 /* The right-hand end of the head: the tally, and the button that explains it.
  * Aligned on the text baseline rather than centred, so the tally still reads as
  * part of the same line as the tab labels. */
@@ -933,68 +874,6 @@ const AlertQuickLabel = styled.span`
   text-transform: uppercase;
   color: ${({ theme }) => theme.color.textSecondary};
   margin-right: 0.15rem;
-`;
-
-/* A section label with a control on the right — the calls section needs to
- * carry its own switch, since it no longer has a settings tab to live in. */
-const AlertsSectionRow = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-`;
-
-/* Neutral chip: the squares selector and the section's own switch.
- * AlertQuickChip is coloured by direction, which means nothing here.
- *
- * Sized to be hit, not just seen. The first version was 0.2rem of padding on
- * a 0.66rem label — about 20px tall, which is under any reasonable pointer
- * target and impossible on a touchpad in a hurry. The selected state is
- * carried by fill *and* border rather than border alone, so it survives being
- * looked at quickly. */
-const AlertPlainChip = styled.button.attrs({ type: "button" })`
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 2.1rem;
-  min-height: 1.9rem;
-  padding: 0 0.6rem;
-  font-family: ${({ theme }) => theme.font.primary};
-  font-size: 0.72rem;
-  letter-spacing: 0.04em;
-  color: ${({ theme, active }) =>
-    active ? theme.color.bg : theme.color.textSecondary};
-  background: ${({ theme, active }) =>
-    active ? theme.color.text : "transparent"};
-  border: 1px solid
-    ${({ theme, active }) =>
-      active ? theme.color.text : theme.color.border};
-  border-radius: 7px;
-  cursor: pointer;
-  transition:
-    border-color 0.15s ease,
-    background 0.15s ease,
-    color 0.15s ease;
-
-  &:hover {
-    border-color: ${({ theme }) => theme.color.borderHover};
-    color: ${({ theme, active }) => (active ? theme.color.bg : theme.color.text)};
-  }
-
-  &:focus-visible {
-    outline: none;
-    border-color: ${({ theme }) => theme.color.chartLineGreen};
-    box-shadow: 0 0 0 1px ${({ theme }) => theme.color.chartLineGreen};
-  }
-`;
-
-/* The squares row wraps at ten chips rather than squeezing them, and keeps
- * its label on its own line so the two never collide. */
-const AlertChipRow = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
-  margin: 0.3rem 0 0.1rem;
 `;
 
 /* A settled call's verdict, in the row it belongs to */

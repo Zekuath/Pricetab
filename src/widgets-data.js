@@ -17,10 +17,10 @@ const HIDDEN_WIDGETS_KEY = "crypto_chart_hidden_widgets";
 const WIDGET_SIZE_KEY = "crypto_chart_widget_size";
 const DEFAULT_WIDGET_SIZE = "medium";
 const WIDGET_SIZE_OPTIONS = [
-  { value: "small", short: "S", label: "Compact", scale: 0.85 },
-  { value: "medium", short: "M", label: "Default", scale: 1 },
-  { value: "large", short: "L", label: "Large", scale: 1.2 },
-  { value: "xlarge", short: "XL", label: "Extra large", scale: 1.45 },
+  { value: "small", short: "S", label: msg("wsize_compact", "Compact"), scale: 0.85 },
+  { value: "medium", short: "M", label: msg("wsize_default", "Default"), scale: 1 },
+  { value: "large", short: "L", label: msg("wsize_large", "Large"), scale: 1.2 },
+  { value: "xlarge", short: "XL", label: msg("wsize_xlarge", "Extra large"), scale: 1.45 },
 ];
 
 const widgetSizeScale = (value) => {
@@ -105,37 +105,37 @@ const isPresetActive = (widgets, presetKey) => {
 // Settings panel grouping + one-line explanations for each widget
 const WIDGET_GROUPS = [
   {
-    title: "Portfolio",
+    title: msg("wgroup_portfolio", "Portfolio"),
     items: [
       {
         key: "watchlist",
-        label: "Watchlist",
-        desc: "Your coins as a colour-coded 24h grid",
+        label: msg("wname_watchlist", "Watchlist"),
+        desc: msg("wdesc_watchlist", "Your coins as a colour-coded 24h grid"),
       },
       {
         key: "topMovers",
-        label: "Top Movers",
-        desc: "Today's biggest gainers and losers",
+        label: msg("wname_top_movers", "Top Movers"),
+        desc: msg("wdesc_top_movers", "Today's biggest gainers and losers"),
       },
     ],
   },
   {
-    title: "Market",
+    title: msg("wgroup_market", "Market"),
     items: [
       {
         key: "fearGreed",
-        label: "Fear & Greed",
-        desc: "Market sentiment score from 0 to 100",
+        label: msg("wname_fear_greed", "Fear & Greed"),
+        desc: msg("wdesc_fear_greed", "Market sentiment score from 0 to 100"),
       },
       {
         key: "marketOverview",
-        label: "Market Overview",
-        desc: "Total market cap and BTC/ETH dominance",
+        label: msg("wname_market_overview", "Market Overview"),
+        desc: msg("wdesc_market_overview", "Total market cap and BTC/ETH dominance"),
       },
       {
         key: "altcoinSeason",
-        label: "Altcoin Season",
-        desc: "Are altcoins outperforming Bitcoin?",
+        label: msg("wname_altcoin_season", "Altcoin Season"),
+        desc: msg("wdesc_altcoin_season", "Are altcoins outperforming Bitcoin?"),
       },
     ],
   },
@@ -143,65 +143,65 @@ const WIDGET_GROUPS = [
    * is a price. Halving moved here from Market for that reason: it is a block
    * height, and the group it was in is about what things trade at. */
   {
-    title: "Network",
+    title: msg("wgroup_network", "Network"),
     items: [
       {
         key: "ethGas",
-        label: "ETH Gas",
-        desc: "Gas price now, and what a plain ETH transfer costs",
+        label: msg("wname_eth_gas", "ETH Gas"),
+        desc: msg("wdesc_eth_gas", "Gas price now, and what a plain ETH transfer costs"),
       },
       {
         key: "btcFees",
         // The vsize is an assumption and it is stated here rather than on the
         // card: 141 vB is a one-in-two-out native SegWit spend, the ordinary
         // wallet transaction. Yours may be bigger.
-        label: "BTC Fees",
-        desc: "Fee rate now, and what a typical 141 vB transfer costs",
+        label: msg("wname_btc_fees", "BTC Fees"),
+        desc: msg("wdesc_btc_fees", "Fee rate now, and what a typical 141 vB transfer costs"),
       },
       {
         key: "halvingCountdown",
-        label: "BTC Halving Countdown",
-        desc: "Time until the next Bitcoin halving",
+        label: msg("wname_halving_countdown", "BTC Halving Countdown"),
+        desc: msg("wdesc_halving_countdown", "Time until the next Bitcoin halving"),
       },
     ],
   },
   {
-    title: "Trader",
+    title: msg("wgroup_trader", "Trader"),
     items: [
       {
         key: "rsiWidget",
-        label: "RSI",
+        label: msg("wname_rsi_widget", "RSI"),
         // Not "overbought above 70, oversold below 30": that describes the
         // daily RSI, and this one's period follows the range on screen
-        desc: "Momentum on a 0–100 scale, over the range you are looking at",
+        desc: msg("wdesc_rsi_widget", "Momentum on a 0–100 scale, over the range you are looking at"),
       },
       {
         key: "worstFall",
-        label: "Worst Fall",
+        label: msg("wname_worst_fall", "Worst Fall"),
         // The risk column, and the only survivor of the algorithm research:
         // 59 of 64 rule x coin pairs cut the worst fall while only 28 beat
         // holding. A description of what happened, never an entry.
-        desc: "The deepest peak-to-trough fall inside the range on screen",
+        desc: msg("wdesc_worst_fall", "The deepest peak-to-trough fall inside the range on screen"),
       },
       {
         key: "fundingRate",
-        label: "Funding Rate",
-        desc: "What longs pay shorts on perpetual futures",
+        label: msg("wname_funding_rate", "Funding Rate"),
+        desc: msg("wdesc_funding_rate", "What longs pay shorts on perpetual futures"),
       },
       {
         key: "longShortRatio",
-        label: "Long / Short Ratio",
-        desc: "How traders are positioned right now",
+        label: msg("wname_long_short_ratio", "Long / Short Ratio"),
+        desc: msg("wdesc_long_short_ratio", "How traders are positioned right now"),
       },
       {
         key: "openInterest",
-        label: "Open Interest",
-        desc: "Value of open futures contracts",
+        label: msg("wname_open_interest", "Open Interest"),
+        desc: msg("wdesc_open_interest", "Value of open futures contracts"),
       },
       {
         key: "liquidations",
-        label: "Liquidations 24h",
-        desc: "Forced position closures, last 24 hours",
+        label: msg("wname_liquidations", "Liquidations 24h"),
+        desc: msg("wdesc_liquidations", "Forced position closures, last 24 hours"),
       },
     ],
   },

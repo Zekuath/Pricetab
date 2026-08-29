@@ -29,6 +29,13 @@ This document explains how to create all required assets for publishing PriceTab
 
 > ✅ **The 1.4.0 set is shot** (19 Aug 2026), against live market data:
 > `01-hero`, `02-calls`, `03-portfolio`, `04-widgets`, `05-targets`.
+>
+> ⚠️ **They predate 1.5.0 and three of the five now show an older screen.**
+> `02-calls` has no travel band; `03-portfolio` opens on the header the empty
+> state and the alignment work changed; `04-widgets` is missing the network-fee
+> and worst-fall cards, the Fear & Greed meter and the card titles. Reshoot
+> before submitting, or submit the two that still hold (`01-hero`,
+> `05-targets`) and say why.
 > **[SCREENSHOT_PLAN.md](SCREENSHOT_PLAN.md)** is still the canonical brief —
 > read it first; it carries the five frames, the house rules, and the two
 > capture traps that cost a morning (the board's window versus the range, and

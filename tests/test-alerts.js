@@ -44,7 +44,7 @@ vm.createContext(sandbox);
 const base = path.join(__dirname, "..", "src");
 // styles-alerts.js comes with it now: the info card is rendered by these tests,
 // and its styled-components live there (in load order, before alerts.js)
-for (const f of ["config.js", "storage.js", "styles-alerts.js", "alerts.js"]) {
+for (const f of ["storage.js", "i18n.js", "config.js", "styles-alerts.js", "alerts.js"]) {
   vm.runInContext(fs.readFileSync(`${base}/${f}`, "utf8"), sandbox, { filename: f });
 }
 const run = (code) => vm.runInContext(code, sandbox);
@@ -388,7 +388,7 @@ assert.deepStrictEqual(json("alertCoinsToWatch([], 'USD')"), [], "no alerts → 
 /* ── a target on the whole portfolio ────────────────────────────────────────
  *
  * The third kind. It exists because the algorithm research
- * (`docs/product/TODAY.md` §9) says buy and sell signals cannot be built
+ * (the working notes §9) says buy and sell signals cannot be built
  * honestly — 0 of 70 permutation tests survive, and on live daily closes
  * "overbought" beat the coin's ordinary month on four of six coins. What a
  * person actually wants when they ask for a sell signal is to be told about

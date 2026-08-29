@@ -158,7 +158,7 @@ const priceAtOrBefore = (prices, ms) => {
 /* The worst peak-to-trough fall inside a series.
  *
  * This is here because of what the algorithm research found and what it did
- * not (`docs/product/TODAY.md` §9.4). Nine textbook rules over 21,669 daily
+ * not (the working notes §9.4). Nine textbook rules over 21,669 daily
  * closes on eight coins: **0 of 70 permutation tests survive Holm–Bonferroni**,
  * and on live daily closes the textbook labels point the wrong way — after
  * RSI 14 crosses 70, the "sell" signal, the next thirty days beat the coin's
@@ -253,6 +253,99 @@ const buildPortfolioParts = (histories, holdings) => {
   const last = (p) => p.values[p.values.length - 1] || 0;
   parts.sort((a, b) => last(b) - last(a));
   return { series, parts };
+};
+
+/* WHICH HOLDING MOVED THE TOTAL — and deliberately not which one to buy.
+ *
+ * Allocation says what the basket is *made of*; this says what *moved* it, and
+ * they are different questions that people routinely read off the same chart.
+ * A coin can be 40% of the position and account for none of the month's
+ * change, and a 3% holding can be the whole of it.
+ *
+ * It is arithmetic on a series already on screen, so it costs nothing:
+ *
+ *     contribution = values[last] - values[0]
+ *
+ * and because `values` is `amount x price(t)` with the amount fixed, that is
+ * exactly `amount x (end price - start price)`. **They sum to the headline
+ * delta by construction**, which is the property that makes the chart honest —
+ * `tests/test-portfolio.js` asserts it rather than trusting it.
+ *
+ * `share` is against the sum of **absolute** contributions, not the net: with
+ * winners and losers cancelling, a net denominator can be near zero and send
+ * every share to infinity. Shares therefore say "how much of the total
+ * movement was this", not "what fraction of the net".
+ *
+ * It says nothing about what happens next, and it must not: nine textbook
+ * rules over 21,669 daily closes produced 0 of 70 results that survived
+ * correction for multiple testing (the working notes §9). This is a description of
+ * something that already happened, which is the only thing the data supports.
+ */
+const contributionsOf = (parts) => {
+  if (!Array.isArray(parts) || !parts.length) return null;
+  const rows = [];
+  let net = 0;
+  let gross = 0;
+  for (const part of parts) {
+    const values = part && part.values;
+    if (!Array.isArray(values) || values.length < 2) continue;
+    const first = values[0];
+    const last = values[values.length - 1];
+    if (!isFinite(first) || !isFinite(last)) continue;
+    const change = last - first;
+    rows.push({ coin: part.coin, change, from: first, to: last });
+    net += change;
+    gross += Math.abs(change);
+  }
+  if (!rows.length) return null;
+  /* Biggest mover first, regardless of direction: the question is "what moved
+   * this", and the largest loser answers it as well as the largest winner. */
+  rows.sort((a, b) => Math.abs(b.change) - Math.abs(a.change));
+  for (const row of rows) {
+    row.share = gross > 0 ? (Math.abs(row.change) / gross) * 100 : 0;
+    /* Against the coin's own starting value, which is the figure people mean
+     * by "how did BTC do" — null rather than a divide-by-zero when the
+     * position was empty at the start of the window. */
+    row.pct = row.from > 0 ? (row.change / row.from) * 100 : null;
+  }
+  return { rows, net, gross };
+};
+
+/* THE SAME SERIES AS DISTANCE FROM ITS OWN PEAK.
+ *
+ * `maxDrawdown` already reports the deepest fall as one number, and one number
+ * hides the two things that decide whether a fall mattered: **how long** it
+ * lasted and **whether it came back**. A position that fell 12% and recovered
+ * in a fortnight and one that fell 12% and stayed there produce the same
+ * headline figure and are not the same experience.
+ *
+ * Every point is `(value / running peak) - 1`, so:
+ *   - zero means "at a new high", and the top of the chart is a hard ceiling
+ *     the series touches rather than an arbitrary edge;
+ *   - everything else is negative, and the depth is read straight off the
+ *     axis.
+ *
+ * It is derived from the series already drawn — no request, no second history,
+ * no new state. And it is risk *context*, not a forecast: it says how bad this
+ * got, never how bad it can get, which is the same wording rule the worst-fall
+ * widget follows.
+ */
+const drawdownSeries = (series) => {
+  if (!Array.isArray(series) || series.length < 2) return null;
+  const out = [];
+  let peak = -Infinity;
+  for (const point of series) {
+    const v = point.price;
+    if (!isFinite(v)) {
+      out.push({ time: point.time, price: 0 });
+      continue;
+    }
+    if (v > peak) peak = v;
+    /* Before the first positive value there is no peak to be below, and a
+     * division by a non-positive peak is not a percentage of anything. */
+    out.push({ time: point.time, price: peak > 0 ? ((v - peak) / peak) * 100 : 0 });
+  }
+  return out;
 };
 
 const buildPortfolioSeries = (histories, holdings) => {
@@ -350,9 +443,6 @@ const consumeLots = (lots, amount, method) => {
   return { basis, covered, matched };
 };
 
-// The name every existing caller used, kept as the FIFO case rather than
-// rewritten at forty call sites
-const consumeLotsFifo = (lots, amount) => consumeLots(lots, amount, "fifo");
 
 /* ── money entered in another currency ─────────────────────────────────────
  * A lot's `paid` and a sale's `received` are numbers of a specific currency,
@@ -387,7 +477,7 @@ const pausedCurrencies = (entries) => {
   for (const e of entries || []) {
     if (e && e.currency && !seen.includes(e.currency)) seen.push(e.currency);
   }
-  if (seen.length <= 1) return seen[0] || "another currency";
+  if (seen.length <= 1) return seen[0] || msg("po_another_currency", "another currency");
   return `${seen.slice(0, -1).join(", ")} and ${seen[seen.length - 1]}`;
 };
 
@@ -397,8 +487,8 @@ const pausedCount = (row) => {
   const parts = [];
   const lots = row.paused.length;
   const sales = row.salesPaused.length;
-  if (lots) parts.push(`${lots} purchase${lots > 1 ? "s" : ""}`);
-  if (sales) parts.push(`${sales} sale${sales > 1 ? "s" : ""}`);
+  if (lots) parts.push((lots > 1 ? msg("po_n_purchases", "$1 purchases", lots) : msg("po_one_purchase", "1 purchase")));
+  if (sales) parts.push((sales > 1 ? msg("po_n_sales", "$1 sales", sales) : msg("po_one_sale", "1 sale")));
   return parts.join(" and ");
 };
 
@@ -457,7 +547,7 @@ const methodTitle = (method) => {
   const m =
     COST_METHODS.find((x) => x.value === method) ||
     COST_METHODS.find((x) => x.value === DEFAULT_COST_METHOD);
-  return `${m.label} — ${m.title.toLowerCase()}`;
+  return msg("po_method_line", "$1 — $2", m.label, m.title.toLowerCase());
 };
 
 const AMOUNT_EPSILON = 1e-9;
@@ -729,7 +819,7 @@ const buildPortfolioCsv = (rows, currency, costMethod) => {
           `# ${otherCurrencyLots} purchase(s) and ${otherCurrencySales} sale(s) were entered in a different currency. They are listed below with their own currency and are NOT in the totals above — converting them at today's rate would state a gain that moves on days the purchase did not.`,
         ]
       : []),
-    `# "Long term" here means held ${LONG_TERM_DAYS} days or more. That threshold is not the same in every country — check yours.`,
+    `# msg("po_long_term", "Long term") here means held ${LONG_TERM_DAYS} days or more. That threshold is not the same in every country — check yours.`,
     "",
     "Summary,Value",
     `Portfolio value,${num(totalHoldingsValue)}`,
@@ -793,7 +883,7 @@ const buildPortfolioCsv = (rows, currency, costMethod) => {
           num(d.gainPct, 2),
           d.held == null ? "" : d.held,
           d.longTerm == null ? "unknown" : d.longTerm ? "long" : "short",
-          lot.source === "chain" ? "chain (estimated)" : "manual",
+          lot.source === "chain" ? msg("po_chain_estimated", "chain (estimated)") : "manual",
           own ? "" : "not in totals",
         ].join(","),
       );
@@ -886,7 +976,7 @@ const buildPortfolioCsv = (rows, currency, costMethod) => {
       }
       // Whatever the purchases didn't cover — proceeds with no cost to match
       const uncovered = sale.amount - (sale.basisAmount || 0);
-      if (uncovered > AMOUNT_EPSILON) pair(uncovered, null, 0, "no purchase");
+      if (uncovered > AMOUNT_EPSILON) pair(uncovered, null, 0, msg("po_no_purchase", "no purchase"));
     }
   }
   if (saleLines.length) {
@@ -982,7 +1072,7 @@ class Portfolio extends PureComponent {
       // The chart brought forward: same series, given a scale, a crosshair and
       // the purchases and sales drawn where they happened
       chartOpen: false,
-      chartStacked: loadPortfolioStackedFromStorage(),
+      chartMode: loadPortfolioChartMode(), // "total" | "bycoin" | "pnl"
     };
     this._chartToken = 0; // invalidates in-flight history loads
     this._chartSig = null; // last loaded coins|currency|period signature
@@ -990,9 +1080,12 @@ class Portfolio extends PureComponent {
     this._eventsMemo = null; // …and the marker list
     this._importErrTimer = null;
     this.fileInput = createRef();
+    /* The chart's wrapper, animated on a mode switch — see
+     * `componentDidUpdate`. */
+    this.chartSwapRef = createRef();
     this.handleChartKey = this.handleChartKey.bind(this);
     this.toggleChart = this.toggleChart.bind(this);
-    this.toggleStacked = this.toggleStacked.bind(this);
+    this.setChartMode = this.setChartMode.bind(this);
   }
 
   componentDidMount() {
@@ -1011,9 +1104,36 @@ class Portfolio extends PureComponent {
     document.addEventListener("keydown", this.handleChartKey, true);
   }
 
-  componentDidUpdate() {
+  componentDidUpdate(prevProps, prevState) {
     this.maybeLoadHistories();
     this.measureAllocation();
+
+    /* A mode switch is a different drawing, so it arrives.
+     *
+     * The line morphs when the drawing is the same and the data changed (see
+     * `morphLine`), but a line and a stack of bands and a row of ranked bars
+     * are not states of one shape — there is nothing to interpolate between,
+     * so this cross-fades instead.
+     *
+     * Driven from here with the Web Animations API rather than a CSS class or
+     * a React `key`: a key would remount the chart and throw away its
+     * measurement, and a class would need adding and removing to replay. This
+     * is one call, one-shot, and `getAnimations()` is empty again when it
+     * lands — which matters on a page that opens in every new tab.
+     *
+     * Opacity and a two-pixel lift only: neither touches layout. */
+    if (prevState && prevState.chartMode !== this.state.chartMode) {
+      const node = this.chartSwapRef.current;
+      if (node && typeof node.animate === "function" && !prefersReducedMotion()) {
+        node.animate(
+          [
+            { opacity: 0, transform: "translateY(2px)" },
+            { opacity: 1, transform: "none" },
+          ],
+          { duration: 260, easing: "cubic-bezier(0.22, 1, 0.36, 1)" },
+        );
+      }
+    }
   }
 
   /* The strip's width, for deciding which segments can hold a label.
@@ -1041,23 +1161,46 @@ class Portfolio extends PureComponent {
     document.removeEventListener("keydown", this.handleChartKey, true);
   }
 
+  /* `_chartHolding` is an instance field, not state, and deliberately: nothing
+   * renders from it, and routing it through `setState` would re-render the
+   * whole portfolio on every arrow key — the same reason the crosshair itself
+   * is written imperatively. It is read by a capture-phase listener, so it
+   * also has to be true *synchronously* by the time the next key arrives. */
   handleChartKey(e) {
     if (e.key !== "Escape" || !this.state.chartOpen) return;
+    /* Stopped here, in the capture phase, whatever it turns out to mean.
+     *
+     * Three handlers want this key: the chart's crosshair, this stage, and
+     * `app.js`'s global one that closes the portfolio. The last two both
+     * listen on `document` in the bubble phase, so `stopPropagation` from
+     * anywhere downstream cannot separate them — the event has already
+     * arrived at the element they share. This listener is the only one that
+     * runs first, so it decides, and nothing after it sees the key at all. */
     e.stopPropagation();
     e.preventDefault();
+
+    /* Two meanings, in the order you would expect: let go of the point you
+     * are reading, then leave the chart. Anything else makes Escape close a
+     * whole screen while you were only trying to drop a crosshair. */
+    if (this._chartHolding) {
+      this._chartHolding = false;
+      if (typeof this._releaseChart === "function") this._releaseChart();
+      return;
+    }
     this.setState({ chartOpen: false });
   }
 
   toggleChart() {
+    this._chartHolding = false;
     this.setState((prev) => ({ chartOpen: !prev.chartOpen }));
   }
 
-  toggleStacked() {
-    this.setState((prev) => {
-      const chartStacked = !prev.chartStacked;
-      savePortfolioStackedToStorage(chartStacked);
-      return { chartStacked };
-    });
+  setChartMode(mode) {
+    if (!PORTFOLIO_CHART_MODES.includes(mode)) return;
+    savePortfolioChartMode(mode);
+    // The old boolean is kept in step so a downgrade still finds a sane value
+    savePortfolioStackedToStorage(mode === "bycoin");
+    this.setState({ chartMode: mode });
   }
 
   // The biggest holdings by current value, capped so a period switch never
@@ -1231,13 +1374,13 @@ class Portfolio extends PureComponent {
     const points = series
       .map((p, i) => `${(i / last) * 100},${y(p.price).toFixed(2)}`)
       .join(" ");
-    const rising = series[last].price >= series[0].price;
+    /* No `up` flag any more: the line is neutral ink, because green and red on
+     * this row already mean the P/L printed beside it. See `HoldingSpark`. */
     return React.createElement(
       HoldingSpark,
       {
         viewBox: "0 0 100 100",
         preserveAspectRatio: "none",
-        up: rising,
         "aria-hidden": true,
       },
       React.createElement("polyline", {
@@ -1315,7 +1458,7 @@ class Portfolio extends PureComponent {
         value: costBasis,
         ref: {
           value: costBasis,
-          label: `COST ${this.fmtMoney(costBasis, false)}`,
+          label: msg("pc_cost", "COST $1", this.fmtMoney(costBasis, false)),
         },
       };
     }
@@ -1336,6 +1479,49 @@ class Portfolio extends PureComponent {
    * Null rather than a guess when the benchmark's own history starts after
    * the window does: there is no honest first price to measure from.
    */
+  /* The basket and the benchmark, both re-based to 0% at their first common
+   * point — the only honest way to put two series of different magnitudes on
+   * one chart.
+   *
+   * **One axis, never two.** A second y-axis is the trick that makes any two
+   * lines look related; the coin comparison already refuses it and says so in
+   * its own comment, and this refuses it the same way. Percentages from a
+   * shared start need no second axis, because they are already the same unit.
+   *
+   * It refuses rather than approximates in the cases that matter: no benchmark
+   * history, a benchmark that starts after the basket does, or a starting
+   * price of zero to divide by. A comparison drawn from a window the benchmark
+   * was not trading in is a comparison of different dates wearing one x-axis.
+   */
+  benchmarkSeries(series) {
+    const bench = this.state.histories[BENCHMARK_COIN];
+    if (!series || series.length < 2 || !Array.isArray(bench) || bench.length < 2) {
+      return null;
+    }
+    const base = priceAtOrBefore(bench, +series[0].time);
+    if (!(base > 0)) return null;
+    const out = [];
+    for (const point of series) {
+      const at = priceAtOrBefore(bench, +point.time);
+      if (at == null || !isFinite(at)) continue;
+      out.push({ time: point.time, price: ((at - base) / base) * 100 });
+    }
+    /* Every point or none: a benchmark drawn over part of the window and
+     * absent for the rest reads as the market having stopped. */
+    return out.length === series.length ? out : null;
+  }
+
+  /* The basket itself as percent change from the same start. */
+  basketPctSeries(series) {
+    if (!series || series.length < 2) return null;
+    const base = series[0].price;
+    if (!(base > 0)) return null;
+    return series.map((p) => ({
+      time: p.time,
+      price: ((p.price - base) / base) * 100,
+    }));
+  }
+
   benchmarkPct(series) {
     const bench = this.state.histories[BENCHMARK_COIN];
     if (!series || !Array.isArray(bench) || bench.length < 2) return null;
@@ -1355,13 +1541,13 @@ class Portfolio extends PureComponent {
    */
   renderChartStage(view) {
     const { built, costBasis, seriesDelta, seriesPct, periodLabel } = view;
-    const { chartPeriod, chartStacked } = this.state;
+    const { chartPeriod, chartMode } = this.state;
     const series = built.series;
     return React.createElement(
       PortfolioStage,
       {
         /* Anywhere off the card puts the chart away. Esc did this and the
-         * "Holdings" button did this, and both are things you have to know;
+         * Holdings button did this, and both are things you have to know;
          * clicking the empty margin around a thing you opened is what
          * everybody tries first, and it did nothing at all. `currentTarget`
          * is the test rather than a bounding box, so a click that lands on
@@ -1381,12 +1567,17 @@ class Portfolio extends PureComponent {
         React.createElement(
           PortfolioHeader,
           { style: { marginBottom: 0 } },
-          React.createElement(PortfolioEyebrow, null, "Portfolio · Total value"),
+          React.createElement(PortfolioEyebrow, null, msg("po_chart_title", "Portfolio · Total value")),
           React.createElement(
             PortfolioTotal,
             {
               title: view.coverage
-                ? `The value of the ${view.coverage.drawn} holdings on this chart. Your portfolio total covers all ${view.coverage.held}.`
+                ? msg(
+            "po_chart_value_note",
+            "The value of the $1 holdings on this chart. Your portfolio total covers all $2.",
+            view.coverage.drawn,
+            view.coverage.held,
+          )
                 : undefined,
             },
             this.fmtMoney(series[series.length - 1].price, false),
@@ -1405,17 +1596,92 @@ class Portfolio extends PureComponent {
         React.createElement(
           PortfolioStageChart,
           null,
-          React.createElement(PortfolioChart, {
-            series,
-            parts: built.parts,
-            events: this.chartEvents(series),
-            costBasis: costBasis > 0 ? costBasis : null,
-            period: chartPeriod,
-            currency: this.props.currency,
-            stacked: chartStacked,
-            formatMoney: (v, sign) => this.fmtMoney(v, sign),
-            formatAmount: (v) => this.fmtAmount(v),
-          }),
+          /* **The P/L view is the total re-based, not a second chart.**
+           *
+           * Everything the value chart already does — the fill above and below
+           * the cost level, the crosshair, the buy and sell markers, the
+           * scale — is right for profit and loss the moment the cost level is
+           * zero. So the transform happens here, where the series is built,
+           * and `PortfolioChart` stays one chart with one set of rules rather
+           * than growing a third branch. Its own comment says what a fourth
+           * mode would do to it; this is not one.
+           *
+           * The whole cost basis is subtracted, constant across the window,
+           * because that is what the series is: `amount x price(t)` with
+           * today's amounts. Stepping the cost up on each purchase date would
+           * pair a cost that changes with a value that does not, and every
+           * point before the last purchase would report a profit nobody made.
+           * The note under the chart says so in as many words. */
+          /* A different chart, not a fourth branch inside the time series.
+           *
+           * `PortfolioChart` already switches between a line, stacked bands
+           * and a re-based line inside one `componentDidUpdate`; a ranked bar
+           * chart shares none of that — no x scale, no crosshair, no markers —
+           * and putting it there would be the fourth mode its own comment
+           * warns about. */
+          /* Faded in place rather than remounted.
+           *
+           * A `key` on the mode was the obvious way to replay the animation,
+           * and it is the wrong one here: remounting throws away the chart's
+           * measurement, so on every switch it renders once with no geometry —
+           * no plot, no marker, nothing to point at — and only settles a frame
+           * later. The animation is driven from `componentDidUpdate` instead,
+           * on this node, so the component stays mounted and keeps its size. */
+          React.createElement(
+            PortfolioChartSwap,
+            { innerRef: this.chartSwapRef },
+            chartMode === "moved"
+              ? React.createElement(PortfolioContribution, {
+                  parts: built.parts,
+                  periodLabel,
+                  formatMoney: (v, sign) => this.fmtMoney(v, sign),
+                })
+              : React.createElement(PortfolioChart, {
+              /* Reported up so Escape has two steps rather than one — see
+               * `handleChartKey`. Closing the stage also clears it, or a
+               * reopened chart would start out owning a key it is not using. */
+              onHoldingChange: (held, release) => {
+                this._chartHolding = held;
+                this._releaseChart = release;
+              },
+              series:
+                chartMode === "vsbtc"
+                  ? this.basketPctSeries(series) || series
+                  : chartMode === "drawdown"
+                  ? drawdownSeries(series) || series
+                  : chartMode === "pnl" && costBasis > 0
+                    ? series.map((p) => ({ ...p, price: p.price - costBasis }))
+                    : series,
+              parts: built.parts,
+              /* Only in the comparison mode, and only when it is complete —
+               * `benchmarkSeries` returns null rather than a partial line. */
+              compare: chartMode === "vsbtc" ? this.benchmarkSeries(series) : null,
+              events: this.chartEvents(series),
+              /* Zero is the peak in this mode, and it is the same device P/L
+               * uses: a level of 0 forces the top of the scale onto the chart,
+               * so "at a new high" is a line you can see rather than an edge you
+               * have to infer. */
+              costBasis:
+                chartMode === "pnl" ||
+                chartMode === "drawdown" ||
+                chartMode === "vsbtc"
+                  ? 0
+                  : costBasis > 0
+                    ? costBasis
+                    : null,
+              period: chartPeriod,
+              currency: this.props.currency,
+              mode: chartMode,
+              /* Percentages, not money, in this mode — the readout and the axis
+               * both go through this one formatter, so passing a different one
+               * is all it takes to change the units the chart speaks in. */
+              formatMoney:
+                chartMode === "drawdown" || chartMode === "vsbtc"
+                  ? (v) => `${v > 0 ? "+" : ""}${Number(v).toFixed(1)}%`
+                  : (v, sign) => this.fmtMoney(v, sign),
+              formatAmount: (v) => this.fmtAmount(v),
+                }),
+          ),
         ),
         React.createElement(
           PortfolioStageFoot,
@@ -1428,43 +1694,139 @@ class Portfolio extends PureComponent {
           React.createElement(
             PortfolioStageTools,
             null,
-            React.createElement(PortfolioSortLabel, null, "Show"),
-            React.createElement(
-              PortfolioSortBtn,
-              {
-                active: !chartStacked,
-                onClick: chartStacked ? this.toggleStacked : undefined,
-                title: "One line: the total, on the range it actually moved in",
-              },
-              "Total",
-            ),
-            React.createElement(
-              PortfolioSortBtn,
-              {
-                active: chartStacked,
-                onClick: chartStacked ? undefined : this.toggleStacked,
-                title:
-                  "The coins the total is made of, stacked. The scale starts at zero — that is what makes the bands comparable",
-              },
-              "By coin",
+            React.createElement(PortfolioSortLabel, null, msg("po_show", "Show")),
+            /* Three views of one series, and each answers a question the other
+             * two cannot: what is it worth, what is it made of, and am I up. */
+            ...[
+              [
+                "total",
+                msg("po_total", "Total"),
+                msg("po_total_hint", "One line: the total, on the range it actually moved in"),
+              ],
+              [
+                "bycoin",
+                msg("po_by_coin", "By coin"),
+                msg("po_by_coin_hint", "The coins the total is made of, stacked. The scale starts at zero — that is what makes the bands comparable"),
+              ],
+              [
+                "pnl",
+                "P/L",
+                msg(
+                  "po_pnl_hint",
+                  "The same total, re-based so zero is what you paid. Above the line is profit, below it is loss — the one thing the value chart cannot show when the cost sits off the scale",
+                ),
+              ],
+              [
+                "vsbtc",
+                msg("po_vs_btc", "vs BTC"),
+                msg(
+                  "po_vs_btc_hint",
+                  "Your basket and BTC over exactly the same dates, both starting at 0% — where you pulled ahead, and where you only followed the market",
+                ),
+              ],
+              [
+                "drawdown",
+                msg("po_drawdown", "Peak"),
+                msg(
+                  "po_drawdown_mode_hint",
+                  "How far below its own highest point the total has been, all the way along — depth and how long it took to come back, which one 'worst fall' number cannot show",
+                ),
+              ],
+              [
+                "moved",
+                msg("po_moved", "What moved it"),
+                msg(
+                  "po_moved_hint",
+                  "Which holdings account for this range's change, biggest first. The bars add up to the figure above them",
+                ),
+              ],
+            ].map(([value, label, title]) =>
+              React.createElement(
+                PortfolioSortBtn,
+                {
+                  key: value,
+                  active: chartMode === value,
+                  onClick:
+                    chartMode === value
+                      ? undefined
+                      : () => this.setChartMode(value),
+                  title,
+                },
+                label,
+              ),
             ),
             React.createElement(
               PortfolioChartBtn,
               {
                 onClick: this.toggleChart,
-                title: "Back to the holdings list (Esc)",
+                title: msg("po_back_to_list", "Back to the holdings list (Esc)"),
               },
               icon("portfolio", 0.85),
-              React.createElement("span", null, "Holdings"),
+              React.createElement("span", null, msg("po_holdings", "Holdings")),
             ),
           ),
         ),
         React.createElement(
           PortfolioStageNote,
           null,
-          chartStacked
-            ? "Bands add up to the line. The scale starts at zero, so the heights are comparable — which costs the zoom."
-            : "Hover anywhere to read the total, what it was made of, and how far it sat above or below what you paid.",
+          chartMode === "bycoin"
+            ? msg("po_bands_note", "Bands add up to the line. The scale starts at zero, so the heights are comparable — which costs the zoom.")
+            : chartMode === "vsbtc"
+              ? (() => {
+                  /* The gap, stated rather than left to the eye — and refused
+                   * outright when the benchmark could not be built, because a
+                   * lone line labelled "vs BTC" is the worst of both. */
+                  const bench = this.benchmarkPct(series);
+                  if (bench == null || seriesPct == null) {
+                    return msg(
+                      "po_vs_btc_none",
+                      "No BTC history covering these dates, so there is nothing to compare against. The line above is your basket alone.",
+                    );
+                  }
+                  const gap = seriesPct - bench;
+                  return msg(
+                    "po_vs_btc_note",
+                    "Both from 0% at the same first date, on one scale — never two axes, which is what makes any two lines look related. Yours $1, BTC $2: a gap of $3 points. Holding BTC instead is the comparison, not a suggestion.",
+                    `${seriesPct >= 0 ? "+" : ""}${seriesPct.toFixed(1)}%`,
+                    `${bench >= 0 ? "+" : ""}${bench.toFixed(1)}%`,
+                    `${gap >= 0 ? "+" : "−"}${Math.abs(gap).toFixed(1)}`,
+                  );
+                })()
+            : chartMode === "drawdown"
+              ? msg(
+                  "po_drawdown_note",
+                  "Zero is a new high. Everything below it is how far under its own peak the total was at that moment — the depth, and how long it took to get back. It says how bad this got, not how bad it can get.",
+                )
+            : chartMode === "pnl"
+              ? msg(
+                  "po_pnl_note",
+                  "Zero is what you paid, so the line crossing it is the moment this became a profit or a loss. It uses the whole cost basis, not the cost as it stood on each day — the amounts are today's.",
+                )
+              : msg(
+                  "po_hover_note",
+                  "Hover, tap or focus the chart to read the total, what it was made of, and how far it sat above or below what you paid.",
+                ),
+        ),
+        /* What the line actually is, said once and in the open.
+         *
+         * The series is `amount x price(t)` with **today's** amounts, so it is
+         * this basket priced backwards through the range — not a history of
+         * what the account was worth. A purchase made yesterday is carried
+         * back as though those coins were held all along, and something sold
+         * last month is missing from the earlier part of the curve. The
+         * markers show the transactions but do not change the quantities.
+         *
+         * The code has always known this — the comment above `buildPortfolioParts`
+         * says it in as many words — and the screen said "Total value", which
+         * reads as account history. A chart that is more precise about a model
+         * it never states just looks more authoritative. */
+        React.createElement(
+          PortfolioStageNote,
+          { quiet: true },
+          msg(
+            "po_model_note",
+            "Today's amounts priced across this range. Purchases and sales are marked, but they do not change the historical quantities.",
+          ),
         ),
       ),
     );
@@ -1611,6 +1973,53 @@ class Portfolio extends PureComponent {
         up: p ? p.up : null,
       };
     });
+    /* MONEY-WEIGHTED RETURN — the rate this person's own timing earned.
+     *
+     * Every other percentage on this screen is `(value - cost) / cost`, which
+     * treats money put in this morning exactly like money put in two years
+     * ago. Two positions that both read "+20%" can be a very different piece
+     * of work: measured on the arithmetic in `utils.js`, £1,000 in at the
+     * start and £1,200 now is **9.55% a year**, while the same £1,000 paid
+     * half at the start and half a month ago is **17.76%**. The first number
+     * is the one a fund factsheet and a bank statement print, and it is the
+     * one a crypto tracker almost never does.
+     *
+     * The flows are exactly what has been recorded: a lot is money leaving,
+     * a sale is money coming back, and what is held now is a final notional
+     * sale at today's price. Only lots and sales in the currency on screen —
+     * the same rule the cost basis follows, and for the same reason: a rate
+     * built from two currencies is not a rate.
+     *
+     * Undated entries cannot be placed on a timeline at all, so they are
+     * **counted and named** rather than quietly dropped, the way the chart
+     * names the holdings it cannot draw. */
+    const flows = [];
+    let datedLots = 0;
+    let undatedLots = 0;
+    for (const h of holdings) {
+      for (const lot of holdingLots(h)) {
+        if (!inCurrency(lot, currency)) continue;
+        const paid = Number(lot.paid);
+        if (!isFinite(paid) || paid <= 0) continue;
+        if (lot.time > 0) {
+          flows.push({ when: lot.time, amount: -paid });
+          datedLots++;
+        } else {
+          undatedLots++;
+        }
+      }
+      for (const sale of h.sales || []) {
+        if (!inCurrency(sale, currency)) continue;
+        const got = Number(sale.received);
+        if (!isFinite(got) || got <= 0 || !(sale.time > 0)) continue;
+        flows.push({ when: sale.time, amount: got });
+      }
+    }
+    if (flows.length && totalNow > 0) {
+      flows.push({ when: Math.floor(Date.now() / 1000), amount: totalNow });
+    }
+    const moneyWeighted = datedLots ? xirr(flows) : null;
+
     const pnl = anyPriced ? totalNow - totalAgo : null;
     const pnlPct = pnl != null && totalAgo > 0 ? (pnl / totalAgo) * 100 : null;
     // Unrealized P/L vs entered average costs (only rows that have both)
@@ -1633,6 +2042,11 @@ class Portfolio extends PureComponent {
       thisYear,
       undatedSales,
       pausedAny,
+      moneyWeighted,
+      // Purchases with no date: they cannot be placed on a timeline, so the
+      // rate above is the rate of what is left, and the row says so
+      undatedLots,
+      datedLots,
     };
   }
 
@@ -1707,7 +2121,12 @@ class Portfolio extends PureComponent {
     this.props.onRemove(coin);
     this.setState({
       undo: {
-        label: `Removed ${coin}${records ? " and everything logged against it" : ""}`,
+        label: msg(
+      "po_removed",
+      "Removed $1$2",
+      coin,
+      records ? msg("po_and_records", " and everything logged against it") : "",
+    ),
         list: before,
       },
     });
@@ -1784,38 +2203,56 @@ class Portfolio extends PureComponent {
         React.createElement(
           "span",
           null,
-          `Sold ${Number(sale.amount.toPrecision(8))} ${coin} — ${this.fmtMoney(sale.received, false, sale.currency)}`,
+          msg(
+            "po_sold_line",
+            "Sold $1 $2 — $3",
+            Number(sale.amount.toPrecision(8)),
+            coin,
+            this.fmtMoney(sale.received, false, sale.currency),
+          ),
         ),
         React.createElement(
           LotMeta,
           {
             title: paused
-              ? `Recorded in ${sale.currency}. Its gain is left out of Realized while another currency is shown — switch to ${sale.currency} to include it.`
+              ? msg(
+                    "po_sale_paused",
+                    "Recorded in $1. Its gain is left out of Realized while another currency is shown — switch to $1 to include it.",
+                    sale.currency,
+                  )
               : partial
-              ? `Only ${Number(sale.basisAmount.toPrecision(6))} ${coin} of this sale had a purchase logged, so the gain covers that much of it`
+              ? msg(
+                  "po_sale_partial",
+                  "Only $1 $2 of this sale had a purchase logged, so the gain covers that much of it",
+                  Number(sale.basisAmount.toPrecision(6)),
+                  coin,
+                )
               : realized == null
-                ? "No purchase was logged for these coins, so there is no cost to set the proceeds against"
+                ? msg(
+                    "po_sale_no_basis",
+                    "No purchase was logged for these coins, so there is no cost to set the proceeds against",
+                  )
                 : // Which purchases it ate, since one sale can span several
                   // bought on different days — the tax report pairs them out
                   (sale.matched || []).length > 1
                   ? `Proceeds less the cost of the ${sale.matched.length} purchases it consumed, oldest first. The tax report lists them as separate pairs, each with its own holding period.`
-                  : "Proceeds less the cost of the purchase it consumed",
+                  : msg("po_proceeds_less", "Proceeds less the cost of the purchase it consumed"),
           },
           (sale.time > 0
             ? new Date(sale.time * 1000).toLocaleDateString()
-            : "date unknown") +
+            : msg("po_date_unknown", "date unknown")) +
             (realized == null
-              ? " · no cost basis"
+              ? msg("po_no_basis_suffix", " · no cost basis")
               : ` · ${realized >= 0 ? "+" : "−"}${this.fmtMoney(Math.abs(realized), false, sale.currency)}${partial ? " (part)" : ""}`) +
-            (paused ? ` · ${sale.currency} · paused` : ""),
+            (paused ? msg("po_currency_paused", " · $1 · paused", sale.currency) : ""),
         ),
         React.createElement(
           RemoveBtn,
           {
             type: "button",
-            "aria-label": `Remove this ${coin} sale`,
+            "aria-label": msg("po_remove_sale", "Remove this $1 sale", coin),
             title:
-              "Remove this record. It does not give the coins back — adjust the amount if you need to.",
+              msg("po_remove_sale_hint", "Remove this record. It does not give the coins back — adjust the amount if you need to."),
             onClick: () => this.props.onRemoveSale(coin, i),
           },
           "×",
@@ -1843,7 +2280,13 @@ class Portfolio extends PureComponent {
         React.createElement(
           "span",
           null,
-          `${lot.amount} ${coin} — ${this.fmtMoney(lot.paid, false, lot.currency)}`,
+          msg(
+            "po_lot_line",
+            "$1 $2 — $3",
+            lot.amount,
+            coin,
+            this.fmtMoney(lot.paid, false, lot.currency),
+          ),
         ),
         React.createElement(
           LotMeta,
@@ -1852,22 +2295,34 @@ class Portfolio extends PureComponent {
               ? `Entered in ${lot.currency}. Its cost basis is left out of the P/L above while another currency is shown — switch to ${lot.currency} to include it.`
               : held == null
                 ? undefined
-                : `Held ${held} days — ${long ? "long term" : "short term"} at the ${LONG_TERM_DAYS}-day mark used in many places`,
+                : (long
+                    ? msg(
+                        "po_held_long",
+                        "Held $1 days — long term at the $2-day mark used in many places",
+                        held,
+                        LONG_TERM_DAYS,
+                      )
+                    : msg(
+                        "po_held_short",
+                        "Held $1 days — short term at the $2-day mark used in many places",
+                        held,
+                        LONG_TERM_DAYS,
+                      )),
           },
           (lot.time > 0
             ? new Date(lot.time * 1000).toLocaleDateString()
-            : "date unknown") +
-            (lot.source === "chain" ? " · ~on-chain" : "") +
-            (long ? " · long" : "") +
-            (paused ? ` · ${lot.currency} · paused` : ""),
+            : msg("po_date_unknown", "date unknown")) +
+            (lot.source === "chain" ? msg("po_on_chain", " · ~on-chain") : "") +
+            (long ? msg("po_long_suffix", " · long") : "") +
+            (paused ? msg("po_currency_paused", " · $1 · paused", lot.currency) : ""),
         ),
         editable &&
           React.createElement(
             RemoveBtn,
             {
               type: "button",
-              "aria-label": `Remove this ${coin} lot`,
-              title: "Remove lot",
+              "aria-label": msg("po_remove_lot_aria", "Remove this $1 lot", coin),
+              title: msg("po_remove_lot", "Remove lot"),
               onClick: () => this.props.onRemoveLot(coin, i),
             },
             "×",
@@ -1906,22 +2361,28 @@ class Portfolio extends PureComponent {
     if (reason.startsWith("foreign:")) {
       const chain = reason.slice(8);
       return (
-        `That is ${/^[AEIOU]/.test(chain) ? "an" : "a"} ${chain} address. ` +
-        "PriceTab reads Bitcoin, Ethereum and its tokens, Litecoin, Dogecoin, " +
-        "Bitcoin Cash and Zcash — the amount can still be typed in above."
+        /* The article ("a" / "an") is English grammar and does not survive
+         * translation, so the whole sentence is one message with the chain as
+         * a placeholder — every language decides its own wording around it. */
+        msg("po_watch_foreign", "That is a $1 address. ", chain) +
+        msg(
+          "po_watch_chains",
+          "PriceTab reads Bitcoin, Ethereum and its tokens, Litecoin, Dogecoin, Bitcoin Cash and Zcash — the amount can still be typed in above.",
+        )
       );
     }
     if (reason === "unreachable") {
       return (
-        "The balance service did not answer just now. It limits how often it " +
-        "can be asked, so this usually clears on its own — try again in a few " +
-        "minutes. Nothing is wrong with the address."
+        msg(
+          "po_watch_unreachable",
+          "The balance service did not answer just now. It limits how often it can be asked, so this usually clears on its own — try again in a few minutes. Nothing is wrong with the address.",
+        )
       );
     }
     if (reason === "empty") {
-      return "That address holds nothing PriceTab can price right now.";
+      return msg("po_watch_empty", "That address holds nothing PriceTab can price right now.");
     }
-    return "That does not look like an address. Paste the whole thing, with no spaces.";
+    return msg("po_watch_shape", "That does not look like an address. Paste the whole thing, with no spaces.");
   }
 
   handleFieldChange = (coin, field, raw) => {
@@ -2015,8 +2476,8 @@ class Portfolio extends PureComponent {
       this.setState({
         undo: {
           label: merging
-            ? `Added ${merged.added} holding${merged.added > 1 ? "s" : ""} from the file`
-            : `Replaced ${before.length} holding${before.length > 1 ? "s" : ""} with the file`,
+            ? msg("po_added_from_file", "Added $1 holdings from the file", merged.added)
+            : msg("po_replaced_with_file", "Replaced $1 holdings with the file", before.length),
           list: before,
         },
       });
@@ -2027,7 +2488,7 @@ class Portfolio extends PureComponent {
        * rule working rather than as a failure. */
       const parts = [];
       if (merged.added) {
-        parts.push(`Added ${merged.added} holding${merged.added > 1 ? "s" : ""}`);
+        parts.push(msg("po_added_holdings", "Added $1 holdings", merged.added));
       }
       if (merged.kept) {
         parts.push(
@@ -2035,9 +2496,9 @@ class Portfolio extends PureComponent {
         );
       }
       if (merged.dropped) {
-        parts.push(`${merged.dropped} did not fit — the list is full`);
+        parts.push(msg("po_dropped", "$1 did not fit — the list is full", merged.dropped));
       }
-      this.setState({ mergeNote: parts.join(" · ") || "Nothing to add" });
+      this.setState({ mergeNote: parts.join(" · ") || msg("po_nothing_to_add", "Nothing to add") });
       if (this._mergeNoteTimer) clearTimeout(this._mergeNoteTimer);
       this._mergeNoteTimer = setTimeout(
         () => this.setState({ mergeNote: null }),
@@ -2095,7 +2556,7 @@ class Portfolio extends PureComponent {
     const slices = named.map((p, i) => ({ ...p, tone: i }));
     if (otherValue > 0) {
       slices.push({
-        coin: "Other",
+        coin: msg("po_other", "Other"),
         value: otherValue,
         share: (otherValue / totalNow) * 100,
         tone: null, // neutral, and the stylesheet knows what that means
@@ -2141,7 +2602,11 @@ class Portfolio extends PureComponent {
         React.createElement(
           AllocNote,
           null,
-          `${top.share >= 9.95 ? top.share.toFixed(0) : top.share.toFixed(1)}% in one holding`,
+          msg(
+            "po_share_in_one",
+            "$1% in one holding",
+            top.share >= 9.95 ? top.share.toFixed(0) : top.share.toFixed(1),
+          ),
         ),
       ),
       React.createElement(
@@ -2150,7 +2615,7 @@ class Portfolio extends PureComponent {
           innerRef: (n) => (this.allocNode = n),
           role: "img",
           "aria-label":
-            "Allocation: " +
+            msg("po_allocation_prefix", "Allocation: ") +
             slices.map((s) => `${s.coin} ${s.share.toFixed(1)}%`).join(", "),
           onMouseLeave: () => this.setState({ allocAt: null }),
         },
@@ -2168,7 +2633,12 @@ class Portfolio extends PureComponent {
               tone: slice.tone,
               dim: active != null && active !== i,
               tabIndex: 0,
-              title: `${slice.coin} — ${slice.share.toFixed(1)}% of what you hold`,
+              title: msg(
+                "po_slice_title",
+                "$1 — $2% of what you hold",
+                slice.coin,
+                slice.share.toFixed(1),
+              ),
               "aria-label": `${slice.coin} ${slice.share.toFixed(1)}%`,
               onMouseEnter: () => this.setState({ allocAt: i }),
               onFocus: () => this.setState({ allocAt: i }),
@@ -2205,6 +2675,9 @@ class Portfolio extends PureComponent {
       undatedSales,
       costBasis,
       pausedAny,
+      moneyWeighted,
+      undatedLots,
+      datedLots,
     } = this.computeTotals();
     const suggestions = this.matches();
     const sortedRows = this.sortRows(rows);
@@ -2327,10 +2800,10 @@ class Portfolio extends PureComponent {
               React.createElement(
                 PortfolioEyebrow,
                 null,
-                holdings.length ? "Portfolio · Total value" : "Portfolio",
+                holdings.length ? msg("po_chart_title", "Portfolio · Total value") : "Portfolio",
               ),
           holdings.length === 0
-            ? React.createElement(PortfolioEmptyTitle, null, "Nothing tracked yet")
+            ? React.createElement(PortfolioEmptyTitle, null, msg("po_nothing_tracked", "Nothing tracked yet"))
             : React.createElement(
                 PortfolioTotal,
                 null,
@@ -2346,7 +2819,20 @@ class Portfolio extends PureComponent {
                    * two numbers on one line that measure different things and
                    * do not admit it is the defect, not the gap itself. */
                   title: coverage
-                    ? `Over ${periodLabel.toLowerCase()}, across the ${coverage.drawn} holdings this chart can draw${coverage.share != null ? ` — ${coverage.share.toFixed(0)}% of your value` : ""}. The total above covers all ${coverage.held}.`
+                    ? msg(
+                        "po_coverage_note",
+                        "Over $1, across the $2 holdings this chart can draw$3. The total above covers all $4.",
+                        periodLabel.toLowerCase(),
+                        coverage.drawn,
+                        coverage.share != null
+                          ? msg(
+                              "po_share_of_value_dash",
+                              " — $1% of your value",
+                              coverage.share.toFixed(0),
+                            )
+                          : "",
+                        coverage.held,
+                      )
                     : undefined,
                 },
                 // fmtMoney(delta, true) already prints a +/- sign
@@ -2355,7 +2841,7 @@ class Portfolio extends PureComponent {
                     ? ` (${seriesPct >= 0 ? "+" : ""}${seriesPct.toFixed(2)}%)`
                     : "") +
                   ` · ${periodLabel}` +
-                  (coverage ? ` · ${coverage.drawn} of ${coverage.held}` : ""),
+                  (coverage ? msg("po_drawn_of_held", " · $1 of $2", coverage.drawn, coverage.held) : ""),
               )
             : holdings.length > 0 &&
                 anyPriced &&
@@ -2389,13 +2875,20 @@ class Portfolio extends PureComponent {
                     lead: true,
                     title:
                       (this.unloggedNote(rows)
-                        ? `Unrealized P/L vs what you paid — covers only the amounts you've logged a purchase for (${this.unloggedNote(rows)})`
-                        : "Unrealized P/L vs what you paid") +
+                        ? msg(
+                          "po_unrealized_partial",
+                          "Unrealized P/L vs what you paid — covers only the amounts you've logged a purchase for ($1)",
+                          this.unloggedNote(rows),
+                        )
+                        : msg("po_unrealized_hint", "Unrealized P/L vs what you paid")) +
                       (pausedAny
-                        ? ` · purchases entered in another currency are left out rather than converted — open a holding to see which`
+                        ? msg(
+                            "po_unrealized_paused",
+                            " · purchases entered in another currency are left out rather than converted — open a holding to see which",
+                          )
                         : ""),
                   },
-                  React.createElement(StatLabel, null, "Unrealized"),
+                  React.createElement(StatLabel, null, msg("po_unrealized", "Unrealized")),
                   React.createElement(
                     StatValue,
                     { up: unrealized === 0 ? null : unrealized > 0 },
@@ -2413,10 +2906,10 @@ class Portfolio extends PureComponent {
                     title:
                       "Gains and losses on sales you've recorded — proceeds less the cost of the purchases each sale consumed, oldest first. Unlike the figure beside it, this one is settled." +
                       (pausedAny
-                        ? " Sales recorded in another currency are left out rather than converted."
+                        ? msg("po_realized_paused", " Sales recorded in another currency are left out rather than converted.")
                         : ""),
                   },
-                  React.createElement(StatLabel, null, "Realized"),
+                  React.createElement(StatLabel, null, msg("po_realized", "Realized")),
                   React.createElement(
                     StatValue,
                     { up: realized === 0 ? null : realized > 0 },
@@ -2433,132 +2926,205 @@ class Portfolio extends PureComponent {
             React.createElement(
               PortfolioStats,
               null,
-              /* The one number a portfolio percentage can't be read for: in a
-               * market that moves together, "up 8%" is nearly everyone's
-               * answer. Whether these particular coins beat simply holding
-               * the obvious one is the part that was yours. */
-              benchGap != null &&
-                React.createElement(
-                  StatItem,
-                  {
-                    title: `Over ${periodLabel.toLowerCase()}: your holdings ${fmtPct(seriesPct)}, ${BENCHMARK_COIN} ${fmtPct(benchPct)}. The gap is what holding these coins rather than ${BENCHMARK_COIN} was worth — amounts are fixed across the window, so nothing is distorting it.`,
-                  },
-                  React.createElement(StatLabel, null, `vs ${BENCHMARK_COIN}`),
-                  /* The sign comes from the **rounded** figure, not the raw
-                   * one. A gap of −0.04 printed as "−0.0 pts", in the down
-                   * colour: a direction claimed by a number that has no
-                   * direction left once it is rounded. Anything that rounds to
-                   * zero is a dead heat and is shown as one. */
-                  (() => {
-                    const shown = Number(benchGap.toFixed(1));
-                    return React.createElement(
-                      StatValue,
-                      { up: shown === 0 ? null : shown > 0 },
-                      `${shown > 0 ? "+" : shown < 0 ? "−" : ""}${Math.abs(shown).toFixed(1)} pts`,
-                    );
-                  })(),
-                ),
-              /* The one thing the algorithm research left standing (§9.4):
-               * rules cut the fall on 59 of 64 pairs and beat holding on 28.
-               * So the honest number to put beside a portfolio is how far it
-               * actually fell, not when to buy it. */
-              drawdown != null &&
-                React.createElement(
-                  StatItem,
-                  {
-                    title:
-                      `The deepest fall from a high to a later low inside this ${periodLabel.toLowerCase()} window` +
-                      (drawdown.from && drawdown.to
-                        ? ` — ${new Date(+drawdown.from).toLocaleDateString()} to ${new Date(+drawdown.to).toLocaleDateString()}`
-                        : "") +
-                      ". It says how bad this got, not how bad it can get.",
-                  },
-                  React.createElement(StatLabel, null, "Worst fall"),
-                  React.createElement(
-                    StatValue,
-                    { up: false },
-                    `${drawdown.pct.toFixed(1)}%`,
-                  ),
-                ),
-              /* How much of what you've logged is past the one-year mark.
-               * It's the split the tax report leads with, and the one thing
-               * about a holding that changes on its own while you do nothing. */
-              longTermPct != null &&
-                React.createElement(
-                  StatItem,
-                  {
-                    title: `${this.fmtMoney(longTermValue, false)} of your logged purchases have been held ${LONG_TERM_DAYS} days or more. Many places treat that as long term — the threshold isn't the same everywhere.`,
-                  },
-                  React.createElement(StatLabel, null, "Long term"),
-                  React.createElement(
-                    StatValue,
-                    null,
-                    `${longTermPct.toFixed(0)}%`,
-                  ),
-                ),
-              /* The window a return is worked out over. Shown only when it
-               * is not simply the Realized figure again — if every sale you
-               * recorded happened this year the two are the same number, and
-               * printing it twice is one of them saying nothing.
+              /* Three subjects, not seven facts in a row.
                *
-               * Called the calendar year and never the tax year: that ends on
-               * 5 April in the UK and 30 June in Australia, and `TODO.md`
-               * declined country-specific tax computation for exactly this
-               * reason. A calendar year is a fact; a tax year is a guess. */
-              realizedThisYear != null &&
-                realized != null &&
-                Math.abs(realizedThisYear - realized) > 0.005 &&
-                React.createElement(
-                  StatItem,
-                  {
-                    title:
-                      `Gains and losses on sales you recorded between 1 January ${thisYear} and today. ` +
-                      "This is the calendar year — the tax year ends on a different date in many countries, so check yours." +
-                      (undatedSales
-                        ? ` ${undatedSales} sale(s) have no date and are in neither year.`
-                        : ""),
-                  },
-                  React.createElement(StatLabel, null, `Realized ${thisYear}`),
+               * The grid already aligned these into columns; what it could
+               * not do was say which belonged with which. Read straight
+               * across, the old order put the fall next to the benchmark next
+               * to the annualised return — three different questions, evenly
+               * spaced. The columns are now the subjects themselves: how it
+               * went wrong, what it returned, and what today did. Same
+               * figures, standing next to the ones they belong with. */
+              React.createElement(
+                PortfolioStatGroup,
+                null,
+                /* The one thing the algorithm research left standing (§9.4):
+                 * rules cut the fall on 59 of 64 pairs and beat holding on 28.
+                 * So the honest number to put beside a portfolio is how far it
+                 * actually fell, not when to buy it. */
+                drawdown != null &&
                   React.createElement(
-                    StatValue,
-                    { up: realizedThisYear === 0 ? null : realizedThisYear > 0 },
-                    this.fmtMoney(realizedThisYear, true),
+                    StatItem,
+                    {
+                      title:
+                        msg(
+                        "po_drawdown_hint",
+                        "The deepest fall from a high to a later low inside this $1 window",
+                        periodLabel.toLowerCase(),
+                      ) +
+                        (drawdown.from && drawdown.to
+                          ? msg(
+                            "po_drawdown_range",
+                            " — $1 to $2",
+                            new Date(+drawdown.from).toLocaleDateString(),
+                            new Date(+drawdown.to).toLocaleDateString(),
+                          )
+                          : "") +
+                        msg("po_worst_fall_note", ". It says how bad this got, not how bad it can get."),
+                    },
+                    React.createElement(StatLabel, null, msg("po_worst_fall", "Worst fall")),
+                    React.createElement(
+                      StatValue,
+                      { up: false },
+                      `${drawdown.pct.toFixed(1)}%`,
+                    ),
                   ),
-                ),
-              show24h &&
-                React.createElement(
-                  StatItem,
-                  null,
-                  React.createElement(StatLabel, null, "24h"),
+
+                /* The one number a portfolio percentage can't be read for: in a
+                 * market that moves together, "up 8%" is nearly everyone's
+                 * answer. Whether these particular coins beat simply holding
+                 * the obvious one is the part that was yours. */
+                benchGap != null &&
                   React.createElement(
-                    StatValue,
-                    { up: pnl === 0 ? null : pnl > 0 },
-                    this.fmtMoney(pnl, true) +
-                      (pnlPct != null ? ` (${fmtPct(pnlPct)})` : ""),
+                    StatItem,
+                    {
+                      title: `Over ${periodLabel.toLowerCase()}: your holdings ${fmtPct(seriesPct)}, ${BENCHMARK_COIN} ${fmtPct(benchPct)}. The gap is what holding these coins rather than ${BENCHMARK_COIN} was worth — amounts are fixed across the window, so nothing is distorting it.`,
+                    },
+                    React.createElement(StatLabel, null, msg("po_vs_benchmark", "vs $1", BENCHMARK_COIN)),
+                    /* The sign comes from the **rounded** figure, not the raw
+                     * one. A gap of −0.04 printed as "−0.0 pts", in the down
+                     * colour: a direction claimed by a number that has no
+                     * direction left once it is rounded. Anything that rounds to
+                     * zero is a dead heat and is shown as one. */
+                    (() => {
+                      const shown = Number(benchGap.toFixed(1));
+                      return React.createElement(
+                        StatValue,
+                        { up: shown === 0 ? null : shown > 0 },
+                        `${shown > 0 ? "+" : shown < 0 ? "−" : ""}${Math.abs(shown).toFixed(1)} pts`,
+                      );
+                    })(),
                   ),
-                ),
-              best &&
-                React.createElement(
-                  StatItem,
-                  null,
-                  React.createElement(StatLabel, null, "Best 24h"),
+              ),
+              React.createElement(
+                PortfolioStatGroup,
+                null,
+                /* THE RATE, not the amount — a bank statement's headline.
+                 *
+                 * Every other percentage here divides one number by another and
+                 * ignores when the money went in. This one does not, which is
+                 * why it can disagree with "Unrealized" and why the disagreement
+                 * is the useful part: the same money in and the same value now
+                 * is 9.55% a year if it all went in at the start and 17.76% if
+                 * half went in last month. */
+                moneyWeighted != null &&
                   React.createElement(
-                    StatValue,
-                    { up: best.change === 0 ? null : best.change > 0 },
-                    `${best.coin} ${fmtPct(best.change)}`,
+                    StatItem,
+                    {
+                      title:
+                        "Money-weighted return, annualised — the rate that would have turned your recorded purchases, on the dates you made them, into what you hold now. " +
+                        "Unlike the percentages beside it this one counts *when* money went in, so topping up at a good moment shows up in it. " +
+                        (undatedLots
+                          ? `Worked out from the ${datedLots} purchase${datedLots === 1 ? "" : "s"} that carry a date; ${undatedLots} without one could not be placed on a timeline and are left out. `
+                          : "") +
+                        "It is not printed at all until a position is two weeks old, because annualising three days of anything is arithmetic rather than information.",
+                    },
+                    React.createElement(StatLabel, null, msg("po_return_pa", "Return p.a.")),
+                    React.createElement(
+                      StatValue,
+                      { up: moneyWeighted === 0 ? null : moneyWeighted > 0 },
+                      `${moneyWeighted > 0 ? "+" : ""}${(moneyWeighted * 100).toFixed(1)}%`,
+                    ),
                   ),
-                ),
-              worst &&
-                React.createElement(
-                  StatItem,
-                  null,
-                  React.createElement(StatLabel, null, "Worst 24h"),
+
+                /* How much of what you've logged is past the one-year mark.
+                 * It's the split the tax report leads with, and the one thing
+                 * about a holding that changes on its own while you do nothing. */
+                longTermPct != null &&
                   React.createElement(
-                    StatValue,
-                    { up: worst.change === 0 ? null : worst.change > 0 },
-                    `${worst.coin} ${fmtPct(worst.change)}`,
+                    StatItem,
+                    {
+                      title: `${this.fmtMoney(longTermValue, false)} of your logged purchases have been held ${LONG_TERM_DAYS} days or more. Many places treat that as long term — the threshold isn't the same everywhere.`,
+                    },
+                    React.createElement(StatLabel, null, msg("po_long_term", "Long term")),
+                    React.createElement(
+                      StatValue,
+                      null,
+                      `${longTermPct.toFixed(0)}%`,
+                    ),
                   ),
-                ),
+
+                /* The window a return is worked out over. Shown only when it
+                 * is not simply the Realized figure again — if every sale you
+                 * recorded happened this year the two are the same number, and
+                 * printing it twice is one of them saying nothing.
+                 *
+                 * Called the calendar year and never the tax year: that ends on
+                 * 5 April in the UK and 30 June in Australia, and `TODO.md`
+                 * declined country-specific tax computation for exactly this
+                 * reason. A calendar year is a fact; a tax year is a guess. */
+                realizedThisYear != null &&
+                  realized != null &&
+                  Math.abs(realizedThisYear - realized) > 0.005 &&
+                  React.createElement(
+                    StatItem,
+                    {
+                      title:
+                        msg(
+                        "po_realized_year_hint",
+                        "Gains and losses on sales you recorded between 1 January $1 and today. ",
+                        thisYear,
+                      ) +
+                        msg(
+                        "po_calendar_year",
+                        "This is the calendar year — the tax year ends on a different date in many countries, so check yours.",
+                      ) +
+                        (undatedSales
+                          ? msg(
+                            "po_undated_sales",
+                            " $1 sale(s) have no date and are in neither year.",
+                            undatedSales,
+                          )
+                          : ""),
+                    },
+                    React.createElement(StatLabel, null, msg("po_realized_year", "Realized $1", thisYear)),
+                    React.createElement(
+                      StatValue,
+                      { up: realizedThisYear === 0 ? null : realizedThisYear > 0 },
+                      this.fmtMoney(realizedThisYear, true),
+                    ),
+                  ),
+              ),
+              React.createElement(
+                PortfolioStatGroup,
+                null,
+                show24h &&
+                  React.createElement(
+                    StatItem,
+                    null,
+                    React.createElement(StatLabel, null, "24h"),
+                    React.createElement(
+                      StatValue,
+                      { up: pnl === 0 ? null : pnl > 0 },
+                      this.fmtMoney(pnl, true) +
+                        (pnlPct != null ? ` (${fmtPct(pnlPct)})` : ""),
+                    ),
+                  ),
+
+                best &&
+                  React.createElement(
+                    StatItem,
+                    null,
+                    React.createElement(StatLabel, null, msg("po_best_24h", "Best 24h")),
+                    React.createElement(
+                      StatValue,
+                      { up: best.change === 0 ? null : best.change > 0 },
+                      `${best.coin} ${fmtPct(best.change)}`,
+                    ),
+                  ),
+
+                worst &&
+                  React.createElement(
+                    StatItem,
+                    null,
+                    React.createElement(StatLabel, null, msg("po_worst_24h", "Worst 24h")),
+                    React.createElement(
+                      StatValue,
+                      { up: worst.change === 0 ? null : worst.change > 0 },
+                      `${worst.coin} ${fmtPct(worst.change)}`,
+                    ),
+                  ),
+              ),
             ),
           /* Said once, at the top, because a figure that silently covers less
            * than you think is the failure this whole section is written
@@ -2576,9 +3142,14 @@ class Portfolio extends PureComponent {
                   ? `No price history is published for ${coverage.unchartable.join(", ")} by either exchange this app reads, so there is no line to draw. They are still in the total above.`
                   : undefined,
               },
-              `The chart and the change beside the total cover ${coverage.drawn} of ${coverage.held} holdings` +
+              msg(
+                  "po_chart_covers",
+                  "The chart and the change beside the total cover $1 of $2 holdings",
+                  coverage.drawn,
+                  coverage.held,
+                ) +
                 (coverage.share != null
-                  ? `, ${coverage.share.toFixed(0)}% of your value`
+                  ? msg("po_share_of_value", ", $1% of your value", coverage.share.toFixed(0))
                   : "") +
                 ". " +
                 [
@@ -2591,7 +3162,7 @@ class Portfolio extends PureComponent {
                 ]
                   .filter(Boolean)
                   .join("; ") +
-                ". The total above counts everything.",
+                msg("po_total_counts_all", ". The total above counts everything."),
             ),
           pausedAny &&
             React.createElement(
@@ -2600,6 +3171,55 @@ class Portfolio extends PureComponent {
               `Some purchases or sales were entered in another currency. They are shown in their own currency and left out of the figures above rather than converted — open a holding to see which, or switch back to that currency.`,
             ),
         ),
+
+        /* The chart itself, in the band that was empty.
+         *
+         * The same component the stage uses, in a fixed frame — one chart with
+         * one set of rules, rather than a second drawing that could disagree
+         * with it. Only the total line here: composition, P/L, the benchmark
+         * and the rest are questions you go and ask, and a glance should
+         * answer one thing.
+         *
+         * The whole frame opens the stage, so the chart is its own way in and
+         * `Explore chart` beside it is the label for what clicking does. */
+        holdings.length > 0 &&
+          series &&
+          built &&
+          React.createElement(
+            PortfolioInlineChart,
+            {
+              onClick: this.toggleChart,
+              onKeyDown: (e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  this.toggleChart();
+                }
+              },
+              tabIndex: 0,
+              role: "button",
+              "aria-label": msg("po_explore", "Explore chart"),
+              title: msg(
+                "po_explore_hint",
+                "Open the value chart — read it at any moment, with your purchases and sales on it",
+              ),
+            },
+            React.createElement(PortfolioChart, {
+              series,
+              parts: built.parts,
+              events: this.chartEvents(series),
+              costBasis: costBasis > 0 ? costBasis : null,
+              period: chartPeriod,
+              currency: this.props.currency,
+              mode: "total",
+              formatMoney: (v, sign) => this.fmtMoney(v, sign),
+              formatAmount: (v) => this.fmtAmount(v),
+              /* The glance: no crosshair, no legend, no focus stop of its own
+               * — the frame around it is the control. See `compact` in
+               * `portfolio-chart.js` for why the legend in particular has to
+               * go here and stay in the stage. */
+              compact: true,
+            }),
+          ),
 
         // Chart range switcher (persisted; drives the value chart), and the
         // way into the chart itself
@@ -2618,10 +3238,10 @@ class Portfolio extends PureComponent {
                 {
                   onClick: this.toggleChart,
                   title:
-                    "Open the value chart — read it at any moment, with your purchases and sales on it",
+                    msg("po_explore_hint", "Open the value chart — read it at any moment, with your purchases and sales on it"),
                 },
                 icon("eye", 0.85),
-                React.createElement("span", null, "Explore chart"),
+                React.createElement("span", null, msg("po_explore", "Explore chart")),
               ),
           ),
 
@@ -2641,7 +3261,7 @@ class Portfolio extends PureComponent {
           ? React.createElement(
               PortfolioEmptyLine,
               null,
-              "Search a coin below, or paste an address to watch.",
+              msg("po_empty_hint", "Search a coin below, or paste an address to watch."),
             )
           : React.createElement(
               Fragment,
@@ -2652,13 +3272,13 @@ class Portfolio extends PureComponent {
                 React.createElement(
                   PortfolioSectionLabel,
                   { style: { margin: 0 } },
-                  `Holdings · ${holdings.length}`,
+                  msg("po_holdings_n", "Holdings · $1", holdings.length),
                 ),
                 holdings.length > 1 &&
                   React.createElement(
                     PortfolioSortBtns,
                     null,
-                    React.createElement(PortfolioSortLabel, null, "Sort"),
+                    React.createElement(PortfolioSortLabel, null, msg("po_sort", "Sort")),
                     ...PORTFOLIO_SORT_OPTIONS.map((option) =>
                       React.createElement(
                         PortfolioSortBtn,
@@ -2668,8 +3288,8 @@ class Portfolio extends PureComponent {
                           onClick: () => this.handleSortChange(option.value),
                           title:
                             option.value === "name"
-                              ? "Alphabetical"
-                              : `Largest ${option.label.toLowerCase()} first`,
+                              ? msg("po_alphabetical", "Alphabetical")
+                              : msg("po_largest_first", "Largest $1 first", option.label.toLowerCase()),
                         },
                         option.label,
                       ),
@@ -2680,10 +3300,10 @@ class Portfolio extends PureComponent {
                 HoldingsHead,
                 { "aria-hidden": true },
                 React.createElement("span", null, ""),
-                React.createElement("span", null, "Amount"),
-                React.createElement("span", null, "Cost basis"),
+                React.createElement("span", null, msg("po_amount", "Amount")),
+                React.createElement("span", null, msg("po_cost_basis", "Cost basis")),
                 React.createElement("span", null, periodLabel),
-                React.createElement("span", null, "Value"),
+                React.createElement("span", null, msg("po_value", "Value")),
                 React.createElement("span", null, ""),
               ),
               React.createElement(
@@ -2731,8 +3351,8 @@ class Portfolio extends PureComponent {
                         tabIndex: 0,
                         "aria-expanded": expanded,
                         title: watched
-                          ? "Show where these coins came from and what you paid"
-                          : "Show your purchases for this coin",
+                          ? msg("po_show_origin", "Show where these coins came from and what you paid")
+                          : msg("po_show_purchases", "Show your purchases for this coin"),
                         onClick: () => this.handleToggleLots(r.coin),
                         onKeyDown: (e) => {
                           if (e.key === "Enter" || e.key === " ") {
@@ -2750,7 +3370,9 @@ class Portfolio extends PureComponent {
                           React.createElement(
                             WatchedBadge,
                             {
-                              title: `${r.watches.length} watched address${r.watches.length > 1 ? "es" : ""}`,
+                              title: (r.watches.length > 1
+                        ? msg("po_n_watched", "$1 watched addresses", r.watches.length)
+                        : msg("po_one_watched", "1 watched address")),
                             },
                             icon("link", 0.85),
                             r.watches.length > 1
@@ -2776,8 +3398,8 @@ class Portfolio extends PureComponent {
                           AmountTotalBtn,
                           {
                             title:
-                              "Total across the hand-entered part and every watched address — click for the breakdown",
-                            "aria-label": `${r.coin} total amount`,
+                              msg("po_total_across", "Total across the hand-entered part and every watched address — click for the breakdown"),
+                            "aria-label": msg("po_total_amount_aria", "$1 total amount", r.coin),
                             onClick: () => this.handleToggleLots(r.coin),
                           },
                           String(r.amount),
@@ -2786,7 +3408,7 @@ class Portfolio extends PureComponent {
                           type: "text",
                           inputMode: "decimal",
                           value: amountVal,
-                          "aria-label": `${r.coin} amount`,
+                          "aria-label": msg("po_amount_aria", "$1 amount", r.coin),
                           onChange: (e) =>
                             this.handleFieldChange(
                               r.coin,
@@ -2802,11 +3424,16 @@ class Portfolio extends PureComponent {
                         open: expanded,
                         title:
                           basis <= 0 && r.paused.length
-                            ? `Every purchase logged for ${r.coin} was entered in ${pausedCurrencies(r.paused)}. Switch to it to see this cost basis and its P/L.`
+                            ? msg(
+                          "po_paused_basis",
+                          "Every purchase logged for $1 was entered in $2. Switch to it to see this cost basis and its P/L.",
+                          r.coin,
+                          pausedCurrencies(r.paused),
+                        )
                             : watched
-                              ? "Purchases inferred from the watched address — click to view"
-                              : "Your purchases for this coin — click to view or add ('bought 0.5 for 15000')",
-                        "aria-label": `${r.coin} purchase lots`,
+                              ? msg("po_inferred", "Purchases inferred from the watched address — click to view")
+                              : msg("po_your_purchases", "Your purchases for this coin — click to view or add ('bought 0.5 for 15000')"),
+                        "aria-label": msg("po_lots_aria", "$1 purchase lots", r.coin),
                         onClick: () => this.handleToggleLots(r.coin),
                       },
                       basis > 0
@@ -2842,7 +3469,7 @@ class Portfolio extends PureComponent {
                             HoldingValueSub,
                             {
                               up: rowPl === 0 ? null : rowPl > 0,
-                              title: "Unrealized P/L vs what you paid",
+                              title: msg("po_unrealized_hint", "Unrealized P/L vs what you paid"),
                             },
                             this.fmtMoney(rowPl, true),
                           )
@@ -2858,9 +3485,9 @@ class Portfolio extends PureComponent {
                       RemoveBtn,
                       {
                         type: "button",
-                        "aria-label": `Remove ${r.coin}`,
+                        "aria-label": msg("po_remove_coin", "Remove $1", r.coin),
                         title:
-                          "Remove this holding, its purchases and its recorded sales. Undoable until you close the portfolio.",
+                          msg("po_remove_holding_hint", "Remove this holding, its purchases and its recorded sales. Undoable until you close the portfolio."),
                         onClick: () => this.handleRemoveHolding(r.coin),
                       },
                       "×",
@@ -2882,7 +3509,12 @@ class Portfolio extends PureComponent {
                           React.createElement(
                             LotNote,
                             null,
-                            `${Number(r.unlogged.toPrecision(6))} ${r.coin} has no purchase logged, so it counts toward the value above but not toward the P/L.`,
+                            msg(
+                              "po_unlogged_note",
+                              "$1 $2 has no purchase logged, so it counts toward the value above but not toward the P/L.",
+                              Number(r.unlogged.toPrecision(6)),
+                              r.coin,
+                            ),
                           ),
                         /* Entered in another currency. Converting at today's
                          * rate would give a figure that moves on days the
@@ -2903,7 +3535,7 @@ class Portfolio extends PureComponent {
                             React.createElement(
                               SourceTitle,
                               null,
-                              "Added by hand",
+                              msg("po_added_by_hand", "Added by hand"),
                             ),
                             // Editable here only when the row's own amount
                             // cell is showing the multi-source total
@@ -2912,7 +3544,7 @@ class Portfolio extends PureComponent {
                                   type: "text",
                                   inputMode: "decimal",
                                   value: amountVal,
-                                  "aria-label": `${r.coin} hand-entered amount`,
+                                  "aria-label": msg("po_manual_amount_aria", "$1 hand-entered amount", r.coin),
                                   onChange: (e) =>
                                     this.handleFieldChange(
                                       r.coin,
@@ -2932,7 +3564,7 @@ class Portfolio extends PureComponent {
                             r.coin,
                             r.manualLots,
                             true,
-                            "No purchases logged yet — add one below.",
+                            msg("po_no_purchases", "No purchases logged yet — add one below."),
                           ),
                           this.renderSaleLines(r.coin, r.sales),
                           /* Buying and selling are the same two questions —
@@ -2947,7 +3579,7 @@ class Portfolio extends PureComponent {
                                 active: selling === false,
                                 onClick: () => this.handleLotModeChange("buy"),
                               },
-                              "Bought",
+                              msg("po_bought", "Bought"),
                             ),
                             React.createElement(
                               LotModeBtn,
@@ -2955,11 +3587,11 @@ class Portfolio extends PureComponent {
                                 active: selling,
                                 disabled: !(r.manualAmount > 0),
                                 title: !(r.manualAmount > 0)
-                                  ? "Nothing hand-entered to sell — a watched address reconciles itself from the chain"
-                                  : "Record a sale: takes the coins off, consumes the oldest purchases, and keeps the gain",
+                                  ? msg("po_nothing_to_sell", "Nothing hand-entered to sell — a watched address reconciles itself from the chain")
+                                  : msg("po_record_sale_hint", "Record a sale: takes the coins off, consumes the oldest purchases, and keeps the gain"),
                                 onClick: () => this.handleLotModeChange("sell"),
                               },
-                              "Sold",
+                              msg("po_sold", "Sold"),
                             ),
                           ),
                           React.createElement(
@@ -2969,10 +3601,10 @@ class Portfolio extends PureComponent {
                               type: "text",
                               inputMode: "decimal",
                               value: this.state.lotAmount,
-                              placeholder: `amount (e.g. 0.5 ${r.coin})`,
+                              placeholder: msg("po_amount_placeholder", "amount (e.g. 0.5 $1)", r.coin),
                               "aria-label": selling
-                                ? "Amount sold"
-                                : "Lot amount",
+                                ? msg("po_amount_sold", "Amount sold")
+                                : msg("po_lot_amount", "Lot amount"),
                               onChange: this.handleLotAmountChange,
                               onKeyDown: (e) => this.handleLotKeyDown(r.coin, e),
                             }),
@@ -2981,25 +3613,29 @@ class Portfolio extends PureComponent {
                               inputMode: "decimal",
                               value: this.state.lotPaid,
                               placeholder: selling
-                                ? "received in total (e.g. 45000)"
-                                : "paid in total (e.g. 15000)",
+                                ? msg("po_received_placeholder", "received in total (e.g. 45000)")
+                                : msg("po_paid_placeholder", "paid in total (e.g. 15000)"),
                               "aria-label": selling
-                                ? "Total received"
-                                : "Lot total paid",
+                                ? msg("po_total_received", "Total received")
+                                : msg("po_lot_total_paid", "Lot total paid"),
                               onChange: this.handleLotPaidChange,
                               onKeyDown: (e) => this.handleLotKeyDown(r.coin, e),
                             }),
                             React.createElement(
                               LotAddBtn,
                               { onClick: () => this.handleLotAdd(r.coin) },
-                              selling ? "Record" : "Add",
+                              selling ? msg("po_record", "Record") : msg("al_add", "Add"),
                             ),
                           ),
                           selling &&
                             React.createElement(
                               LotNote,
                               null,
-                              `Takes the coins off your ${r.coin} and consumes the oldest purchases first. The gain is kept even after those purchases are gone.`,
+                              msg(
+                                "po_sell_hint",
+                                "Takes the coins off your $1 and consumes the oldest purchases first. The gain is kept even after those purchases are gone.",
+                                r.coin,
+                              ),
                             ),
                         ),
 
@@ -3013,7 +3649,7 @@ class Portfolio extends PureComponent {
                               React.createElement(
                                 SourceTitle,
                                 null,
-                                "Watched address",
+                                msg("po_watched_address", "Watched address"),
                               ),
                               React.createElement(
                                 SourceAmount,
@@ -3024,24 +3660,24 @@ class Portfolio extends PureComponent {
                                 StopWatchBtn,
                                 {
                                   title:
-                                    "Stop syncing this address (its coins and purchases move to the hand-entered part)",
-                                  "aria-label": `Stop watching this ${r.coin} address`,
+                                    msg("po_stop_sync_hint", "Stop syncing this address (its coins and purchases move to the hand-entered part)"),
+                                  "aria-label": msg("po_stop_watch_aria", "Stop watching this $1 address", r.coin),
                                   onClick: () =>
                                     this.props.onUnwatch(r.coin, w.address),
                                 },
-                                "Stop",
+                                msg("po_stop", "Stop"),
                               ),
                             ),
                             React.createElement(
                               SourceAddr,
-                              { title: "Watched address (click to select)" },
+                              { title: msg("po_watched_select", "Watched address (click to select)") },
                               w.address,
                             ),
                             this.renderLotLines(
                               r.coin,
                               w.lots,
                               false,
-                              "No incoming transfers detected yet.",
+                              msg("po_no_transfers", "No incoming transfers detected yet."),
                             ),
                           ),
                         ),
@@ -3057,7 +3693,13 @@ class Portfolio extends PureComponent {
                               React.createElement(
                                 LotNote,
                                 null,
-                                `Lots cover ${lotAmt} of ${r.amount} ${r.coin} — P/L is computed on the logged part.`,
+                                msg(
+                      "po_lots_cover",
+                      "Lots cover $1 of $2 $3 — P/L is computed on the logged part.",
+                      lotAmt,
+                      r.amount,
+                      r.coin,
+                    ),
                               ),
                       ),
                   );
@@ -3076,7 +3718,7 @@ class Portfolio extends PureComponent {
             React.createElement(
               PortfolioUndoBtn,
               { onClick: this.handleUndo },
-              "Undo",
+              msg("set_undo", "Undo"),
             ),
           ),
 
@@ -3087,14 +3729,14 @@ class Portfolio extends PureComponent {
           React.createElement(
             AddLabel,
             null,
-            atCap ? "Holding limit reached" : "Add a holding",
+            atCap ? msg("po_limit_reached", "Holding limit reached") : msg("po_add_holding", "Add a holding"),
           ),
           !atCap &&
             React.createElement(SearchInput, {
               type: "text",
               value: query,
-              placeholder: "Search coin (e.g. BTC or Bitcoin)…",
-              "aria-label": "Search coin to add",
+              placeholder: msg("po_search_coin", "Search coin (e.g. BTC or Bitcoin)…"),
+              "aria-label": msg("po_search_coin_label", "Search coin to add"),
               onChange: this.handleSearchChange,
             }),
           !atCap &&
@@ -3131,8 +3773,8 @@ class Portfolio extends PureComponent {
             AddLabel,
             null,
             watchedChips.length
-              ? `Watching · ${watchedChips.length}`
-              : "Watch an address",
+              ? msg("po_watching_n", "Watching · $1", watchedChips.length)
+              : msg("po_watch_address", "Watch an address"),
           ),
           // Small standing summary of what's being synced; click a chip to
           // open that coin's breakdown
@@ -3145,7 +3787,12 @@ class Portfolio extends PureComponent {
                   WatchChip,
                   {
                     key: `${c.coin}-${c.address}`,
-                    title: `${c.coin} · ${c.address} — click for the breakdown`,
+                    title: msg(
+                    "po_watch_chip_title",
+                    "$1 · $2 — click for the breakdown",
+                    c.coin,
+                    c.address,
+                  ),
                     onClick: () => this.handleToggleLots(c.coin),
                   },
                   icon("link", 0.72),
@@ -3160,8 +3807,8 @@ class Portfolio extends PureComponent {
             React.createElement(WatchInput, {
               type: "text",
               value: this.state.watchAddress,
-              placeholder: "Paste any BTC, ETH, LTC, DOGE, BCH or ZEC address…",
-              "aria-label": "Address to watch",
+              placeholder: msg("po_paste_address", "Paste any BTC, ETH, LTC, DOGE, BCH or ZEC address…"),
+              "aria-label": msg("po_address_label", "Address to watch"),
               onChange: this.handleWatchAddressChange,
               onKeyDown: this.handleWatchKeyDown,
             }),
@@ -3171,7 +3818,10 @@ class Portfolio extends PureComponent {
                 onClick: this.handleWatchSubmit,
                 disabled: this.state.watchBusy,
                 title:
-                  "Reads the address's public balances and keeps the holdings synced (checked every 10 minutes while the portfolio is open)",
+                  msg(
+                    "po_watch_note",
+                    "Reads the address's public balances and keeps the holdings synced (checked every 10 minutes while the portfolio is open)",
+                  ),
               },
               this.state.watchBusy ? "…" : "Watch",
             ),
@@ -3195,14 +3845,14 @@ class Portfolio extends PureComponent {
             React.createElement(
               MethodRow,
               null,
-              React.createElement(MethodLabel, null, "Cost basis method"),
+              React.createElement(MethodLabel, null, msg("po_cost_method", "Cost basis method")),
               ...COST_METHODS.map((m) =>
                 React.createElement(
                   MethodBtn,
                   {
                     key: m.value,
                     active: this.props.costMethod === m.value,
-                    title: `${m.title} — ${m.note}`,
+                    title: msg("po_method_line", "$1 — $2", m.title, m.note),
                     onClick: () =>
                       this.props.onCostMethodChange &&
                       this.props.onCostMethodChange(m.value),
@@ -3228,18 +3878,18 @@ class Portfolio extends PureComponent {
               ToolBtn,
               {
                 onClick: this.handleExportJson,
-                title: "Download holdings as a JSON backup",
+                title: msg("po_export_hint", "Download holdings as a JSON backup"),
               },
-              "Export JSON",
+              msg("po_export", "Export JSON"),
             ),
           React.createElement(
             ToolBtn,
             {
               empty: holdings.length === 0,
               onClick: () => this.handleImportClick("replace"),
-              title: "Restore holdings from a JSON backup (replaces the current list)",
+              title: msg("po_import_hint", "Restore holdings from a JSON backup (replaces the current list)"),
             },
-            "Import JSON",
+            msg("po_import", "Import JSON"),
           ),
           /* Only with something to merge into: against an empty list this
            * button and the one beside it would do exactly the same thing, and
@@ -3252,7 +3902,7 @@ class Portfolio extends PureComponent {
                 title:
                   "Add holdings from a backup without touching the ones you already have. A coin already in the list is left exactly as it is, so merging the same file twice changes nothing the second time.",
               },
-              "Merge JSON",
+              msg("po_merge", "Merge JSON"),
             ),
           holdings.length > 0 &&
             React.createElement(
@@ -3262,7 +3912,7 @@ class Portfolio extends PureComponent {
                 title:
                   "Holdings, purchases and disposals with cost basis and gains — the record a tax return is worked out from, not the return itself. It knows only what you entered here: no exchange history, transfers, fees or crypto-to-crypto trades.",
               },
-              "Cost basis report (CSV)",
+              msg("po_csv", "Cost basis report (CSV)"),
             ),
         ),
         React.createElement("input", {
@@ -3276,7 +3926,7 @@ class Portfolio extends PureComponent {
           React.createElement(
             ImportError,
             null,
-            "Import failed — the file is not a valid PriceTab portfolio backup.",
+            msg("po_import_failed", "Import failed — the file is not a valid PriceTab portfolio backup."),
           ),
         this.state.mergeNote &&
           React.createElement(LotNote, null, this.state.mergeNote),
@@ -3284,7 +3934,7 @@ class Portfolio extends PureComponent {
         React.createElement(
           PrivacyNote,
           { empty: holdings.length === 0 },
-          "Tracking only · no wallet connection · stored locally on this device. Watched addresses are used solely for public balance lookups.",
+          msg("po_footer", "Tracking only · no wallet connection · stored locally on this device. Watched addresses are used solely for public balance lookups."),
         ),
       ),
       /* Over the list, not instead of it — the holdings stay mounted, so

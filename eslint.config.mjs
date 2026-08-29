@@ -28,7 +28,7 @@ const here = path.dirname(new URL(import.meta.url).pathname);
 // const/let/var/function/class in src/ is a global that any other file may
 // legitimately reference at runtime.
 //
-// Note on load order: CLAUDE.md's rule is that a file may only *execute*
+// Note on load order: the codebase guide's rule is that a file may only *execute*
 // references to bindings declared in files loaded before it, while runtime
 // calls inside functions may reference anything. no-undef cannot tell those
 // apart, so this config deliberately declares every project binding for every

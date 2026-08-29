@@ -1,4 +1,4 @@
-# CLAUDE.md, React 16.5 Patterns: "Immutability - never mutate".
+# The codebase guide, React 16.5 Patterns: "Immutability - never mutate".
 #
 # Mutating this.state directly does not re-render, so the symptom is not a
 # crash but a chart that silently stops updating — the hardest class of bug to

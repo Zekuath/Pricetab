@@ -64,7 +64,7 @@ const base = path.join(__dirname, "..", "src");
 /* `styles-portfolio.js` is loaded for the same reason `index.html` loads it
  * first: the donut constants and `bandInk` live there now, and `portfolio.js`
  * reads them at render. The styled blocks themselves are inert here. */
-for (const f of ["config.js", "storage.js", "styles-portfolio.js", "portfolio.js"]) {
+for (const f of ["storage.js", "i18n.js", "config.js", "styles-portfolio.js", "portfolio.js"]) {
   vm.runInContext(fs.readFileSync(`${base}/${f}`, "utf8"), sandbox, { filename: f });
 }
 const run = (code) => vm.runInContext(code, sandbox);
@@ -1090,6 +1090,124 @@ assert.strictEqual(
       assert.ok(holdable.has(t), `${t} is offered as a holding`);
       assert.ok(names[t], `${t} has a name to search by`);
     }
+  }
+
+  /* --- contributions: which holding moved the total ---------------------
+   *
+   * The property that makes the chart honest is that the bars add up to the
+   * headline figure. Asserted rather than assumed: a contribution chart whose
+   * parts do not sum to the whole is a chart that quietly edits the number
+   * above it. */
+  {
+    assert.strictEqual(
+      run("typeof contributionsOf"),
+      "function",
+      "contributionsOf is defined",
+    );
+
+    sandbox.__parts = [
+      { coin: "BTC", values: [1000, 1200, 1400] }, //  +400
+      { coin: "ETH", values: [800, 700, 500] }, //     -300
+      { coin: "SOL", values: [200, 260, 250] }, //      +50
+    ];
+    const out = json("contributionsOf(__parts)");
+
+    // 1. Signed contributions, and they sum to the total's own change.
+    const byCoin = Object.fromEntries(out.rows.map((r) => [r.coin, r.change]));
+    assert.strictEqual(byCoin.BTC, 400);
+    assert.strictEqual(byCoin.ETH, -300);
+    assert.strictEqual(byCoin.SOL, 50);
+    const totalFirst = 1000 + 800 + 200;
+    const totalLast = 1400 + 500 + 250;
+    assert.strictEqual(out.net, totalLast - totalFirst, "bars sum to the headline delta");
+
+    // 2. Sorted by size, not by sign: the biggest loser outranks a small win.
+    assert.deepStrictEqual(
+      out.rows.map((r) => r.coin),
+      ["BTC", "ETH", "SOL"],
+    );
+
+    // 3. Share is of the **absolute** movement. Against the net (+150 here) a
+    //    400 contribution would read as 267% of the move, which is not a share
+    //    of anything; and with winners and losers cancelling exactly, a net
+    //    denominator is zero and every share is infinite.
+    assert.strictEqual(out.gross, 750);
+    assert.ok(Math.abs(out.rows[0].share - (400 / 750) * 100) < 1e-9);
+    assert.ok(out.rows.every((r) => r.share >= 0 && r.share <= 100));
+
+    // 4. The exactly-cancelling case, which is the one that divides by zero.
+    const cancel = json(
+      `contributionsOf([{ coin: "A", values: [100, 200] }, { coin: "B", values: [100, 0] }])`,
+    );
+    assert.strictEqual(cancel.net, 0);
+    assert.ok(
+      cancel.rows.every((r) => isFinite(r.share)),
+      "a net of zero must not make the shares infinite",
+    );
+
+    // 5. A position that started at nothing has no percentage to report —
+    //    null, not Infinity, and not a silent zero.
+    const fromZero = json(`contributionsOf([{ coin: "NEW", values: [0, 500] }])`);
+    assert.strictEqual(fromZero.rows[0].change, 500);
+    assert.strictEqual(fromZero.rows[0].pct, null);
+
+    // 6. Nothing to say is null, not an empty chart claiming a flat month.
+    assert.strictEqual(run("contributionsOf([])"), null);
+    assert.strictEqual(run("contributionsOf(null)"), null);
+    assert.strictEqual(run(`contributionsOf([{ coin: "X", values: [5] }])`), null);
+  }
+
+  /* --- drawdown: distance from the running peak -------------------------- */
+  {
+    assert.strictEqual(run("typeof drawdownSeries"), "function");
+
+    // Rise to 200, fall to 150, recover past the old high.
+    const dd = json(
+      `drawdownSeries([
+        { time: 1, price: 100 },
+        { time: 2, price: 200 },
+        { time: 3, price: 150 },
+        { time: 4, price: 220 },
+      ])`,
+    );
+    const at = dd.map((p) => Number(p.price.toFixed(4)));
+
+    // 1. A new high is exactly zero — the ceiling is touched, not approached.
+    assert.strictEqual(at[0], 0, "the first point is its own peak");
+    assert.strictEqual(at[1], 0, "a new high reads zero");
+    assert.strictEqual(at[3], 0, "recovering past the old high reads zero again");
+
+    // 2. Below the peak is negative, and it is the real percentage: 150 from a
+    //    peak of 200 is −25%, not −50/200 of something else.
+    assert.strictEqual(at[2], -25);
+
+    // 3. Never positive. A drawdown above zero would mean "above its own
+    //    highest point", which cannot happen and would break the scale.
+    assert.ok(at.every((v) => v <= 0), "no point is above its own peak");
+
+    // 4. The deepest point agrees with `maxDrawdown`, which reports the same
+    //    fall as one number. Two functions describing one fact must not
+    //    disagree — that is how a chart ends up contradicting the figure
+    //    printed beside it.
+    const worst = json(
+      `maxDrawdown([
+        { time: 1, price: 100 },
+        { time: 2, price: 200 },
+        { time: 3, price: 150 },
+        { time: 4, price: 220 },
+      ])`,
+    );
+    /* `maxDrawdown.pct` is already signed negative — the worst-fall widget
+     * prints it straight — so these compare directly. Negating it here was my
+     * own assumption, and this assertion is what caught it. */
+    assert.ok(
+      Math.abs(Math.min(...at) - worst.pct) < 1e-9,
+      `the strip's deepest point (${Math.min(...at)}) matches maxDrawdown (${worst.pct})`,
+    );
+
+    // 5. Too little to measure is null, not a flat line implying no falls.
+    assert.strictEqual(run("drawdownSeries([{ time: 1, price: 100 }])"), null);
+    assert.strictEqual(run("drawdownSeries(null)"), null);
   }
 
   console.log("PORTFOLIO TESTS OK");

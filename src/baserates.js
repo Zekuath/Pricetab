@@ -1,7 +1,7 @@
 /* BASE RATES — "has this happened before, and how often?"
  *
  * This panel is what got built instead of buy and sell signals, and the reason
- * is measured rather than tasteful. `docs/product/TODAY.md` §9 has the working;
+ * is measured rather than tasteful. the working notes §9 has the working;
  * the short version is three findings that all point the same way:
  *
  *   - Nine textbook rules over **21,669 daily closes on eight coins**: 7 raw
@@ -37,8 +37,8 @@
 // How far ahead each row looks. Two horizons, because "it went up next week"
 // and "it went up next month" are different claims and both get asked.
 const BASE_RATE_HORIZONS = [
-  { days: 7, label: "next 7 days" },
-  { days: 30, label: "next 30 days" },
+  { days: 7, label: msg("br_next_7", "next 7 days") },
+  { days: 30, label: msg("br_next_30", "next 30 days") },
 ];
 
 /* The states worth counting.
@@ -52,26 +52,26 @@ const BASE_RATE_HORIZONS = [
 const BASE_RATE_STATES = [
   {
     id: "rsi-hot",
-    title: "RSI above 70",
-    note: "the line usually called overbought",
+    title: msg("br_rsi_above_70", "RSI above 70"),
+    note: msg("br_note_overbought", "the line usually called overbought"),
     test: (v) => v != null && v > 70,
   },
   {
     id: "rsi-veryhot",
-    title: "RSI above 80",
-    note: "the same line, further out",
+    title: msg("br_rsi_above_80", "RSI above 80"),
+    note: msg("br_note_further", "the same line, further out"),
     test: (v) => v != null && v > 80,
   },
   {
     id: "rsi-cold",
-    title: "RSI below 30",
-    note: "the line usually called oversold",
+    title: msg("br_rsi_below_30", "RSI below 30"),
+    note: msg("br_note_oversold", "the line usually called oversold"),
     test: (v) => v != null && v < 30,
   },
   {
     id: "rsi-verycold",
-    title: "RSI below 20",
-    note: "the same line, further out",
+    title: msg("br_rsi_below_20", "RSI below 20"),
+    note: msg("br_note_further", "the same line, further out"),
     test: (v) => v != null && v < 20,
   },
 ];
@@ -94,8 +94,12 @@ const movingAverage = (closes, period) => {
 const describeEdge = (edge) => {
   if (edge == null) return null;
   const rounded = Number(edge.toFixed(1));
-  if (rounded === 0) return "no different from an ordinary stretch";
-  return `${Math.abs(rounded).toFixed(1)} points ${rounded > 0 ? "better" : "worse"} than an ordinary stretch`;
+  if (rounded === 0) {
+    return msg("br_edge_none", "no different from an ordinary stretch");
+  }
+  return rounded > 0
+    ? msg("br_edge_better", "$1 points better than an ordinary stretch", Math.abs(rounded).toFixed(1))
+    : msg("br_edge_worse", "$1 points worse than an ordinary stretch", Math.abs(rounded).toFixed(1));
 };
 
 /* The sign comes from the **rounded** figure, never the raw one.
@@ -179,8 +183,11 @@ class BaseRatesPanel extends PureComponent {
     const above = ma200.map((v, i) => (v == null ? null : closes[i] > v));
     rows.push({
       id: "ma200",
-      title: "Above its 200-day average",
-      note: "the line institutions read as a regime, not as an entry",
+      title: msg("br_above_200d", "Above its 200-day average"),
+      note: msg(
+        "br_note_200d",
+        "the line institutions read as a regime, not as an entry",
+      ),
       live: above[last] === true,
       byHorizon: BASE_RATE_HORIZONS.map((h) => ({
         ...h,
@@ -210,13 +217,31 @@ class BaseRatesPanel extends PureComponent {
           React.createElement(
             BaseCompare,
             null,
-            `${formatSigned(r.median)} typically, up ${r.up.toFixed(0)}% of the time`,
+            msg(
+              "br_typically",
+              "$1 typically, up $2% of the time",
+              formatSigned(r.median),
+              r.up.toFixed(0),
+            ),
           ),
-          ` across ${r.n} episode${r.n === 1 ? "" : "s"}. ` +
-            `An ordinary ${h.days} days: ${formatSigned(r.baseMedian)}, up ${r.baseUp.toFixed(0)}% (${r.baseN} of them). ` +
+          (r.n === 1
+            ? msg("br_across_one_episode", " across 1 episode. ")
+            : msg("br_across_episodes", " across $1 episodes. ", r.n)) +
+            msg(
+              "br_ordinary_days",
+              "An ordinary $1 days: $2, up $3% ($4 of them). ",
+              h.days,
+              formatSigned(r.baseMedian),
+              r.baseUp.toFixed(0),
+              r.baseN,
+            ) +
             (enough
-              ? `That is ${edge}.`
-              : `${r.n} episodes is too few to compare — the difference is not printed.`),
+              ? msg("br_that_is", "That is $1.", edge)
+              : msg(
+                  "br_too_few",
+                  "$1 episodes is too few to compare — the difference is not printed.",
+                  r.n,
+                )),
         );
       })
       .filter(Boolean);
@@ -229,12 +254,12 @@ class BaseRatesPanel extends PureComponent {
         BaseRowTitle,
         null,
         row.title,
-        row.live ? " · now" : "",
+        row.live ? msg("br_now_suffix", " · now") : "",
       ),
       React.createElement(
         BaseCount,
         { weak: n < BASE_RATE_MIN_EPISODES },
-        `${n} time${n === 1 ? "" : "s"}`,
+        n === 1 ? msg("br_one_time", "1 time") : msg("br_n_times", "$1 times", n),
       ),
       ...cells,
     );
@@ -259,19 +284,23 @@ class BaseRatesPanel extends PureComponent {
         React.createElement(
           BaseHead,
           null,
-          React.createElement(BaseTitle, null, `${coin} · has this happened before?`),
+          React.createElement(
+            BaseTitle,
+            null,
+            msg("br_title", "$1 · has this happened before?", coin),
+          ),
           React.createElement(
             BaseEyebrow,
             null,
             readings
-              ? `${readings.days} daily closes`
+              ? msg("br_daily_closes", "$1 daily closes", readings.days)
               : loading
-                ? "Reading the daily closes…"
+                ? msg("br_reading", "Reading the daily closes…")
                 : "",
           ),
           React.createElement(
             BaseClose,
-            { onClick: onClose, "aria-label": "Close base rates" },
+            { onClick: onClose, "aria-label": msg("br_close", "Close base rates") },
             "×",
           ),
         ),
@@ -295,25 +324,32 @@ class BaseRatesPanel extends PureComponent {
               React.createElement(
                 BaseNowLabel,
                 null,
-                "RSI 14 · daily closes · 0–100",
+                msg("br_rsi_label", "RSI 14 · daily closes · 0–100"),
               ),
             ),
           loading &&
             React.createElement(
               BaseEmpty,
               null,
-              "Reading this coin's daily closes. It goes back as far as the exchange publishes, which is what makes the counts below worth printing.",
+              msg(
+                "br_loading_body",
+                "Reading this coin's daily closes. It goes back as far as the exchange publishes, which is what makes the counts below worth printing.",
+              ),
             ),
           failed &&
             !loading &&
             React.createElement(
               BaseEmpty,
               null,
-              `No daily history came back for ${coin}. Nothing can be counted without it, and a count made up would be worse than none.`,
+              msg(
+                "br_failed",
+                "No daily history came back for $1. Nothing can be counted without it, and a count made up would be worse than none.",
+                coin,
+              ),
               React.createElement(
                 BaseLoad,
                 { onClick: this.load, disabled: loading },
-                "Try again",
+                msg("br_try_again", "Try again"),
               ),
             ),
           readings &&
@@ -323,24 +359,43 @@ class BaseRatesPanel extends PureComponent {
               React.createElement(
                 BaseSectionLabel,
                 null,
-                live.length ? "True right now" : "Nothing unusual right now",
+                live.length
+                  ? msg("br_true_now", "True right now")
+                  : msg("br_nothing_unusual", "Nothing unusual right now"),
               ),
               live.length
                 ? live.map((r) => this.renderRow(r))
                 : React.createElement(
                     BaseEmpty,
                     null,
-                    `${coin} is not in any of the states below. That is the ordinary case, and it is the honest answer far more often than any of them.`,
+                    msg(
+                      "br_no_states",
+                      "$1 is not in any of the states below. That is the ordinary case, and it is the honest answer far more often than any of them.",
+                      coin,
+                    ),
                   ),
-              React.createElement(BaseSectionLabel, null, "The rest, for reference"),
+              React.createElement(
+                BaseSectionLabel,
+                null,
+                msg("br_the_rest", "The rest, for reference"),
+              ),
               rest.map((r) => this.renderRow(r)),
             ),
           React.createElement(
             BaseNote,
             null,
-            "This counts what happened after a state, against what happened after an ordinary day in the same coin. It is not a signal and there is nothing to act on here. ",
-            "Nine textbook rules tested over 21,669 daily closes on eight coins produced 0 of 70 results that survived correction for multiple testing, and on live data the “overbought” line was followed by a better-than-ordinary month on four coins of six. ",
-            "Where a count is small the comparison is left out rather than dressed up: a rate needs its denominator to mean anything.",
+            msg(
+              "br_note_1",
+              "This counts what happened after a state, against what happened after an ordinary day in the same coin. It is not a signal and there is nothing to act on here. ",
+            ),
+            msg(
+              "br_note_2",
+              "Nine textbook rules tested over 21,669 daily closes on eight coins produced 0 of 70 results that survived correction for multiple testing, and on live data the “overbought” line was followed by a better-than-ordinary month on four coins of six. ",
+            ),
+            msg(
+              "br_note_3",
+              "Where a count is small the comparison is left out rather than dressed up: a rate needs its denominator to mean anything.",
+            ),
           ),
         ),
       ),

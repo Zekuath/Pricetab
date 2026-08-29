@@ -234,8 +234,14 @@ const TabContent = styled.div`
   overflow-x: hidden;
   scroll-behavior: smooth;
   /* Keep the scrollbar out by the card edge and reserve its lane so
-     content never shifts when it appears */
-  scrollbar-gutter: stable;
+     content never shifts when it appears.
+
+     **both-edges**, because reserving the lane on one side only moves the
+     centre. Everything in this tab is centred, and with a single gutter it
+     centred inside a box 11px narrower than the card — measured, the search
+     field sat at x 714.5 while the title and the tab underline sat at 720, so
+     the panel's two halves were on different axes by half a scrollbar. */
+  scrollbar-gutter: stable both-edges;
   margin-right: -${({ theme }) => theme.spacing.large}rem;
   padding-right: ${({ theme }) => theme.spacing.large}rem;
   animation: ${tabFadeIn} 0.25s ease-out;
@@ -270,6 +276,18 @@ const TabContent = styled.div`
      middle. Measured on screen, not inferred: mask-image computed to
      rgb(0,0,0) 5.5px. 1.75rem (28px at the default root) clears a full line
      of the smallest type on this panel. */
+  /* The fade band is **padding**, so at rest there is nothing inside it.
+   *
+   * A mask alone fades whatever happens to be in the top and bottom 28px —
+   * including at scrollTop 0, where nothing is scrolling anywhere. That is a
+   * permanent murky strip under the tab strip and above the card's foot: the
+   * first control in the list sits half-dissolved and reads as a smudge
+   * rather than as a fade. Reserving the same distance as padding means the
+   * band is empty until something is actually scrolled into it, which is when
+   * a fade is telling the truth. */
+  padding-top: ${({ theme }) => theme.scale * 7}rem;
+  padding-bottom: ${({ theme }) => theme.scale * 7}rem;
+
   mask-image: linear-gradient(
     to bottom,
     transparent 0,
@@ -1163,7 +1181,13 @@ const HelpHintRow = styled.div`
 `;
 
 // Quiet pointer to the shortcut list, at the foot of Preferences
-const ShortcutsHint = styled.button.attrs({ type: "button" })`
+/* Shared by the two buttons and the one link in that row.
+ *
+ * A fragment rather than one component with an "as" prop: the vendored
+ * styled-components is 3.4.6 and has no "as". One of the three has to be an
+ * anchor because it leaves the extension, and three items that sit on one rule
+ * must not be able to drift apart. */
+const hintFace = css`
   display: block;
   flex: 1;
   padding: ${({ theme }) => theme.spacing.small}rem 0;
@@ -1174,10 +1198,26 @@ const ShortcutsHint = styled.button.attrs({ type: "button" })`
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: ${({ theme }) => theme.color.textSecondary};
+  text-decoration: none;
+  text-align: center;
   cursor: pointer;
   transition: color 0.15s ease;
 
   &:hover {
     color: ${({ theme }) => theme.color.text};
   }
+`;
+
+const ShortcutsHint = styled.button.attrs({ type: "button" })`
+  ${hintFace};
+`;
+
+/* The way to the store listing that is always there.
+ *
+ * The rating ask can be dismissed, and should be — but until this existed the
+ * two prompts were the *only* routes to the listing, so someone who waved the
+ * card away and later wanted to leave a review had nowhere to go. Asking less
+ * is only honest if the door stays open. */
+const RateHint = styled.a`
+  ${hintFace};
 `;

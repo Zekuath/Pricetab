@@ -6,7 +6,7 @@
  * **how big is a square and where does the window sit** — the pitch, the
  * price step, the zoom, the visible slice, the fade boundary, the node pool.
  * `updateGrid`, which begins on the line after the last of these, answers
- * **put it on screen**. `CLAUDE.md` states the split in its own words:
+ * **put it on screen**. The codebase guide states the split in its own words:
  * "`gridGeometry()` is lifted out of `updateGrid` precisely because
  * `updatePath` needs the pitch *first*."
  *
@@ -761,6 +761,14 @@ const chartBoardGeometry = (chart) => ({
           "g",
         );
         layer.setAttribute("mask", `url(#${chart.fadeId})`);
+        /* Named, the way the chart names every other node worth addressing
+           (`pt-live-dot`, `pt-moves`). It used to be identified as "the first
+           masked group in the chart", which was true until the travel band
+           gained a masked layer of its own underneath it — after which a test
+           for "the mesh is drawn through a fade" was measuring the band and
+           failing for a reason unrelated to the rule it protects. Position is
+           not an identity. */
+        layer.setAttribute("class", "pt-mesh");
         layer.setAttribute("opacity", i === chart._meshAt ? "1" : "0");
         set.layer = layer;
         const other = chart._meshSets[1 - i].layer;

@@ -23,84 +23,155 @@
 const ONBOARDING_STEPS = [
   {
     selector: null,
-    title: "Welcome to PriceTab 👋",
-    text: "Live crypto charts on every new tab. Here's a quick run through what's here — skip it any time.",
+    chapter: msg("tour_chapter_start_here", "Start here"),
+    title: msg("tour_title_welcome_to_pricetab", "Welcome to PriceTab"),
+    text: msg("tour_text_01", "Live crypto charts on every new tab, asking for nothing — no account, no permissions, and nothing about you leaving this device. This tour is twenty short steps in five chapters. Skip it whenever you like; Settings → Preferences can replay it."),
   },
+
   {
     selector: '[data-tour="price"]',
-    title: "Live price",
-    text: "Your active coin and its live price. Click it — or use the arrow keys — to move through your coin list.",
-    keys: ["←", "→"],
+    chapter: msg("tour_chapter_the_chart", "The chart"),
+    title: msg("tour_title_live_price", "Live price"),
+    text: msg("tour_text_02", "Your active coin and its live price, refreshed while the tab is open and paused while it is not. Click it, or use the arrow keys, to move through your coin list."),
+    keys: ["\u2190", "\u2192"],
   },
   {
     selector: '[data-tour="change"]',
-    title: "Change",
-    text: "How the price moved over the range. Click it to flip between percentage and absolute change.",
+    chapter: msg("tour_chapter_the_chart", "The chart"),
+    title: msg("tour_title_change", "Change"),
+    text: msg("tour_text_03", "How the price moved across the range on screen — not a fixed 24 hours. Click it to flip between a percentage and an amount."),
     keys: ["X"],
   },
   {
     selector: '[data-tour="period"]',
-    title: "Time range",
-    text: "Anywhere from the last hour (1H) to all time (ALL). The number keys jump straight to a range.",
-    keys: ["1", "–", "6"],
+    chapter: msg("tour_chapter_the_chart", "The chart"),
+    title: msg("tour_title_time_range", "Time range"),
+    text: msg("tour_text_04", "The last hour through all time. Each range keeps its own settings — the board you set up on 1H is still there when you come back to it."),
+    keys: ["1", "\u2013", "6"],
   },
   {
     selector: null,
-    title: "Jump to any coin",
-    text: "Press / and type a symbol or a name. Your own coins rank first, and picking one you don't track yet adds it to your list.",
+    chapter: msg("tour_chapter_the_chart", "The chart"),
+    title: msg("tour_title_jump_to_any_coin", "Jump to any coin"),
+    text: msg("tour_text_05", "Type a symbol or a name. Your own coins rank first, and picking one you do not track yet adds it. The same search chooses a coin for a price target."),
     keys: ["/"],
   },
   {
     selector: '[data-tour="compare"]',
-    title: "Compare two coins",
-    text: "Pick a second coin and both are drawn as percent change from the start of the range — one shared scale, so the lines can be trusted. Press C again or Esc to drop it.",
+    chapter: msg("tour_chapter_the_chart", "The chart"),
+    title: msg("tour_title_compare_two_coins", "Compare two coins"),
+    text: msg("tour_text_06", "Both drawn as percent change from the start of the range, on one shared scale — never two axes, which is the trick that makes any two lines look related. Press C again or Esc to drop it."),
     keys: ["C"],
   },
   {
-    selector: '[data-tour="alerts"]',
-    title: "Price targets",
-    text: "Set “BTC rises above…” and PriceTab tells you on your next new tab when it was hit — even overnight, while no tab was open. Nothing is pushed, which is how it stays permission-free.",
-    keys: ["A"],
+    selector: null,
+    chapter: msg("tour_chapter_the_chart", "The chart"),
+    title: msg("tour_title_two_more_ways_to_read_it", "Two more ways to read it"),
+    text: msg("tour_text_07", "T swaps the line for candlesticks. G puts a price and time mesh behind the chart so you can read a level off it. Under the price sits the range high and low, and the volume-weighted average price when the candle data happens to be loaded — it is never fetched just for that."),
+    keys: ["T", "G"],
   },
   {
+    selector: null,
+    chapter: msg("tour_chapter_the_chart", "The chart"),
+    title: msg("tour_title_what_happened_here", "What happened here?"),
+    text: msg("tour_text_08", "Off by default, in Settings → Chart. It marks the moments the price did something unusual for this coin — measured against its own volatility, so it is right on a quiet stablecoin and on a wild one — and a click shows the headlines published around that day. It never claims they are the cause, because nobody knows that."),
+  },
+
+  {
+    selector: '[data-tour="calls"]',
+    chapter: msg("tour_chapter_calling_a_square", "Calling a square"),
+    title: msg("tour_title_say_where_you_think_it_goes", "Say where you think it goes"),
+    text: msg("tour_text_09", "A call is a claim: this coin, in this price band, at this time. It settles itself on a later tab and goes on a record you keep. Nothing is scored, nothing is worth anything, and nothing leaves the device — it is a way to find out whether you are actually any good."),
+    keys: ["K"],
+  },
+  {
+    selector: null,
+    chapter: msg("tour_chapter_calling_a_square", "Calling a square"),
+    title: msg("tour_title_the_board", "The board"),
+    text: msg("tour_text_10", "Turn calls on and the chart grows a board of squares to the right of now. Hover one, click once to draft it, click again to lock it — two clicks, because one stray click should not commit a prediction. Drag the dotted now line to trade history for board, and use the pill at its top right to change what one square is worth."),
+    keys: ["L", "[", "\u2013", "]"],
+  },
+  {
+    selector: null,
+    chapter: msg("tour_chapter_calling_a_square", "Calling a square"),
+    title: msg("tour_title_how_far_it_usually_travels", "How far it usually travels"),
+    text: msg("tour_text_11", "In the calls panel under Show there is a travel band. It shades the distances this coin has actually covered over each square's worth of time — the middle half and the middle 80%. It is deliberately not a forecast: the direction is stripped out of the figures before they are drawn, so a coin that rose all week still gets a band that leans neither way. It answers whether a square is a near-certainty or a long shot, which is a different question on every coin."),
+  },
+
+  {
     selector: '[data-tour="portfolio"]',
-    title: "Portfolio",
-    text: "Track holdings by amount, or paste a public address and let it read the balance. Value, cost basis and 24h P/L — stored only on this device, no wallet connection.",
+    chapter: msg("tour_chapter_your_money", "Your money"),
+    title: msg("tour_title_portfolio", "Portfolio"),
+    text: msg("tour_text_12", "Amounts you type in, with purchases and sales if you want cost basis and profit. FIFO, LIFO or HIFO — a reporting method, not a tax calculation, and the report says which method every line used. Everything is stored on this device and there is no wallet to connect."),
     keys: ["P"],
+  },
+  {
+    selector: null,
+    chapter: msg("tour_chapter_your_money", "Your money"),
+    title: msg("tour_title_or_watch_an_address", "Or watch an address"),
+    text: msg("tour_text_13", "Paste a public Bitcoin, Ethereum, Litecoin, Dogecoin, Bitcoin Cash or Zcash address and the balance is read for you — including the ERC-20 tokens an Ethereum address holds, in one request. The address is only ever sent to the balance service, and if a chain cannot be read PriceTab says which chain it is rather than telling you to check a perfectly good address."),
+  },
+  {
+    selector: '[data-tour="alerts"]',
+    chapter: msg("tour_chapter_your_money", "Your money"),
+    title: msg("tour_title_price_targets", "Price targets"),
+    text: msg("tour_text_14", "Tell me when BTC rises above a number, or moves 5% in a day, or when everything I hold is worth less than X. You are told on your next new tab, and a hit overnight is still found because the check looks back through the week. Nothing is pushed at you, which is how the extension stays permission-free."),
+    keys: ["A"],
+  },
+
+  {
+    selector: '[data-tour="news"]',
+    chapter: msg("tour_chapter_reading_the_market", "Reading the market"),
+    title: msg("tour_title_news", "News"),
+    text: msg("tour_text_15", "Every headline with its source, its age and a summary, newest first, narrowed by coin or by source or by typing. A source that has stopped publishing shows its own age in red — a dead feed looking exactly like a live one is the thing this was built for. Advertising is dropped rather than badged."),
+    keys: ["N"],
+  },
+  {
+    selector: null,
+    chapter: msg("tour_chapter_reading_the_market", "Reading the market"),
+    title: msg("tour_title_has_this_happened_before", "Has this happened before?"),
+    text: msg("tour_text_16", "Reads years of this coin's daily closes and counts what followed each time it was in a given state. Every figure carries how many times it is based on, and where that number is small it refuses to draw a conclusion. It will never tell you to buy or sell — nine textbook rules tested over 21,669 daily closes produced nothing that survived proper correction, and saying so is more useful than an arrow."),
+    keys: ["B"],
   },
   {
     selector: '[data-tour="widgets"]',
     optional: true, // nothing to point at until a widget is switched on
-    title: "Widgets",
-    text: "Watchlist, Fear & Greed, funding rates, market overview and more. Switch them on in Settings → Widgets — there are ready-made bundles — then drag them to reorder, or hover one and click × to hide just that card.",
+    chapter: msg("tour_chapter_reading_the_market", "Reading the market"),
+    title: msg("tour_title_widgets", "Widgets"),
+    text: msg("tour_text_17", "Watchlist, Fear & Greed, funding, open interest, network fees, the worst fall in the range and more. Switch them on in Settings → Widgets, where there are ready-made bundles, then drag to reorder or hover one and click its × to hide that card."),
   },
   {
     selector: '[data-tour="widget-toggle"]',
     // Deliberately not `optional`: this step describes a button, so with no
     // button on screen it has nothing to say and is better skipped. The step
     // before it is the one that has to survive, and it does.
-    title: "Clear the row",
-    text: "This clears every widget at once, and brings them all back. Nothing is switched off, so they return exactly as you arranged them.",
+    chapter: msg("tour_chapter_reading_the_market", "Reading the market"),
+    title: msg("tour_title_clear_the_row", "Clear the row"),
+    text: msg("tour_text_18", "Clears every widget at once and brings them all back. Nothing is switched off, so they return exactly as you arranged them."),
     keys: ["W"],
   },
+
   {
     selector: '[data-tour="settings"]',
-    title: "Everything else lives here",
-    text: "Coins, currency, theme, widgets and the tickers. There's a search box at the top of Preferences if you can't find something.",
+    chapter: msg("tour_chapter_making_it_yours", "Making it yours"),
+    title: msg("tour_title_everything_else_lives_here", "Everything else lives here"),
+    text: msg("tour_text_19", "Coins, currency, theme, widgets and the tickers, with a search box at the top of Preferences. The modes row sets a dozen of them at once — Minimal, Fast, Trader, Holder — and never touches your currency, number format or theme."),
     keys: ["S"],
   },
   {
     selector: null,
-    title: "It's faster from the keyboard",
-    text: "Press ? any time for the full list. A few more worth knowing:",
+    chapter: msg("tour_chapter_making_it_yours", "Making it yours"),
+    title: msg("tour_title_it_is_faster_from_the_keyboard", "It is faster from the keyboard"),
+    text: msg("tour_keys_intro", "Press ? at any time for the full list. A few worth knowing now:"),
     keyGrid: [
-      { keys: ["T"], label: "Line or candlesticks" },
       { keys: ["D"], label: "Light or dark" },
-      { keys: ["Space"], label: "Rotate through your coins" },
+      { keys: ["Space"], label: msg("tour_key_rotate", "Rotate through your coins") },
       { keys: ["R"], label: "Refresh now" },
+      { keys: ["Esc"], label: msg("sc_close_open", "Close whatever is open") },
     ],
   },
 ];
+
 
 const SPOTLIGHT_PADDING = 8; // px of breathing room around the highlighted element
 const TIP_WIDTH = 300; // px, tooltip max width
@@ -158,6 +229,22 @@ const OnbCard = styled.div`
   transition:
     top 0.35s cubic-bezier(0.22, 1, 0.36, 1),
     left 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+`;
+
+/* Which chapter this step is in.
+ *
+ * Twenty steps is a lot to be walked through, and a bare "7 / 20" says how far
+ * you have to go without saying what any of it is about. The chapter name
+ * turns the same twenty into five short subjects, so somebody who only wants
+ * the chart knows the moment the tour has left it — and Skip is always one
+ * click away. A tour long enough to be worth taking has to be navigable, and
+ * an eyebrow costs one line. */
+const OnbChapter = styled.div`
+  font-size: 0.6rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: ${({ theme }) => theme.color.textSecondary};
+  margin-bottom: 0.3rem;
 `;
 
 const OnbTitle = styled.div`
@@ -501,6 +588,9 @@ class OnboardingTour extends React.Component {
       React.createElement(
         OnbCard,
         { key: "card", style: this.cardStyle() },
+        current.chapter
+          ? React.createElement(OnbChapter, null, current.chapter)
+          : null,
         React.createElement(OnbTitle, null, current.title),
         current.keys &&
           React.createElement(
@@ -541,7 +631,7 @@ class OnboardingTour extends React.Component {
             React.createElement(
               OnbSkip,
               { type: "button", onClick: () => this.finish() },
-              "Skip tour",
+              msg("tour_skip", "Skip tour"),
             ),
           React.createElement(
             OnbCount,
@@ -555,12 +645,12 @@ class OnboardingTour extends React.Component {
               React.createElement(
                 OnbBtn,
                 { type: "button", onClick: () => this.goPrev() },
-                "Back",
+                msg("tour_back", "Back"),
               ),
             React.createElement(
               OnbBtn,
               { type: "button", primary: true, onClick: () => this.goNext() },
-              isLast ? "Done" : "Next",
+              isLast ? msg("tour_done", "Done") : msg("tour_next", "Next"),
             ),
           ),
         ),

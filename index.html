@@ -57,8 +57,13 @@
     <script src="./src/theme.js"></script>
     <script src="./src/icons.js"></script>
     <script src="./src/api.js"></script>
-    <script src="./src/config.js"></script>
     <script src="./src/storage.js"></script>
+    <!-- Language sits between storage.js and config.js, and both halves of that
+         are load-order facts: it reads its own setting through storage.js, and
+         config.js builds translated option labels while it runs, so msg() has
+         to exist before config.js is read. -->
+    <script src="./src/i18n.js"></script>
+    <script src="./src/config.js"></script>
     <script src="./src/widgets-data.js"></script>
     <script src="./src/utils.js"></script>
     <script src="./src/chart-board.js"></script>
@@ -72,6 +77,9 @@
     <script src="./src/onboarding.js"></script>
     <script src="./src/portfolio-chart.js"></script>
     <script src="./src/styles-portfolio.js"></script>
+    <!-- A different chart grammar from portfolio-chart.js: ranked bars, no
+         crosshair. Loads after it and before portfolio.js, which renders it. -->
+    <script src="./src/portfolio-contribution.js"></script>
     <script src="./src/portfolio.js"></script>
     <script src="./src/quickswitch.js"></script>
     <script src="./src/styles-alerts.js"></script>
@@ -82,6 +90,10 @@
     <script src="./src/baserates.js"></script>
     <script src="./src/shortcuts.js"></script>
     <script src="./src/app-portfolio.js"></script>
+    <script src="./src/app-calls.js"></script>
+    <script src="./src/app-alerts.js"></script>
+    <script src="./src/app-news.js"></script>
+    <script src="./src/app-ticker.js"></script>
     <script src="./src/app.js"></script>
   </body>
 </html>

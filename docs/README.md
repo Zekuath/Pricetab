@@ -20,7 +20,7 @@ docs/
 |---|---|
 | [VISION.md](product/VISION.md) | The roadmap: what this is for, and what it will not become |
 | [TODO.md](product/TODO.md) | Development tasks, by phase |
-| [TODAY.md](product/TODAY.md) | The current session's working list — one numbered piece per job, newest first |
+| `product/TODAY.md` | The current session's working list — one numbered piece per job, newest first. **Local only**: it is a scratchpad in a working voice, not product documentation, so it is git-ignored and lives in the tree rather than in the history |
 
 `TODAY.md` is the one to read before starting anything. It carries what was
 asked, what was actually wrong, what was done about it and — the part worth
@@ -43,44 +43,33 @@ pointer, and nothing more.
 
 ## `internal/` — working material
 
-Agent rules, journals, memories, tooling research and business thinking. All of
-it is **git-ignored as a directory**, which is deliberate: the previous
-arrangement named five individual paths, so a sixth note dropped beside them
-would have been committed with nobody noticing. `tests/test-invariants.js`
-fails if anything under it is ever tracked.
+Contributor notes, tooling research and business thinking. All of it is
+**git-ignored as a directory**, which is deliberate: the previous arrangement
+named five individual paths, so a sixth note dropped beside them would have
+been committed with nobody noticing. `tests/test-invariants.js` fails if
+anything under it is ever tracked.
 
 Ignored means "not part of the shipped history", not "disposable" —
 `scripts/checkpoint.sh` still snapshots the folder.
 
-| File | What it is |
-|---|---|
-| `internal/AGENT_RULES.md` | Binding on every AI agent working here. Read it first |
-| `internal/AI_GUIDELINES.md` | The security checklists behind those rules |
-| `internal/AI_TOOLING_RESEARCH.md` | Notes on the tooling itself |
-| `internal/MONETIZATION.md` | The long-form strategy and the principles a paid version still has to keep. Its "no paywall" position was superseded on 21 Aug 2026 |
-| `internal/MONETIZATION_PLAN.md` | The pricing plan, and **the current direction**: freemium, one-time "Pro", new features only. Kept apart from the strategy above deliberately: one is the principles, this is the price |
-| `internal/BUSINESS_IDEAS.md` | Working notes. Nothing here is a decision until it moves to `product/` or `store/` |
-| `internal/agents/` | One journal and one memory file per agent |
+What lives there: how to work in this repository (the one command that must be
+green, the house style, how a change is verified), the security checklists
+behind those rules, notes on the tooling, the monetization strategy and pricing
+plan, business ideas, and per-contributor working notes. **Nothing under
+`internal/` is a decision until it moves to `product/` or `store/`.**
+
+No file table here on purpose — a list of paths for a folder nobody else can
+see goes stale silently, and this file is published.
 
 ## What stays at the repository root, and why
 
-Four files, and each has a reason that is not preference:
-
 - **`README.md`** — GitHub renders the root README as the repository's front
   page. Moved into `docs/`, the project would land on a bare file listing.
-- **`CLAUDE.md`** — the codebase guide, and the door Claude and Codex arrive
-  through. `AGENTS.md` is a symlink to it and **`GEMINI.md`** is the third
-  door. All three are git-ignored, and `tests/test-invariants.js` checks each
-  one still points at `internal/AGENT_RULES.md`.
+- **The codebase guide** — load order, globals, the invariants and why the
+  chart is built the way it is. It is git-ignored, and it is the other half of
+  the working rules under `internal/`: one describes **what the code is**, the
+  other **how to work in it**.
 
 Everything else that used to sit at the root — the monetization plan and the
 business notes — is under `internal/` now. They were the two files a reader
 could mistake for public documentation because of where they were sitting.
-
-## Where the rest lives
-
-`CLAUDE.md` at the repository root describes **the codebase** — load order,
-globals, the invariants and why the chart is built the way it is. It is the
-other half of `internal/AGENT_RULES.md`, which describes **how to work here**.
-`AGENTS.md` is a symlink to it; `GEMINI.md` is the third door to the same
-rules. All three are git-ignored.

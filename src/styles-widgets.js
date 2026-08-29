@@ -70,8 +70,12 @@ const CompareToggleButton = styled.button.attrs({ type: "button" })`
   padding: 0;
   border: none;
   background: transparent;
+  /* The interaction accent, not the chart's blue — see the accent token in
+     theme.js. An "on" state and a plotted line are different things and were
+     sharing one token, so the only blue in the interface was doing two
+     unrelated jobs. (No backticks: this is inside a template literal.) */
   color: ${({ theme, active }) =>
-    active ? theme.color.chartLine : theme.color.text};
+    active ? theme.color.accent : theme.color.text};
   cursor: pointer;
   line-height: 1;
   z-index: 120;
@@ -531,9 +535,9 @@ const HalvingEta = styled.div`
  * same thing the words at its ends used to say: low is good, high is bad. That
  * is the textbook reading of the *daily* RSI, this number is not the daily RSI
  * (its period follows the range on screen), and on 21,669 daily closes the
- * claim does not hold for the daily one either — see `docs/product/TODAY.md`
+ * claim does not hold for the daily one either — see the working notes
  * §9. Removing the two words and leaving the traffic light would have moved
- * the claim rather than dropped it. Theme colours, too, per CLAUDE.md: the
+ * the claim rather than dropped it. Theme colours, too, per the codebase guide: the
  * three hex values were drawn on both a white and a black card. */
 /* The one meter.
  *
@@ -558,10 +562,19 @@ const widgetSkeletonPulse = keyframes`
   50% { opacity: 0.42; }
 `;
 
+/* `row` stands in for a coin row rather than for a line of caption.
+ *
+ * A `WidgetCoinRow` is 0.72em type at 1.35 line-height inside 0.22em of
+ * padding, with 0.15em of gap under it — about 1.44em all told, against the
+ * 0.7em a caption line reserves. Four of those is roughly 35px, which is
+ * exactly how far every widget below the watchlist dropped when the coin
+ * sweep answered. A skeleton whose height is not the height of the thing it
+ * replaces causes the jump it exists to prevent. */
 const WidgetSkeletonLine = styled.div`
-  height: ${({ tall }) => (tall ? "1.15em" : "0.7em")};
-  width: ${({ tall }) => (tall ? "62%" : "44%")};
-  margin: ${({ tall }) => (tall ? "0.15em auto 0.3em" : "0 auto")};
+  height: ${({ tall, row }) => (tall ? "1.15em" : row ? "1.29em" : "0.7em")};
+  width: ${({ tall, row }) => (tall ? "62%" : row ? "100%" : "44%")};
+  margin: ${({ tall, row }) =>
+    tall ? "0.15em auto 0.3em" : row ? "0 auto 0.15em" : "0 auto"};
   border-radius: 0.25em;
   background: ${({ theme }) => theme.color.text};
   animation: ${widgetSkeletonPulse} 1.4s ease-in-out infinite;

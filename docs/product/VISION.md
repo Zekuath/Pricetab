@@ -112,7 +112,7 @@ to stay in sync with `handleKeyDown`, and `?` is what advertises it. Verified
 - Crypto news widget (CryptoPanic)
 
 **Prediction markets widget (Polymarket)** — *researched Aug 2026, deferred
-until after 1.4.0 is approved*
+until after 1.5.0 is approved*
 
 Deliberately held back so it ships alone: if it draws a rejection we want to
 know it was this and not something else in a large release.

@@ -206,6 +206,7 @@ const NewsList = styled.div`
 `;
 
 const NewsRowTitle = styled.span`
+  display: block;
   font-size: 0.82rem;
   line-height: 1.4;
   color: ${({ theme }) => theme.color.text};
@@ -222,12 +223,78 @@ const NewsRowTitle = styled.span`
 /* The three-column grid. `minmax(0, 1fr)` on the headline rather than `1fr`,
  * or a long unbroken title pushes the whole row wider than the card and the
  * age column slides off the left. */
-const NewsRow = styled.a`
+/* Column three is a block now, not a line.
+ *
+ * The row was age / source / headline and nothing else. What a feed already
+ * hands over and the panel was discarding is a summary — RSS calls it
+ * description, WordPress calls it excerpt — so the headline gained the sentence
+ * under it that says whether the story is worth the click. The coin chips
+ * answer the other question a filtered list raises: which of the coins you
+ * follow this row is here for.
+ */
+const NewsRowBody = styled.span`
+  display: block;
+  min-width: 0;
+
+  @media (max-width: 620px) {
+    grid-column: 2;
+  }
+`;
+
+/* Two lines, and the clamp is the point: three would make the list a column of
+   paragraphs and lose the thing a list is for, which is scanning it. */
+const NewsRowSummary = styled.span`
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin-top: 0.22rem;
+  font-size: 0.72rem;
+  line-height: 1.45;
+  color: ${({ theme }) => theme.color.textSecondary};
+`;
+
+const NewsRowCoins = styled.span`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.28rem;
+  margin-top: 0.34rem;
+`;
+
+const NewsRowCoin = styled.span`
+  font-size: 0.56rem;
+  letter-spacing: 0.09em;
+  padding: 0.06rem 0.32rem;
+  border: 1px solid ${({ theme }) => theme.color.border};
+  border-radius: 0.3rem;
+  color: ${({ theme }) => theme.color.textSecondary};
+`;
+
+/* The row's three columns, in one place.
+ *
+ * A clustered story draws a second line under its headline naming the other
+ * newsrooms, and that line has to start exactly where the headline starts or
+ * the list develops a second left edge. Interpolating one fragment into both
+ * is how this codebase already shares a look across two elements — there is no
+ * `as` prop in styled-components 3.4.6 — and it means the alignment cannot
+ * drift when the columns are next adjusted, including at the breakpoint where
+ * the source folds under the age. */
+const newsRowGrid = css`
   display: grid;
   grid-template-columns: 2.6rem 8.5rem minmax(0, 1fr);
   gap: 0.7rem;
-  align-items: baseline;
   padding: 0.5rem 1.1rem;
+
+  @media (max-width: 620px) {
+    /* The source folds under the age rather than squeezing the headline into
+       a column two words wide */
+    grid-template-columns: 2.6rem minmax(0, 1fr);
+  }
+`;
+
+const NewsRow = styled.a`
+  ${newsRowGrid};
+  align-items: baseline;
   text-decoration: none;
   border-bottom: 1px solid ${({ theme }) => theme.color.border}55;
 
@@ -250,12 +317,6 @@ const NewsRow = styled.a`
   &:focus-visible {
     outline: none;
   }
-
-  @media (max-width: 620px) {
-    /* The source folds under the age rather than squeezing the headline into
-       a column two words wide */
-    grid-template-columns: 2.6rem minmax(0, 1fr);
-  }
 `;
 
 const NewsRowAge = styled.span`
@@ -277,6 +338,212 @@ const NewsRowSource = styled.span`
   @media (max-width: 620px) {
     grid-column: 2;
   }
+`;
+
+/* A story four newsrooms ran is one row, and the other three are named under
+ * it — see clusterNewsItems in api.js for how two headlines are judged the
+ * same story, and why the threshold errs towards leaving them apart.
+ *
+ * They are links, not text. The whole promise of the fold is that nothing is
+ * discarded, and a newsroom you can read the name of but not the article is
+ * discarded with extra steps. That is also why this wrapper exists at all: the
+ * row is an anchor, an anchor cannot contain another anchor, so the second
+ * line has to be its sibling. The border moves out here with it, or the fold
+ * would draw a rule through the middle of one story.
+ */
+const NewsCluster = styled.div`
+  border-bottom: 1px solid ${({ theme }) => theme.color.border}55;
+
+  ${NewsRow} {
+    border-bottom: none;
+  }
+
+  /* The pointer anywhere over the cluster lights the whole cluster, including
+     the second line: it is one story, so it should not look like two rows that
+     happen to be adjacent. */
+  &:hover ${NewsRow} {
+    background: ${({ theme }) => theme.color.bgSecondary};
+  }
+`;
+
+const NewsAlso = styled.div`
+  ${newsRowGrid};
+  align-items: baseline;
+  padding-top: 0;
+  padding-bottom: 0.5rem;
+  margin-top: -0.15rem;
+
+  ${NewsCluster}:hover & {
+    background: ${({ theme }) => theme.color.bgSecondary};
+  }
+`;
+
+/* The line sits in the headline's column. Its first two grid cells are left
+   empty rather than collapsed, which is what keeps it aligned at both
+   breakpoints without either block knowing about the other. */
+const NewsAlsoLine = styled.div`
+  grid-column: 3;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.3rem 0.5rem;
+  font-size: 0.62rem;
+  color: ${({ theme }) => theme.color.textSecondary};
+
+  @media (max-width: 620px) {
+    grid-column: 2;
+  }
+`;
+
+/* How many newsrooms ran it, which is the thing a list of names does not say
+   at a glance. Four outlets covering something is the story being big, and
+   that is a fact about the news rather than about this panel. */
+const NewsAlsoCount = styled.span`
+  font-size: 0.56rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  padding: 0.06rem 0.34rem;
+  border: 1px solid ${({ theme }) => theme.color.border};
+  border-radius: 0.3rem;
+  color: ${({ theme }) => theme.color.textSecondary};
+  white-space: nowrap;
+`;
+
+/* Not a link, because there is nothing single to point it at. */
+const NewsAlsoRest = styled.span`
+  color: ${({ theme }) => theme.color.textSecondary};
+  font-size: 0.58rem;
+  letter-spacing: 0.06em;
+  opacity: 0.8;
+`;
+
+const NewsAlsoLink = styled.a`
+  color: ${({ theme }) => theme.color.textSecondary};
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-size: 0.58rem;
+  ${hoverUnderline};
+
+  &:hover,
+  &:focus-visible {
+    color: ${({ theme }) => theme.color.text};
+  }
+
+  &:focus-visible {
+    outline: none;
+  }
+`;
+
+/* ── The line between new and already-read ───────────────────────────────
+ *
+ * A rule with the words sitting on it, rather than a coloured band down the
+ * new rows. A band would be a second thing competing with the coin chips and
+ * the source names for the same glance, and it would have to be a colour —
+ * every colour in this palette already means something (up, down, "you are on
+ * this"). A rule means one thing and means it in one place.
+ *
+ * It scrolls with the list on purpose. Pinned, it would be a permanent
+ * announcement; in the flow it is a mark you pass once and then leave behind,
+ * which is what it is for. */
+const NewsDivider = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.55rem 1.1rem 0.35rem;
+
+  &::before,
+  &::after {
+    content: "";
+    height: 1px;
+    background: ${({ theme }) => theme.color.border};
+  }
+
+  &::before {
+    width: 1.4rem;
+    flex: none;
+  }
+
+  &::after {
+    flex: 1;
+  }
+`;
+
+const NewsDividerText = styled.span`
+  font-size: 0.56rem;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: ${({ theme }) => theme.color.textSecondary};
+  white-space: nowrap;
+`;
+
+/* ── What the coin on the chart just did ─────────────────────────────────
+ *
+ * Above the list and outside it, because it is not a row: the list is sorted
+ * by time and filtered by your scope, and this answers a different question
+ * that neither of those controls governs. Inside the list it would be a row
+ * that ignores the filters, which is the kind of exception that makes a list
+ * stop being trustworthy.
+ *
+ * See `unusualNow` in news.js for what "unusual" means here and why the
+ * section is absent rather than empty when there is nothing to say. */
+const NewsUnusual = styled.div`
+  padding: 0.7rem 1.1rem 0.75rem;
+  border-top: 1px solid ${({ theme }) => theme.color.border};
+  background: ${({ theme }) => theme.color.bgSecondary};
+`;
+
+const NewsUnusualHead = styled.div`
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+`;
+
+/* Green and red here are the same green and red as everywhere else — this is
+   a price move, which is exactly what those two colours mean in this app. The
+   written sign carries it as well, so colour is never alone. */
+const NewsUnusualMove = styled.span`
+  font-size: 0.86rem;
+  font-weight: ${({ theme }) => theme.fontWeight.bold};
+  font-variant-numeric: tabular-nums;
+  color: ${({ up, theme }) =>
+    up ? theme.color.chartLineGreen : theme.color.chartLineRed};
+`;
+
+const NewsUnusualWhat = styled.span`
+  font-size: 0.7rem;
+  color: ${({ theme }) => theme.color.text};
+`;
+
+const NewsUnusualList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.28rem;
+  margin-top: 0.5rem;
+`;
+
+const NewsUnusualLink = styled.a`
+  font-size: 0.72rem;
+  line-height: 1.35;
+  color: ${({ theme }) => theme.color.text};
+  ${hoverUnderline};
+
+  &:focus-visible {
+    outline: none;
+  }
+`;
+
+const NewsUnusualNone = styled.div`
+  font-size: 0.68rem;
+  color: ${({ theme }) => theme.color.textSecondary};
+  margin-top: 0.45rem;
+`;
+
+const NewsUnusualNote = styled.div`
+  font-size: 0.6rem;
+  line-height: 1.45;
+  color: ${({ theme }) => theme.color.textSecondary};
+  margin-top: 0.5rem;
+  opacity: 0.85;
 `;
 
 const NewsEmpty = styled.div`

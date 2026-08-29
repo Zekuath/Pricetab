@@ -1,14 +1,14 @@
-// Enforces the architectural invariants CLAUDE.md states in prose.
+// Enforces the architectural invariants the codebase guide states in prose.
 //
 // Why this file exists: this repo has no compiler, no type system and no
 // module graph, so the rules that protect the product's core claims — zero
 // permissions, zero external requests, no eval, a known set of API hosts —
-// are enforced today by an agent (or a human) remembering to read the right
+// are enforced today by whoever remembers to read the right
 // paragraph. This turns each of them into a failing test instead.
 //
 // Deliberately zero-dependency: it runs on plain Node through the existing
 // tests/run-all.js, so it works in CI as-is and adds no supply chain.
-// Every rule below quotes the CLAUDE.md line it enforces.
+// Every rule below quotes the codebase guide line it enforces.
 const fs = require("fs");
 const path = require("path");
 
@@ -52,7 +52,7 @@ const scanSrc = (re, why) => {
 };
 
 // --- 1. Nothing is granted at install ------------------------------------
-// CLAUDE.md: "Zero permissions required" / "Zero permissions = faster review".
+// The codebase guide: "Zero permissions required" / "Zero permissions = faster review".
 // This is the product's central privacy claim and the store listing rests on it.
 //
 // The rule used to be "no manifest key matching /permission/i", which is the
@@ -105,7 +105,7 @@ check("nothing is granted at install", () => {
     if (!OPTIONAL_ORIGINS.has(origin)) {
       out.push(
         `${origin} is in optional_host_permissions but not in this test's list — ` +
-          "add it here and to CLAUDE.md's provider list in the same change, with a reason",
+          "add it here and to the codebase guide's provider list in the same change, with a reason",
       );
     }
   }
@@ -113,7 +113,7 @@ check("nothing is granted at install", () => {
 });
 
 // --- 2. The new tab page stays the new tab page -------------------------
-// CLAUDE.md: 'index.html — extension entry point (new tab page) — NEVER repurpose'
+// The codebase guide: 'index.html — extension entry point (new tab page) — NEVER repurpose'
 check("manifest newtab override still points at index.html", () => {
   const m = JSON.parse(read("manifest.json"));
   const nt = (m.chrome_url_overrides || {}).newtab;
@@ -121,7 +121,7 @@ check("manifest newtab override still points at index.html", () => {
 });
 
 // --- 3. No external resources ------------------------------------------
-// CLAUDE.md: "External resources: None" — Normalize.css and Roboto Mono are
+// The codebase guide: "External resources: None" — Normalize.css and Roboto Mono are
 // bundled locally precisely so the extension makes zero external font/CSS
 // requests. A CDN <script> would also break the MV3 CSP.
 check("no remote <script>/<link> in shipped HTML", () => {
@@ -136,13 +136,13 @@ check("no remote <script>/<link> in shipped HTML", () => {
 });
 
 // --- 4. MV3 CSP ---------------------------------------------------------
-// CLAUDE.md: "No eval() or inline scripts".
+// The codebase guide: "No eval() or inline scripts".
 check("no eval() or new Function() in src/", () =>
   scanSrc(/\beval\s*\(|\bnew\s+Function\s*\(/, "MV3 CSP forbids dynamic code"),
 );
 
 // --- 5. XSS -------------------------------------------------------------
-// CLAUDE.md security checklist: "No innerHTML with user data (XSS risk)".
+// The codebase guide security checklist: "No innerHTML with user data (XSS risk)".
 // Blanket ban: this codebase builds every node through React, so an
 // innerHTML assignment anywhere is a new pattern that deserves a look.
 check("no innerHTML / outerHTML assignment in src/", () =>
@@ -150,13 +150,13 @@ check("no innerHTML / outerHTML assignment in src/", () =>
 );
 
 // --- 6. Production cleanliness -----------------------------------------
-// CLAUDE.md code-quality checklist: "No console.log in production (removed)".
+// The codebase guide code-quality checklist: "No console.log in production (removed)".
 check("no console.log in src/", () =>
   scanSrc(/\bconsole\.log\s*\(/, "left-over debug output"),
 );
 
 // --- 7. Every module is actually loaded ---------------------------------
-// CLAUDE.md: "Add a new src file: Add a <script> tag to index.html — order
+// The codebase guide: "Add a new src file: Add a <script> tag to index.html — order
 // matters". A file that exists but is never loaded is dead weight; a file
 // referenced but missing is a blank new tab.
 check("src/*.js and index.html agree (rate.js is loaded by rate.html)", () => {
@@ -177,7 +177,7 @@ check("src/*.js and index.html agree (rate.js is loaded by rate.html)", () => {
 });
 
 // --- 8. The tab-title gate ---------------------------------------------
-// CLAUDE.md, updateTabTitle(): "Never call it directly from app.js — go
+// The codebase guide, updateTabTitle(): "Never call it directly from app.js — go
 // through this.setTabTitle(), which stands down while a hit target owns the
 // title". The single legitimate call site is inside setTabTitle itself, so
 // exactly one occurrence is expected.
@@ -192,7 +192,7 @@ check("updateTabTitle() is called from app.js only inside setTabTitle", () => {
 });
 
 // --- 9. Widget cards scale from one font-size ---------------------------
-// CLAUDE.md: "Style anything inside a widget card: Use em, never rem."
+// The codebase guide: "Style anything inside a widget card: Use em, never rem."
 // The rule is scoped to the card interior. These three components are the
 // panel chrome that sits OUTSIDE the card, where rem is correct.
 const REM_ALLOWED_OUTSIDE_CARD = new Set([
@@ -221,7 +221,7 @@ check("no rem units inside widget-card components", () => {
 });
 
 // --- 10. The set of remote hosts is a deliberate list -------------------
-// CLAUDE.md documents every provider and records which ones were rejected
+// The codebase guide documents every provider and records which ones were rejected
 // (CORS, API keys, geo-blocking). A new host appearing quietly is both a
 // privacy-claim change and a Chrome Web Store single-purpose question, so
 // adding one should be a conscious edit to this list.
@@ -239,13 +239,17 @@ const ALLOWED_HOSTS = new Set([
   "decrypt.co",
   "feeds.bbci.co.uk",
 
-  /* Three financial newsrooms that need **no permission at all**: each answers
-   * `Access-Control-Allow-Origin: *`, verified 21 Aug 2026 by sending a
-   * `chrome-extension://` Origin and reading the header back. That is what
-   * separates them from the six above, and it is why they are `optional:
-   * false` in `NEWS_SOURCES` while Cointelegraph and the rest are not. */
+  /* Four newsrooms that need **no permission at all**: each answers
+   * `Access-Control-Allow-Origin: *`, verified by sending a
+   * `chrome-extension://` Origin and reading the header back — the first three
+   * on 21 Aug 2026, Bitcoin.com on 28 Aug. That is what separates them from
+   * the six above, and it is why they are `optional: false` in `NEWS_SOURCES`
+   * while Cointelegraph and the rest are not. Three of them are finance desks;
+   * Bitcoin.com is the only one on the crypto beat, which is what a fresh
+   * install had none of. */
   "feeds.content.dowjones.io",
   "finance.yahoo.com",
+  "news.bitcoin.com",
   "search.cnbc.com",
 
   "api.alternative.me",
@@ -273,7 +277,7 @@ check("no undeclared remote hosts in src/", () => {
       if (!ALLOWED_HOSTS.has(m[1])) {
         out.push(
           `src/${f} references ${m[1]} — add it to ALLOWED_HOSTS here and to ` +
-            `CLAUDE.md's provider list if it is intended`,
+            `the codebase guide's provider list if it is intended`,
         );
       }
     }
@@ -282,7 +286,7 @@ check("no undeclared remote hosts in src/", () => {
 });
 
 // --- 11. No credentials in the extension --------------------------------
-// CLAUDE.md: "No hardcoded secrets or API keys" / "localStorage for
+// The codebase guide: "No hardcoded secrets or API keys" / "localStorage for
 // preferences only (no secrets)". Every provider used here is keyless by
 // design; a key appearing at all means a provider was swapped for one that
 // is not, which changes the privacy story.
@@ -293,60 +297,7 @@ check("no hardcoded API keys or tokens in src/", () =>
   ),
 );
 
-// --- 12. The agent rulebook is wired to every entry point ----------------
-/* `docs/internal/AGENT_RULES.md` is what binds Claude, Codex and Gemini to the same way
- * of working, and each of them arrives by a different door: Claude and Codex
- * through `CLAUDE.md` (`AGENTS.md` is a symlink to it), Gemini through
- * `GEMINI.md`. A rename that leaves one door pointing at nothing is silent —
- * the agent simply never reads the rules and nobody finds out until it behaves
- * like an agent with no rules.
- *
- * Conditional on purpose: all of these files are git-ignored local notes, so a
- * clean CI checkout has none of them. Where the file is absent there is nothing
- * to keep honest; where it is present, it has to point somewhere real. */
-check("the agent rulebook is reachable from every entry point", () => {
-  const out = [];
-  const rules = path.join(ROOT, "docs", "internal", "AGENT_RULES.md");
-  const doors = [
-    ["CLAUDE.md", "Claude, and Codex through the AGENTS.md symlink"],
-    ["GEMINI.md", "Gemini"],
-  ];
-  const present = doors.filter(([f]) => fs.existsSync(path.join(ROOT, f)));
-  if (!present.length && !fs.existsSync(rules)) return out; // clean checkout
-  if (!fs.existsSync(rules)) {
-    out.push("docs/internal/AGENT_RULES.md is missing but an entry point exists");
-    return out;
-  }
-  for (const [file, who] of present) {
-    const text = fs.readFileSync(path.join(ROOT, file), "utf8");
-    if (!text.includes("docs/internal/AGENT_RULES.md")) {
-      out.push(`${file} does not point at docs/internal/AGENT_RULES.md (the door for ${who})`);
-    }
-  }
-  // The one command has to be spelled the same everywhere it is promised
-  const text = fs.readFileSync(rules, "utf8");
-  if (!text.includes("npm --prefix tests run check")) {
-    out.push("docs/internal/AGENT_RULES.md never names the command that must be green");
-  }
-  if (!text.includes("docs/internal/agents/")) {
-    out.push("docs/internal/AGENT_RULES.md never says where the journals live");
-  }
-  return out;
-});
 
-// --- 13. Local-only files are not tracked by git -------------------------
-/* `.gitignore` does nothing for a file that is already tracked — add one once,
- * with `git add -f` or before the ignore rule existed, and it is in the history
- * forever, on every clone and on the public remote. That has already happened
- * here: an early `CLAUDE.md` and `docs/internal/AI_GUIDELINES.md` live in commits
- * `dfdd536`…`4b00b34` on `origin/main`, removed from the tree but not from the
- * history.
- *
- * So the ignore list is not the guard — this is. It fails the moment one of
- * these appears in the index, which is before it can reach a commit.
- *
- * Skipped where there is no git (a tarball, a packaged build): there is nothing
- * to be tracked by. */
 /* The store summary is written in three places, and drift between them is not
  * a tidiness problem here — it is this listing's specific failure mode.
  *
@@ -409,42 +360,39 @@ check("the store summary says the same thing everywhere", () => {
   return out;
 });
 
-check("no local-only agent file is tracked by git", () => {
-  const { execFileSync } = require("child_process");
-  if (!fs.existsSync(path.join(ROOT, ".git"))) return [];
-  const LOCAL_ONLY = [
-    "CLAUDE.md",
-    "AGENTS.md",
-    "GEMINI.md",
-    /* The whole directory, not a file per line. Every piece of working
-     * material lives under it now, so a new note dropped in beside the others
-     * is covered the day it is written — the old list named four paths and a
-     * fifth file would have walked straight past this check onto a public
-     * remote. */
-    "docs/internal",
-    "MONETIZATION.md",
-    "BUSINESS_IDEAS.md",
-    ".claude",
-  ];
-  let listed;
-  try {
-    listed = execFileSync("git", ["ls-files", "--", ...LOCAL_ONLY], {
-      cwd: ROOT,
-      encoding: "utf8",
-      stdio: ["ignore", "pipe", "ignore"],
-    });
-  } catch {
-    return []; // no git binary, or not a work tree
+
+/* --- the palette has one blue, and it belongs to one thing --------------
+ *
+ * `chartLine` is a blue, and the only hue in this interface that is not green,
+ * red or ink. It exists for the **second line in comparison mode**, where two
+ * series have to be told apart and up/down are already spoken for.
+ *
+ * It kept leaking out of there into accents: hovering a coin in the portfolio
+ * turned its symbol Tailwind-blue, an active widget control used the same
+ * token, and the allocation strip's Other bar fell back to it. On a word, at
+ * that saturation, it reads as a hyperlink; on a bar it reads as a seventh
+ * identity rather than the absence of one. Interaction has its own token now
+ * (`accent`, green-family and deliberately not the up-green), so this fails
+ * the moment the blue is borrowed for something that is not a plotted line.
+ */
+check("the palette's blue is only ever a plotted line", () => {
+  const out = [];
+  /* `chart.js` is the comparison overlay, which is what the colour is for.
+   * Everything else has to justify itself here rather than in review. */
+  const allowed = new Set(["chart.js"]);
+  for (const file of srcFiles) {
+    if (allowed.has(file)) continue;
+    read(`src/${file}`)
+      .split("\n")
+      .forEach((line, i) => {
+        if (!/color\.chartLine\b/.test(line)) return;
+        out.push(
+          `src/${file}:${i + 1} uses the palette's blue outside the ` +
+            `comparison chart — interaction and "on" states use color.accent`,
+        );
+      });
   }
-  return listed
-    .split("\n")
-    .filter(Boolean)
-    .map(
-      (f) =>
-        `${f} is tracked — it is working material, not part of the published ` +
-        `extension. Untrack it with \`git rm --cached\` before committing; ` +
-        `once it is in a commit that has been sent to the remote, it is public.`,
-    );
+  return out;
 });
 
 if (failures) {

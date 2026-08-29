@@ -24,7 +24,7 @@ const sandbox = {
 };
 vm.createContext(sandbox);
 const base = path.join(__dirname, "..", "src");
-for (const f of ["config.js", "storage.js"]) {
+for (const f of ["i18n.js", "config.js", "storage.js"]) {
   vm.runInContext(fs.readFileSync(path.join(base, f), "utf8"), sandbox, { filename: f });
 }
 

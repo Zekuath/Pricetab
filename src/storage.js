@@ -495,6 +495,9 @@ const saveFutureShare = (share) => saveSetting(FUTURE_SHARE_KEY, share);
 const loadCallsShowSettled = () =>
   loadBoolSetting(CALLS_SHOW_SETTLED_KEY, DEFAULT_CALLS_SHOW_SETTLED);
 const saveCallsShowSettled = (v) => saveSetting(CALLS_SHOW_SETTLED_KEY, v);
+const loadTravelBand = () =>
+  loadBoolSetting(TRAVEL_BAND_KEY, DEFAULT_TRAVEL_BAND);
+const saveTravelBand = (v) => saveSetting(TRAVEL_BAND_KEY, v);
 
 const loadCallsCelebrate = () =>
   loadBoolSetting(CALLS_CELEBRATE_KEY, DEFAULT_CALLS_CELEBRATE);
@@ -513,6 +516,17 @@ const loadCallsSeenAt = () => {
   }
 };
 const saveCallsSeenAt = (at) => saveSetting(CALLS_SEEN_KEY, at);
+
+// The news panel's own last-opened stamp, read exactly the same way.
+const loadNewsSeenAt = () => {
+  try {
+    const raw = Number(localStorage.getItem(NEWS_SEEN_KEY));
+    return isFinite(raw) && raw > 0 ? raw : 0;
+  } catch (error) {
+    return 0;
+  }
+};
+const saveNewsSeenAt = (at) => saveSetting(NEWS_SEEN_KEY, at);
 
 /* Open calls and the tally. Sanitized on the way in like every other stored
  * shape: a hand-edited file must not be able to produce a call that resolves
@@ -904,6 +918,26 @@ const loadPortfolioStackedFromStorage = () =>
 
 const savePortfolioStackedToStorage = (on) =>
   saveSetting(PORTFOLIO_STACKED_KEY, on ? "true" : "false");
+
+/* Which of the three views the value chart opens on.
+ *
+ * Reads the old boolean key when the new one is absent, so an existing choice
+ * survives the view being added rather than being silently reset — `true` was
+ * the by-coin stack, `false` was the total. Written to the new key from then
+ * on; the old one is left alone rather than deleted, because a downgrade
+ * should still find what it wrote. */
+const loadPortfolioChartMode = () => {
+  const saved = loadEnumSetting(
+    PORTFOLIO_CHART_MODE_KEY,
+    PORTFOLIO_CHART_MODES,
+    "",
+  );
+  if (saved) return saved;
+  return loadPortfolioStackedFromStorage() ? "bycoin" : DEFAULT_PORTFOLIO_CHART_MODE;
+};
+
+const savePortfolioChartMode = (mode) =>
+  saveSetting(PORTFOLIO_CHART_MODE_KEY, mode);
 
 const loadPortfolioSortFromStorage = () =>
   loadEnumSetting(

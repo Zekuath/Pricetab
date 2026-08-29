@@ -41,7 +41,7 @@ die() { printf '✘ %s\n' "$*" >&2; exit 1; }
 
 # Files git ignores but a snapshot must still contain. .gitignore exists to keep
 # things out of the *published* history; it is not a statement that the file is
-# disposable, and CLAUDE.md is exactly the file an agent is asked to edit.
+# disposable, and the codebase guide is exactly the file most edited.
 #
 # `docs/internal` is named as a directory rather than as the six files it used
 # to list. That list had already gone stale once — it still said `docs/agents`
@@ -53,6 +53,7 @@ CLAUDE.md
 AGENTS.md
 GEMINI.md
 docs/internal
+docs/product/TODAY.md
 .github/copilot-instructions.md
 .github/instructions
 .vscode

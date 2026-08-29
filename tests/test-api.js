@@ -3,6 +3,31 @@ const path = require("path");
 const vm = require("vm");
 const assert = require("assert");
 
+/* Pull the news regexes straight out of the source. Each is a single-line or
+ * two-line `const NAME = /…/flags;` — anything that stops matching that shape
+ * fails loudly here rather than silently reverting to a copy. */
+const newsPatterns = () => {
+  const src = fs.readFileSync(
+    path.join(__dirname, "..", "src", "config.js"),
+    "utf8",
+  );
+  const out = {};
+  for (const name of [
+    "NEWS_SPAM_RE",
+    "NEWS_PROMO_PATH_RE",
+    "NEWS_WIRE_RE",
+    "NEWS_PROMO_CATEGORY_RE",
+    "NEWS_PROMO_LEAD_RE",
+  ]) {
+    const m = src.match(
+      new RegExp(`const ${name} =\\s*(/[\\s\\S]*?/[a-z]*);`),
+    );
+    if (!m) throw new Error(`${name} not found in config.js`);
+    out[name] = eval(m[1]);
+  }
+  return out;
+};
+
 let fetchCalls = [];
 let chainFail = false; // simulates the balance providers going down
 let coinbaseDown = false; // an edge error: a rejected fetch, as the browser sees it
@@ -163,12 +188,13 @@ const sandbox = {
   HN_NEWS_MAX_ITEMS: 8,
   MAX_NEWS_ITEMS: 50,
   COIN_NAMES: { BTC: "Bitcoin", ETH: "Ethereum", SOL: "Solana", OP: "Optimism", BAT: "Basic Attention Token", TON: "Toncoin" },
-  NEWS_SPAM_RE:
-    /price (prediction|analysis)|presale|pre-sale|best (coins?|cryptos?) to buy|casino|airdrop|giveaway|sponsored/i,
-  NEWS_PROMO_PATH_RE:
-    /\/(press-releases?|sponsored|sponsored-content|partner-content|advertorial|paid-content|paid-post)\//i,
-  NEWS_WIRE_RE:
-    /(chainwire|globenewswire|businesswire|accesswire|prnewswire|pressrelease|sponsored)/i,
+  /* The promo patterns are **read out of `config.js`** rather than copied.
+   * Three of them used to be typed out here, and a pattern tightened in the
+   * source while the copy stayed put is a test that passes against a rule the
+   * app no longer has — the failure mode is silence. `isPromoNews` is the one
+   * predicate every path to the screen goes through, so it is the last place
+   * that should be tested against a stale copy. */
+  ...newsPatterns(),
   encodeURIComponent,
   WATCH_CHAINS: {
     BTC: { provider: "mempool", decimals: 8 },
@@ -202,7 +228,18 @@ const sandbox = {
   },
 };
 vm.createContext(sandbox);
-for (const f of ["api.js", "widgets-data.js"]) {
+// `cleanFeedSummary` decodes entities the same way the titles do, and that
+// lives in utils.js — loaded with the same chainable `line()` stub
+// tests/test-storage.js uses, since utils.js touches d3 at load time
+sandbox.line = () => {
+  const o = {};
+  o.x = () => o;
+  o.y = () => o;
+  o.curve = () => o;
+  return o;
+};
+sandbox.String = String;
+for (const f of ["i18n.js", "utils.js", "api.js", "widgets-data.js"]) {
   vm.runInContext(fs.readFileSync(path.join(__dirname, "..", "src", f), "utf8"), sandbox, { filename: f });
 }
 const run = (c) => vm.runInContext(c, sandbox);
@@ -263,6 +300,101 @@ const json = (c) => JSON.parse(JSON.stringify(run(c)));
     true,
     "the wording rule still earns its place on the obvious ones",
   );
+
+  /* Bitcoin.com's word for it, from the live feed of 28 Aug 2026 — the poll
+   * that qualified it as the fourth always-on source. One item of ten was a
+   * paid post, and the outlet filed it three ways at once: a `Branded
+   * Spotlight` category, a `/branded-spotlight/` path, and `Media` as the
+   * byline. It slipped through **all** of the existing signals, because none
+   * of them knew that word, which is the check the house rule asks for before
+   * a source is added. Asserted from the path and the category separately, so
+   * removing either one fails here rather than on somebody's screen. */
+  assert.strictEqual(
+    promo({
+      title: "CoinRabbit Hits Six Years of Incident-Free Custody",
+      url: "https://news.bitcoin.com/branded-spotlight/coinrabbit-hits-six-years/",
+      author: "Media",
+    }),
+    true,
+    "a branded-spotlight path is the outlet filing its own advertising",
+  );
+  assert.strictEqual(
+    promo({
+      title: "CoinRabbit Hits Six Years of Incident-Free Custody",
+      url: "https://news.bitcoin.com/2026/08/coinrabbit-six-years/",
+      categories: ["Branded Spotlight"],
+    }),
+    true,
+    "…and so is the category, on its own",
+  );
+  assert.strictEqual(
+    promo({
+      title: "Circle Brings USDC Into UK Premier League With Chelsea Shirt Deal",
+      url: "https://news.bitcoin.com/crypto-news/circle-usdc-chelsea/",
+      author: "Emmanuel Musa",
+      categories: ["Crypto News", "Circle", "USDC"],
+    }),
+    false,
+    "a sponsorship deal reported as news is a story about branding, not a branded story",
+  );
+
+  /* Two signals that did not exist until the summary was read onto the row,
+   * both taken from a live CryptoSlate item on 23 Aug 2026: an unremarkable
+   * title, a human byline, and the outlet's own `Guest Post` category with a
+   * summary that opens by disclosing it. Under the old three rules this
+   * reached the panel. */
+  assert.strictEqual(
+    promo({
+      title: "The next phase of tokenization is utility",
+      url: "https://cryptoslate.com/the-next-phase-of-tokenization-is-utility/",
+      author: "Vincent Maliepaard",
+      categories: ["Guest Post"],
+    }),
+    true,
+    "the outlet's own category says it is a guest post",
+  );
+  assert.strictEqual(
+    promo({
+      title: "The next phase of tokenization is utility",
+      url: "https://cryptoslate.com/the-next-phase-of-tokenization-is-utility/",
+      summary:
+        "The following is a guest post and opinion from Vincent Maliepaard, VP of Marketing at Sentora.",
+    }),
+    true,
+    "…and so does the disclosure it opens with, on its own",
+  );
+  assert.strictEqual(
+    promo({
+      title: "Crypto media is drowning in press releases",
+      url: "https://decrypt.co/1/crypto-media-press-releases",
+      categories: ["Markets", "Opinion"],
+      summary:
+        "A new study counts how many press releases ran as news last quarter.",
+    }),
+    false,
+    "a story *about* press releases is not one — both rules are anchored",
+  );
+
+  /* The summary itself: tags stripped without touching innerHTML, entities
+   * decoded like the titles, whitespace collapsed, and cut on a word. */
+  {
+    const clean = (v) => run(`cleanFeedSummary(${JSON.stringify(v)})`);
+    assert.strictEqual(
+      clean("<p>Spot bitcoin funds took in <b>$1.2bn</b> &amp; more.</p>"),
+      "Spot bitcoin funds took in $1.2bn & more.",
+      "tags out, entities decoded, spacing collapsed",
+    );
+    assert.strictEqual(
+      clean("<script>alert(1)</script>Real text"),
+      "Real text",
+      "a script body is removed rather than flattened into the sentence",
+    );
+    assert.strictEqual(clean(null), "", "a missing summary is an empty string");
+    const long = clean("word ".repeat(120));
+    assert.ok(long.length <= 221, `clamped, got ${long.length}`);
+    assert.ok(long.endsWith("…"), "…and says it was clamped");
+    assert.ok(!/ …$/.test(long), "…without leaving a dangling space");
+  }
 
   // Hacker News: one request per term, story-id dedupe across terms,
   // empty titles dropped, text posts link to the HN discussion
@@ -405,6 +537,108 @@ const json = (c) => JSON.parse(JSON.stringify(run(c)));
   assert.strictEqual(merged.length, 2, "spam + duplicate + junk dropped");
   assert.strictEqual(merged[0].url, "https://a", "first source wins the duplicate");
   assert.strictEqual(merged[1].title, "Fresh story", "second source appended");
+
+  /* clusterNewsItems: one event is one row, two events are two.
+   *
+   * The test is written from both sides on purpose. Asserting only that four
+   * write-ups of the ETF story fold would pass with a threshold of zero, which
+   * would fold the entire panel into one row; asserting only that the two Fed
+   * stories stay apart would pass with a threshold of one, which folds
+   * nothing. The pair is what pins the threshold down, and the second half is
+   * the one that must never be relaxed to make a stubborn duplicate merge —
+   * merging two different stories hides one of them, while failing to merge
+   * two versions of one leaves what is on screen today. */
+  const nowMs = Date.now();
+  sandbox.__feed = [
+    { source: "Decrypt", time: nowMs, title: "Bitcoin ETF Sees Record $1.2B Inflow as Price Nears $100K", url: "https://d" },
+    { source: "CoinJournal", time: nowMs - 6e5, title: "Record inflows push Bitcoin ETFs past $1.2 billion", url: "https://cj" },
+    { source: "Cointelegraph", time: nowMs - 9e5, title: "Bitcoin ETFs notch record $1.2B daily inflow", url: "https://ct" },
+    { source: "CryptoSlate", time: nowMs - 12e5, title: "Bitcoin ETF inflows hit record high of $1.2B", url: "https://cs" },
+    { source: "Bitcoin Magazine", time: nowMs - 2e6, title: "Ethereum upgrade goes live on mainnet", url: "https://bm" },
+    { source: "CNBC", time: nowMs - 3e6, title: "Fed holds rates steady", url: "https://cnbc" },
+    { source: "MarketWatch", time: nowMs - 4e6, title: "Fed signals rate cut in December", url: "https://mw" },
+  ];
+  const clustered = run("clusterNewsItems(__feed)");
+  assert.strictEqual(clustered.length, 4, "four write-ups of one story become one row");
+  assert.strictEqual(clustered[0].source, "Decrypt", "the newest leads, so the list stays sorted");
+  assert.strictEqual(
+    clustered[0].also.map((a) => a.source).join(","),
+    "CoinJournal,Cointelegraph,CryptoSlate",
+    "the rest ride along by name",
+  );
+  assert.ok(
+    clustered[0].also.every((a) => a.url && a.title),
+    "…with their own link and their own headline, so nothing is discarded",
+  );
+  /* The half that guards the threshold from above. Both name the Fed, both are
+   * about rates, and they are not the same story. */
+  assert.strictEqual(
+    clustered.slice(2).map((i) => i.source).join(","),
+    "CNBC,MarketWatch",
+    "two different rate stories stay two rows",
+  );
+  assert.ok(
+    clustered.slice(1).every((i) => !i.also),
+    "a row with nothing folded into it carries no `also` at all",
+  );
+
+  // The same words months apart are a different event.
+  sandbox.__old = [
+    { source: "a", time: nowMs, title: "Bitcoin ETF inflows hit record high of $1.2B" },
+    { source: "b", time: nowMs - 40 * 24 * 3600 * 1000, title: "Bitcoin ETF inflows hit record high of $1.2B" },
+  ];
+  assert.strictEqual(
+    run("clusterNewsItems(__old)").length,
+    2,
+    "the same headline outside the window is a different story",
+  );
+  /* The same two headlines must get the same answer in a feed of six and a
+   * feed of sixty. This is a regression test for a bug that failed **silently
+   * in one direction**: the weights are `log(1 + n/df)`, so their scale moves
+   * with the size of the feed, and a first version guarded the denominator
+   * with an absolute number tuned on 116 live headlines. In a seven-item feed
+   * every weight sits below that number, the guard swallowed every pair, and
+   * clustering simply stopped happening — with nothing on screen to say so,
+   * because "no duplicates found" and "the feature is off" look identical.
+   * The floor is a fraction of the feed's own median now. */
+  const SUBJECTS = ("regulator custodian brokerage exchange miner auditor insurer " +
+    "clearinghouse depositary registrar underwriter arbitrator liquidator " +
+    "ombudsman notary actuary assessor bailiff chancellor comptroller " +
+    "curator dean escrow factor guarantor herald inspector juror keeper " +
+    "lender").split(" ");
+  const VERBS = ("expands withdraws reorganises publishes appeals defers " +
+    "consolidates diversifies liquidates renegotiates").split(" ");
+  const pair = [
+    { source: "A", title: "Bitcoin ETF inflows hit record high of $1.2B", url: "https://a" },
+    { source: "B", title: "Record inflows push Bitcoin ETFs past $1.2 billion", url: "https://b" },
+  ];
+  sandbox.__small = pair.map((i) => ({ ...i, time: nowMs }));
+  sandbox.__big = [
+    ...pair.map((i) => ({ ...i, time: nowMs })),
+    /* Filler that is genuinely fifty-eight different stories. An earlier
+     * version varied only a number, which `clusterNewsItems` correctly folded
+     * into one row — the test then measured the filler rather than the pair it
+     * was padding. Two rotating vocabularies, so no two share enough to pair
+     * off. */
+    ...Array.from({ length: 58 }, (_, k) => ({
+      source: "C",
+      title: `${SUBJECTS[k % SUBJECTS.length]} ${VERBS[k % VERBS.length]} ${k}`,
+      time: nowMs - k * 60000,
+    })),
+  ];
+  assert.strictEqual(
+    run("clusterNewsItems(__small).length"),
+    1,
+    "two write-ups of one story fold in a small feed",
+  );
+  assert.strictEqual(
+    run("clusterNewsItems(__big).length"),
+    59,
+    "…and in a feed ten times the size, where the weights are on a different scale",
+  );
+
+  assert.strictEqual(run("clusterNewsItems([]).length"), 0, "no items → nothing");
+  assert.strictEqual(run("clusterNewsItems(null).length"), 0, "…and a non-list is a non-list");
 
   // fetchAddressBalance: provider parsing, unit conversion, caching, guards
   const btcAddr = "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa";

@@ -1,4 +1,4 @@
-# CLAUDE.md: storage.js holds "Generic localStorage helpers + all setting
+# The codebase guide: storage.js holds "Generic localStorage helpers + all setting
 # load/save", and every reader validates + falls back
 # (loadBoolSetting / loadEnumSetting / loadNumberSetting / loadJsonSetting).
 #

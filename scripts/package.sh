@@ -37,6 +37,11 @@ FILES=(
 DIRS=(
   src
   vendor
+  # The language catalogues. Chrome reads `_locales/` itself — it is what
+  # `default_locale` in the manifest points at — and an override chosen in
+  # Settings fetches the same files from inside the package, so a build without
+  # this directory is a build that can only speak English.
+  _locales
 )
 # Only the icons the manifest actually names. `assets/icons/` also holds the
 # source art and the 512 used for store listings, and neither is loaded by the

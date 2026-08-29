@@ -1,0 +1,2434 @@
+{
+  "al_a_pct_move": {
+    "message": "$1% 的波动"
+  },
+  "al_about_panel": {
+    "message": "关于此面板"
+  },
+  "al_above_by": {
+    "message": "高出"
+  },
+  "al_above_current": {
+    "message": "比当前的 $2 高 $1。"
+  },
+  "al_add": {
+    "message": "添加"
+  },
+  "al_already_above": {
+    "message": "$1 已经在那之上——这会立刻触发。"
+  },
+  "al_already_below": {
+    "message": "$1 已经在那之下——这会立刻触发。"
+  },
+  "al_already_hit": {
+    "message": "已达成"
+  },
+  "al_already_moved": {
+    "message": "$1 今天已经走了那么多——这会立刻触发。"
+  },
+  "al_and_more": {
+    "message": "，还有 $1 个"
+  },
+  "al_armed_hit_used": {
+    "message": "$1 个已布置 · $2 个已达成 · 已用 $3/$4"
+  },
+  "al_armed_summary": {
+    "message": "已布置 $1$2 · $3/$4"
+  },
+  "al_below_by": {
+    "message": "低于"
+  },
+  "al_below_current": {
+    "message": "比当前的 $2 低 $1。"
+  },
+  "al_best_streak": {
+    "message": "最佳连胜"
+  },
+  "al_best_streak_hint": {
+    "message": "连续猜对的最长纪录"
+  },
+  "al_best_streak_suffix": {
+    "message": " · 最佳连胜 $1"
+  },
+  "al_board": {
+    "message": "棋盘"
+  },
+  "al_board_hint": {
+    "message": "拖动图表上的“现在”线可改变棋盘大小"
+  },
+  "al_board_readout": {
+    "message": "向前 $1$2 · 每格 $3 × $4"
+  },
+  "al_burst_hint": {
+    "message": "猜对之后你第一次打开标签页时，图表上的一次绽放"
+  },
+  "al_call_belongs": {
+    "message": "一次预测属于做出它时的币种、区间和货币，也只在那里结算。当两个币共用图表时，预测会暂时退场。"
+  },
+  "al_called": {
+    "message": "已预测"
+  },
+  "al_called_at": {
+    "message": "预测于 $1"
+  },
+  "al_called_at_suffix": {
+    "message": " · 预测于 $1"
+  },
+  "al_called_it": {
+    "message": "猜对了！"
+  },
+  "al_called_right": {
+    "message": "$2 次中猜对 $1 次$3。分数只存在这台设备上，一文不值。"
+  },
+  "al_calls": {
+    "message": "预测"
+  },
+  "al_calls_info": {
+    "message": "一次预测就是一个断言：不是“到了告诉我”，而是“我说它会在哪”。指向图表右侧空白带里的某个方格，你就指定了一个价格区间和一个时刻——点一次是草稿，再点一次才锁定。它会在你下次打开标签页时，按那一刻的价格自动结算，方框会留在图表上，告诉你猜没猜对。那条带子能伸多远由你决定：把“现在”线往左拖，棋盘更大；往右拖，历史更长。"
+  },
+  "al_calls_off": {
+    "message": "预测已关闭"
+  },
+  "al_calls_off_body": {
+    "message": "在图表上指向一格空白的未来，你就已经说出了价格会在哪里、在什么时候。它会在你下次打开标签页时自动结算——不通知、不发送，分数也一文不值。"
+  },
+  "al_clear_settled": {
+    "message": "清除已结算"
+  },
+  "al_clear_settled_hint": {
+    "message": "把已结算的预测从图表和此列表中移除"
+  },
+  "al_closed_at": {
+    "message": " · 收于 $1"
+  },
+  "al_common": {
+    "message": "常用"
+  },
+  "al_direction": {
+    "message": "目标方向"
+  },
+  "al_drag_hint": {
+    "message": "直接拖动那条虚线，即可放大或缩小棋盘。"
+  },
+  "al_drops_below": {
+    "message": "跌破"
+  },
+  "al_drops_below_price": {
+    "message": "跌破 $1"
+  },
+  "al_due": {
+    "message": "已到期——下次加载该区间时结算"
+  },
+  "al_duplicate": {
+    "message": "你已经有这个目标了。"
+  },
+  "al_falls_pct_24h": {
+    "message": "24 小时内下跌 $1"
+  },
+  "al_hit_announced": {
+    "message": "达成的目标会在标签页标题中提示，且此标签页被隐藏时仍会检查目标。"
+  },
+  "al_hit_at": {
+    "message": " 于 $1"
+  },
+  "al_hit_here_only": {
+    "message": "达成的目标只在这里报告——标签页标题提示已在设置中关闭，这同时也停止了后台检查。"
+  },
+  "al_hit_when": {
+    "message": "$1$2 达成"
+  },
+  "al_in_band": {
+    "message": " · 目前在区间内"
+  },
+  "al_info_calls": {
+    "message": "预测是什么、目前状况以及快捷键"
+  },
+  "al_info_targets": {
+    "message": "目标是什么、目前状况以及快捷键"
+  },
+  "al_it_resumes": {
+    "message": "会恢复"
+  },
+  "al_keep_settled_hint": {
+    "message": "把已结算的预测留在图表上，并标注猜对或没猜中"
+  },
+  "al_keep_under": {
+    "message": "请保持在 $1% 以内——更大的波动不会在一天内发生。"
+  },
+  "al_key_add": {
+    "message": "添加"
+  },
+  "al_key_calls_toggle": {
+    "message": "预测 开 / 关"
+  },
+  "al_key_close": {
+    "message": "关闭"
+  },
+  "al_key_grid": {
+    "message": "普通图表上的网格"
+  },
+  "al_key_this_panel": {
+    "message": "此面板"
+  },
+  "al_kind_percent": {
+    "message": "24 小时内的波动"
+  },
+  "al_kind_portfolio": {
+    "message": "我的投资组合"
+  },
+  "al_kind_price": {
+    "message": "一个价格"
+  },
+  "al_limit_reached": {
+    "message": "已达目标数量上限（$1）。请先移除一个再添加。"
+  },
+  "al_missed": {
+    "message": "没猜中"
+  },
+  "al_missed_by": {
+    "message": " · 差 $1 未中"
+  },
+  "al_move_needs": {
+    "message": "24 小时变动 $1 $2 · 还需 $3 $4"
+  },
+  "al_n_hit": {
+    "message": " · $1 个已达成"
+  },
+  "al_n_open": {
+    "message": "$1 个进行中$2"
+  },
+  "al_needs_pct": {
+    "message": " · 还需 $1"
+  },
+  "al_new_target": {
+    "message": "新建目标"
+  },
+  "al_no_calls": {
+    "message": "还没有预测"
+  },
+  "al_no_holdings": {
+    "message": "还没有可合计的持仓"
+  },
+  "al_no_targets": {
+    "message": "还没有目标"
+  },
+  "al_now": {
+    "message": "当前 $1"
+  },
+  "al_now_away": {
+    "message": "当前 $1 · 还差 $2"
+  },
+  "al_of_settled": {
+    "message": " / 共 $1 次已结算"
+  },
+  "al_of_total": {
+    "message": "/ $1"
+  },
+  "al_off_kept": {
+    "message": "已关闭 · 保留 $1 个并仍在后台结算——关掉的是棋盘：不绘制、不能落子，猜中也不会提示"
+  },
+  "al_on_open_settled": {
+    "message": "已开启 · $1 个进行中 · $2 个已结算"
+  },
+  "al_on_range": {
+    "message": " · 在 $1"
+  },
+  "al_open_n": {
+    "message": "进行中 · $1"
+  },
+  "al_paused_currency": {
+    "message": "已暂停 · $1"
+  },
+  "al_paused_info": {
+    "message": "$1 个已暂停——它们以其他货币设定，切回那种货币后$2。基于波动的目标永远不会暂停：百分比在哪里都是同一个意思。"
+  },
+  "al_paused_set_in": {
+    "message": " · 已暂停——以 $1 设定"
+  },
+  "al_pct_above_current": {
+    "message": "高于当前价 $1%"
+  },
+  "al_pct_below_current": {
+    "message": "低于当前价 $1%"
+  },
+  "al_portfolio": {
+    "message": "投资组合"
+  },
+  "al_progress_title": {
+    "message": "距离你设定时的位置已走完 $1%"
+  },
+  "al_rearm": {
+    "message": "重新布置"
+  },
+  "al_rearm_aria": {
+    "message": "重新布置 $1 目标"
+  },
+  "al_rearm_hint": {
+    "message": "重新布置这个目标"
+  },
+  "al_record_kept": {
+    "message": "你的战绩会被保留。它只存在于这台设备上，一文不值"
+  },
+  "al_remove_aria": {
+    "message": "移除 $1 目标"
+  },
+  "al_remove_target": {
+    "message": "移除目标"
+  },
+  "al_removed_target": {
+    "message": "已移除 $1 目标"
+  },
+  "al_reset_score": {
+    "message": "重置分数"
+  },
+  "al_reset_score_hint": {
+    "message": "把战绩清零。它只存在于这台设备上，一文不值"
+  },
+  "al_rises_above": {
+    "message": "涨破"
+  },
+  "al_rises_above_price": {
+    "message": "涨破 $1"
+  },
+  "al_rises_pct_24h": {
+    "message": "24 小时内上涨 $1"
+  },
+  "al_search_coins": {
+    "message": "搜索币种"
+  },
+  "al_set_in_currency": {
+    "message": "以 $1 设定——当你再次显示 $1 时恢复"
+  },
+  "al_settled_n": {
+    "message": "已结算 · $1"
+  },
+  "al_settles_in": {
+    "message": "$1 后结算"
+  },
+  "al_show": {
+    "message": "显示"
+  },
+  "al_still_judged": {
+    "message": "你已经做出的预测在关闭期间仍会被判定——重新打开后，棋盘会连同它们一起回来"
+  },
+  "al_still_settling": {
+    "message": "仍在结算"
+  },
+  "al_stop_calls_hint": {
+    "message": "停止预测。你的预测和分数都会保留，图表上按 L 也是同样效果"
+  },
+  "al_streak_best": {
+    "message": "连胜 $1 · 最佳 $2"
+  },
+  "al_target_coin": {
+    "message": "目标币种"
+  },
+  "al_target_in": {
+    "message": "目标（$1）"
+  },
+  "al_target_percent": {
+    "message": "目标波动百分比"
+  },
+  "al_target_price": {
+    "message": "目标价格"
+  },
+  "al_target_total": {
+    "message": "目标投资组合总额"
+  },
+  "al_targets_info": {
+    "message": "目标是一个请求：到了告诉我。指定一个价格（“BTC 涨破 80,000”）或一次波动（“BTC 24 小时内下跌 5%”），下次你打开标签页时就会在这里得到报告——包括夜里触发的，因为每个目标都会对照最近一周的小时 K 线来检查，而不只是当前价格。"
+  },
+  "al_they_resume": {
+    "message": "会恢复"
+  },
+  "al_total_in": {
+    "message": "合计（$1）"
+  },
+  "al_total_unmeasured": {
+    "message": "——总额宁可不予计量，也不少算"
+  },
+  "al_travel_band": {
+    "message": "移动幅度带"
+  },
+  "al_turn_calls_on": {
+    "message": "开启预测"
+  },
+  "al_turn_off": {
+    "message": "关闭"
+  },
+  "al_waiting_price": {
+    "message": "正在等待 $1 的价格"
+  },
+  "al_way_down": {
+    "message": "下跌"
+  },
+  "al_way_up": {
+    "message": "上涨"
+  },
+  "al_withdraw": {
+    "message": "撤回"
+  },
+  "al_withdraw_hint": {
+    "message": "撤回这个预测"
+  },
+  "al_worth_less": {
+    "message": "价值低于"
+  },
+  "al_worth_less_than": {
+    "message": "价值低于 $1"
+  },
+  "al_worth_more": {
+    "message": "价值高于"
+  },
+  "al_worth_more_than": {
+    "message": "价值高于 $1"
+  },
+  "al_zoom_in": {
+    "message": "放大棋盘"
+  },
+  "al_zoom_in_hint": {
+    "message": "放大：区间更窄、覆盖更短  ( ] )"
+  },
+  "al_zoom_out": {
+    "message": "缩小棋盘"
+  },
+  "al_zoom_out_hint": {
+    "message": "缩小：区间更宽，足以预测大幅波动  ( [ )"
+  },
+  "al_zoom_reset": {
+    "message": "恢复棋盘的默认范围"
+  },
+  "app_close": {
+    "message": "关闭"
+  },
+  "app_dismiss": {
+    "message": "关闭"
+  },
+  "app_dismiss_rating": {
+    "message": "关闭评分请求"
+  },
+  "app_error": {
+    "message": "出错了。"
+  },
+  "app_fetching_prices": {
+    "message": "正在获取价格…"
+  },
+  "app_looking_headlines": {
+    "message": "正在查找头条…"
+  },
+  "app_move_note": {
+    "message": "这次波动前后发布的头条——当时人们在写什么，而不是价格为何波动。"
+  },
+  "app_new_tab": {
+    "message": "新标签页"
+  },
+  "app_no_archive": {
+    "message": "那几天的存档里没有内容。"
+  },
+  "app_offline": {
+    "message": "你处于离线状态。连接恢复后数据会更新。"
+  },
+  "app_offline_short": {
+    "message": "离线——等待连接"
+  },
+  "app_rate_ask": {
+    "message": "喜欢 PriceTab 吗？评分是其他人发现它的方式——只要几秒钟，比什么都有帮助。"
+  },
+  "app_read_on": {
+    "message": "阅读于 "
+  },
+  "app_reload": {
+    "message": "重新加载"
+  },
+  "app_remove": {
+    "message": "移除"
+  },
+  "app_retry": {
+    "message": "重试"
+  },
+  "app_retrying": {
+    "message": "正在重试…"
+  },
+  "app_skip": {
+    "message": "以后再说"
+  },
+  "app_unreachable": {
+    "message": "无法连接价格服务。正在显示我们拥有的最后价格。"
+  },
+  "br_above_200d": {
+    "message": "高于其 200 日均线"
+  },
+  "br_across_episodes": {
+    "message": "（共 $1 次）"
+  },
+  "br_across_one_episode": {
+    "message": "（共 1 次）"
+  },
+  "br_close": {
+    "message": "关闭基准频率"
+  },
+  "br_daily_closes": {
+    "message": "$1 个日收盘价"
+  },
+  "br_edge_better": {
+    "message": "比普通时段高 $1 个百分点"
+  },
+  "br_edge_none": {
+    "message": "与普通时段没有差别"
+  },
+  "br_edge_worse": {
+    "message": "比普通时段低 $1 个百分点"
+  },
+  "br_failed": {
+    "message": "没有获取到 $1 的日线历史。没有它就无法统计，而编造的数字比没有更糟。"
+  },
+  "br_loading_body": {
+    "message": "正在读取该币的日收盘价。能回溯到交易所公开的最早时间，这正是下面的统计值得展示的原因。"
+  },
+  "br_n_times": {
+    "message": "$1 次"
+  },
+  "br_next_30": {
+    "message": "之后 30 天"
+  },
+  "br_next_7": {
+    "message": "之后 7 天"
+  },
+  "br_no_states": {
+    "message": "$1 目前不处于下列任何状态。这才是常态，也远比其中任何一种更常见、更诚实。"
+  },
+  "br_note_1": {
+    "message": "这里统计的是某种状态之后发生了什么，并与同一币种普通日子之后的情况对比。它不是信号，也没有可执行的操作。 "
+  },
+  "br_note_2": {
+    "message": "在 8 个币种、21,669 个日收盘价上检验的九条教科书规则，70 项结果中通过多重检验校正的为 0 项；在实时数据中，“超买”线之后有六个币种中的四个走出了好于平常的一个月。 "
+  },
+  "br_note_200d": {
+    "message": "机构视作行情格局、而非入场点的那条线"
+  },
+  "br_note_3": {
+    "message": "样本太少时直接略去比较，而不是粉饰：比率必须有分母才有意义。"
+  },
+  "br_note_further": {
+    "message": "同一条线，更极端处"
+  },
+  "br_note_overbought": {
+    "message": "通常被称为超买的那条线"
+  },
+  "br_note_oversold": {
+    "message": "通常被称为超卖的那条线"
+  },
+  "br_nothing_unusual": {
+    "message": "当前没有异常"
+  },
+  "br_now_suffix": {
+    "message": " · 当前"
+  },
+  "br_one_time": {
+    "message": "1 次"
+  },
+  "br_ordinary_days": {
+    "message": "普通的 $1 天：$2，其中 $3% 上涨（共 $4 次）。 "
+  },
+  "br_reading": {
+    "message": "正在读取日收盘价…"
+  },
+  "br_rsi_above_70": {
+    "message": "RSI 高于 70"
+  },
+  "br_rsi_above_80": {
+    "message": "RSI 高于 80"
+  },
+  "br_rsi_below_20": {
+    "message": "RSI 低于 20"
+  },
+  "br_rsi_below_30": {
+    "message": "RSI 低于 30"
+  },
+  "br_rsi_label": {
+    "message": "RSI 14 · 日收盘价 · 0–100"
+  },
+  "br_that_is": {
+    "message": "也就是 $1。"
+  },
+  "br_the_rest": {
+    "message": "其余情况，供参考"
+  },
+  "br_title": {
+    "message": "$1 · 这种情况以前发生过吗？"
+  },
+  "br_too_few": {
+    "message": "$1 次太少，无法比较——差值不予显示。"
+  },
+  "br_true_now": {
+    "message": "当前成立"
+  },
+  "br_try_again": {
+    "message": "重试"
+  },
+  "br_typically": {
+    "message": "通常 $1，其中 $2% 上涨"
+  },
+  "ch_band": {
+    "message": "区间"
+  },
+  "ch_close": {
+    "message": "收"
+  },
+  "ch_default_reach": {
+    "message": "恢复默认范围"
+  },
+  "ch_drag_now": {
+    "message": "拖动以改变你能预测多远"
+  },
+  "ch_drag_or_keys": {
+    "message": "拖动或使用方向键改变你能预测多远"
+  },
+  "ch_high": {
+    "message": "高"
+  },
+  "ch_low": {
+    "message": "低"
+  },
+  "ch_now_label": {
+    "message": "你能预测多远"
+  },
+  "ch_open": {
+    "message": "开"
+  },
+  "ch_reach_title": {
+    "message": "棋盘向上下延伸多远"
+  },
+  "ch_span": {
+    "message": "时段"
+  },
+  "ch_volume": {
+    "message": "成交量"
+  },
+  "ch_zoom_hint": {
+    "message": "——在图表上滚动，或按 [ 和 ]"
+  },
+  "ch_zoom_in": {
+    "message": "放大"
+  },
+  "ch_zoom_in_label": {
+    "message": "放大棋盘——更窄的区间"
+  },
+  "ch_zoom_out": {
+    "message": "缩小"
+  },
+  "ch_zoom_out_label": {
+    "message": "缩小棋盘——更宽的区间，足以预测大幅波动"
+  },
+  "chart_coin_price": {
+    "message": "$1 价格"
+  },
+  "chart_next_coin": {
+    "message": "下一个币种"
+  },
+  "chart_percent_change": {
+    "message": "百分比涨跌"
+  },
+  "chart_price_change": {
+    "message": "价格涨跌"
+  },
+  "chart_switch_to_percent": {
+    "message": "切换为百分比涨跌"
+  },
+  "chart_switch_to_price": {
+    "message": "切换为价格涨跌"
+  },
+  "chart_your_cost": {
+    "message": "你的成本"
+  },
+  "chrome_calls": {
+    "message": "预测"
+  },
+  "chrome_calls_close": {
+    "message": "关闭预测"
+  },
+  "chrome_news": {
+    "message": "新闻"
+  },
+  "chrome_news_close": {
+    "message": "关闭新闻"
+  },
+  "chrome_news_new": {
+    "message": "新闻 — 你的币种有新消息"
+  },
+  "chrome_portfolio": {
+    "message": "投资组合"
+  },
+  "chrome_portfolio_close": {
+    "message": "关闭投资组合"
+  },
+  "chrome_portfolio_open": {
+    "message": "打开投资组合"
+  },
+  "chrome_refresh": {
+    "message": "重新获取最新价格"
+  },
+  "chrome_settings": {
+    "message": "设置"
+  },
+  "chrome_settings_close": {
+    "message": "关闭设置"
+  },
+  "chrome_settings_open": {
+    "message": "打开设置"
+  },
+  "chrome_targets": {
+    "message": "价格目标"
+  },
+  "chrome_targets_close": {
+    "message": "关闭价格目标"
+  },
+  "chrome_targets_short": {
+    "message": "目标"
+  },
+  "chrome_ticker_hide": {
+    "message": "隐藏行情条"
+  },
+  "chrome_ticker_show": {
+    "message": "显示行情条"
+  },
+  "dec_2": {
+    "message": "2 位小数（例：1,234.56）"
+  },
+  "dec_4": {
+    "message": "4 位小数（例：1,234.5678）"
+  },
+  "dec_6": {
+    "message": "6 位小数（例：0.001234）"
+  },
+  "dec_8": {
+    "message": "8 位小数（例：0.00001234）"
+  },
+  "every_10s": {
+    "message": "每 10 秒"
+  },
+  "every_15m": {
+    "message": "每 15 分钟"
+  },
+  "every_1m": {
+    "message": "每分钟"
+  },
+  "every_30s": {
+    "message": "每 30 秒"
+  },
+  "every_5m": {
+    "message": "每 5 分钟"
+  },
+  "method_fifo": {
+    "message": "先进先出"
+  },
+  "method_fifo_note": {
+    "message": "最早买入的先卖出。几乎在所有地方都是默认方法，也是某些国家唯一认可的方法。"
+  },
+  "method_hifo": {
+    "message": "高进先出"
+  },
+  "method_hifo_note": {
+    "message": "最贵的先卖出，因而报告的收益最小。并非所有地区都接受。"
+  },
+  "method_lifo": {
+    "message": "后进先出"
+  },
+  "method_lifo_note": {
+    "message": "最近买入的先卖出。某些地区允许、某些不允许——请核实你所在地的规定。"
+  },
+  "mins_1": {
+    "message": "1 分钟"
+  },
+  "mins_5": {
+    "message": "5 分钟"
+  },
+  "news_allow_rest": {
+    "message": "允许其余来源"
+  },
+  "news_also_count": {
+    "message": "另外 $1 家",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "news_also_rest": {
+    "message": "以及另外 $1 家",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "news_also_title": {
+    "message": "$1 家媒体报道了这条新闻",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "news_ask_body_1": {
+    "message": "Cointelegraph、Decrypt、CryptoSlate、Bitcoin Magazine、CoinJournal 和 BBC Business 发布的订阅源，浏览器在未经你同意时不允许页面读取。Chrome 会向你请求授权。"
+  },
+  "news_ask_body_2": {
+    "message": "不会向它们发送任何内容，也不会在本设备之外存储任何内容——PriceTab 只读取它们公开发布的内容。你可以随时在这里关闭。"
+  },
+  "news_asking": {
+    "message": "正在询问 Chrome…"
+  },
+  "news_fetching": {
+    "message": "正在获取头条…"
+  },
+  "news_granted_silent": {
+    "message": "已授权，但 $1 家新闻源均无响应。重新加载此标签页通常可以解决。"
+  },
+  "news_n_stories": {
+    "message": "$1 条"
+  },
+  "news_no_match": {
+    "message": "没有与“$1”匹配的内容。"
+  },
+  "news_none_at_all": {
+    "message": "没有获取到任何头条。这次什么都没能连上。"
+  },
+  "news_none_blocked": {
+    "message": "没有获取到任何头条。新闻源已获授权但没有响应——重新加载此标签页通常可以解决。"
+  },
+  "news_none_filtered": {
+    "message": "当前筛选下没有内容。请放宽范围，或在下方重新启用某个来源。"
+  },
+  "news_one_click": {
+    "message": "$1 家新闻源，一键即可开启"
+  },
+  "news_one_story": {
+    "message": "1 条"
+  },
+  "news_reading_all": {
+    "message": "正在直接读取 $1 家新闻源。"
+  },
+  "news_reading_some": {
+    "message": "正在读取 $2 家新闻源中的 $1 家。"
+  },
+  "news_scope_all": {
+    "message": "全部"
+  },
+  "news_scope_held": {
+    "message": "我持有的"
+  },
+  "news_scope_mine": {
+    "message": "我的币种"
+  },
+  "news_search_label": {
+    "message": "搜索头条"
+  },
+  "news_search_placeholder": {
+    "message": "搜索头条…"
+  },
+  "news_since_last": {
+    "message": "上次查看后的新内容"
+  },
+  "news_stale_note": {
+    "message": "名称旁标有时间的来源自那之后就没有再发布内容。是这个源沉默了，而不是 PriceTab 没去询问。"
+  },
+  "news_turn_off": {
+    "message": "关闭"
+  },
+  "news_turn_on": {
+    "message": "开启全部来源"
+  },
+  "news_unusual_head": {
+    "message": "$1 出现了对自身而言异常的波动，$2",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "news_unusual_none": {
+    "message": "已加载的订阅源中没有提到它。"
+  },
+  "news_unusual_note": {
+    "message": "以你正在查看的区间内该币种自身的常见波动幅度为基准衡量。这些是同一时段的头条，不是原因。"
+  },
+  "pc_bought": {
+    "message": "▲ 买入"
+  },
+  "pc_break_even": {
+    "message": "盈亏平衡"
+  },
+  "pc_cost": {
+    "message": "成本 $1"
+  },
+  "pc_more": {
+    "message": "还有 $1 个"
+  },
+  "pc_other_upper": {
+    "message": "其他"
+  },
+  "pc_plot_hint": {
+    "message": "用左右方向键在图表中移动，用 Home 和 End 跳到第一个和最后一个点，按 Escape 松开。"
+  },
+  "pc_plot_label": {
+    "message": "投资组合价值图"
+  },
+  "pc_sold": {
+    "message": "▼ 卖出"
+  },
+  "pc_title": {
+    "message": "投资组合价值随时间变化"
+  },
+  "pcb_empty": {
+    "message": "历史数据不足，无法说明是什么推动了它。"
+  },
+  "pcb_note": {
+    "message": "本$1的变动中，每项持仓各占多少（按你现在持有的数量）。相加等于上方的变化额。这是已经发生的事，不是将要发生的事。"
+  },
+  "pcb_other_members": {
+    "message": "其他：$1"
+  },
+  "pcb_row_label": {
+    "message": "$1：$2，占变动的 $3%"
+  },
+  "period_all": {
+    "message": "全部时间"
+  },
+  "po_add_holding": {
+    "message": "添加持仓"
+  },
+  "po_added_by_hand": {
+    "message": "手动录入"
+  },
+  "po_added_from_file": {
+    "message": "已从文件添加 $1 项持仓"
+  },
+  "po_added_holdings": {
+    "message": "已添加 $1 项持仓"
+  },
+  "po_address_label": {
+    "message": "要监视的地址"
+  },
+  "po_allocation_prefix": {
+    "message": "配置："
+  },
+  "po_alphabetical": {
+    "message": "按字母"
+  },
+  "po_amount": {
+    "message": "数量"
+  },
+  "po_amount_aria": {
+    "message": "$1 数量"
+  },
+  "po_amount_placeholder": {
+    "message": "数量（例：0.5 $1）"
+  },
+  "po_amount_sold": {
+    "message": "卖出数量"
+  },
+  "po_and_records": {
+    "message": "以及与之相关的全部记录"
+  },
+  "po_another_currency": {
+    "message": "另一种货币"
+  },
+  "po_back_to_list": {
+    "message": "返回持仓列表（Esc）"
+  },
+  "po_bands_note": {
+    "message": "各色带相加即为总线。刻度从零开始，因此高度可比——代价是失去缩放。"
+  },
+  "po_best_24h": {
+    "message": "24 小时最佳"
+  },
+  "po_bought": {
+    "message": "买入"
+  },
+  "po_by_coin": {
+    "message": "按币种"
+  },
+  "po_by_coin_hint": {
+    "message": "构成总额的各个币种，堆叠显示。刻度从零开始——正因如此各色带才可比较"
+  },
+  "po_calendar_year": {
+    "message": "这是自然年——许多国家的纳税年度在不同日期结束，请核实你所在地的规定。"
+  },
+  "po_chain_estimated": {
+    "message": "链上（估算）"
+  },
+  "po_chart_covers": {
+    "message": "图表和总额旁的涨跌涵盖了 $2 项持仓中的 $1 项"
+  },
+  "po_chart_title": {
+    "message": "投资组合 · 总价值"
+  },
+  "po_chart_value_note": {
+    "message": "本图中 $1 项持仓的价值。你的投资组合总额涵盖全部 $2 项。"
+  },
+  "po_cost_basis": {
+    "message": "成本"
+  },
+  "po_cost_method": {
+    "message": "成本计算方法"
+  },
+  "po_coverage_note": {
+    "message": "在 $1 内，涵盖本图能绘制的 $2 项持仓$3。上方总额涵盖全部 $4 项。"
+  },
+  "po_csv": {
+    "message": "成本报告（CSV）"
+  },
+  "po_currency_paused": {
+    "message": " · $1 · 已暂停"
+  },
+  "po_date_unknown": {
+    "message": "日期未知"
+  },
+  "po_drawdown": {
+    "message": "峰值"
+  },
+  "po_drawdown_hint": {
+    "message": "本 $1 窗口内，从高点到之后低点的最深跌幅"
+  },
+  "po_drawdown_mode_hint": {
+    "message": "总额在整个期间内低于自身最高点多少——深度以及花了多久才回来，这是单一的“最大跌幅”数字无法展示的"
+  },
+  "po_drawdown_note": {
+    "message": "零就是创出新高。下方的一切表示当时总额低于自身峰值多少——深度以及回到峰值花了多久。它说的是当时糟到什么程度，而不是可能糟到什么程度。"
+  },
+  "po_drawdown_range": {
+    "message": "——$1 至 $2"
+  },
+  "po_drawn_of_held": {
+    "message": " · $2 项中的 $1 项"
+  },
+  "po_dropped": {
+    "message": "有 $1 项放不下——列表已满"
+  },
+  "po_empty_hint": {
+    "message": "在下方搜索币种，或粘贴一个要监视的地址。"
+  },
+  "po_explore": {
+    "message": "查看图表"
+  },
+  "po_explore_hint": {
+    "message": "打开价值图——随时读取任一时刻，图上带有你的买入与卖出"
+  },
+  "po_export": {
+    "message": "导出 JSON"
+  },
+  "po_export_hint": {
+    "message": "把持仓下载为 JSON 备份"
+  },
+  "po_footer": {
+    "message": "仅作追踪 · 不连接钱包 · 本地存储在这台设备上。被监视的地址仅用于查询公开余额。"
+  },
+  "po_held_long": {
+    "message": "持有 $1 天——按许多地方采用的 $2 天界线属于长期"
+  },
+  "po_held_short": {
+    "message": "持有 $1 天——按许多地方采用的 $2 天界线属于短期"
+  },
+  "po_holdings": {
+    "message": "持仓"
+  },
+  "po_holdings_n": {
+    "message": "持仓 · $1"
+  },
+  "po_hover_note": {
+    "message": "将鼠标悬停、点按或聚焦到图表上，即可读到总额、它由什么构成，以及它高于或低于你付出成本多少。"
+  },
+  "po_import": {
+    "message": "导入 JSON"
+  },
+  "po_import_failed": {
+    "message": "导入失败——该文件不是有效的 PriceTab 投资组合备份。"
+  },
+  "po_import_hint": {
+    "message": "从 JSON 备份恢复持仓（会替换当前列表）"
+  },
+  "po_inferred": {
+    "message": "从被监视地址推断出的买入——点击查看"
+  },
+  "po_largest_first": {
+    "message": "$1 最大的排在前面"
+  },
+  "po_limit_reached": {
+    "message": "已达持仓上限"
+  },
+  "po_long_suffix": {
+    "message": " · 长期"
+  },
+  "po_long_term": {
+    "message": "长期"
+  },
+  "po_lot_amount": {
+    "message": "批次数量"
+  },
+  "po_lot_line": {
+    "message": "$1 $2 — $3"
+  },
+  "po_lot_total_paid": {
+    "message": "该批次支付总额"
+  },
+  "po_lots_aria": {
+    "message": "$1 的买入批次"
+  },
+  "po_lots_cover": {
+    "message": "批次覆盖了 $2 $3 中的 $1——盈亏仅按已记录的部分计算。"
+  },
+  "po_manual_amount_aria": {
+    "message": "手动录入的 $1 数量"
+  },
+  "po_merge": {
+    "message": "合并 JSON"
+  },
+  "po_method_line": {
+    "message": "$1 — $2"
+  },
+  "po_model_note": {
+    "message": "以今天的持有数量在该区间内计价。买入和卖出会被标注，但不会改变历史数量。"
+  },
+  "po_moved": {
+    "message": "是什么推动的"
+  },
+  "po_moved_hint": {
+    "message": "哪些持仓解释了本区间的变动，最大的在前。各条相加等于上方的数字"
+  },
+  "po_n_purchases": {
+    "message": "$1 笔买入"
+  },
+  "po_n_sales": {
+    "message": "$1 笔卖出"
+  },
+  "po_n_watched": {
+    "message": "$1 个被监视地址"
+  },
+  "po_no_basis_suffix": {
+    "message": " · 无成本"
+  },
+  "po_no_purchase": {
+    "message": "无买入"
+  },
+  "po_no_purchases": {
+    "message": "还没有记录买入——请在下方添加一笔。"
+  },
+  "po_no_transfers": {
+    "message": "尚未检测到转入记录。"
+  },
+  "po_nothing_to_add": {
+    "message": "没有可添加的内容"
+  },
+  "po_nothing_to_sell": {
+    "message": "没有手动录入的可卖出数量——被监视的地址会自行按链上数据对账"
+  },
+  "po_nothing_tracked": {
+    "message": "还没有记录任何持仓"
+  },
+  "po_on_chain": {
+    "message": " · ~链上"
+  },
+  "po_one_purchase": {
+    "message": "1 笔买入"
+  },
+  "po_one_sale": {
+    "message": "1 笔卖出"
+  },
+  "po_one_watched": {
+    "message": "1 个被监视地址"
+  },
+  "po_other": {
+    "message": "其他"
+  },
+  "po_other_count": {
+    "message": "其他（$1）"
+  },
+  "po_paid_placeholder": {
+    "message": "总支付额（例：15000）"
+  },
+  "po_paste_address": {
+    "message": "粘贴任意 BTC、ETH、LTC、DOGE、BCH 或 ZEC 地址…"
+  },
+  "po_paused_basis": {
+    "message": "$1 记录的所有买入都是以 $2 录入的。切换到该货币即可查看这笔成本及其盈亏。"
+  },
+  "po_pnl_hint": {
+    "message": "同一个总额，重新以你付出的成本为零基准。线以上是盈利，以下是亏损——当成本落在刻度之外时，价值图唯一无法展示的东西"
+  },
+  "po_pnl_note": {
+    "message": "零就是你付出的成本，因此这条线越过它的时刻，就是它变成盈利或亏损的时刻。它使用的是全部成本，而不是每一天当时的成本——数量取的是今天的。"
+  },
+  "po_proceeds_less": {
+    "message": "卖出所得减去它消耗的那笔买入的成本"
+  },
+  "po_realized": {
+    "message": "已实现"
+  },
+  "po_realized_paused": {
+    "message": "以其他货币记录的卖出会被排除，而不是换算。"
+  },
+  "po_realized_year": {
+    "message": "$1 年已实现"
+  },
+  "po_realized_year_hint": {
+    "message": "你在 $1 年 1 月 1 日至今日之间记录的卖出所产生的盈亏。 "
+  },
+  "po_received_placeholder": {
+    "message": "总收到额（例：45000）"
+  },
+  "po_record": {
+    "message": "记录"
+  },
+  "po_record_sale_hint": {
+    "message": "记录一笔卖出：扣减币量、消耗最早的买入，并保留收益"
+  },
+  "po_remove_coin": {
+    "message": "移除 $1"
+  },
+  "po_remove_holding_hint": {
+    "message": "移除这项持仓及其买入与已记录的卖出。在你关闭投资组合前都可撤销。"
+  },
+  "po_remove_lot": {
+    "message": "移除批次"
+  },
+  "po_remove_lot_aria": {
+    "message": "移除这笔 $1 批次"
+  },
+  "po_remove_sale": {
+    "message": "移除这笔 $1 卖出"
+  },
+  "po_remove_sale_hint": {
+    "message": "移除这条记录。它不会把币还回来——如有需要请自行调整数量。"
+  },
+  "po_removed": {
+    "message": "已移除 $1$2"
+  },
+  "po_replaced_with_file": {
+    "message": "已用文件替换 $1 项持仓"
+  },
+  "po_return_pa": {
+    "message": "年化回报"
+  },
+  "po_sale_no_basis": {
+    "message": "这些币没有记录任何买入，因此没有可与卖出所得相抵的成本"
+  },
+  "po_sale_partial": {
+    "message": "这笔卖出中只有 $1 $2 有对应的买入记录，因此收益只覆盖这一部分"
+  },
+  "po_sale_paused": {
+    "message": "以 $1 记录。当显示其他货币时，它的收益不计入“已实现”——切换到 $1 即可纳入。"
+  },
+  "po_search_coin": {
+    "message": "搜索币种（例：BTC 或 Bitcoin）…"
+  },
+  "po_search_coin_label": {
+    "message": "搜索要添加的币种"
+  },
+  "po_sell_hint": {
+    "message": "从你的 $1 中扣减币量，并优先消耗最早的买入。即使那些批次已用尽，收益仍会保留。"
+  },
+  "po_share_in_one": {
+    "message": "$1% 集中在一项持仓"
+  },
+  "po_share_of_value": {
+    "message": "，占你价值的 $1%"
+  },
+  "po_share_of_value_dash": {
+    "message": "——占你价值的 $1%"
+  },
+  "po_show": {
+    "message": "显示"
+  },
+  "po_show_origin": {
+    "message": "查看这些币从何而来以及你付了多少"
+  },
+  "po_show_purchases": {
+    "message": "查看你对该币的买入"
+  },
+  "po_slice_title": {
+    "message": "$1 — 占你持有的 $2%"
+  },
+  "po_sold": {
+    "message": "卖出"
+  },
+  "po_sold_line": {
+    "message": "卖出 $1 $2 — $3"
+  },
+  "po_sort": {
+    "message": "排序"
+  },
+  "po_stop": {
+    "message": "停止"
+  },
+  "po_stop_sync_hint": {
+    "message": "停止同步该地址（它的币和买入会转入手动录入的部分）"
+  },
+  "po_stop_watch_aria": {
+    "message": "停止监视这个 $1 地址"
+  },
+  "po_total": {
+    "message": "总计"
+  },
+  "po_total_across": {
+    "message": "手动录入部分与所有被监视地址的合计——点击查看明细"
+  },
+  "po_total_amount_aria": {
+    "message": "$1 总数量"
+  },
+  "po_total_counts_all": {
+    "message": "。上方总额涵盖全部。"
+  },
+  "po_total_hint": {
+    "message": "一条线：总额，落在它实际波动的范围内"
+  },
+  "po_total_received": {
+    "message": "收到总额"
+  },
+  "po_undated_sales": {
+    "message": " 有 $1 笔卖出没有日期，不属于任何一年。"
+  },
+  "po_unlogged_note": {
+    "message": "$1 $2 没有记录买入，因此它计入上方价值，但不计入盈亏。"
+  },
+  "po_unrealized": {
+    "message": "未实现"
+  },
+  "po_unrealized_hint": {
+    "message": "相对于你付出成本的未实现盈亏"
+  },
+  "po_unrealized_partial": {
+    "message": "相对于你付出成本的未实现盈亏——仅涵盖你已记录买入的数量（$1）"
+  },
+  "po_unrealized_paused": {
+    "message": "；以其他货币录入的买入会被排除而不是换算——打开某项持仓即可看到是哪些"
+  },
+  "po_value": {
+    "message": "价值"
+  },
+  "po_vs_benchmark": {
+    "message": "对比 $1"
+  },
+  "po_vs_btc": {
+    "message": "对比 BTC"
+  },
+  "po_vs_btc_hint": {
+    "message": "你的组合与 BTC 在完全相同的日期上，两者都从 0% 起步——你在哪里领先，又在哪里只是跟随市场"
+  },
+  "po_vs_btc_none": {
+    "message": "没有覆盖这些日期的 BTC 历史数据，因此无从比较。上面这条线只是你的组合。"
+  },
+  "po_vs_btc_note": {
+    "message": "两者都从同一个首日的 0% 起步，落在同一条刻度上——绝不使用双轴，因为那正是让任意两条线看起来相关的把戏。你 $1，BTC $2：相差 $3 个百分点。改为持有 BTC 是比较对象，而不是建议。"
+  },
+  "po_watch_address": {
+    "message": "监视一个地址"
+  },
+  "po_watch_chains": {
+    "message": "PriceTab 能读取 Bitcoin、Ethereum 及其代币、Litecoin、Dogecoin、Bitcoin Cash 和 Zcash——数量仍然可以在上面手动填写。"
+  },
+  "po_watch_chip_title": {
+    "message": "$1 · $2 — 点击查看明细"
+  },
+  "po_watch_empty": {
+    "message": "该地址目前没有 PriceTab 能够定价的资产。"
+  },
+  "po_watch_foreign": {
+    "message": "这是一个 $1 地址。 "
+  },
+  "po_watch_note": {
+    "message": "读取该地址的公开余额并保持持仓同步（投资组合打开时每 10 分钟检查一次）"
+  },
+  "po_watch_shape": {
+    "message": "这看起来不像一个地址。请粘贴完整内容，不要有空格。"
+  },
+  "po_watch_unreachable": {
+    "message": "余额服务刚才没有响应。它对查询频率有限制，通常会自行恢复——请过几分钟再试。地址本身没有问题。"
+  },
+  "po_watched_address": {
+    "message": "被监视地址"
+  },
+  "po_watched_select": {
+    "message": "被监视地址（点击选中）"
+  },
+  "po_watching_n": {
+    "message": "监视中 · $1"
+  },
+  "po_worst_24h": {
+    "message": "24 小时最差"
+  },
+  "po_worst_fall": {
+    "message": "最大跌幅"
+  },
+  "po_worst_fall_note": {
+    "message": "。它说的是当时糟到什么程度，而不是可能糟到什么程度。"
+  },
+  "po_your_purchases": {
+    "message": "你对该币的买入——点击查看或添加（“用 15000 买了 0.5”）"
+  },
+  "pref_alert_tab_title_aria": {
+    "message": "开关标签页标题中的价格目标提示"
+  },
+  "pref_alert_tab_title_desc": {
+    "message": "当目标达成时在标签页标题中提示，这样你没在看的标签页也能告诉你"
+  },
+  "pref_alert_tab_title_heading": {
+    "message": "在标签页标题中提示目标"
+  },
+  "pref_alert_tab_title_note": {
+    "message": "它也会在标签页处于后台时继续检查你的目标——这是你在别处时 PriceTab 唯一会去获取的东西，而且仅在你设有目标时。关闭它会同时停止提示和后台检查。"
+  },
+  "pref_alerts_keywords": {
+    "message": "提醒 目标 价格 标签页 标题 通知 后台"
+  },
+  "pref_alerts_title": {
+    "message": "价格目标提醒"
+  },
+  "pref_auto_rotate_aria": {
+    "message": "开关自动轮播"
+  },
+  "pref_auto_rotate_aria_2": {
+    "message": "自动轮播间隔"
+  },
+  "pref_auto_rotate_desc": {
+    "message": "自动切换到列表中的下一个币种"
+  },
+  "pref_auto_rotate_heading": {
+    "message": "自动轮播"
+  },
+  "pref_auto_rotate_keywords": {
+    "message": "轮播 币种 旋转 间隔 暂停 面板"
+  },
+  "pref_auto_rotate_note": {
+    "message": "任何面板打开时都会暂停，以免在你阅读时把图表换掉。"
+  },
+  "pref_auto_rotate_title": {
+    "message": "自动轮播"
+  },
+  "pref_candlesticks_aria": {
+    "message": "开关 K 线图"
+  },
+  "pref_candlesticks_desc": {
+    "message": "以开/高/低/收柱状图代替价格折线。没有 K 线数据的区间仍用折线"
+  },
+  "pref_candlesticks_heading": {
+    "message": "K 线"
+  },
+  "pref_candlesticks_keywords": {
+    "message": "蜡烛 ohlc 柱 日本 kraken 请求 成本"
+  },
+  "pref_candlesticks_note": {
+    "message": "比看上去便宜：K 线是图表唯一发出的请求，因为价格折线由它们的收盘价推导而来。ALL 区间来自 Kraken——没有其他数据源能回溯数年，BTC 可到 2013 年。没有 K 线数据的币种或货币会保持折线，而不是给你一张空图。"
+  },
+  "pref_candlesticks_title": {
+    "message": "K 线"
+  },
+  "pref_chart_color_aria": {
+    "message": "开关图表颜色"
+  },
+  "pref_chart_color_desc": {
+    "message": "上涨为绿、下跌为红——关闭后为普通折线"
+  },
+  "pref_chart_color_heading": {
+    "message": "图表颜色"
+  },
+  "pref_chart_color_keywords": {
+    "message": "绿 红 填充 趋势 颜色"
+  },
+  "pref_chart_color_title": {
+    "message": "图表颜色"
+  },
+  "pref_chart_details_aria": {
+    "message": "开关图表细节"
+  },
+  "pref_chart_details_desc": {
+    "message": "悬停图表时显示开/高/低/收和成交量（每张图额外一次请求，仅在悬停时）"
+  },
+  "pref_chart_details_heading": {
+    "message": "图表细节"
+  },
+  "pref_chart_details_keywords": {
+    "message": "ohlc 成交量 十字线 悬停 开 高 低 收 成本"
+  },
+  "pref_chart_details_note": {
+    "message": "开、高、低、收：描述一个周期的四个价格，加上该周期的成交量。每张图额外一次请求，在你第一次悬停时发出，此前不会。"
+  },
+  "pref_chart_details_title": {
+    "message": "图表细节"
+  },
+  "pref_chart_grid_aria": {
+    "message": "开关图表网格"
+  },
+  "pref_chart_grid_desc": {
+    "message": "在图表后方绘制价位与时间分隔，便于读取价位。悬停某个方格会将其点亮"
+  },
+  "pref_chart_grid_heading": {
+    "message": "图表网格"
+  },
+  "pref_chart_grid_keywords": {
+    "message": "网格 网 价位 线 价格 时间 轴 目标 预测 方格"
+  },
+  "pref_chart_grid_note": {
+    "message": "这项设置管的是普通图表，G 键作用相同。开启预测后网格无论如何都会绘制——你所指的方格就是网格——所以此开关在预测期间无从改变什么。"
+  },
+  "pref_chart_grid_title": {
+    "message": "图表网格"
+  },
+  "pref_currency_about": {
+    "message": "关于货币"
+  },
+  "pref_currency_all": {
+    "message": "全部货币"
+  },
+  "pref_currency_aria_2": {
+    "message": "货币"
+  },
+  "pref_currency_keywords": {
+    "message": "usd eur 法币 汇率 暂停 目标 预测"
+  },
+  "pref_currency_note": {
+    "message": "使用行情条本就会获取的汇率换算，因此切换不会产生额外请求。以其他货币设定的价格目标和预测在你处于当前货币时会暂停——它们不会丢失，切回后继续。基于百分比涨跌的目标永远不会暂停：百分比在任何货币里含义相同。"
+  },
+  "pref_currency_popular": {
+    "message": "常用"
+  },
+  "pref_currency_title": {
+    "message": "货币"
+  },
+  "pref_group_chart": {
+    "message": "图表"
+  },
+  "pref_group_look": {
+    "message": "外观"
+  },
+  "pref_group_numbers": {
+    "message": "数字"
+  },
+  "pref_group_tickers": {
+    "message": "行情条"
+  },
+  "pref_group_under_price": {
+    "message": "价格下方"
+  },
+  "pref_group_updating": {
+    "message": "更新"
+  },
+  "pref_language_aria": {
+    "message": "语言"
+  },
+  "pref_language_auto": {
+    "message": "自动（跟随 Chrome）"
+  },
+  "pref_language_chosen": {
+    "message": "由你选择。更改后页面会重新加载。"
+  },
+  "pref_language_following": {
+    "message": "跟随 Chrome — $1"
+  },
+  "pref_language_keywords": {
+    "message": "语言 区域 翻译 英语 土耳其语 西班牙语 德语 法语 中文 日语 自动"
+  },
+  "pref_language_label": {
+    "message": "语言"
+  },
+  "pref_language_title": {
+    "message": "语言"
+  },
+  "pref_last_seen_aria": {
+    "message": "开关“自上次访问以来”一行"
+  },
+  "pref_last_seen_desc": {
+    "message": "显示自你上次打开标签页以来该币的走势"
+  },
+  "pref_last_seen_heading": {
+    "message": "自你上次访问以来"
+  },
+  "pref_last_seen_keywords": {
+    "message": "差值 变动 访问 上次 设备"
+  },
+  "pref_last_seen_note": {
+    "message": "把当前价格与你上次打开标签页时的价格作比较。该标记只保存在本设备，因此换浏览器后会重新开始计数。"
+  },
+  "pref_last_seen_title": {
+    "message": "自你上次访问以来"
+  },
+  "pref_market_stats_aria": {
+    "message": "开关市场数据"
+  },
+  "pref_market_stats_desc": {
+    "message": "在价格下方显示区间最高价、最低价、市值和 24 小时成交量"
+  },
+  "pref_market_stats_heading": {
+    "message": "市场数据"
+  },
+  "pref_market_stats_keywords": {
+    "message": "数据 最高 最低 市值 成交量 区间 免费"
+  },
+  "pref_market_stats_note": {
+    "message": "免费。最高价和最低价读自已在屏幕上的数据序列，市值和成交量随行情条数据一同到达——这一行不会额外发起任何请求。"
+  },
+  "pref_market_stats_title": {
+    "message": "市场数据"
+  },
+  "pref_modes": {
+    "message": "模式"
+  },
+  "pref_modes_own": {
+    "message": "这是你自己的搭配。一个模式会一次性设定下面十几项设置——货币、数字格式和主题始终保持你的选择。"
+  },
+  "pref_move_headlines_aria": {
+    "message": "开关异动头条"
+  },
+  "pref_move_headlines_desc": {
+    "message": "当某个币出现异常波动时，显示同一时间窗口内提到它的头条。与行情条使用同一新闻源"
+  },
+  "pref_move_headlines_heading": {
+    "message": "异动头条"
+  },
+  "pref_move_headlines_keywords": {
+    "message": "新闻 头条 大幅波动 背景 异常 来源"
+  },
+  "pref_move_headlines_note": {
+    "message": "“异常”是相对于你正在查看的区间来衡量的，所以 2% 的一天在小时图上算异常，在年图上不算。只有点名该币的报道才计入，标签只说明出处，不宣称它们解释了这次波动。"
+  },
+  "pref_move_headlines_title": {
+    "message": "异动头条"
+  },
+  "pref_move_news_aria": {
+    "message": "开关“这里发生了什么”"
+  },
+  "pref_move_news_desc": {
+    "message": "标记价格在当前区间中表现异常的时刻。点击标记可查看那一天前后发布的头条"
+  },
+  "pref_move_news_heading": {
+    "message": "这里发生了什么"
+  },
+  "pref_move_news_keywords": {
+    "message": "新闻 头条 波动 暴涨 暴跌 原因 历史 存档 事件"
+  },
+  "pref_move_news_note": {
+    "message": "这些标记本身不花费任何东西——它们的位置由已在屏幕上的数据序列算出。只有打开某个标记才会发起请求，且结果会被缓存，同一时刻此后免费。它无法告诉你的是原因：波动当天的头条是当时被写下的内容，而不是成因，卡片上也这么写。与网格一样，两个币共用图表时会关闭。"
+  },
+  "pref_move_news_title": {
+    "message": "这里发生了什么"
+  },
+  "pref_news_headlines": {
+    "message": "新闻头条"
+  },
+  "pref_number_format_aria": {
+    "message": "小数位数"
+  },
+  "pref_number_format_aria_2": {
+    "message": "数字格式"
+  },
+  "pref_number_format_keywords": {
+    "message": "小数 分隔符 千位 格式"
+  },
+  "pref_number_format_label": {
+    "message": "小数位数"
+  },
+  "pref_number_format_label_2": {
+    "message": "数字格式"
+  },
+  "pref_number_format_title": {
+    "message": "数字格式"
+  },
+  "pref_page_ticker_aria": {
+    "message": "开关价格行情条"
+  },
+  "pref_page_ticker_aria_2": {
+    "message": "价格行情条位置"
+  },
+  "pref_page_ticker_aria_3": {
+    "message": "开关新闻头条行"
+  },
+  "pref_page_ticker_aria_4": {
+    "message": "该行显示哪些头条"
+  },
+  "pref_page_ticker_desc": {
+    "message": "横贯页面的滚动价格条（顶部或底部）"
+  },
+  "pref_page_ticker_heading": {
+    "message": "价格行情条"
+  },
+  "pref_page_ticker_keywords": {
+    "message": "滚动条 新闻 头条 位置 全部币种 筛选 我的币种 投资组合"
+  },
+  "pref_page_ticker_news_desc": {
+    "message": "头条来自公开订阅源——Hacker News、Bitcoin.com 和三家财经新闻机构，以及你在新闻面板中授权的来源。点击即可在新标签页打开报道。"
+  },
+  "pref_page_ticker_note": {
+    "message": "显示 PriceTab 支持的全部币种，而不仅是你列表里的——一次请求即可涵盖全部。下方的头条行与“异动头条”使用同一来源。"
+  },
+  "pref_page_ticker_position": {
+    "message": "位置"
+  },
+  "pref_page_ticker_scope_desc": {
+    "message": "当一条报道点名该币（代号或全称）时，才算作你的。清淡的一周会让这一行留空，而不是用其他内容填满。"
+  },
+  "pref_page_ticker_title": {
+    "message": "价格行情条"
+  },
+  "pref_position_bottom": {
+    "message": "底部"
+  },
+  "pref_position_top": {
+    "message": "顶部"
+  },
+  "pref_quiet_chrome_aria": {
+    "message": "开关低调控件"
+  },
+  "pref_quiet_chrome_desc": {
+    "message": "让角落的按钮几乎隐形地待着，当你指向它们时再显现。什么都没有被隐藏，也没有任何东西停止工作——快捷键照常"
+  },
+  "pref_quiet_chrome_heading": {
+    "message": "低调的控件"
+  },
+  "pref_quiet_chrome_keywords": {
+    "message": "低调 极简 淡出 隐藏 角落 按钮 不透明度 键盘 焦点"
+  },
+  "pref_quiet_chrome_note": {
+    "message": "齿轮在五个按钮中保持最亮，因为它是回到本设置的路径。它们在指针悬停和键盘聚焦时都会恢复完全可见，而快捷键无论外观如何都照常работа。"
+  },
+  "pref_quiet_chrome_title": {
+    "message": "低调的控件"
+  },
+  "pref_rate": {
+    "message": "为 PriceTab 评分"
+  },
+  "pref_rate_hint": {
+    "message": "在新标签页中打开 Chrome 应用商店页面"
+  },
+  "pref_refresh_about": {
+    "message": "关于刷新间隔"
+  },
+  "pref_refresh_interval_aria_2": {
+    "message": "刷新间隔"
+  },
+  "pref_refresh_interval_keywords": {
+    "message": "更新 轮询 秒 频率 隐藏 后台 成本"
+  },
+  "pref_refresh_interval_note": {
+    "message": "图表请求新价格的频率。隐藏的标签页完全不轮询，等你回来时再补上，因此在你离开期间，短间隔不会有任何成本。"
+  },
+  "pref_refresh_interval_title": {
+    "message": "刷新间隔"
+  },
+  "pref_replay_hint": {
+    "message": "重新运行首次导览"
+  },
+  "pref_replay_tour": {
+    "message": "重看导览"
+  },
+  "pref_rotate_every": {
+    "message": "每隔"
+  },
+  "pref_search": {
+    "message": "搜索设置…"
+  },
+  "pref_search_label": {
+    "message": "搜索设置"
+  },
+  "pref_show": {
+    "message": "显示"
+  },
+  "pref_show_shortcuts": {
+    "message": "显示键盘快捷键"
+  },
+  "pref_tab_ticker_aria": {
+    "message": "开关标签页行情"
+  },
+  "pref_tab_ticker_aria_2": {
+    "message": "标签页行情格式"
+  },
+  "pref_tab_ticker_desc": {
+    "message": "在浏览器标签页标题中显示实时价格"
+  },
+  "pref_tab_ticker_format": {
+    "message": "标题格式"
+  },
+  "pref_tab_ticker_heading": {
+    "message": "浏览器标签页标题"
+  },
+  "pref_tab_ticker_keywords": {
+    "message": "浏览器 标签页 标题 价格 条 隐藏"
+  },
+  "pref_tab_ticker_note": {
+    "message": "它会写入浏览器标签页标题，因此页面被遮住时你也能从标签栏读到价格。标题是共用的：达成的价格目标在提示期间会接管它，随后归还。"
+  },
+  "pref_tab_ticker_title": {
+    "message": "标签页行情"
+  },
+  "pref_theme_auto": {
+    "message": "自动"
+  },
+  "pref_theme_dark": {
+    "message": "深色"
+  },
+  "pref_theme_heading": {
+    "message": "主题"
+  },
+  "pref_theme_keywords": {
+    "message": "深色 浅色 自动 系统 颜色"
+  },
+  "pref_theme_light": {
+    "message": "浅色"
+  },
+  "pref_theme_title": {
+    "message": "主题"
+  },
+  "pref_theme_using": {
+    "message": "正在使用$1模式"
+  },
+  "pref_theme_using_auto": {
+    "message": "正在使用$1模式（跟随系统）"
+  },
+  "pref_volume_bars_aria": {
+    "message": "开关成交量柱"
+  },
+  "pref_volume_bars_desc": {
+    "message": "以图表底部的色带显示成交量"
+  },
+  "pref_volume_bars_heading": {
+    "message": "成交量柱"
+  },
+  "pref_volume_bars_keywords": {
+    "message": "成交量 带 柱 成交 活跃度"
+  },
+  "pref_volume_bars_title": {
+    "message": "成交量柱"
+  },
+  "qs_compare_label": {
+    "message": "与某个币种比较"
+  },
+  "qs_compare_with": {
+    "message": "将 $1 与…比较"
+  },
+  "qs_jump_label": {
+    "message": "跳转到某个币种"
+  },
+  "qs_jump_placeholder": {
+    "message": "跳转到某个币种…"
+  },
+  "qs_no_match": {
+    "message": "没有匹配的币种。"
+  },
+  "sc_base_rates": {
+    "message": "基准频率——这个币以前来过这里多少次"
+  },
+  "sc_board_zoom": {
+    "message": "棋盘范围：缩小 / 放大（开启预测时）"
+  },
+  "sc_calls": {
+    "message": "预测 开 / 关"
+  },
+  "sc_calls_panel": {
+    "message": "预测——棋盘、战绩、设置"
+  },
+  "sc_chart_type": {
+    "message": "折线 / K 线图"
+  },
+  "sc_close_open": {
+    "message": "关闭当前打开的内容"
+  },
+  "sc_compare": {
+    "message": "与第二个币种比较"
+  },
+  "sc_grid": {
+    "message": "图表上的价格 / 时间网格"
+  },
+  "sc_group_anywhere": {
+    "message": "任意位置"
+  },
+  "sc_group_chart": {
+    "message": "图表"
+  },
+  "sc_group_open": {
+    "message": "打开"
+  },
+  "sc_group_view": {
+    "message": "视图"
+  },
+  "sc_jump": {
+    "message": "按名称跳转到币种"
+  },
+  "sc_news_panel": {
+    "message": "新闻——全部来源，可筛选并标注时间"
+  },
+  "sc_note": {
+    "message": "在输入框中打字时快捷键会暂停。再次按 ? 或按 Esc 关闭。"
+  },
+  "sc_percent": {
+    "message": "百分比 / 价格涨跌"
+  },
+  "sc_prev_next_coin": {
+    "message": "上一个 / 下一个币种"
+  },
+  "sc_refresh": {
+    "message": "立即刷新"
+  },
+  "sc_rotate": {
+    "message": "自动轮播 开 / 关"
+  },
+  "sc_switch_range": {
+    "message": "切换区间，1H 到 ALL"
+  },
+  "sc_theme": {
+    "message": "深色 / 浅色主题"
+  },
+  "sc_this_list": {
+    "message": "本列表"
+  },
+  "sc_title": {
+    "message": "键盘快捷键"
+  },
+  "sc_widgets": {
+    "message": "隐藏 / 显示小组件"
+  },
+  "secs_10": {
+    "message": "10 秒"
+  },
+  "secs_30": {
+    "message": "30 秒"
+  },
+  "sep_auto": {
+    "message": "自动（跟随你的语言）"
+  },
+  "sep_eu": {
+    "message": "欧式 (1.234,56)"
+  },
+  "sep_space": {
+    "message": "空格式 (1 234.56)"
+  },
+  "sep_us": {
+    "message": "美式 (1,234.56)"
+  },
+  "set_add_coin": {
+    "message": "添加币种"
+  },
+  "set_add_failed": {
+    "message": "无法添加该币种"
+  },
+  "set_already_listed": {
+    "message": "该代号已在列表中"
+  },
+  "set_bundle_holder": {
+    "message": "持币者"
+  },
+  "set_bundle_minimal": {
+    "message": "极简"
+  },
+  "set_bundle_trader": {
+    "message": "交易者"
+  },
+  "set_bundles": {
+    "message": "组合"
+  },
+  "set_coins_help": {
+    "message": "搜索以添加币种。拖动色块排序，点 × 移除。"
+  },
+  "set_coins_reset": {
+    "message": "已恢复默认币种"
+  },
+  "set_coins_restored": {
+    "message": "已还原之前的币种"
+  },
+  "set_drag_hint": {
+    "message": "拖动以排序"
+  },
+  "set_keep_one_coin": {
+    "message": "请至少保留一个币种"
+  },
+  "set_max_coins": {
+    "message": "最多 $1 个币种"
+  },
+  "set_no_coins": {
+    "message": "还没有币种"
+  },
+  "set_not_recognized": {
+    "message": "无法识别 $1"
+  },
+  "set_quick_add": {
+    "message": "快速添加"
+  },
+  "set_rate": {
+    "message": "评分"
+  },
+  "set_rate_dismiss": {
+    "message": "关闭评分提醒"
+  },
+  "set_remove_coin": {
+    "message": "移除 $1"
+  },
+  "set_reset_defaults": {
+    "message": "恢复默认"
+  },
+  "set_search_placeholder": {
+    "message": "按名称或代号搜索"
+  },
+  "set_selected": {
+    "message": "已选"
+  },
+  "set_show_widgets": {
+    "message": "在图表下方显示数据小组件"
+  },
+  "set_size": {
+    "message": "大小"
+  },
+  "set_size_note": {
+    "message": " — 适用于所有小组件"
+  },
+  "set_sort": {
+    "message": "排序"
+  },
+  "set_sort_az_hint": {
+    "message": "按字母顺序排列"
+  },
+  "set_sort_cap": {
+    "message": "市值"
+  },
+  "set_sort_cap_hint": {
+    "message": "市值最大的排在前面"
+  },
+  "set_sort_cap_wait": {
+    "message": "正在等待市场数据"
+  },
+  "set_sort_move": {
+    "message": "24小时涨跌"
+  },
+  "set_sort_move_hint": {
+    "message": "24小时涨跌最大的排在前面"
+  },
+  "set_sort_move_wait": {
+    "message": "正在等待今日价格"
+  },
+  "set_sorted_az": {
+    "message": "已按字母排序"
+  },
+  "set_sorted_cap": {
+    "message": "已按市值排序"
+  },
+  "set_sorted_move": {
+    "message": "已按今日涨跌排序"
+  },
+  "set_symbol": {
+    "message": "代号"
+  },
+  "set_symbol_empty": {
+    "message": "请先输入代号"
+  },
+  "set_symbol_shape": {
+    "message": "仅限 2-10 个字母或数字"
+  },
+  "set_tab_coins": {
+    "message": "币种"
+  },
+  "set_tab_preferences": {
+    "message": "偏好设置"
+  },
+  "set_tab_widgets": {
+    "message": "小组件"
+  },
+  "set_toggle_widget": {
+    "message": "开关 $1 小组件"
+  },
+  "set_undo": {
+    "message": "撤销"
+  },
+  "sort_az": {
+    "message": "A–Z"
+  },
+  "stats_high": {
+    "message": "最高"
+  },
+  "stats_low": {
+    "message": "最低"
+  },
+  "stats_mkt_cap": {
+    "message": "市值"
+  },
+  "stats_vol_24h": {
+    "message": "24小时成交量"
+  },
+  "ticker_compact": {
+    "message": "精简 (43.2K)"
+  },
+  "ticker_full": {
+    "message": "完整 (43,250)"
+  },
+  "toggle_off": {
+    "message": "关"
+  },
+  "toggle_on": {
+    "message": "开"
+  },
+  "tour_back": {
+    "message": "上一步"
+  },
+  "tour_chapter_calling_a_square": {
+    "message": "预测一个方格"
+  },
+  "tour_chapter_making_it_yours": {
+    "message": "让它属于你"
+  },
+  "tour_chapter_reading_the_market": {
+    "message": "读懂市场"
+  },
+  "tour_chapter_start_here": {
+    "message": "从这里开始"
+  },
+  "tour_chapter_the_chart": {
+    "message": "图表"
+  },
+  "tour_chapter_your_money": {
+    "message": "你的钱"
+  },
+  "tour_done": {
+    "message": "完成"
+  },
+  "tour_key_rotate": {
+    "message": "轮播你的币种"
+  },
+  "tour_keys_intro": {
+    "message": "随时按 ? 查看完整列表。先记住这几个："
+  },
+  "tour_next": {
+    "message": "下一步"
+  },
+  "tour_skip": {
+    "message": "跳过导览"
+  },
+  "tour_text_01": {
+    "message": "每开一个新标签页，就有实时加密行情图，而且什么都不索取——不需要账号、不需要权限，关于你的任何信息都不会离开这台设备。本导览共五章二十步，随时可以跳过；设置 → 偏好设置里可以重看。"
+  },
+  "tour_text_02": {
+    "message": "当前币种及其实时价格，标签页打开时刷新，关闭时暂停。点击它，或使用方向键，在你的币种列表中切换。"
+  },
+  "tour_text_03": {
+    "message": "价格在当前显示区间内的变化——不是固定的 24 小时。点击可在百分比和金额之间切换。"
+  },
+  "tour_text_04": {
+    "message": "从最近一小时到全部历史。每个区间各自保留设置——你在 1H 上摆好的棋盘，回来时依然在。"
+  },
+  "tour_text_05": {
+    "message": "输入代号或名称。你自己的币种排在前面，选中尚未跟踪的币会自动加入。同一个搜索也用于为价格目标选币。"
+  },
+  "tour_text_06": {
+    "message": "两者都以区间起点为基准、按百分比变化绘制在同一条刻度上——绝不使用双轴，因为那正是让任意两条线看起来相关的把戏。再按一次 C 或按 Esc 可移除。"
+  },
+  "tour_text_07": {
+    "message": "T 把折线换成 K 线。G 在图表后面铺上价格与时间网格，便于读取价位。价格下方是该区间的最高价和最低价，若 K 线数据恰好已加载，还会显示成交量加权均价——绝不会仅为此发起请求。"
+  },
+  "tour_text_08": {
+    "message": "默认关闭，在设置 → 图表中。它标记价格对这个币而言异常的时刻——以该币自身的波动率为准，因此在平静的稳定币和狂野的币上都成立——点击可看到那一天前后的头条。它从不声称这些新闻就是原因，因为没人知道。"
+  },
+  "tour_text_09": {
+    "message": "一次预测就是一个断言：这个币，在这个价格区间，在这个时刻。它会在你之后打开的标签页里自动结算，并进入只属于你的战绩。没有可兑换的分数，它一文不值，也不会离开这台设备——它只是让你看清自己到底行不行。"
+  },
+  "tour_text_10": {
+    "message": "打开预测后，图表会在“现在”右侧长出一片方格棋盘。悬停某个方格，点一次是草稿，再点一次才锁定——需要两次，是因为一次误点不该敲定一个预测。拖动虚线可以在历史与棋盘之间取舍，用右上角的胶囊按钮改变一个方格的价值。"
+  },
+  "tour_text_11": {
+    "message": "在预测面板的“显示”里有一条移动幅度带。它把这个币在一格时间内实际走过的距离画成阴影——中间一半和中间 80%。它刻意不是预测：绘制前会先把方向从数据里剔除，因此一整周都在上涨的币，得到的带子也不会偏向任何一侧。它回答的是某个方格是几乎必然还是远景，而这在每个币上都是不同的问题。"
+  },
+  "tour_text_12": {
+    "message": "金额由你手动录入；如果需要成本和盈亏，还可以录入买入与卖出。FIFO、LIFO 或 HIFO 是一种申报方法，而不是税额计算，报告会逐行标明所用方法。所有内容都存在这台设备上，也没有钱包需要连接。"
+  },
+  "tour_text_13": {
+    "message": "粘贴一个公开的 Bitcoin、Ethereum、Litecoin、Dogecoin、Bitcoin Cash 或 Zcash 地址，余额就会替你读取——包括以太坊地址持有的 ERC-20 代币，只需一次请求。地址只会发送给余额服务；若某条链读不了，PriceTab 会告诉你那是哪条链，而不是让你去检查一个完全正确的地址。"
+  },
+  "tour_text_14": {
+    "message": "告诉我：当 BTC 涨破某个数字、当它一天内波动 5%、或当我持有的一切价值低于 X 时。你会在下一个新标签页里得知，夜里触发的也能找到，因为检查会回看整整一周。没有任何东西被推送给你——这正是这个扩展得以零权限的原因。"
+  },
+  "tour_text_15": {
+    "message": "每条头条都带有来源、时间和摘要，最新的在前，可按币种、按来源或输入关键词筛选。已经停止发布的来源会用红色标出自己的时间——一个死掉的源看起来和活的一模一样，正是做这件事的原因。广告是被丢弃，而不是被贴标签。"
+  },
+  "tour_text_16": {
+    "message": "读取该币多年的日收盘价，统计它每次处于某个状态之后发生了什么。每个数字都带着它基于多少次样本，而当样本太少时，它拒绝下结论。它永远不会叫你买或卖——在 21,669 个日收盘价上检验的九条教科书规则，没有一条经得起正确的统计校正，而把这点说出来比画个箭头更有用。"
+  },
+  "tour_text_17": {
+    "message": "自选列表、恐惧与贪婪、资金费率、未平仓量、链上手续费、区间内最大跌幅等等。在设置 → 小组件里开启，那里有现成的组合；之后可拖动排序，或悬停在某张卡片上点 × 隐藏它。"
+  },
+  "tour_text_18": {
+    "message": "一次清空所有小组件，也能一次全部找回。它们并没有被关闭，因此会按你原来的排列原样回来。"
+  },
+  "tour_text_19": {
+    "message": "币种、货币、主题、小组件和行情条，偏好设置顶部还有搜索框。模式行可一次设定其中十几项——极简、快速、交易者、持币者——但从不改动你的货币、数字格式和主题。"
+  },
+  "tour_title_change": {
+    "message": "涨跌"
+  },
+  "tour_title_clear_the_row": {
+    "message": "清空这一行"
+  },
+  "tour_title_compare_two_coins": {
+    "message": "比较两个币种"
+  },
+  "tour_title_everything_else_lives_here": {
+    "message": "其余的一切都在这里"
+  },
+  "tour_title_has_this_happened_before": {
+    "message": "这种情况以前发生过吗？"
+  },
+  "tour_title_how_far_it_usually_travels": {
+    "message": "它通常会走多远"
+  },
+  "tour_title_it_is_faster_from_the_keyboard": {
+    "message": "用键盘更快"
+  },
+  "tour_title_jump_to_any_coin": {
+    "message": "跳转到任意币种"
+  },
+  "tour_title_live_price": {
+    "message": "实时价格"
+  },
+  "tour_title_news": {
+    "message": "新闻"
+  },
+  "tour_title_or_watch_an_address": {
+    "message": "或者监视一个地址"
+  },
+  "tour_title_portfolio": {
+    "message": "投资组合"
+  },
+  "tour_title_price_targets": {
+    "message": "价格目标"
+  },
+  "tour_title_say_where_you_think_it_goes": {
+    "message": "说出你认为它会走到哪"
+  },
+  "tour_title_the_board": {
+    "message": "棋盘"
+  },
+  "tour_title_time_range": {
+    "message": "时间区间"
+  },
+  "tour_title_two_more_ways_to_read_it": {
+    "message": "另外两种读法"
+  },
+  "tour_title_welcome_to_pricetab": {
+    "message": "欢迎使用 PriceTab"
+  },
+  "tour_title_what_happened_here": {
+    "message": "这里发生了什么？"
+  },
+  "tour_title_widgets": {
+    "message": "小组件"
+  },
+  "wdesc_altcoin_season": {
+    "message": "山寨币是否跑赢比特币？"
+  },
+  "wdesc_btc_fees": {
+    "message": "当前费率，以及一笔典型 141 vB 转账的花费"
+  },
+  "wdesc_eth_gas": {
+    "message": "当前 Gas 价格，以及一笔普通 ETH 转账的花费"
+  },
+  "wdesc_fear_greed": {
+    "message": "市场情绪指数，0 到 100"
+  },
+  "wdesc_funding_rate": {
+    "message": "永续合约中多头支付给空头的费用"
+  },
+  "wdesc_halving_countdown": {
+    "message": "距离下一次比特币减半的时间"
+  },
+  "wdesc_liquidations": {
+    "message": "过去 24 小时的强制平仓"
+  },
+  "wdesc_long_short_ratio": {
+    "message": "交易者当前的持仓方向"
+  },
+  "wdesc_market_overview": {
+    "message": "总市值与 BTC/ETH 占比"
+  },
+  "wdesc_open_interest": {
+    "message": "未平仓合约的价值"
+  },
+  "wdesc_rsi_widget": {
+    "message": "当前区间内 0–100 的动能"
+  },
+  "wdesc_top_movers": {
+    "message": "今日涨跌最大的币"
+  },
+  "wdesc_watchlist": {
+    "message": "你的币种，24 小时彩色网格"
+  },
+  "wdesc_worst_fall": {
+    "message": "当前区间内从高点到低点的最深跌幅"
+  },
+  "wgroup_market": {
+    "message": "市场"
+  },
+  "wgroup_network": {
+    "message": "网络"
+  },
+  "wgroup_portfolio": {
+    "message": "投资组合"
+  },
+  "wgroup_trader": {
+    "message": "交易"
+  },
+  "widget_about_30_min": {
+    "message": "约 30 分钟"
+  },
+  "widget_altcoin_season": {
+    "message": "山寨币季节"
+  },
+  "widget_annualized": {
+    "message": "年化 $1%"
+  },
+  "widget_btc_dom": {
+    "message": "BTC 占比 $1%"
+  },
+  "widget_btc_fees": {
+    "message": "BTC 手续费"
+  },
+  "widget_btc_halving": {
+    "message": "BTC 减半"
+  },
+  "widget_eta": {
+    "message": "预计：$1"
+  },
+  "widget_eth_gas": {
+    "message": "ETH Gas"
+  },
+  "widget_fear_greed": {
+    "message": "恐惧与贪婪"
+  },
+  "widget_fee_fast": {
+    "message": "最快"
+  },
+  "widget_fee_hour": {
+    "message": "1 小时"
+  },
+  "widget_fee_to_send": {
+    "message": "转账约 $1 · $2"
+  },
+  "widget_from_to": {
+    "message": "$1 至 $2"
+  },
+  "widget_funding_rate": {
+    "message": "$1 资金费率"
+  },
+  "widget_hide_all": {
+    "message": "隐藏所有小组件"
+  },
+  "widget_hide_one": {
+    "message": "隐藏$1"
+  },
+  "widget_liquidations": {
+    "message": "$1 24小时爆仓"
+  },
+  "widget_loading": {
+    "message": "加载中"
+  },
+  "widget_long_short": {
+    "message": "$1 多空比"
+  },
+  "widget_market_cap": {
+    "message": "总市值"
+  },
+  "widget_next_block": {
+    "message": "下一个区块"
+  },
+  "widget_none": {
+    "message": "无"
+  },
+  "widget_only_rose": {
+    "message": "该区间内只有上涨"
+  },
+  "widget_open_interest": {
+    "message": "$1 未平仓量"
+  },
+  "widget_peak_to_trough": {
+    "message": "从高点到低点"
+  },
+  "widget_rsi": {
+    "message": "$1 RSI · $2"
+  },
+  "widget_show_hidden": {
+    "message": "显示隐藏的小组件"
+  },
+  "widget_top_movers": {
+    "message": "24小时涨跌榜"
+  },
+  "widget_under_a_cent": {
+    "message": "低于 $1"
+  },
+  "widget_unit_days": {
+    "message": "天"
+  },
+  "widget_unit_hours": {
+    "message": "时"
+  },
+  "widget_unit_minutes": {
+    "message": "分"
+  },
+  "widget_unit_years": {
+    "message": "年"
+  },
+  "widget_watchlist": {
+    "message": "自选列表"
+  },
+  "widget_worst_fall": {
+    "message": "$1 最大跌幅 · $2"
+  },
+  "wname_altcoin_season": {
+    "message": "山寨币季节"
+  },
+  "wname_btc_fees": {
+    "message": "BTC 手续费"
+  },
+  "wname_eth_gas": {
+    "message": "ETH Gas"
+  },
+  "wname_fear_greed": {
+    "message": "恐惧与贪婪"
+  },
+  "wname_funding_rate": {
+    "message": "资金费率"
+  },
+  "wname_halving_countdown": {
+    "message": "BTC 减半倒计时"
+  },
+  "wname_liquidations": {
+    "message": "24小时爆仓"
+  },
+  "wname_long_short_ratio": {
+    "message": "多空比"
+  },
+  "wname_market_overview": {
+    "message": "市场概览"
+  },
+  "wname_open_interest": {
+    "message": "未平仓量"
+  },
+  "wname_rsi_widget": {
+    "message": "RSI"
+  },
+  "wname_top_movers": {
+    "message": "涨跌榜"
+  },
+  "wname_watchlist": {
+    "message": "自选列表"
+  },
+  "wname_worst_fall": {
+    "message": "最大跌幅"
+  },
+  "wsize_compact": {
+    "message": "紧凑"
+  },
+  "wsize_default": {
+    "message": "默认"
+  },
+  "wsize_large": {
+    "message": "大"
+  },
+  "wsize_xlarge": {
+    "message": "特大"
+  }
+}

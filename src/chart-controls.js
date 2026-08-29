@@ -408,8 +408,8 @@ class Overview extends PureComponent {
         OverviewItem,
         {
           onClick: this.props.cycleCoinIndex,
-          label: `${coin} Price`,
-          title: "Next coin",
+          label: msg("chart_coin_price", "$1 Price", coin),
+          title: msg("chart_next_coin", "Next coin"),
           dataTour: "price",
           flash: this.state.flash,
         },
@@ -426,8 +426,12 @@ class Overview extends PureComponent {
         OverviewItem,
         {
           onClick: this.togglePercentage,
-          label: `${calcPercentage ? "Percent" : "Price"} Change`,
-          title: calcPercentage ? "Switch to price change" : "Switch to percent change",
+          label: calcPercentage
+            ? msg("chart_percent_change", "Percent Change")
+            : msg("chart_price_change", "Price Change"),
+          title: calcPercentage
+            ? msg("chart_switch_to_price", "Switch to price change")
+            : msg("chart_switch_to_percent", "Switch to percent change"),
           dataTour: "change",
         },
         delta,

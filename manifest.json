@@ -1,7 +1,8 @@
 {
   "manifest_version": 3,
   "name": "PriceTab - Crypto Charts on Every New Tab",
-  "version": "1.4.0",
+  "version": "1.5.0",
+  "default_locale": "en",
   "description": "Every new tab opens a live crypto chart. Follow your coins, call where the price goes next, and keep the score. No account.",
   "chrome_url_overrides": {
     "newtab": "index.html"

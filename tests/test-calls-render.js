@@ -1685,7 +1685,9 @@ const T = Date.now();
     const state = await page.evaluate(`(() => {
       const c = ${CHART};
       const box = c.getBoundingClientRect();
-      const mesh = c.querySelector("g[mask]");
+      // By name, not by being the first masked group — see the note on
+      // pt-mesh in chart-board.js
+      const mesh = c.querySelector("g.pt-mesh");
       const grip = c.querySelector(".pt-now-grip");
       const zoom = c.querySelector(".pt-zoom");
       const ramp = [...c.querySelectorAll("stop")]

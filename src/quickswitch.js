@@ -236,16 +236,20 @@ class QuickSwitch extends PureComponent {
           type: "text",
           value: this.state.query,
           placeholder: this.props.compare
-            ? `Compare ${this.props.exclude || ""} with…`.replace("  ", " ")
-            : "Jump to a coin…",
+            ? msg("qs_compare_with", "Compare $1 with…", this.props.exclude || "").replace("  ", " ")
+            : msg("qs_jump_placeholder", "Jump to a coin…"),
           "aria-label": this.props.compare
-            ? "Compare with a coin"
-            : "Jump to a coin",
+            ? msg("qs_compare_label", "Compare with a coin")
+            : msg("qs_jump_label", "Jump to a coin"),
           onChange: this.handleChange,
           onKeyDown: this.handleKeyDown,
         }),
         results.length === 0
-          ? React.createElement(QuickEmpty, null, "No coin matches that.")
+          ? React.createElement(
+              QuickEmpty,
+              null,
+              msg("qs_no_match", "No coin matches that."),
+            )
           : React.createElement(
               QuickList,
               null,
