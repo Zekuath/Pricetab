@@ -1,6 +1,6 @@
 # PriceTab — Launch Checklist
 
-A concrete, step-by-step plan to get the first real users for a zero-install, free Chrome extension. Work top to bottom. Copy-paste templates are provided — edit names/links before posting.
+A concrete, step-by-step plan to get the first real users for a free Chrome extension with zero permissions at install. Work top to bottom. Copy-paste templates are provided — edit names/links before posting.
 
 > Reality check: the single biggest lever for a 0-review listing is **getting the first 5–10 honest reviews** and **strong first-3 screenshots**. Do those before any big launch push.
 
@@ -9,7 +9,8 @@ A concrete, step-by-step plan to get the first real users for a zero-install, fr
 ## Phase 0 — Before you tell anyone (store readiness)
 
 - [x] Upload the new build with the new title + description (`docs/store/STORE_DESCRIPTION.md`) — 1.3.0 live since August 2026.
-- [ ] Host the privacy policy and put the URL in the **Privacy** field (not the description). GitHub Pages from `privacy.html` works.
+- [x] Host the privacy policy — `https://zekuath.github.io/Pricetab/privacy.html` answered HTTP 200 on 28 Sep 2026.
+- [ ] Publish the current policy (the live page is still the 6 Aug copy), then put its URL in the **Privacy** field, not the description.
 - [ ] Add a support email in the dashboard (a plain Gmail is fine).
 - [ ] Replace outdated screenshots with fresh captures (asset pipeline in `assets/mockups/`).
 - [ ] First 3 screenshots must each show **one clear benefit** — they appear in search results.
@@ -31,18 +32,18 @@ Reviews are social proof. A listing with 0 reviews converts far worse than one w
 ## Phase 2 — Owned channels (week 1–2)
 
 ### GitHub (organic discovery + trust)
-- [ ] Polish the repo README: hero screenshot, one-line pitch, install link, feature list, privacy note.
+- [x] Polish the README in the working tree: hero image, one-line pitch, install link, feature list and privacy note.
 - [ ] Add repo **topics**: `chrome-extension`, `cryptocurrency`, `new-tab`, `bitcoin`, `crypto-charts`, `manifest-v3`.
-- [ ] Add the Chrome Web Store badge/link at the top.
+- [x] Add the Chrome Web Store badge/link at the top of the updated README.
 
 ### X / Twitter — build-in-public + launch thread
 Template (launch thread, post 1):
 ```
 I turned my browser's new tab into a live crypto dashboard 📈
 
-PriceTab: real-time charts for 60+ coins, market widgets (Fear & Greed, funding, liquidations…), and the price right in your tab title.
+PriceTab: real-time charts for 80+ coins, market widgets (Fear & Greed, funding, liquidations…), and the price right in your tab title.
 
-Free. No account. No tracking. Zero permissions.
+Free. No account. No tracking. Zero permissions at install.
 
 🧵👇
 ```
@@ -65,7 +66,7 @@ Hi PH 👋 I'm the maker of PriceTab.
 
 I kept opening price sites in a new tab all day, so I made the new tab BE the price site. Every time you open one, you get a live chart for your coins + optional market widgets (Fear & Greed, funding rate, liquidations, halving countdown…).
 
-It's free, needs zero permissions, has no account and no tracking — your watchlist stays in your browser.
+It's free, asks for no permissions at install, has no account and no tracking — your watchlist stays in your browser.
 
 Would genuinely love your feedback on what to build next. AMA!
 ```
@@ -82,9 +83,9 @@ I built PriceTab because I was tired of opening a price site every time I wanted
 
 Now every new tab shows a live chart for my coins, the price in the tab title, and optional widgets like Fear & Greed and funding rates.
 
-Tech notes for anyone curious: Manifest V3, React + D3, zero permissions, all data in localStorage, Coinbase public API. No build step — single bundled file.
+Tech notes for anyone curious: Manifest V3, React + D3, zero permissions at install, browser-local records and public market APIs. No build step — ordered local scripts.
 
-No account, and nothing leaves your machine. Link in comments (per sub rules). Happy to answer anything.
+No account and no telemetry; your settings and records stay on your machine. Link in comments (per sub rules). Happy to answer anything.
 ```
 
 ### Hacker News — Show HN

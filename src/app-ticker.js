@@ -122,7 +122,18 @@ const tickerHandlers = (app) => ({
        * capped at `PAGE_TICKER_FALLBACK_MAX`. See the note on that constant
        * for the measurement that set it. */
       const mine = app.state.coinOptions || [];
-      const order = [...mine, ...SUGGESTED_COINS.filter((c) => !mine.includes(c))];
+      /* **As far as something on screen reads it** (27 Sep 2026). The
+       * watchlist is on by default and reads only this person's coins; the
+       * rest of the list is for the bar and the movers. Measured with both of
+       * those off: every new tab more than a minute after the last one sent
+       * 24–28 requests for twelve coins Coinlore's top 100 does not carry —
+       * a spot price and a day's history each — which nothing on the page
+       * drew. With the watchlist alone the sweep stops at the coins it
+       * shows. */
+      const order =
+        app.coinSweepScope() === "mine"
+          ? mine.slice()
+          : [...mine, ...SUGGESTED_COINS.filter((c) => !mine.includes(c))];
       const stale = order
         .filter((coin) => {
           if (!SUGGESTED_COINS.includes(coin)) return false;
@@ -176,13 +187,26 @@ const tickerHandlers = (app) => ({
 
     // The all-coin sweep feeds the page ticker AND the watchlist / top-movers
     // widgets, so it should run whenever ANY of them is active.
-    needsCoinSweep: () => {
+    needsCoinSweep: () => Boolean(app.coinSweepScope()),
+
+    /* What the sweep is for: "all" while the bar or the movers are drawn,
+       "mine" while only the watchlist is, null for nothing. */
+    coinSweepScope: () => {
       const w = app.state.widgets || {};
-      return app.state.pageTicker || w.watchlist || w.topMovers;
+      if (app.state.pageTicker || w.topMovers) return "all";
+      if (w.watchlist) return "mine";
+      return null;
     },
 
     ensureCoinSweep: () => {
+      const scope = app.coinSweepScope();
+      const widened = app._sweepScope === "mine" && scope === "all";
+      app._sweepScope = scope;
       if (app.needsCoinSweep()) {
+        /* The bar or the movers switched on while only the watchlist was
+           being swept: the rest of the list is asked for now, not at the
+           next two-minute tick. */
+        if (widened && app.pageTickerRefreshInterval) app.fetchPageTickerData();
         if (!app.pageTickerRefreshInterval) {
           app.fetchPageTickerData();
           app.pageTickerRefreshInterval = setInterval(

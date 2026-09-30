@@ -54,6 +54,7 @@ AGENTS.md
 GEMINI.md
 docs/internal
 docs/product/TODAY.md
+docs/product/derivatives-simulator
 .github/copilot-instructions.md
 .github/instructions
 .vscode

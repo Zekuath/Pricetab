@@ -57,8 +57,27 @@ const offeredLocales = () => {
 const readCatalogue = (code) =>
   JSON.parse(fs.readFileSync(path.join(LOCALES, code, "messages.json"), "utf8"));
 
-const placeholdersIn = (message) =>
-  [...new Set(String(message).match(/\$\d+/g) || [])].sort();
+/* Which substitutions a message actually carries.
+ *
+ * Two ways to carry one, and both count. `$1` straight in the text is the
+ * common form. The other is Chrome's **named** placeholder — `$FIRST$` in the
+ * text with `placeholders: { first: { content: "$1" } }` beside it — which is
+ * the only way to put two substitutions **side by side**: written plainly,
+ * `$1$2` reads as a placeholder named `1`, and the extension will not load at
+ * all. Japanese, Korean and Chinese need exactly that adjacency, because they
+ * do not put a space between the number and its unit.
+ *
+ * Reading only the text called those translations broken for carrying their
+ * values correctly. */
+const placeholdersIn = (message, entry) => {
+  const found = new Set(String(message).match(/\$\d+/g) || []);
+  for (const p of Object.values((entry && entry.placeholders) || {})) {
+    for (const n of String((p && p.content) || "").match(/\$\d+/g) || []) {
+      found.add(n);
+    }
+  }
+  return [...found].sort();
+};
 
 check("every offered language has a catalogue, and every catalogue is offered", () => {
   const out = [];
@@ -114,8 +133,8 @@ check("every translation carries the English key set, with the same placeholders
         out.push(`${code}.${key} has no message`);
         continue;
       }
-      const want = placeholdersIn(en[key].message);
-      const got = placeholdersIn(message);
+      const want = placeholdersIn(en[key].message, en[key]);
+      const got = placeholdersIn(message, cat[key]);
       if (want.join(",") !== got.join(",")) {
         out.push(
           `${code}.${key} has placeholders ${got.join(" ") || "(none)"} where English has ` +
@@ -147,8 +166,51 @@ check("the manifest declares a default locale that exists", () => {
     : [`default_locale is "${manifest.default_locale}" but ${file} does not exist`];
 });
 
+/* ── no two positional placeholders side by side ─────────────────────────
+ *
+ * `$1$2` does not mean "substitution one then substitution two". Chrome's
+ * named-placeholder syntax is `$NAME$`, so it reads the `$1$` and looks for a
+ * placeholder called `1`; not finding one it refuses the **whole extension**:
+ *
+ *     Variable $1$ used but not defined.
+ *     Could not load manifest.
+ *
+ * Nothing in the app fails first — the extension simply will not install, and
+ * the message names a variable no one wrote. Two strings carried this shape
+ * ("Hit $1$2", "Removed $1$2") across all thirteen catalogues.
+ *
+ * A hand-rolled check for this missed it once already by looking for
+ * `$[A-Za-z_]\w*$` — the name Chrome objects to is a **digit**, so the
+ * pattern that finds real named placeholders steps straight over the one
+ * shape that breaks. This asks the question the loader asks: any `$…$` whose
+ * name is not declared, digits included.
+ */
+check("no message reads as an undeclared placeholder", () => {
+  const offenders = [];
+  for (const locale of fs.readdirSync(LOCALES)) {
+    const file = path.join(LOCALES, locale, "messages.json");
+    if (!fs.existsSync(file)) continue;
+    const catalogue = JSON.parse(fs.readFileSync(file, "utf8"));
+    for (const [key, entry] of Object.entries(catalogue)) {
+      const text = (entry && entry.message) || "";
+      const declared = new Set(
+        Object.keys((entry && entry.placeholders) || {}).map((p) => p.toLowerCase()),
+      );
+      for (const name of text.match(/\$[A-Za-z0-9_]+\$/g) || []) {
+        if (!declared.has(name.slice(1, -1).toLowerCase())) {
+          offenders.push(
+            `${locale}.${key} uses ${name} with nothing declaring it — Chrome refuses the manifest`,
+          );
+        }
+      }
+    }
+  }
+  return offenders;
+});
+
+console.log("ALL I18N TESTS PASSED");
+
 if (failures) {
   console.error(`\n${failures} I18N PROBLEM(S)`);
   process.exit(1);
 }
-console.log("ALL I18N TESTS PASSED");

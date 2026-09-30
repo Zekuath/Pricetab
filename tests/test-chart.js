@@ -38,6 +38,12 @@ const sandbox = {
    * interpolated into a styled block by every file has to be stubbed
    * here too, or the file throws before a single assertion runs. */
   themedScrollbar: "",
+  touchTarget: "",
+  motionMs: (ms) => ms,
+  reducedMotion: () => false,
+  touchBox: "",
+  besideScreenSpine: "",
+  refusedField: "",
   React: {
     Component: class {},
     createElement: () => null,
@@ -95,7 +101,7 @@ vm.createContext(sandbox);
  * `chart.js` calls `chartBoardGeometry` from the constructor, and a sandbox
  * that omits it fails at the first `new LineBase()` rather than at an
  * assertion. */
-for (const f of ["i18n.js", "config.js", "utils.js", "chart-board.js", "chart.js"]) {
+for (const f of ["i18n.js", "config.js", "utils.js", "chart-board.js", "chart-axes.js", "chart-tools.js", "chart-studies.js", "chart.js", "chart-image.js"]) {
   vm.runInContext(fs.readFileSync(path.join(__dirname, "..", "src", f), "utf8"), sandbox, {
     filename: f,
   });
@@ -354,6 +360,75 @@ assert.strictEqual((upD.match(/M/g) || []).length, 2, "up path: wick + body for 
 assert.strictEqual((downD.match(/M/g) || []).length, 2, "down path: wick + body for its one bar");
 assert.ok(!upD.includes("NaN") && !downD.includes("NaN"), "no NaN leaks into the path");
 assert.strictEqual(run("candlePathData(null, true)"), "", "no geometry → empty path");
+
+/* **Every drawn edge lands on a pixel.** A 1px wick at a fractional x is
+   drawn across two columns at half strength — measured on the 1M chart before
+   this, not one of 34 wicks sat on a pixel and every one read as a grey
+   smear. The path carries no fractional coordinate at all now: bodies and
+   wicks are both integer rectangles. */
+sandbox.__crisp = json("scaleCandles(__sc, 100, 201, 10)"); // an odd width, so the step is fractional
+const crispD =
+  run("candlePathData(__crisp, true)") + run("candlePathData(__crisp, false)");
+assert.ok(crispD.length, "there is a path to check");
+assert.ok(
+  !/[0-9]\.[0-9]/.test(crispD),
+  `no fractional coordinate reaches the path: ${crispD}`,
+);
+// Wick and body per bar, and the wick is the narrower of the two
+{
+  const rects = [...crispD.matchAll(/M(-?\d+) (-?\d+)h(-?\d+)v(-?\d+)/g)].map((m) => ({
+    x: +m[1],
+    y: +m[2],
+    w: +m[3],
+    h: +m[4],
+  }));
+  assert.strictEqual(rects.length, 4, "two bars, a wick and a body each");
+  const wicks = rects.filter((_, i) => i % 2 === 0);
+  const bodies = rects.filter((_, i) => i % 2 === 1);
+  assert.ok(
+    wicks.every((w, i) => w.w <= bodies[i].w),
+    "a wick is never wider than its body",
+  );
+  assert.ok(
+    wicks.every((w, i) => w.x >= bodies[i].x && w.x + w.w <= bodies[i].x + bodies[i].w),
+    "and sits inside it, so the two read as one candle",
+  );
+  assert.ok(rects.every((r) => r.h >= 1), "nothing is drawn with no height");
+}
+
+/* **The gap between bars is a gap, not a share of the step.** It was
+   `step * 0.7`, which at the spacing this chart actually draws left a
+   six-pixel hole between bodies. */
+{
+  const flats = (n) =>
+    JSON.stringify(
+      Array.from({ length: n }, (_, i) => ({ time: i, open: 10, high: 12, low: 9, close: 11 })),
+    );
+  // 20 bars across 400px of plot: a 20px step, which is what the 1M chart draws
+  const wide = json(`scaleCandles(${flats(20)}, 100, 424, 12)`);
+  assert.ok(
+    20 - wide.barW <= 3 && 20 - wide.barW >= 1,
+    `the gap stays between one and three pixels: bar ${wide.barW} of a 20px step`,
+  );
+  // Past 20px a body stops growing, or a handful of candles read as blocks
+  const few = json(`scaleCandles(${flats(4)}, 100, 424, 12)`);
+  assert.strictEqual(few.barW, 20, "a body is capped, however much room there is");
+  // And under four pixels of step the gap shrinks with it rather than eating
+  // the bar: 200 bars on a phone still have to be separable
+  const dense = json(`scaleCandles(${flats(200)}, 100, 424, 12)`);
+  assert.ok(dense.barW >= 1 && dense.barW < 2, `a dense chart keeps a visible bar: ${dense.barW}`);
+}
+
+/* **The price plot stops where the volume band starts.** Without a bottom
+   the bars run to `height - padding`; with one they end there instead, which
+   is what keeps the band from being drawn over the last fifth of them. */
+{
+  const full = json("scaleCandles(__sc, 200, 200, 10)");
+  const capped = json("scaleCandles(__sc, 200, 200, 10, null, null, 150)");
+  assert.strictEqual(full.bars[0].yLow, 190, "no bottom given → the plot ends at height - padding");
+  assert.strictEqual(capped.bars[0].yLow, 150, "a bottom given → the lowest wick ends exactly there");
+  assert.strictEqual(capped.bars[1].yHigh, 10, "…and the top of the plot has not moved");
+}
 
 /* ── candle windows line up with their periods ──────────────────────────────
  * Each period must be divided into even candles that cover exactly that
@@ -852,6 +927,32 @@ assert.ok(
   `flat pair keeps a minimum span, got ${flatPair.high - flatPair.low}`,
 );
 
+/* **Two series, one window** (28 Sep 2026). With candlesticks on, the
+ * chart's series and the compared coin's come from different requests and
+ * need not cover the same time: a chart series reaching ten steps further
+ * back put the compared line in the right-hand sliver and measured the two
+ * "% since the start" from different starts. Both are cut to the time they
+ * share, from each one's own price at the later start. */
+sandbox.__long = Array.from({ length: 21 }, (_, i) => ({ price: 100 + i, time: new Date(i * 1000) }));
+sandbox.__short = Array.from({ length: 11 }, (_, i) => ({ price: 50 + (i % 2), time: new Date((10 + i) * 1000) }));
+const aligned = json("alignComparison(__long, __short)");
+assert.strictEqual(aligned[0].length, 11, "the longer series is cut to the shared ten seconds (and its base point)");
+assert.strictEqual(new Date(aligned[0][0].time).getTime(), 10000, "…starting where the shorter one starts");
+const cut = json("scaleComparison(__long, __short, 200, 400, 20)");
+assert.ok(Math.abs(cut.a[0].time - 20) < 1e-6 && Math.abs(cut.b[0].time - 20) < 1e-6,
+  "both lines start at the left edge, not one of them in the right-hand half");
+assert.ok(Math.abs(cut.lastA - (10 / 110) * 100) < 1e-9, `the chart's coin is measured from the shared start: 110 → 120 is +9.09%, not +20% from 100 — got ${cut.lastA}`);
+assert.deepStrictEqual(json("alignComparison(__long, [{ price: 1, time: new Date(99000) }, { price: 2, time: new Date(99500) }])"), [[], []],
+  "two series that share no time share no chart");
+
+/* How often the two moved the same way — a count with its denominator. */
+sandbox.__upA = Array.from({ length: 6 }, (_, i) => ({ price: 100 + i, time: new Date(i * 1000) }));
+sandbox.__zig = Array.from({ length: 6 }, (_, i) => ({ price: 10 + (i % 2), time: new Date(i * 1000) }));
+assert.deepStrictEqual(json("compareSameDirection(__upA, __upA)"), { same: 5, n: 5 }, "a coin moves the same way as itself every step");
+assert.deepStrictEqual(json("compareSameDirection(__upA, __zig)"), { same: 3, n: 5 },
+  "a steady rise against a zigzag agrees on the zig's rising steps only");
+assert.strictEqual(run("compareSameDirection(__upA, [])"), null, "nothing to count against is null, not zero of zero");
+
 /* The 0% baseline is what both lines are read against, so it must always be
  * drawable. Both series start at 0% by construction, so the domain can never
  * sit wholly above or below it — asserted here rather than assumed, since the
@@ -895,7 +996,14 @@ assert.strictEqual(
 
 assert.strictEqual(run("formatSignedPercent(4.2)"), "+4.20%", "gains carry a sign");
 assert.strictEqual(run("formatSignedPercent(-1.5)"), "-1.50%", "so do losses");
-assert.strictEqual(run("formatSignedPercent(0)"), "+0.00%", "flat reads as zero, not blank");
+assert.strictEqual(run("formatSignedPercent(0)"), "0.00%", "flat reads as zero, not blank — and with no sign");
+// A sign is never a rounding artefact: what prints as zero carries none
+assert.strictEqual(run("formatSignedPercent(-0.001)"), "0.00%", "a loss too small to print is not a loss");
+assert.strictEqual(run("signedFixed(-0.04, 1)"), "0.0", "-0.04 at one place is a dead heat, not \"-0.0\"");
+assert.strictEqual(run("signedFixed(0.04, 1)"), "0.0", "…and +0.04 is not \"+0.0\"");
+assert.strictEqual(run("signedFixed(-0.04, 2)"), "−0.04", "at two places it has a direction again, with a real minus");
+assert.strictEqual(run("signedFixed(0.06, 1)"), "+0.1", "a rise that prints keeps its plus");
+assert.strictEqual(run("signedFixed(NaN, 1)"), "", "junk prints nothing");
 assert.strictEqual(run("formatSignedPercent(NaN)"), "", "junk prints nothing");
 
 /* ── comparison readout and labels ───────────────────────────────────────
@@ -950,9 +1058,14 @@ assert.ok(
   /%$/.test(cmp.rowValueRefs[1].current.textContent),
   "values are percentages, not prices",
 );
-// Five rows exist for OHLC; comparison uses two and the rest must be hidden,
-// not left showing the last coin's high and low
-for (const r of [2, 3, 4]) {
+/* The third row is the gap at that moment (28 Sep 2026): the compared
+   coin's move minus this one's, in points — the strip's figure, read at
+   the cursor. */
+assert.strictEqual(cmp.rowLabelRefs[2].current.textContent, "Gap", "the third row is the gap between them");
+assert.ok(/ pts$/.test(cmp.rowValueRefs[2].current.textContent), "…in points", cmp.rowValueRefs[2].current.textContent);
+// Five rows exist for OHLC; comparison uses three and the rest must be
+// hidden, not left showing the last coin's low and volume
+for (const r of [3, 4]) {
   assert.strictEqual(
     cmp.rowLabelRefs[r].current.attrs.visibility,
     "hidden",
@@ -1188,6 +1301,81 @@ for (const [name, node] of [["A", labelA], ["B", labelB]]) {
     "below the sample floor it returns nothing to draw",
   );
   assert.strictEqual(run("travelBand([], 5, 0.25, 0.75)"), null, "no series, no band");
+
+  /* CALL ODDS — travelBand read the other way round: given a band, how often
+   * has this series landed in it? It is what tells a careful call from a lucky
+   * one, so the properties that matter are the ones that would let an easy
+   * call score like a hard one. */
+  {
+    /* A seeded walk rather than a sine, because a periodic series returns to
+     * where it started and every horizon then looks equally easy — a fixture
+     * that agrees with the code for the wrong reason. */
+    let seed = 12345;
+    const rnd = () => {
+      seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+      return seed / 0x7fffffff - 0.5;
+    };
+    let p = 100;
+    sandbox.__walk = Array.from({ length: 600 }, () => {
+      p *= Math.exp(rnd() * 0.02);
+      return { price: p };
+    });
+    sandbox.__spot = sandbox.__walk[sandbox.__walk.length - 1].price;
+    const at = (lo, hi, steps = 10) =>
+      json(`callOdds(__walk, ${steps}, __spot * ${lo}, __spot * ${hi}, __spot)`).p;
+
+    // Wider band, likelier square — or the number is not a probability
+    assert.ok(
+      at(0.995, 1.005) < at(0.98, 1.02) && at(0.98, 1.02) < at(0.95, 1.05),
+      "a wider band is never less likely than the band inside it",
+    );
+    assert.strictEqual(at(1.06, 1.1), 0, "a square the series never reached scores zero");
+
+    /* The term structure, and the reason this is worth having at all: the same
+     * band is harder the further ahead it is called. A tally that cannot see
+     * this cannot tell a bold call from a safe one. */
+    assert.ok(
+      at(0.99, 1.01, 5) > at(0.99, 1.01, 20),
+      "the same square is harder further out",
+    );
+
+    /* Direction is not information — the same rule the travel band above is
+     * built on. On a series that quadrupled, an upward square and its mirror
+     * both score zero, and only the square around the price now scores. Before
+     * the drift was taken off the samples *and left on the band*, the two
+     * cancelled and this read 1.000 against 0.000: a trend wearing a
+     * probability. */
+    sandbox.__spotRise = sandbox.__rise[sandbox.__rise.length - 1].price;
+    const up = json("callOdds(__rise, 10, __spotRise * 1.001, __spotRise * 1.06, __spotRise)").p;
+    const down = json("callOdds(__rise, 10, __spotRise * 0.94, __spotRise * 0.999, __spotRise)").p;
+    assert.ok(
+      Math.abs(up - down) < 0.05,
+      `no direction favoured on a series that quadrupled (up ${up}, down ${down})`,
+    );
+
+    // Scale is not information, exactly as for the band
+    sandbox.__walk10 = sandbox.__walk.map((q) => ({ price: q.price * 10 }));
+    sandbox.__spot10 = sandbox.__spot * 10;
+    assert.strictEqual(
+      json("callOdds(__walk10, 10, __spot10 * 0.98, __spot10 * 1.02, __spot10)").p,
+      at(0.98, 1.02),
+      "ten times the price is the same odds",
+    );
+
+    // Refuses rather than guesses, and refuses nonsense outright
+    assert.strictEqual(
+      run("callOdds(__walk.slice(0, 8), 5, 99, 101, 100)"),
+      null,
+      "below the sample floor it says nothing",
+    );
+    assert.strictEqual(
+      run("callOdds(__walk, 10, __spot * 1.05, __spot * 1.01, __spot)"),
+      null,
+      "a band whose top is under its bottom is not a band",
+    );
+    assert.strictEqual(run("callOdds(null, 5, 1, 2, 1)"), null, "no series, no odds");
+    assert.strictEqual(run("callOdds(__walk, 0, 1, 2, 1)"), null, "no horizon, no odds");
+  }
   assert.strictEqual(run("travelBand(__rise, 0, 0.25, 0.75)"), null, "no horizon, no band");
 
   // A flat series has travelled nowhere, and says so rather than dividing by it
@@ -1258,6 +1446,127 @@ for (const [name, node] of [["A", labelA], ["B", labelB]]) {
     null, "nothing paid in, nothing to earn a rate on");
   assert.strictEqual(rate([]), null, "no flows, no answer");
   assert.strictEqual(run("MIN_XIRR_DAYS"), 14);
+}
+
+/* ── chartYToPrice: the inverse, and it has to agree with the map ───────── */
+
+/* A price picked off the chart is drawn back as a line at the same height,
+ * so the two functions are one statement seen twice. Anything that makes them
+ * disagree — a different domain, a different padding, a different axis — is a
+ * target that lands where you did not point. */
+{
+  /* **The sandbox's own stubs cannot answer this one.** `extent` here returns
+     a fixed [0, 1] and `scaleLinear` has no `invert`, so both functions would
+     be measured against a fake that ignores its arguments. For this block
+     only they are replaced with faithful ones and then put back — what is
+     under test is that the map and its inverse agree on the domain, the
+     range and the padding, and that needs a scale that really scales. */
+  const stubs = { extent: sandbox.extent, scaleLinear: sandbox.scaleLinear, scaleLog: sandbox.scaleLog };
+  const linear = () => {
+    let d = [0, 1];
+    let r = [0, 1];
+    const at = (v) => r[0] + ((v - d[0]) / (d[1] - d[0])) * (r[1] - r[0]);
+    at.domain = (x) => (x ? ((d = x), at) : d);
+    at.range = (x) => (x ? ((r = x), at) : r);
+    at.invert = (y) => d[0] + ((y - r[0]) / (r[1] - r[0])) * (d[1] - d[0]);
+    return at;
+  };
+  const log = () => {
+    let d = [1, 10];
+    let r = [0, 1];
+    const at = (v) =>
+      r[0] + ((Math.log(v) - Math.log(d[0])) / (Math.log(d[1]) - Math.log(d[0]))) * (r[1] - r[0]);
+    at.domain = (x) => (x ? ((d = x), at) : d);
+    at.range = (x) => (x ? ((r = x), at) : r);
+    at.invert = (y) =>
+      Math.exp(
+        Math.log(d[0]) + ((y - r[0]) / (r[1] - r[0])) * (Math.log(d[1]) - Math.log(d[0])),
+      );
+    return at;
+  };
+  sandbox.extent = (data, fn) => {
+    let lo = Infinity;
+    let hi = -Infinity;
+    for (const d of data) {
+      const v = fn(d);
+      if (v < lo) lo = v;
+      if (v > hi) hi = v;
+    }
+    return [lo, hi];
+  };
+  sandbox.scaleLinear = linear;
+  sandbox.scaleLog = log;
+  run(`__series = Array.from({ length: 50 }, (_, i) => ({ price: 100 + i, time: i }))`);
+  const H = 400;
+  const PAD = 24;
+  for (const price of [100, 123, 149]) {
+    const y = run(`priceToChartY(__series, ${price}, ${H}, ${PAD}, ${PAD}, false)`);
+    const back = run(`chartYToPrice(__series, ${y}, ${H}, ${PAD}, ${PAD}, false)`);
+    assert.ok(
+      Math.abs(back - price) < 1e-6,
+      `a price maps to a y and back (${price} → ${y} → ${back})`,
+    );
+  }
+  /* The same round trip on the log axis, which is a different scale and the
+     one a mismatch would hide in. */
+  const ly = run(`priceToChartY(__series, 120, ${H}, ${PAD}, ${PAD}, true)`);
+  assert.ok(
+    Math.abs(run(`chartYToPrice(__series, ${ly}, ${H}, ${PAD}, ${PAD}, true)`) - 120) < 1e-6,
+    "…on a log axis too",
+  );
+  /* Outside the drawn band it refuses rather than clamping: a click in the
+     margin is a click that missed, not a request for the highest price. */
+  assert.strictEqual(run(`chartYToPrice(__series, 5, ${H}, ${PAD}, ${PAD}, false)`), null,
+    "above the top padding, no price");
+  assert.strictEqual(run(`chartYToPrice(__series, ${H - 5}, ${H}, ${PAD}, ${PAD}, false)`), null,
+    "below the bottom padding, no price");
+  assert.strictEqual(run(`chartYToPrice([], 100, ${H}, ${PAD}, ${PAD}, false)`), null,
+    "no series, no price");
+  assert.strictEqual(run(`chartYToPrice(__series, NaN, ${H}, ${PAD}, ${PAD}, false)`), null,
+    "no y, no price");
+  Object.assign(sandbox, stubs);
+}
+
+/* ── dailyMoveCount: a count with its denominator ───────────────────────── */
+
+{
+  /* 400 closes, every one of them a 1% step up. Every day therefore moved at
+     least 0.5%, none moved 2%, and the boundary is inclusive. */
+  run(`__closes = Array.from({ length: 401 }, (_, i) => 100 * Math.pow(1.01, i))`);
+  const near = json(`dailyMoveCount(__closes, 0.5)`);
+  assert.strictEqual(near.of, 400, "the denominator is the number of steps, not of closes");
+  assert.strictEqual(near.n, 400, "every day cleared half a percent");
+  assert.strictEqual(json(`dailyMoveCount(__closes, 2)`).n, 0, "none of them cleared two");
+  assert.strictEqual(json(`dailyMoveCount(__closes, 1)`).n, 400,
+    "a day exactly the size asked about counts");
+
+  /* Direction is not the question: a target below the price is measured by
+     the same distance as one above it. */
+  assert.deepStrictEqual(
+    json(`dailyMoveCount(__closes, -1)`),
+    json(`dailyMoveCount(__closes, 1)`),
+    "a fall of the same size is the same size",
+  );
+
+  /* It refuses a record too short to read as a rate — the base-rate panel's
+     rule, applied to one number. */
+  assert.strictEqual(run(`dailyMoveCount(__closes.slice(0, 40), 1)`), null,
+    "a count out of forty days is not offered");
+  assert.strictEqual(run(`dailyMoveCount(null, 1)`), null, "no closes, no count");
+  assert.strictEqual(run(`dailyMoveCount(__closes, 0)`), null,
+    "a target at the price itself has no distance to count");
+  assert.strictEqual(run("DAILY_MOVE_MIN_DAYS"), 120);
+}
+
+// The saved image's file name: the coin, the range and the minute, in a form
+// every file system takes — nothing from a symbol that could make a path
+{
+  const when = "new Date(2026, 8, 27, 14, 3)";
+  assert.strictEqual(run(`chartImageName("BTC", "1Y", ${when})`), "pricetab-BTC-1Y-2026-09-27-1403.png");
+  assert.strictEqual(run(`chartImageName("../x/y", "1H", ${when})`), "pricetab-xy-1H-2026-09-27-1403.png",
+    "no separator or dot from a coin name reaches the file name");
+  assert.strictEqual(run(`chartImageName("", "", ${when})`), "pricetab-chart-chart-2026-09-27-1403.png",
+    "an empty name is a word, not a double dash");
 }
 
 console.log("CHART TESTS OK");

@@ -68,10 +68,20 @@ const scanSrc = (re, why) => {
 // check now enforces the two things that keep it true, which is more than the
 // old one did:
 //
-//   1. `permissions`, `host_permissions` and `optional_permissions` are empty —
-//      nothing is granted without a person asking for it;
-//   2. every entry in `optional_host_permissions` is on the list below, so a
-//      new origin cannot appear without editing this file and saying why.
+//   1. `permissions` and `host_permissions` are empty — nothing at all is
+//      granted without a person asking for it;
+//   2. every entry in `optional_host_permissions` and in `optional_permissions`
+//      is on a list below, so neither a new origin nor a new capability can
+//      appear without editing this file and saying why.
+//
+// `optional_permissions` was opened on 7 Sep 2026 for exactly one entry.
+// **notifications** — a price target that is hit, and a contract that is
+// stopped out or liquidated, are the two things here worth being told about
+// while you are looking at something else, and the tab title (the only
+// announcement there was) says nothing to somebody not looking at that tab.
+// Asked for from a button inside the Targets and Futures panels, never at
+// install; Chrome raises no install-time warning for an optional permission
+// and does not slow review, so the listing's claim still holds.
 const OPTIONAL_ORIGINS = new Set([
   "https://cointelegraph.com/*",
   "https://decrypt.co/*",
@@ -79,14 +89,27 @@ const OPTIONAL_ORIGINS = new Set([
   "https://bitcoinmagazine.com/*",
   "https://coinjournal.net/*",
   "https://feeds.bbci.co.uk/*",
+  // 29 Sep 2026: the two largest crypto newsrooms, no CORS header, staff
+  // bylines only in their feeds; paid posts on paths the promo filter refuses
+  "https://www.coindesk.com/*",
+  "https://www.theblock.co/*",
 ]);
+const OPTIONAL_PERMISSIONS = new Set(["notifications"]);
 check("nothing is granted at install", () => {
   const m = JSON.parse(read("manifest.json"));
   const out = [];
-  for (const key of ["permissions", "host_permissions", "optional_permissions"]) {
+  for (const key of ["permissions", "host_permissions"]) {
     if (m[key] && m[key].length) {
       out.push(
         `manifest declares "${key}": ${JSON.stringify(m[key])} — that is granted at install`,
+      );
+    }
+  }
+  for (const name of m.optional_permissions || []) {
+    if (!OPTIONAL_PERMISSIONS.has(name)) {
+      out.push(
+        `"${name}" is in optional_permissions but not in this test's list — ` +
+          "add it here and to the codebase guide in the same change, with a reason",
       );
     }
   }
@@ -126,7 +149,7 @@ check("manifest newtab override still points at index.html", () => {
 // requests. A CDN <script> would also break the MV3 CSP.
 check("no remote <script>/<link> in shipped HTML", () => {
   const out = [];
-  for (const f of ["index.html", "privacy.html", "rate.html"]) {
+  for (const f of ["index.html", "privacy.html", "popup.html"]) {
     const html = read(f);
     const re = /<(script|link)\b[^>]*\b(?:src|href)\s*=\s*["']https?:\/\/[^"']+["']/gi;
     let m;
@@ -159,7 +182,7 @@ check("no console.log in src/", () =>
 // The codebase guide: "Add a new src file: Add a <script> tag to index.html — order
 // matters". A file that exists but is never loaded is dead weight; a file
 // referenced but missing is a blank new tab.
-check("src/*.js and index.html agree (rate.js is loaded by rate.html)", () => {
+check("src/*.js and index.html agree (popup.js is loaded by popup.html)", () => {
   const html = read("index.html");
   const listed = new Set(
     [...html.matchAll(/src="\.\/src\/([^"]+)"/g)].map((m) => m[1]),
@@ -167,12 +190,12 @@ check("src/*.js and index.html agree (rate.js is loaded by rate.html)", () => {
   const actual = new Set(srcFiles);
   const out = [];
   for (const f of actual) {
-    if (f !== "rate.js" && !listed.has(f)) out.push(`src/${f} exists but has no <script> tag`);
+    if (f !== "popup.js" && !listed.has(f)) out.push(`src/${f} exists but has no <script> tag`);
   }
   for (const f of listed) {
     if (!actual.has(f)) out.push(`index.html loads src/${f} which does not exist`);
   }
-  if (!read("rate.html").includes("src/rate.js")) out.push("rate.html no longer loads src/rate.js");
+  if (!read("popup.html").includes("src/popup.js")) out.push("popup.html no longer loads src/popup.js");
   return out;
 });
 
@@ -193,13 +216,22 @@ check("updateTabTitle() is called from app.js only inside setTabTitle", () => {
 
 // --- 9. Widget cards scale from one font-size ---------------------------
 // The codebase guide: "Style anything inside a widget card: Use em, never rem."
-// The rule is scoped to the card interior. These three components are the
-// panel chrome that sits OUTSIDE the card, where rem is correct.
+// The rule is scoped to the card interior. These components are the panel
+// chrome that sits OUTSIDE the card, where rem is correct — since 25 Sep 2026
+// that includes the drawer the cards live in, its empty state and its one
+// button, which are sized with the other drawers, not with the cards. Since
+// 27 Sep 2026 also the drawer head's tools, its card-size letters and its
+// resize edge — the head of the drawer, never inside a card.
 const REM_ALLOWED_OUTSIDE_CARD = new Set([
   "WidgetRestoreButton",
-  "CompareToggleButton",
   "WidgetPanel",
   "WidgetHideButton",
+  "WidgetsDrawer",
+  "WidgetsDrawerEmpty",
+  "WidgetsDrawerAction",
+  "WidgetsDrawerTools",
+  "WidgetsSizeButton",
+  "WidgetsResize",
 ]);
 check("no rem units inside widget-card components", () => {
   const lines = read("src/styles-widgets.js").split("\n");
@@ -225,6 +257,70 @@ check("no rem units inside widget-card components", () => {
 // (CORS, API keys, geo-blocking). A new host appearing quietly is both a
 // privacy-claim change and a Chrome Web Store single-purpose question, so
 // adding one should be a conscious edit to this list.
+/* ── no backtick inside a styled-components template ─────────────────────
+ *
+ * A backtick in a comment inside a tagged template literal **ends the
+ * literal**. Everything after it is parsed as JavaScript, so the failure is a
+ * syntax error pointing at a word in the middle of an English sentence —
+ * `Unexpected identifier 'OfflineMessage'` — which reads as anything but what
+ * it is. It costs one edit to make and several minutes to recognise, and it
+ * was made three times in one afternoon writing these comments, by someone who
+ * already had a note warning about it.
+ *
+ * The rule is narrow on purpose: backticks in comments *between* components
+ * are fine and this file is full of them. Only the ones inside the template
+ * matter, so the scan finds each tagged template, walks to its real end
+ * (skipping over `${...}` interpolations, which may themselves contain
+ * backticks legitimately), and checks the comments in between.
+ */
+const templateCommentBackticks = () => {
+  const offenders = [];
+  for (const file of fs.readdirSync(path.join(ROOT, "src")).filter((f) => f.endsWith(".js"))) {
+    const text = fs.readFileSync(path.join(ROOT, "src", file), "utf8");
+    const tag = /styled(?:\.\w+|\([^)]*\))(?:\.attrs\([^)]*\))?`|css`|keyframes`|injectGlobal`/g;
+    /* The match itself is not needed — only where it ends, which `lastIndex`
+     * carries — but the assignment is the loop's condition. */
+    while (tag.exec(text)) {
+      /* Walk the template **tracking whether we are inside a comment**, and
+       * stop at the first backtick that is not.
+       *
+       * The first version of this walked to the first backtick and then looked
+       * for comments in what it had passed — which cannot work, because the
+       * backtick it stops at is the offending one: the comment containing it
+       * is left unterminated and matches nothing. It reported every file clean
+       * with a fault deliberately injected, which is the only reason it was
+       * caught. A rule has to be shown failing on a known-bad input before it
+       * is worth anything. */
+      let i = tag.lastIndex;
+      let depth = 0;
+      let inComment = false;
+      while (i < text.length) {
+        const ch = text[i];
+        if (!inComment && ch === "\\") { i += 2; continue; }
+        if (!inComment && ch === "/" && text[i + 1] === "*") { inComment = true; i += 2; continue; }
+        if (inComment && ch === "*" && text[i + 1] === "/") { inComment = false; i += 2; continue; }
+        if (inComment) {
+          if (ch === "`") {
+            offenders.push(`${file}:${text.slice(0, i).split("\n").length}`);
+            /* One report per template is enough; the fix is the same edit. */
+            inComment = false;
+            while (i < text.length && !(text[i] === "*" && text[i + 1] === "/")) i++;
+            continue;
+          }
+          i++;
+          continue;
+        }
+        if (ch === "$" && text[i + 1] === "{") { depth++; i += 2; continue; }
+        if (ch === "}" && depth) { depth--; i++; continue; }
+        if (ch === "`" && !depth) break;
+        i++;
+      }
+      tag.lastIndex = i + 1;
+    }
+  }
+  return offenders;
+};
+
 const ALLOWED_HOSTS = new Set([
   /* The six opt-in newsrooms. These are only ever fetched once the user has
    * pressed "Turn on full sources" and Chrome has granted the matching
@@ -238,6 +334,9 @@ const ALLOWED_HOSTS = new Set([
   "cryptoslate.com",
   "decrypt.co",
   "feeds.bbci.co.uk",
+  /* CoinDesk and The Block (29 Sep 2026): the seventh and eighth. */
+  "www.coindesk.com",
+  "www.theblock.co",
 
   /* Four newsrooms that need **no permission at all**: each answers
    * `Access-Control-Allow-Origin: *`, verified by sending a
@@ -248,8 +347,10 @@ const ALLOWED_HOSTS = new Set([
    * Bitcoin.com is the only one on the crypto beat, which is what a fresh
    * install had none of. */
   "feeds.content.dowjones.io",
-  "finance.yahoo.com",
   "news.bitcoin.com",
+  /* The fifth always-on news source (21 Sep 2026): its wp-json sends
+     Access-Control-Allow-Origin: * to an extension Origin. See ref/news.md. */
+  "cryptopotato.com",
   "search.cnbc.com",
 
   "api.alternative.me",
@@ -269,9 +370,27 @@ const ALLOWED_HOSTS = new Set([
   // createElementNS in chart.js. Nothing is ever fetched from it.
   "www.w3.org",
 ]);
+/* **Link-only data** (28 Sep 2026): the tax guide's sources — about eighty
+ * pages on tax authorities, law firms and guides, one or more per country,
+ * each printed as an <a target="_blank"> a person presses to check a rule.
+ * Listing each host here would bury the list above, whose job is to name
+ * every host the extension *talks to*. So these files are held to a
+ * stricter rule instead: they may name any page, and they may not contain
+ * anything that makes a request (checked below). */
+const LINK_ONLY_FILES = ["tax-world.js"];
+check("link-only data files cannot make a request", () => {
+  const out = [];
+  for (const f of LINK_ONLY_FILES) {
+    const body = stripComments(read(`src/${f}`));
+    for (const p of [/\bfetch\s*\(/, /XMLHttpRequest/, /\bimport\s*\(/, /new\s+(Image|WebSocket|EventSource)\b/, /sendBeacon/, /createElement\s*\(\s*["'](script|img|iframe|link)/]) {
+      if (p.test(body)) out.push(`src/${f} contains ${p} — a link-only file must not request anything`);
+    }
+  }
+  return out;
+});
 check("no undeclared remote hosts in src/", () => {
   const out = [];
-  for (const f of srcFiles) {
+  for (const f of srcFiles.filter((x) => !LINK_ONLY_FILES.includes(x))) {
     const body = stripComments(read(`src/${f}`));
     for (const m of body.matchAll(/https?:\/\/([a-zA-Z0-9.-]+)/g)) {
       if (!ALLOWED_HOSTS.has(m[1])) {
@@ -374,7 +493,18 @@ check("the store summary says the same thing everywhere", () => {
  * identity rather than the absence of one. Interaction has its own token now
  * (`accent`, green-family and deliberately not the up-green), so this fails
  * the moment the blue is borrowed for something that is not a plotted line.
+ *
+ * The one legitimate reader outside the chart is the strip under the price
+ * that names the two compared lines (`CompareStrip`, `styles-app.js`): it
+ * asks `chart.js` for the ink through `compareInk()` rather than naming the
+ * token, so the legend can only ever be the colour the line actually is.
  */
+check("no backtick inside a styled-components template", () =>
+  templateCommentBackticks().map(
+    (at) => `${at} — a backtick in a comment inside a tagged template ends the literal`,
+  ),
+);
+
 check("the palette's blue is only ever a plotted line", () => {
   const out = [];
   /* `chart.js` is the comparison overlay, which is what the colour is for.

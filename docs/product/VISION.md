@@ -1,198 +1,142 @@
-# PriceTab Vision & Feature Roadmap
+# PriceTab — Vision
 
-> **Last Updated:** August 22, 2026
+> **Last updated:** 28 September 2026 · The roadmap that turns this into work
+> is [TODO.md](TODO.md); what has already shipped is in the
+> [changelog](../CHANGELOG.md).
 
-PriceTab aims to be the go-to new tab experience for crypto enthusiasts — beautiful design, real-time data, and useful widgets while staying fast and privacy-first.
+## What PriceTab is
 
----
+**The crypto market, read honestly, on every new tab.** A Chrome extension
+that opens a live price chart where the blank page used to be, and grows —
+only when asked — into the tools someone following the market reaches for
+next: price targets, a portfolio with its cost basis, a practice derivatives
+account, the news around a move, and what followed the last time the chart
+looked like this.
 
-## Core Value Proposition
+It is for people who look at crypto prices many times a day and do not want
+to open an exchange, sign in or be tracked to do it.
 
-- No account required, zero permissions at install
-- **Measured 22 Aug 2026: chart on screen in ~55 ms**, painted from the
-  persisted cache before any request returns
-- Privacy-first: all preferences stored locally
-- Crypto-first: not an add-on to a productivity tool
+## Principles
 
----
+These decide arguments. A feature that needs one of them bent is a feature
+that does not get built.
 
-## Feature Roadmap
+1. **Speed first.** The chart is on screen before any request returns —
+   first contentful paint measured at 52 ms, painted from a persisted cache.
+   No build step, no remote code, nothing loaded from a CDN.
+2. **Privacy is the product.** Zero permissions at install, no account, no
+   analytics, no telemetry. Everything a person enters stays in their
+   browser. The two optional permissions — eight newsroom feeds, and
+   notifications for the alarm — are asked for from a button inside the app,
+   never at install.
+3. **One purpose.** Reading the crypto market on the new tab page. Every
+   feature is a different way of reading the same prices; nothing turns the
+   page into a productivity suite.
+4. **Count, never claim.** Where the app says something about the market it
+   prints a number with its denominator — "8 of 25 times", never an arrow, a
+   score or a signal. Below twelve episodes it prints the counts and refuses
+   the comparison. A label that makes a claim (*oversold*, *better*) must
+   survive the app's own data first, and most have not.
+5. **Official or nothing.** Where the app states a rule — a tax rate, a
+   holding period, a legal status — it comes from the authority that makes
+   the rule, with the day it was read. Where no official source was
+   confirmed, the app says so and states nothing.
+6. **Simple by default, deep on request.** Every panel is off until
+   switched on; the four modes (Minimal, Fast, Trader, Holder) set sensible
+   bundles; the chart alone is the product for anyone who wants only that.
+7. **Never a blank screen.** A failed request shows the last good data and
+   says how old it is.
 
-### Phase 1: Core (Completed) ✅
+## What exists today
 
-- Real-time price charts with D3.js
-- 81 cryptocurrencies (Coinbase, with a runtime failover to Kraken and six coins routed there permanently)
-- 6 time periods (1H, 1D, 1W, 1M, 1Y, ALL)
-- Dark/Light/Auto themes
-- Drag-and-drop coin reordering
-- 37 currency options
-- Configurable refresh interval
-- Dynamic tab title with live prices
-- Caching with TTL and offline fallback
+| Area | In one line |
+|---|---|
+| **The chart** | Line or candles over six ranges, 81 coins, 37 currencies; comparison on one percent axis, a log axis, an average named by what it covers, US CPI release marks, and named chart patterns with their record on this coin |
+| **Calls** | Say where the price will be on a board of real price-and-time squares; each call settles itself against the price at that moment, and the record is scored locally with its *n* |
+| **Price targets** | A price crossing or a move over 1h / 4h / 24h, caught even when it happened overnight, announced in the tab title and — if switched on — by a Chrome notification |
+| **Portfolio** | Holdings by amount, dated purchases, sales and income; cost basis by FIFO, LIFO or HIFO; value, P/L, contribution and mix charts; the time-weighted return by month; target shares with drift; a mask for when someone is leaning over the desk |
+| **Tax guide** | Every country's crypto tax rules — 244 countries and territories — from official sources only, with an estimate from what was recorded where the rule is specific enough. Not tax advice, and it says so first |
+| **Derivatives practice** | A simulated USDT-margined perpetual priced from a real venue's public quotes, in Practice Units that cannot be bought or cashed out: orders, stops, funding, liquidation on a mark, a ledger that explains the balance exactly |
+| **News** | Thirteen newsrooms and boards (eight behind an optional permission) and an exchange's notices if wanted; dated, read by day or by coverage, advertising kept out, one event written up four times shown once |
+| **Base rates** | "Has this happened before?" — what followed every past time this coin entered the state it is in now |
+| **Widgets** | Eighteen optional cards, from Fear & Greed to open interest, with Holder / Trader / Minimal bundles and four sizes |
+| **Everywhere** | Thirteen languages, dark and light themes, keyboard-first, a toolbar popup that costs no request, and an iPhone build of the same page |
 
-### Phase 2: Widget System (Completed) ✅
+## Direction
 
-- Watchlist heatmap + Top Movers (your coins / 24h gainers & losers)
-- Fear & Greed Index (Alternative.me)
-- Market Overview — market cap, volume + dominance (Coinlore)
-- BTC Halving Countdown (mempool.space)
-- RSI Widget — 14-period, coin-specific
-- Funding Rate (OKX)
-- Long/Short Ratio (Bybit)
-- Open Interest in USD (OKX)
-- Liquidations 24h (OKX)
-- Altcoin Season Index — BTC dominance based (Coinlore)
-- All widgets toggleable from settings
-- Drag-and-drop widget reordering
-- Hide-all / show-all widget toggle
+Ordered by what matters most, not by what is most interesting to build.
 
-### Phase 3: User Experience (Q2–Q3 2026)
+### 1. Be found
 
-**Onboarding** — *first-run spotlight tour shipped (staged, July 2026)* ✅
+The feature list is already ahead of every extension in the category that
+was measured (August 2026), yet the store carries 1.3.0 while two packaged
+builds and everything since sit unreleased, and PriceTab appears in none of
+the searches that return its competitors. **Shipping and launching comes before any new feature.** The
+open question for the next store build is scope: the derivatives practice
+account and the tax guide are both policy surfaces, and each is reviewed
+against the store's single-purpose and financial-content rules before it
+ships.
 
-**Keyboard shortcuts** — *shipped* ✅ — navigate without a mouse. The list
-outgrew this file: `SHORTCUT_GROUPS` in `src/shortcuts.js` is the one that has
-to stay in sync with `handleKeyDown`, and `?` is what advertises it. Verified
-22 Aug 2026 that the arrows and `1`–`6` work on a tab nobody has clicked.
+### 2. Derivatives readings, as base rates
 
-**Improved error handling** — *shipped Aug 2026*
-- User-friendly error messages ✅
-- Retry button on fetch failures ✅
-- Rate limit warnings ✅
+What a crypto market has that an equity market does not is its mechanics:
+perpetual funding, leverage, forced liquidation, and one coin traded on many
+venues. The rule for all of it is the crowd reading's: a count with its
+denominator, a lean only with its record. Already built: funding written
+per year beside the venue's premium, and funding and open interest ranked
+against their own history, alone and as a pair. Next, in order of what they
+cost — all from providers already declared, no new host:
 
-**Visual polish**
-- Coin logos/icons — *closed as not wanted*: real brand marks meant ~64
-  trademark files or external requests, and the monogram badges that shipped in
-  their place were removed the same month because every row already names the
-  coin in text beside the badge
-- Price flash animation on update ✅
-- Loading spinner for initial fetch ✅
+- liquidation prints on the derivatives chart, kept from while a tab is open;
+- open interest against the visible order book, printed as the reach, the
+  money and the multiple — never as a "fragility index";
+- two venues side by side as a table;
+- a snapshot of the market's state stored on each call and contract, so a
+  record can be broken down by the conditions it was made in.
 
-### Phase 4: Power User Features (Q3 2026)
+Not doing: a 0–100 score, a red/amber/green market state, liquidation
+heatmaps, or any model fitted in the browser.
 
-**Price Alerts** — *elevated priority (July 2026): #1 requested feature across the sector*
-- Set price targets (above/below) per coin
-- Percentage change alerts
-- All stored locally, max 10 active alerts
-- No server required — alerts checked on each fetch
-- **Decided (Aug 2026): in-tab only.** Browser push needs the `notifications`
-  permission, which costs the promise. What shipped instead announces a hit in
-  the tab title and keeps checking while the tab is hidden — both of which need
-  no permission at all. Revisit only if users actually ask
+### 3. A chart that reads like a venue's
 
-**Coin Coverage Expansion** — *reframed 22 Aug 2026*
-- "Price-only" coin tier priced from the Coinlore bulk feed we already fetch
-- **Not an acquisition lever.** July's reading was that coverage is our biggest
-  funnel gap. Re-measured on the Web Store on 22 Aug: the extension carrying
-  10,000+ coins has **58 users**, the one with 3,000+ has **127**, and the one
-  that leads this category has **1,000 users with 500 pairs** and is otherwise
-  simpler than PriceTab. Coverage does not sell here
-- **It is a portfolio argument.** You cannot track what the app does not
-  support, and that is a retention cost paid by the people most invested in it
-- Chart remains Coinbase/Kraken-only; price-only coins are marked as such in
-  search
+A permanent price scale down the right and dates along the foot. The parts
+exist (the grid draws both); what is missing is one right-hand gutter that
+the board, the comparison ticks and the end labels all agree on.
 
-**Mini Portfolio** — *tracking view shipped (June 2026)* ✅
-- Manually enter coin holdings ✅ — the 81 chartable coins, plus the tokens
-  `isWatchableCoin` accepts, which can be held and priced but not charted
-- Full-screen view: total value + 24h profit/loss ✅
-- No wallet address / connection needed — tracking only ✅
-- All data local (`crypto_chart_portfolio`), no cloud sync ✅
-- JSON export/import ✅ · allocation breakdown + donut ✅ · per-coin cost basis
-  with dated purchase lots ✅ · realized P/L from recorded disposals ✅ ·
-  cost-basis report CSV with matched acquisition→disposal pairs ✅ ·
-  read-only on-chain address watching (6 chains + 47 ERC-20 tokens) ✅ ·
-  benchmark against holding BTC ✅ (Aug 2026)
-- *Still open:* concentration note, realized P/L for the current tax year,
-  merge-on-import, a cost-basis method choice for the report
+### 4. A portfolio that needs less typing
 
-**Additional Widgets**
-- Ethereum Gas Tracker (Etherscan/Blocknative)
-- Whale Alert feed (large transaction monitoring)
-- Crypto news widget (CryptoPanic)
+Importing an exchange's transaction history, recording a sale out of a
+watched address, and promoting more of the tax guide's 155 unconfirmed
+countries as their authorities publish rules.
 
-**Prediction markets widget (Polymarket)** — *researched Aug 2026, deferred
-until after 1.5.0 is approved*
+### 5. More places
 
-Deliberately held back so it ships alone: if it draws a rejection we want to
-know it was this and not something else in a large release.
+A Firefox port, and settings that can follow a person between their own
+browsers without an account.
 
-- Source clears our bar: `gamma-api.polymarket.com` is keyless and sends
-  `access-control-allow-origin: *`; `/events?tag_slug=bitcoin&order=volume24hr`
-  returns exactly the right markets ("Bitcoin above ___ on August 9?", one
-  probability per strike)
-- Known cost: no field selection, so the smallest useful response is 40 KB —
-  more than the 37 KB Coinlore sweep that feeds the ticker, watchlist, top
-  movers and market stats combined. Would need a long cache and off-by-default
-- Open questions are not technical: whether prediction markets fit a listing
-  that promises price charts, and how closely CWS reviews gambling-adjacent
-  content when we display odds without taking bets
+## Money
 
-### Phase 5: Platform Expansion (2027+)
+Nothing is monetised today, and nothing will be before the store launch
+settles. What is settled, and will not move: **no ad networks, no tracking,
+no data sold, no subscriptions, and nothing that is free today ever moves
+behind a paywall.** Any revenue surface is optional, labelled and contextual.
 
-- Firefox WebExtension port
-- Safari Web Extension (Xcode required)
-- Chrome sync storage option
-- Internationalization (Turkish, Spanish, German)
+## What we will not build
 
----
-
-## Monetization
-
-No monetization is live, and none is planned before the store launch settles.
-
-The constraints are the part that is settled and will not move: **no ad
-networks, no tracking, no telemetry, no data sold, and nothing that is free
-today ever stops being free.** Any revenue surface has to be optional, clearly
-labeled and contextual.
-
-The direction itself was revisited on 21 Aug 2026 and this file no longer
-summarises it — a one-line summary here went stale the moment the position
-changed, and a stale promise in a public document is worse than no promise.
-Current strategy, placement, CWS compliance and phasing live in
-`docs/internal/MONETIZATION.md` and the plan beside it.
-
----
-
-## Design Philosophy
-
-1. **Speed first** — no build step, no bloat, no CDN for JS
-2. **Privacy always** — zero telemetry, localStorage only, and **zero
-   permissions at install**. There is one optional host permission, for the six
-   newsrooms, and Chrome grants it only when someone presses the button; it
-   raises no install-time warning, so the claim on the listing still holds
-3. **Single purpose** — crypto price dashboard, not a productivity tool
-4. **Progressive disclosure** — simple by default, powerful when needed
-5. **Graceful degradation** — always show cached data, never a blank screen
-
----
-
-## Technical Direction
-
-| Topic | Current | Future |
-|-------|---------|--------|
-| React | 16.5 (class components) | Consider React 18 + hooks when ready to refactor |
-| App size | **31,592 lines across 26 files** (22 Aug 2026) — 25 loaded by `index.html`, plus `rate.js` for the popup. `app.js` 5,541 and `chart.js` 5,176 are the outliers | Keep files under ~800 lines where practical. Their styled-components are already split out, so the next cut for those two is behavioural and genuinely risky |
-| Charts | Custom D3 v5 module bundle (only what the chart uses) | Revisit if chart needs outgrow it |
-| Storage | localStorage (+ persisted price cache for instant paint) | Consider chrome.storage.sync for multi-device |
-| Testing | 49 checks: lint, ast-grep rules, unit suites and five real-Chromium suites | Keep the browser suites as the net for anything about pixels, events or what React actually renders |
-
----
-
-## What We Will NOT Build
-
-- Wallet functionality (sending/receiving)
-- DEX or trading integration
-- **Subscriptions** — whatever else changes, PriceTab does not become a
-  recurring charge
-- Anything that removes a feature people already have
-- User accounts or cloud sync (unless explicitly requested)
-- AI-powered recommendations (out of scope for now)
-- **A search box on the new tab.** Settled 22 Aug 2026: since Chrome 27 an
-  extension new-tab page cannot take focus from the omnibox, so the address bar
-  is still where typing goes. Competitors ship one; it is a redundancy, and the
-  extensions that fought Chrome for that focus are what the standing complaints
-  are about
-- **Anything needing a content script.** The floating price widget the leading
-  competitor offers requires access to every site you visit, which is the one
-  thing this product is built not to ask for
+- **A wallet.** Nothing that sends, receives or holds keys. Addresses are
+  watched read-only, and checked against the sanctions list on the device.
+- **Real trading.** The derivatives account is a simulation in valueless
+  units; a route from it to a real venue is the one thing that would make it
+  something else.
+- **Tax filing or tax advice.** The guide explains official rules and
+  estimates from what was recorded; it never files, and it never tells
+  anyone what to do.
+- **Buy and sell signals, scores or AI recommendations.** Counts with their
+  denominators are what got built instead.
+- **Accounts or cloud sync** of anyone's data.
+- **A search box on the new tab.** An extension's new-tab page cannot take
+  focus from the address bar, which is still where typing goes.
+- **Anything that needs a content script.** A floating price widget on every
+  page would need access to every site visited — the one thing this product
+  is built not to ask for.
+- **Anything that removes a feature people already have.**

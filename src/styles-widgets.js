@@ -1,136 +1,12 @@
 /* WIDGET PANEL STYLES */
-const WidgetRestoreButton = styled.button.attrs({ type: "button" })`
-  position: fixed;
-  left: ${({ theme }) => theme.spacing.large}rem;
-  top: ${({ theme, tickerTop }) =>
-    tickerTop
-      ? `calc(${theme.spacing.large}rem + 3rem)`
-      : `${theme.spacing.large}rem`};
-  padding: 0;
-  border: none;
-  background: transparent;
-  color: ${({ theme }) => theme.color.text};
-  font-size: 1.35rem;
-  font-weight: ${({ theme }) => theme.fontWeight.bold};
-  cursor: pointer;
-  line-height: 1;
-  z-index: 120;
-  width: 1.6rem;
-  height: 1.6rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: transform 0.25s ease, opacity 0.25s ease,
-    top 0.4s cubic-bezier(0.22, 1, 0.36, 1);
-
-  /* Resting weight, and the two ways back to full — see QUIET_LEAD */
-  opacity: ${({ quiet }) => (quiet ? QUIET_REST : 1)};
-
-  &:hover,
-  &:focus-visible {
-    opacity: 1;
-  }
-
-  &:hover {
-    transform: scale(1.1);
-  }
-
-  /* A visible ring rather than none at all — these are the only way to reach
-     the widget row and the compare overlay from the keyboard */
-  &:focus {
-    outline: none;
-  }
-
-  &:focus-visible {
-    outline: 2px solid ${({ theme }) => theme.color.borderHover};
-    outline-offset: 3px;
-    border-radius: 4px;
-  }
-
-  @media (max-width: ${({ theme }) => theme.breakpoint.down.sm}px) {
-    left: ${({ theme }) => theme.spacing.small}rem;
-    top: ${({ theme, tickerTop }) =>
-      tickerTop
-        ? `calc(${theme.spacing.small}rem + 3rem)`
-        : `${theme.spacing.small}rem`};
-  }
-`;
-
-/* Compare toggle — sits beside the widget control on the left, not in the
- * right-hand cluster: those three all open a panel over the chart, while this
- * changes how the chart itself is drawn. Active takes the accent the compared
- * line is drawn in, so the button and the line read as the same thing. */
-const CompareToggleButton = styled.button.attrs({ type: "button" })`
-  position: fixed;
-  left: ${({ theme }) => `calc(${theme.spacing.large}rem + 2.5rem)`};
-  top: ${({ theme, tickerTop }) =>
-    tickerTop
-      ? `calc(${theme.spacing.large}rem + 3rem)`
-      : `${theme.spacing.large}rem`};
-  padding: 0;
-  border: none;
-  background: transparent;
-  /* The interaction accent, not the chart's blue — see the accent token in
-     theme.js. An "on" state and a plotted line are different things and were
-     sharing one token, so the only blue in the interface was doing two
-     unrelated jobs. (No backticks: this is inside a template literal.) */
-  color: ${({ theme, active }) =>
-    active ? theme.color.accent : theme.color.text};
-  cursor: pointer;
-  line-height: 1;
-  z-index: 120;
-  width: 1.6rem;
-  height: 1.6rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition:
-    transform 0.25s ease,
-    color 0.2s ease,
-    opacity 0.25s ease,
-    top 0.4s cubic-bezier(0.22, 1, 0.36, 1);
-
-  /* Resting weight, and the two ways back to full — see QUIET_LEAD */
-  opacity: ${({ quiet }) => (quiet ? QUIET_REST : 1)};
-
-  &:hover,
-  &:focus-visible {
-    opacity: 1;
-  }
-
-  &:hover {
-    transform: scale(1.1);
-  }
-
-  /* A visible ring rather than none at all — these are the only way to reach
-     the widget row and the compare overlay from the keyboard */
-  &:focus {
-    outline: none;
-  }
-
-  &:focus-visible {
-    outline: 2px solid ${({ theme }) => theme.color.borderHover};
-    outline-offset: 3px;
-    border-radius: 4px;
-  }
-
-  @media (max-width: ${({ theme }) => theme.breakpoint.down.sm}px) {
-    left: ${({ theme }) => `calc(${theme.spacing.small}rem + 2.5rem)`};
-    top: ${({ theme, tickerTop }) =>
-      tickerTop
-        ? `calc(${theme.spacing.small}rem + 3rem)`
-        : `${theme.spacing.small}rem`};
-  }
-`;
-
 /* Hidden until the card is hovered — except where there is no hover to give.
  * On a tablet the widget row sits at the bottom of the screen and this was
  * the only way to dismiss a card, so it was unreachable on exactly the
  * devices that have the least room for the row. */
 const WidgetHideButton = styled.button.attrs({ type: "button" })`
   position: absolute;
-  top: 0.15em;
-  right: 0.15em;
+  top: 0.4em;
+  right: 0.55em;
   width: 1.15em;
   height: 1.15em;
   padding: 0;
@@ -154,63 +30,242 @@ const WidgetHideButton = styled.button.attrs({ type: "button" })`
   @media (hover: none) {
     opacity: 0.55;
   }
+
+  /* On a touch screen the whole corner of the card is the button — the box
+     the shared touch fragment would draw reaches past the card's edge, where
+     the next card or the chart takes the press instead. The glyph stays the
+     size it is; the button around it grows, in em like everything in a card. */
+  @media (pointer: coarse) {
+    top: 0;
+    right: 0;
+    width: 2.6em;
+    height: 2.6em;
+  }
 `;
 
-const WidgetPanel = styled.div`
-  position: fixed;
-  z-index: 40;
-  display: flex;
-  gap: 0.5rem;
-  opacity: ${({ visible }) => (visible ? 1 : 0)};
-  pointer-events: ${({ visible }) => (visible ? "auto" : "none")};
-  transition: opacity 0.3s ease, top 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+/* **The widgets are a drawer now, not a rail** (25 Sep 2026, *"soldan
+ * hoverlanabilir olan menülerin yani widget, chart settings, targets, calls
+ * kısmı soldan… folder tag gibi"*). They were a column of cards pinned down
+ * the left of the chart for good, which is where the drawers dock too — so
+ * for a day the column had to stand down whenever one opened. Now they are
+ * the first of the four drawers on that edge, opened from its tab, and the
+ * home screen is the chart and nothing over it.
+ *
+ * Same surface, same slide and same place as the chart's own drawer — see
+ * ChartDrawer in styles-settings.js — because four drawers that arrive four
+ * ways is the thing the folder tabs are there to hide. */
+const WidgetsDrawer = styled.aside`
+  ${chartDrawerSurface};
+  /* Two cards across. A card's width is set in em by the size setting, so
+     the grid below decides the columns and this only has to hold two of the
+     medium size with their gap.
+     **Or what the right edge was dragged to** (27 Sep 2026) — --widgets-w,
+     set on the element by the app from WIDGETS_WIDTH_KEY, absent until the
+     edge is first moved. The window still caps it, so a width chosen on a
+     wide screen opens inside a narrow one; the phone's sheet (below) sets
+     its own width and ignores both. */
+  width: min(var(--widgets-w, 30rem), 92vw);
+  padding: ${({ theme }) => theme.spacing.large}rem;
+  /* The head on the targets drawer's line — see ChartDrawerTitle. */
+  padding-top: 1.3rem;
+  transform: translateX(${({ open }) => (open ? "0" : "calc(-100% - 8rem)")});
+  opacity: ${({ open }) => (open ? 1 : 0)};
+  visibility: ${({ open }) => (open ? "visible" : "hidden")};
+  transition:
+    transform 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.24s ease,
+    visibility 0s linear ${({ open }) => (open ? "0s" : "0.3s")};
 
-  /* Desktop: a column down the left, **bounded by the window**.
-   *
-   * It was unbounded, and with every widget on the column measured 1,153px —
-   * off the bottom of every common laptop: 353px past a 1280×800, 253px past
-   * 1440×900, and still 73px past a 1080p screen. Below the fold there was no
-   * way to reach them at all, because the only overflow rule in this block
-   * lived under the 1024px breakpoint. Turning one widget on could silently
-   * push another out of reach.
-   *
-   * The padding-and-negative-margin pair is not decoration: a vertical
-   * overflow rule makes the box a scroll container, which clips the cards' own
-   * box-shadow at the edges. The padding gives the shadow room and the margin takes the position
-   * back, so left: 1rem still means what it says. */
-  top: ${({ tickerTop }) => (tickerTop ? "8rem" : "5rem")};
-  left: 1rem;
-  flex-direction: column;
-  max-height: ${({ tickerTop }) =>
-    tickerTop ? "calc(100vh - 9rem)" : "calc(100vh - 6rem)"};
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding: 3px 0.5rem;
-  margin: -3px -0.5rem;
-  ${themedScrollbar};
-
-  /* Tablet: a scrollable row along the bottom */
-  @media (max-width: 1024px) {
-    top: auto;
-    left: 50%;
-    bottom: 1rem;
-    transform: translateX(-50%);
-    flex-direction: row;
-    max-width: calc(100vw - 2rem);
-    /* The desktop bound is a *column* height and would clip this row */
-    max-height: none;
-    overflow-x: auto;
-    overflow-y: hidden;
-    padding-bottom: 0.35rem;
-    -webkit-overflow-scrolling: touch;
-    ${themedScrollbar};
+  @media (prefers-reduced-motion: reduce) {
+    transition: opacity 0.2s ease, visibility 0s;
+    transform: none;
   }
 
-  /* Phone: tighter */
+  ${chartDrawerPhone};
+
   @media (max-width: 600px) {
-    bottom: 0.5rem;
-    gap: 0.3rem;
-    max-width: calc(100vw - 1rem);
+    transform: translateY(${({ open }) => (open ? "0" : "calc(100% + 1.5rem)")});
+  }
+`;
+
+/* The cards, inside the drawer. A grid rather than the old flex column: the
+ * drawer is two cards wide, and a column of one would leave half of it empty
+ * while the list scrolled. min(100%, …) so a single XL card still fits a
+ * phone's sheet instead of overflowing it. */
+const WidgetPanel = styled.div`
+  display: grid;
+  /* **The column floor rides the card size** (27 Sep 2026). It was 12.5rem
+     whatever the size, so XL cards — 1.45 times the type — were poured into
+     the same two medium columns and wrapped every line; the size setting
+     made the text bigger and the cards no wider. Now the drawer holds as
+     many of the chosen size as fit, and widening it (the right edge) is how
+     to get two XL cards side by side. */
+  grid-template-columns: repeat(
+    auto-fill,
+    minmax(min(100%, ${({ scale }) => 12.5 * (scale || 1)}rem), 1fr)
+  );
+  align-content: start;
+  gap: 0.5rem;
+  /* Room for the cards' own shadow inside the scroller, which would
+     otherwise clip it at the edges. */
+  padding: 3px;
+`;
+
+/* What the drawer says when there is nothing in it: which of two things is
+ * true, and the one press that changes it. */
+const WidgetsDrawerEmpty = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: ${({ theme }) => theme.spacing.small}rem;
+  padding: ${({ theme }) => theme.spacing.medium}rem 0;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: ${({ theme }) => theme.color.textSecondary};
+`;
+
+const WidgetsDrawerAction = styled.button.attrs({ type: "button" })`
+  padding: 0.4rem 0.75rem;
+  border: 1px solid ${({ theme }) => theme.color.border};
+  border-radius: 6px;
+  background: ${({ theme }) => theme.color.bgSecondary};
+  color: ${({ theme }) => theme.color.text};
+  font-family: ${({ theme }) => theme.font.primary};
+  font-size: 0.72rem;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+
+  &:hover,
+  &:focus-visible {
+    border-color: ${({ theme }) => theme.color.borderHover};
+  }
+`;
+
+/* The head's right-hand end: Choose / Done beside the ×. The head lays out
+ * its title against one child, so the two ride in this. */
+const WidgetsDrawerTools = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+
+  /* **On a phone the sizes take a second line** (27 Sep 2026). Title, four
+     letters, Choose and × came to 327px in a 306px head at 390 wide, and the
+     × was pushed past the sheet's edge. The break is forced, not left to
+     wrapping — a shorter translation would otherwise fit the sizes after the
+     ×, which has to stay last — by a zero-height item that takes a whole
+     line between the two rows. */
+  @media (max-width: 600px) {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    row-gap: 0.25rem; /* twice: the break is a line of its own */
+
+    &::before {
+      content: "";
+      order: 2;
+      flex-basis: 100%;
+      height: 0;
+    }
+  }
+`;
+
+/* **The card size, in the drawer's head** (27 Sep 2026, *"widgetları
+ * yeniden boyutlandıralım, zaten ayarlarında yazı büyüklüğü vardı"*). The
+ * S/M/L/XL row existed, but only on the drawer's Choose view — one press
+ * away from the cards it changes and out of sight while you look at them.
+ * A segmented control of four letters, beside Choose, so the cards resize
+ * under the pointer that asked. */
+const WidgetsSizeGroup = styled.div`
+  display: inline-flex;
+  align-items: stretch;
+  border: 1px solid ${({ theme }) => theme.color.border};
+  border-radius: 6px;
+
+  /* After the break WidgetsDrawerTools draws on a phone. */
+  @media (max-width: 600px) {
+    order: 3;
+  }
+`;
+
+const WidgetsSizeButton = styled.button.attrs({ type: "button" })`
+  min-width: 1.75rem;
+  padding: 0.3rem 0.4rem;
+  border: none;
+  background: ${({ active, theme }) => (active ? theme.color.bgSecondary : "transparent")};
+  color: ${({ active, theme }) => (active ? theme.color.text : theme.color.textSecondary)};
+  font-family: ${({ theme }) => theme.font.primary};
+  font-size: 0.66rem;
+  font-weight: ${({ active, theme }) => (active ? theme.fontWeight.semibold : theme.fontWeight.normal)};
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+  ${touchTarget};
+
+  /* Rounded at the ends by hand: an overflow: hidden on the group would
+     clip the finger-sized box touchTarget draws round each letter. */
+  &:first-child {
+    border-radius: 5px 0 0 5px;
+  }
+
+  &:last-child {
+    border-radius: 0 5px 5px 0;
+  }
+
+  & + & {
+    border-left: 1px solid ${({ theme }) => theme.color.border};
+  }
+
+  &:hover,
+  &:focus-visible {
+    color: ${({ theme }) => theme.color.text};
+    background: ${({ theme }) => theme.color.bgSecondary};
+  }
+`;
+
+/* **The drawer's right edge, dragged sideways** (27 Sep 2026, *"widget
+ * penceresini de yeniden boyutlandırabilelim, sağa ve sola, aşağı yukarı
+ * yok"*). Width only: the drawer already runs the window's height, top to
+ * bottom, so there is no height to hand out. The WAI-ARIA window splitter —
+ * a focusable separator with its value, arrows to step it, Home and End for
+ * the ends — plus a double-click back to the 30rem it opens at. The strip is
+ * 12px astride the border and invisible; a short grip shows where it is on
+ * hover and focus. No handle on a phone, where the drawer is a sheet the
+ * width of the screen. */
+const WidgetsResize = styled.div`
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: -6px;
+  width: 12px;
+  z-index: 2;
+  cursor: ew-resize;
+  touch-action: none;
+  outline: none;
+
+  &::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 4px;
+    height: 2.75rem;
+    border-radius: 2px;
+    transform: translate(-50%, -50%);
+    background: ${({ theme }) => theme.color.borderHover};
+    opacity: ${({ dragging }) => (dragging ? 1 : 0)};
+    transition: opacity 0.15s ease;
+  }
+
+  &:hover::after,
+  &:focus-visible::after {
+    opacity: 1;
+  }
+
+  &:focus-visible::after {
+    background: ${({ theme }) => theme.color.text};
+  }
+
+  @media (max-width: 600px) {
+    display: none;
   }
 `;
 
@@ -219,8 +274,10 @@ const WidgetPanel = styled.div`
  * greens and reds were being drawn on white in light mode, where they are
  * noticeably weaker. */
 const FundingValue = styled.div`
-  font-size: 1.05em;
+  font-size: 1.15em;
   font-weight: ${({ theme }) => theme.fontWeight.semibold};
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
   /* Positive funding means longs pay, which is the crowded side — so the
      colour follows who is paying, not whether the number is above zero */
   color: ${({ theme, positive }) =>
@@ -273,9 +330,11 @@ const WidgetSideValue = styled.span`
 `;
 
 const OIValue = styled.div`
-  font-size: 1em;
+  font-size: 1.15em;
   font-weight: ${({ theme }) => theme.fontWeight.semibold};
-  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+  letter-spacing: 0.01em;
 `;
 
 const LiqBarWrap = styled.div`
@@ -353,15 +412,25 @@ const WidgetCard = styled.div`
   position: relative;
   flex: 0 0 auto;
   font-size: ${({ scale }) => scale || 1}rem;
+  /* A card in the phone's scrolling row keeps a width its title and its ×
+     both fit in; a narrower one drew the × over the title. */
+  @media (max-width: 600px) {
+    min-width: 11em;
+  }
   background: ${({ theme }) =>
     theme.color.bg === "#ffffff"
       ? "rgba(255, 255, 255, 0.95)"
       : "rgba(15, 15, 15, 0.9)"};
   backdrop-filter: blur(8px);
   border: 1px solid ${({ theme }) => theme.color.border};
-  border-radius: 0.55em;
-  padding: 0.55em 0.8em;
-  text-align: center;
+  border-radius: 0.6em;
+  padding: 0.55em 0.85em 0.65em;
+  /* A ledger, not a badge. Every card was centred — title, figure, caption —
+     which reads as a row of tiles on a dashboard poster. Left-aligned, with
+     the title as a head bar and the figure under it, the column reads like a
+     desk's readings: the eye runs down one edge and every card starts where
+     the last one did. The meters and bars are full-width either way. */
+  text-align: left;
   box-shadow: 0 2px 8px ${({ theme }) => theme.color.shadow};
   cursor: grab;
   user-select: none;
@@ -400,18 +469,30 @@ const WidgetCard = styled.div`
  * the primary one. Opacity on already-small type is what made these hardest
  * to read — and it stacked with the card's own translucent background, so the
  * effective contrast was lower than the number suggested. */
+/* The card's head bar: the title on its own line with a hairline under it,
+ * and room at the right end for the × so the two never meet. */
 const WidgetLabel = styled.div`
   font-size: 0.62em;
-  letter-spacing: 0.09em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: ${({ theme }) => theme.color.textSecondary};
-  margin-bottom: 0.25em;
+  padding: 0 1.6em 0.45em 0;
+  margin-bottom: 0.5em;
+  border-bottom: 1px solid ${({ theme }) => theme.color.border};
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 `;
 
+/* The figure: one step heavier than the caption under it, and larger than
+ * the title over it — the rule every readings card on the derivatives page
+ * follows, brought to the column. */
 const WidgetValue = styled.div`
-  font-size: 1.05em;
-  font-weight: ${({ theme }) => theme.fontWeight.medium};
-  letter-spacing: 0.02em;
+  font-size: 1.15em;
+  font-weight: ${({ theme }) => theme.fontWeight.semibold};
+  letter-spacing: 0.01em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
 `;
 
 /* Watchlist + Top movers: both are coin rows now — symbol, price, 24h
@@ -424,7 +505,6 @@ const WidgetCoinList = styled.div`
   gap: 0.15em;
   width: 100%;
   min-width: 10.5em;
-  margin-top: 0.25em;
 `;
 const WidgetCoinRow = styled.div`
   display: grid;
@@ -471,15 +551,48 @@ const WidgetListDivider = styled.div`
 `;
 
 const WidgetSubtext = styled.div`
-  font-size: 0.72em;
+  font-size: 0.68em;
   color: ${({ theme }) => theme.color.textSecondary};
-  margin-top: 0.15em;
+  margin-top: 0.2em;
   /* No text-transform. It used to capitalize, which was invisible while every
    * subtext was one word from an API that already capitalised it ("Greed",
    * "Neutral") and wrong the moment one of them became a sentence: the
    * network-fee cards read "≈ $0.21 To Send · Next Block". Nothing here
    * depended on it — the strings are cased correctly in the source, which is
    * where a reader looks. */
+`;
+
+/* **The regime grid** — nine cells and their headings, in the card's em
+ * like everything in it. Neutral ink throughout: "rising" and "falling" are
+ * names of states here, not figures, and green and red already mean a
+ * figure went up or down. The row for today's state is the one marked. */
+const RegimeTable = styled.div`
+  display: grid;
+  grid-template-columns: auto repeat(3, auto);
+  justify-content: start;
+  align-items: baseline;
+  column-gap: 0.3em;
+  row-gap: 0.1em;
+  margin-top: 0.35em;
+  font-size: 0.64em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.35;
+`;
+
+const RegimeHead = styled.span`
+  color: ${({ theme }) => theme.color.textSecondary};
+  text-align: ${({ left }) => (left ? "left" : "right")};
+  white-space: nowrap;
+`;
+
+const RegimeCell = styled.span`
+  text-align: ${({ left }) => (left ? "left" : "right")};
+  white-space: nowrap;
+  padding: 0.1em 0.25em;
+  border-radius: 0.25em;
+  color: ${({ theme, quiet }) => (quiet ? theme.color.textSecondary : theme.color.text)};
+  font-weight: ${({ theme, now }) => (now ? theme.fontWeight.semibold : theme.fontWeight.regular)};
+  background: ${({ theme, now }) => (now ? theme.color.bgSecondary : "transparent")};
 `;
 
 const MarketStatLabel = styled.span`
@@ -490,7 +603,7 @@ const MarketStatLabel = styled.span`
 
 const HalvingTimeGrid = styled.div`
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 0.5em;
   margin-bottom: 0.35em;
 `;
@@ -557,6 +670,21 @@ const HalvingEta = styled.div`
  * `aria-hidden` on the blocks and the real word kept for screen readers — a
  * pulsing rectangle says nothing out loud.
  */
+/* What a card says when it asked and nothing came back.
+ *
+ * `em`, not `rem` — everything inside a widget card scales off the one
+ * font-size `WidgetCard` sets from the size picker, and a `rem` here would sit
+ * at one size while the card around it grew.
+ *
+ * Secondary ink and no colour: a card that could not load is not an alarm, and
+ * red in this panel already means a price fell. */
+const WidgetEmptyNote = styled.div`
+  font-size: 0.72em;
+  line-height: 1.4;
+  color: ${({ theme }) => theme.color.textSecondary};
+  padding: 0.4em 0;
+`;
+
 const widgetSkeletonPulse = keyframes`
   0%, 100% { opacity: 0.20; }
   50% { opacity: 0.42; }
@@ -574,7 +702,7 @@ const WidgetSkeletonLine = styled.div`
   height: ${({ tall, row }) => (tall ? "1.15em" : row ? "1.29em" : "0.7em")};
   width: ${({ tall, row }) => (tall ? "62%" : row ? "100%" : "44%")};
   margin: ${({ tall, row }) =>
-    tall ? "0.15em auto 0.3em" : row ? "0 auto 0.15em" : "0 auto"};
+    tall ? "0.15em 0 0.3em" : row ? "0 0 0.15em" : "0"};
   border-radius: 0.25em;
   background: ${({ theme }) => theme.color.text};
   animation: ${widgetSkeletonPulse} 1.4s ease-in-out infinite;

@@ -39,6 +39,33 @@ const suites = [
   "test-onboarding.js",
   "test-settings.js",
   "test-chart.js",
+  // The chart's axes: ticks, time labels and the lane allocator, on real d3.
+  "test-axes.js",
+  // The chart's window in time: the window arithmetic, the cut series, LTTB.
+  "test-viewport.js",
+  // The chart's tools: the ruler's count, hit distances, a drawing moved.
+  "test-tools.js",
+  // The chart's counted studies: profile, unusual volume, regimes, turns, where.
+  "test-studies.js",
+  // The palettes: contrast in both themes and palettes, up/down apart for colour-blind readers.
+  "test-palette.js",
+  // The positions model behind Calls: pure arithmetic, no DOM and no clock.
+  "test-practice-model.js",
+  "test-practice-fuzz.js",
+  "test-tax-report.js",
+  // The portfolio's ledger: records in date order, and the return with the
+  // money moved in and out taken out of it.
+  "test-portfolio-ledger.js",
+  "test-crowd.js",
+  // The candlestick shapes, and the counting rule they are read through.
+  "test-candle-patterns.js",
+  "test-price-patterns.js",
+  "test-strategy-setups.js",
+  "test-regime-grid.js",
+  // The outlook: counted readings of the next stretch, before a contract.
+  "test-outlook.js",
+  // The assistant: facts a desk checks, in three phases, never a verdict.
+  "test-assistant.js",
   "test-quickswitch.js",
   "test-alerts.js",
   "test-calls.js",

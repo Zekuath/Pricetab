@@ -33,7 +33,8 @@
 const alertHandlers = (app) => ({
     /* ── price targets (in-tab) ── */
 
-    handleAddAlert: (coin, kind, direction, target) => {
+    handleAddAlert: (coin, kind, direction, target, window, extra) => {
+      const more = extra && typeof extra === "object" ? extra : {};
       app.setState((prev) => {
         if (prev.alerts.length >= MAX_ALERTS) return null;
         const alerts = [
@@ -54,6 +55,26 @@ const alertHandlers = (app) => ({
                 : app.alertPriceFor(coin, prev),
             triggeredAt: null,
             hitPrice: null,
+            /* Stamped on the target rather than kept as a setting: a target is
+               a record of what was asked, and re-reading an old one through a
+               later preference answers a question nobody asked. Only the
+               percent kind has one — see `PERCENT_WINDOW_OPTIONS`. */
+            ...(kind === "percent"
+              ? {
+                  window: PERCENT_WINDOW_OPTIONS.some((o) => o.value === window)
+                    ? window
+                    : DEFAULT_PERCENT_WINDOW,
+                }
+              : {}),
+            /* The three optional stamps, absent unless set — the shape the
+               sanitizer keeps, so a stored target and a fresh one agree. */
+            ...(typeof more.note === "string" && more.note.trim()
+              ? { note: more.note.trim().slice(0, ALERT_NOTE_MAX) }
+              : {}),
+            ...(ALERT_KEEP_OPTIONS.some((o) => o.value !== null && o.value === more.keepFor)
+              ? { keepFor: more.keepFor }
+              : {}),
+            ...(kind === "price" && more.repeat === true ? { repeat: true } : {}),
           },
         ];
         saveAlerts(alerts);
@@ -77,6 +98,8 @@ const alertHandlers = (app) => ({
                     : app.alertPriceFor(a.coin, prev),
                 triggeredAt: null,
                 hitPrice: null,
+                // An expired target re-armed starts its span again from now
+                expiredAt: null,
               }
             : a,
         );
@@ -151,23 +174,42 @@ const alertHandlers = (app) => ({
      * announcement itself stays until the banner is dismissed, so a hit
      * noticed out of the corner of your eye is still there when you arrive.
      */
-    alertTitleText: () => {
-      const fired = app.state.firedAlerts;
-      if (!fired.length) return null;
+    /* **One sentence, two places it is said.** The tab title and the
+       notification are the same announcement in different furniture, so they
+       are written once — a banner that said something the title did not would
+       be two accounts of one event. Takes the list rather than reading state,
+       because the notification is raised inside the check that found the hits
+       and `firedAlerts` has not been written yet at that point.
+       Whole sentences with placeholders: the fragments this was built from
+       ("rose", "fell", "hit") read correctly in English and cannot be
+       translated, because no other language is obliged to put the coin, the
+       verb and the figure in that order. */
+    alertTitleTextFor: (fired) => {
+      if (!fired || !fired.length) return null;
       const first = fired[0];
-      const what =
+      const figure =
         first.kind === "percent"
-          ? `${first.coin} ${first.direction === "above" ? "rose" : "fell"} ${formatPercentValue(first.target)}`
-          : `${first.coin} hit ${formatNumberString(
+          ? formatPercentValue(first.target)
+          : formatNumberString(
               first.target,
               getCurrencySymbol(first.currency),
               true,
               false,
               app.state.decimalPlaces,
               app.state.separatorFormat,
-            )}`;
-      return fired.length > 1 ? `${what} +${fired.length - 1} more` : what;
+            );
+      const what =
+        first.kind === "percent"
+          ? first.direction === "above"
+            ? msg("alarm_rose", "$1 rose $2", first.coin, figure)
+            : msg("alarm_fell", "$1 fell $2", first.coin, figure)
+          : msg("alarm_hit", "$1 hit $2", first.coin, figure);
+      return fired.length > 1
+        ? msg("alarm_and_more", "$1 +$2 more", what, String(fired.length - 1))
+        : what;
     },
+
+    alertTitleText: () => app.alertTitleTextFor(app.state.firedAlerts),
 
     syncAlertTitle: () => {
       const wanted =
@@ -234,6 +276,52 @@ const alertHandlers = (app) => ({
       }
     },
 
+    /* **The permission is asked for out of the press, and only when asked
+       for.** `chrome.permissions.request` refuses anything not tied to a user
+       gesture, and refuses it in a way indistinguishable from the person
+       declining — so this runs straight off the click, with no `await` in
+       front of it. Turning the switch *off* does not withdraw the permission:
+       revoking is its own control, because somebody who is only muting the
+       alarm for an afternoon should not have to grant it again afterwards. */
+    handleAlarmNotifyChange: (enabled) => {
+      if (!enabled) {
+        saveAlarmNotify(false);
+        app.setState({ alarmNotify: false });
+        return;
+      }
+      requestNotifyPermission().then((granted) => {
+        saveAlarmNotify(granted);
+        app.setState({ alarmNotify: granted, alarmGranted: granted });
+      });
+    },
+
+    handleAlarmSoundChange: (enabled) => {
+      saveAlarmSound(enabled);
+      app.setState({ alarmSound: enabled });
+      /* Played once on the way on, which is the only honest way to offer a
+         sound: it is the answer to "what will this sound like", and it is
+         also the gesture that lets the audio context start, so the first real
+         alarm is not the one Chrome's autoplay policy swallows. */
+      if (enabled) playAlarmTone();
+    },
+
+    handleAlarmDrop: () => {
+      dropNotifyPermission().then(() => {
+        saveAlarmNotify(false);
+        app.setState({ alarmNotify: false, alarmGranted: false });
+      });
+    },
+
+    /* One place decides whether anything is raised, for both features. The
+       switch says what is wanted; `alarmGranted` says whether Chrome will
+       allow the banner. A sound needs neither. */
+    raiseAlarm: (id, title, message) => {
+      const notify = Boolean(app.state.alarmNotify && app.state.alarmGranted);
+      const sound = Boolean(app.state.alarmSound);
+      if (!notify && !sound) return false;
+      return announceAlarm({ id, title, message, notify, sound });
+    },
+
     handleAlertTabTitleChange: (enabled) => {
       saveAlertTabTitle(enabled);
       app.setState({ alertTabTitle: enabled }, () => {
@@ -252,8 +340,22 @@ const alertHandlers = (app) => ({
     // after each fetch; the active coin's price comes from state, the rest
     // from the shared ticker cache (filled by the bulk sweep below).
     checkAlerts: async () => {
-      const { alerts, currency } = app.state;
-      if (!alerts.some((a) => !a.triggeredAt)) return;
+      const { currency } = app.state;
+      const now = Date.now();
+      /* Spans first: a target past its keep-for is marked before anything is
+         measured, so it can neither fire nor cost a candle request. */
+      const alerts = expireAlerts(app.state.alerts, now);
+      if (alerts !== app.state.alerts) {
+        saveAlerts(alerts);
+        app.setState({ alerts });
+      }
+      /* Anything armed — or hit and waiting to re-arm, which needs a price too */
+      if (
+        !alerts.some(
+          (a) => !a.expiredAt && (!a.triggeredAt || (a.repeat && a.kind === "price")),
+        )
+      )
+        return;
       const prices = {};
       const activeCoin = app.state.coinOptions[app.state.coinIndex];
       /* The chart's own value is the freshest thing we have for the active
@@ -288,8 +390,16 @@ const alertHandlers = (app) => ({
           if (candles) candlesByCoin[coin] = candles;
         }),
       );
+      /* Repeats re-arm on the way back across the line, before this sweep
+         measures anything — so a re-armed target is judged against where the
+         price is now, and cannot fire on the crossing it already reported. */
+      const armed = rearmRepeatingAlerts(alerts, prices, now);
+      if (armed !== alerts) {
+        saveAlerts(armed);
+        app.setState({ alerts: armed });
+      }
       const fired = findTriggeredAlerts(
-        alerts,
+        armed,
         prices,
         currency,
         candlesByCoin,
@@ -297,6 +407,19 @@ const alertHandlers = (app) => ({
         app.portfolioTotalFrom(prices),
       );
       if (!fired.length) return;
+      /* **Told, not merely marked.** The tab title was the whole of the
+         announcement and it says nothing to somebody looking at another tab —
+         which is the only case where being told is worth anything. Raised
+         once per check with everything that fired in it, rather than one
+         banner per target: three targets crossing on the same sweep is one
+         event to a person and three notifications is a punishment. */
+      app.raiseAlarm(
+        `target-${fired[0].id}`,
+        fired.length > 1
+          ? msg("alarm_targets_n", "$1 price targets hit", String(fired.length))
+          : msg("alarm_target_one", "Price target hit"),
+        app.alertTitleTextFor(fired),
+      );
       // Record when it was actually hit, not when we noticed, and what it was
       // worth then — the row still says so days later
       const hits = new Map(fired.map((a) => [a.id, a]));

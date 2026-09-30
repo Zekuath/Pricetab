@@ -19,6 +19,18 @@ in titles use the brand green.
 | `promo-tiles.html` | Small Tile 440×280, Large Tile 920×680, Marquee 1400×560 |
 | `check-scenes.js` | Runs `scenes.html`'s script for real in a stubbed browser and asserts every scene resolves. **Run it after editing `scenes.html`** — see below |
 | `raw/*.png` | Raw live-UI captures produced by `scenes.html` |
+| `site-shots.js` | The website's gallery (`site/shots/*.png`): drives the live page with its own shortcuts, seeds each scene from the price at capture time, and fails on a page error or a near-empty image. `node assets/mockups/site-shots.js [scene…]` |
+
+## The website's screenshots
+
+`site/index.html`'s gallery is shot by `site-shots.js`, not by `scenes.html`:
+nine scenes (calls, compare, companion, portfolio, tax, practice, news,
+base rates, targets) against real market data, seeded from the live price so
+a target or a call never lands off the chart. It serves the repository on
+localhost, uses the Chromium the render suites installed, and needs a network.
+Run it after a visible change to any of those screens, and look at every
+image before publishing — it proves each one is a real screen, not that it is
+a good one.
 
 ## Shooting the promo site
 

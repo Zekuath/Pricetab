@@ -4,6 +4,15 @@ const LINE_DUMMY = Array(2)
   .map((_, i) => ({ price: 0, time: new Date(2010 + i) }));
 
 const PADDING = 24;
+/* Air between the last wick and the top of the volume band. Four pixels: at
+ * two the tallest bars touched the bodies above them, and at eight the band
+ * read as a second chart rather than as the price's own foot. */
+const CANDLE_VOLUME_GAP = 4;
+/* The last-price tag: one character of the chart's 10px monospace, the inset
+ * either side of the number, and the air between the tag and the last bar. */
+const LAST_TAG_CHAR = 6;
+const LAST_TAG_PAD = 6;
+const LAST_TAG_GAP = 4;
 
 /* The board's limits, in squares rather than in fractions of the width: a
  * limit written as a percentage would mean something different on every
@@ -96,6 +105,25 @@ const isCellSpan = (ms) => CELL_SPANS.some((v) => Math.abs(v - ms) < 1);
 /* How long the latch takes to close, and how long the draft's own pulse is
  * suppressed for so the two never play over each other. */
 const LOCK_PULSE_MS = 520;
+/* How far the pointer must travel before a press is a drag rather than a
+ * click. Movement, never a timer: a press-and-hold that never moves is a
+ * click that took a while, and a gesture keyed on how fast the hand is fails
+ * on a trackpad. Six pixels is also about the distance a hand shakes on a
+ * mouse button. */
+const CALL_DRAG_SLOP = 6;
+/* The pan arrows: the plate you can see, and the capsule that answers to the
+ * pointer. The capsule is deliberately under one square in both directions
+ * (a square is around 64px on a 900px window) — the arrow gets an area of its
+ * own without taking a band you might want to call. */
+const PAN_PLATE = 28;
+const PAN_ZONE = 46;
+/* Room for the grid's own price labels down the left-hand edge, which the
+ * left arrow must sit beside rather than on top of — and it is the *capsule*
+ * that has to clear them, not the plate. Measured at 1280x800: a label runs
+ * to x=47 and the capsule reached back to x=41, so resting on a price to read
+ * it put the pointer inside a control, took the crosshair away and offered to
+ * walk the board instead. The plate had cleared it by 3px and looked right. */
+const PAN_LEFT_GUTTER = 58;
 /* Letting go is quicker than locking. The latch is a commitment and is worth
  * watching land; a withdrawal is a correction, and dwelling on it would make
  * an accident feel like an event. */
@@ -241,6 +269,18 @@ const CROSSHAIR_ROWS = [
 const COMPARE_LABEL_LIFT = 8;
 const COMPARE_LABEL_MIN_GAP = 14;
 
+/* The ink of each compared line, and the only door to the palette's blue.
+ *
+ * `theme.color.chartLine` may be named in this file alone
+ * (`tests/test-invariants.js` fails on it anywhere else), because it exists
+ * for the second plotted line and nothing else. The strip under the price
+ * that names the two lines while a comparison is up (`CompareStrip`,
+ * `styles-app.js`) has to show the same two inks or it is a legend for a
+ * different chart — so it asks here, through this function, rather than
+ * reaching for the token. Anything else that wants the blue is still a bug. */
+const compareInk = (theme, second) =>
+  second ? theme.color.chartLine : theme.color.text;
+
 // Compact volume: 1.57K, 42.4M — full digits would dominate the readout
 const formatVolume = (value) => {
   const v = Number(value);
@@ -309,12 +349,22 @@ class LineBase extends PureComponent {
       },
     ];
     this.activeLayer = 0;
+    /* The last close: a line across the plot and a tag at the right edge —
+     * see `updateLastPrice`. Written to imperatively like every other
+     * overlay here, so a price arriving does not cost React a diff. */
+    _defineProperty(this, "lastPriceRef", createRef());
+    _defineProperty(this, "lastLineRef", createRef());
+    _defineProperty(this, "lastTagRef", createRef());
+    _defineProperty(this, "lastTextRef", createRef());
     _defineProperty(this, "lineGroupRef", createRef());
 
     /* Reference level drawn across the chart — the portfolio's cost basis.
      * Positioned imperatively like the comparison zero line, so a redraw
      * moves it without React touching the SVG. */
     _defineProperty(this, "refLineRef", createRef());
+    // The moving-average line and the word that says what it averages
+    _defineProperty(this, "avgRef", createRef());
+    _defineProperty(this, "avgLabelRef", createRef());
     _defineProperty(this, "refLabelRef", createRef());
 
     /* Grid layer. Lines, their axis labels and the cell under the pointer are
@@ -330,6 +380,9 @@ class LineBase extends PureComponent {
     _defineProperty(this, "liveDotRef", createRef());
     _defineProperty(this, "callLayerRef", createRef());
     _defineProperty(this, "moveLayerRef", createRef());
+    _defineProperty(this, "posLayerRef", createRef());
+    // US CPI releases on the drawn range — see `updateMacroEvents`
+    _defineProperty(this, "eventLayerRef", createRef());
     _defineProperty(this, "burstRef", createRef());
 
     // Comparison overlay: both coins as percent change on one shared axis
@@ -339,6 +392,9 @@ class LineBase extends PureComponent {
     _defineProperty(this, "comparePathBRef", createRef());
     _defineProperty(this, "compareLabelARef", createRef());
     _defineProperty(this, "compareLabelBRef", createRef());
+    /* The percent ticks at the left edge: the top of the shared axis, its
+       foot, and the zero line. See `placeCompareTicks`. */
+    _defineProperty(this, "compareTickRefs", [createRef(), createRef(), createRef()]);
     this.compareScaled = null;
     this.compareD = { a: null, b: null };
 
@@ -367,6 +423,13 @@ class LineBase extends PureComponent {
     this.hoverIndex = -1;
     this.hoverCellKey = null;     // which square the readout is describing
     this.nowDrag = null;          // { from, moved } while the now line is held
+    this.callDrag = null;         // { x, y, moved } while a square is dragged to
+    this.callDragRaf = 0;
+    this.boardPan = 0;            // how many squares the board has been walked
+    this.panAnim = null;          // { from, start } while that walk travels
+    this.panRaf = 0;
+    this._panHold = 0;            // the wait before a held arrow starts repeating
+    this._panRepeat = 0;
     this.suppressClick = false;   // the click that ends a drag is not a click
     /* Kept and rewritten rather than rebuilt — see `poolNode`.
      *
@@ -393,6 +456,24 @@ class LineBase extends PureComponent {
     // "What happened here?" marks — pooled like everything else on this chart
     this._moveMarks = { list: [], at: 0 };
     this._moveTags = { list: [], at: 0 };
+    // The open position's levels — entry, stop, take-profit, liquidation
+    this._posLines = { list: [], at: 0 };
+    this._posTags = { list: [], at: 0 };
+    this._posFills = { list: [], at: 0 };
+    // The armed price targets for this coin, drawn on the same layer
+    this._tgtLines = { list: [], at: 0 };
+    this._tgtTags = { list: [], at: 0 };
+    // US CPI releases: a line down the plot and its tag
+    this._evtLines = { list: [], at: 0 };
+    this._evtTags = { list: [], at: 0 };
+    // The chart companion: a setup's lines, its swing points and its words
+    this._cmpLines = { list: [], at: 0 };
+    this._cmpDots = { list: [], at: 0 };
+    this._cmpTags = { list: [], at: 0 };
+    this._cmpBoxes = { list: [], at: 0 };
+    // The indicator overlay's lines and its one label
+    this._ovlPaths = { list: [], at: 0 };
+    this._ovlTags = { list: [], at: 0 };
     this._moveClusters = [];
     // The leading-edge bar on the first call in a contested column
     this._callMarks = { list: [], at: 0 };
@@ -417,6 +498,10 @@ class LineBase extends PureComponent {
     this.clipId = "ptReveal_" + uid;
     this.fadeId = "ptFade_" + uid;
     this.fadeGradId = "ptFadeGrad_" + uid;
+    /* Two, because the danger is below a long and above a short and a
+     * gradient has a direction. */
+    this.liqGradIdDown = "ptLiqDown_" + uid;
+    this.liqGradIdUp = "ptLiqUp_" + uid;
 
     // Debounced resize handler (150ms delay)
     _defineProperty(
@@ -425,11 +510,13 @@ class LineBase extends PureComponent {
       debounce(() => {
         if (this.svgRef && this.svgRef.current) {
           const { height, width } = this.svgRef.current.getBoundingClientRect();
-          this.height = height;
-          this.width = width;
-          // Keep the reveal clip covering the full chart after a resize
+          // The SVG's box; the plot is that less the axes (`layoutPlot`)
+          this.svgW = width;
+          this.svgH = height;
+          this.layoutPlot();
+          // Keep the reveal clip covering the full plot after a resize
           if (this.clipRect) {
-            this.clipRect.attr("width", width).attr("height", height);
+            this.clipRect.attr("width", this.width).attr("height", this.height);
           }
           this.updatePath();
           this.updateCandles(false);
@@ -461,7 +548,18 @@ class LineBase extends PureComponent {
     );
 
     _defineProperty(this, "handlePointerDown", (e) => {
-      if (!this.nowLineAt(e.offsetX)) return;
+      /* A press on one of the pan arrows is that arrow's, whatever it is
+       * sitting over. The left one is placed a grab-band clear of the "now"
+       * line, but the board can be pulled out until there is one square of
+       * history left, and there the arrow has nowhere to go but onto the line
+       * — at which point the control that walks a square would have started a
+       * drag instead. The pan group already swallows its own clicks; this is
+       * the same rule one event earlier. */
+      if (e.target && e.target.closest && e.target.closest(".pt-pan")) return;
+      if (!this.nowLineAt(e.offsetX)) {
+        this.armCallDrag(e);
+        return;
+      }
       this.nowDrag = { from: e.offsetX, x: e.offsetX, moved: false };
       const svg = this.svgRef.current;
       if (svg && svg.setPointerCapture) {
@@ -477,6 +575,119 @@ class LineBase extends PureComponent {
       this.unlockId = null;
       this.clearHover();
       this.updateCalls();
+    });
+
+    /* **Drag a square to where you want it, and let go.**
+     *
+     * The board has always taken two clicks, and the reason is still good: a
+     * chart is a surface people click for other reasons, and one stray click
+     * must not commit a prediction that goes on a record. But two clicks is
+     * also the slowest way to say a thing you can already see — you are
+     * looking at the square, and pressing twice on it is a formality.
+     *
+     * So a **drag** is the second way in, and it is deliberately not a
+     * shortcut for one click: press, pull to the square you mean, let go, and
+     * it locks. One continuous gesture, with the box under the hand the whole
+     * time, which is how you point at something. Clicking still takes two,
+     * unchanged and untouched, so nothing anybody has learned stops working
+     * and a slipped click still cannot call anything.
+     *
+     * The two are told apart by movement, not by timing — a press-and-hold
+     * that never moves is a click that took a while, and a gesture that
+     * depends on how fast your hand is is a gesture that fails on a trackpad.
+     * `CALL_DRAG_SLOP` (6px) is the line, which is also the distance below
+     * which a "drag" is a hand shaking on a mouse button.
+     *
+     * Nothing is drafted on the press. Drafting there would make a plain
+     * click place a call on its own — the click handler would find its own
+     * draft already sitting under it and lock immediately, quietly deleting
+     * the two-click rule while every comment still claimed it. */
+    /* Let go of a held arrow — on release, on the pointer leaving it, and on
+     * unmount. A repeat that outlives the press walks the board on its own. */
+    _defineProperty(this, "stopPanHold", () => {
+      clearTimeout(this._panHold);
+      clearInterval(this._panRepeat);
+      this._panHold = 0;
+      this._panRepeat = 0;
+    });
+
+    _defineProperty(this, "armCallDrag", (e) => {
+      if (!this.props.predict || typeof this.props.onPlaceCall !== "function") return;
+      const cell = this.cellAt(e.offsetX, e.offsetY);
+      /* Only from an empty square. Starting on a locked box is how you take
+       * one back (two clicks, `unlockId`), and a drag beginning there would
+       * be two gestures fighting over one press. */
+      if (!cell || this.callOccupying(cell)) return;
+      this.callDrag = { x: e.offsetX, y: e.offsetY, fromX: e.offsetX, fromY: e.offsetY, moved: false };
+    });
+
+    /* One redraw per frame while the box follows the hand, the rule the "now"
+     * drag and the crosshair both already follow: a trackpad fires several
+     * moves per frame and each one that crossed a square would redraw the
+     * whole board, so the work piles up behind the hand. */
+    _defineProperty(this, "trackCallDrag", (e) => {
+      const d = this.callDrag;
+      d.x = e.offsetX;
+      d.y = e.offsetY;
+      if (
+        !d.moved &&
+        Math.abs(d.x - d.fromX) + Math.abs(d.y - d.fromY) >= CALL_DRAG_SLOP
+      ) {
+        d.moved = true;
+        /* The crosshair stands down for the same reason it does on the "now"
+         * handle: the chart is being operated, not read, and a price readout
+         * would sit on top of the box being placed. */
+        this.clearHover();
+      }
+      if (!d.moved) return;
+      if (!this.callDragRaf) {
+        this.callDragRaf = requestAnimationFrame(this.applyCallDrag);
+      }
+    });
+
+    _defineProperty(this, "applyCallDrag", () => {
+      this.callDragRaf = 0;
+      const d = this.callDrag;
+      if (!d || !d.moved) return;
+      /* The **position** is held and the square re-derived from it, exactly as
+       * `draftAt` does between two clicks — the price domain moves under a
+       * refresh, so a stored cell would stop matching the lattice it was taken
+       * from. */
+      this.draftAt = { x: d.x, y: d.y };
+      this.unlockId = null;
+      this.updateCalls();
+      this.drawGridCell();
+    });
+
+    /* Let go: on a square, that is the call. Anywhere else, the draft goes
+     * with the gesture rather than being left on the chart — a half-made call
+     * nobody asked to keep. */
+    _defineProperty(this, "finishCallDrag", () => {
+      const d = this.callDrag;
+      this.callDrag = null;
+      if (this.callDragRaf) {
+        cancelAnimationFrame(this.callDragRaf);
+        this.callDragRaf = 0;
+      }
+      if (!d || !d.moved) return false;
+      const cell = this.cellAt(d.x, d.y);
+      this.draftAt = null;
+      this.unlockId = null;
+      if (cell && !this.callOccupying(cell)) {
+        // The same latch the second click plays, so the two ways in end
+        // identically — a call placed by dragging must not look different
+        // from one placed by clicking
+        this.lockPulse = cell;
+        clearTimeout(this.lockPulseTimer);
+        this.lockPulseTimer = setTimeout(() => {
+          this.lockPulse = null;
+          this.updateCalls();
+        }, LOCK_PULSE_MS);
+        this.props.onPlaceCall(cell);
+      }
+      this.updateCalls();
+      this.drawGridCell();
+      return true;
     });
 
     /* Where the line is allowed to be, in pixels from the left. The drag and
@@ -560,6 +771,17 @@ class LineBase extends PureComponent {
     });
 
     _defineProperty(this, "handlePointerUp", (e) => {
+      if (this.callDrag) {
+        /* A drag that moved must not also arrive as a click — the click
+         * fires after the release, and on this board a click drafts. Same
+         * guard the "now" handle needs, for the same reason. */
+        if (this.finishCallDrag()) this.suppressClick = true;
+        const svgc = this.svgRef.current;
+        if (svgc && svgc.releasePointerCapture && e && svgc.hasPointerCapture(e.pointerId)) {
+          svgc.releasePointerCapture(e.pointerId);
+        }
+        return;
+      }
       if (!this.nowDrag) return;
       if (this.dragRaf) {
         cancelAnimationFrame(this.dragRaf);
@@ -582,6 +804,12 @@ class LineBase extends PureComponent {
 
     /* Pointer handling: record the position, do the work once per frame */
     _defineProperty(this, "handlePointerMove", (e) => {
+      // A pan owns the pointer (chart-viewport.js); the readout waits for it
+      if (this.props.panning) return;
+      if (this.callDrag) {
+        this.trackCallDrag(e);
+        if (this.callDrag.moved) return;
+      }
       if (this.nowDrag) {
         /* One redraw per frame, not one per pointer event. A trackpad fires
          * several moves a frame and each one that crossed a square rebuilt the
@@ -618,6 +846,27 @@ class LineBase extends PureComponent {
       if (grabbable) return;
       this.hoverX = e.offsetX;
       this.hoverY = e.offsetY;      // the grid needs both axes
+      /* A companion mark under the pointer opens its card in the corner
+       * (29 Sep 2026). A ring shared by several setups reads the one a
+       * click already stepped to, else the newest. On a mark the chart is
+       * being read through the card, so the crosshair stands down — the
+       * rule the move marks below follow. */
+      const cmpHit = this.companionAt(e.offsetX, e.offsetY);
+      const cmpKey = !cmpHit
+        ? null
+        : cmpHit.keys && this._cmpPinned && cmpHit.keys.includes(this._cmpPinned)
+          ? this._cmpPinned
+          : cmpHit.key;
+      if (this._cmpHot !== cmpKey) {
+        this._cmpHot = cmpKey;
+        if (svg) svg.style.cursor = cmpHit ? "pointer" : "";
+        this.updateCompanion();
+      }
+      if (cmpHit) {
+        this.clearHover();
+        this.updateGrid();
+        return;
+      }
       /* A mark under the pointer comes up to full strength, takes the pointer
        * cursor, and is announced upward so the headlines for that window can
        * be on their way before anybody clicks. Announced on the way *off* one
@@ -662,6 +911,13 @@ class LineBase extends PureComponent {
      * line rather than on a square, and a readout left behind describes a box
      * that the redraw has already moved out from under it. */
     _defineProperty(this, "clearHover", () => {
+      /* A frame already asked for would draw the readout straight back —
+         at index 0, since the pointer is parked at -1 below: after a pan or
+         the ruler the readout sat on the chart's first point. */
+      if (this.hoverRaf) {
+        cancelAnimationFrame(this.hoverRaf);
+        this.hoverRaf = 0;
+      }
       this.hoverIndex = -1;
       this.hoverCellKey = null;
       /* Park the pointer off the chart, not just wherever it was last seen.
@@ -710,6 +966,19 @@ class LineBase extends PureComponent {
       /* A drag that leaves the window is over. Without this the flag survived
        * — the pointer came back somewhere else on the chart and the line
        * followed it, having never been let go of. */
+      /* A drag that leaves the window is abandoned, never completed: the
+       * square under a pointer that has gone is not a square anybody chose. */
+      if (this.callDrag) {
+        this.callDrag = null;
+        if (this.callDragRaf) {
+          cancelAnimationFrame(this.callDragRaf);
+          this.callDragRaf = 0;
+        }
+        if (this.draftAt) {
+          this.draftAt = null;
+          this.updateCalls();
+        }
+      }
       if (this.nowDrag) {
         this.nowDrag = null;
         this.suppressClick = false;
@@ -720,6 +989,11 @@ class LineBase extends PureComponent {
         this.updatePath();
       }
       this._grabbable = false;
+      // A card read by pointing goes with the pointer; a kept one stays
+      if (this._cmpHot) {
+        this._cmpHot = null;
+        this.updateCompanion();
+      }
       this.clearHover();
     });
 
@@ -818,7 +1092,508 @@ class LineBase extends PureComponent {
         }
         out.push({ x: point.time, y: point.price, items: [move] });
       }
+      /* **Which way the cluster went: the biggest step in it decides.**
+       *
+       * A cluster can hold several moves and they need not agree — a spike is
+       * usually a violent step and its recovery, and the two land close
+       * enough together to share a mark. The first rule tried here was the
+       * *net* move across the cluster, first `from` against last `to`, and it
+       * was measured wrong on the suite's own fixture: all three marks came
+       * out green and pointing up, including the two that mark a fall,
+       * because a drop and its rebound net out to nothing.
+       *
+       * The largest `|z|` in the cluster was tried next and is wrong for a
+       * reason worth writing down: these are **log** returns, and a fall
+       * lowers the base the recovery is measured against, so the rebound is
+       * always the larger of the two. A 2,600 drop from 43,180 is −0.0621 and
+       * the way back is +0.0630 — so every V read as *up*, and every
+       * inverted V would have read as *down*, which is precisely backwards.
+       *
+       * What is left is the one that is actually true: **the step that
+       * started it**. A spike is a violent move and then its return, and the
+       * violent move is the thing that happened; the return is the aftermath.
+       * `items` is in time order, so that is the first of them. `null` only
+       * when it carries no usable direction, and then the old neutral mark is
+       * drawn rather than a side being picked. */
+      for (const c of out) {
+        const z = Number(c.items[0].z);
+        c.up = isFinite(z) && z !== 0 ? z > 0 : null;
+      }
       return out;
+    });
+
+    /* **Where you got in, where it ends, and which way it is going.**
+     *
+     * A position in the panel is four numbers in a list; on the chart it is
+     * four lines the price is either side of, which is the reading you cannot
+     * get from a list — the whole reason the panel sits under a chart rather
+     * than in a tab of its own. Entry, stop, take-profit and the liquidation
+     * level, each labelled, each only drawn when it is inside the range on
+     * screen (`priceToChartY` returns null otherwise, and pinning a level to
+     * the edge would draw a crossing the window does not contain).
+     *
+     * **The band between entry and the price is filled**, up-green above the
+     * entry on a long and down-red below it, which is the thing being asked
+     * for — "where did we start and where are we going" is a direction, and a
+     * direction is read as an area far faster than as two numbers. The fill
+     * flips with the side: a short is winning below its entry.
+     *
+     * The colours are the only ones available here and they are already
+     * right: green and red mean up and down on this chart, and on a position
+     * up and down *are* profit and loss. The liquidation line is the one that
+     * carries weight rather than colour — a dash and full ink — because it is
+     * not a reading about the price, it is the level the position stops
+     * existing at, and it must not be mistaken for the stop you chose.
+     *
+     * Under a board the y mapping is the board's own window, not the data's
+     * range, so `this.priceToY` is used wherever it exists: a level placed by
+     * the other scale would sit a few squares off the lattice the calls are
+     * welded to. */
+/* **Where a price sits on this chart, and which way it lies when it does
+     * not sit on it at all.** Two helpers, shared by everything that draws a
+     * level: the open contract's four, and the price targets you set.
+     *
+     * They were written inside `updatePositionLevels` and were lifted out
+     * whole when targets began drawing lines of their own — a second copy is
+     * how two drawings of the same price end up a few pixels apart.
+     *
+     * Under a board the price scale is the board's window; without one it is
+     * the data's range. Asking the wrong one puts every level a few squares
+     * out. Outside the window `levelY` answers null rather than an edge,
+     * because pinning a level to the frame draws a crossing the chart does
+     * not contain — and `levelOffEdge` is how a drawing says "it is up
+     * there" without pretending to know where. */
+    /* **The candles' own scale, while they are what is drawn** (29 Sep
+     * 2026). Bars are scaled from their highs and lows into the space above
+     * the volume pane (`scaleCandles`), while `priceToChartY` maps the closes
+     * over the whole height — so in candle mode every level (targets, the
+     * position, overlays, the companion) sat a few pixels to tens of pixels
+     * off the bars it was about. The price scale made that visible: its
+     * "$86K" was level with a close of $85,646. Null whenever something else
+     * owns the y mapping — a lattice (`priceToY`) or a comparison. */
+    _defineProperty(this, "candleMap", () => {
+      const sc = this.candleScale;
+      if (!this.props.showCandles || this.priceToY || this.compareScaled || !sc) return null;
+      if (!(sc.max > sc.min) || !(sc.bottom > sc.top) || !sc.bars || !sc.bars.length) return null;
+      const span = sc.max - sc.min;
+      const h = sc.bottom - sc.top;
+      return {
+        min: sc.min,
+        max: sc.max,
+        top: sc.top,
+        bottom: sc.bottom,
+        toY: (v) => sc.top + (1 - (v - sc.min) / span) * h,
+        toV: (y) => sc.min + (1 - (y - sc.top) / h) * span,
+      };
+    });
+
+    _defineProperty(this, "levelY", (v) => {
+      if (!isFinite(v) || !(v > 0)) return null;
+      if (this.priceToY) {
+        const y = this.priceToY(v);
+        return y >= 0 && y <= this.height ? y : null;
+      }
+      const candles = this.candleMap();
+      if (candles) {
+        const y = candles.toY(v);
+        return y >= 0 && y <= this.height ? y : null;
+      }
+      return priceToChartY(
+        safePrices(this.props.prices),
+        v,
+        this.height,
+        PADDING,
+        PADDING,
+        this.logAxis(),
+      );
+    });
+
+    _defineProperty(this, "levelOffEdge", (v) => {
+      if (!isFinite(v) || !(v > 0)) return null;
+      if (this.priceToY) {
+        const raw = this.priceToY(v);
+        if (!isFinite(raw)) return null;
+        return raw < 0 ? "above" : raw > this.height ? "below" : null;
+      }
+      const candles = this.candleMap();
+      if (candles) {
+        const y = candles.toY(v);
+        return y < 0 ? "above" : y > this.height ? "below" : null;
+      }
+      let lo = Infinity;
+      let hi = -Infinity;
+      for (const d of safePrices(this.props.prices)) {
+        const price = Number(d.price);
+        if (!isFinite(price)) continue;
+        if (price < lo) lo = price;
+        if (price > hi) hi = price;
+      }
+      if (!isFinite(lo) || !isFinite(hi)) return null;
+      return v > hi ? "above" : v < lo ? "below" : null;
+    });
+
+    _defineProperty(this, "updatePositionLevels", () => {
+      const layer = this.posLayerRef.current;
+      if (!layer) return;
+      this._posLines.at = 0;
+      this._posTags.at = 0;
+      this._posFills.at = 0;
+      const pos = this.props.position;
+      const color = this.props.theme.color;
+      const data = safePrices(this.props.prices);
+      const toY = this.levelY;
+
+      if (!pos || !data.length || !this.height || !this.width) {
+        this.hideRest(this._posLines);
+        this.hideRest(this._posTags);
+        this.hideRest(this._posFills);
+        return;
+      }
+
+      /* **Edge to edge, like everything else the chart draws.**
+       *
+       * These were inset by `PADDING` at both ends, so the levels and the two
+       * tinted regions stopped 24px short of the sides while the price line,
+       * its area fill and the gridlines all run the full width. The result
+       * read as a rectangle laid *on* the chart rather than as part of it —
+       * reported as gaps at the edges — and the liquidation zone was the
+       * worst of it, being a large filled block with a visible margin.
+       *
+       * A level is a statement about a price, and a price is true across the
+       * whole chart. Only the *labels* keep an inset, because a word touching
+       * the frame is a different fault. */
+      const right = this.width;
+      const entryY = toY(pos.entry);
+      const nowY = toY(pos.mark);
+
+      /* The area between the entry and where the price actually is. Drawn
+         first so every line lands on top of it. */
+      if (entryY != null && nowY != null) {
+        const winning = pos.side === "short" ? pos.mark < pos.entry : pos.mark > pos.entry;
+        const fill = this.poolNode(this._posFills, "rect", layer);
+        fill.setAttribute("x", 0);
+        fill.setAttribute("width", Math.max(0, right));
+        fill.setAttribute("y", Math.min(entryY, nowY));
+        fill.setAttribute("height", Math.abs(entryY - nowY));
+        fill.setAttribute(
+          "fill",
+          winning ? color.chartLineGreen : color.chartLineRed,
+        );
+        /* Enough to read against the chart's own area fill, which is green
+           too — at a tenth the winning case was invisible under it. The
+           losing case is the one that earns this: red under a green chart is
+           unmistakable, and it is the state you want to notice without
+           reading anything. */
+        fill.setAttribute("opacity", "0.18");
+      }
+
+      /* **The liquidation level, and the ground under it.**
+       *
+       * The other three levels are choices — where you got in, where you get
+       * out if you are wrong, where you get out if you are right. This one is
+       * not: it is where the position stops existing, and a dashed line among
+       * three other dashed lines does not say that. So the region past it is
+       * tinted: for a long, everything below; for a short, everything above.
+       * Faint, because it is a large filled area and the price line has to
+       * stay the thing you read — but unmistakably a place you do not want
+       * the price to reach. Drawn before the levels so every line lands on
+       * top of it. */
+      /* **Which way a level lies when it is off the window.**
+       *
+       * `toY` refuses a price outside the drawn range, which is right for a
+       * line — pinning one to an edge would draw a crossing the chart does
+       * not contain. For the *liquidation* it is the worst possible answer:
+       * the one level you must not be surprised by becomes invisible, with
+       * nothing saying whether it is a hair above the top or half a chart
+       * below. Every venue puts a marker on the edge instead. */
+      const offEdge = this.levelOffEdge;
+
+      if (pos.liquidation > 0) {
+        const ly = toY(pos.liquidation);
+        if (ly != null) {
+          const long = pos.side !== "short";
+          /* **A band that falls away, not a flooded half.** At a high
+             leverage the level sits close to the price, so tinting everything
+             past it filled most of the chart — and the claim was never "this
+             region matters", it is "the contract ends *here*". The reach is a
+             fifth of the height, clipped to the chart, so the statement is
+             about the line and the price line stays the thing you read. */
+          const reach = Math.max(24, Math.round(this.height * 0.2));
+          const top = long ? ly : Math.max(0, ly - reach);
+          const bottom = long ? Math.min(this.height, ly + reach) : ly;
+          const zone = this.poolNode(this._posFills, "rect", layer);
+          zone.setAttribute("x", 0);
+          zone.setAttribute("width", Math.max(0, right));
+          zone.setAttribute("y", top);
+          zone.setAttribute("height", Math.max(0, bottom - top));
+          zone.setAttribute(
+            "fill",
+            `url(#${long ? this.liqGradIdDown : this.liqGradIdUp})`,
+          );
+          zone.setAttribute("opacity", "1");
+        }
+      }
+
+      const level = (value, label, ink, dash, weight) => {
+        const y = toY(value);
+        if (y == null) return;
+        const el = this.poolNode(this._posLines, "line", layer);
+        el.setAttribute("x1", 0);
+        el.setAttribute("x2", right);
+        el.setAttribute("y1", y);
+        el.setAttribute("y2", y);
+        el.setAttribute("stroke", ink);
+        el.setAttribute("stroke-width", weight || "1");
+        el.setAttribute("stroke-dasharray", dash || "none");
+        el.setAttribute("opacity", "0.9");
+        const tag = this.poolNode(this._posTags, "text", layer);
+        /* Right-hand end, where the price already is — the left edge is
+           where the grid puts its own price labels, and two sets of numbers
+           in one gutter is neither of them. */
+        /* The label keeps its inset even though the line no longer has one:
+           a number touching the frame reads as clipped. Placed above its own
+           line, or below it when the line is within a label's height of the
+           top — otherwise the entry tag on a position near the top of the
+           window is drawn off the chart. */
+        tag.setAttribute("x", right - 10);
+        tag.setAttribute("y", y < 14 ? y + 12 : y - 5);
+        tag.setAttribute("text-anchor", "end");
+        tag.setAttribute("fill", ink);
+        tag.setAttribute("font-size", "9");
+        tag.setAttribute("font-family", this.props.theme.font.primary);
+        tag.setAttribute("letter-spacing", "0.06em");
+        /* Painted with the page behind it: these sit on top of the price
+           line, and a nine-pixel label crossed by it is unreadable. */
+        tag.setAttribute("stroke", color.bg);
+        tag.setAttribute("stroke-width", "3");
+        tag.setAttribute("paint-order", "stroke");
+        tag.textContent = label;
+      };
+
+      /* Finer than the grid's own labels, and it has to be. The axis prints
+         many levels and abbreviates hard; these are four specific numbers
+         somebody is comparing with each other, and at the grid's resolution
+         an entry and a stop one percent apart both read `$112.5K`. A step of
+         a two-thousandth gives about two decimals in the K form — ten dollars
+         of resolution on a Bitcoin price — and still four decimals on a coin
+         that costs forty cents. */
+      const money = (v) => formatAxisPrice(v, v / 2000, this.props.currencySymbol);
+      const long = pos.side !== "short";
+      /* The entry carries the live result as well as the price. It is the
+         line the result is measured *from*, so the two belong on one label —
+         and a position on a chart with no number on it makes you go back to
+         the panel to find out how it is doing, which is the trip this whole
+         drawing exists to save. */
+      level(
+        pos.entry,
+        pos.pnlText
+          ? msg(
+              "chart_pos_entry_pnl",
+              "$1 entry $2 · $3",
+              long ? "LONG" : "SHORT",
+              money(pos.entry),
+              pos.pnlText,
+            )
+          : msg("chart_pos_entry", "$1 entry $2", long ? "LONG" : "SHORT", money(pos.entry)),
+        color.text,
+        "4 3",
+      );
+      if (pos.take > 0) {
+        level(
+          pos.take,
+          msg("chart_pos_take", "take $1", money(pos.take)),
+          color.chartLineGreen,
+          "2 3",
+        );
+      }
+      if (pos.stop > 0) {
+        level(
+          pos.stop,
+          msg("chart_pos_stop", "stop $1", money(pos.stop)),
+          color.chartLineRed,
+          "2 3",
+        );
+      }
+      if (pos.liquidation > 0) {
+        /* Solid, heavier and in full ink where the other three are dashed:
+           this is not a reading about the price, it is the level the contract
+           closes you at, and it must not read as another level you chose. */
+        level(
+          pos.liquidation,
+          msg("chart_pos_liq", "liquidation $1", money(pos.liquidation)),
+          color.chartLineRed,
+          "none",
+          "2",
+        );
+        /* **Off the window, it gets a marker rather than nothing.** An arrow
+           on the edge it lies beyond, in the same red, with the price — so a
+           liquidation a hair above the top of the chart is a thing you can
+           see, which is the whole reason the level is drawn at all. Not a
+           line: it is not at that price, and pretending otherwise is the
+           thing `toY` refuses to do. */
+        const off = toY(pos.liquidation) == null ? offEdge(pos.liquidation) : null;
+        if (off) {
+          const tag = this.poolNode(this._posTags, "text", layer);
+          tag.setAttribute("x", right - 10);
+          tag.setAttribute("y", off === "above" ? 11 : this.height - 4);
+          tag.setAttribute("text-anchor", "end");
+          tag.setAttribute("fill", color.chartLineRed);
+          tag.setAttribute("font-size", "9");
+          tag.setAttribute("font-family", this.props.theme.font.primary);
+          tag.setAttribute("letter-spacing", "0.06em");
+          tag.setAttribute("stroke", color.bg);
+          tag.setAttribute("stroke-width", "3");
+          tag.setAttribute("paint-order", "stroke");
+          /* Two whole calls with literal keys, not one whose key is an
+             expression: the extractor reads the source, and a key it cannot
+             see never reaches a catalogue.
+             **And the arrow is the character, not an escape.** The extractor
+             copies what is between the quotes, so a `\u2191` written in the
+             source reaches `_locales/en` as six literal characters — which is
+             what an English browser then prints, since `chrome.i18n` answers
+             from that file. */
+          tag.textContent = off === "above"
+            ? msg("chart_pos_liq_up", "liquidation ↑ $1", money(pos.liquidation))
+            : msg("chart_pos_liq_down", "liquidation ↓ $1", money(pos.liquidation));
+        }
+      }
+      this.hideRest(this._posLines);
+      this.hideRest(this._posTags);
+      this.hideRest(this._posFills);
+    });
+
+    /* **THE PRICE TARGETS YOU SET, ON THE AXIS YOU SET THEM AGAINST.**
+     *
+     * Asked for on 23 Sep 2026, with the drawer that puts the targets panel
+     * beside the chart rather than over it. A target is a price and a
+     * direction; a panel can only print the number, and a number on its own
+     * does not answer the question anybody actually has open on a chart,
+     * which is *how far away is it*. One line says it.
+     *
+     * **What is drawn, and what deliberately is not.**
+     *
+     * · Only **price** targets, only for the coin on screen, only in the
+     *   currency the chart is drawn in, and only while they are still armed.
+     *   A percent target is a move rather than a level and has no line to
+     *   draw; a portfolio target is not about this coin at all; and a hit or
+     *   expired one is a record, not a level.
+     * · **One ink for both directions, and it is the page's own.** Green and
+     *   red are direction on this chart, and a target is not a direction: a
+     *   *falls below* target is as often somewhere you want to buy as
+     *   somewhere you fear. The accent was tried first and is the wrong
+     *   answer for the same reason — it is a green, on a chart whose green
+     *   means up. The arrow in the label says which way it is watching.
+     * · **Dotted, and thinner than the contract's lines.** A level you asked
+     *   to be told about must not read like the level a contract closes at.
+     *
+     * Off the window it gets a marker on the edge rather than nothing, for
+     * the reason the liquidation does — except that a target above the range
+     * is ordinary rather than exceptional, so several can be out there at
+     * once. One marker per edge names the **nearest** and counts the rest,
+     * because ten tags stacked on one pixel is not a reading.
+     */
+    _defineProperty(this, "updateTargetLevels", () => {
+      const layer = this.posLayerRef.current;
+      if (!layer) return;
+      this._tgtLines.at = 0;
+      this._tgtTags.at = 0;
+      const list = Array.isArray(this.props.targets) ? this.props.targets : [];
+      const color = this.props.theme.color;
+      if (!list.length || !this.height || !this.width) {
+        this.hideRest(this._tgtLines);
+        this.hideRest(this._tgtTags);
+        return;
+      }
+      const right = this.width;
+      const money = (v) => formatAxisPrice(v, v / 2000, this.props.currencySymbol);
+      const ink = color.text;
+
+      const tagAt = (x, y, text, fill) => {
+        const tag = this.poolNode(this._tgtTags, "text", layer);
+        tag.setAttribute("x", x);
+        tag.setAttribute("y", y);
+        tag.setAttribute("text-anchor", "end");
+        tag.setAttribute("fill", fill);
+        tag.setAttribute("font-size", "9");
+        tag.setAttribute("font-family", this.props.theme.font.primary);
+        tag.setAttribute("letter-spacing", "0.06em");
+        /* Painted with the page behind it: these sit over the price line, and
+           a nine-pixel label crossed by it is unreadable. */
+        tag.setAttribute("stroke", color.bg);
+        tag.setAttribute("stroke-width", "3");
+        tag.setAttribute("paint-order", "stroke");
+        tag.textContent = text;
+      };
+
+      /* The left-hand end of the label lane, so a target tag and the
+         contract's own tag never print over each other: the contract owns
+         the right edge (it was there first and it is the more urgent
+         reading), and a target sits one label's width inside it whenever a
+         contract is on the chart. */
+      const lane = this.props.position ? right - 120 : right - 10;
+      const above = [];
+      const below = [];
+
+      for (const t of list) {
+        const value = Number(t.price);
+        if (!isFinite(value) || !(value > 0)) continue;
+        const y = this.levelY(value);
+        if (y == null) {
+          const edge = this.levelOffEdge(value);
+          if (edge === "above") above.push(value);
+          else if (edge === "below") below.push(value);
+          continue;
+        }
+        const el = this.poolNode(this._tgtLines, "line", layer);
+        el.setAttribute("x1", 0);
+        el.setAttribute("x2", right);
+        el.setAttribute("y1", y);
+        el.setAttribute("y2", y);
+        el.setAttribute("stroke", ink);
+        el.setAttribute("stroke-width", "1");
+        el.setAttribute("stroke-dasharray", "1 4");
+        /* Lighter than the contract's levels, which are the more urgent
+           reading: this is a line you asked to be told about, not one that
+           closes anything. */
+        el.setAttribute("opacity", "0.55");
+        tagAt(
+          lane,
+          y < 14 ? y + 12 : y - 5,
+          t.direction === "below"
+            ? msg("chart_target_down", "target ↓ $1", money(value))
+            : msg("chart_target_up", "target ↑ $1", money(value)),
+          ink,
+        );
+      }
+
+      /* The nearest one beyond each edge, with how many are further out.
+         Sorted so "nearest" means nearest to the window rather than first in
+         the list. */
+      if (above.length) {
+        above.sort((a, b) => a - b);
+        tagAt(
+          lane,
+          11,
+          above.length > 1
+            ? msg("chart_target_up_more", "target ↑ $1 +$2", money(above[0]), String(above.length - 1))
+            : msg("chart_target_up", "target ↑ $1", money(above[0])),
+          ink,
+        );
+      }
+      if (below.length) {
+        below.sort((a, b) => b - a);
+        tagAt(
+          lane,
+          this.height - 4,
+          below.length > 1
+            ? msg("chart_target_down_more", "target ↓ $1 +$2", money(below[0]), String(below.length - 1))
+            : msg("chart_target_down", "target ↓ $1", money(below[0])),
+          ink,
+        );
+      }
+
+      this.hideRest(this._tgtLines);
+      this.hideRest(this._tgtTags);
     });
 
     _defineProperty(this, "updateMoveMarks", () => {
@@ -836,11 +1611,38 @@ class LineBase extends PureComponent {
          * a marker sitting on it reads as a kink in the price. */
         const y = Math.max(s + 2, c.y - s - 6);
         const mark = this.poolNode(this._moveMarks, "path", layer);
+        /* **The mark points the way the price went, and is coloured for it.**
+         *
+         * Every mark used to be one neutral upward triangle, and the comment
+         * above this block argued for that: green and red are spoken for on
+         * this chart, and a coloured mark would read as a verdict on the
+         * move. Revisited on 23 Sep 2026 at the owner's asking, and the
+         * argument does not survive the distinction it rests on — green up
+         * and red down is not a verdict here, it is the same thing they mean
+         * everywhere else in this app: **which way the price went**. The
+         * line's own fill, the candles and the ticker all say it that way
+         * already, so a mark that stayed grey was the one place on the chart
+         * where direction had to be worked out by looking at the line beside
+         * it.
+         *
+         * Position is unchanged — above the point, for the reason recorded
+         * above — so the hit area and everything that reads `c.x`/`c.y` are
+         * untouched. Only the shape and the ink carry the new fact. */
+        const up = c.up;
         mark.setAttribute(
           "d",
-          `M${c.x},${y - s} L${c.x + s},${y + s} L${c.x - s},${y + s} Z`,
+          up === false
+            ? `M${c.x},${y + s} L${c.x + s},${y - s} L${c.x - s},${y - s} Z`
+            : `M${c.x},${y - s} L${c.x + s},${y + s} L${c.x - s},${y + s} Z`,
         );
-        mark.setAttribute("fill", color.text);
+        mark.setAttribute(
+          "fill",
+          up === true
+            ? color.chartLineGreen
+            : up === false
+              ? color.chartLineRed
+              : color.text,
+        );
         mark.setAttribute("stroke", color.bg);
         mark.setAttribute("stroke-width", "2");
         mark.setAttribute("stroke-linejoin", "round");
@@ -1128,7 +1930,7 @@ class LineBase extends PureComponent {
           this._extraLayer.appendChild(grow);
           select(grow)
             .transition()
-            .duration(LOCK_PULSE_MS)
+            .duration(motionMs(LOCK_PULSE_MS))
             .ease(easeCubicOut)
             .attr("x", bx)
             .attr("y", by)
@@ -1153,7 +1955,7 @@ class LineBase extends PureComponent {
           select(flash)
             .transition()
             .delay(LOCK_PULSE_MS * 0.55)
-            .duration(LOCK_PULSE_MS * 0.45)
+            .duration(motionMs(LOCK_PULSE_MS * 0.45))
             .ease(easeCubicOut)
             .attr("stroke-opacity", 0.9)
             .transition()
@@ -1246,6 +2048,8 @@ class LineBase extends PureComponent {
      * staggered spray of rays fades as it goes.
      */
     _defineProperty(this, "burst", (cx, cy, box) => {
+      // A celebration is motion for its own sake: none, when motion is unwelcome
+      if (reducedMotion()) return;
       const layer = this.burstRef.current;
       if (!layer) return;
       while (layer.firstChild) layer.removeChild(layer.firstChild);
@@ -1364,6 +2168,7 @@ class LineBase extends PureComponent {
      * because it is about the record, not about one square.
      */
     _defineProperty(this, "fireworks", () => {
+      if (reducedMotion()) return;
       const layer = this.burstRef.current;
       if (!layer || !this.width || !this.height) return;
       const { color } = this.props.theme;
@@ -1623,7 +2428,7 @@ class LineBase extends PureComponent {
       select(ghost)
         .attr("stroke-opacity", 0.85)
         .transition()
-        .duration(RELEASE_MS)
+        .duration(motionMs(RELEASE_MS))
         .ease(easeCubicOut)
         .attr("x", box.x - grow)
         .attr("y", box.y - grow)
@@ -1651,6 +2456,38 @@ class LineBase extends PureComponent {
       );
     });
 
+    /* **What price a point on this chart stands for** — the inverse of
+     * `levelY`, and it answers on the same axis: the board's own window when
+     * one is drawn, the data's range otherwise. Null outside the drawn band,
+     * because a click in the margin is a click that missed.
+     *
+     * It exists so a price target can be picked off the chart instead of
+     * typed, which is the fastest way to say a level you are already looking
+     * at. */
+    _defineProperty(this, "priceAtY", (y) => {
+      if (!isFinite(y)) return null;
+      if (this.priceToY && typeof this.priceToY.invert === "function") {
+        if (y < 0 || y > this.height) return null;
+        const v = this.priceToY.invert(y);
+        return isFinite(v) && v > 0 ? v : null;
+      }
+      // Over the bars' own band only: the volume pane below is not a price
+      const candles = this.candleMap();
+      if (candles) {
+        if (y < candles.top || y > candles.bottom) return null;
+        const v = candles.toV(y);
+        return isFinite(v) && v > 0 ? v : null;
+      }
+      return chartYToPrice(
+        safePrices(this.props.prices),
+        y,
+        this.height,
+        PADDING,
+        PADDING,
+        this.logAxis(),
+      );
+    });
+
     _defineProperty(this, "handleChartClick", (e) => {
       if (this.suppressClick) {
         this.suppressClick = false;
@@ -1663,6 +2500,28 @@ class LineBase extends PureComponent {
        * the eleven pixels of a mark belong to the mark — a stray call is
        * undoable in one click, and a card that refuses to open at all reads as
        * a broken feature. */
+      /* A companion mark takes the click next: it keeps the card open, a
+       * second click on a ring shared by several setups steps to the next of
+       * them, and past the last one it lets go. With a card kept, a click
+       * anywhere else puts it away and does nothing more — the gesture that
+       * closes something is not also the one that places something. */
+      const cmpHit = this.companionAt(e.offsetX, e.offsetY);
+      if (cmpHit) {
+        const keys = cmpHit.keys || [cmpHit.key];
+        if (cmpHit.card) this._cmpPinned = this._cmpPinned ? null : cmpHit.key;
+        else if (this._cmpPinned && keys.includes(this._cmpPinned)) {
+          const i = keys.indexOf(this._cmpPinned);
+          this._cmpPinned = i < keys.length - 1 ? keys[i + 1] : null;
+        } else this._cmpPinned = keys[0];
+        this._cmpHot = this._cmpPinned || (cmpHit.card ? cmpHit.key : keys[0]);
+        this.updateCompanion();
+        return;
+      }
+      if (this._cmpPinned) {
+        this._cmpPinned = null;
+        this.updateCompanion();
+        return;
+      }
       const mark = this.moveAt(e.offsetX, e.offsetY);
       if (mark && typeof this.props.onMoveOpen === "function") {
         /* In page coordinates, not the chart's own: the card is a React
@@ -1683,6 +2542,28 @@ class LineBase extends PureComponent {
           box ? box.top + markY : markY,
         );
         return;
+      }
+      /* **A click is a price, while something is waiting for one.**
+       *
+       * `onPickPrice` is set only while the targets drawer is open beside the
+       * chart, and it is what makes that drawer worth docking: the level you
+       * want is the one under your finger, and typing it back in digits is
+       * the slow way to say something you can already see.
+       *
+       * **The board wins whenever it is up.** With `predict` on, a click on
+       * this surface calls a square, and a gesture that means two things is a
+       * gesture that does neither — so the pick stands down rather than
+       * arguing, exactly as the lattice stands down under comparison. */
+      if (
+        !this.props.predict &&
+        typeof this.props.onPickPrice === "function" &&
+        !this.compareScaled
+      ) {
+        const picked = this.priceAtY(e.offsetY);
+        if (picked != null) {
+          this.props.onPickPrice(picked);
+          return;
+        }
       }
       if (!this.props.predict || !this.props.onPlaceCall) return;
       const cell = this.cellAt(e.offsetX, e.offsetY);
@@ -1873,6 +2754,8 @@ class LineBase extends PureComponent {
 
     _defineProperty(this, "drawCrosshair", () => {
       this.hoverRaf = 0;
+      // A pointer parked off the chart reads nothing (see clearHover)
+      if (this.hoverX < 0) return;
       this.drawGridCell();
       const g = this.hoverRef.current;
       const raw = safePrices(this.props.prices);
@@ -1921,6 +2804,10 @@ class LineBase extends PureComponent {
           return;
         }
         i = nearestIndex(scaled, this.hoverX);
+        /* A window's two edge points are where the line crosses the frame,
+           interpolated (chart-viewport.js) — not a price anyone quoted, so
+           the readout takes the real point beside one. */
+        if (raw[i] && raw[i].edge) i = i === 0 ? Math.min(1, raw.length - 1) : Math.max(0, i - 1);
         px = scaled[i].time;
         py = scaled[i].price;
         source = raw[i];
@@ -1991,10 +2878,9 @@ class LineBase extends PureComponent {
           ? `${a} – ${b.slice(cut + 2)}`
           : `${a} – ${b}`;
       };
-      const dateText = cellBox
+      let dateText = cellBox
         ? spanText(cellBox.from, cellBox.to)
         : crosshairDate(source.time, this.props.period);
-      this.hoverDateRef.current.textContent = dateText;
 
       /* The third line: what naming this square would actually be claiming.
        *
@@ -2020,6 +2906,18 @@ class LineBase extends PureComponent {
               : "";
         const when = describeAhead(+cellBox.to - Date.now());
         noteText = away ? `${away} · settles ${when}` : `settles ${when}`;
+        /* **How ordinary that is** (the chart plan's Phase 5): how many of
+           the series' own stretches as long as the time left moved as far as
+           the square needs, up or down — the ruler's count (`measureCount`),
+           a count with its denominator. Under the base-rate floor it is left
+           out rather than printed thin. */
+        if (!inside && isFinite(live) && live > 0) {
+          const dt = +cellBox.to - Date.now();
+          const count = measureCount(safePrices(this.props.prices), dt, Math.log(edge / live));
+          if (count && count.windows >= BASE_RATE_MIN_EPISODES) {
+            noteText += ` · ${msg("board_ordinary", "as far in as long: $1 of $2", String(count.hits), String(count.windows))}`;
+          }
+        }
       }
       const note = this.hoverNoteRef.current;
       if (note) {
@@ -2055,15 +2953,49 @@ class LineBase extends PureComponent {
           ? ""
           : fmt(source.price);
 
+      /* **The head says what the axes cannot** (the chart plan's Phase 1,
+       * finished 30 Sep 2026). The pills print the point's time on the foot
+       * and its price on the scale, and the head printed the time again. It
+       * says how far the price has come since the first point on screen —
+       * over a drawn candle, how far that candle moved — the one reading the
+       * axes leave to arithmetic. The board keeps the square's span and a
+       * comparison its date: neither has a pill to lean on. */
+      if (!cellBox && !compareMode && this.axesOn && this.axesOn()) {
+        if (candleMode && candle && Number(candle.open) > 0) {
+          dateText = msg(
+            "ch_bar_change",
+            "$1 in this candle",
+            formatSignedPercent(((Number(candle.close) - Number(candle.open)) / Number(candle.open)) * 100),
+          );
+        } else {
+          const first = raw.find((p) => p && !p.edge && Number(p.price) > 0);
+          if (first && first !== source) {
+            dateText = msg(
+              "ch_since_first",
+              "$1 since $2",
+              formatSignedPercent(((Number(source.price) - Number(first.price)) / Number(first.price)) * 100),
+              crosshairDate(first.time, this.props.period),
+            );
+          }
+        }
+      }
+      this.hoverDateRef.current.textContent = dateText;
+
       // Two shapes of readout share the same rows: OHLC for one coin, or one
       // row per coin when two are being compared
       let labels;
       let values;
       if (compareMode) {
-        labels = [this.props.coin || "", this.props.compareCoin || ""];
+        const pa = this.compareScaled.a[i].percent;
+        const pb = this.compareScaled.b[compareIndex].percent;
+        /* And the gap at that moment, in the strip's own terms (the compared
+           coin's move minus this one's) — the figure the two lines are read
+           for, which the eye otherwise has to take off the axis. */
+        labels = [this.props.coin || "", this.props.compareCoin || "", msg("ch_gap", "Gap")];
         values = [
-          formatSignedPercent(this.compareScaled.a[i].percent),
-          formatSignedPercent(this.compareScaled.b[compareIndex].percent),
+          formatSignedPercent(pa),
+          formatSignedPercent(pb),
+          `${signedFixed(pb - pa, 2)} ${msg("ch_pts", "pts")}`,
         ];
       } else if (candle && !cellBox) {
         labels = [
@@ -2194,7 +3126,51 @@ class LineBase extends PureComponent {
      * The line morphs between periods because its shape survives the change;
      * a candle set doesn't (60 one-minute bars become 120 six-hour ones), so
      * this cross-fades instead of trying to tween one into the other. */
+    /* **The tag, before it is drawn** — its text and the room it needs.
+     *
+     * Both `drawCandleLayers` and `updateLastPrice` have to agree about this:
+     * one keeps the bars out of the tag's way, the other puts the tag there.
+     * Measured with `getComputedTextLength` a tag can only be sized *after*
+     * it is in the document, which is a frame too late to reserve anything —
+     * so the width is counted instead. The chart's own font is monospace
+     * (`theme.font.primary`, Roboto Mono) and this text is fixed at 10px, so
+     * a character is 6px and the count is exact rather than an estimate.
+     * Returns null whenever the tag is not drawn at all, and then nothing is
+     * reserved either. */
+    _defineProperty(this, "lastPriceTag", () => {
+      // With the axes on the tag lives in their gutter (chart-axes.js)
+      if (this.axesOn()) return null;
+      if (this.props.showCandles !== true) return null;
+      if (this.props.predict || this.props.compareCoin) return null;
+      const bars = this.candleBars;
+      if (!bars || !bars.length) return null;
+      const close = Number(bars[bars.length - 1].close);
+      if (!isFinite(close)) return null;
+      const label = this.props.formatPrice
+        ? String(this.props.formatPrice(close))
+        : String(close);
+      if (!label) return null;
+      return { label, width: label.length * LAST_TAG_CHAR + LAST_TAG_PAD * 2 };
+    });
+
+    /* The bars, and then the mark that says where the last one closed.
+     * Wrapped rather than called at the end of the body below, because that
+     * body returns early in three places — no candles, no morph, resize —
+     * and the mark has to be cleared on every one of them. Drawing is
+     * conditional; clearing is not. */
     _defineProperty(this, "updateCandles", (animate) => {
+      this.drawCandleLayers(animate);
+      this.updateLastPrice();
+      /* The axes read the bars (their times, the last close), and the bars
+         usually land after the series they close — a range switch in
+         candle mode left the time axis on the old range's bars. */
+      this.updateAxes();
+      this.updateTools();
+      this.updateStudies();
+    });
+
+    _defineProperty(this, "drawCandleLayers", (animate) => {
+      this.layoutPlot();
       const layers = this.candleLayers;
       if (!layers[0].group.current || !layers[1].group.current) return;
       const candles = this.props.candles;
@@ -2222,7 +3198,7 @@ class LineBase extends PureComponent {
        * the same visible window, they slide off the edge as the board grows
        * instead of squeezing: same bar width, same minutes per bar, fewer of
        * them on screen. */
-      const future = this.futureWidth();
+      const future = this.futureWidth() || this.studyFutureWidth();
       const nowX = this.width - future;
       const visible =
         future > 0 && this.width > 0
@@ -2238,10 +3214,41 @@ class LineBase extends PureComponent {
         candleDensityCap(visible),
       );
       const bars = aggregateCandles(visible, maxBars);
-      const scaled = scaleCandles(bars, this.height, this.width, PADDING, PADDING, nowX);
+      /* **The price stops where the volume band starts.** With the band on,
+         the bars used to run the full height and the band was drawn over
+         their last fifth — see `scaleCandles`'s `bottom`. The gap is the
+         band's own breathing room, so a tall volume bar does not touch the
+         wick above it. */
+      const bandTop = this.props.showVolume
+        ? this.height * (1 - VOLUME_BAND_RATIO) - CANDLE_VOLUME_GAP
+        : null;
+      /* **The bars stop short of the price tag.** Drawn to the edge, the tag
+         sat on top of the three most recent candles — the ones anybody
+         opening a candle chart is looking at — and at 420px it covered five.
+         A venue reserves a gutter for its price scale and never draws price
+         into it; this reserves exactly the tag's own width, and only while
+         there is a tag (`lastPriceTag` answers null under the board, under a
+         comparison and in line mode, and then nothing is given up).
+         `candleBars` is what the tag's text is counted from, so it is set
+         before the reservation is worked out. */
+      this.candleBars = bars;
+      const tag = this.lastPriceTag();
+      const plotRight = tag
+        ? Math.max(PADDING + 1, nowX - tag.width - LAST_TAG_GAP)
+        : nowX;
+      const scaled = scaleCandles(
+        bars,
+        this.height,
+        this.width,
+        PADDING,
+        PADDING,
+        plotRight,
+        bandTop,
+      );
       const previous = this.candleScale;
       this.candleScale = scaled;
-      this.candleBars = bars; // what the crosshair reports, post-aggregation
+      // `candleBars` — what the crosshair reports, post-aggregation — is set
+      // above, because the tag's width is counted from its last close.
 
       const drawInto = (layer, geometry) => {
         layer.up.current.setAttribute("d", candlePathData(geometry, true));
@@ -2284,6 +3291,82 @@ class LineBase extends PureComponent {
         "d",
         show ? volumeBarsData(geometry, bars, this.height, false) : "",
       );
+    });
+
+    /* **Where the last candle closed**, as a venue draws it: a hairline
+     * across the plot at that price and a filled tag at the right edge
+     * carrying the number, tinted by the bar's own direction.
+     *
+     * This chart had no way to read a level off it. The header prints the
+     * live price and the range's high and low, but none of those says *where*
+     * on the plot that price is, so a candle chart was a shape with no scale
+     * — the one thing a venue's chart never is. The grid ("G") draws levels,
+     * but it is a whole lattice, off by default, and tied to the board.
+     *
+     * Candle mode only, and it stands down whenever something else owns the
+     * right edge: the board puts the future strip there and marks the live
+     * price with its own dot, and a comparison's axis is percent change from
+     * two series, where one coin's price is not a level at all. The same rule
+     * the grid, the travel band and the move marks already follow.
+     *
+     * The tag is pushed inside the plot rather than hung off it — there is no
+     * gutter to hang it in — and the line stops short of the tag so the two
+     * do not overlap. */
+    _defineProperty(this, "updateLastPrice", () => {
+      const group = this.lastPriceRef.current;
+      const line = this.lastLineRef.current;
+      const tag = this.lastTagRef.current;
+      const text = this.lastTextRef.current;
+      if (!group || !line || !tag || !text) return;
+      const scale = this.candleScale;
+      const bars = this.candleBars;
+      if (
+        !this.props.showCandles ||
+        this.props.predict ||
+        this.props.compareCoin ||
+        !scale ||
+        !scale.bars.length ||
+        !bars ||
+        !bars.length ||
+        !this.width
+      ) {
+        group.setAttribute("visibility", "hidden");
+        return;
+      }
+      const bar = scale.bars[scale.bars.length - 1];
+      const y = Math.round(bar.yClose) + 0.5; // a 1px line, on a pixel
+      if (!isFinite(y)) {
+        group.setAttribute("visibility", "hidden");
+        return;
+      }
+      const { color } = this.props.theme;
+      const tint = bar.up ? color.chartLineGreen : color.chartLineRed;
+      /* The same count the gutter was reserved from, so the tag can never be
+         wider than the room made for it — see `lastPriceTag`. */
+      const info = this.lastPriceTag();
+      if (!info) {
+        group.setAttribute("visibility", "hidden");
+        return;
+      }
+      text.textContent = info.label;
+      const tagW = info.width;
+      const tagH = 16;
+      const right = Math.max(0, this.width - 2);
+      const tagX = Math.max(0, right - tagW);
+      group.setAttribute("visibility", "visible");
+      line.setAttribute("x1", "0");
+      line.setAttribute("x2", String(Math.max(0, tagX - 4)));
+      line.setAttribute("y1", String(y));
+      line.setAttribute("y2", String(y));
+      line.setAttribute("stroke", tint);
+      tag.setAttribute("x", String(tagX));
+      tag.setAttribute("y", String(Math.round(y - tagH / 2)));
+      tag.setAttribute("width", String(tagW));
+      tag.setAttribute("height", String(tagH));
+      tag.setAttribute("fill", tint);
+      text.setAttribute("x", String(tagX + tagW / 2));
+      text.setAttribute("y", String(Math.round(y) + 4));
+      text.setAttribute("fill", color.bg);
     });
 
     /* Tween one layer's paths between two candle geometries. `reverse`
@@ -2331,6 +3414,7 @@ class LineBase extends PureComponent {
      * fade out while this is up: three sets of marks answering two different
      * questions on one chart is noise, not more information. */
     _defineProperty(this, "updateComparison", (animate) => {
+      this.layoutPlot();
       const group = this.compareGroupRef.current;
       if (!group) return;
       const scaled =
@@ -2348,6 +3432,9 @@ class LineBase extends PureComponent {
         this.compareScaled = null;
         this.compareD = { a: null, b: null };
         this.fadeTo(group, 0, animate);
+        this.updateAxes();
+        this.updateTools();
+        this.updateStudies();
         return;
       }
 
@@ -2391,7 +3478,47 @@ class LineBase extends PureComponent {
       }
 
       this.placeCompareLabels(scaled);
+      this.placeCompareTicks(scaled);
       this.fadeTo(group, 1, animate);
+      this.updateAxes();
+      this.updateTools();
+      this.updateStudies();
+    });
+
+    /* The axis a comparison is read against, said in three numbers.
+     *
+     * Both lines are percent change on one shared scale, and the only thing
+     * that scale ever printed was the two figures at the lines' ends. The
+     * middle of the chart — a crossing, a gap opening up — was drawn against
+     * a scale nobody could see: the same chart with a domain of ±2% and one
+     * of ±40% looked identical. Three ticks: the top of the domain, the zero
+     * line, the foot.
+     *
+     * At the **right** edge, not the left. The chart runs under the widget
+     * column on a desktop, so the left edge is the one place on it nobody can
+     * see; the right edge is where the eye is anyway, reading the end labels.
+     * Those labels are the reason for the one rule here: a line very often
+     * ends at the domain's own high or low, so a tick at that extreme would
+     * land on the label already printing that figure — and a tick within a
+     * label's height of one is left blank rather than drawn through it. The
+     * zero tick sits a few pixels above its line, and all three carry the
+     * background halo the end labels do. */
+    _defineProperty(this, "placeCompareTicks", (scaled) => {
+      const [top, zero, bottom] = this.compareTickRefs.map((r) => r.current);
+      if (!top || !zero || !bottom) return;
+      const x = Math.max(PADDING, this.width - PADDING);
+      const taken = this.compareLabelYs || [];
+      // With the axes on, the scale itself reads in percent (chart-axes.js)
+      const axis = this.axesOn();
+      const put = (node, text, y) => {
+        const clear = !axis && taken.every((t) => Math.abs(t - y) >= COMPARE_LABEL_MIN_GAP);
+        node.textContent = clear ? text : "";
+        node.setAttribute("x", x);
+        node.setAttribute("y", y);
+      };
+      put(top, formatSignedPercent(scaled.high), PADDING + 9);
+      put(zero, "0%", scaled.zeroY - 4);
+      put(bottom, formatSignedPercent(scaled.low), this.height - PADDING - 2);
     });
 
     /* Each line is named at its own end. Two colours alone would leave the
@@ -2438,6 +3565,8 @@ class LineBase extends PureComponent {
         node.setAttribute("x", end.time);
         node.setAttribute("y", y);
       }
+      // Where the labels are, for the ticks to stay clear of
+      this.compareLabelYs = placed;
     });
 
     /* How long the line has to get where it is going.
@@ -2449,10 +3578,12 @@ class LineBase extends PureComponent {
      * while the live dot and the candles finished 400ms early. */
     _defineProperty(this, "reshape", false);
     _defineProperty(this, "tweenMs", () =>
-      this.reshape ? RESHAPE_DURATION : TRANSITION_DURATION,
+      motionMs(this.reshape ? RESHAPE_DURATION : TRANSITION_DURATION),
     );
 
     _defineProperty(this, "updatePath", () => {
+      // The plot is the SVG less the axes, and the gutter follows the price's width
+      this.layoutPlot();
       const { prices } = this.props;
 
       /* Is something already animating this path frame by frame?
@@ -2462,7 +3593,10 @@ class LineBase extends PureComponent {
        * an ordinary update and gets sent on a 300ms journey of its own, a
        * pixel long, after the hand has stopped. */
       const driven =
-        this.nowDrag || Boolean(this.zoomAnim && !this.reshape);
+        this.nowDrag ||
+        Boolean(this.zoomAnim && !this.reshape) ||
+        // A hand or a wheel moving the window in time (chart-viewport.js)
+        Boolean(this.props.viewDriven);
 
       /* The board is taken out of the left, not out of the price line.
        *
@@ -2480,7 +3614,8 @@ class LineBase extends PureComponent {
        * beyond what has happened; the mesh uses the same figure, and the two
        * would part company on the first pixel if either computed its own. */
       const geo = this.gridGeometry();
-      const future = this.futureWidth();
+      // The board's strip, or the usual range's (chart-studies.js)
+      const future = this.futureWidth() || this.studyFutureWidth();
       /* With a board on, the price window is the board's, not the data's: the
        * lattice decides what is on screen and the line is drawn into it. They
        * would part company on the first refresh otherwise — the mesh holding
@@ -2497,8 +3632,11 @@ class LineBase extends PureComponent {
         future,               // …by exactly what the future takes on the right
         window[0],
         window[1],
+        // Log stands down while a lattice is drawn — see `logAxis`
+        this.logAxis(),
       );
       this.scaled = scaled;
+      this.updateAverage(scaled, window[0], window[1]);
       this.hoverIndex = -1;
       this.hoverCellKey = null;
       const d = lineFromPrices(scaled);
@@ -2579,8 +3717,26 @@ class LineBase extends PureComponent {
       this.updateTravelBand();
       this.updateCalls();
       this.updateLiveDot();
+      /* And the last-price tag, for the reason the four above are here: it is
+         cleared by `updateCandles`, which does **not** run when the board or a
+         comparison opens — those change no candle — so the tag stayed on a
+         chart that had just handed its right edge to something else. Drawing
+         is conditional; clearing is not. */
+      this.updateLastPrice();
       this.updateMoveMarks();
       this.updateReference();
+      /* After the grid, because under a board the levels are placed on the
+         board's own window and `this.priceToY` is not set until it is drawn. */
+      this.updatePositionLevels();
+      this.updateTargetLevels();
+      this.updateMacroEvents();
+      this.updateOverlay();
+      this.updateCompanion();
+      // Last, because the scale reads what everything above just laid out
+      this.updateAxes();
+      // The drawings read the same mappings (chart-tools.js)
+      this.updateTools();
+      this.updateStudies();
     });
 
     /* THE TRAVEL BAND — how far this coin has moved over each square's worth
@@ -2717,10 +3873,71 @@ class LineBase extends PureComponent {
      * `app-portfolio.js` — a plain function handed the component, with
      * `Object.assign` putting every name back where it was. */
     Object.assign(this, chartBoardGeometry(this));
+    /* The axes (chart-axes.js): the plot is the SVG less a price gutter and
+       a time strip, and these wrap the crosshair, the pointer and the click so
+       the axes can follow them without either body changing. */
+    this.axisRef = createRef();
+    this._axis = { lines: { list: [], at: 0 }, texts: { list: [], at: 0 }, rects: { list: [], at: 0 } };
+    this._axisGridPrice = [];
+    this._axisGridTime = [];
+    this._axisPointerX = null;
+    this._axisPointerY = null;
+    Object.assign(this, chartAxes(this));
+    this.wireAxes();
+    /* The tools (chart-tools.js): the ruler, the drawings and the click that
+       places an anchor. Wrapped after the axes, so a press on the axes is
+       still a press on nothing. */
+    this.toolsRef = createRef();
+    this.toolClipRef = createRef();
+    this.toolClipId = "ptToolClip_" + Math.random().toString(36).slice(2, 9);
+    this._tools = {
+      lines: { list: [], at: 0 },
+      fillRects: { list: [], at: 0 },
+      wordRects: { list: [], at: 0 },
+      texts: { list: [], at: 0 },
+      circles: { list: [], at: 0 },
+    };
+    this._measure = null;
+    this._draft = null;
+    this._toolHover = null;
+    this._toolDrag = null;
+    Object.assign(this, chartTools(this));
+    this.wireTools();
+    /* The counted studies (chart-studies.js): drawn behind the price and in
+       front of it, both cut at the plot's edges. */
+    this.studiesBackRef = createRef();
+    this.studiesFrontRef = createRef();
+    this.studyClipRef = createRef();
+    this.studyClipId = "ptStudyClip_" + Math.random().toString(36).slice(2, 9);
+    this._studies = {
+      rects: { list: [], at: 0 },
+      paths: { list: [], at: 0 },
+      lines: { list: [], at: 0 },
+      pills: { list: [], at: 0 },
+      texts: { list: [], at: 0 },
+    };
+    Object.assign(this, chartStudies(this));
 
     _defineProperty(this, "updateGrid", () => {
       const g = this.gridRef.current;
       if (!g) return;
+      /* **The walk arrows exist only while calls do**, and this is asserted
+       * here rather than left to the branch that draws them.
+       *
+       * Drawing is conditional; clearing is not — the rule this file already
+       * states, and the one the call boxes learned the expensive way. The
+       * arrows are drawn inside a branch guarded on the board having a width,
+       * which is only true with calls on; but `updateGrid` has several early
+       * returns below (no geometry, no data), and a chart that reached one of
+       * them with the feature just switched off kept whatever was last put on
+       * screen. Four controls for a board that is not there is worse than no
+       * controls at all: they answer to the pointer and walk a lattice nobody
+       * can see. */
+      if (this._panUi && !this.props.predict) {
+        this._panUi.setAttribute("visibility", "hidden");
+        this._panUi.setAttribute("pointer-events", "none");
+        this.stopPanHold();
+      }
       /* The mesh gets its own layer so the *mask* can be on the mesh alone.
        * The now-line's handle and the zoom pill live in this group too, and
        * they sit exactly where the fade is strongest — masked with the lattice
@@ -2754,6 +3971,9 @@ class LineBase extends PureComponent {
       this._gridLabels.at = 0;
       this.gridX = [];
       this.gridY = [];
+      // What the axes print in grid and board mode (chart-axes.js)
+      this._axisGridPrice = [];
+      this._axisGridTime = [];
       /* Forget the geometry on the way out, not just the lines.
        * `updateCalls` and `drawGridCell` read these to place their boxes, and
        * leaving yesterday's scales behind meant a chart with the feature
@@ -2852,6 +4072,18 @@ class LineBase extends PureComponent {
         // whatever the last redraw left on it
         el.setAttribute("opacity", dim ? "0.55" : "1");
       };
+      /* **The labels dim while the scale is travelling, and that is not
+       * decoration.** The step is interpolated between two rungs during a
+       * zoom (see `boardStep`), which is what stopped the lattice jumping —
+       * but an interpolated step is not a round number, so every price label
+       * on the chart re-renders a different long figure on every frame. The
+       * lattice glides and the numbers strobe: smoother in the geometry,
+       * shimmering in the text, which is worse than what it replaced.
+       *
+       * A bell, not a switch: `sin(pi t)` is 1 at both ends and dips in the
+       * middle, so the labels are at full ink the frame the travel starts and
+       * the frame it lands, and are faint exactly while they are meaningless.
+       * A flat "0 during, 1 after" is two hard flashes of its own. */
       const label = (x, y, text) => {
         const el = this.poolNode(this._gridLabels, "text", mesh);
         el.setAttribute("x", x);
@@ -2860,9 +4092,20 @@ class LineBase extends PureComponent {
         el.setAttribute("font-size", "9");
         el.setAttribute("font-family", font.primary);
         el.setAttribute("letter-spacing", "0.08em");
+        el.setAttribute("opacity", labelInk === 1 ? "1" : labelInk.toFixed(3));
         // Assigning textContent replaces the text node even when the string is
-        // the same one, which on a hover-heavy path is churn for nothing
-        if (el.textContent !== text) el.textContent = text;
+        // the same one, which on a hover-heavy path is churn for nothing — and
+        // while the numbers are faint they are not worth writing at all
+        /* Never rewritten while the scale is travelling, at any ink. The step
+           is interpolated between two rungs during a zoom, so mid-travel a
+           level is not a round number and the printed figure is not even
+           monotonic — measured across four frames of one press: $111.0K,
+           $110.7K, $110.8K, $110.6K. Those numbers say nothing and cost a
+           relayout each; the travel ends on a rung and the text catches up
+           there. */
+        if (!this.zoomAnim && labelInk > 0.55 && el.textContent !== text) {
+          el.textContent = text;
+        }
       };
 
       /* The lattice runs the full height, not just the band the data covers.
@@ -2871,6 +4114,34 @@ class LineBase extends PureComponent {
        * there was not a square, it was whatever was left over. Extending by
        * whole steps keeps every row the same height, and the extra levels
        * are real prices, so they get real labels. */
+      /* **The labels dim while the scale is moving, and they do not flicker
+       * when it moves twice.**
+       *
+       * This was a bell over one travel's clock — full ink at both ends,
+       * faint in the middle — which is right for a single press and wrong for
+       * every other way the zoom is actually used. A trackpad scroll, a held
+       * button, two quick presses: each notch restarted the bell, so the
+       * labels went bright-dim-bright-dim as fast as the notches arrived, and
+       * that strobing *was* the shaking. Nothing else on the board moves
+       * during a zoom — measured across a travel, the top gridline holds at
+       * 9.9px and the pitch at 64.32px, to the frame.
+       *
+       * So the ink is not a function of any one travel. It is a value that
+       * decays toward "moving" (0.1) and rises back toward "still" (1) on its
+       * own clock, so a chain of zooms keeps the labels down for the whole
+       * chain and brings them back once, at the end. Exponential rather than
+       * linear, and clamped on `dt`, so a frame dropped to a background tab
+       * cannot make it jump. */
+      {
+        const now = Date.now();
+        const dt = Math.min(120, now - (this._labelInkAt || now));
+        this._labelInkAt = now;
+        if (this._labelInk === undefined) this._labelInk = 1;
+        const want = this.zoomAnim ? 0.1 : 1;
+        this._labelInk += (want - this._labelInk) * (1 - Math.exp(-dt / 90));
+      }
+      const labelInk = this._labelInk;
+
       const rowsUp = Math.ceil((priceToY(levels[levels.length - 1]) - 0) / pitch) + 1;
       const rowsDown = Math.ceil((this.height - priceToY(levels[0])) / pitch) + 1;
       const allLevels = [];
@@ -2890,7 +4161,11 @@ class LineBase extends PureComponent {
          * line landed on top of the date at the foot of the axis — two
          * different readings in the same few pixels. Cheaper to leave one
          * level unlabelled than to move an axis. */
-        if (y - 4 >= 9 && y < this.height - 15) {
+        /* With the axes on the level is printed on the scale, level with its
+           line, instead of inside the plot. */
+        if (this.axesOn()) {
+          this._axisGridPrice.push({ y, text: formatAxisPrice(v, step, this.props.currencySymbol) });
+        } else if (y - 4 >= 9 && y < this.height - 15) {
           label(4, y - 4, formatAxisPrice(v, step, this.props.currencySymbol));
         }
       });
@@ -2988,7 +4263,8 @@ class LineBase extends PureComponent {
         const w = labelWidth(text);
         if (b.x + w > leftEdge) continue;
         leftEdge = b.x;
-        label(b.x + 4, this.height - 6, text);
+        if (this.axesOn()) this._axisGridTime.push({ x: b.x, text });
+        else label(b.x + 4, this.height - 6, text);
       }
       /* The future side starts from where the "now" label ends, so the first
        * date can never sit on top of it. */
@@ -2999,7 +4275,8 @@ class LineBase extends PureComponent {
         if (b.x < rightEdge) continue;
         if (b.x + w > this.width) continue; // would run off the edge
         rightEdge = b.x + w;
-        label(b.x + 4, this.height - 6, text);
+        if (this.axesOn()) this._axisGridTime.push({ x: b.x, text });
+        else label(b.x + 4, this.height - 6, text);
       }
       if (future > 0) {
         /* "now" itself gets the one emphatic line on the chart — kept from
@@ -3170,6 +4447,362 @@ class LineBase extends PureComponent {
             }
           }
         }
+      /* **The four arrows, and the way back to the price.**
+       *
+       * The board reaches about three squares either side of where the price
+       * is. That is the right default and it is not everything: the call an
+       * hour chart most invites — "it falls off a cliff" — ends at a band
+       * with no square on the screen, and until now there was no way to go
+       * and look. The zoom widens what a square is *worth*, which is a
+       * different question; this walks the window.
+       *
+       * Up and down move the price window a square at a time. Left and right
+       * move the boundary between history and board, which is the same
+       * setting the "now" line drags — one thing, two ways to reach it, and
+       * the arrows are the discoverable one: a line you have to know is a
+       * handle is not a control.
+       *
+       * **They repeat while held**, which is the whole ask. A press is one
+       * square; holding walks. The travel is eased and one repeat long, so
+       * the board arrives before it is asked to leave again and the walk
+       * reads as continuous rather than as a series of jumps.
+       *
+       * The fifth control exists only while it leads somewhere — the same
+       * rule the zoom pill's readout follows. Panned away, there is a chip
+       * that says how far and takes you back; at the price it is not drawn,
+       * because a button that cannot change anything is a promise the next
+       * click breaks. */
+      if (future > 0) {
+        if (!this._panUi) {
+          const ui = document.createElementNS(ns, "g");
+          ui.setAttribute("class", "pt-pan");
+          ui.setAttribute("pointer-events", "auto");
+          ui.addEventListener("click", (e) => e.stopPropagation());
+          const parts = { arrows: [], home: null };
+          /* Chevrons rather than solid triangles: a filled arrowhead on this
+           * chart is the shape the "what happened here?" marks already use. */
+          const glyphs = {
+            up: "M-5,3 L0,-3 L5,3",
+            down: "M-5,-3 L0,3 L5,-3",
+            left: "M3,-5 L-3,0 L3,5",
+            right: "M-3,-5 L3,0 L-3,5",
+          };
+          for (const dir of ["up", "down", "left", "right"]) {
+            const b = document.createElementNS(ns, "g");
+            b.setAttribute("class", "pt-pan-btn");
+            b.setAttribute("tabindex", "0");
+            b.setAttribute("role", "button");
+            b.setAttribute(
+              "aria-label",
+              dir === "up"
+                ? msg("ch_pan_up", "Look at higher prices")
+                : dir === "down"
+                  ? msg("ch_pan_down", "Look at lower prices")
+                  : dir === "right"
+                    ? msg("ch_pan_right", "Show more squares further ahead")
+                    : msg("ch_pan_left", "Show less board and more history"),
+            );
+            /* **The area that answers to the pointer is its own, and it is
+             * bigger than the thing you can see.** A 22px plate is a hard
+             * target to land on and a harder one to rest on, and simply
+             * growing the plate to a comfortable size would put a control
+             * the size of a square on top of a square — so the visible plate
+             * grows a little and the *hit area* grows a lot, as a capsule
+             * around it that is deliberately smaller than one square in both
+             * directions. Hovering inside it means "walk", never "point at
+             * the band underneath", which is why the capsule also puts the
+             * crosshair away on the way in. */
+            const zone = document.createElementNS(ns, "rect");
+            zone.setAttribute("width", PAN_ZONE);
+            zone.setAttribute("height", PAN_ZONE);
+            zone.setAttribute("rx", 12);
+            zone.setAttribute("fill", "transparent");
+            b.appendChild(zone);
+            const plate = document.createElementNS(ns, "rect");
+            plate.setAttribute("width", PAN_PLATE);
+            plate.setAttribute("height", PAN_PLATE);
+            plate.setAttribute("rx", 8);
+            b.appendChild(plate);
+            const chev = document.createElementNS(ns, "path");
+            chev.setAttribute("d", glyphs[dir]);
+            chev.setAttribute("fill", "none");
+            chev.setAttribute("stroke-width", "1.6");
+            chev.setAttribute("stroke-linecap", "round");
+            chev.setAttribute("stroke-linejoin", "round");
+            b.appendChild(chev);
+            const title = document.createElementNS(ns, "title");
+            title.textContent =
+              dir === "up" || dir === "down"
+                ? msg(
+                    "ch_pan_hint",
+                    "Rest the pointer here to walk the board that way — or press it, or use the arrow keys",
+                  )
+                : msg(
+                    "ch_pan_hint_hold",
+                    "Press, or hold, to change how much of the chart is board",
+                  );
+            b.appendChild(title);
+            const step = () => {
+              /* Which arrow was last used, so the way back can be drawn
+                 beside it rather than in a corner of the board nobody is
+                 looking at. Only the two that produce an offset are worth
+                 remembering: left and right change how much board there is,
+                 which has its own way back — the "now" line. */
+              if (dir === "up" || dir === "down") this._panLast = dir;
+              if (dir === "up") this.panBoard(1);
+              else if (dir === "down") this.panBoard(-1);
+              else this.nudgeNow(dir === "right" ? 1 : -1);
+            };
+            const repeatFrom = (wait) => {
+              clearTimeout(this._panHold);
+              clearInterval(this._panRepeat);
+              this._panHold = setTimeout(() => {
+                this._panRepeat = setInterval(step, BOARD_PAN_REPEAT_MS);
+              }, wait);
+            };
+            /* Held down, not clicked repeatedly. The first repeat waits, so a
+             * single press is a single square and the control is still usable
+             * by someone who taps. */
+            const start = (e) => {
+              e.stopPropagation();
+              step();
+              repeatFrom(BOARD_PAN_HOLD_MS);
+            };
+            /* **And resting on it is enough.** The pointer is already on the
+             * chart and the arrows are at its edges, so hovering is the
+             * shortest route there is — but only after a dwell (see
+             * `BOARD_PAN_DWELL_MS`), or the board would walk off while the
+             * pointer was on its way somewhere else. Nothing happens on the
+             * first frame of the hover; what happens is the arrow comes to
+             * full strength, so the wait is visibly doing something. */
+            b.addEventListener("pointerenter", () => {
+              this._panHot = dir;
+              b.setAttribute("opacity", "1");
+              /* Inside the capsule the chart is being operated, not read —
+               * the same rule the "now" handle and the move marks follow.
+               * Left drawing, the crosshair would light the very square the
+               * arrow is about to move out from under the pointer. */
+              this.clearHover();
+              this.updateGrid();
+              /* **Only up and down answer to a hover, and the asymmetry is
+               * the point.** Those two move the *view*: walking is exactly
+               * what resting on them should do, it costs nothing and the way
+               * back is beside them. Left and right do not move a view — they
+               * rewrite `futureShare`, a stored setting shared with the "now"
+               * line — and resting the pointer near the edge of the chart
+               * must not quietly change a preference. It also made them hard
+               * to press: aiming at one takes about as long as the dwell, so
+               * the board had already started walking before the click
+               * landed and the click then added to it. */
+              if (dir === "up" || dir === "down") repeatFrom(BOARD_PAN_DWELL_MS);
+            });
+            b.addEventListener("pointerdown", start);
+            b.addEventListener("pointerup", this.stopPanHold);
+            b.addEventListener("pointerleave", () => {
+              this._panHot = null;
+              this.stopPanHold();
+              this.updateGrid();
+            });
+            b.addEventListener("pointercancel", this.stopPanHold);
+            b.addEventListener("focus", () => b.setAttribute("opacity", "1"));
+            b.addEventListener("blur", () => this.updateGrid());
+            /* **The arrow keys do the same thing, from any of the four.**
+             * Scoped to the focused arrow rather than taken globally: the
+             * unmodified arrow keys already move between coins, and a control
+             * that quietly redefines them from anywhere on the page is worse
+             * than one that cannot be reached by keyboard at all. Tab to an
+             * arrow and the four keys walk the board; Enter and Space step
+             * the one you are on. */
+            b.addEventListener("keydown", (e) => {
+              const byKey = {
+                ArrowUp: () => this.panBoard(1),
+                ArrowDown: () => this.panBoard(-1),
+                ArrowRight: () => this.nudgeNow(1),
+                ArrowLeft: () => this.nudgeNow(-1),
+              };
+              if (byKey[e.key]) {
+                e.preventDefault();
+                e.stopPropagation();
+                byKey[e.key]();
+                return;
+              }
+              if (e.key !== "Enter" && e.key !== " ") return;
+              e.preventDefault();
+              e.stopPropagation();
+              step();
+            });
+            ui.appendChild(b);
+            parts.arrows.push({ node: b, plate, chev, zone, dir });
+          }
+          const home = document.createElementNS(ns, "g");
+          home.setAttribute("class", "pt-pan-home");
+          home.setAttribute("tabindex", "0");
+          home.setAttribute("role", "button");
+          home.setAttribute(
+            "aria-label",
+            msg("ch_pan_home", "Bring the board back to the price"),
+          );
+          const homeBox = document.createElementNS(ns, "rect");
+          homeBox.setAttribute("height", 18);
+          homeBox.setAttribute("rx", 5);
+          home.appendChild(homeBox);
+          const homeText = document.createElementNS(ns, "text");
+          homeText.setAttribute("y", 13);
+          homeText.setAttribute("text-anchor", "middle");
+          homeText.setAttribute("font-size", "9");
+          homeText.setAttribute("letter-spacing", "0.06em");
+          home.appendChild(homeText);
+          const homeTitle = document.createElementNS(ns, "title");
+          homeTitle.textContent = msg("ch_pan_home", "Bring the board back to the price");
+          home.appendChild(homeTitle);
+          const goHome = () => this.panBoard(0, true);
+          home.addEventListener("click", (e) => {
+            e.stopPropagation();
+            goHome();
+          });
+          home.addEventListener("keydown", (e) => {
+            if (e.key !== "Enter" && e.key !== " ") return;
+            e.preventDefault();
+            e.stopPropagation();
+            goHome();
+          });
+          ui.appendChild(home);
+          parts.home = home;
+          parts.homeBox = homeBox;
+          parts.homeText = homeText;
+          this._panUi = ui;
+          this._panParts = parts;
+          g.appendChild(ui);
+        }
+        const { arrows, home, homeBox, homeText } = this._panParts;
+        const midX = Math.round((nowX + this.width) / 2);
+        /* Clear of everything already drawn on the board: the time labels at
+         * the foot (the down arrow was on top of them, two readings in the
+         * same few pixels), the zoom pill at the top right, and the "now"
+         * grip at the top of the boundary line. */
+        const half = PAN_PLATE / 2;
+        /* **Where the four go.**
+         *
+         * Up and down sit at the top and bottom of the board, because what
+         * they move is the price window and those are its two ends.
+         *
+         * Left and right are a different pair: they do not move the window,
+         * they move the **line between history and board**. They were placed
+         * at the two ends of that line's span — one at each edge of the chart
+         * — on the reasoning that the thing they slide is between them. That
+         * shape reads at a glance and does not survive use. The left arrow
+         * ended up at the far edge of the screen from the line it moves, over
+         * the price series, with its capsule on the grid's price labels,
+         * while the right one happened to land where the board is. So the
+         * left arrow comes back to the boundary, on the history side of it,
+         * a grab-band clear of the line itself — the objection that moved it
+         * away was that it landed on the "now" grip, and the grip is at the
+         * top of the line while these two sit at mid-height. It travels with
+         * the line, which is the point rather than the cost: the line is what
+         * you are watching while you press.
+         *
+         * `PAN_LEFT_GUTTER` is the floor, keeping the capsule clear of the
+         * price labels down the left-hand edge when the board has been pulled
+         * out over nearly the whole width. */
+        const at = {
+          up: [midX, 34 + half],
+          down: [midX, this.height - 46 - half],
+          /* Just left of the line, on the history side of it. It sat at the
+           * chart's own left edge — the far end of the span it slides, which
+           * is a shape you can read but is not where the hand is: the thing
+           * you are watching is the boundary, and the button that moves it
+           * was a thousand pixels away from it, over the price line, with its
+           * capsule on the price labels. Beside the line is the same
+           * arrangement the way-back chip already uses — the control goes
+           * where you are looking.
+           *
+           * `NOW_GRAB` of clearance, because the line is grabbable for 12px
+           * either side along its whole height: any closer and a press meant
+           * to walk one square would start a drag instead. The floor keeps it
+           * off the price labels when the board has been pulled almost the
+           * whole width; at that point there is one square of history left
+           * and the arrow is at its own limit anyway. */
+          left: [
+            Math.max(
+              PAN_LEFT_GUTTER + half,
+              Math.round(nowX - NOW_GRAB - PAN_ZONE / 2),
+            ),
+            Math.round(this.height / 2),
+          ],
+          right: [this.width - 8 - half, Math.round(this.height / 2)],
+        };
+        /* The two horizontal arrows have ends too, and until now only the
+         * vertical pair said so: at the limits the drag already clamps to,
+         * pressing left or right moved nothing while the arrow stayed lit. */
+        const nowSpan = this.nowLimits();
+        const futureNow = this.futureWidth();
+        for (const a of arrows) {
+          const [cx, cy] = at[a.dir];
+          a.zone.setAttribute("x", cx - PAN_ZONE / 2);
+          a.zone.setAttribute("y", cy - PAN_ZONE / 2);
+          a.plate.setAttribute("x", cx - half);
+          a.plate.setAttribute("y", cy - half);
+          a.plate.setAttribute("fill", color.bgSecondary);
+          a.plate.setAttribute("stroke", color.border);
+          a.chev.setAttribute("transform", `translate(${cx},${cy})`);
+          a.chev.setAttribute("stroke", color.text);
+          /* At the end of its travel a direction stops being a control, the
+           * same rule the zoom's ± follow at the ends of the ladder. */
+          const spent =
+            (a.dir === "up" && this.boardPan >= BOARD_PAN_MAX) ||
+            (a.dir === "down" && this.boardPan <= -BOARD_PAN_MAX) ||
+            (a.dir === "left" && futureNow <= nowSpan.least + 0.5) ||
+            (a.dir === "right" && futureNow >= nowSpan.most - 0.5);
+          /* Full while the pointer is resting on it — which is also the
+           * signal that the dwell has started and something is about to
+           * happen. Quiet otherwise, the manners every control on this chart
+           * has. */
+          a.node.setAttribute(
+            "opacity",
+            spent ? "0.18" : this._panHot === a.dir ? "1" : "0.5",
+          );
+          a.node.setAttribute("pointer-events", spent ? "none" : "auto");
+          if (spent) a.node.removeAttribute("tabindex");
+          else a.node.setAttribute("tabindex", "0");
+        }
+        const panned = (this.boardPan || 0) !== 0;
+        const homeLabel = msg(
+          "ch_pan_off",
+          "$1 off · back",
+          `${this.boardPan > 0 ? "+" : ""}${this.boardPan}`,
+        );
+        if (homeText.textContent !== homeLabel) homeText.textContent = homeLabel;
+        const homeW = homeLabel.length * 5.6 + 14;
+        /* **Beside the arrow that walked, not in a corner.** It sat at the
+         * foot of the board, which is nowhere near the hand: you walk with
+         * the up arrow at the top of the screen and the way back was two
+         * hundred pixels below, in a place there was no reason to look. It
+         * follows the last vertical arrow used — under the up arrow, over the
+         * down one — so the way back is where you already are. */
+        const beside = at[this._panLast === "down" ? "down" : "up"];
+        const homeY =
+          this._panLast === "down"
+            ? beside[1] - PAN_ZONE / 2 - 22
+            : beside[1] + PAN_ZONE / 2 + 4;
+        homeBox.setAttribute("x", midX - homeW / 2);
+        homeBox.setAttribute("y", homeY);
+        homeBox.setAttribute("width", homeW);
+        homeBox.setAttribute("fill", color.bgSecondary);
+        homeBox.setAttribute("stroke", color.border);
+        homeText.setAttribute("x", midX);
+        homeText.setAttribute("y", homeY + 13);
+        homeText.setAttribute("fill", color.text);
+        homeText.setAttribute("font-family", font.primary);
+        home.setAttribute("opacity", panned ? "0.85" : "0");
+        home.setAttribute("pointer-events", panned ? "auto" : "none");
+        if (panned) home.setAttribute("tabindex", "0");
+        else home.removeAttribute("tabindex");
+        this._panUi.setAttribute("visibility", "inherit");
+      } else if (this._panUi) {
+        this._panUi.setAttribute("visibility", "hidden");
+        this._panUi.setAttribute("pointer-events", "none");
+      }
+
       /* The board's own zoom, drawn on the board.
        *
        * Nothing said the scale could be changed. The wheel worked in silence,
@@ -3473,6 +5106,774 @@ class LineBase extends PureComponent {
      * inside the range the chart draws — see `priceToChartY`. The label sits
      * on the line at the left edge, so it reads as belonging to it rather
      * than floating in the plot. */
+    /* **A moving average of what is on the chart, labelled by what it
+     * actually covers.**
+     *
+     * `movingAverage` is `baserates.js`'s, unchanged — it is the arithmetic
+     * behind that panel's 200-day regime row, so this draws a line the app
+     * already trusts rather than a second implementation of a mean.
+     *
+     * **The period is a fraction of the drawn range, not 50 or 200**, and that
+     * is the decision worth defending. The classic figures are *days*, and the
+     * series here is not: a point is half a minute on the hour range and
+     * thirteen days on ALL (measured 22 Aug 2026 on Coinbase's own BTC `all`
+     * series). "MA(200)" would therefore mean 200 minutes on one range and
+     * eight years on another while wearing the name of the 200-day line —
+     * exactly the kind of label `ref/measurements.md` was written about. A
+     * sixth of the window always means the same thing to the eye, and the
+     * label says the time it really spans, read off the series' own stamps.
+     *
+     * **Drawn on the price series' own pixels.** The x of point *i* is the x
+     * the price already has at *i*, and the y is the same domain the price was
+     * scaled with, handed in rather than recomputed — an average scaled to its
+     * own extent is a line that floats somewhere the price never went, and one
+     * given its own x range starts at the left edge instead of a sixth of the
+     * way in, where it actually begins.
+     */
+    _defineProperty(this, "updateAverage", (scaledPrices, lo, hi) => {
+      const path = this.avgRef.current;
+      const label = this.avgLabelRef.current;
+      if (!path || !label) return;
+      const data = safePrices(this.props.prices);
+      const off = () => {
+        path.setAttribute("d", "");
+        label.setAttribute("opacity", "0");
+      };
+      // Clearing is not conditional — see the note on `updateCalls`
+      if (this.props.average !== true || data.length < 12 || !scaledPrices) {
+        off();
+        return;
+      }
+      const period = Math.max(3, Math.round(data.length / 6));
+      const avg = movingAverage(data.map((d) => d.price), period);
+      const [dataLo, dataHi] = extent(data, (d) => d.price);
+      const domainLo = lo != null ? lo : dataLo;
+      const domainHi = hi != null ? hi : dataHi;
+      if (!(domainHi > domainLo)) {
+        off();
+        return;
+      }
+      const padY = this.plotPadY();
+      const priceToY = (
+        this.logAxis() && domainLo > 0 ? scaleLog() : scaleLinear()
+      )
+        .range([this.height - padY, padY])
+        .domain([domainLo, domainHi]);
+      const pts = [];
+      for (let i = 0; i < data.length; i += 1) {
+        if (avg[i] == null || !scaledPrices[i]) continue;
+        pts.push({ time: scaledPrices[i].time, price: priceToY(avg[i]) });
+      }
+      if (pts.length < 2) {
+        off();
+        return;
+      }
+      path.setAttribute("d", lineFromPrices(pts) || "");
+      /* What it covers, in time, from the series' own stamps. The number of
+         points is not a reading anybody has — "about a month" is. */
+      const coveredMs = Math.max(
+        0,
+        +data[data.length - 1].time - +data[data.length - period].time,
+      );
+      const last = pts[pts.length - 1];
+      label.textContent = msg("chart_avg_label", "avg $1", describeSpan(coveredMs));
+      /* Ended at the line's end and kept inside the plot by its own
+         measured width. It was clamped by a guessed 62px, and "avg 4.9 days"
+         is 72 — the plot's clip took the last letters off, on screen and in
+         the saved image (30 Sep 2026); a translation is longer still. */
+      const labelW =
+        typeof label.getComputedTextLength === "function" ? label.getComputedTextLength() || 60 : 60;
+      label.setAttribute("text-anchor", "end");
+      label.setAttribute(
+        "x",
+        Math.max(labelW + 2, Math.min(last.time - 4, this.width - 4)),
+      );
+      label.setAttribute("y", Math.max(10, last.price - 6));
+      label.setAttribute("opacity", "1");
+    });
+
+    /* **US CPI releases, where they fall on the drawn range** (27 Sep 2026).
+     * A faint line down the plot at the minute of each release and "CPI" at
+     * its head — the one scheduled event this app marks, because it is the
+     * one measured to move the price (see `CPI_RELEASES_UTC`). The x of an
+     * instant comes from the series' own ends: the time scale is linear, so
+     * the first and last point's pixels place any moment between them
+     * exactly, board or no board. **Not drawn past `MACRO_EVENTS_MAX_MARKS`**
+     * in one window — ALL holds over a hundred, and a fence of dashes is a
+     * texture, not a reading. Under the price line, and it takes no pointer. */
+    _defineProperty(this, "updateMacroEvents", () => {
+      const layer = this.eventLayerRef.current;
+      if (!layer) return;
+      this._evtLines.at = 0;
+      this._evtTags.at = 0;
+      const done = () => {
+        this.hideRest(this._evtLines);
+        this.hideRest(this._evtTags);
+      };
+      const scaled = this.scaled;
+      const data = safePrices(this.props.prices);
+      // Clearing is not conditional — see the note on `updateCalls`
+      if (
+        this.props.macroEvents !== true ||
+        !scaled || scaled.length < 2 || data.length < 2 ||
+        !this.width || !this.height
+      ) {
+        done();
+        return;
+      }
+      const t0 = +data[0].time;
+      const t1 = +data[data.length - 1].time;
+      const x0 = scaled[0].time;
+      const x1 = scaled[scaled.length - 1].time;
+      const at = t1 > t0 ? cpiReleasesBetween(t0, t1) : [];
+      if (!at.length || at.length > MACRO_EVENTS_MAX_MARKS) {
+        done();
+        return;
+      }
+      const color = this.props.theme.color;
+      for (const t of at) {
+        const x = x0 + ((t - t0) / (t1 - t0)) * (x1 - x0);
+        if (!(x >= 0 && x <= this.width)) continue;
+        const line = this.poolNode(this._evtLines, "line", layer);
+        line.setAttribute("x1", x);
+        line.setAttribute("x2", x);
+        line.setAttribute("y1", 14);
+        line.setAttribute("y2", this.height);
+        line.setAttribute("stroke", color.textSecondary);
+        line.setAttribute("stroke-width", "1");
+        line.setAttribute("stroke-dasharray", "2 3");
+        line.setAttribute("opacity", "0.5");
+        line.setAttribute("data-macro", String(t));
+        const tag = this.poolNode(this._evtTags, "text", layer);
+        tag.setAttribute("x", x);
+        tag.setAttribute("y", 10);
+        tag.setAttribute("text-anchor", "middle");
+        tag.setAttribute("fill", color.textSecondary);
+        tag.setAttribute("font-size", "9");
+        tag.setAttribute("font-family", this.props.theme.font.primary);
+        tag.setAttribute("letter-spacing", "0.06em");
+        tag.setAttribute("stroke", color.bg);
+        tag.setAttribute("stroke-width", "3");
+        tag.setAttribute("paint-order", "stroke");
+        tag.textContent = msg("chart_cpi_tag", "CPI");
+      }
+      done();
+    });
+
+    /* **The chart companion** (27 Sep 2026): each setup it found on this
+     * coin's daily candles whose breakout falls in the drawn range, named
+     * where it is. The swing points it was read from, the neckline, the
+     * measured target and the invalidation — drawn from the breakout until
+     * one of them was reached, or to the right edge while neither has — and
+     * under the breakout the setup's name and this coin's record for it. A
+     * setup that has resolved is drawn faint; the one still being walked is
+     * drawn in full. Placed from the series' own ends like the CPI markers,
+     * and in price through `levelY`, which leaves out anything off the plot
+     * rather than pinning it to an edge. */
+    _defineProperty(this, "updateCompanion", () => {
+      const layer = this.posLayerRef.current;
+      if (!layer) return;
+      this._cmpLines.at = 0;
+      this._cmpDots.at = 0;
+      this._cmpTags.at = 0;
+      this._cmpBoxes.at = 0;
+      /* What the pointer can land on, rebuilt with every drawing so it can
+         never describe marks that are no longer there — see `companionAt`. */
+      this._cmpHits = [];
+      const done = () => {
+        this.hideRest(this._cmpLines);
+        this.hideRest(this._cmpDots);
+        this.hideRest(this._cmpTags);
+        this.hideRest(this._cmpBoxes);
+      };
+      const cmp = this.props.companion;
+      const scaled = this.scaled;
+      const data = safePrices(this.props.prices);
+      // Clearing is not conditional — see the note on `updateCalls`
+      if (
+        !cmp || !Array.isArray(cmp.episodes) ||
+        !scaled || scaled.length < 2 || data.length < 2 ||
+        !this.width || !this.height
+      ) {
+        /* Nothing drawn, nothing kept: a card held open across the
+           companion being switched off would swallow the next click. */
+        this._cmpPinned = null;
+        this._cmpHot = null;
+        done();
+        return;
+      }
+      const t0 = +data[0].time;
+      const t1 = +data[data.length - 1].time;
+      const x0 = scaled[0].time;
+      const x1 = scaled[scaled.length - 1].time;
+      if (!(t1 > t0)) {
+        done();
+        return;
+      }
+      const xAt = (ms) => x0 + ((ms - t0) / (t1 - t0)) * (x1 - x0);
+      const color = this.props.theme.color;
+      const font = this.props.theme.font.primary;
+      const lastPrice = Number(data[data.length - 1].price);
+      const money = (v) => formatAxisPrice(v, v / 2000, this.props.currencySymbol);
+      const pctFrom = (from, to) => (from > 0 ? `${signedFixed(((to - from) / from) * 100, 1)}%` : "—");
+      const ago = (sec) => {
+        const days = Math.max(0, Math.round((t1 - sec * 1000) / 86400000));
+        return days === 0 ? msg("cmp_today", "today") : msg("cmp_days_ago", "$1d ago", String(days));
+      };
+      /* **One mark at a time** (29 Sep 2026, *"üzerine gelince veya
+       * tıklayınca açıklamalar yazsın"*): the one the pointer is on, else the
+       * one a click kept. Every other mark of the companion steps back to a
+       * quarter, so the lines being explained are the only ones drawn in
+       * full; with nothing in focus the chart is exactly what it was. */
+      const cards = new Map();
+      const wanted = this._cmpHot || this._cmpPinned || null;
+      const shown = cmp.episodes
+        .filter((e) => e.at * 1000 >= t0 && e.at * 1000 <= t1)
+        .slice(-COMPANION_MAX);
+      const recentFrom = t1 - COMPANION_RECENT_DAYS * 86400000;
+      const inRange = (cmp.setups || []).filter((m) => m.t * 1000 >= t0 && m.t * 1000 <= t1);
+      const latest = new Map();
+      for (const m of inRange) {
+        if (COMPANION_RARE_SETUPS.includes(m.id)) continue;
+        const had = latest.get(m.id);
+        if (!had || m.t > had.t) latest.set(m.id, m);
+      }
+      /* Newest first: the number 1 is the most recent. */
+      const marks = [
+        ...Array.from(latest.values()).filter((m) => m.t * 1000 >= recentFrom),
+        ...inRange.filter((m) => COMPANION_RARE_SETUPS.includes(m.id)),
+      ]
+        .sort((a, b) => b.t - a.t)
+        .slice(0, COMPANION_MAX_SETUPS);
+      const patternKey = (e) => `p:${e.kind}:${e.at}`;
+      const setupKey = (m) => `s:${m.id}:${m.t}`;
+      const known = new Set([...shown.map(patternKey), ...marks.map(setupKey)]);
+      // Another coin or range: a mark that is gone cannot stay kept
+      if (this._cmpPinned && !known.has(this._cmpPinned)) this._cmpPinned = null;
+      const focus = wanted && known.has(wanted) ? wanted : null;
+      const dim = (key, op) => (focus && key !== focus ? "0.25" : op);
+
+      /* A pooled node keeps whatever it was last — a card's title reused as
+         a pattern's name would still say it is a title. Every node this
+         layer takes is wiped of the companion's own markers first. */
+      const take = (pool, name) => {
+        const el = this.poolNode(pool, name, layer);
+        for (const a of Array.from(el.attributes)) if (a.name.startsWith("data-companion")) el.removeAttribute(a.name);
+        return el;
+      };
+      this._cmpTake = take;
+      const line = (xa, ya, xb, yb, ink, dash, op) => {
+        const el = take(this._cmpLines, "line");
+        el.setAttribute("x1", xa);
+        el.setAttribute("x2", xb);
+        el.setAttribute("y1", ya);
+        el.setAttribute("y2", yb);
+        el.setAttribute("stroke", ink);
+        el.setAttribute("stroke-width", "1");
+        el.setAttribute("stroke-dasharray", dash || "none");
+        el.setAttribute("opacity", op);
+        return el;
+      };
+      const tag = (x, y, text, ink, anchor, op) => {
+        const el = take(this._cmpTags, "text");
+        el.setAttribute("x", x);
+        el.setAttribute("y", y);
+        el.setAttribute("text-anchor", anchor);
+        el.setAttribute("fill", ink);
+        el.setAttribute("font-size", "9");
+        el.setAttribute("font-family", font);
+        el.setAttribute("font-weight", "400");
+        el.setAttribute("letter-spacing", "0.04em");
+        el.setAttribute("stroke", color.bg);
+        el.setAttribute("stroke-width", "3");
+        el.setAttribute("paint-order", "stroke");
+        el.setAttribute("opacity", op);
+        el.textContent = text;
+        return el;
+      };
+      const clampX = (x) => Math.max(0, Math.min(this.width, x));
+      /* Each hit answers how far the pointer is from it (Infinity when out
+         of reach), so where a pattern's name sits beside a ring the one
+         nearer the pointer wins rather than whichever was drawn last. */
+      const near = (px, py, r) => (x, y) =>
+        Math.abs(x - px) <= r && Math.abs(y - py) <= r ? Math.hypot(x - px, y - py) : Infinity;
+      const inBox = (bx, by, bw, bh) => (x, y) => (x >= bx && x <= bx + bw && y >= by && y <= by + bh ? 0 : Infinity);
+      for (const e of shown) {
+        const key = patternKey(e);
+        const live = e.out === "pending";
+        /* Faint enough to read as history, not so faint it cannot be read
+           on the dark ground. */
+        const op = dim(key, live ? "0.95" : "0.6");
+        const ink = e.bear ? color.chartLineRed : color.chartLineGreen;
+        const def = PRICE_PATTERNS.find((p) => p.id === e.kind);
+        let anchorX = null;
+        let anchorY = null;
+        for (const p of e.points) {
+          const y = this.levelY(p.price);
+          if (y == null) continue;
+          const x = clampX(xAt(p.t * 1000));
+          const dot = take(this._cmpDots, "circle");
+          dot.setAttribute("cx", x);
+          dot.setAttribute("cy", y);
+          dot.setAttribute("r", focus === key ? "3.5" : "2.5");
+          dot.setAttribute("fill", color.bg);
+          dot.setAttribute("stroke", ink);
+          dot.setAttribute("stroke-width", "1.2");
+          dot.setAttribute("opacity", op);
+          this._cmpHits.push({ key, dist: near(x, y, COMPANION_HIT) });
+          if (anchorX == null) {
+            anchorX = x;
+            anchorY = y;
+          }
+        }
+        const xa = clampX(xAt(e.neck.from.t * 1000));
+        const xb = clampX(xAt(e.neck.to.t * 1000));
+        const ya = this.levelY(e.neck.from.price);
+        const yb = this.levelY(e.neck.to.price);
+        if (ya != null && yb != null) {
+          line(xa, ya, xb, yb, color.text, null, op).setAttribute("data-companion-neck", e.kind);
+          /* The neckline is the easiest part to find with a pointer: within
+             a few pixels of the segment, measured square to it. */
+          const dx = xb - xa;
+          const dy = yb - ya;
+          const len2 = dx * dx + dy * dy;
+          this._cmpHits.push({
+            key,
+            dist: (x, y) => {
+              const u = len2 ? Math.max(0, Math.min(1, ((x - xa) * dx + (y - ya) * dy) / len2)) : 0;
+              const d = Math.hypot(x - (xa + u * dx), y - (ya + u * dy));
+              return d <= 5 ? d : Infinity;
+            },
+          });
+        }
+        /* A resolved setup's levels run from its breakout to where one of
+           them was reached. One still being walked has not got that far —
+           a breakout on the last bar has no width after it at all — so its
+           levels run across the whole setup to the right edge, where the
+           price is now. */
+        const xs = live ? clampX(xAt(e.points[0].t * 1000)) : xb;
+        const xEnd = e.resolvedAt ? clampX(xAt(e.resolvedAt * 1000)) : this.width;
+        const yT = this.levelY(e.target);
+        const yS = this.levelY(e.stop);
+        if (yT != null && xEnd - xs >= 1) {
+          line(xs, yT, xEnd, yT, ink, "4 3", op).setAttribute("data-companion-target", e.kind);
+          /* "measured move", the pattern's own name for the level — not
+             "target", which on this app would read as an order. */
+          tag(xEnd - 2, yT - 3, msg("cmp_measured", "measured move"), ink, "end", op);
+        }
+        if (yS != null && xEnd - xs >= 1) {
+          line(xs, yS, xEnd, yS, color.textSecondary, "1 3", op).setAttribute("data-companion-stop", e.kind);
+          tag(xEnd - 2, yS - 3, msg("cmp_invalid", "invalidation"), color.textSecondary, "end", op);
+        }
+        /* Its name under the breakout (over it for a bullish setup, whose
+           target is above). The record went into the card with the rest of
+           the explanation: two lines of small print under every name was
+           what made a year of patterns hard to read. */
+        const rec = cmp.records && cmp.records[e.kind];
+        if (yb != null && def) {
+          const below = e.bear;
+          const yy = below ? Math.min(this.height - 14, yb + 14) : Math.max(22, yb - 16);
+          /* Centred under the breakout when it fits, pushed in from an edge
+             when it would not — measured in the label's own characters
+             (nine-pixel mono with its tracking is about 5.8px each), since a
+             name cut off by the edge of the plot is not a name. */
+          const half = (def.title.length * 5.8) / 2;
+          const anchor = xb + half > this.width - 2 ? "end" : xb - half < 2 ? "start" : "middle";
+          const tx = anchor === "end" ? this.width - 2 : anchor === "start" ? 2 : xb;
+          const name = tag(tx, yy, def.title, color.text, anchor, op);
+          name.setAttribute("data-companion-name", e.kind);
+          if (focus === key) name.setAttribute("font-weight", "700");
+          const left = anchor === "end" ? tx - half * 2 : anchor === "start" ? tx : tx - half;
+          this._cmpHits.push({ key, dist: inBox(left - 3, yy - 11, half * 2 + 6, 15) });
+          if (anchorX == null) {
+            anchorX = xb;
+            anchorY = yb;
+          }
+        }
+        if (def) cards.set(key, { type: "pattern", e, def, rec, x: anchorX, y: anchorY });
+      }
+
+      /* **The strategy setups** (27 Sep 2026): a ring on the close where
+       * each was entered, numbered, and a short list in the plot's top-left
+       * corner saying what each number is and when — the record and the
+       * rest of the explanation open in its place when a mark is pointed at
+       * (29 Sep 2026). Never a word for better or worse: tested together
+       * none of the twelve was distinguishable from an ordinary day
+       * (setups-prereg.md). Only each setup's latest entry, and only when it
+       * is recent, plus the rare crosses wherever they fall: "here, now".
+       * Labels beside the rings were tried first and five of them stacked
+       * over the price line at the right edge, where everything current is. */
+      const rows = [];
+      /* Setups entered on the same close share one ring and one tag —
+         "1·2·3" — or their numbers print over each other. */
+      const rings = new Map();
+      marks.forEach((m, k) => {
+        const def = STRATEGY_SETUPS.find((d) => d.id === m.id);
+        if (!def) return;
+        const key = setupKey(m);
+        const n = String(k + 1);
+        const y = this.levelY(m.price);
+        let x = null;
+        if (y != null) {
+          x = clampX(xAt(m.t * 1000));
+          const at = `${Math.round(x)}:${Math.round(y)}`;
+          const had = rings.get(at);
+          if (had) {
+            had.nums.push(n);
+            had.keys.push(key);
+          } else rings.set(at, { x, y, id: m.id, nums: [n], keys: [key] });
+        }
+        rows.push({ id: m.id, key, head: `${n}  ${def.title} · ${ago(m.t)}` });
+        cards.set(key, { type: "setup", m, def, n, x, y });
+      });
+      for (const r of rings.values()) {
+        const hot = focus && r.keys.includes(focus);
+        const op = focus && !hot ? "0.25" : "0.9";
+        const ring = take(this._cmpDots, "circle");
+        ring.setAttribute("cx", r.x);
+        ring.setAttribute("cy", r.y);
+        ring.setAttribute("r", hot ? "5" : "3.5");
+        ring.setAttribute("fill", "none");
+        ring.setAttribute("stroke", color.text);
+        ring.setAttribute("stroke-width", hot ? "1.6" : "1.2");
+        ring.setAttribute("opacity", op);
+        ring.setAttribute("data-companion-setup", r.id);
+        const label = r.nums.join("·");
+        const right = r.x + 5 + label.length * 5.8 > this.width;
+        tag(right ? r.x - 5 : r.x + 5, r.y - 5, label, color.text, right ? "end" : "start", focus && !hot ? "0.25" : "0.95")
+          .setAttribute("data-companion-ring", label);
+        /* One ring, several setups: pointing at it reads the newest, and
+           each click on it steps to the next (see `handleChartClick`). */
+        this._cmpHits.push({ key: r.keys[0], keys: r.keys, dist: near(r.x, r.y, COMPANION_HIT) });
+      }
+
+      const rowH = 13;
+      const card = focus ? cards.get(focus) : null;
+      if (card) {
+        this.drawCompanionCard(layer, card, {
+          marks, cards, money, pctFrom, ago, lastPrice, tag, rowH, pinned: this._cmpPinned === focus, key: focus,
+        });
+      } else if (rows.length) {
+        /* The index: which number is which, and when. The rest is a point
+           away — in the plate's own place, so the eye does not travel. */
+        const hint = msg("cmp_hint", "Point at a mark to read it · click to keep it open");
+        const w = Math.min(this.width - 12, Math.max(hint.length, ...rows.map((l) => l.head.length)) * 5.8 + 14);
+        const plate = take(this._cmpBoxes, "rect");
+        plate.setAttribute("x", 4);
+        plate.setAttribute("y", 12);
+        plate.setAttribute("width", w);
+        plate.setAttribute("height", (rows.length + 1) * rowH + 8);
+        plate.setAttribute("rx", 4);
+        plate.setAttribute("fill", color.bg);
+        plate.setAttribute("opacity", "0.85");
+        plate.setAttribute("data-companion-list", String(rows.length));
+        rows.forEach((l, k) => {
+          const el = tag(10, 24 + k * rowH, l.head, color.text, "start", "0.95");
+          el.setAttribute("stroke-width", "0");
+          el.setAttribute("data-companion-setup-name", l.id);
+          // A row of the index is a way in too, for a ring that is hard to reach
+          this._cmpHits.push({ key: l.key, dist: inBox(4, 24 + k * rowH - 10, w, rowH) });
+        });
+        const quiet = tag(10, 24 + rows.length * rowH, hint, color.textSecondary, "start", "0.8");
+        quiet.setAttribute("stroke-width", "0");
+        quiet.setAttribute("data-companion-hint", "true");
+      }
+      done();
+    });
+
+    /* **The companion's card** (29 Sep 2026): everything the chart knows
+     * about one mark, in the corner where the index was — what it is, what
+     * it is said to mean (reported, never endorsed), where the price has gone
+     * since, and this coin's count against an ordinary stretch, with the
+     * count's own size beside it. Placed top-left, or top-right when the mark
+     * it explains sits under that corner. The card is a hit area for the same
+     * mark, so moving onto it to read does not close it. */
+    _defineProperty(this, "drawCompanionCard", (layer, card, o) => {
+      const color = this.props.theme.color;
+      const lines = [];
+      const add = (text, ink, attr) => text && lines.push({ text, ink, attr });
+      const capital = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
+      const few = (n) =>
+        n < BASE_RATE_MIN_EPISODES
+          ? msg("cmp_c_few", "Fewer than $1 — too few to compare.", String(BASE_RATE_MIN_EPISODES))
+          : "";
+      if (card.type === "setup") {
+        const { m, def, n } = card;
+        const cmp = this.props.companion;
+        const r = cmp.setupRecords && cmp.setupRecords[m.id];
+        add(`${n}  ${def.title}`, color.text, "title");
+        add(
+          msg("cmp_c_when", "$1 · at $2 · $3 since", o.ago(m.t), o.money(m.price), o.pctFrom(m.price, o.lastPrice)),
+          color.textSecondary,
+        );
+        add(capital(def.what), color.text);
+        add(capital(def.claim), color.textSecondary, "claim");
+        if (!r || !r.n) add(msg("cmp_setup_none", "nothing earlier on this coin to count"), color.text, "record");
+        else if (def.kind === "move") {
+          add(
+            msg(
+              "cmp_c_move",
+              "On this coin the next $1 days moved more than usual $2 of $3 times; an ordinary stretch does so half the time. $4",
+              String(SETUP_MOVE_HORIZON),
+              String(r.bigger),
+              String(r.n),
+              few(r.n),
+            ).trim(),
+            color.text,
+            "record",
+          );
+        } else {
+          add(
+            msg(
+              "cmp_c_up",
+              "On this coin, $1 days later it was up $2% of $3 times, typically $4; any $5 days: up $6%, typically $7. $8",
+              String(SETUP_HORIZON),
+              r.up.toFixed(0),
+              String(r.n),
+              `${signedFixed(r.median, 1)}%`,
+              String(SETUP_HORIZON),
+              r.baseUp.toFixed(0),
+              `${signedFixed(r.baseMedian, 1)}%`,
+              few(r.n),
+            ).trim(),
+            color.text,
+            "record",
+          );
+        }
+        /* What the marks on screen claim, counted — the reading a person
+           does in their head when three lines point one way, done out loud
+           and next to the test that says how little it carries. */
+        let up = 0;
+        let down = 0;
+        for (const mk of o.marks) {
+          const d = STRATEGY_SETUPS.find((x) => x.id === mk.id);
+          if (d && d.kind === "up") up += 1;
+          if (d && d.kind === "down") down += 1;
+        }
+        if (up + down > 1) {
+          add(msg("cmp_c_mix", "Marks on screen: $1 said to point up, $2 said to point down.", String(up), String(down)), color.textSecondary);
+        }
+        add(
+          msg("cmp_c_tested", "Tested together on this app's data, none of the twelve setups differed from an ordinary day."),
+          color.textSecondary,
+        );
+      } else {
+        const { e, def, rec } = card;
+        add(`${def.title} · ${def.claim}`, color.text, "title");
+        const status =
+          e.out === "pending"
+            ? msg("cmp_c_open", "Broke its neckline $1 at $2 — neither level reached yet.", o.ago(e.at), o.money(e.breakout))
+            : e.out === "target"
+              ? msg("cmp_c_hit", "Broke its neckline $1; reached the measured move $2.", o.ago(e.at), o.ago(e.resolvedAt))
+              : e.out === "stop"
+                ? msg("cmp_c_stop", "Broke its neckline $1; the invalidation level was reached first, $2.", o.ago(e.at), o.ago(e.resolvedAt))
+                : msg("cmp_c_neither", "Broke its neckline $1; neither level was reached within $2 days.", o.ago(e.at), String(PRICE_PATTERN_WALK));
+        add(status, color.text);
+        add(msg("cmp_c_levels", "Measured move $1 · invalidation $2", o.money(e.target), o.money(e.stop)), color.textSecondary);
+        if (e.out === "pending") {
+          add(
+            msg("cmp_c_dist", "From today's price: $1 to the measured move, $2 to the invalidation.", o.pctFrom(o.lastPrice, e.target), o.pctFrom(o.lastPrice, e.stop)),
+            color.textSecondary,
+          );
+        }
+        if (rec) {
+          add(
+            msg(
+              "cmp_c_prec",
+              "On this coin: $1 of $2 that resolved reached the measured move first · found $3. $4",
+              String(rec.targetFirst),
+              String(rec.resolved),
+              rec.found === 1 ? msg("br_one_time", "1 time") : msg("br_n_times", "$1 times", rec.found),
+              few(rec.resolved),
+            ).trim(),
+            color.text,
+            "record",
+          );
+        }
+        add(msg("cmp_c_rule", "Found by a fixed rule on daily candles, set before it was tested — no score, no entry."), color.textSecondary);
+      }
+      add(
+        o.pinned
+          ? msg("cmp_c_unpin", "Kept open · click the chart to put it away")
+          : msg("cmp_c_pin", "Click to keep it open"),
+        color.textSecondary,
+        "action",
+      );
+
+      /* Wrapped by characters. The card is set a size up from the labels
+         (ten pixels, not nine) because it is read, not glanced at; ten-pixel
+         mono with its tracking is about 6.4px a character. */
+      const CH = 6.4;
+      const lh = 14;
+      const w = Math.min(this.width - 12, 420);
+      const per = Math.max(16, Math.floor((w - 16) / CH));
+      const wrapped = [];
+      for (const l of lines) {
+        const words = String(l.text).split(" ");
+        let cur = "";
+        const parts = [];
+        for (const word of words) {
+          if (cur && (cur + " " + word).length > per) {
+            parts.push(cur);
+            cur = word;
+          } else cur = cur ? `${cur} ${word}` : word;
+        }
+        if (cur) parts.push(cur);
+        parts.forEach((p, k) => wrapped.push({ ...l, text: p, first: k === 0 }));
+      }
+      const h = wrapped.length * lh + 10;
+      const coversMark =
+        card.x != null && card.y != null && card.x <= w + 12 && card.y <= 12 + h + 6;
+      const x = coversMark ? Math.max(4, this.width - w - 4) : 4;
+      const plate = this._cmpTake(this._cmpBoxes, "rect");
+      plate.setAttribute("x", x);
+      plate.setAttribute("y", 12);
+      plate.setAttribute("width", w);
+      plate.setAttribute("height", h);
+      plate.setAttribute("rx", 4);
+      plate.setAttribute("fill", color.bg);
+      plate.setAttribute("opacity", "0.92");
+      plate.setAttribute("data-companion-card", o.key);
+      wrapped.forEach((l, k) => {
+        const el = o.tag(x + 8, 26 + k * lh, l.text, l.ink, "start", "1");
+        el.setAttribute("stroke-width", "0");
+        el.setAttribute("font-size", "10");
+        if (l.attr === "title" && l.first) el.setAttribute("font-weight", "700");
+        if (l.attr) el.setAttribute(`data-companion-card-${l.attr}`, "true");
+      });
+      // Inside the card is nearer than any mark: it is on top of them
+      this._cmpHits.push({ key: o.key, card: true, dist: (px, py) => (px >= x && px <= x + w && py >= 12 && py <= 12 + h ? -1 : Infinity) });
+    });
+
+    /* Which companion mark the pointer is on: the nearest in reach, and the
+     * card over all of them. Found from the pointer the chart already
+     * tracks, like `moveAt`, rather than by hit-testing nodes in a layer that
+     * takes no pointer events. */
+    _defineProperty(this, "companionAt", (x, y) => {
+      let best = null;
+      let bestD = Infinity;
+      for (const h of this._cmpHits || []) {
+        const d = h.dist(x, y);
+        if (d <= bestD && d < Infinity) {
+          best = h;
+          bestD = d;
+        }
+      }
+      return best;
+    });
+
+    /* **Indicator lines** (27 Sep 2026): one classic overlay, daily, drawn
+     * under the price line on the event layer. Each line is placed like the
+     * companion — instants from the series' own ends, prices through
+     * `levelY` — and broken where it leaves the plot rather than pinned to
+     * its edge. Not drawn when the range holds fewer than
+     * `INDICATOR_MIN_POINTS` of its days: a "20-day" band on an hour of
+     * half-minute points is a flat stroke that looks like a level. Its name
+     * and "daily" sit at its right end, so it says what it is. */
+    _defineProperty(this, "updateOverlay", () => {
+      const layer = this.eventLayerRef.current;
+      if (!layer) return;
+      this._ovlPaths.at = 0;
+      this._ovlTags.at = 0;
+      const done = () => {
+        this.hideRest(this._ovlPaths);
+        this.hideRest(this._ovlTags);
+      };
+      /* A list of overlays since 27 Sep 2026 — any number at once, each
+         `{ kind, lines }` from `indicatorOverlaySeries`. */
+      const list = Array.isArray(this.props.overlay) ? this.props.overlay.filter((o) => o && Array.isArray(o.lines) && o.lines.length) : [];
+      const scaled = this.scaled;
+      const data = safePrices(this.props.prices);
+      if (!list.length || !scaled || scaled.length < 2 || data.length < 2 || !this.width || !this.height) {
+        done();
+        return;
+      }
+      const t0 = +data[0].time;
+      const t1 = +data[data.length - 1].time;
+      const x0 = scaled[0].time;
+      const x1 = scaled[scaled.length - 1].time;
+      if (!(t1 > t0)) {
+        done();
+        return;
+      }
+      const xAt = (ms) => x0 + ((ms - t0) / (t1 - t0)) * (x1 - x0);
+      const color = this.props.theme.color;
+      const inRange = (p) => p.t * 1000 >= t0 && p.t * 1000 <= t1;
+      // The same daily candles feed every overlay, so one count decides for all
+      const days = list[0].lines[0].points.filter(inRange).length;
+      if (days < INDICATOR_MIN_POINTS) {
+        done();
+        return;
+      }
+      const names = {
+        bollinger: msg("ovl_bollinger", "Bollinger 20, 2σ · daily"),
+        donchian: msg("ovl_donchian", "Donchian 20 · daily"),
+        averages: msg("ovl_averages", "50 & 200-day averages · daily"),
+        supertrend: msg("ovl_supertrend", "Supertrend 10, 3 · daily"),
+      };
+      const labels = [];
+      for (const ov of list) {
+        let labelAt = null;
+        for (const line of ov.lines) {
+          let d = "";
+          let pen = false;
+          for (const p of line.points) {
+            if (!inRange(p) || p.v == null) {
+              pen = false;
+              continue;
+            }
+            const y = this.levelY(p.v);
+            if (y == null) {
+              pen = false;
+              continue;
+            }
+            const x = xAt(p.t * 1000);
+            d += `${pen ? "L" : "M"}${x.toFixed(1)},${y.toFixed(1)}`;
+            pen = true;
+            if (!labelAt || x >= labelAt.x) labelAt = { x, y };
+          }
+          const el = this.poolNode(this._ovlPaths, "path", layer);
+          el.setAttribute("d", d);
+          el.setAttribute("fill", "none");
+          el.setAttribute(
+            "stroke",
+            line.tone === "up" ? color.chartLineGreen
+              : line.tone === "down" ? color.chartLineRed
+              : line.id === "sma50" ? color.text
+              : color.textSecondary,
+          );
+          el.setAttribute("stroke-width", "1");
+          el.setAttribute("stroke-dasharray", line.dash || "none");
+          el.setAttribute("opacity", "0.75");
+          el.setAttribute("data-overlay-line", line.id);
+          el.setAttribute("data-overlay-kind", ov.kind);
+        }
+        if (labelAt) labels.push({ kind: ov.kind, x: labelAt.x, y: Math.max(22, labelAt.y - 6) });
+      }
+      /* Two overlays usually end near each other at the right edge; their
+         names are pushed apart, top to bottom, rather than printed over
+         one another. */
+      labels.sort((a, b) => a.y - b.y);
+      for (let i = 1; i < labels.length; i += 1) {
+        labels[i].y = Math.max(labels[i].y, labels[i - 1].y + 11);
+      }
+      for (const lab of labels) {
+        const tagEl = this.poolNode(this._ovlTags, "text", layer);
+        tagEl.setAttribute("x", Math.min(this.width - 2, lab.x));
+        tagEl.setAttribute("y", lab.y);
+        tagEl.setAttribute("text-anchor", "end");
+        tagEl.setAttribute("fill", color.textSecondary);
+        tagEl.setAttribute("font-size", "9");
+        tagEl.setAttribute("font-family", this.props.theme.font.primary);
+        tagEl.setAttribute("stroke", color.bg);
+        tagEl.setAttribute("stroke-width", "3");
+        tagEl.setAttribute("paint-order", "stroke");
+        tagEl.setAttribute("data-overlay-label", lab.kind);
+        tagEl.textContent = names[lab.kind] || "";
+      }
+      done();
+    });
+
     _defineProperty(this, "updateReference", () => {
       const line = this.refLineRef.current;
       const label = this.refLabelRef.current;
@@ -3486,6 +5887,7 @@ class LineBase extends PureComponent {
               this.height,
               PADDING,
               PADDING,
+              this.logAxis(),
             )
           : null;
       if (y == null) {
@@ -3506,6 +5908,8 @@ class LineBase extends PureComponent {
   }
 
   componentDidMount() {
+    // The window in time needs the plot's size and the hover to hand
+    if (this.props.chartRef) this.props.chartRef(this);
     if (
       this.pathRef &&
       this.pathRef.current &&
@@ -3518,19 +5922,31 @@ class LineBase extends PureComponent {
       this.path = select(this.pathRef.current);
       this.area = select(this.areaRef.current);
       this.clipRect = select(this.clipRectRef.current);
-      this.height = height;
-      this.width = width;
+      this.svgW = width;
+      this.svgH = height;
+      this.layoutPlot();
 
       const scaled = scalePrices(
         safePrices(prices),
-        height,
-        width,
+        this.height,
+        this.width,
         this.plotPadY(),
         this.plotPadY(),
+        0,
+        0,
+        null,
+        null,
+        // The same rule the redraw applies, or the first refresh would
+        // silently change the axis under the line
+        this.logAxis(),
       );
       this.scaled = scaled;
+      this.updateAverage(scaled, null, null);
+      this.updateMacroEvents();
+      this.updateOverlay();
+      this.updateCompanion();
       const d = lineFromPrices(scaled);
-      const areaD = buildAreaD(d, scaled, height);
+      const areaD = buildAreaD(d, scaled, this.height);
       this.path.attr("d", d);
       this.area.attr("d", areaD);
       this.updateReference();
@@ -3538,15 +5954,23 @@ class LineBase extends PureComponent {
       this.areaD = areaD;
 
       // "Draw-in": reveal the chart left→right by widening the clip rect
+      this._revealing = true;
       this.clipRect
         .attr("x", 0)
         .attr("y", 0)
-        .attr("height", height)
+        .attr("height", this.height)
         .attr("width", 0)
         .transition()
-        .duration(REVEAL_DURATION)
+        .duration(motionMs(REVEAL_DURATION))
         .ease(easeCubicOut)
-        .attr("width", width);
+        .attr("width", this.width)
+        /* The plot can narrow or widen while this runs — the axes size their
+           gutter from the first price, which lands after mount — so the clip
+           is set to the plot as it is when the reveal ends. */
+        .on("end interrupt", () => {
+          this._revealing = false;
+          if (this.clipRect) this.clipRect.attr("width", this.width).attr("height", this.height);
+        });
 
       // Re-measure on ANY change to the chart box — window resize, but also
       // the page ticker appearing/collapsing or other padding shifts that
@@ -3565,8 +5989,8 @@ class LineBase extends PureComponent {
             // the wrong width and the chart looks like it never loads.
             const box = entries[entries.length - 1].contentRect;
             if (
-              Math.abs(box.width - this.width) < 1 &&
-              Math.abs(box.height - this.height) < 1
+              Math.abs(box.width - (this.svgW || 0)) < 1 &&
+              Math.abs(box.height - (this.svgH || 0)) < 1
             ) {
               return;
             }
@@ -3639,6 +6063,34 @@ class LineBase extends PureComponent {
       prevProps.coin !== this.props.coin ||
       prevProps.period !== this.props.period;
     if (reshaped) this.reshape = true;
+    /* **The walk belongs to the board you took it on.** A different coin or a
+     * different range is a different board, and carrying an offset of nine
+     * squares across to it drops you somewhere nobody asked to be, on a chart
+     * that may not even reach that far. Snapped rather than travelled: there
+     * is nothing to watch move between two boards. Currency counts too — the
+     * prices are different numbers for the same market. */
+    if (
+      reshaped ||
+      prevProps.currency !== this.props.currency ||
+      (prevProps.predict && !this.props.predict)
+    ) {
+      this.boardPan = 0;
+      this.panAnim = null;
+      this.stopPanHold();
+    }
+
+    /* **A new palette repaints what the chart draws itself** (30 Sep 2026).
+     * The axes' tags, the candles, the tools and the studies read the theme
+     * when they draw, and nothing redrew them when it changed: after "D" the
+     * last price's tag kept the old theme's green until the next price
+     * landed, and the blue/orange palette would have waited the same way.
+     * The resize path, which redraws all of it; skipped when new prices are
+     * about to redraw it below anyway. */
+    if (prevProps.theme !== this.props.theme && prevProps.prices === this.props.prices) {
+      this.updatePath();
+      this.updateCandles(false);
+      this.updateComparison(false);
+    }
 
     // Only update path if prices actually changed
     if (prevProps.prices !== this.props.prices) {
@@ -3721,6 +6173,20 @@ class LineBase extends PureComponent {
     if (
       prevProps.grid !== this.props.grid ||
       prevProps.predict !== this.props.predict ||
+      /* The axis is the y scale of every point, so changing it is a redraw of
+       * the series and not of the mesh. It sits here rather than with the
+       * board keys above because the same rebuild is what it needs — and it
+       * was missing at first, which looked exactly like the setting doing
+       * nothing: the path only came back logarithmic after some unrelated
+       * change happened to redraw it. */
+      prevProps.logScale !== this.props.logScale ||
+      // Same reason as the axis: it is drawn from the series, so it needs the
+      // redraw rather than a repaint of the mesh
+      prevProps.average !== this.props.average ||
+      // Placed from the series' own ends, so it follows the same redraw
+      prevProps.macroEvents !== this.props.macroEvents ||
+      prevProps.companion !== this.props.companion ||
+      prevProps.overlay !== this.props.overlay ||
       prevProps.futureShare !== this.props.futureShare ||
       prevProps.boardZoom !== this.props.boardZoom
     ) {
@@ -3813,12 +6279,65 @@ class LineBase extends PureComponent {
     if (prevProps.reference !== this.props.reference) {
       this.updateReference();
     }
+    /* The position moves without the series doing so — a mark repriced, a
+       stop typed in, a close — so it gets its own branch rather than riding
+       on the redraw. */
+    if (prevProps.position !== this.props.position) {
+      this.updatePositionLevels();
+    }
+    /* A target is set, hit or removed without the series moving, so it gets
+       its own branch for the reason the position has one. It also has to
+       follow the position: the label lane steps aside when a contract is on
+       the chart. */
+    if (
+      prevProps.targets !== this.props.targets ||
+      prevProps.position !== this.props.position
+    ) {
+      this.updateTargetLevels();
+    }
+    /* The tools (chart-tools.js): a tool put down drops its half-placed
+       drawing; a new coin drops the ruler; anything the drawings are drawn
+       from redraws them. */
+    if (prevProps.tool !== this.props.tool) {
+      this._draft = null;
+      this._toolHover = null;
+    }
+    if (prevProps.coin !== this.props.coin || prevProps.currency !== this.props.currency) {
+      this._measure = null;
+    }
+    /* The studies (chart-studies.js): a study switched, the daily candles
+       they read, or the bars the profile and the marks read. A change that
+       gives or takes the usual range's strip moves every point, so the path
+       is rebuilt; everything else is a repaint of the studies alone. */
+    const hadFuture = Array.isArray(prevProps.studies) && prevProps.studies.includes("usualRange");
+    const hasFuture = Array.isArray(this.props.studies) && this.props.studies.includes("usualRange");
+    if (hadFuture !== hasFuture) {
+      this.updatePath();
+      this.updateCandles(false);
+    } else if (
+      prevProps.studies !== this.props.studies ||
+      prevProps.studyDaily !== this.props.studyDaily ||
+      prevProps.ohlc !== this.props.ohlc
+    ) {
+      this.updateStudies();
+    }
+    if (
+      prevProps.tool !== this.props.tool ||
+      prevProps.drawings !== this.props.drawings ||
+      prevProps.drawingSelected !== this.props.drawingSelected ||
+      prevProps.drawTools !== this.props.drawTools ||
+      prevProps.coin !== this.props.coin
+    ) {
+      this.updateTools();
+      this.updateStudies();
+    }
     const modeChanged = prevProps.showCandles !== this.props.showCandles;
     if (prevProps.showVolume !== this.props.showVolume) {
       this.updateCandles(false);
     }
     if (modeChanged || prevProps.candles !== this.props.candles) {
-      this.updateCandles(true);
+      // Under a hand moving the window the bars go straight there
+      this.updateCandles(modeChanged || !this.props.viewDriven);
     }
     /* The single-coin line, the candles and the comparison overlay are three
      * ways of drawing the same chart and only one is ever up. Deciding the
@@ -3875,6 +6394,7 @@ class LineBase extends PureComponent {
   }
 
   componentWillUnmount() {
+    if (this.props.chartRef) this.props.chartRef(null);
     if (this.resizeObserver) {
       this.resizeObserver.disconnect();
       this.resizeObserver = null;
@@ -3882,7 +6402,10 @@ class LineBase extends PureComponent {
     window.removeEventListener("resize", this.handleResize);
     if (this.hoverRaf) cancelAnimationFrame(this.hoverRaf);
     if (this.dragRaf) cancelAnimationFrame(this.dragRaf);
+    if (this.callDragRaf) cancelAnimationFrame(this.callDragRaf);
     if (this.zoomRaf) cancelAnimationFrame(this.zoomRaf);
+    if (this.panRaf) cancelAnimationFrame(this.panRaf);
+    this.stopPanHold();
     clearTimeout(this.lockPulseTimer);
     clearTimeout(this._fireworkSweep);
     const svg = this.svgRef.current;
@@ -3911,6 +6434,18 @@ class LineBase extends PureComponent {
       React.createElement(
         "defs",
         null,
+        // The drawings are cut at the plot's edges (chart-tools.js)
+        React.createElement(
+          "clipPath",
+          { id: this.toolClipId },
+          React.createElement("rect", { ref: this.toolClipRef, x: "0", y: "0" }),
+        ),
+        // …and so are the studies' words and levels (chart-studies.js)
+        React.createElement(
+          "clipPath",
+          { id: this.studyClipId },
+          React.createElement("rect", { ref: this.studyClipRef, x: "0", y: "0" }),
+        ),
         React.createElement(
           "linearGradient",
           { id: this.gradId, x1: "0", y1: "0", x2: "0", y2: "1" },
@@ -3922,6 +6457,47 @@ class LineBase extends PureComponent {
           React.createElement("stop", {
             offset: "100%",
             stopColor: tint,
+            stopOpacity: 0,
+          }),
+        ),
+        /* **Past the liquidation, fading out.**
+         *
+         * The level used to tint *everything* beyond it — for a long, the
+         * whole chart below the line. At a high leverage the liquidation sits
+         * close to the price, so that was half the drawing filled with red at
+         * 12% over an area fill that is already tinted: the price line, which
+         * is the thing you are meant to read, came second to a wash. And the
+         * message was never "this whole region matters" — it is "the contract
+         * ends here", which is a statement about the *line*.
+         *
+         * So the tint is a band that falls away from the level over about a
+         * fifth of the chart. Strongest where it means something, gone by the
+         * time it would start competing with the price. */
+        React.createElement(
+          "linearGradient",
+          { id: this.liqGradIdDown, x1: "0", y1: "0", x2: "0", y2: "1" },
+          React.createElement("stop", {
+            offset: "0%",
+            stopColor: color.chartLineRed,
+            stopOpacity: 0.22,
+          }),
+          React.createElement("stop", {
+            offset: "100%",
+            stopColor: color.chartLineRed,
+            stopOpacity: 0,
+          }),
+        ),
+        React.createElement(
+          "linearGradient",
+          { id: this.liqGradIdUp, x1: "0", y1: "1", x2: "0", y2: "0" },
+          React.createElement("stop", {
+            offset: "0%",
+            stopColor: color.chartLineRed,
+            stopOpacity: 0.22,
+          }),
+          React.createElement("stop", {
+            offset: "100%",
+            stopColor: color.chartLineRed,
             stopOpacity: 0,
           }),
         ),
@@ -4052,9 +6628,31 @@ class LineBase extends PureComponent {
         ),
         // Line layer — faded rather than unmounted on a mode switch, so the
         // two chart types cross over instead of blinking
+        /* **The series is drawn, not pressed.** Every pointer on this chart is
+         * handled at the SVG root off `offsetX`, and nothing is listening on
+         * the line or on its fill — but they are the last group before the
+         * non-interactive overlays, so the filled area was hit-testing on top
+         * of the one control drawn underneath it. The left pan arrow sits
+         * over the history, which is exactly where the fill is: measured, its
+         * `pointerdown` never arrived at all and the button did nothing at
+         * either of the two places it has been put. The arrows re-enable
+         * pointer events on themselves inside a layer that has them off, and
+         * that is only worth anything if what is painted over them lets the
+         * pointer through. */
+        /* US CPI releases, under the price line so the line wins where
+           they cross (`updateMacroEvents`). */
+        /* The studies behind the price — regime shading, volume by price,
+           the usual range's cone (chart-studies.js). */
+        React.createElement("g", {
+          ref: this.studiesBackRef,
+          "data-studies": "back",
+          "aria-hidden": "true",
+          pointerEvents: "none",
+        }),
+        React.createElement("g", { ref: this.eventLayerRef, "data-events": "1", pointerEvents: "none" }),
         React.createElement(
           "g",
-          { ref: this.lineGroupRef, "data-line": "1" },
+          { ref: this.lineGroupRef, "data-line": "1", pointerEvents: "none" },
           React.createElement("path", {
             // colorize off → no fill, just the line (the "colourless" chart)
             fill:
@@ -4069,6 +6667,30 @@ class LineBase extends PureComponent {
             ref: this.pathRef,
             stroke: color.text,
             strokeWidth: "1.5",
+          }),
+          /* **The moving average, under the price line and never over it.**
+           *
+           * Thinner, dashed and in the secondary ink: it is context for the
+           * line, not a second reading of equal weight — and it is drawn
+           * before the price in this group so the price wins wherever they
+           * cross. Empty `d` when the option is off, which is the whole of
+           * turning it off: `updateAverage` clears unconditionally, the rule
+           * the rest of this file follows. */
+          React.createElement("path", {
+            fill: "none",
+            ref: this.avgRef,
+            stroke: color.textSecondary,
+            strokeWidth: "1",
+            strokeDasharray: "5 4",
+            opacity: 0.9,
+            "data-average": "1",
+          }),
+          React.createElement("text", {
+            ref: this.avgLabelRef,
+            fill: color.textSecondary,
+            fontSize: "10",
+            opacity: 0,
+            "data-average-label": "1",
           }),
         ),
         // Candles: two identical layers so a range change can dissolve from
@@ -4096,19 +6718,41 @@ class LineBase extends PureComponent {
               stroke: "none",
               opacity: "0.28",
             }),
+            /* Fill and no stroke: the wick is a rectangle of its own now
+               (`candlePathData`), so there is nothing here that needs a line
+               — and a stroke straddling the body's edge was what made a
+               14.65px body 15.65px wide and blurred both of its sides. */
             React.createElement("path", {
               ref: layer.up,
               fill: color.chartLineGreen,
-              stroke: color.chartLineGreen,
-              strokeWidth: "1",
+              stroke: "none",
             }),
             React.createElement("path", {
               ref: layer.down,
               fill: color.chartLineRed,
-              stroke: color.chartLineRed,
-              strokeWidth: "1",
+              stroke: "none",
             }),
           ),
+        ),
+        /* Where the last candle closed — see `updateLastPrice`. After the
+           bars so the tag is never drawn under one. */
+        React.createElement(
+          "g",
+          { ref: this.lastPriceRef, visibility: "hidden", "data-last-price": "1" },
+          React.createElement("line", {
+            ref: this.lastLineRef,
+            strokeWidth: "1",
+            strokeDasharray: "2 3",
+            opacity: "0.65",
+          }),
+          React.createElement("rect", { ref: this.lastTagRef, rx: "3" }),
+          React.createElement("text", {
+            ref: this.lastTextRef,
+            textAnchor: "middle",
+            fontSize: "10",
+            fontFamily: this.props.theme.font.primary,
+            fontWeight: "500",
+          }),
         ),
         /* Comparison overlay. Ink for the coin you are on and the accent for
          * the one you brought in: the pair separates at ΔE 43 (light) / 29
@@ -4126,15 +6770,28 @@ class LineBase extends PureComponent {
           React.createElement("path", {
             ref: this.comparePathARef,
             fill: "none",
-            stroke: color.text,
+            stroke: compareInk(this.props.theme, false),
             strokeWidth: "1.5",
           }),
           React.createElement("path", {
             ref: this.comparePathBRef,
             fill: "none",
-            stroke: color.chartLine,
+            stroke: compareInk(this.props.theme, true),
             strokeWidth: "1.5",
           }),
+          ...this.compareTickRefs.map((ref, i) =>
+            React.createElement("text", {
+              key: `tick-${i}`,
+              ref,
+              fill: color.textSecondary,
+              stroke: color.bg,
+              strokeWidth: "3",
+              paintOrder: "stroke",
+              fontSize: "9",
+              textAnchor: "end",
+              "data-compare-tick": i === 0 ? "high" : i === 1 ? "zero" : "low",
+            }),
+          ),
           /* Painted with a background-coloured halo underneath: a label sits
            * at its line's end, and a steeply falling line runs straight
            * through the text otherwise. */
@@ -4189,6 +6846,34 @@ class LineBase extends PureComponent {
       React.createElement("g", {
         ref: this.moveLayerRef,
         className: "pt-moves",
+        "aria-hidden": "true",
+        pointerEvents: "none",
+      }),
+      /* The open futures position, as levels across the chart. Above the
+       * line, because the whole point of them is to be read *against* it, and
+       * below the marks and the burst so nothing that has to be seen is
+       * hidden behind a price nobody has reached yet. */
+      React.createElement("g", {
+        ref: this.posLayerRef,
+        className: "pt-position",
+        "aria-hidden": "true",
+        pointerEvents: "none",
+      }),
+      // The studies' levels, marks and words, in front of the price
+      React.createElement("g", {
+        ref: this.studiesFrontRef,
+        "data-studies": "front",
+        clipPath: `url(#${this.studyClipId})`,
+        "aria-hidden": "true",
+        pointerEvents: "none",
+      }),
+      /* Somebody's own lines, boxes and notes, and the ruler — over the price
+         and the levels, under the burst and the crosshair (chart-tools.js).
+         Hit-tested by distance, so it takes no pointer events itself. */
+      React.createElement("g", {
+        ref: this.toolsRef,
+        "data-tools": "1",
+        clipPath: `url(#${this.toolClipId})`,
         "aria-hidden": "true",
         pointerEvents: "none",
       }),
@@ -4282,6 +6967,15 @@ class LineBase extends PureComponent {
             ),
           ),
         ),
+      /* The axes, last and outside the plot's clip: the price scale in the
+         gutter to the plot's right, time in the strip under it, and the
+         pointer's tags over both (chart-axes.js). */
+      React.createElement("g", {
+        ref: this.axisRef,
+        "data-axes": "1",
+        "aria-hidden": "true",
+        pointerEvents: "none",
+      }),
     );
   }
 }

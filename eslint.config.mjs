@@ -44,9 +44,13 @@ for (const file of fs.readdirSync(path.join(here, "src")).filter((f) => f.endsWi
   for (const m of body.matchAll(/^(const|let|var|function|class)\s+([A-Za-z_$][\w$]*)/gm)) {
     projectGlobals[m[2]] = m[1] === "let" || m[1] === "var" ? "writable" : "readonly";
   }
-  // Top-level destructuring, e.g. `const { css, keyframes } = styled;`
+  /* Top-level destructuring, e.g. `const { css, keyframes } = styled;`
+   *
+   * Comments inside the braces are stripped first: a `// …` line between two
+   * names made the name after it unreadable to this, and the symptom was a
+   * `no-undef` on a binding that is plainly declared two files away. */
   for (const m of body.matchAll(/^const\s*\{([^}]+)\}\s*=/gm)) {
-    for (const part of m[1].split(",")) {
+    for (const part of m[1].replace(/\/\/[^\n]*/g, "").split(",")) {
       const name = part.trim().split(":").pop().trim();
       if (/^[A-Za-z_$][\w$]*$/.test(name)) projectGlobals[name] = "readonly";
     }
@@ -59,8 +63,8 @@ const vendorGlobals = {
   ReactDOM: "readonly",
   styled: "readonly",
   d3: "readonly",
-  // src/rate.js is the toolbar popup (loaded by rate.html, not index.html) and
-  // is the one file that touches the extension API.
+  // src/popup.js is the toolbar popup (loaded by popup.html, not index.html)
+  // and is the one file that touches the extension API.
   chrome: "readonly",
 };
 

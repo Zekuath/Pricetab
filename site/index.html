@@ -6,7 +6,7 @@
     <title>PriceTab — Live Crypto Charts on Every New Tab</title>
     <meta
       name="description"
-      content="Every new browser tab opens a live cryptocurrency chart. Call where the price goes next, track what you hold, and get told when a price is hit. No account, zero permissions."
+      content="Every new browser tab opens a live cryptocurrency chart. Track what you hold, read your country's crypto tax rules from official sources, practise derivatives with no real money, and get told when a price is hit. No account, no permissions at install."
     />
     <link rel="icon" href="../assets/icons/icon48.png" />
     <link rel="canonical" href="https://zekuath.github.io/Pricetab/site/" />
@@ -14,7 +14,7 @@
     <meta property="og:title" content="PriceTab — Live Crypto Charts on Every New Tab" />
     <meta
       property="og:description"
-      content="Turn every new tab into a live crypto dashboard. Private, zero permissions, no account."
+      content="Turn every new tab into a live crypto dashboard. Private, no permissions at install, no account."
     />
     <meta property="og:image" content="https://zekuath.github.io/Pricetab/assets/promotional/Marquee.png" />
     <meta property="og:url" content="https://zekuath.github.io/Pricetab/site/" />
@@ -22,7 +22,7 @@
     <meta name="twitter:title" content="PriceTab — Live Crypto Charts on Every New Tab" />
     <meta
       name="twitter:description"
-      content="Turn every new tab into a live crypto dashboard. Private, zero permissions, no account."
+      content="Turn every new tab into a live crypto dashboard. Private, no permissions at install, no account."
     />
     <meta name="twitter:image" content="https://zekuath.github.io/Pricetab/assets/promotional/Marquee.png" />
     <link rel="stylesheet" href="../vendor/roboto-mono.css" />
@@ -1103,6 +1103,11 @@
         opacity: 0.7;
         flex: none;
       }
+      /* On a phone the longest title and the index do not fit one line, and
+         the index is the part that is decoration. */
+      @media (max-width: 560px) {
+        .sec-index { display: none; }
+      }
 
       /* Feature cards — settings-panel language, decorative toggles ON */
       .grid {
@@ -1187,9 +1192,17 @@
 
          They start at rest and move once, when the section arrives — nothing
          loops, because six looping animations in one grid is a screensaver. */
+      /* The visual sits on the card's foot, so a row of cards whose text runs
+         to different lengths still draws its pictures on one line. */
+      .card {
+        display: flex;
+        flex-direction: column;
+      }
       .viz {
-        margin-top: 1.1rem;
-        height: 46px;
+        margin-top: auto;
+        padding-top: 1.1rem;
+        height: calc(46px + 1.1rem);
+        box-sizing: border-box;
       }
       .viz svg {
         display: block;
@@ -1336,6 +1349,95 @@
       .reveal.in .v-keys kbd:nth-child(6) { transition-delay: 0.55s; }
 
       /* Screenshots */
+      /* Country cells — the tax guide: a third confirmed from an official
+         source, the rest left open rather than guessed. */
+      .v-cells rect.on {
+        fill: rgba(52, 211, 153, 0.7);
+        opacity: 0;
+      }
+      .v-cells rect.off {
+        fill: none;
+        stroke: rgba(255, 255, 255, 0.16);
+        stroke-width: 1;
+        stroke-dasharray: 2 2;
+        vector-effect: non-scaling-stroke;
+      }
+      .reveal.in .v-cells rect.on { animation: vFade 0.8s ease 0.3s forwards; }
+
+      /* Candles — the practice terminal. Filled, no outline, like the app's. */
+      .v-candles rect { opacity: 0; }
+      .v-candles rect.up { fill: var(--up); }
+      .v-candles rect.dn { fill: var(--down); }
+      .v-candles .wick {
+        stroke-width: 1;
+        vector-effect: non-scaling-stroke;
+        opacity: 0;
+      }
+      .v-candles .wick.up { stroke: var(--up); }
+      .v-candles .wick.dn { stroke: var(--down); }
+      .reveal.in .v-candles rect,
+      .reveal.in .v-candles .wick { animation: vFade 0.7s ease 0.25s forwards; }
+
+      /* Headlines — three rows, each with its wording mark. */
+      .v-news {
+        display: grid;
+        gap: 9px;
+        padding-top: 6px;
+      }
+      .v-news i {
+        position: relative;
+        display: block;
+        height: 5px;
+        margin-left: 12px;
+        border-radius: 3px;
+        background: rgba(255, 255, 255, 0.14);
+        transform: scaleX(0);
+        transform-origin: left;
+        transition: transform 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.25s;
+      }
+      .v-news i::before {
+        content: "";
+        position: absolute;
+        left: -12px;
+        top: -0.5px;
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.3);
+      }
+      .v-news i.up::before { background: var(--up); }
+      .v-news i.dn::before { background: var(--down); }
+      .reveal.in .v-news i { transform: scaleX(1); }
+      .reveal.in .v-news i:nth-child(2) { transition-delay: 0.35s; }
+      .reveal.in .v-news i:nth-child(3) { transition-delay: 0.45s; }
+
+      /* A state against every day — the base-rate panel's comparison. */
+      .v-rate {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        align-items: center;
+        column-gap: 0.7rem;
+        row-gap: 8px;
+        padding-top: 4px;
+      }
+      .v-rate span {
+        font-size: 0.52rem;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--text-dim);
+      }
+      .v-rate i {
+        display: block;
+        height: 6px;
+        border-radius: 3px;
+        background: linear-gradient(90deg, rgba(52, 211, 153, 0.35), var(--green));
+        transform: scaleX(0);
+        transform-origin: left;
+        transition: transform 1.1s cubic-bezier(0.22, 1, 0.36, 1) 0.25s;
+      }
+      .v-rate i.base { background: rgba(255, 255, 255, 0.22); }
+      .reveal.in .v-rate i { transform: scaleX(1); }
+
       .shots {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
@@ -2029,9 +2131,10 @@
         </div>
         <h1 class="rise d2">PriceTab</h1>
         <p class="tagline rise d3">
-          Every new browser tab opens a live cryptocurrency chart. Compare two
-          coins, track what you hold, and get told when a price you care about
-          is hit — without giving up a single browser permission.
+          Every new browser tab opens a live cryptocurrency chart. Track what
+          you hold, read your country's crypto tax rules, practise with no real
+          money, and get told when a price you care about is hit — with no
+          permission asked at install.
         </p>
         <div class="cta-row rise d4">
           <a
@@ -2066,7 +2169,7 @@
         <div class="grid">
           <div class="card">
             <div class="card-head"><h3>Live charts</h3><span class="card-num">01</span></div>
-            <p>Line or candlesticks, six ranges from the last hour to all time. Hover for that point's open, high, low, close and volume.</p>
+            <p>Line or candlesticks over six ranges, a log axis, and an average that says what it covers. Hover for that point's open, high, low, close and volume. US inflation releases are marked where they fall.</p>
             <div class="viz"><svg viewBox="0 0 200 46" preserveAspectRatio="none" aria-hidden="true">
               <defs><linearGradient id="vFill" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stop-color="#34d399" stop-opacity="0.3"/>
@@ -2077,8 +2180,25 @@
             </svg></div>
           </div>
           <div class="card">
-            <div class="card-head"><h3>Call the next move</h3><span class="card-num">02</span></div>
-            <p>The right of the chart becomes a board of empty squares — real price bands at real moments ahead. Point at one, click twice, and it settles itself the next time you open a tab: called it, or missed. The score is local, worth nothing, and never leaves.</p>
+            <div class="card-head"><h3>Compare two coins</h3><span class="card-num">02</span></div>
+            <p>Both drawn as percent change from the same moment, on one shared axis — so where the lines cross is where the market put them, not where a second scale was placed.</p>
+            <div class="viz"><svg viewBox="0 0 200 46" preserveAspectRatio="none" aria-hidden="true">
+              <line class="v-zero" x1="0" y1="23" x2="200" y2="23"/>
+              <path class="v-line" d="M0,23 L26,19 L52,25 L78,15 L104,18 L130,10 L156,13 L200,6"/>
+              <path class="v-line b" d="M0,23 L26,27 L52,22 L78,31 L104,26 L130,35 L156,31 L200,40"/>
+            </svg></div>
+          </div>
+          <div class="card">
+            <div class="card-head"><h3>Chart companion</h3><span class="card-num">03</span></div>
+            <p>Head and shoulders, double tops and twelve common strategy setups, named where they appear — each beside what followed its past appearances on this coin. Counted, never scored.</p>
+            <div class="viz"><svg viewBox="0 0 200 46" preserveAspectRatio="none" aria-hidden="true">
+              <line class="v-zero" x1="52" y1="30" x2="186" y2="30"/>
+              <path class="v-line" d="M0,38 L20,28 L40,18 L65,30 L95,4 L122,30 L150,18 L174,30 L188,38 L200,43"/>
+            </svg></div>
+          </div>
+          <div class="card">
+            <div class="card-head"><h3>Call the next move</h3><span class="card-num">04</span></div>
+            <p>The right of the chart becomes a board of empty squares — real price bands at real moments ahead. Point at one, click twice, and it settles itself: called it, or missed. The score is local, worth nothing, and never leaves.</p>
             <div class="viz"><svg viewBox="0 0 200 46" preserveAspectRatio="none" aria-hidden="true">
               <path class="v-line" d="M0,36 L22,32 L44,37 L66,26 L88,30 L110,20 L124,24"/>
               <line class="v-zero" x1="124" y1="0" x2="124" y2="46" stroke-dasharray="2 3"/>
@@ -2088,27 +2208,87 @@
             </svg></div>
           </div>
           <div class="card">
-            <div class="card-head"><h3>Compare two coins</h3><span class="card-num">03</span></div>
-            <p>Both drawn as percent change from the start of the range, on one shared axis — so where the lines cross is where the market put them, not where a second scale was placed.</p>
-            <div class="viz"><svg viewBox="0 0 200 46" preserveAspectRatio="none" aria-hidden="true">
-              <line class="v-zero" x1="0" y1="23" x2="200" y2="23"/>
-              <path class="v-line" d="M0,23 L26,19 L52,25 L78,15 L104,18 L130,10 L156,13 L200,6"/>
-              <path class="v-line b" d="M0,23 L26,27 L52,22 L78,31 L104,26 L130,35 L156,31 L200,40"/>
-            </svg></div>
-          </div>
-          <div class="card">
-            <div class="card-head"><h3>Price targets</h3><span class="card-num">04</span></div>
-            <p>"BTC rises above 80,000", or "BTC falls 5% in 24h". Reported next time you open a tab — including a move that happened and reverted while you were asleep.</p>
+            <div class="card-head"><h3>Price targets</h3><span class="card-num">05</span></div>
+            <p>"BTC rises above 80,000", or "BTC falls 5% in 1h, 4h or 24h". Reported next time you open a tab — even a move that happened and reverted overnight — and, only if you switch it on, as a Chrome notification.</p>
             <div class="viz"><div class="v-meter"><i></i><b></b><span>TARGET</span></div></div>
           </div>
           <div class="card">
-            <div class="card-head"><h3>Portfolio</h3><span class="card-num">05</span></div>
-            <p>Track holdings by amount, or paste a public address and let it read the balance. Purchase lots, recorded sales, realized and unrealized P/L — all on your device.</p>
+            <div class="card-head"><h3>Portfolio</h3><span class="card-num">06</span></div>
+            <p>Holdings by amount, or a public address read for its balance. Dated purchases, sales and income; cost basis by FIFO, LIFO or HIFO; the return month by month. Press <kbd>H</kbd> and the amounts are masked.</p>
             <div class="viz"><div class="v-bars"><i style="height:78%"></i><i style="height:54%"></i><i class="red" style="height:31%"></i><i style="height:66%"></i><i style="height:42%"></i><i style="height:88%"></i></div></div>
           </div>
           <div class="card">
-            <div class="card-head"><h3>11 market widgets</h3><span class="card-num">06</span></div>
-            <p>Fear &amp; Greed, market overview, halving countdown, RSI, funding, open interest, liquidations, alt season, watchlist, top movers. Every one optional, and off until you want it.</p>
+            <div class="card-head"><h3>Crypto tax guide</h3><span class="card-num">07</span></div>
+            <p>The crypto tax rules of 244 countries and territories — what is taxed and what is not, the rates, the tax year — each read from the country's own tax authority or law, linked and dated. Where none was confirmed, it says so. Not tax advice.</p>
+            <div class="viz"><svg class="v-cells" viewBox="0 0 200 46" preserveAspectRatio="none" aria-hidden="true">
+              <rect class="on" x="0.0" y="0.0" width="13.4" height="11.5" rx="1.5"/>
+              <rect class="off" x="16.8" y="0.0" width="13.4" height="11.5" rx="1.5"/>
+              <rect class="off" x="33.6" y="0.0" width="13.4" height="11.5" rx="1.5"/>
+              <rect class="on" x="50.4" y="0.0" width="13.4" height="11.5" rx="1.5"/>
+              <rect class="off" x="67.2" y="0.0" width="13.4" height="11.5" rx="1.5"/>
+              <rect class="on" x="84.0" y="0.0" width="13.4" height="11.5" rx="1.5"/>
+              <rect class="off" x="100.8" y="0.0" width="13.4" height="11.5" rx="1.5"/>
+              <rect class="off" x="117.6" y="0.0" width="13.4" height="11.5" rx="1.5"/>
+              <rect class="off" x="134.4" y="0.0" width="13.4" height="11.5" rx="1.5"/>
+              <rect class="on" x="151.2" y="0.0" width="13.4" height="11.5" rx="1.5"/>
+              <rect class="off" x="168.0" y="0.0" width="13.4" height="11.5" rx="1.5"/>
+              <rect class="off" x="184.8" y="0.0" width="13.4" height="11.5" rx="1.5"/>
+              <rect class="off" x="0.0" y="15.5" width="13.4" height="11.5" rx="1.5"/>
+              <rect class="on" x="16.8" y="15.5" width="13.4" height="11.5" rx="1.5"/>
+              <rect class="on" x="33.6" y="15.5" width="13.4" height="11.5" rx="1.5"/>
+              <rect class="off" x="50.4" y="15.5" width="13.4" height="11.5" rx="1.5"/>
+              <rect class="off" x="67.2" y="15.5" width="13.4" height="11.5" rx="1.5"/>
+              <rect class="off" x="84.0" y="15.5" width="13.4" height="11.5" rx="1.5"/>
+              <rect class="on" x="100.8" y="15.5" width="13.4" height="11.5" rx="1.5"/>
+              <rect class="off" x="117.6" y="15.5" width="13.4" height="11.5" rx="1.5"/>
+              <rect class="off" x="134.4" y="15.5" width="13.4" height="11.5" rx="1.5"/>
+              <rect class="off" x="151.2" y="15.5" width="13.4" height="11.5" rx="1.5"/>
+              <rect class="on" x="168.0" y="15.5" width="13.4" height="11.5" rx="1.5"/>
+              <rect class="off" x="184.8" y="15.5" width="13.4" height="11.5" rx="1.5"/>
+              <rect class="off" x="0.0" y="31.0" width="13.4" height="11.5" rx="1.5"/>
+              <rect class="on" x="16.8" y="31.0" width="13.4" height="11.5" rx="1.5"/>
+              <rect class="off" x="33.6" y="31.0" width="13.4" height="11.5" rx="1.5"/>
+              <rect class="off" x="50.4" y="31.0" width="13.4" height="11.5" rx="1.5"/>
+              <rect class="off" x="67.2" y="31.0" width="13.4" height="11.5" rx="1.5"/>
+              <rect class="on" x="84.0" y="31.0" width="13.4" height="11.5" rx="1.5"/>
+              <rect class="off" x="100.8" y="31.0" width="13.4" height="11.5" rx="1.5"/>
+              <rect class="on" x="117.6" y="31.0" width="13.4" height="11.5" rx="1.5"/>
+              <rect class="off" x="134.4" y="31.0" width="13.4" height="11.5" rx="1.5"/>
+              <rect class="off" x="151.2" y="31.0" width="13.4" height="11.5" rx="1.5"/>
+              <rect class="on" x="168.0" y="31.0" width="13.4" height="11.5" rx="1.5"/>
+              <rect class="off" x="184.8" y="31.0" width="13.4" height="11.5" rx="1.5"/>
+            </svg></div>
+          </div>
+          <div class="card">
+            <div class="card-head"><h3>Practice derivatives</h3><span class="card-num">08</span></div>
+            <p>A perpetual-contract terminal priced from a real venue's public quotes: long or short up to 200x, stops, limit orders, funding and liquidation. Settled in Practice Units that cannot be bought or cashed out — no real money, ever.</p>
+            <div class="viz"><svg class="v-candles" viewBox="0 0 200 46" preserveAspectRatio="none" aria-hidden="true">
+              <line class="v-zero" x1="0" y1="37" x2="200" y2="37"/>
+              <line class="wick up" x1="10" y1="26" x2="10" y2="44"/><rect class="up" x="6" y="30" width="8" height="10"/>
+              <line class="wick dn" x1="30" y1="20" x2="30" y2="40"/><rect class="dn" x="26" y="24" width="8" height="12"/>
+              <line class="wick up" x1="50" y1="22" x2="50" y2="38"/><rect class="up" x="46" y="26" width="8" height="8"/>
+              <line class="wick up" x1="70" y1="14" x2="70" y2="34"/><rect class="up" x="66" y="18" width="8" height="12"/>
+              <line class="wick dn" x1="90" y1="16" x2="90" y2="31"/><rect class="dn" x="86" y="20" width="8" height="8"/>
+              <line class="wick up" x1="110" y1="8" x2="110" y2="27"/><rect class="up" x="106" y="12" width="8" height="12"/>
+              <line class="wick dn" x1="130" y1="10" x2="130" y2="25"/><rect class="dn" x="126" y="14" width="8" height="8"/>
+              <line class="wick up" x1="150" y1="5" x2="150" y2="21"/><rect class="up" x="146" y="8" width="8" height="10"/>
+              <line class="wick dn" x1="170" y1="6" x2="170" y2="19"/><rect class="dn" x="166" y="10" width="8" height="6"/>
+              <line class="wick up" x1="190" y1="1" x2="190" y2="15"/><rect class="up" x="186" y="3" width="8" height="9"/>
+            </svg></div>
+          </div>
+          <div class="card">
+            <div class="card-head"><h3>News, dated</h3><span class="card-num">09</span></div>
+            <p>Thirteen sources, filtered to your coins or your holdings, read by day or by coverage, with advertising kept out and one story written up four times shown once. Eight newsrooms are optional, and only ever asked for from a button.</p>
+            <div class="viz"><div class="v-news"><i style="width:88%"></i><i class="up" style="width:66%"></i><i class="dn" style="width:76%"></i></div></div>
+          </div>
+          <div class="card">
+            <div class="card-head"><h3>Has this happened before?</h3><span class="card-num">10</span></div>
+            <p>What followed every past time this coin entered the state it is in now — with the count behind every figure, and no comparison at all below twelve episodes. What got built instead of buy and sell signals.</p>
+            <div class="viz"><div class="v-rate"><span>This state</span><i style="width:58%"></i><span>Any day</span><i class="base" style="width:44%"></i></div></div>
+          </div>
+          <div class="card">
+            <div class="card-head"><h3>18 market widgets</h3><span class="card-num">11</span></div>
+            <p>Fear &amp; Greed, market overview, halving, difficulty, fees, gas, RSI, funding, open interest, liquidations, long/short, alt season, regimes, watchlist, top movers and more. Every one optional, off until you want it.</p>
             <div class="viz"><svg viewBox="0 0 200 46" aria-hidden="true">
               <path d="M60,40 A40,40 0 0,1 140,40" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="5" stroke-linecap="round"/>
               <path d="M60,40 A40,40 0 0,1 96,16" fill="none" stroke="#34d399" stroke-width="5" stroke-linecap="round"/>
@@ -2117,9 +2297,9 @@
             </svg></div>
           </div>
           <div class="card">
-            <div class="card-head"><h3>Yours to arrange</h3><span class="card-num">07</span></div>
-            <p>66 coins, 37 display currencies, dark / light / auto, four widget sizes, and a keyboard shortcut for everything. Press <kbd>?</kbd> to see them.</p>
-            <div class="viz"><div class="v-keys"><kbd>/</kbd><kbd>C</kbd><kbd>K</kbd><kbd>A</kbd><kbd>P</kbd><kbd>?</kbd></div></div>
+            <div class="card-head"><h3>Yours to arrange</h3><span class="card-num">12</span></div>
+            <p>81 coins, 37 currencies, 13 languages, dark / light / auto, four modes, four widget sizes, and a keyboard shortcut for everything. Press <kbd>?</kbd> to see them.</p>
+            <div class="viz"><div class="v-keys"><kbd>/</kbd><kbd>C</kbd><kbd>K</kbd><kbd>P</kbd><kbd>F</kbd><kbd>?</kbd></div></div>
           </div>
         </div>
       </div>
@@ -2135,28 +2315,40 @@
         </div>
         <div class="shots">
           <figure>
-            <img class="gallery-img" src="../assets/mockups/raw/compare-dark.png" alt="Bitcoin and Ethereum drawn together as percent change over one month" loading="lazy" width="1280" height="800" />
-            <figcaption>Two coins over a month, one axis. Each line is named at its own end, so nothing rests on colour.</figcaption>
+            <img class="gallery-img" src="shots/calls.png" alt="The board, one day ahead: two squares called, each waiting for the price at its own moment" loading="lazy" width="1280" height="800" />
+            <figcaption>The board: squares of real price and real time ahead. Click one twice to call it; it settles itself against the price at that moment.</figcaption>
           </figure>
           <figure>
-            <img class="gallery-img" src="../assets/mockups/raw/portfolio-dark.png" alt="Portfolio view with holdings, sparklines and profit and loss" loading="lazy" width="1280" height="800" />
-            <figcaption>Holdings with what you paid, what they're worth, and what you've already taken off the table.</figcaption>
+            <img class="gallery-img" src="shots/compare.png" alt="Bitcoin and Ethereum drawn together as percent change over one month" loading="lazy" width="1280" height="800" />
+            <figcaption>Two coins over a month on one axis, measured from the same moment — with how often they moved the same way.</figcaption>
           </figure>
           <figure>
-            <img class="gallery-img" src="../assets/mockups/raw/targets-light.png" alt="Price targets panel showing armed targets and one already hit" loading="lazy" width="1280" height="800" />
-            <figcaption>Targets with how far each one has to go — and no permission asked for.</figcaption>
+            <img class="gallery-img" src="shots/companion.png" alt="A year of Bitcoin with named patterns, their measured moves and a numbered list of recent setups" loading="lazy" width="1280" height="800" />
+            <figcaption>The chart companion names what it finds, where it found it — and how often it played out on this coin before.</figcaption>
           </figure>
           <figure>
-            <img class="gallery-img" src="../assets/mockups/raw/widget-row-dark.png" alt="Market widgets beside the chart" loading="lazy" width="1280" height="800" />
-            <figcaption>Market widgets, if you want them. Nothing is switched on until you switch it on.</figcaption>
+            <img class="gallery-img" src="shots/portfolio.png" alt="Portfolio view with holdings, cost basis, allocation and a month of value" loading="lazy" width="1280" height="800" />
+            <figcaption>Holdings with what you paid, what they are worth, and what you have already taken off the table.</figcaption>
           </figure>
           <figure>
-            <img class="gallery-img" src="../assets/mockups/raw/candles-dark.png" alt="Candlestick chart with volume bars" loading="lazy" width="1280" height="800" />
-            <figcaption>Candlesticks with a volume band, drawn from the same data — so the mode costs nothing extra.</figcaption>
+            <img class="gallery-img" src="shots/tax.png" alt="The crypto tax guide showing the United States card: what is taxed and what is not" loading="lazy" width="1280" height="800" />
+            <figcaption>The tax guide: every country, what is taxed and what is not, each rule read from an official source.</figcaption>
           </figure>
           <figure>
-            <img class="gallery-img" src="../assets/mockups/raw/hero-light.png" alt="The same chart in light mode" loading="lazy" width="1280" height="800" />
-            <figcaption>Light, dark, or whatever your system is set to.</figcaption>
+            <img class="gallery-img" src="shots/practice.png" alt="The practice derivatives terminal with the perpetual's candles, the order book and an order ticket" loading="lazy" width="1280" height="800" />
+            <figcaption>The practice terminal: the perpetual's own candles, its live book and a ticket — in units that have no value.</figcaption>
+          </figure>
+          <figure>
+            <img class="gallery-img" src="shots/news.png" alt="The news reading room with dated headlines, the wording tally and every source's age" loading="lazy" width="1280" height="800" />
+            <figcaption>The news, dated and narrowed to your coins, with how each headline is worded and every source's age.</figcaption>
+          </figure>
+          <figure>
+            <img class="gallery-img" src="shots/baserates.png" alt="The base-rate panel: what followed each state Bitcoin's daily closes are in, with the count behind each figure" loading="lazy" width="1280" height="800" />
+            <figcaption>&ldquo;Has this happened before?&rdquo; Every figure with the count behind it, against an ordinary stretch.</figcaption>
+          </figure>
+          <figure>
+            <img class="gallery-img" src="shots/targets.png" alt="Price targets panel with three armed targets and one already hit" loading="lazy" width="1280" height="800" />
+            <figcaption>Targets with how far each one has to go, and the level drawn on the chart.</figcaption>
           </figure>
         </div>
       </div>
@@ -2171,26 +2363,31 @@
           <span class="sec-index">03 / 05</span>
         </div>
         <div class="zeros">
-          <div class="zero"><b>0</b><span>Permissions</span></div>
+          <div class="zero"><b>0</b><span>Permissions at install</span></div>
           <div class="zero"><b>0</b><span>Accounts</span></div>
           <div class="zero"><b>0</b><span>Trackers</span></div>
         </div>
         <p>
-          PriceTab requests <strong>no browser permissions at all</strong>. No
-          account, no analytics, no telemetry. Your coins, settings, portfolio
-          and targets live in your browser's local storage and never leave the
-          device — which is also why they don't follow you to another computer.
+          PriceTab asks for <strong>no browser permission at install</strong>. No
+          account, no analytics, no telemetry. Your coins, settings, portfolio,
+          targets and practice account live in your browser's local storage and
+          never leave the device — which is also why they don't follow you to
+          another computer, unless you carry a backup file there yourself.
         </p>
         <p>
           Prices come from public, keyless market APIs. The one thing that
-          leaves the browser beyond a price request is a wallet address, and
-          only if you paste one in to watch its balance — then it goes to that
-          chain's balance provider and nowhere else.
+          leaves the browser beyond a request for market data is a wallet
+          address, and only if you paste one in to watch its balance — then it
+          goes to that chain's balance provider and nowhere else. Checking it
+          against the sanctions list happens on your device, from a list that
+          ships with the extension. Two things are optional and off until you
+          press a button inside the app: a Chrome notification for a hit
+          target, and eight newsroom feeds.
         </p>
         <p class="privacy-note">
           It also means a target can only be checked while a PriceTab tab is
           open. Nothing runs in the background when your browser is closed:
-          that would need a permission, and this doesn't have one.
+          there is no background worker to run it.
         </p>
         <!-- The first three chips used to be "Zero permissions / No account /
              No tracking", which is what the three figures above now say in
@@ -2235,23 +2432,30 @@
 <pre><span class="k">{</span>
   <span class="s">"manifest_version"</span>: 3,
   <span class="s">"name"</span>: <span class="s">"PriceTab - Crypto Charts on Every New Tab"</span>,
-  <span class="s">"version"</span>: <span class="s">"1.4.0"</span>,
+  <span class="s">"version"</span>: <span class="s">"1.5.0"</span>,
+  <span class="s">"default_locale"</span>: <span class="s">"en"</span>,
   <span class="s">"description"</span>: <span class="s">"Every new tab opens a live crypto chart&hellip;"</span>,
   <span class="s">"chrome_url_overrides"</span>: { <span class="s">"newtab"</span>: <span class="s">"index.html"</span> },
-  <span class="s">"action"</span>: { <span class="s">"default_popup"</span>: <span class="s">"rate.html"</span> },
+  <span class="s">"permissions"</span>: [],
+  <span class="s">"optional_permissions"</span>: [<span class="s">"notifications"</span>],
+  <span class="s">"optional_host_permissions"</span>: [<span class="s">"https://cointelegraph.com/*"</span>, &hellip; eight newsroom feeds],
+  <span class="s">"action"</span>: { <span class="s">"default_popup"</span>: <span class="s">"popup.html"</span> },
   <span class="s">"icons"</span>: { <span class="s">"16"</span>: &hellip;, <span class="s">"48"</span>: &hellip;, <span class="s">"128"</span>: &hellip; }
 <span class="k">}</span>
 
-<span class="c">// Seven keys. None of them is "permissions",</span>
-<span class="c">// "host_permissions", "background" or "content_scripts".</span></pre>
+<span class="c">// Eleven keys. "permissions" is empty, and the two optional lists</span>
+<span class="c">// are granted only when you press a button inside the app. There is no</span>
+<span class="c">// "host_permissions", no "background" and no "content_scripts".</span></pre>
           </div>
 
           <ul class="claims">
             <li>
-              <b>Nothing to grant</b>
-              There is no permissions block, so Chrome has nothing to ask you
-              about at install. That isn't a policy we promise to keep — it is
-              the manifest, and the browser enforces it.
+              <b>Nothing to grant at install</b>
+              The permissions list is empty, so Chrome has nothing to ask you
+              about when you add it. The two optional entries are asked for
+              only when you press their button inside the app. That isn't a
+              policy we promise to keep — it is the manifest, and the browser
+              enforces it.
             </li>
             <li>
               <b>No content scripts</b>
@@ -2265,9 +2469,11 @@
               can only be checked when you open a tab.
             </li>
             <li>
-              <b>Every network call is in two files</b>
+              <b>Every network request is in two files</b>
               <code>src/api.js</code> and <code>src/widgets-data.js</code>.
-              The source contains no <code>XMLHttpRequest</code>, no
+              (A third, <code>src/i18n.js</code>, reads a language file from
+              inside the extension itself.) The source contains no
+              <code>XMLHttpRequest</code>, no
               <code>sendBeacon</code>, no <code>eval</code>, no
               <code>document.cookie</code>, and no analytics SDK of any kind.
             </li>
@@ -2287,16 +2493,18 @@
             </thead>
             <tbody>
               <tr><td>www.coinbase.com</td><td>Prices and chart history; exchange rates for non-USD</td><td>Coin symbol, currency code</td></tr>
-              <tr><td>api.exchange.coinbase.com</td><td>Candles for the crosshair and candlestick chart</td><td>Trading pair, granularity</td></tr>
-              <tr><td>api.kraken.com</td><td>Coins Coinbase doesn't list, and long-range candles</td><td>Trading pair, interval</td></tr>
-              <tr><td>api.coinlore.com</td><td>One bulk snapshot feeding the ticker, watchlist and top movers</td><td>Nothing &mdash; a fixed top-100 request</td></tr>
+              <tr><td>api.exchange.coinbase.com</td><td>Candles for the crosshair and candlestick chart, and the daily history the base rates and the chart companion count</td><td>Trading pair, granularity, a time range</td></tr>
+              <tr><td>api.kraken.com</td><td>Coins Coinbase doesn't list, long-range candles, and a fallback while Coinbase is not answering</td><td>Trading pair, interval</td></tr>
+              <tr><td>api.coinlore.com</td><td>One bulk snapshot feeding the ticker, watchlist, top movers and price-only coins; the market overview</td><td>Nothing &mdash; a fixed top-100 request</td></tr>
               <tr><td>api.alternative.me</td><td>Fear &amp; Greed index</td><td>Nothing</td></tr>
-              <tr><td>www.okx.com</td><td>Funding rate, open interest, liquidations</td><td>Coin symbol</td></tr>
-              <tr><td>api.bybit.com</td><td>Long/short ratio</td><td>Coin symbol</td></tr>
-              <tr><td>mempool.space</td><td>Halving block height; Bitcoin address balance</td><td>Only an address you paste in yourself</td></tr>
-              <tr><td>api.blockchair.com</td><td>News headlines; ETH/LTC/DOGE/BCH/ZEC address balance</td><td>Only an address you paste in yourself</td></tr>
-              <tr><td>ethereum-rpc.publicnode.com</td><td>ERC-20 token balances</td><td>Only an address you paste in yourself</td></tr>
-              <tr><td>hn.algolia.com</td><td>Crypto stories for the optional news row</td><td>A fixed search term</td></tr>
+              <tr><td>www.okx.com</td><td>Funding rate, open interest, liquidations; the perpetual's price, candles and order book while the practice page is open</td><td>Coin symbol</td></tr>
+              <tr><td>api.bybit.com</td><td>Long/short ratio; the practice page's market readings; delisting and network-upgrade notices if you switch them on</td><td>Coin symbol</td></tr>
+              <tr><td>mempool.space</td><td>Halving, fee, mempool and difficulty cards; Bitcoin address balance</td><td>Only an address you paste in yourself</td></tr>
+              <tr><td>api.blockchair.com</td><td>The &ldquo;what happened here?&rdquo; news archive; ETH/LTC/DOGE/BCH/ZEC address balance</td><td>A date range; only an address you paste in yourself</td></tr>
+              <tr><td>ethereum-rpc.publicnode.com</td><td>ETH gas; ERC-20 token balances</td><td>Nothing for gas; only an address you paste in yourself</td></tr>
+              <tr><td>hn.algolia.com</td><td>Hacker News stories for the news panel</td><td>A fixed search term, or a date range</td></tr>
+              <tr><td>search.cnbc.com<br />feeds.content.dowjones.io<br />news.bitcoin.com<br />cryptopotato.com</td><td>The news feeds that need no permission</td><td>Nothing &mdash; a request for a public feed</td></tr>
+              <tr><td>www.coindesk.com<br />www.theblock.co<br />cointelegraph.com<br />decrypt.co<br />cryptoslate.com<br />bitcoinmagazine.com<br />coinjournal.net<br />feeds.bbci.co.uk</td><td>Eight optional newsrooms &mdash; never contacted until you grant them from the news panel</td><td>Nothing &mdash; a request for a public feed</td></tr>
             </tbody>
           </table>
         </div>
@@ -2312,14 +2520,17 @@
             <b>Watch the traffic</b>
             Open a new tab, press <kbd>F12</kbd>, choose Network and reload.
             Every row will be one of the hosts above. With the widgets off,
-            a tab asks for two things: the price history and the current
-            price &mdash; and often neither, because both are cached.
+            a first tab asks Coinbase for the price and the history of all
+            six ranges &mdash; seven requests, so switching ranges is instant
+            &mdash; and the next tab usually asks for nothing, because
+            everything it needs is cached.
           </div>
           <div class="check">
             <b>Read the code</b>
             It ships unminified and unbundled, so what you install is what is
-            on GitHub. <code>grep -rn "fetch(" src/</code> returns two files,
-            and you can read both.
+            on GitHub. <code>grep -rln "fetch(" src/</code> returns three
+            files: the two above, and the language loader, which only reads
+            from the extension's own folder.
           </div>
         </div>
       </div>
@@ -2358,9 +2569,10 @@
           <a href="../privacy.html">Privacy Policy</a>
         </div>
         <p class="disclaimer">
-          PriceTab is for information only and is not financial advice.
-          Cryptocurrency prices are volatile and risky. Always do your own
-          research.
+          PriceTab is for information only and is not financial or tax
+          advice. The derivatives account is a simulation in units with no
+          value. Cryptocurrency prices are volatile and risky. Always do your
+          own research.
         </p>
       </div>
     </footer>

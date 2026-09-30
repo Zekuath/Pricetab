@@ -20,42 +20,69 @@ const BaseOverlay = styled.div`
   inset: 0;
   z-index: 110;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1rem;
-  background: ${({ theme }) =>
-    theme.color.bg === "#ffffff"
-      ? "rgba(255, 255, 255, 0.85)"
-      : "rgba(0, 0, 0, 0.88)"};
+  align-items: stretch;
+  justify-content: stretch;
+  /* **The window, like Settings** (26 Sep 2026, *"news kısmının tasarımını
+     da elden geçir… aynı şekilde base rate'i de"*): no rim and no card in the
+     middle of it. The screens share one head, one left edge and one ground
+     now, so moving between them is a change of content, not of furniture. */
+  padding: 0;
+  /* **Opaque, and the chart is not behind it.**
+     It was 85% white over 90% black, with the price line showing through as a
+     ghost. Asked for on 23 Sep 2026: *"arka planda bizim ana grafik
+     görünmesin… her bir tab'ı tam ekranda yapabiliriz"*. A panel that covers
+     the screen and still shows the chart is neither one thing nor the other —
+     the chart cannot be read through it and its own content is competing with
+     a line. These are screens now, in the app's own ground. */
+  background: ${({ theme }) => theme.color.bg};
+  ${besideScreenSpine};
 `;
 
 const BaseCard = styled.div`
   display: flex;
   flex-direction: column;
-  width: min(46rem, 100%);
-  max-height: min(42rem, calc(100vh - 3rem));
-  background: ${({ theme }) => theme.color.bgSecondary};
-  border: 1px solid ${({ theme }) => theme.color.border};
-  border-radius: 14px;
-  box-shadow: 0 8px 32px ${({ theme }) => theme.color.shadow};
+  /* **A screen, not a dialog** — 23 Sep 2026, *"her bir tab'i tam ekranda
+     yapabiliriz"*. A border, a radius and a drop shadow all mean the same
+     thing: a layer floating above a page. Once the ground behind is opaque
+     there is no page under it, so the three of them draw an outline around
+     nothing — which is exactly what the panel looked like. The surface
+     reaches the window instead and keeps only its fill, which is what the
+     white controls inside it are read against. */
+  width: 100%;
+  height: 100vh;
+  background: ${({ theme }) => theme.color.bg};
   overflow: hidden;
   animation: ${baseRatesIn} 0.2s cubic-bezier(0.22, 1, 0.36, 1);
 `;
 
+/* Settings' head, to the pixel: the same padding, rule and left edge. */
 const BaseHead = styled.div`
   display: flex;
   align-items: baseline;
   gap: 0.75rem;
-  padding: 1rem 1.1rem 0.75rem;
+  padding: 1.8rem 2.5rem 1rem;
   border-bottom: 1px solid ${({ theme }) => theme.color.border};
+
+  @media (max-width: 600px) {
+    padding: 1rem;
+  }
 `;
 
+/* In the screens' own head type (27 Sep 2026): News, Settings and the
+   derivatives page set their names in tracked capitals, and this one alone
+   was in sentence case at 0.02em — one of five screens with a head of its
+   own kind. */
 const BaseTitle = styled.h2`
   margin: 0;
   font-size: 1rem;
   font-weight: ${({ theme }) => theme.fontWeight.semibold};
-  letter-spacing: 0.02em;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   color: ${({ theme }) => theme.color.text};
+  /* Its key sits beside it — see KeyCap. */
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
 `;
 
 const BaseEyebrow = styled.div`
@@ -66,28 +93,41 @@ const BaseEyebrow = styled.div`
   color: ${({ theme }) => theme.color.textSecondary};
 `;
 
-const BaseClose = styled.button.attrs({ type: "button" })`
-  flex: 0 0 auto;
-  padding: 0.15rem 0.45rem;
-  font-family: ${({ theme }) => theme.font.primary};
-  font-size: 1rem;
-  line-height: 1;
-  color: ${({ theme }) => theme.color.textSecondary};
-  background: transparent;
-  border: none;
-  cursor: pointer;
-
-  &:hover {
-    color: ${({ theme }) => theme.color.text};
-  }
-`;
-
+/* A reading column on the head's left edge: the rows keep a measure however
+   wide the window, and the scroller still runs to its edge. */
 const BaseBody = styled.div`
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding: 0.9rem 1.1rem 1.1rem;
+  padding: 1.6rem 2.5rem 3rem;
   ${themedScrollbar};
+
+  & > * {
+    max-width: 52rem;
+  }
+
+  @media (max-width: 600px) {
+    padding: 1rem 1rem 2rem;
+  }
+`;
+
+/* The two columns: the states and the candlestick shapes, side by side on
+ * a wide window and stacked under 1100px. Wider than the body's reading
+ * measure, since each column keeps its own. */
+const BaseColumns = styled.div`
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0 2.5rem;
+  align-items: start;
+  max-width: 110rem;
+
+  @media (min-width: 1100px) {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+`;
+
+const BaseColumn = styled.div`
+  min-width: 0;
 `;
 
 /* The state now. One reading, said plainly, with the clock it was measured on
@@ -130,9 +170,10 @@ const BaseRow = styled.div`
   border: 1px solid ${({ theme }) => theme.color.border};
   border-radius: 10px;
   margin-bottom: 0.5rem;
-  /* A row about a state the coin is in right now is the one you came for */
+  /* A row about a state the coin is in right now is the one you came for:
+     it wears the fill; the rest are outlines on the page's own ground. */
   background: ${({ theme, live }) =>
-    live ? theme.color.bg : "transparent"};
+    live ? theme.color.bgSecondary : "transparent"};
 `;
 
 const BaseRowTitle = styled.div`
@@ -158,6 +199,17 @@ const BaseDetail = styled.div`
   color: ${({ theme }) => theme.color.textSecondary};
 `;
 
+/* What a pattern is *said* to mean, under its name. Quieter than the count
+ * beside it and in the secondary ink on purpose: it is the folklore the row
+ * exists to test, not a finding of this panel's. */
+const BaseClaim = styled.div`
+  grid-column: 1 / -1;
+  margin-top: -0.1rem;
+  font-size: 0.68rem;
+  font-style: italic;
+  color: ${({ theme }) => theme.color.textSecondary};
+`;
+
 const BaseCompare = styled.span`
   color: ${({ theme }) => theme.color.text};
   font-weight: ${({ theme }) => theme.fontWeight.semibold};
@@ -172,9 +224,11 @@ const BaseNote = styled.div`
   color: ${({ theme }) => theme.color.textSecondary};
 `;
 
+/* Left, on the column's edge: a sentence in a reading column centred under
+   left-aligned rows read as a caption that had lost its picture. */
 const BaseEmpty = styled.div`
-  padding: 1.4rem 0.4rem;
-  text-align: center;
+  padding: 0.6rem 0 1rem;
+  text-align: left;
   font-size: 0.8rem;
   line-height: 1.6;
   color: ${({ theme }) => theme.color.textSecondary};

@@ -18,8 +18,10 @@ docs/internal/
 # The working list is a session scratchpad in an agent's own voice, not
 # product documentation. It stays in the tree and out of the history.
 docs/product/TODAY.md
-# Private portfolio-chart research requested as local working material.
-docs/product/ideasfromcodex.md
+# The derivatives simulator research and agent implementation hand-off are
+# local product working material. Keep the complete directory out of GitHub;
+# checkpoints still preserve it with the rest of the dirty tree.
+docs/product/derivatives-simulator/
 MONETIZATION.md
 BUSINESS_IDEAS.md
 
@@ -59,3 +61,11 @@ tests/node_modules/
 # package-lock.json is deliberately TRACKED: it pins every transitive dev
 # dependency to an exact resolved version + integrity hash, which is the only
 # real defence against a dependency being hijacked between installs.
+
+# The iPhone app: generated artefacts only — the project comes from ios/project.yml, the page from scripts/build-webapp.sh
+ios/WebApp/
+ios/PriceTab.xcodeproj/
+ios/PriceTab/Assets.xcassets/
+ios/PriceTabWidget/Assets.xcassets/
+ios/build/
+ios/DerivedData/

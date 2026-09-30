@@ -45,7 +45,24 @@ const EPHEMERAL_CACHE_KEYS = [
   "crypto_chart_price_cache",
   "crypto_chart_widget_cache",
   "crypto_chart_news_cache",
+  /* The rolling headline archive. Losing it costs the "what happened here?"
+   * card its best answers for the weeks the network archive has not caught up
+   * to, and costs nothing a person typed — so it goes before the portfolio,
+   * with the rest of the caches. See `api.js`. */
+  "crypto_chart_news_archive",
   "crypto_chart_ticker_cache",
+  /* Years of daily candles for the base-rate panel and the candlestick
+     patterns. It carries OHLC since 22 Sep 2026 — about 190 KB a coin
+     against 97 — and losing it costs one refetch when that panel is next
+     opened, which is the cheapest thing on this list to lose. */
+  "crypto_chart_daily_closes",
+  /* Finer candles a zoomed chart asked for (api.js, `fetchViewCandles`):
+     at most six pages of 300 bars, and every one of them refetchable. */
+  "crypto_chart_view_candles",
+  /* What followed each of the last US CPI releases, per coin — 1-minute
+     candles reduced to eight numbers a release. Rebuildable from the
+     network, so it goes before anything a person typed. */
+  "crypto_chart_cpi_moves",
 ];
 
 /* Write, and if the quota refuses, spend the caches to make room.
@@ -96,11 +113,47 @@ const saveJsonSetting = (key, value) => {
   return writeStorage(key, serialized);
 };
 
+/* The coin list, and the whitelist that guards it.
+ *
+ * It lived in `utils.js` until 12 Sep 2026 and was moved here unchanged: it is
+ * a `load*`/`save*` pair and every other one is in this file. The move is what
+ * lets the toolbar popup read the list — `utils.js` builds a d3 line generator
+ * at load, so a page that only wants prices cannot have it, and the
+ * alternative was a second copy of the whitelist test. A validation rule with
+ * two implementations is a validation rule with one of them out of date. */
+const loadCoinOptionsFromStorage = () => {
+  const parsed = loadJsonSetting(STORAGE_KEY);
+  if (Array.isArray(parsed) && parsed.length > 0) {
+    // Validate coins against whitelist and limit to 20
+    const validCoins = parsed
+      .filter(
+        (coin) =>
+          typeof coin === "string" &&
+          SUGGESTED_COINS.includes(coin.toUpperCase()),
+      )
+      .map((coin) => coin.toUpperCase())
+      .slice(0, 20);
+
+    if (validCoins.length > 0) {
+      return validCoins;
+    }
+  }
+  return DEFAULT_COIN_OPTIONS.slice();
+};
+
+const saveCoinOptionsToStorage = (coinOptions) =>
+  saveJsonSetting(STORAGE_KEY, coinOptions);
+
 // Theme helper functions
 const loadThemeFromStorage = () =>
   loadEnumSetting(THEME_STORAGE_KEY, ["auto", "light", "dark"], "auto");
 
 const saveThemeToStorage = (theme) => saveSetting(THEME_STORAGE_KEY, theme);
+
+// Green/red or blue/orange for up and down (theme.js)
+const loadDirectionPalette = () =>
+  loadEnumSetting(DIRECTION_PALETTE_KEY, DIRECTION_PALETTES, "classic");
+const saveDirectionPalette = (value) => saveSetting(DIRECTION_PALETTE_KEY, value);
 
 const loadRatePromptDismissed = () => {
   try {
@@ -322,6 +375,9 @@ const sanitizeAlerts = (list) => {
     const startPrice = Number(a.startPrice);
     const triggeredAt = Number(a.triggeredAt);
     const hitPrice = Number(a.hitPrice);
+    const expiredAt = Number(a.expiredAt);
+    const keepFor = Number(a.keepFor);
+    const repeated = Number(a.repeated);
     clean.push({
       id: typeof a.id === "string" && a.id ? a.id : `${coin || "portfolio"}-${Date.now()}-${clean.length}`,
       coin: kind === "portfolio" ? "" : coin,
@@ -330,9 +386,39 @@ const sanitizeAlerts = (list) => {
       target,
       currency,
       created: isFinite(created) && created > 0 ? created : Date.now(),
+      /* **Only a percent target has a window**, and one it does not recognise
+       * becomes the default rather than dropping the target: an unreadable
+       * window is a question we can still answer, where an unreadable price is
+       * not. Absent on the other two kinds instead of null, so nothing
+       * downstream can read a window off a target that never had one. */
+      ...(kind === "percent"
+        ? {
+            window: PERCENT_WINDOW_OPTIONS.some((o) => o.value === Number(a.window))
+              ? Number(a.window)
+              : DEFAULT_PERCENT_WINDOW,
+          }
+        : {}),
       startPrice: isFinite(startPrice) && startPrice > 0 ? startPrice : null,
       triggeredAt: isFinite(triggeredAt) && triggeredAt > 0 ? triggeredAt : null,
       hitPrice: isFinite(hitPrice) && hitPrice > 0 ? hitPrice : null,
+      /* The four fields added on 21 Sep 2026 — a note, a keep-for span, a
+       * repeat flag and the moment a span ran out — are **absent when they
+       * are not set**, the rule the window already follows: a target written
+       * before they existed loads exactly as it did, and a reader that asks
+       * `a.note || ""` gets the same answer either way. A span nobody offers
+       * is dropped rather than the target; repeat is a price target's alone,
+       * because a move target re-arms itself by the window passing. */
+      ...(typeof a.note === "string" && a.note.trim()
+        ? { note: a.note.trim().slice(0, ALERT_NOTE_MAX) }
+        : {}),
+      ...(isFinite(keepFor) && ALERT_KEEP_OPTIONS.some((o) => o.value === keepFor)
+        ? { keepFor }
+        : {}),
+      ...(kind === "price" && a.repeat === true ? { repeat: true } : {}),
+      ...(isFinite(repeated) && repeated > 0 ? { repeated: Math.floor(repeated) } : {}),
+      ...(isFinite(expiredAt) && expiredAt > 0 && !(isFinite(triggeredAt) && triggeredAt > 0)
+        ? { expiredAt }
+        : {}),
     });
     if (clean.length >= MAX_ALERTS) break;
   }
@@ -410,6 +496,68 @@ const loadAlertTabTitle = () =>
 const saveAlertTabTitle = (enabled) =>
   saveSetting(ALERT_TAB_TITLE_KEY, enabled);
 
+/* The two alarm switches. The permission is never stored — see
+ * `ALARM_NOTIFY_KEY` — so "on" here means "wanted", and whether it can
+ * actually fire is asked of Chrome. */
+const loadPracticeDock = () => loadBoolSetting(PRACTICE_DOCK_KEY, true);
+const savePracticeDock = (v) => saveSetting(PRACTICE_DOCK_KEY, v);
+
+/* The tax helper's choices: a country it knows and, per country, rates in
+   percent between 0 and 100 under the names that country uses. Anything
+   else is dropped, so a hand-edited file cannot put a rate of 900 on
+   screen. */
+/* The tax helper's choices: the country (any the world list knows — "uk",
+   its old name for the United Kingdom, is read as "gb") and the rates typed
+   for each country with a model, only under that model's own rate names. */
+const sanitizeTaxSettings = (raw) => {
+  const out = { country: null, rates: {} };
+  if (!raw || typeof raw !== "object") return out;
+  const entry = (c) => (typeof taxWorldEntry === "function" ? taxWorldEntry(c) : null);
+  const id = (c) => (String(c).toLowerCase() === "uk" ? "gb" : String(c).toLowerCase());
+  if (typeof raw.country === "string" && entry(raw.country)) out.country = id(raw.country);
+  const rates = raw.rates && typeof raw.rates === "object" ? raw.rates : {};
+  for (const c of Object.keys(rates)) {
+    const e = entry(c);
+    const given = rates[c];
+    if (!e || !e.m || !e.m.rates || !given || typeof given !== "object") continue;
+    const kept = {};
+    for (const name of Object.keys(e.m.rates)) {
+      const v = Number(given[name]);
+      if (given[name] != null && given[name] !== "" && Number.isFinite(v) && v >= 0 && v <= 100) kept[name] = Math.round(v * 100) / 100;
+    }
+    if (Object.keys(kept).length) out.rates[id(c)] = kept;
+  }
+  return out;
+};
+const loadTaxSettings = () => sanitizeTaxSettings(loadJsonSetting(TAX_SETTINGS_KEY));
+const saveTaxSettings = (settings) => saveJsonSetting(TAX_SETTINGS_KEY, sanitizeTaxSettings(settings));
+
+/* The terminal's three seams. Rebuilt field by field: an unknown key, a
+   string or a size outside its limits is dropped rather than kept, and a
+   missing field is the default (`sanitizers rebuild the object`). */
+const sanitizePracticeLayout = (raw) => {
+  const out = {};
+  if (!raw || typeof raw !== "object") return out;
+  for (const key of Object.keys(PRACTICE_LAYOUT_LIMITS)) {
+    const v = raw[key];
+    if (typeof v !== "number" || !Number.isFinite(v)) continue;
+    const [lo, hi] = PRACTICE_LAYOUT_LIMITS[key];
+    out[key] = Math.round(Math.min(hi, Math.max(lo, v)));
+  }
+  return out;
+};
+const loadPracticeLayout = () => sanitizePracticeLayout(loadJsonSetting(PRACTICE_LAYOUT_KEY));
+const savePracticeLayout = (layout) => saveJsonSetting(PRACTICE_LAYOUT_KEY, sanitizePracticeLayout(layout));
+const loadPracticeChartStyle = () => loadEnumSetting(PRACTICE_CHART_STYLE_KEY, PRACTICE_CHART_STYLES, "candles");
+const savePracticeChartStyle = (v) => saveSetting(PRACTICE_CHART_STYLE_KEY, v);
+const loadPracticeConfirm = () => loadBoolSetting(PRACTICE_CONFIRM_KEY, false);
+const savePracticeConfirm = (v) => saveSetting(PRACTICE_CONFIRM_KEY, v);
+
+const loadAlarmNotify = () => loadBoolSetting(ALARM_NOTIFY_KEY, DEFAULT_ALARM);
+const saveAlarmNotify = (enabled) => saveSetting(ALARM_NOTIFY_KEY, enabled);
+const loadAlarmSound = () => loadBoolSetting(ALARM_SOUND_KEY, DEFAULT_ALARM);
+const saveAlarmSound = (enabled) => saveSetting(ALARM_SOUND_KEY, enabled);
+
 const loadMoveHeadlines = () =>
   loadBoolSetting(MOVE_HEADLINES_KEY, DEFAULT_MOVE_HEADLINES);
 
@@ -426,6 +574,126 @@ const loadChartGrid = () =>
 
 const saveChartGrid = (enabled) => saveSetting(CHART_GRID_KEY, enabled);
 
+// The moving-average line — see CHART_AVERAGE_KEY
+const loadChartAverage = () =>
+  loadBoolSetting(CHART_AVERAGE_KEY, DEFAULT_CHART_AVERAGE);
+const saveChartAverage = (enabled) => saveSetting(CHART_AVERAGE_KEY, enabled);
+// The chart's tool strip — see CHART_TOOLS_KEY
+const loadChartTools = () => loadBoolSetting(CHART_TOOLS_KEY, DEFAULT_CHART_TOOLS);
+const saveChartTools = (enabled) => saveSetting(CHART_TOOLS_KEY, enabled);
+// The US-release markers and the line under the price — see MACRO_EVENTS_KEY
+const loadMacroEvents = () => loadBoolSetting(MACRO_EVENTS_KEY, DEFAULT_MACRO_EVENTS);
+const saveMacroEvents = (enabled) => saveSetting(MACRO_EVENTS_KEY, enabled);
+// Indicator lines — see INDICATOR_OVERLAYS_KEY. Read as a set; a value
+// stored before the set existed (the single choice) is its first member.
+const loadIndicatorOverlays = () => {
+  const saved = loadJsonSetting(INDICATOR_OVERLAYS_KEY);
+  if (Array.isArray(saved)) {
+    return INDICATOR_OVERLAYS.filter((k) => k !== "none" && saved.includes(k));
+  }
+  const single = loadEnumSetting(INDICATOR_OVERLAY_KEY, INDICATOR_OVERLAYS, DEFAULT_INDICATOR_OVERLAY);
+  return single === "none" ? [] : [single];
+};
+const saveIndicatorOverlays = (kinds) => saveJsonSetting(INDICATOR_OVERLAYS_KEY, kinds);
+// The chart's counted studies — see CHART_STUDIES_KEY. A set, in the list's
+// own order; an id nothing knows any more is dropped.
+const loadChartStudies = () => {
+  const saved = loadJsonSetting(CHART_STUDIES_KEY);
+  return Array.isArray(saved) ? CHART_STUDIES.filter((k) => saved.includes(k)) : [];
+};
+const saveChartStudies = (ids) => saveJsonSetting(CHART_STUDIES_KEY, ids);
+// Headlines kept to read later — see NEWS_SAVED_KEY. Rebuilt field by field:
+// only an https link is kept, since the row opens it, and each link once.
+const sanitizeNewsSaved = (list) => {
+  if (!Array.isArray(list)) return [];
+  const out = [];
+  const seen = new Set();
+  for (const x of list) {
+    if (!x || typeof x !== "object") continue;
+    const url = typeof x.url === "string" && /^https:\/\//.test(x.url) ? x.url.slice(0, 800) : "";
+    const title = typeof x.title === "string" ? x.title.trim().slice(0, 300) : "";
+    if (!url || !title || seen.has(url)) continue;
+    seen.add(url);
+    const time = Number(x.time);
+    const savedAt = Number(x.savedAt);
+    out.push({
+      url,
+      title,
+      source: typeof x.source === "string" ? x.source.slice(0, 60) : "",
+      summary: typeof x.summary === "string" ? x.summary.slice(0, 400) : "",
+      time: Number.isFinite(time) && time > 0 ? time : 0,
+      savedAt: Number.isFinite(savedAt) && savedAt > 0 ? savedAt : 0,
+    });
+    if (out.length >= NEWS_SAVED_MAX) break;
+  }
+  return out;
+};
+const loadNewsSaved = () => sanitizeNewsSaved(loadJsonSetting(NEWS_SAVED_KEY));
+const saveNewsSaved = (list) => saveJsonSetting(NEWS_SAVED_KEY, list);
+
+/* The drawings, rebuilt field by field — a stored shape keeps only what is
+ * named here. `{ COIN: [{ id, kind, currency, a: { t, p }, b?, note?, at }] }`:
+ * a coin the app knows, a kind it draws, a currency it offers, anchors with a
+ * finite time and a price above zero (two for the kinds that need two), a
+ * note cut to its length, and at most `DRAWINGS_MAX_PER_COIN` a coin, newest
+ * kept. A hand-edited file cannot put a NaN into a line or a script into a
+ * note — the note is drawn as text, never as markup, and is trimmed here. */
+const sanitizeDrawings = (raw) => {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {};
+  // Chart coins only: a coin that is priced but never drawn has no chart to draw on
+  const coins = SUGGESTED_COINS;
+  const currencies = CURRENCY_OPTIONS.map((c) => (typeof c === "string" ? c : c.value));
+  const anchor = (x) => {
+    if (!x || typeof x !== "object") return null;
+    const t = Number(x.t);
+    const p = Number(x.p);
+    return Number.isFinite(t) && t > 0 && Number.isFinite(p) && p > 0 ? { t, p } : null;
+  };
+  const out = {};
+  for (const coin of Object.keys(raw)) {
+    if (!coins.includes(coin) || !Array.isArray(raw[coin])) continue;
+    const list = [];
+    const seen = new Set();
+    for (const d of raw[coin]) {
+      if (!d || typeof d !== "object" || !DRAWING_KINDS.includes(d.kind)) continue;
+      const id = typeof d.id === "string" && /^[a-z0-9-]{1,40}$/i.test(d.id) ? d.id : null;
+      if (!id || seen.has(id) || !currencies.includes(d.currency)) continue;
+      const a = anchor(d.a);
+      const two = d.kind !== "hline" && d.kind !== "note";
+      const b = two ? anchor(d.b) : null;
+      if (!a || (two && !b)) continue;
+      seen.add(id);
+      const item = { id, kind: d.kind, currency: d.currency, a };
+      if (b) item.b = b;
+      const note = typeof d.note === "string" ? d.note.trim().slice(0, DRAWING_NOTE_MAX) : "";
+      if (note) item.note = note;
+      const at = Number(d.at);
+      item.at = Number.isFinite(at) && at > 0 ? at : 0;
+      list.push(item);
+    }
+    list.sort((x, y) => x.at - y.at);
+    if (list.length) out[coin] = list.slice(-DRAWINGS_MAX_PER_COIN);
+  }
+  return out;
+};
+const loadDrawings = () => sanitizeDrawings(loadJsonSetting(DRAWINGS_KEY));
+const saveDrawings = (all) => saveJsonSetting(DRAWINGS_KEY, all);
+
+// The companion's metrics switched off — see COMPANION_HIDDEN_KEY. Only
+// strings are kept; an id nothing knows any more simply matches nothing.
+const loadCompanionHidden = () => {
+  const saved = loadJsonSetting(COMPANION_HIDDEN_KEY);
+  return Array.isArray(saved) ? saved.filter((id) => typeof id === "string" && id.length < 40).slice(0, 40) : [];
+};
+const saveCompanionHidden = (ids) => saveJsonSetting(COMPANION_HIDDEN_KEY, ids);
+// The chart companion — see COMPANION_KEY
+const loadCompanion = () => loadBoolSetting(COMPANION_KEY, DEFAULT_COMPANION);
+const saveCompanion = (enabled) => saveSetting(COMPANION_KEY, enabled);
+
+// A logarithmic price axis — see LOG_SCALE_KEY
+const loadLogScale = () => loadBoolSetting(LOG_SCALE_KEY, DEFAULT_LOG_SCALE);
+const saveLogScale = (enabled) => saveSetting(LOG_SCALE_KEY, enabled);
+
 const loadMoveNews = () => loadBoolSetting(MOVE_NEWS_KEY, DEFAULT_MOVE_NEWS);
 
 const saveMoveNews = (enabled) => saveSetting(MOVE_NEWS_KEY, enabled);
@@ -437,10 +705,15 @@ const saveMoveNews = (enabled) => saveSetting(MOVE_NEWS_KEY, enabled);
  * visible and an old one stays hidden. */
 const loadNewsPanelSources = () => {
   const saved = loadJsonSetting(NEWS_PANEL_KEY);
-  if (!saved || typeof saved !== "object" || Array.isArray(saved)) return {};
+  const good = saved && typeof saved === "object" && !Array.isArray(saved) ? saved : {};
   const out = {};
-  for (const key of Object.keys(saved)) {
-    if (typeof key === "string" && saved[key] === false) out[key] = false;
+  for (const key of Object.keys(good)) {
+    if (typeof key === "string" && good[key] === false) out[key] = false;
+  }
+  /* An opt-in source (NEWS_SOURCES' `optIn`) is off unless stored on, so
+     every reader of this map — which treats "absent" as on — sees it off. */
+  for (const src of typeof NEWS_SOURCES !== "undefined" ? NEWS_SOURCES : []) {
+    if (src.optIn) out[src.name] = good[src.name] === true;
   }
   return out;
 };
@@ -528,6 +801,160 @@ const loadNewsSeenAt = () => {
 };
 const saveNewsSeenAt = (at) => saveSetting(NEWS_SEEN_KEY, at);
 
+/* Practice Lab. `sanitizePractice` owns every rule about what these numbers
+ * mean; storage only carries them. The session is typed user state, so it is
+ * never an eviction candidate — see `EPHEMERAL_CACHE_KEYS`. */
+const loadPractice = () => sanitizePractice(loadJsonSetting(PRACTICE_STATE_KEY));
+/* Returns whether the write landed, and the caller is expected to use it: a
+ * transition that could not be saved must not be shown as if it had. */
+const savePractice = (v) => saveJsonSetting(PRACTICE_STATE_KEY, v);
+const loadPracticeUnits = () =>
+  loadEnumSetting(PRACTICE_UNITS_KEY, PRACTICE_UNIT_OPTIONS, PRACTICE_UNITS_COIN);
+const savePracticeUnits = (v) => saveSetting(PRACTICE_UNITS_KEY, v);
+/* **The ticket's own memory.** Validated on the way in rather than trusted:
+ * this is user-writable storage, and a leverage of `"200x"` or of 5,000 would
+ * reach `practiceOpen` as a number the model has to refuse. Coins are capped
+ * so a long rotation cannot grow the key without bound — the oldest simply
+ * fall off, and a coin with nothing remembered starts at the default. */
+const loadPracticeTicket = () => {
+  const raw = loadJsonSetting(PRACTICE_TICKET_KEY);
+  const out = { leverage: {}, share: DEFAULT_PRACTICE_SHARE };
+  if (!raw || typeof raw !== "object") return out;
+  const lev = raw.leverage && typeof raw.leverage === "object" ? raw.leverage : {};
+  for (const coin of Object.keys(lev).slice(0, PRACTICE_TICKET_COINS)) {
+    const v = lev[coin];
+    if (SUGGESTED_COINS.includes(coin) && practiceLeverageOk(v)) out.leverage[coin] = v;
+  }
+  if (PRACTICE_SIZE_SHARES.includes(raw.share)) out.share = raw.share;
+  return out;
+};
+const savePracticeTicket = (v) => saveJsonSetting(PRACTICE_TICKET_KEY, v);
+const loadPracticeConsent = () => loadBoolSetting(PRACTICE_CONSENT_KEY, false);
+// The news panel's one-time ask, put away with "Not now" — see NEWS_ASK_SEEN_KEY
+const loadNewsAskSeen = () => loadBoolSetting(NEWS_ASK_SEEN_KEY, false);
+const saveNewsAskSeen = () => saveSetting(NEWS_ASK_SEEN_KEY, true);
+const savePracticeConsent = () => saveSetting(PRACTICE_CONSENT_KEY, true);
+/* Off by default, like every other addition in this codebase: the plain chart
+ * is what ships, and a leveraged ticket is not something to arrive at
+ * unasked. */
+/* `{ compare: false }` — absent is on, and only false is ever written, so a
+ * feature added in a later version arrives switched on rather than being
+ * silently disabled by an old stored list. Anything that is not one of the
+ * known keys is dropped on read: a hand-edited file must not be able to turn
+ * off something the Settings list has no row for, which would leave it off
+ * with no way back. Futures keeps its own key (`store: "practice"`) and is
+ * skipped here. */
+const loadFeatures = () => {
+  const raw = loadJsonSetting(FEATURES_KEY, {});
+  const out = {};
+  if (raw && typeof raw === "object") {
+    for (const c of FEATURE_CONTROLS) {
+      if (!c.store && raw[c.key] === false) out[c.key] = false;
+    }
+  }
+  return out;
+};
+const saveFeatures = (v) => saveJsonSetting(FEATURES_KEY, v);
+
+/* **On by default, and that is a reversal with a reason.**
+ *
+ * It shipped off, on the rule this codebase applies to every addition: the
+ * plain chart is what ships, and a leveraged ticket is not something to
+ * arrive at unasked. Two things changed that.
+ *
+ * The first is the terms gate. Opening the section lands on four paragraphs
+ * saying it is a simulation with an imaginary balance, and there is no ticket
+ * behind them until they are read. The button does not show anyone a
+ * leveraged form; it shows them a sentence about one. The switch was doing
+ * the safety work before that gate existed, and is not doing it now.
+ *
+ * The second is the Features list. Every other feature there is on, so one
+ * row switched off reads as a fault rather than as a default — and it was the
+ * only reason the control was missing from the corner, with no way to find
+ * out why short of opening Settings and reading eight rows.
+ *
+ * Turning it off is still a real off: no button, no shortcut, no marking. */
+const loadPracticeEnabled = () => loadBoolSetting(PRACTICE_ENABLED_KEY, true);
+const savePracticeEnabled = (v) => saveSetting(PRACTICE_ENABLED_KEY, v);
+
+// The interface's root text size — see TEXT_SIZE_KEY.
+const loadTextSize = () =>
+  loadEnumSetting(
+    TEXT_SIZE_KEY,
+    TEXT_SIZE_OPTIONS.map((o) => o.value),
+    DEFAULT_TEXT_SIZE,
+  );
+const saveTextSize = (v) => saveSetting(TEXT_SIZE_KEY, v);
+/* One place decides what a stored value means in pixels, so the pass that runs
+ * before React and the handler that runs after it cannot disagree. */
+const textSizePx = (value) => {
+  const found = TEXT_SIZE_OPTIONS.find((o) => o.value === value);
+  return (found || TEXT_SIZE_OPTIONS.find((o) => o.value === DEFAULT_TEXT_SIZE)).px;
+};
+const applyTextSize = (value) => {
+  document.documentElement.style.fontSize = `${textSizePx(value)}px`;
+};
+
+/* The panel order — see `PANEL_ORDER_KEY`.
+ *
+ * Rebuilt from the default rather than trusted: anything stored that this
+ * version does not have is dropped, anything it has gained is appended, and
+ * Settings is pulled back to the front whatever the file says. A hand-edited
+ * or out-of-date file must not be able to leave a panel with no tab, which is
+ * the same rule every sanitiser in this app follows. */
+const loadPanelOrder = () => {
+  const stored = loadJsonSetting(PANEL_ORDER_KEY);
+  const known = DEFAULT_PANEL_ORDER;
+  const kept = Array.isArray(stored)
+    ? stored.filter((k, i) => known.includes(k) && stored.indexOf(k) === i)
+    : [];
+  const order = kept.concat(known.filter((k) => !kept.includes(k)));
+  return ["settings"].concat(order.filter((k) => k !== "settings"));
+};
+const savePanelOrder = (order) =>
+  saveJsonSetting(PANEL_ORDER_KEY, Array.isArray(order) ? order : DEFAULT_PANEL_ORDER);
+
+
+/* The Custom mode's slot — see `CUSTOM_MODE_KEY`.
+ *
+ * Sanitised on the way in like every other stored shape: only the keys a mode
+ * actually governs survive, so a hand-edited file cannot make "restore my
+ * arrangement" write a setting no mode is allowed to touch. Widgets come back
+ * as plain booleans for the same reason. An unreadable slot is an empty one —
+ * the failure that costs nothing is Custom simply not lighting up. */
+const loadCustomMode = () => {
+  const raw = loadJsonSetting(CUSTOM_MODE_KEY);
+  if (!raw || typeof raw !== "object" || !raw.settings) return null;
+  const settings = {};
+  for (const key of MODE_SETTING_KEYS) {
+    if (Object.prototype.hasOwnProperty.call(raw.settings, key)) {
+      settings[key] = raw.settings[key];
+    }
+  }
+  if (!Object.keys(settings).length) return null;
+  const widgets = {};
+  if (raw.widgets && typeof raw.widgets === "object") {
+    for (const w of Object.keys(raw.widgets)) widgets[w] = Boolean(raw.widgets[w]);
+  }
+  return { settings, widgets, savedAt: Number(raw.savedAt) || 0 };
+};
+
+const saveCustomMode = (settings, widgets) => {
+  const kept = {};
+  for (const key of MODE_SETTING_KEYS) {
+    if (settings && Object.prototype.hasOwnProperty.call(settings, key)) {
+      kept[key] = settings[key];
+    }
+  }
+  const on = {};
+  for (const w of Object.keys(widgets || {})) on[w] = Boolean(widgets[w]);
+  return saveJsonSetting(CUSTOM_MODE_KEY, {
+    settings: kept,
+    widgets: on,
+    savedAt: Date.now(),
+  });
+};
+
 /* Open calls and the tally. Sanitized on the way in like every other stored
  * shape: a hand-edited file must not be able to produce a call that resolves
  * against a band it never named, or a streak longer than the games played. */
@@ -610,6 +1037,36 @@ const sanitizeCalls = (raw) => {
       settledAt:
         typeof c.settledAt === "number" && isFinite(c.settledAt) && c.settledAt > 0
           ? c.settledAt
+          : null,
+      /* **How likely the square was, measured when it was named.**
+       *
+       * Kept for the same reason `settledAt` is, and it is the same trap: a
+       * field left out of this shape exists until the next reload and then
+       * quietly does not. Without it the record cannot say what a call was
+       * worth — a hit rate treats naming the square the price is already in as
+       * equal to naming one four squares out, which is the whole thing the
+       * odds are there to separate.
+       *
+       * `p` is a probability and `n` the sample behind it; both are validated
+       * because a hand-edited file must not be able to make an easy square
+       * pay like a hard one. A call placed before this existed carries null
+       * and is left out of the comparison rather than counted as a certainty. */
+      /* How sure the caller said they were — one of three words, or nothing.
+       * Kept for the same reason `odds` is: the calibration table under the
+       * scoreboard is built from settled calls, and a field this shape does
+       * not name is gone at the next reload. */
+      confidence: CALL_CONFIDENCE_LEVELS.includes(c.confidence) ? c.confidence : null,
+      odds:
+        c.odds &&
+        typeof c.odds === "object" &&
+        typeof c.odds.p === "number" &&
+        isFinite(c.odds.p) &&
+        c.odds.p >= 0 &&
+        c.odds.p <= 1 &&
+        typeof c.odds.n === "number" &&
+        isFinite(c.odds.n) &&
+        c.odds.n > 0
+          ? { p: c.odds.p, n: Math.round(c.odds.n) }
           : null,
     }));
 
@@ -715,6 +1172,11 @@ const sanitizeLots = (list) => {
       source: lot.source === "chain" ? "chain" : "manual",
     };
     if (currency) clean.currency = currency;
+    /* **An income receipt** — staking, a reward, an airdrop (28 Sep 2026).
+       Its `paid` is its market value when it arrived: the income the tax
+       report counts, and the cost a later sale is measured against. Named,
+       or it would come back a purchase on the next tab. */
+    if (lot.kind === "income") clean.kind = "income";
     lots.push(clean);
     if (lots.length >= MAX_LOTS_PER_HOLDING) break;
   }
@@ -742,6 +1204,8 @@ const sanitizeMatched = (list) => {
       cost: isFinite(cost) && cost >= 0 ? cost : 0,
       acquired: isFinite(acquired) && acquired > 0 ? Math.floor(acquired) : 0,
       source: m.source === "chain" ? "chain" : "manual",
+      // Named, or a sold income receipt comes back as a purchase
+      ...(m.kind === "income" ? { kind: "income" } : {}),
     });
     if (out.length >= MAX_LOTS_PER_HOLDING) break;
   }
@@ -830,6 +1294,24 @@ const sanitizeWatches = (list, coin) => {
 // corrupted entry (or a hand-edited import file) can't break the view.
 // Legacy shapes migrate: a `paid` total becomes one lot, and a single
 // top-level `address` becomes the holding's first watch entry.
+/* A target share, as a percentage of the tracked total.
+ *
+ * **`null` is the normal state and 0 is a real answer** — "I want to hold none
+ * of this" is a position somebody can genuinely hold, and it is not the same
+ * as never having set a target. So the absent case is tested for explicitly
+ * before the number is read: `Number(null)` is 0 and `isFinite(null)` is
+ * `true`, which would have turned every holding on the screen into one with a
+ * target of zero and reported the whole portfolio as over.
+ *
+ * Kept to one decimal: the field is a share of a portfolio, and nobody means
+ * the third decimal place of a percent. */
+const sanitizeTargetShare = (value) => {
+  if (value == null || value === "") return null;
+  const n = Number(value);
+  if (!isFinite(n) || n < 0 || n > 100) return null;
+  return Math.round(n * 10) / 10;
+};
+
 const sanitizePortfolio = (list) => {
   if (!Array.isArray(list)) return [];
   const seen = new Set();
@@ -847,15 +1329,17 @@ const sanitizePortfolio = (list) => {
      * them in the coin list would offer four chart coins that cannot draw.
      * Kept out of that list, they were found at the address, added, saved,
      * and dropped on the next tab open with nothing said. A token you hold is
-     * a holding whether or not there is a line to look at. `isWatchableCoin`
-     * is a closed list too — `WATCH_CHAINS` plus `ERC20_TOKENS` — so this is
-     * the same protection against a hand-edited file, over a wider set. */
-    if (
-      (!SUGGESTED_COINS.includes(coin) && !isWatchableCoin(coin)) ||
-      seen.has(coin)
-    ) {
-      continue;
-    }
+     * a holding whether or not there is a line to look at.
+     *
+     * **It reads `HOLDABLE_COINS` rather than rebuilding the test.** This line
+     * used to be `SUGGESTED_COINS.includes(coin) || isWatchableCoin(coin)` —
+     * that list's own definition, written a second time — and when the
+     * price-only tier was added to the list on 12 Sep 2026 the second copy
+     * would have gone on refusing it: offered by the search, kept in memory,
+     * gone on the next tab open. Exactly the failure this comment was written
+     * about, one rung up. The list is still closed, so the protection against
+     * a hand-edited file is unchanged. */
+    if (!isHoldableCoin(coin) || seen.has(coin)) continue;
     if (!isFinite(amount) || amount < 0) continue;
     let lots = sanitizeLots(entry.lots);
     if (!lots.length) {
@@ -884,6 +1368,7 @@ const sanitizePortfolio = (list) => {
       lots,
       watches,
       sales: sanitizeSales(entry.sales),
+      target: sanitizeTargetShare(entry.target),
     });
   }
   return clean;
@@ -948,3 +1433,195 @@ const loadPortfolioSortFromStorage = () =>
 
 const savePortfolioSortToStorage = (sort) =>
   saveSetting(PORTFOLIO_SORT_KEY, sort);
+
+// Amounts masked on the portfolio screen — see PORTFOLIO_HIDDEN_KEY
+const loadPortfolioHiddenFromStorage = () =>
+  loadBoolSetting(PORTFOLIO_HIDDEN_KEY, DEFAULT_PORTFOLIO_HIDDEN);
+
+const savePortfolioHiddenToStorage = (hidden) =>
+  saveSetting(PORTFOLIO_HIDDEN_KEY, hidden);
+
+/* ── BACKING UP EVERYTHING THIS BROWSER KNOWS ────────────────────────────
+ *
+ * **There are sixty-four `crypto_chart_*` keys and, until now, exactly one
+ * export path** — the portfolio's. The calls record, the price targets, the
+ * practice account, the widget layout, the modes, the language, the currency:
+ * all of it was lost on a new machine, a cleared profile, or a reinstall, and
+ * there was nothing the person could have done about it beforehand.
+ *
+ * `chrome.storage.sync` is the obvious answer and is not available here: it is
+ * a permission, and "zero permissions at install" is a shipped promise. A file
+ * is the zero-permission answer, and it is also the more honest one — it goes
+ * where the reader puts it and nowhere else.
+ *
+ * **The caches are deliberately left out.** `EPHEMERAL_CACHE_KEYS` already
+ * names everything that is rebuildable from the network, and a backup of a
+ * price cache is dead weight that is stale before it lands. What is kept is
+ * exactly what a person typed or chose.
+ */
+const BACKUP_APP = "pricetab";
+const BACKUP_VERSION = 1;
+const BACKUP_KEY_RE = /^crypto_chart_[a-z0-9_]+$/;
+// Generous against anything a person could produce here, and a bound against
+// a file that is not one: the portfolio is the largest value and a big one is
+// tens of kilobytes.
+const BACKUP_MAX_VALUE = 524288;
+const BACKUP_MAX_KEYS = 200;
+/* The snapshot a restore leaves behind so it can be undone, and its own key —
+ * excluded from backups, because a backup of the state before the last restore
+ * is not part of anybody's settings. */
+const BACKUP_UNDO_KEY = "crypto_chart_backup_undo";
+const BACKUP_UNDO_MAX_AGE = 86400000;
+
+const backupExcluded = (key) =>
+  key === BACKUP_UNDO_KEY || EPHEMERAL_CACHE_KEYS.includes(key);
+
+/* Everything worth keeping, read straight out of storage.
+ *
+ * Deliberately **not** a list of the keys this build knows about: a hand-kept
+ * list is one a new setting gets left out of, silently, and the person only
+ * finds out when the restore does not bring it back. The prefix is the rule. */
+const buildSettingsBackup = () => {
+  const keys = {};
+  let count = 0;
+  try {
+    for (let i = 0; i < localStorage.length; i += 1) {
+      const key = localStorage.key(i);
+      if (!key || !BACKUP_KEY_RE.test(key) || backupExcluded(key)) continue;
+      const value = localStorage.getItem(key);
+      if (typeof value !== "string" || value.length > BACKUP_MAX_VALUE) continue;
+      keys[key] = value;
+      count += 1;
+      if (count >= BACKUP_MAX_KEYS) break;
+    }
+  } catch (error) {
+    // Storage unavailable — an empty backup, which the caller refuses to save
+  }
+  return { app: BACKUP_APP, version: BACKUP_VERSION, at: Date.now(), keys };
+};
+
+/* What a file actually holds, before anything is written.
+ *
+ * Returns the keys it would restore, or null if this is not one of our files.
+ * **The count is shown to the person before they commit**, which is the only
+ * part of a restore that cannot be undone by the undo below: the reading of
+ * it. Every value is left as the string it was — the readers above
+ * (`loadBoolSetting`, `loadEnumSetting`, the `sanitize*` family) are what
+ * decide whether a value is usable, and they already treat storage as
+ * untrusted input. This adds the boundary they cannot: **which keys exist at
+ * all.** */
+const readSettingsBackup = (parsed) => {
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return null;
+  if (parsed.app !== BACKUP_APP) return null;
+  const source = parsed.keys;
+  if (!source || typeof source !== "object" || Array.isArray(source)) return null;
+  const keys = {};
+  let count = 0;
+  for (const key of Object.keys(source)) {
+    if (!BACKUP_KEY_RE.test(key) || backupExcluded(key)) continue;
+    const value = source[key];
+    if (typeof value !== "string" || value.length > BACKUP_MAX_VALUE) continue;
+    keys[key] = value;
+    count += 1;
+    if (count >= BACKUP_MAX_KEYS) break;
+  }
+  if (!count) return null;
+  return {
+    keys,
+    count,
+    at: typeof parsed.at === "number" && isFinite(parsed.at) ? parsed.at : null,
+  };
+};
+
+/* Write it, keeping what was there.
+ *
+ * **A restore adds and replaces; it does not clear.** A key this file has no
+ * opinion about is a setting the backup predates, and throwing it away would
+ * make "restore my settings" mean "and forget everything since". The panel
+ * says so in as many words.
+ *
+ * The snapshot of what is being overwritten goes down **first**, so an
+ * interrupted restore leaves a way back rather than a half-written profile.
+ */
+const restoreSettingsBackup = (backup) => {
+  if (!backup || !backup.keys) return null;
+  const before = {};
+  const added = [];
+  try {
+    for (const key of Object.keys(backup.keys)) {
+      const current = localStorage.getItem(key);
+      /* A key that did not exist is not "an empty value" — undoing has to
+       * remove it, or the way back leaves settings behind that were never
+       * there. The two cases are kept apart rather than folded into one map
+       * with empty strings in it. */
+      if (typeof current === "string") before[key] = current;
+      else added.push(key);
+    }
+    writeStorage(
+      BACKUP_UNDO_KEY,
+      JSON.stringify({ at: Date.now(), keys: before, added }),
+    );
+  } catch (error) {
+    // No undo, which the caller cannot fix — the restore itself still stands
+  }
+  let written = 0;
+  let refused = 0;
+  for (const key of Object.keys(backup.keys)) {
+    if (writeStorage(key, backup.keys[key])) written += 1;
+    else refused += 1;
+  }
+  return { written, refused };
+};
+
+/* The way back, for a day.
+ *
+ * A day rather than for ever because it is a snapshot of a moment nobody chose
+ * to keep, and an "undo" offered next month is offering to undo something the
+ * person has since built on. */
+const pendingBackupUndo = () => {
+  const saved = loadJsonSetting(BACKUP_UNDO_KEY);
+  if (!saved || typeof saved !== "object" || !saved.keys) return null;
+  const at = typeof saved.at === "number" && isFinite(saved.at) ? saved.at : 0;
+  if (!at || Date.now() - at > BACKUP_UNDO_MAX_AGE) return null;
+  const keys = Object.keys(saved.keys).filter(
+    (k) => BACKUP_KEY_RE.test(k) && !backupExcluded(k),
+  );
+  const added = Array.isArray(saved.added)
+    ? saved.added.filter((k) => typeof k === "string" && BACKUP_KEY_RE.test(k))
+    : [];
+  if (!keys.length && !added.length) return null;
+  return { at, count: keys.length + added.length };
+};
+
+/* Put back what the restore overwrote, and remove what it added, so undo is
+ * the state before rather than an approximation of it. */
+const undoBackupRestore = () => {
+  const saved = loadJsonSetting(BACKUP_UNDO_KEY);
+  if (!saved || !saved.keys) return false;
+  for (const key of Object.keys(saved.keys)) {
+    if (!BACKUP_KEY_RE.test(key) || backupExcluded(key)) continue;
+    writeStorage(key, saved.keys[key]);
+  }
+  if (Array.isArray(saved.added)) {
+    for (const key of saved.added) {
+      if (typeof key !== "string" || !BACKUP_KEY_RE.test(key)) continue;
+      if (backupExcluded(key)) continue;
+      try {
+        localStorage.removeItem(key);
+      } catch (error) {
+        // Leave it: a key that will not go is better than a thrown restore
+      }
+    }
+  }
+  clearBackupUndo();
+  return true;
+};
+
+const clearBackupUndo = () => {
+  try {
+    localStorage.removeItem(BACKUP_UNDO_KEY);
+    return true;
+  } catch (error) {
+    return false;
+  }
+};

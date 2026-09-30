@@ -166,10 +166,33 @@ const localeNeedsLoading = () => {
  * cache eviction is allowed to do. */
 const LANGUAGE_CACHE_KEY = "crypto_chart_language_cache";
 
+/* Which build wrote the cached catalogue.
+ *
+ * Without this the cache was written once, when the language was chosen, and
+ * then read for ever: a translation corrected in a later version never reached
+ * anyone who had picked a language, because their copy of the catalogue was
+ * frozen at the day they picked it. Measured — a profile holding a catalogue
+ * with the old wording kept showing that wording after the packaged files had
+ * changed, and nothing short of switching language and back would clear it.
+ *
+ * The version is the right key rather than a timestamp: the catalogue can only
+ * change when the extension is updated, so it is stale exactly when the
+ * versions differ, and it costs no revalidation on an ordinary tab. Absent
+ * (a page opened outside the extension) it degrades to "no stamp matches",
+ * which re-fetches — the safe direction. */
+const extensionVersion = () => {
+  try {
+    return chrome.runtime.getManifest().version || "";
+  } catch (error) {
+    return "";
+  }
+};
+
 const readCachedMessages = (code) => {
   if (typeof loadJsonSetting !== "function") return null;
-  const held = loadJsonSetting(LANGUAGE_CACHE_KEY, null);
+  const held = loadJsonSetting(LANGUAGE_CACHE_KEY);
   if (!held || held.locale !== code || !held.messages) return null;
+  if (held.version !== extensionVersion()) return null;
   return typeof held.messages === "object" ? held.messages : null;
 };
 
@@ -188,7 +211,11 @@ const loadLocaleMessages = (code) => {
       if (json && typeof json === "object") {
         _localeMessages = json;
         if (typeof saveJsonSetting === "function") {
-          saveJsonSetting(LANGUAGE_CACHE_KEY, { locale: code, messages: json });
+          saveJsonSetting(LANGUAGE_CACHE_KEY, {
+            locale: code,
+            version: extensionVersion(),
+            messages: json,
+          });
         }
       }
       return json;
@@ -344,14 +371,18 @@ const intlFormatter = (kind, options) => {
         ? new Intl.NumberFormat(tag, options)
         : kind === "date"
           ? new Intl.DateTimeFormat(tag, options)
-          : new Intl.RelativeTimeFormat(tag, options);
+          : kind === "list"
+            ? new Intl.ListFormat(tag, options)
+            : new Intl.RelativeTimeFormat(tag, options);
   } catch {
     f =
       kind === "number"
         ? new Intl.NumberFormat("en", options)
         : kind === "date"
           ? new Intl.DateTimeFormat("en", options)
-          : new Intl.RelativeTimeFormat("en", options);
+          : kind === "list"
+            ? new Intl.ListFormat("en", options)
+            : new Intl.RelativeTimeFormat("en", options);
   }
   _intlCache.set(key, f);
   return f;

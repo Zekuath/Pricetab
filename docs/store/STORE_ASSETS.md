@@ -12,7 +12,11 @@ This document explains how to create all required assets for publishing PriceTab
 - [x] 128x128 - `assets/icons/icon128.png`
 - [x] Source icon - `assets/icons/icon.png`
 
-### Screenshots (✅ COMPLETED)
+### Screenshots (the 1.4.0 set — re-shoot for the next build)
+> The set in `assets/screenshots/` was made for 1.4.0. It predates the news
+> reading room, the derivatives page, the portfolio's ledger views and the tax
+> guide. Choose the next build's five frames in `SCREENSHOT_PLAN.md` first.
+
 - [x] 5 store screenshots (1280×800) - `assets/screenshots/01-hero.png` … `05-targets.png`
       (five is the cap the upload form accepts — verified in the console)
 - [x] Upload order + on-image captions documented in `assets/screenshots/README.md`
@@ -271,7 +275,7 @@ English (United States)
 ## 📊 Asset Creation Checklist
 
 ### Immediate (Before Publishing)
-- [x] Take 3-5 screenshots (1280x800) ✓ 9 screenshots ready
+- [x] Take 3-5 screenshots (1280x800) — 5 screenshots ready from the 1.4.0 set; the next build still needs a re-shoot
 - [x] Create small tile (440x280) ✓
 - [x] Write store description - see `docs/store/STORE_DESCRIPTION.md`
 - [x] Privacy policy URL live: `https://zekuath.github.io/Pricetab/privacy.html` ✓
@@ -286,7 +290,7 @@ English (United States)
 
 ### Pre-Launch
 - [ ] Test extension on fresh Chrome install
-- [ ] Verify all assets meet size requirements
+- [x] Verify all existing PNG assets meet their documented dimensions (28 Sep 2026; the next screenshots are not captured yet)
 - [ ] Proofread all text for typos
 - [ ] Check links in description
 - [ ] Preview how listing looks in store

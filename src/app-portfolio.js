@@ -50,6 +50,33 @@ const portfolioHandlers = (app) => ({
       );
     },
 
+    /* Mask the money. Lives here rather than in `Portfolio`'s own state — the
+     * way the sort order does — because the point of it is the shortcut:
+     * somebody walks up to the desk and "H" has to work before the pointer
+     * reaches a button, and `handleKeyDown` is in `app.js`. */
+    togglePortfolioHidden: () => {
+      app.setState(
+        (prevState) => ({ portfolioHidden: !prevState.portfolioHidden }),
+        () => savePortfolioHiddenToStorage(app.state.portfolioHidden),
+      );
+    },
+
+    /* A target share for one holding, or `null` to drop it.
+     *
+     * The value arrives already checked by the panel; it is written straight
+     * onto the holding, so a target travels with the coin it belongs to
+     * through export, import and every other handler here (all of which spread
+     * the holding rather than rebuilding it). */
+    handleSetTarget: (coin, share) => {
+      app.setState((prevState) => {
+        const portfolio = prevState.portfolio.map((h) =>
+          h.coin === coin ? { ...h, target: share } : h,
+        );
+        savePortfolioToStorage(portfolio);
+        return { portfolio };
+      });
+    },
+
     handleAddHolding: (coin, amount) => {
       const normalized = (coin || "").trim().toUpperCase();
       if (!SUGGESTED_COINS.includes(normalized)) return;
@@ -93,10 +120,13 @@ const portfolioHandlers = (app) => ({
      * know is the price you sold at, so a sale out of a watched address is
      * still just a balance going down.
      */
-    handleAddSale: (coin, amount, received) => {
+    /* `when` (unix seconds, optional): the day it was sold, from the form's
+       date field — a tax year and a holding period turn on it. Absent, now. */
+    handleAddSale: (coin, amount, received, when) => {
       const amt = Number(amount);
       const got = Number(received);
       if (!isFinite(amt) || amt <= 0 || !isFinite(got) || got < 0) return;
+      const time = Number.isFinite(when) && when > 0 ? Math.min(Math.floor(when), Math.floor(Date.now() / 1000)) : Math.floor(Date.now() / 1000);
       app.setState((prevState) => {
         const holding = prevState.portfolio.find((h) => h.coin === coin);
         if (!holding) return null;
@@ -107,13 +137,13 @@ const portfolioHandlers = (app) => ({
         if (!(sold > 0)) return null;
         const lots = holding.lots || [];
         const method = prevState.costMethod;
-        const { basis, covered, matched } = consumeLots(lots, sold, method);
+        const { basis, covered, matched } = consumeLots(lots, sold, method, time);
         const portfolio = prevState.portfolio.map((h) =>
           h.coin === coin
             ? {
                 ...h,
                 amount: Math.max(0, h.amount - sold),
-                lots: reduceLots(lots, sold, method),
+                lots: reduceLots(lots, sold, method, time),
                 sales: [
                   ...sales,
                   {
@@ -126,7 +156,7 @@ const portfolioHandlers = (app) => ({
                     // Which purchases it consumed, so the report can pair
                     // each acquisition with this disposal
                     matched,
-                    time: Math.floor(Date.now() / 1000),
+                    time,
                     // Proceeds and the basis it consumed are both in the
                     // currency that was on screen when it was recorded
                     currency: prevState.currency,
@@ -158,24 +188,34 @@ const portfolioHandlers = (app) => ({
 
     // Log a purchase lot: "bought `amount` for `paid` in total" (dated now —
     // the date only matters for chain-inferred lots and the tax report)
-    handleAddLot: (coin, amount, paid) => {
+    /* `when`: the day it was bought or received (the form's date field;
+       absent, now). `kind: "income"` records a receipt — staking, a reward,
+       an airdrop — whose `paid` is its market value when it arrived: the
+       income the tax report counts, and the cost of a later sale. */
+    handleAddLot: (coin, amount, paid, when, kind) => {
       const amt = Number(amount);
       const cost = Number(paid);
       if (!isFinite(amt) || amt <= 0 || !isFinite(cost) || cost < 0) return;
+      const time = Number.isFinite(when) && when > 0 ? Math.min(Math.floor(when), Math.floor(Date.now() / 1000)) : Math.floor(Date.now() / 1000);
       app.setState((prevState) => {
         const portfolio = prevState.portfolio.map((h) => {
           if (h.coin !== coin || h.lots.length >= MAX_LOTS_PER_HOLDING) {
             return h;
           }
+          /* The amount grows by what the record adds beyond coins already
+             counted — see `lotAmountGrowth` — or the record is trimmed
+             away the moment it is saved. */
           return {
             ...h,
+            amount: (h.amount || 0) + lotAmountGrowth(h, amt),
             lots: [
               ...h.lots,
               {
                 amount: amt,
                 paid: cost,
-                time: Math.floor(Date.now() / 1000),
+                time,
                 source: "manual",
+                ...(kind === "income" ? { kind: "income" } : {}),
                 // What `paid` is a number of. Without it, switching the
                 // display currency re-read every basis in the new one.
                 currency: prevState.currency,

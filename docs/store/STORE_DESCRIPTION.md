@@ -7,6 +7,13 @@
 > top to bottom and copy each block into the matching field.
 > Do NOT use descriptions from any other file — `STORE_ASSETS.md` previously had a duplicate that caused a Yellow Argon rejection.
 
+> **Status (28 Sep 2026):** the copy below describes the build as of 1.5.0. It
+> does not yet mention the derivatives practice account or the crypto tax
+> guide, and the single-purpose description (§2) does not name them. Once the
+> next build's scope is decided (`docs/product/TODO.md`, *Now*), update the
+> English blocks first, then the twelve translations, then the character
+> counts.
+
 ---
 
 # 1. Store Listing Tab
@@ -653,7 +660,7 @@ English (United States)
 ## Single Purpose Description
 
 ```
-PriceTab replaces the browser's new tab page with a live cryptocurrency price chart. Every feature serves that one purpose — reading the cryptocurrency market on the new tab page — and each is a different way of reading the same data: the coin list and time ranges choose what the chart shows; comparison draws a second coin on the same axis; the optional market panels annotate it; price targets report when the chart reaches a level you named; the holdings view prices coins you own against the same feed; and calls let you record what you expect the chart to do next and score yourself against what it did. Nothing collects, transmits or sells data. The extension is installed with zero permissions granted, runs entirely from local files, and keeps every setting, holding and score in the browser's own localStorage. Six news feeds can optionally be read directly if the user turns them on from the news panel; nothing is requested until they do.
+PriceTab replaces the browser's new tab page with a live cryptocurrency price chart. Every feature serves that one purpose — reading the cryptocurrency market on the new tab page — and each is a different way of reading the same data: the coin list and time ranges choose what the chart shows; comparison draws a second coin on the same axis; the optional market panels annotate it; price targets report when the chart reaches a level you named; the holdings view prices coins you own against the same feed; and calls let you record what you expect the chart to do next and score yourself against what it did. Nothing collects, transmits or sells data. The extension is installed with zero permissions granted, runs entirely from local files, and keeps every setting, holding and score in the browser's own localStorage. Eight news feeds can optionally be read directly if the user turns them on from the news panel; nothing is requested until they do.
 ```
 
 ## Permission Justifications
@@ -670,12 +677,12 @@ PriceTab shows crypto news headlines alongside the price chart. Newsrooms serve
 their feeds without CORS headers, so the extension cannot read one from a page
 without host access to that specific feed.
 
-These six origins are optional and are never granted at install. The extension
+These eight origins are optional and are never granted at install. The extension
 requests them only when the user presses "Turn on full sources" in its news
 panel, and the same panel revokes them. Until then no request is made to any of
 them.
 
-Scope is the narrowest that works: six exact origins, no wildcard hosts, no
+Scope is the narrowest that works: eight exact origins, no wildcard hosts, no
 content scripts. The extension performs read-only GET requests for the
 publicly published feed URL and sends no user data of any kind.
 ```
@@ -683,6 +690,21 @@ publicly published feed URL and sends no user data of any kind.
 The fuller reasoning, including the measurements that made this necessary, is
 in `docs/store/policies/PRICETAB_COMPLIANCE.md` under *Optional host
 permissions*.
+
+It also declares **`optional_permissions: ["notifications"]`**, and the
+dashboard asks for that one too. Paste this:
+
+```
+PriceTab can raise a Chrome notification when a price target the user set is
+hit, or when a contract on its simulated derivatives account is stopped out or
+liquidated. The permission is optional and never granted at install: it is
+requested from a switch inside the Targets panel, straight out of the user's
+click, and the same row revokes it.
+
+Nothing is sent anywhere. The notification is drawn by the user's own browser
+from data already in the page; there is no server and no background service
+worker, so it can only fire while a PriceTab tab is open.
+```
 
 ## Remote Code
 
@@ -746,7 +768,7 @@ Source file: `privacy.html` in the repo root, served via GitHub Pages.
 - [ ] Category = Tools, Language = English (United States)
 - [ ] Privacy tab: single purpose filled, no data types checked, all 3 certifications checked, remote code = No
 - [ ] Account tab: contact email added and verified (required to publish)
-- [ ] ZIP contains only: `manifest.json`, `index.html`, `privacy.html`, `rate.html`, `src/`, `vendor/`, `assets/icons/` — no `docs/`, `site/`, `.git/`, internal notes, screenshots, or mockups
+- [ ] ZIP contains only: `manifest.json`, `index.html`, `popup.html`, `privacy.html`, `LICENSE`, `src/`, `vendor/`, `_locales/`, `assets/icons/` (the three sizes the manifest names) — no `docs/`, `site/`, `.git/`, internal notes, screenshots, or mockups
 
 **Build the ZIP:**
 

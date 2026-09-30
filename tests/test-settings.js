@@ -31,6 +31,10 @@ const sandbox = {
    * interpolated into a styled block by every file has to be stubbed
    * here too, or the file throws before a single assertion runs. */
   themedScrollbar: "",
+  touchTarget: "",
+  touchBox: "",
+  besideScreenSpine: "",
+  refusedField: "",
   React: {
     Component: class {},
     createElement: () => null,
@@ -108,11 +112,22 @@ const sectionNames = (prefs.match(/^ {4}(\w+): \(\) =>/gm) || []).map((m) =>
   m.trim().replace(/: \(\) =>$/, ""),
 );
 const grouped = [];
-/* The group's own name goes through `msg()` now, so the first argument is a
- * call rather than a bare string — matched loosely for that reason. What is
- * read is the list in the brackets, which has not changed. */
-for (const block of prefs.match(/group\([\s\S]{0,120}?(?:true|false),\s*\[[\s\S]*?\]\s*\)/g) || []) {
-  const list = block.slice(block.indexOf("["));
+/* Since 26 Sep 2026 the groups are `preferenceGroups`, one entry per
+ * section of Settings' menu, each listing its settings through `build(…)`.
+ * What is read is still the list in the brackets (or the named constant). */
+/* `keyed(…)` is `build(…)` keeping each row's key, for the chart's headings
+   (27 Sep 2026) — the same list, read the same way. */
+for (const block of prefs.match(/(?:build|keyed)\((?:\[[\s\S]*?\]|[A-Z_]+)\)/g) || []) {
+  /* A group's list is usually written out in the brackets. One of them is a
+     named constant instead — `CHART_SETTING_KEYS`, because the drawer beside
+     the chart reads the same nine — so the name is resolved from its own
+     declaration rather than the list being copied here. Missing that, the
+     nine chart settings read as orphans and this file failed on a change
+     that was correct. */
+  const named = block.match(/\(([A-Z_]+)\)$/);
+  const list = named
+    ? (prefs.match(new RegExp(`const ${named[1]} = \\[([\\s\\S]*?)\\];`)) || [])[1] || ""
+    : block.slice(block.indexOf("["));
   for (const q of list.match(/"(\w+)"/g) || []) grouped.push(q.slice(1, -1));
 }
 assert.ok(sectionNames.length >= 15, `expected the sections to be found, got ${sectionNames.length}`);
@@ -172,8 +187,13 @@ assert.ok(
   !/\bthis\s*[.[]/.test(prefsCode),
   "the preferences tab must not reach through `this` — it has no receiver",
 );
+/* The search box itself moved to the head of Settings' menu on 26 Sep 2026,
+ * inside the SettingsPanel class, where `this` is the panel. It is asserted
+ * there: the one place that writes the query. */
 assert.ok(
-  /panel\.setState\(\{ query/.test(prefs),
+  /this\.setState\(\{ query: e\.target\.value \}\)/.test(
+    fs.readFileSync(path.join(__dirname, "..", "src", "settings.js"), "utf8"),
+  ),
   "the search box writes the query through the panel",
 );
 
@@ -189,6 +209,84 @@ const active = (settings, widgets) => {
   return run("activeAppMode(__settings, __widgets)");
 };
 const noWidgets = run("({ ...DEFAULT_WIDGETS })");
+
+/* ── Custom: a slot, not a recipe ──────────────────────────────────────────
+ *
+ * The other four modes are written down in `config.js` and can be tested
+ * against themselves. Custom holds whatever was saved into it, so what is
+ * worth pinning is the two ways it can lie: lighting up when nothing has been
+ * saved, and failing to light when the arrangement on screen is exactly the
+ * one that was.
+ *
+ * The first is the one that matters. An unsaved Custom that reads as active
+ * would tell someone their arrangement is safe when there is nothing behind
+ * the button, and they would find out by pressing another mode.
+ */
+{
+  const matches = (settings, widgets, saved) => {
+    sandbox.__s = settings;
+    sandbox.__w = widgets;
+    sandbox.__saved = saved;
+    return run("matchesCustomMode(__s, __w, __saved)");
+  };
+  const arrangement = { quietChrome: true, chartGrid: false, refreshInterval: 30000 };
+
+  assert.strictEqual(
+    matches(arrangement, noWidgets, null),
+    false,
+    "an empty slot never matches — Custom must not light before anything is saved",
+  );
+  assert.strictEqual(
+    matches(arrangement, noWidgets, { settings: {}, widgets: {} }),
+    false,
+    "…nor does a slot saved with no settings in it",
+  );
+  assert.strictEqual(
+    matches(arrangement, noWidgets, { settings: arrangement, widgets: noWidgets }),
+    true,
+    "the arrangement it was saved from matches it",
+  );
+  assert.strictEqual(
+    matches(
+      { ...arrangement, quietChrome: false },
+      noWidgets,
+      { settings: arrangement, widgets: noWidgets },
+    ),
+    false,
+    "…and one setting changed by hand puts it out, like every other mode",
+  );
+  /* Widgets are half of an arrangement. Compared as booleans on both sides, so
+   * a slot saved before a widget existed does not stop matching the moment
+   * that widget ships turned off. */
+  assert.strictEqual(
+    matches(
+      arrangement,
+      { ...noWidgets, fearGreed: true },
+      { settings: arrangement, widgets: noWidgets },
+    ),
+    false,
+    "turning a widget on puts it out too",
+  );
+  assert.strictEqual(
+    matches(arrangement, noWidgets, { settings: arrangement, widgets: {} }),
+    true,
+    "…while a widget absent on one side and off on the other still matches",
+  );
+}
+
+/* Every key a mode governs is discovered from the modes themselves, so save
+ * and restore cannot cover different ground from the recipes. */
+{
+  const keys = run("MODE_SETTING_KEYS");
+  const named = new Set(
+    modes.reduce((all, m) => all.concat(Object.keys(m.settings)), []),
+  );
+  assert.strictEqual(
+    keys.slice().sort().join(","),
+    [...named].sort().join(","),
+    "MODE_SETTING_KEYS is exactly what the modes name, not a second hand-written list",
+  );
+}
 
 assert.ok(modes.length >= 3, "there are modes to pick from");
 assert.ok(
@@ -284,21 +382,35 @@ assert.strictEqual(
   "…and widening the filter by hand makes the arrangement yours again",
 );
 
-/* ── every setting a mode names is actually sent to `activeAppMode` ──────
+/* ── every setting a mode names is actually read off state ──────────────
  *
  * The check above cannot see this: it calls `activeAppMode` with its own
- * object, while the app builds a snapshot by hand in `render`. A setting named
- * by a mode and missing from that snapshot is compared against `undefined` for
+ * object, while the app builds a snapshot from state. A setting named by a
+ * mode and missing from that snapshot is compared against `undefined` for
  * ever, so the mode's pill simply never lights — nothing throws, nothing looks
  * wrong, and the only symptom is a row that has quietly stopped working. Same
  * shape of guard as the shortcut-list check below, and for the same reason:
  * two lists that must agree, kept in two files.
+ *
+ * It reads `modeSnapshot` rather than the call site. The snapshot used to be
+ * written inline inside `activeAppMode(...)` and was then needed in a second
+ * place — saving the Custom slot — so it became a method; this check caught
+ * the move immediately, which is the check working. There is only one snapshot
+ * now, so both readers are covered by testing it.
  */
 {
   const src = fs.readFileSync(`${base}/app.js`, "utf8");
-  const at = src.indexOf("activeAppMode(");
-  assert.ok(at > 0, "app.js asks activeAppMode which mode is in force");
-  const snapshot = src.slice(at, src.indexOf("},", at));
+  const at = src.indexOf('_defineProperty(this, "modeSnapshot"');
+  assert.ok(at > 0, "app.js builds one snapshot of the settings a mode governs");
+  const snapshot = src.slice(at, src.indexOf("}));", at));
+  assert.ok(
+    /activeAppMode\(this\.modeSnapshot\(\)/.test(src),
+    "…and the row is drawn from that snapshot, not from a second copy",
+  );
+  assert.ok(
+    /saveCustomMode\(this\.modeSnapshot\(\)/.test(src),
+    "…and so is the Custom slot, so the two can never cover different ground",
+  );
   const named = new Set(modes.flatMap((m) => Object.keys(m.settings)));
   // `handleAppMode`'s map is the other half: a named setting with no handler
   // is a value a mode promises to set and then does not
@@ -335,7 +447,35 @@ const handler = appSrc.slice(
   appSrc.indexOf('_defineProperty(this, "handleKeyDown"'),
   appSrc.indexOf('_defineProperty(this, "handleThemeChange"'),
 );
-const advertised = run("SHORTCUT_GROUPS").flatMap((g) => g.items.flatMap((i) => i.keys));
+/* The derivatives market's keys (P8, 19 Sep 2026) are the page's own and
+ * are handled by `pageKey` in practice-page.js, not by the app's handler —
+ * the app's keys stand down behind an open panel. Same rule, the file that
+ * actually runs them. */
+const pageSrc = fs.readFileSync(`${base}/practice-page.js`, "utf8");
+const pageHandler = pageSrc.slice(pageSrc.indexOf("pageKey: (e) =>"), pageSrc.indexOf("focusContract: (pos, close) =>"));
+const pageGroup = run("SHORTCUT_GROUPS").find((g) => g.title === "Derivatives market");
+assert.ok(pageGroup && pageHandler.length > 200, "the derivatives market's keys are listed, and handled by pageKey");
+for (const key of pageGroup.items.flatMap((i) => i.keys)) {
+  if (key === "–") continue;
+  const needle = { "1": 'k >= "1"', "4": 'k <= "4"', Enter: '"Enter"' }[key] || `"${key}"`;
+  assert.ok(
+    pageHandler.includes(needle) || pageHandler.includes(`"${key.toLowerCase()}"`),
+    `derivatives shortcut "${key}" is advertised but not handled in practice-page.js`,
+  );
+}
+/* The terminal's focused controls (27 Sep 2026): the chart's keyboard
+ * cursor and the seams in practice-page.js, the book's levels in
+ * alerts-futures.js. Each arrow listed has to be read in one of them. */
+const focusGroup = run("SHORTCUT_GROUPS").find((g) => g.title === "Derivatives market — on a focused control");
+assert.ok(focusGroup, "the terminal's focused keys are listed");
+const terminalSrc = pageSrc + fs.readFileSync(`${base}/alerts-futures.js`, "utf8");
+const arrowName = { "←": "ArrowLeft", "→": "ArrowRight", "↑": "ArrowUp", "↓": "ArrowDown" };
+for (const key of focusGroup.items.flatMap((i) => i.keys)) {
+  assert.ok(terminalSrc.includes(`"${arrowName[key] || key}"`), `terminal key "${key}" is advertised but not read by any focused control`);
+}
+const advertised = run("SHORTCUT_GROUPS")
+  .filter((g) => g !== pageGroup && g !== focusGroup && g.title !== "Derivatives market")
+  .flatMap((g) => g.items.flatMap((i) => i.keys));
 const handled = {
   "←": "ArrowLeft",
   "→": "ArrowRight",
@@ -345,8 +485,16 @@ const handled = {
   // The space bar is a key like any other, but its name is a literal space
   Space: 'e.key === " "',
 };
+/* A modifier held through a gesture is read by the gesture, not by the key
+   handler: Shift + drag is the ruler (29 Sep 2026), read on the press in
+   chart-viewport.js. It is advertised all the same, and must be read there. */
+const gestures = { Shift: [fs.readFileSync(`${base}/chart-viewport.js`, "utf8"), "e.shiftKey"] };
 for (const key of advertised) {
   if (key === "–") continue; // a range dash, not a key
+  if (gestures[key]) {
+    assert.ok(gestures[key][0].includes(gestures[key][1]), `gesture "${key}" is advertised but its gesture never reads it`);
+    continue;
+  }
   const needle = handled[key] || `"${key}"`;
   assert.ok(
     handler.includes(needle) || handler.includes(`"${key.toLowerCase()}"`),

@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Privacy Policy — PriceTab</title>
+  <meta name="description" content="PriceTab stores everything on your device, collects nothing and asks for no permission at install. What it keeps, which public services it asks for market data, and what you control.">
+  <link rel="icon" href="assets/icons/icon48.png">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html { font-size: 16px; }
@@ -72,6 +74,8 @@
       padding: 0.1em 0.4em;
       font-size: 0.875em;
       color: #8affc1;
+      /* A long endpoint must wrap on a phone rather than widen the page */
+      overflow-wrap: anywhere;
     }
     pre {
       background: #1a1a1a;
@@ -86,6 +90,7 @@
       border: none;
       padding: 0;
       font-size: 0.85rem;
+      overflow-wrap: normal;
     }
     .callout {
       background: #1a1a1a;
@@ -111,13 +116,13 @@
 <body>
   <div class="container">
     <header>
-      <a href="https://github.com/Zekuath/Pricetab">← Back to PriceTab</a>
+      <a href="https://zekuath.github.io/Pricetab/site/">← Back to PriceTab</a>
       <h1>Privacy Policy</h1>
-      <p class="meta">Last Updated: August 6, 2026 &nbsp;·&nbsp; Effective Date: January 23, 2026</p>
+      <p class="meta">Last Updated: September 29, 2026 &nbsp;·&nbsp; Effective Date: January 23, 2026</p>
     </header>
 
     <div class="callout">
-      <p><strong>TL;DR:</strong> PriceTab stores only your coin preferences, locally on your device. We collect nothing, share nothing, and have no servers.</p>
+      <p><strong>TL;DR:</strong> Everything PriceTab knows about you — your coins, settings, targets, calls, holdings, tax-guide choices and the simulated derivatives account — lives in your browser, on your device. We collect nothing, share nothing, and have no servers. Nothing is granted at install. Two things are optional and off until you press a button inside the app: a Chrome notification, and eight newsroom feeds.</p>
     </div>
 
     <h2>Introduction</h2>
@@ -131,7 +136,11 @@
       <li><strong>Cryptocurrency Preferences:</strong> The list of cryptocurrency symbols you select (e.g., BTC, ETH, SOL)</li>
       <li><strong>Coin Order:</strong> The order in which you arrange your selected coins</li>
       <li><strong>Widget Settings:</strong> Which widgets are enabled and their display order</li>
-      <li><strong>UI Preferences:</strong> Theme, currency, refresh interval, hidden widget states</li>
+      <li><strong>UI Preferences:</strong> Theme, language, currency, refresh interval, auto-rotate, ticker and news settings, hidden widget states</li>
+      <li><strong>Price Targets, Calls and the Portfolio:</strong> the targets you set, the calls you record and their score, your holdings, purchases, sales and income records, any public address you choose to watch, and the country and tax rates you choose in the tax guide</li>
+      <li><strong>Drawings:</strong> the lines, boxes and notes you draw on a coin's chart, with the prices and times they are anchored to</li>
+      <li><strong>The simulated derivatives account:</strong> its balance in Practice Units, its contracts and its ledger — none of it is money</li>
+      <li><strong>Caches:</strong> recently fetched prices, widget readings and headlines, kept so a new tab can paint before any request returns</li>
     </ul>
     <p>This data is stored using the browser's <code>localStorage</code> API and <strong>never leaves your device</strong>.</p>
 
@@ -161,7 +170,7 @@
     <h3>Kraken Public API</h3>
     <ul>
       <li><strong>Endpoints:</strong> <code>https://api.kraken.com/0/public/OHLC</code> and <code>https://api.kraken.com/0/public/Ticker</code></li>
-      <li><strong>Purpose:</strong> Prices and charts for coins Coinbase does not list (currently Monero)</li>
+      <li><strong>Purpose:</strong> Prices and charts for the six coins Coinbase does not list, long-range candles for every coin, and a fallback for any coin while Coinbase is not answering</li>
       <li><strong>Data Sent:</strong> Coin pair (e.g. "XMRUSD") and interval — no user data</li>
       <li><strong>Privacy:</strong> <a href="https://www.kraken.com/legal/privacy" target="_blank" rel="noopener">Kraken Privacy Policy</a></li>
     </ul>
@@ -173,18 +182,19 @@
       <li><strong>Data Sent:</strong> No user data — plain GET request</li>
     </ul>
 
-    <h3>OKX Public API (optional widgets)</h3>
+    <h3>OKX Public API (optional widgets and the derivatives page)</h3>
     <ul>
       <li><strong>Endpoint:</strong> <code>https://www.okx.com/api/v5/public/</code></li>
-      <li><strong>Purpose:</strong> Funding rate, Open Interest, and Liquidations widgets</li>
+      <li><strong>Purpose:</strong> Funding rate, Open Interest and Liquidations widgets; and, only while the derivatives page is open, the perpetual contract's own price, candles and order book (<code>https://www.okx.com/api/v5/market/</code>), which price the simulated account. Nothing about that account is ever sent; the page only reads</li>
       <li><strong>Data Sent:</strong> Coin pair — no user data</li>
       <li><strong>Privacy:</strong> <a href="https://www.okx.com/privacy" target="_blank" rel="noopener">OKX Privacy Policy</a></li>
     </ul>
 
-    <h3>Bybit Public API (optional widget)</h3>
+    <h3>Bybit Public API (optional widget and the derivatives page)</h3>
     <ul>
       <li><strong>Endpoint:</strong> <code>https://api.bybit.com/v5/market/</code></li>
-      <li><strong>Purpose:</strong> Long/Short ratio widget</li>
+      <li><strong>Exchange notices (opt-in):</strong> if you switch on “Bybit notices” in the news panel, <code>https://api.bybit.com/v5/announcements/index</code> is asked for its delisting and network-upgrade notices; nothing is asked until you do, and its listings, campaigns and giveaways are never shown</li>
+      <li><strong>Purpose:</strong> Long/Short ratio widget; and, only while the derivatives page is open, its market readings — the share of accounts holding a long, and the history of funding and open interest they are ranked against
       <li><strong>Data Sent:</strong> Coin symbol — no user data</li>
       <li><strong>Privacy:</strong> <a href="https://www.bybit.com/en/privacy" target="_blank" rel="noopener">Bybit Privacy Policy</a></li>
     </ul>
@@ -192,15 +202,15 @@
     <h3>Coinlore Public API (optional widgets)</h3>
     <ul>
       <li><strong>Endpoint:</strong> <code>https://api.coinlore.com/api/</code></li>
-      <li><strong>Purpose:</strong> Market Overview (market cap, volume, dominance) and Altcoin Season Index widgets</li>
+      <li><strong>Purpose:</strong> Market Overview (market cap, volume, dominance), Altcoin Season Index, and one bulk snapshot of the top 100 coins that prices the ticker, the watchlist, top movers and the portfolio's price-only coins</li>
       <li><strong>Data Sent:</strong> No user data — plain GET requests</li>
       <li><strong>Privacy:</strong> <a href="https://www.coinlore.com" target="_blank" rel="noopener">Coinlore</a></li>
     </ul>
 
-    <h3>mempool.space API (optional widget)</h3>
+    <h3>mempool.space API (optional widgets)</h3>
     <ul>
       <li><strong>Endpoint:</strong> <code>https://mempool.space/api/</code></li>
-      <li><strong>Purpose:</strong> Bitcoin Halving Countdown (current block height)</li>
+      <li><strong>Purpose:</strong> Bitcoin Halving Countdown (current block height), the network-fee, mempool and difficulty cards</li>
       <li><strong>Data Sent:</strong> No user data — plain GET request</li>
       <li><strong>Privacy:</strong> <a href="https://mempool.space/privacy-policy" target="_blank" rel="noopener">mempool.space Privacy Policy</a></li>
     </ul>
@@ -214,21 +224,64 @@
       <li><strong>Privacy:</strong> <a href="https://mempool.space/privacy-policy" target="_blank" rel="noopener">mempool.space Privacy Policy</a>, <a href="https://blockchair.com/privacy" target="_blank" rel="noopener">Blockchair Privacy Policy</a>, <a href="https://www.publicnode.com/privacy" target="_blank" rel="noopener">PublicNode Privacy Policy</a></li>
     </ul>
 
-    <h3>News sources (optional ticker row)</h3>
+    <h3>News sources (optional ticker row and news panel, off by default)</h3>
     <ul>
-      <li><strong>Endpoints:</strong> <code>https://api.blockchair.com/news</code> and <code>https://hn.algolia.com/api/v1/search</code> (Hacker News stories)</li>
-      <li><strong>Purpose:</strong> Crypto news headlines in the optional ticker bar (off by default)</li>
-      <li><strong>Data Sent:</strong> No user data — plain GET requests</li>
-      <li><strong>Outbound links:</strong> Clicking a headline opens the news site in a new tab. The link carries no referrer information (<code>rel="noreferrer"</code>), so the site cannot tell the visit came from PriceTab. From that point the news site's own privacy policy applies.</li>
+      <li><strong>Endpoints:</strong> <code>https://hn.algolia.com/api/v1/search</code> (Hacker News stories), <code>https://search.cnbc.com/…</code> (CNBC), <code>https://feeds.content.dowjones.io/…</code> (MarketWatch), <code>https://news.bitcoin.com/feed/</code> and <code>https://cryptopotato.com/wp-json/…</code> — the five feeds that can be read without any permission. MarketWatch, a general finance desk, is filtered to crypto stories on the device; CNBC is read from its crypto section</li>
+      <li><strong>Politeness:</strong> every request leaves your own browser with your own address; there is no proxy and no server of ours. A feed that answers 429 or 403 is left alone for fifteen minutes, doubling to two hours, and the panel says so</li>
+      <li><strong>Tone:</strong> the “worded up / worded down” mark on a headline is computed on your device from the words in it, with no request and no AI service</li>
+      <li><strong>Purpose:</strong> Crypto news headlines in the optional ticker bar and the news panel; a rolling archive of headlines this browser has already been shown is kept locally for 30 days so "what happened here?" can answer about recent weeks</li>
+      <li><strong>Data Sent:</strong> No user data — plain GET requests for a publicly published feed</li>
+      <li><strong>Outbound links:</strong> Clicking a headline opens the news site in a new tab. The link carries no referrer information (<code>rel="noreferrer"</code>), so the site cannot tell the visit came from PriceTab. From that point the news site's own privacy policy applies. The same holds for the tax guide's source links: each opens the government page it names in a new tab, without referrer information, and only when you click it.</li>
+      <li><strong>Privacy:</strong> <a href="https://www.algolia.com/policies/privacy/" target="_blank" rel="noopener">Algolia Privacy Policy</a>; each newsroom's own policy applies to its feed</li>
+    </ul>
+
+    <h3>"What happened here?" archive (optional chart feature, off by default)</h3>
+    <ul>
+      <li><strong>Endpoints:</strong> <code>https://api.blockchair.com/news</code> and <code>https://hn.algolia.com/api/v1/search</code>, each asked about a window in the past. If you have allowed the additional newsrooms, <code>https://coinjournal.net/wp-json/…</code> is asked about the same window</li>
+      <li><strong>Purpose:</strong> When you click a marked price move on the chart, the headlines published around that date</li>
+      <li><strong>Data Sent:</strong> Only the date range you clicked — no user data, no coin, no holdings</li>
       <li><strong>Privacy:</strong> <a href="https://blockchair.com/privacy" target="_blank" rel="noopener">Blockchair Privacy Policy</a>, <a href="https://www.algolia.com/policies/privacy/" target="_blank" rel="noopener">Algolia Privacy Policy</a></li>
     </ul>
+
+    <h3>Alarms (opt-in, off until you turn them on)</h3>
+    <p>PriceTab can raise a <strong>Chrome notification</strong> when a price target is hit, or when a contract on the simulated derivatives account is stopped out, takes profit or is liquidated. <strong>It does not do so unless you ask it to.</strong> <code>notifications</code> is declared as an <em>optional</em> permission, so Chrome grants nothing at install time; the extension still asks for no permissions when you add it.</p>
+    <ul>
+      <li><strong>How it is turned on:</strong> the "Chrome notification" switch at the foot of the Targets panel or on the derivatives market page. Chrome shows you its own permission dialog and you decide. "Give it back" in the same row revokes it, and you can also revoke it from <code>chrome://extensions</code></li>
+      <li><strong>Data sent:</strong> none. A Chrome notification is drawn by your own browser, on your own machine. Nothing about the target, the contract, your coins or your holdings leaves the device, and no server is involved at any point</li>
+      <li><strong>What it does not allow:</strong> this permission lets PriceTab draw a notification. It grants no access to any site, no reading of your browsing, and no background access to anything</li>
+      <li><strong>When it can fire:</strong> while a PriceTab tab is open, including one sitting in the background. PriceTab has no background service worker, so with every tab closed nothing is watching and nothing fires</li>
+      <li><strong>The sound</strong> is a separate switch beside it and needs no permission at all. It is generated by the page — two short tones — not a file, and nothing is downloaded to play it</li>
+    </ul>
+
+    <h3>Additional newsrooms (opt-in, off until you turn them on)</h3>
+    <p>PriceTab can read eight news feeds directly. <strong>It does not do so unless you ask it to.</strong> They are declared in the manifest as <em>optional</em> host permissions, which means Chrome grants nothing at install time; the extension still asks for no permissions when you add it.</p>
+    <ul>
+      <li><strong>How it is turned on:</strong> a "Turn on full sources" button in the news panel. Chrome shows you its own permission dialog and you decide. There is a "Turn off" button in the same place that revokes it, and you can also revoke it from <code>chrome://extensions</code></li>
+      <li><strong>Endpoints</strong> (only ever fetched once granted): <code>cointelegraph.com/rss</code>, <code>decrypt.co/feed</code>, <code>cryptoslate.com/feed/</code>, <code>bitcoinmagazine.com/wp-json/wp/v2/posts</code>, <code>coinjournal.net/wp-json/wp/v2/posts</code>, <code>feeds.bbci.co.uk/news/business/rss.xml</code>, <code>www.coindesk.com/arc/outboundfeeds/rss</code>, <code>www.theblock.co/rss.xml</code></li>
+      <li><strong>Purpose:</strong> headlines in the news panel. The feeds PriceTab can read without permission carry only a handful of outlets, and are sometimes days out of date</li>
+      <li><strong>Data Sent:</strong> no user data — plain GET requests for the publicly published feed. Nothing about you, your coins, your holdings or your settings is included, and nothing is sent anywhere when you turn the permission on</li>
+      <li><strong>What the permission does not allow:</strong> PriceTab reads these feed URLs and nothing else. It does not read your browsing on those sites, does not run on their pages, and has no content script</li>
+      <li><strong>Privacy:</strong> each newsroom's own privacy policy applies to the request, and to any page you open by clicking a headline</li>
+    </ul>
+
+    <h3>Sanctions list (on the device)</h3>
+    <p>A watched address is checked against the US Treasury's published list of sanctioned addresses. The list is <strong>bundled with the extension</strong> and regenerated at release time, precisely so that the check never sends the address to anyone; the row prints the fact and the list's date, and nothing is refused.</p>
+
+    <h3>Crypto tax guide (bundled, link-only)</h3>
+    <p>The tax guide's rules for every country are <strong>bundled with the extension</strong>; reading a country's card makes no request. The country you pick and any rate you type are stored locally like every other setting, and an estimate is worked out on your device from the records you entered. Each rule links to the official page it was read from — a tax authority, a law or gazette, a parliament, a ministry or a central bank — and that page opens only when you click it, in a new tab, without referrer information. The guide is not tax advice and sends nothing to any authority.</p>
+
+    <h3>Files you save</h3>
+    <p>The chart image (<em>Save as image</em>), the cost-basis and tax CSV files, the portfolio export and the settings backup are all made <strong>on your device</strong> and handed to your browser's own download. None of them is uploaded anywhere. A backup contains your settings, holdings, targets and calls, so keep it as you would any personal file.</p>
+
+    <h3>Local Vendor Files</h3>
+    <p>All JavaScript libraries (React, D3.js, styled-components), styles, and fonts are loaded from local files bundled with the extension — no external CDN or font requests. The toolbar popup prints prices from the same local cache and makes no request of its own.</p>
 
     <h2>Data Storage</h2>
     <ul>
       <li><strong>Where:</strong> Locally in your Chrome browser's localStorage</li>
-      <li><strong>Encryption:</strong> Not encrypted (data is not sensitive — just coin symbols)</li>
+      <li><strong>Encryption:</strong> Not encrypted. Nothing stored is a secret — no key, no password, no account — but the holdings and addresses you enter are yours, which is why the portfolio can be masked on screen (press <code>H</code>) and why every setting can be exported to a file you keep</li>
       <li><strong>Access:</strong> Only accessible by this extension</li>
-      <li><strong>Size:</strong> Typically 50–100 bytes (your coin list)</li>
+      <li><strong>Size:</strong> From a few hundred bytes (your coin list) to a few hundred kilobytes once the caches, the news archive and the derivatives ledger have filled</li>
       <li><strong>Persistence:</strong> Remains until you clear browser data or uninstall the extension</li>
     </ul>
 
@@ -238,10 +291,16 @@
     <p>Open the browser console on any new tab and run:</p>
     <pre><code>localStorage.getItem('crypto_chart_coin_options')</code></pre>
 
+    <h3>Export Your Data</h3>
+    <p>Settings → Preferences → <em>Backup</em> → <em>Save a backup</em> writes everything PriceTab stores to one file on your computer; <em>Read a backup…</em> puts it back, and shows what it would change before it writes anything. The portfolio also exports its own records as CSV and JSON.</p>
+
     <h3>Delete Your Data</h3>
-    <p>Run the following in the browser console, or simply uninstall the extension:</p>
-    <pre><code>localStorage.removeItem('crypto_chart_coin_options')
+    <p>Every setting can be reset from Settings; the portfolio and the derivatives account each have their own remove control; and uninstalling the extension removes everything. To clear it all by hand, run the following in the browser console:</p>
+    <pre><code>Object.keys(localStorage).filter(k => k.startsWith('crypto_chart_')).forEach(k => localStorage.removeItem(k))
 location.reload()</code></pre>
+
+    <h2>Data Retention</h2>
+    <p>Everything stays in your browser until you delete it, reset it, clear your browser data or uninstall the extension. The market-data caches are capped in size, and most expire by themselves — prices within a day, the headline archive after 30 days. We keep nothing on any server, because we have none.</p>
 
     <h2>Children's Privacy</h2>
     <p>PriceTab does not knowingly collect any information from anyone, including children under 13. No personal information is required to use the extension.</p>
@@ -266,6 +325,10 @@ location.reload()</code></pre>
     <h2>Compliance</h2>
     <p><strong>GDPR:</strong> Since we do not collect, process, or store any personal data, no data subject rights are applicable beyond what is in your local browser.</p>
     <p><strong>CCPA:</strong> We do not sell personal information because we do not collect personal information.</p>
+    <p><strong>Other jurisdictions:</strong> We do not collect personal data, so there is nothing for us to access, correct, export or erase on your behalf; everything is in your own browser, under your control.</p>
+
+    <h2>Disclaimer</h2>
+    <p>PriceTab is provided "as is", without warranty. Prices, market readings and tax rules come from third parties and official sources and can be delayed, incomplete or change. PriceTab is for information only and is <strong>not financial or tax advice</strong>; the derivatives account is a simulation in units that have no value.</p>
 
     <footer>
       PriceTab Privacy Policy v1.0.0 &nbsp;·&nbsp; MIT License &nbsp;·&nbsp; This extension is for informational purposes only and does not constitute financial advice.

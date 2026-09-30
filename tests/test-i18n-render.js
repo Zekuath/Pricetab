@@ -144,7 +144,10 @@ const openPage = async (context, uiLanguage) => {
   if (lang === "de") ok("<html lang> follows the browser's language");
   else fail("<html lang> follows the browser's language", `got ${JSON.stringify(lang)}`);
 
-  const gearTitle = await german.getAttribute("[data-tour='settings']", "title");
+  /* The tab names its key after its name since 26 Sep 2026 ("Settings (S)"),
+     and the key is not a word to translate — so the name is read without it. */
+  const gearTitle = (await german.getAttribute("[data-tour='settings']", "title") || "")
+    .replace(/ \(.\)$/, "");
   if (gearTitle === de.chrome_settings.message) {
     ok(`a control that goes through msg() says "${gearTitle}"`);
   } else {
@@ -207,7 +210,8 @@ const openPage = async (context, uiLanguage) => {
 
   // --- 2. no chrome object at all ---------------------------------------
   const plain = await openPage(context, null);
-  const plainGear = await plain.getAttribute("[data-tour='settings']", "title");
+  const plainGear = (await plain.getAttribute("[data-tour='settings']", "title") || "")
+    .replace(/ \(.\)$/, "");
   if (plainGear === "Settings") ok("with no chrome API the English at the call site is used");
   else fail("with no chrome API the English at the call site is used", `got ${JSON.stringify(plainGear)}`);
 

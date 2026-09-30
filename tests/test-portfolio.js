@@ -46,6 +46,10 @@ const sandbox = {
    * interpolated into a styled block by every file has to be stubbed
    * here too, or the file throws before a single assertion runs. */
   themedScrollbar: "",
+  touchTarget: "",
+  touchBox: "",
+  besideScreenSpine: "",
+  refusedField: "",
   React: { Component: class { constructor(p) { this.props = p; } }, createElement: () => null, Fragment: Symbol("Fragment") },
   PureComponent: class { constructor(p) { this.props = p; } },
   Component: class { constructor(p) { this.props = p; } },
@@ -64,7 +68,7 @@ const base = path.join(__dirname, "..", "src");
 /* `styles-portfolio.js` is loaded for the same reason `index.html` loads it
  * first: the donut constants and `bandInk` live there now, and `portfolio.js`
  * reads them at render. The styled blocks themselves are inert here. */
-for (const f of ["storage.js", "i18n.js", "config.js", "styles-portfolio.js", "portfolio.js"]) {
+for (const f of ["storage.js", "i18n.js", "config.js", "sanctions.js", "styles-portfolio.js", "portfolio.js"]) {
   vm.runInContext(fs.readFileSync(`${base}/${f}`, "utf8"), sandbox, { filename: f });
 }
 const run = (code) => vm.runInContext(code, sandbox);
@@ -102,11 +106,130 @@ assert.deepStrictEqual(
       // Added when disposals became recordable; a holding saved before that
       // still loads, with an empty list rather than being dropped
       sales: [],
+      // Added with target shares; a holding saved before that has no target,
+      // which is `null` and is deliberately not 0 — see `sanitizeTargetShare`
+      target: null,
     },
-    { coin: "ETH", amount: 2, lots: [], watches: [], sales: [] },
+    { coin: "ETH", amount: 2, lots: [], watches: [], sales: [], target: null },
   ],
   "roundtrip (manual part + several watched addresses)",
 );
+
+/* ── target shares ──────────────────────────────────────────────────────── */
+
+/* **Absent and zero are different answers**, and the sanitizer has to keep
+ * them apart: `Number(null)` is 0 and `isFinite(null)` is `true`, so the
+ * obvious version of this check turns every holding without a target into one
+ * aiming at zero — and a portfolio where everything is over its target. */
+run(
+  `savePortfolioToStorage([` +
+    `{ coin: "BTC", amount: 1, target: 62.55 },` +
+    `{ coin: "ETH", amount: 1, target: 0 },` +
+    `{ coin: "SOL", amount: 1 },` +
+    `{ coin: "LTC", amount: 1, target: 140 },` +
+    `{ coin: "XRP", amount: 1, target: -5 },` +
+    `{ coin: "DOGE", amount: 1, target: "nonsense" }])`,
+);
+assert.deepStrictEqual(
+  json("loadPortfolioFromStorage().map((h) => [h.coin, h.target])"),
+  [
+    ["BTC", 62.6], // kept to one decimal — nobody means the third
+    ["ETH", 0], // a real position: hold none of this
+    ["SOL", null], // never set
+    ["LTC", null], // over 100% of the portfolio is not a share
+    ["XRP", null],
+    ["DOGE", null],
+  ],
+  "target shares are validated, and absent is not zero",
+);
+
+/* The drift itself, in the three units it is offered in. A holding worth
+ * 7,100 of a 10,000 portfolio against a target of 50% is 21 points over, and
+ * those 21 points are 2,100 of money and 2,100/71,000 of a coin. */
+sandbox.__over = { coin: "BTC", target: 50, value: 7100, price: 71000 };
+const over = run("targetDrift(__over, 10000)");
+assert.strictEqual(Math.round(over.actual * 100) / 100, 71, "share of the total");
+assert.strictEqual(Math.round(over.pts * 100) / 100, 21, "points over the target");
+assert.strictEqual(Math.round(over.value), 2100, "what those points are worth");
+assert.ok(
+  Math.abs(over.amount - 2100 / 71000) < 1e-12,
+  "…and how many coins that is",
+);
+
+// Under the target is the same arithmetic with the sign the other way
+sandbox.__under = { coin: "ETH", target: 40, value: 2500, price: 2500 };
+const under = run("targetDrift(__under, 10000)");
+assert.strictEqual(Math.round(under.pts * 100) / 100, -15, "points under the target");
+assert.ok(under.value < 0 && under.amount < 0, "under the target is negative in every unit");
+
+/* **Null rather than a figure whenever the comparison cannot be made.** The
+ * middle case is the one that matters: a holding no exchange priced has no
+ * share of the total, and printing 0% there would report it as 100% under
+ * whatever target it was given. */
+assert.strictEqual(
+  run('targetDrift({ coin: "BTC", target: null, value: 10, price: 1 }, 100)'),
+  null,
+  "no target, no drift",
+);
+assert.strictEqual(
+  run('targetDrift({ coin: "BTC", target: 50, value: null, price: null }, 100)'),
+  null,
+  "an unpriced holding has no share to compare",
+);
+assert.strictEqual(
+  run('targetDrift({ coin: "BTC", target: 50, value: 10, price: 1 }, 0)'),
+  null,
+  "nothing tracked yet is not a portfolio to be a share of",
+);
+
+/* ── the bundled sanctions list ─────────────────────────────────────────── */
+
+/* Read out of the list itself rather than written here as a literal. The list
+ * is regenerated from OFAC's own publication, so a hard-coded address is a
+ * test that starts passing for the wrong reason the week that address is
+ * delisted — and one that fails for no reason at all the week it is. */
+const firstEvm = run('SANCTIONS_EVM.split("\\n")[0]');
+const firstBtc = run('SANCTIONS_BY_CHAIN.BTC.split("\\n")[0]');
+
+assert.ok(/^0x[0-9a-f]{40}$/.test(firstEvm), "the EVM list holds lower-cased hex");
+assert.ok(firstBtc && firstBtc.length > 20, "the Bitcoin list holds addresses");
+
+assert.strictEqual(
+  run(`isSanctionedAddress(${JSON.stringify(firstEvm)})`),
+  true,
+  "a listed Ethereum address is found",
+);
+/* **EVM is case-insensitive and the UTXO chains are not**, which is why the
+ * two sets are held apart instead of being lower-cased together: a Bitcoin
+ * address differing only in case is a different address, and folding them
+ * would invent matches. */
+assert.strictEqual(
+  run(`isSanctionedAddress(${JSON.stringify(firstEvm.toUpperCase().replace("0X", "0x"))})`),
+  true,
+  "…whatever case it is pasted in",
+);
+assert.strictEqual(
+  run(`isSanctionedAddress(${JSON.stringify(firstBtc)})`),
+  true,
+  "a listed Bitcoin address is found",
+);
+assert.strictEqual(
+  run(`isSanctionedAddress(${JSON.stringify(firstBtc.toLowerCase())})`),
+  false,
+  "…and case is not folded away on a chain where it means something",
+);
+assert.strictEqual(
+  run(`isSanctionedAddress("bitcoincash:${firstBtc}")`),
+  true,
+  "the prefix a Bitcoin Cash wallet puts on the clipboard is stripped first",
+);
+assert.strictEqual(
+  run('isSanctionedAddress("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa")'),
+  false,
+  "the genesis address is not on the list",
+);
+assert.strictEqual(run("isSanctionedAddress(\"\")"), false, "nothing is not an address");
+assert.strictEqual(run("isSanctionedAddress(null)"), false, "and neither is null");
 
 /* ── recorded sales ─────────────────────────────────────────────────────── */
 
@@ -170,6 +293,7 @@ assert.deepStrictEqual(
         },
       ],
       sales: [],
+      target: null,
     },
   ],
   "legacy address holding migrates to a watch entry",
@@ -194,8 +318,9 @@ assert.deepStrictEqual(
       lots: [],
       watches: [{ address: BTC_ADDR, amount: 2, lots: [] }],
       sales: [],
+      target: null,
     },
-    { coin: "SOL", amount: 1, lots: [], watches: [], sales: [] },
+    { coin: "SOL", amount: 1, lots: [], watches: [], sales: [], target: null },
   ],
   "watch entries validated per chain, duplicates and junk dropped",
 );
@@ -236,9 +361,9 @@ store["crypto_chart_portfolio"] = JSON.stringify([
 assert.deepStrictEqual(
   json("loadPortfolioFromStorage()"),
   [
-    { coin: "ETH", amount: 2, lots: [{ amount: 2, paid: 1500, time: 0, source: "manual" }], watches: [], sales: [] },
-    { coin: "BTC", amount: 1, lots: [], watches: [], sales: [] },
-    { coin: "ADA", amount: 0, lots: [], watches: [], sales: [] },
+    { coin: "ETH", amount: 2, lots: [{ amount: 2, paid: 1500, time: 0, source: "manual" }], watches: [], sales: [], target: null },
+    { coin: "BTC", amount: 1, lots: [], watches: [], sales: [], target: null },
+    { coin: "ADA", amount: 0, lots: [], watches: [], sales: [], target: null },
   ],
   "malformed entries dropped, coins normalized/deduped, legacy paid migrated",
 );
@@ -261,6 +386,7 @@ assert.deepStrictEqual(
       lots: [{ amount: 1, paid: 50, time: 1700000000, source: "manual" }],
       watches: [],
       sales: [],
+      target: null,
     },
   ],
   "import sanitizer: bad lots dropped, holding kept",
@@ -282,6 +408,7 @@ assert.deepStrictEqual(
         { address: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045", amount: 12, lots: [] },
       ],
       sales: [],
+      target: null,
     },
   ],
   "an ERC-20 token can be watched on an Ethereum address",
@@ -306,7 +433,7 @@ for (const coin of ["STETH", "WBETH", "FDUSD", "TUSD"]) {
   assert.ok(run(`isWatchableCoin("${coin}")`), `${coin} is watchable`);
   assert.deepStrictEqual(
     json(`sanitizePortfolio([{ coin: "${coin}", amount: 2.5 }])`),
-    [{ coin, amount: 2.5, lots: [], watches: [], sales: [] }],
+    [{ coin, amount: 2.5, lots: [], watches: [], sales: [], target: null }],
     `a holding in ${coin} survives a save and reload`,
   );
 }
@@ -321,9 +448,9 @@ assert.deepStrictEqual(
       "])",
   ),
   [
-    { coin: "ETH", amount: 0, lots: [], watches: [{ address: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045", amount: 1, lots: [] }], sales: [] },
-    { coin: "SOL", amount: 1, lots: [], watches: [], sales: [] },
-    { coin: "BTC", amount: 1, lots: [], watches: [], sales: [] },
+    { coin: "ETH", amount: 0, lots: [], watches: [{ address: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045", amount: 1, lots: [] }], sales: [], target: null },
+    { coin: "SOL", amount: 1, lots: [], watches: [], sales: [], target: null },
+    { coin: "BTC", amount: 1, lots: [], watches: [], sales: [], target: null },
   ],
   "legacy addresses migrate per chain; junk cleared",
 );
@@ -1210,7 +1337,62 @@ assert.strictEqual(
     assert.strictEqual(run("drawdownSeries(null)"), null);
   }
 
-  console.log("PORTFOLIO TESTS OK");
+  /* ── what was held then, and what it had cost (27 Sep 2026) ──────────
+   * Worked by hand. Held now: 0.35 BTC — lot A (0.1 left of a 0.2 bought
+   * at t=100 for 2,000; the other 0.1 was sold at t=200 for a basis of
+   * 1,000), lot B (0.2 at t=300 for 4,000) and an undated lot C (0.05 for
+   * 500). Rewinding:
+   *   t=50   → only C: 0.05, paid 500
+   *   t=150  → C, all of the first purchase (A and the part sold later), not
+   *            B: 0.25, paid 500 + 1,000 + 1,000 = 2,500
+   *   t=250  → C and what was left of A: 0.15, paid 1,500
+   *   t=400  → everything: 0.35, paid 5,500 */
+  {
+    const btc = {
+      coin: "BTC",
+      amount: 0.35,
+      lots: [
+        { amount: 0.1, paid: 1000, time: 100 },
+        { amount: 0.2, paid: 4000, time: 300 },
+        { amount: 0.05, paid: 500, time: 0 },
+      ],
+      sales: [{ amount: 0.1, time: 200, received: 1500, basis: 1000, matched: [{ amount: 0.1, cost: 1000, acquired: 100 }] }],
+    };
+    sandbox.__h = btc;
+    const at = (t) => [run(`heldAmountAt(__h, ${t})`), run(`paidInAt(__h, ${t}, "USD")`)].map((v) => Number(v.toFixed(8)));
+    assert.deepStrictEqual(at(50), [0.05, 500], "before any dated purchase, only the undated one was held");
+    assert.deepStrictEqual(at(150), [0.25, 2500], "after the first purchase and before its sale, all of it — the sold part too");
+    assert.deepStrictEqual(at(250), [0.15, 1500], "after the sale, what was left of it");
+    assert.deepStrictEqual(at(400), [0.35, 5500], "and now, what is held now");
+    // A purchase in another currency is coins, not money
+    sandbox.__e = { coin: "ETH", amount: 1, lots: [{ amount: 1, paid: 900, time: 100, currency: "EUR" }] };
+    assert.deepStrictEqual([run("heldAmountAt(__e, 150)"), run('paidInAt(__e, 150, "USD")')], [1, 0],
+      "a purchase entered in another currency counts as coins held, not as money paid in");
+    // A sale with no purchase behind it was held from somewhere: added back
+    sandbox.__u = { coin: "SOL", amount: 2, lots: [], sales: [{ amount: 3, time: 500, matched: [] }] };
+    assert.strictEqual(run("heldAmountAt(__u, 400)"), 5, "the part of a sale with no purchase behind it was held before it");
+    sandbox.__histories = { BTC: [50, 150, 250, 400].map((t) => ({ price: 10000, time: t * 1000 })) };
+    sandbox.__holdings = [btc, { coin: "LTC", amount: 0, sales: [{ amount: 1, time: 90 }] }];
+    const built = json('buildHeldParts(__histories, __holdings, "USD")');
+    const r6 = (v) => Math.round(v * 1e6) / 1e6;
+    assert.deepStrictEqual(built.series.map((p) => r6(p.price)), [500, 2500, 1500, 3500], "the value as held, point by point");
+    assert.deepStrictEqual(built.paid.map((p) => r6(p.price)), [500, 2500, 1500, 5500], "…and what had been paid for it by then");
+    assert.strictEqual(built.gone, 1, "a coin sold to nothing is counted, not drawn");
+  }
+
+  /* ── a new record grows the amount by what it adds ─────────────────────
+   (28 Sep 2026). On a holding whose amount was never typed, a purchase
+   used to be saved and then trimmed away by heldLots — invisible. */
+{
+  const grow = (h, amt) => run(`lotAmountGrowth(${JSON.stringify(h)}, ${amt})`);
+  assert.strictEqual(grow({ amount: 0, lots: [] }, 2), 2, "nothing typed: the purchase is the amount");
+  assert.strictEqual(grow({ amount: 2, lots: [] }, 2), 0, "typed first, then explained: nothing grows");
+  assert.strictEqual(grow({ amount: 2, lots: [{ amount: 1, paid: 1 }] }, 2), 1, "half explained already: only the other half grows");
+  assert.strictEqual(grow({ amount: 1, lots: [{ amount: 2, paid: 1 }] }, 1), 1,
+    "after a reduction by hand the lots outnumber the amount: a new purchase adds its whole size, and nothing that left comes back");
+}
+
+console.log("PORTFOLIO TESTS OK");
 })().catch((e) => {
   console.error(e);
   process.exit(1);

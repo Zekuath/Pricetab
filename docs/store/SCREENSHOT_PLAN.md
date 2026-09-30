@@ -1,5 +1,11 @@
 # Screenshot plan — 1.4.0
 
+> **Next build (28 Sep 2026):** this is the plan the 1.4.0 set was shot
+> from. The next store build carries far more than 1.4.0 did, so its five
+> frames need choosing again once its scope is decided
+> (`docs/product/TODO.md`, *Now*). The house rules in §5 and the capture
+> notes below still apply.
+
 > **Set changed on 19 Aug 2026 for the 1.4.0 upload.** Frame 2 is now
 > `02-calls` and not `02-compare`: the board is the feature this release
 > exists for, and the dashboard takes five. Compare is still captured and
@@ -88,7 +94,7 @@ Ordered as uploaded. The first three carry the argument on their own.
 | 2 | **Compare** | BTC vs ETH over 1W, both as % change on one axis, compare button lit. Dark. | The differentiator, and it reads instantly at thumbnail size. | Line end-labels, shared-axis honesty, crosshair reading both |
 | 3 | **Portfolio** | 5 holdings with lots + one recorded sale. Dark. | The 1.4.0 headline; nothing else in the category does this. | Cost-basis line on the chart, per-row sparklines, Unrealized + Realized tier, sort row, allocation bars |
 | 4 | **Widgets** | The widget column with 5 on, chart beside it. No panel. Dark. | Depth on demand — the thing itself, not the switch for it. | Watchlist with live prices, Fear & Greed gauge, halving progress, alt-season scale |
-| 5 | **Targets, in light mode** | Targets panel open, 3 armed (one percent target) + 1 hit. Light. | "It tells you when it happens", with zero permissions. | Progress meters, distance-to-target, Already-hit section, direction arrows, light theme |
+| 5 | **Targets, in light mode** | Targets panel open, 3 armed (one percent target) + 1 hit. Light. | "It tells you when it happens", with zero permissions at install. | Progress meters, distance-to-target, Already-hit section, direction arrows, light theme |
 
 Frame 5 does two jobs, not three — see D3: the targets overlay deliberately
 washes out the page behind it, so no chart mode can be shown through it.

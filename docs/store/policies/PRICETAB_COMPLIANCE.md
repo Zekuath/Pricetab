@@ -1,7 +1,7 @@
 # PriceTab - Chrome Web Store Compliance Report
 
-> **Last Updated:** May 2026
-> **Status:** Ready for Submission
+> **Last Updated:** 28 September 2026
+> **Status:** Not yet ready — 1.5.0 is packaged, but the derivatives market, the alarm and the crypto tax guide are new since. Read the three sections below, then decide what the next build carries (`docs/product/TODO.md`, *Now*)
 
 ---
 
@@ -19,8 +19,21 @@ coin lists in the store description.
 - The one genuinely new policy surface is **calls**, which a reviewer can
   misread as gambling. The position, and the code that enforces it, is set out
   in *Calls and the gambling policy* below. Read it before submitting.
-- Still zero permissions, still no remote code, still no data collection of any
-  kind.
+- Still zero permissions *at install*, still no remote code, still no data
+  collection of any kind. Two things are **optional** now and both are asked
+  for from a button inside the app, never at install: eight newsroom origins
+  (`optional_host_permissions`) and `notifications` (`optional_permissions`).
+  Each has a justification in `STORE_DESCRIPTION.md` §2.
+- **Since 1.5.0 there is a simulated derivatives market** (the "Derivatives
+  Market", key `F`): a practice account in valueless Practice Units, priced
+  from a real perpetual contract's public quotes. It is the second surface a
+  reviewer can misread as gambling; the position is under *The derivatives
+  market and the gambling policy* below.
+- **Since 28 Sep 2026 there is a crypto tax guide** on the portfolio: every
+  country's rules from official sources, and an estimate from what the person
+  recorded. It is the one feature a reviewer could read as outside the single
+  purpose, or as financial advice; the position is under *The tax guide,
+  single purpose and advice* below.
 
 ---
 
@@ -75,14 +88,14 @@ coin lists in the store description.
 | Data Collection | COMPLIANT | No user data collected |
 | Limited Use | COMPLIANT | No data sharing |
 | User Consent | COMPLIANT | Consent not needed (no data) |
-| Disclosure | COMPLIANT | All functions disclosed |
+| Disclosure | **PENDING FOR NEXT BUILD** | The local privacy policy is current; the live page and store copy still need the final build's features |
 
 ### Technical Requirements
 
 | Policy | Status | Notes |
 |--------|--------|-------|
 | Manifest V3 | COMPLIANT | `manifest_version: 3` |
-| Local Code | COMPLIANT | All JS in `vendor/` |
+| Local Code | COMPLIANT | All scripts ship locally in `src/` and `vendor/` |
 | eval() | COMPLIANT | Not used |
 | Remote Code | COMPLIANT | No external scripts |
 | Obfuscation | COMPLIANT | Code readable |
@@ -92,18 +105,18 @@ coin lists in the store description.
 
 | Policy | Status | Notes |
 |--------|--------|-------|
-| Minimum Permission | COMPLIANT | **ZERO** granted at install. Six news origins are declared `optional_host_permissions` and requested from a button — see *Optional host permissions* below |
-| Unnecessary Permission | COMPLIANT | No extra permissions |
-| Host Permissions | COMPLIANT | No `host_permissions`. The optional list is the narrowest that works: six exact origins, no wildcards |
+| Minimum Permission | COMPLIANT | **ZERO** granted at install. Eight news origins are declared `optional_host_permissions` and `notifications` is declared `optional_permissions`; both are requested from a button inside the app — see *Optional host permissions* and *The optional notifications permission* below |
+| Unnecessary Permission | COMPLIANT | No extra permissions; `tests/test-invariants.js` §1 keeps both optional lists closed |
+| Host Permissions | COMPLIANT | No `host_permissions`. The optional list is the narrowest that works: eight exact origins, no wildcards |
 
 ### Quality Policies
 
 | Policy | Status | Notes |
 |--------|--------|-------|
-| Single Purpose | COMPLIANT | "Crypto price charts" |
+| Single Purpose | **PENDING FOR NEXT BUILD** | The argument is recorded below; the release scope and listing still have to agree |
 | Minimum Functionality | COMPLIANT | Fully functional product |
 | Working State | COMPLIANT | All features active |
-| Metadata | **FIXED** | Keyword spam removed |
+| Metadata | **PENDING FOR NEXT BUILD** | Keyword spam is fixed; the description still predates the practice account and tax guide |
 
 ### NTP Policies
 
@@ -174,8 +187,8 @@ best run — held in `localStorage` on that one machine. There is no currency, n
 points that buy anything, no leaderboard, no account to attach a result to, and
 no way to move a score to another device, let alone to another person.
 
-**Nothing can be cashed out.** The extension has zero permissions and makes no
-outbound request other than fetching public market data. There is no payment
+**Nothing can be cashed out.** The extension has zero permissions at install
+and makes no outbound request other than fetching public data. There is no payment
 path, no wallet connection anywhere in the product (the holdings view is
 tracking-only and asks for no key), and no server that could hold a balance.
 
@@ -195,6 +208,77 @@ first: attaching a purchasable or transferable value to the score; a
 leaderboard or any comparison against other users; syncing the record off the
 device; or any wording in the listing that frames a call as a bet, a stake or a
 prize.
+
+## The derivatives market and the gambling policy
+
+**Read this before the next submission.** Since 1.5.0 the extension carries a
+simulated derivatives account: long and short contracts with leverage, stops,
+funding and liquidation, priced from OKX's public perpetual quotes and settled
+in **Practice Units**, a unit that exists only in this page's `localStorage`.
+A reviewer will see *leverage*, *liquidation* and *USDT* and think of a
+regulated product. The position:
+
+**It is a simulation, and it says so where it cannot be missed.** The feature
+is behind a terms screen (`renderPracticeTerms`) that is the *only* thing
+drawn until it is accepted — no ticket, no balance, no button — and it states
+that no real money is involved. The page head carries *Simulated · no real
+money* permanently. Chrome's regulated-goods policy allows a simulation that
+offers no winnings, payouts or prizes of value when it clearly states that;
+the troubleshooting guide's Grey Copper still rejects anything that
+*facilitates* real trading or routes into a venue, and this does neither.
+
+**Nothing is staked, won or cashed out.** Practice Units are added by a button
+and cannot be bought, sold, transferred or converted. There is no account with
+any venue, no order ever leaves the device, no key, no wallet, no payment path.
+The quotes it reads are the same public endpoints the funding-rate widget has
+used since 1.1.0 (`www.okx.com`, `api.bybit.com`) — no new host.
+
+**It is not financial advice, and the code enforces the wording.** The
+assistant on the page *reports* (a stop against the window's ordinary steps,
+the loss at the stop against the plan) and never advises; the crowd reading
+leans only with its own counted record and says "no lean" otherwise; the
+listing's disclaimer covers it.
+
+**What would break this** — do not do any of these without a policy review
+first: a way to fund the account with anything of value; a route from a
+contract to a real venue (a "trade this for real" link counts); a
+leaderboard or shared record; removing the terms screen or the *no real money*
+line; or any wording that frames a Practice Unit as money.
+
+---
+
+## The tax guide, single purpose and advice
+
+**Read this before the next submission.** Since 28 Sep 2026 the portfolio
+carries a **Tax guide**: the crypto tax rules of 244 countries and
+territories, and — where a rule is specific enough — an estimate of the tax on
+the sales and income the person recorded in PriceTab.
+
+**Single purpose.** It is part of the holdings view, not a second product: it
+reads the same records the cost-basis report has exported since 1.4.0 and
+explains what those records mean in the person's country. It adds no
+permission, no host and no request — the data is bundled, and
+`tests/test-invariants.js` fails if that file ever makes one. It is off the
+new tab until the portfolio is opened and the button pressed. The
+single-purpose description in `STORE_DESCRIPTION.md` §2 should name it in the
+holdings clause if it ships.
+
+**Not advice, and the code enforces the wording.** The screen and the
+downloaded file open with *not tax advice*. Every rule comes from the
+country's own authority — tax administration, law or gazette, parliament,
+ministry, central bank — linked, with the day it was read; `tests/test-tax-report.js`
+fails on any source host that is not a government domain or a named public
+institution. A country with no official source confirmed states nothing. The
+estimate uses the rate the person types where the law sets it by income, says
+what it could not use, and never files anything or tells anyone what to do.
+
+**Links, not requests.** A source opens only when clicked, in a new tab, with
+no referrer. `PRIVACY.md` says so under *Outbound links*.
+
+**What would break this** — do not do any of these without a policy review
+first: a filing or submission path to any authority; a paid tax product or
+affiliate link inside the guide; a recommendation ("sell before…", "hold to
+save…"); or a source that is not the authority itself.
 
 ---
 
@@ -231,7 +315,7 @@ policy* below.
   spacing and **0 of 7** at 100 seconds.
 - **It is never granted without a person asking.** There is a button in the
   news panel; Chrome shows its own dialog; a second button revokes it.
-- **The narrowest scope that works.** Six exact origins, no wildcards, no
+- **The narrowest scope that works.** Eight exact origins, no wildcards, no
   `<all_urls>`, no content scripts, no `tabs`, no `webRequest`. The extension
   fetches the published feed URL and nothing else.
 - **Nothing is sent.** Plain GET requests for a public feed. No user data, no
@@ -245,6 +329,24 @@ policy* below.
 moving these origins into `host_permissions`; widening any of them to a
 wildcard host; adding a content script; or fetching a feed before the
 permission is granted.
+
+#### The optional notifications permission
+
+`optional_permissions: ["notifications"]` was added on 7 Sep 2026 for the one
+thing the tab title cannot do: tell somebody who is looking at another tab
+that a price target was hit or a contract was stopped out.
+
+- **Never granted at install.** Chrome raises no install-time warning for an
+  optional permission. It is requested from the alarm switch in the Targets
+  panel and on the derivatives page, straight out of the click
+  (`requestNotifyPermission` in `src/notify.js`), and the same row revokes it.
+- **Nothing is sent.** A notification is drawn by the browser from data the
+  page already has. There is no background service worker, so it fires only
+  while a PriceTab tab is open — and the row says so.
+- **Not stored.** `chrome.permissions.contains` is the only source of truth,
+  because the permission can be revoked from `chrome://extensions` without
+  the page hearing.
+- The justification text for the dashboard is in `STORE_DESCRIPTION.md` §2.
 
 ### 2. Fully Local Code
 ```
@@ -266,11 +368,12 @@ No external CDN or remote code.
 - No user data collected
 - No analytics
 - No tracking
-- Only preferences in localStorage
+- Settings, targets, holdings and simulated records stay in `localStorage`; there is no account or server
 
 ### 5. Single Purpose
-- Clear and narrow focus: "Crypto price charts"
-- All features serve this purpose
+- Clear and narrow focus: reading the crypto market on the new tab page
+- Every feature reads the same prices a different way; the practice account
+  and the tax guide are the two to re-check against the description (above)
 - No search functionality (no additional requirements)
 
 ---
@@ -289,10 +392,18 @@ No external CDN or remote code.
 
 | Area | Reason |
 |------|--------|
-| Permission Issue | No permissions |
+| Permission Issue | No permissions granted at install; two optional ones, each justified |
 | Remote Code | All code local |
 | Data Privacy | No data collected |
-| Single Purpose | Single purpose: price display |
+
+### Read before submitting
+
+| Area | Risk | Where the answer is |
+|------|------|---------------------|
+| Calls read as gambling | Medium | *Calls and the gambling policy* above |
+| The derivatives market reads as gambling or as a trading product | Medium | *The derivatives market and the gambling policy* above; the terms screen and the *no real money* line are the enforcement |
+| The tax guide reads as outside the single purpose, or as advice | Medium | *The tax guide, single purpose and advice* above; official sources only and *not tax advice* first are the enforcement |
+| Optional permissions read as data collection | Low | Both justifications in `STORE_DESCRIPTION.md` §2; nothing is sent by either |
 
 ---
 
@@ -302,9 +413,13 @@ No external CDN or remote code.
 
 - [x] Keyword spam fixed (`STORE_DESCRIPTION.md`)
 - [ ] Store description copied to Chrome Web Store
-- [ ] Privacy policy URL verified
-- [ ] Screenshots current
-- [ ] ZIP file created
+- [x] Privacy policy URL answers HTTP 200 (verified 28 Sep 2026)
+- [ ] Publish the current 28 Sep policy — the live page still shows the 6 Aug copy
+- [ ] Privacy policy URL entered and verified in the dashboard field
+- [ ] Decide the build's scope — whether the derivatives market and the tax guide ship in it
+- [ ] Single-purpose description and detailed description updated for what ships, with their translations
+- [ ] Screenshots current (the 1.4.0 set predates the derivatives market, the news panel, the tax guide and the portfolio's card layout — see `STORE_ASSETS.md`)
+- [ ] ZIP file created with `./scripts/package.sh`
 - [ ] Resubmitted
 
 ### Expected Outcome
@@ -313,7 +428,7 @@ No external CDN or remote code.
 
 After fix:
 - Manifest V3 compliant
-- Zero permissions
+- Zero permissions at install, two optional ones justified
 - Keyword spam fixed
 - Full compliance with other policies
 

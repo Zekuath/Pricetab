@@ -60,6 +60,10 @@ const sandbox = {
    * interpolated into a styled block by every file has to be stubbed
    * here too, or the file throws before a single assertion runs. */
   themedScrollbar: "",
+  touchTarget: "",
+  touchBox: "",
+  besideScreenSpine: "",
+  refusedField: "",
   React: { Component: ComponentStub, createElement: () => null, Fragment: Symbol("Fragment") },
   window: {
     innerWidth: 1280,
@@ -90,7 +94,8 @@ for (const [i, s] of steps.entries()) {
 }
 
 // every data-tour selector must anchor to a real element in the app source
-// (rendered as "data-tour": "x" literals or via Overview's dataTour prop)
+// (rendered as "data-tour": "x" literals, via Overview's dataTour prop, or
+// via the drawers' tab list in app.js, whose rows carry tour: "x")
 const srcBlob = fs
   .readdirSync(base)
   .filter((f) => f.endsWith(".js") && f !== "onboarding.js")
@@ -100,7 +105,9 @@ for (const s of steps) {
   if (!s.selector) continue;
   const name = s.selector.match(/"([a-z-]+)"/)[1];
   assert.ok(
-    srcBlob.includes(`"data-tour": "${name}"`) || srcBlob.includes(`dataTour: "${name}"`),
+    srcBlob.includes(`"data-tour": "${name}"`) ||
+      srcBlob.includes(`dataTour: "${name}"`) ||
+      srcBlob.includes(`tour: "${name}" }`),
     `tour anchor "${name}" exists in the app markup`,
   );
 }

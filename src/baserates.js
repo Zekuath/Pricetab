@@ -98,8 +98,16 @@ const describeEdge = (edge) => {
     return msg("br_edge_none", "no different from an ordinary stretch");
   }
   return rounded > 0
-    ? msg("br_edge_better", "$1 points better than an ordinary stretch", Math.abs(rounded).toFixed(1))
-    : msg("br_edge_worse", "$1 points worse than an ordinary stretch", Math.abs(rounded).toFixed(1));
+    ? msg(
+        "br_edge_better",
+        "$1 points better than an ordinary stretch",
+        Math.abs(rounded).toFixed(1),
+      )
+    : msg(
+        "br_edge_worse",
+        "$1 points worse than an ordinary stretch",
+        Math.abs(rounded).toFixed(1),
+      );
 };
 
 /* The sign comes from the **rounded** figure, never the raw one.
@@ -121,7 +129,17 @@ class BaseRatesPanel extends PureComponent {
      * asked for: it costs about seventeen requests and 237 KB, which is right
      * for a coin somebody is studying and absurd for all 81, so nothing is
      * fetched until this panel is opened. */
-    this.state = { closes: null, loading: false, failed: false, coin: null };
+    /* `candles` is the deep **daily OHLC** series for the coin on screen —
+     * closes alone until 22 Sep 2026, when the candlestick patterns needed a
+     * body and two wicks to look at. The closes the RSI rows count are
+     * derived from it, so both readings come out of one request. */
+    this.state = {
+      candles: null,
+      loading: false,
+      failed: false,
+      coin: null,
+      cpi: null,
+    };
     this.load = this.load.bind(this);
   }
 
@@ -138,24 +156,173 @@ class BaseRatesPanel extends PureComponent {
     this._gone = true;
   }
 
+  /* What followed the last US CPI releases for this coin — its own request
+   * path (`fetchCpiMoves`), apart from the daily history, so either can
+   * arrive first and neither waits for the other. */
+  async loadCpi() {
+    const coin = this.props.coin;
+    if (!coin) return;
+    this.setState({ cpi: { coin, pending: true } });
+    let r;
+    try {
+      r = await fetchCpiMoves(coin);
+    } catch (error) {
+      r = null;
+    }
+    if (this._gone || this.props.coin !== coin) return;
+    this.setState({ cpi: { coin, ...(r || { failed: true }) } });
+  }
+
+  /* **The half hour after a US CPI release** (27 Sep 2026). Not a base rate
+   * of a state but the same grammar: a count, what it is a count of, and
+   * what chance would give — each of the eight half hours in a window is the
+   * largest one time in eight, so a release half hour that were ordinary
+   * would top the seven before it about n/8 times. */
+  renderCpi() {
+    const coin = this.props.coin;
+    const c =
+      this.state.cpi && this.state.cpi.coin === coin ? this.state.cpi : null;
+    const label = React.createElement(
+      BaseSectionLabel,
+      {
+        key: "cpi-label",
+        "data-base-cpi": c
+          ? c.unavailable
+            ? "unavailable"
+            : c.pending
+              ? "pending"
+              : "done"
+          : "none",
+      },
+      msg("br_cpi_section", "Around US CPI releases · 1-minute candles"),
+    );
+    const now = Date.now();
+    const next = nextCpiRelease(now);
+    const when = (t) =>
+      new Date(t).toLocaleString(intlTag(activeLocale()), {
+        day: "numeric",
+        month: "short",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      });
+    if (!c || c.pending) {
+      return [
+        label,
+        React.createElement(
+          BaseEmpty,
+          { key: "cpi-wait" },
+          msg(
+            "br_cpi_reading",
+            "Reading the minute candles around the last twelve releases.",
+          ),
+        ),
+      ];
+    }
+    if (c.unavailable) {
+      return [
+        label,
+        React.createElement(
+          BaseEmpty,
+          { key: "cpi-na" },
+          msg(
+            "br_cpi_unavailable",
+            "The minute candles this reads come from Coinbase, which does not list $1.",
+            coin,
+          ),
+        ),
+      ];
+    }
+    const summary = c.failed ? null : cpiMovesSummary(c.moves);
+    if (!summary) {
+      return [
+        label,
+        React.createElement(
+          BaseEmpty,
+          { key: "cpi-none" },
+          msg(
+            "br_cpi_none",
+            "No complete minute history came back around the last releases for $1, so nothing is counted.",
+          ),
+        ),
+      ];
+    }
+    const pct = (v) => `${(v * 100).toFixed(2)}%`;
+    return [
+      label,
+      React.createElement(
+        BaseRow,
+        { key: "cpi-row", "data-base-cpi-row": `${summary.top}/${summary.n}` },
+        React.createElement(
+          BaseRowTitle,
+          null,
+          msg("br_cpi_title", "The half hour after a release"),
+        ),
+        React.createElement(
+          BaseCount,
+          { weak: summary.n < BASE_RATE_MIN_EPISODES },
+          msg(
+            "br_cpi_count",
+            "$1 of $2",
+            String(summary.top),
+            String(summary.n),
+          ),
+        ),
+        React.createElement(
+          BaseDetail,
+          null,
+          msg(
+            "br_cpi_detail",
+            "Moved more than in any of the seven half hours before it on $1 of the last $2 releases. Had the release been an ordinary half hour, about $3 would. ",
+            String(summary.top),
+            String(summary.n),
+            summary.expect.toFixed(1),
+          ),
+          React.createElement(
+            BaseCompare,
+            null,
+            msg(
+              "br_cpi_medians",
+              "Typical move after: $1; in the half hours before: $2; largest after: $3.",
+              pct(summary.medAfter),
+              pct(summary.medBefore),
+              pct(summary.largest),
+            ),
+          ),
+        ),
+        React.createElement(
+          BaseDetail,
+          null,
+          next
+            ? msg(
+                "br_cpi_next",
+                "Next release: $1, your time. The chart marks each one.",
+                when(next),
+              )
+            : msg(
+                "br_cpi_no_next",
+                "The calendar this ships with ends at its last release; nothing later is marked.",
+              ),
+        ),
+      ),
+    ];
+  }
+
   async load() {
     const coin = this.props.coin;
+    if (coin && !(this.state.cpi && this.state.cpi.coin === coin))
+      this.loadCpi();
     if (!coin || this.state.loading) return;
     this.setState({ loading: true, failed: false, coin });
-    let closes = null;
-    try {
-      closes = await fetchDailyCloses(coin);
-    } catch (error) {
-      closes = null;
-    }
+    const candles = await fetchDailyCandles(coin).catch(() => null);
     if (this._gone) return;
     // Guard the coin as well as the mount: a switch mid-fetch must not put one
     // coin's history under another coin's name
     if (this.props.coin !== coin) return;
     this.setState({
-      closes,
+      candles,
       loading: false,
-      failed: !closes,
+      failed: !candles,
       coin,
     });
   }
@@ -165,8 +332,9 @@ class BaseRatesPanel extends PureComponent {
    * about that, because "still fetching" and "nothing came back" are different
    * sentences and one of them must not stand in for the other. */
   readings() {
-    const { closes } = this.state;
-    if (!Array.isArray(closes) || closes.length < 200) return null;
+    const { candles } = this.state;
+    if (!Array.isArray(candles) || candles.length < 200) return null;
+    const closes = candles.map((c) => c.close);
     const rsi = dailyRsi(closes);
     const ma200 = movingAverage(closes, 200);
     const last = closes.length - 1;
@@ -194,13 +362,195 @@ class BaseRatesPanel extends PureComponent {
         result: baseRateFor(closes, above, (v) => v === true, h.days),
       })),
     });
+    /* The candlestick patterns, as states of exactly the same kind: a
+     * boolean per day through `baseRateFor`, one horizon, the same floor.
+     * See `candle-patterns.js` for what the counting found — the short of it
+     * is that almost nothing clears the bar, which is the answer this panel
+     * exists to be able to give. */
+    const horizon = {
+      days: CANDLE_PATTERN_HORIZON,
+      label: msg(
+        "cp_next_days",
+        "next $1 days",
+        String(CANDLE_PATTERN_HORIZON),
+      ),
+    };
+    const patterns = candlePatternsNow(candles).map(
+      ({ pattern, hits, live }) => ({
+        id: pattern.id,
+        title: pattern.title,
+        claim: pattern.claim,
+        live,
+        byHorizon: [
+          {
+            ...horizon,
+            result: baseRateFor(closes, hits, (v) => v === true, horizon.days),
+          },
+        ],
+      }),
+    );
     return {
       rsiNow: rsi[last],
       priceNow: closes[last],
       ma200Now: ma200[last],
       days: closes.length,
       rows,
+      patterns,
+      /* The chart patterns, on the same daily candles — see
+         `price-patterns.js`. Counted, never compared below the floor. */
+      shapes: detectPricePatterns(candles),
+      /* The strategy setups, entered on a day's close — see
+         `strategy-setups.js` and setups-prereg.md. */
+      setups: strategySetupStates(candles),
+      closes,
     };
+  }
+
+  /* **One strategy setup's record here** (27 Sep 2026). The numbers only:
+   * how often the price was up (or moved more than usual) after it, against
+   * an ordinary stretch of the same coin — and no sentence calling it better
+   * or worse, because tested together on four coins none of the twelve was
+   * distinguishable from an ordinary day, and on LTC the loudest difference
+   * pointed against its own claim. Marked "now" when it was entered in the
+   * last ten days. */
+  renderSetup(def, readings) {
+    const states = readings.setups[def.id];
+    const entries = strategySetupEntries(states);
+    const last = entries[entries.length - 1];
+    const ago = last == null ? null : states.length - 1 - last;
+    const live = ago != null && ago < SETUP_HORIZON;
+    const detail = (() => {
+      if (def.kind === "move") {
+        const m = moveRateFor(readings.closes, states, SETUP_MOVE_HORIZON);
+        if (!m || !m.n)
+          return msg("ss_none", "Not once in this coin's daily history.");
+        return msg(
+          "ss_move_detail",
+          "The next 30 days moved more than an ordinary 30 days of this coin in $1 of $2 episodes — half would, if it meant nothing.",
+          String(m.bigger),
+          String(m.n),
+        );
+      }
+      const r = baseRateFor(readings.closes, states, (v) => v, SETUP_HORIZON);
+      if (!r || !r.n)
+        return msg("ss_none", "Not once in this coin's daily history.");
+      return msg(
+        "ss_up_detail",
+        "10 days later: up $1% of the time across $2 episodes. An ordinary 10 days of this coin: up $3%.",
+        r.up.toFixed(0),
+        String(r.n),
+        r.baseUp.toFixed(0),
+      );
+    })();
+    return React.createElement(
+      BaseRow,
+      { key: `setup-${def.id}`, live, "data-base-setup": def.id },
+      React.createElement(
+        BaseRowTitle,
+        null,
+        def.title,
+        live ? msg("br_now_suffix", " · now") : "",
+      ),
+      React.createElement(
+        BaseCount,
+        { weak: entries.length < BASE_RATE_MIN_EPISODES },
+        entries.length === 1
+          ? msg("br_one_time", "1 time")
+          : msg("br_n_times", "$1 times", entries.length),
+      ),
+      React.createElement(BaseClaim, null, `${def.what} — ${def.claim}`),
+      React.createElement(BaseDetail, null, detail),
+      live
+        ? React.createElement(
+            BaseDetail,
+            null,
+            /* "Formed", not "entered": on this screen the word would read as
+               a trade, which is the one thing it must not say. */
+            ago === 0
+              ? msg("ss_formed_today", "Formed on today's close.")
+              : ago === 1
+                ? msg("ss_formed_yesterday", "Formed yesterday.")
+                : msg("ss_formed_ago", "Formed $1 days ago.", String(ago)),
+          )
+        : null,
+    );
+  }
+
+  /* **One chart pattern's record on this coin** (27 Sep 2026): how often it
+   * completed, how many of those have resolved, and how many reached the
+   * measured target before the invalidation — in the same grammar as the
+   * rows above, and below `BASE_RATE_MIN_EPISODES` resolved ones, without a
+   * comparison. The most recent one is named with its levels when it is
+   * still being walked, so the chart's lines have a sentence behind them. */
+  renderShape(def, episodes) {
+    const rec = pricePatternRecord(episodes, def.id);
+    const mine = episodes.filter((e) => e.kind === def.id);
+    const latest = mine[mine.length - 1];
+    const live = latest && latest.out === "pending";
+    const money = (v) => formatAxisPrice(v, v / 2000, "");
+    const day = (t) =>
+      new Date(t * 1000).toLocaleDateString(intlTag(activeLocale()), {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      });
+    return React.createElement(
+      BaseRow,
+      {
+        key: `shape-${def.id}`,
+        live: Boolean(live),
+        "data-base-shape": def.id,
+      },
+      React.createElement(
+        BaseRowTitle,
+        null,
+        def.title,
+        live ? msg("br_now_suffix", " · now") : "",
+      ),
+      React.createElement(
+        BaseCount,
+        { weak: rec.resolved < BASE_RATE_MIN_EPISODES },
+        rec.found === 1
+          ? msg("br_one_time", "1 time")
+          : msg("br_n_times", "$1 times", rec.found),
+      ),
+      React.createElement(BaseClaim, null, def.claim),
+      React.createElement(
+        BaseDetail,
+        null,
+        rec.found
+          ? msg(
+              "cpat_record2",
+              "Reached its measured move before its invalidation on $1 of the $2 that have resolved within 90 days. ",
+              String(rec.targetFirst),
+              String(rec.resolved),
+            ) +
+              (rec.resolved < BASE_RATE_MIN_EPISODES
+                ? msg(
+                    "cpat_too_few",
+                    "$1 is too few to compare with an ordinary day — no comparison is printed.",
+                    String(rec.resolved),
+                  )
+                : "")
+          : msg(
+              "cpat_never",
+              "Not once in this coin's daily history, by these rules.",
+            ),
+      ),
+      live
+        ? React.createElement(
+            BaseDetail,
+            null,
+            msg(
+              "cpat_live2",
+              "The latest completed on $1: measured move to $2, invalidation $3. It has not reached either yet.",
+              day(latest.at),
+              money(latest.target),
+              money(latest.stop),
+            ),
+          )
+        : null,
+    );
   }
 
   renderRow(row) {
@@ -259,8 +609,12 @@ class BaseRatesPanel extends PureComponent {
       React.createElement(
         BaseCount,
         { weak: n < BASE_RATE_MIN_EPISODES },
-        n === 1 ? msg("br_one_time", "1 time") : msg("br_n_times", "$1 times", n),
+        n === 1
+          ? msg("br_one_time", "1 time")
+          : msg("br_n_times", "$1 times", n),
       ),
+      // Only the pattern rows carry one; the RSI states are not folklore
+      row.claim ? React.createElement(BaseClaim, null, row.claim) : null,
       ...cells,
     );
   }
@@ -271,6 +625,19 @@ class BaseRatesPanel extends PureComponent {
     const readings = this.readings();
     const live = readings ? readings.rows.filter((r) => r.live) : [];
     const rest = readings ? readings.rows.filter((r) => !r.live) : [];
+    const restRows = rest.map((r) => this.renderRow(r)).filter(Boolean);
+    /* Today's shapes first — it is the question somebody opens this to ask —
+       then the others by how much history stands behind them, so the rows
+       that can say anything sit above the ones that cannot. */
+    const patterns = readings ? readings.patterns : [];
+    const patternsLive = patterns.filter((p) => p.live);
+    const patternsRest = patterns
+      .filter((p) => !p.live)
+      .slice()
+      .sort((a, b) => {
+        const n = (r) => (r.byHorizon[0].result ? r.byHorizon[0].result.n : 0);
+        return n(b) - n(a);
+      });
     return React.createElement(
       BaseOverlay,
       {
@@ -288,6 +655,7 @@ class BaseRatesPanel extends PureComponent {
             BaseTitle,
             null,
             msg("br_title", "$1 · has this happened before?", coin),
+            keyCap("B"),
           ),
           React.createElement(
             BaseEyebrow,
@@ -297,11 +665,6 @@ class BaseRatesPanel extends PureComponent {
               : loading
                 ? msg("br_reading", "Reading the daily closes…")
                 : "",
-          ),
-          React.createElement(
-            BaseClose,
-            { onClick: onClose, "aria-label": msg("br_close", "Close base rates") },
-            "×",
           ),
         ),
         React.createElement(
@@ -352,34 +715,140 @@ class BaseRatesPanel extends PureComponent {
                 msg("br_try_again", "Try again"),
               ),
             ),
-          readings &&
+          /* The CPI count stands on its own request, so it does not wait
+             for — or disappear with — the daily history: without the
+             columns it is drawn by itself. */
+          !readings &&
             React.createElement(
-              Fragment,
+              BaseColumns,
               null,
               React.createElement(
-                BaseSectionLabel,
-                null,
-                live.length
-                  ? msg("br_true_now", "True right now")
-                  : msg("br_nothing_unusual", "Nothing unusual right now"),
+                BaseColumn,
+                { "data-base-cpi-alone": "1" },
+                ...this.renderCpi(),
               ),
-              live.length
-                ? live.map((r) => this.renderRow(r))
-                : React.createElement(
-                    BaseEmpty,
-                    null,
-                    msg(
-                      "br_no_states",
-                      "$1 is not in any of the states below. That is the ordinary case, and it is the honest answer far more often than any of them.",
-                      coin,
-                    ),
-                  ),
+            ),
+          readings &&
+            /* **Two columns on a wide window** (26 Sep 2026): the states on
+               the left and the candlestick shapes beside them, rather than
+               one column that stopped two thirds of the way across a screen
+               with the rest of it empty. Under 1100px they stack. */
+            React.createElement(
+              BaseColumns,
+              null,
               React.createElement(
-                BaseSectionLabel,
-                null,
-                msg("br_the_rest", "The rest, for reference"),
+                BaseColumn,
+                { "data-base-states": "1" },
+                React.createElement(
+                  BaseSectionLabel,
+                  null,
+                  live.length
+                    ? msg("br_true_now", "True right now")
+                    : msg("br_nothing_unusual", "Nothing unusual right now"),
+                ),
+                live.length
+                  ? live.map((r) => this.renderRow(r))
+                  : React.createElement(
+                      BaseEmpty,
+                      null,
+                      msg(
+                        "br_no_states",
+                        "$1 is not in any of the states below. That is the ordinary case, and it is the honest answer far more often than any of them.",
+                        coin,
+                      ),
+                    ),
+                /* Only with something under it: a row can come back empty
+                   (a state with no record), and a heading over nothing read
+                   as a section that had failed to load. */
+                restRows.length
+                  ? React.createElement(
+                      BaseSectionLabel,
+                      null,
+                      msg("br_the_rest", "The rest, for reference"),
+                    )
+                  : null,
+                ...restRows,
+                ...this.renderCpi(),
               ),
-              rest.map((r) => this.renderRow(r)),
+              /* **The candlestick shapes, counted.** Whatever range is on the
+                 chart, these are read off the daily candle — a pattern is a
+                 claim about a bar, and a bar is half a minute on 1H and a
+                 fortnight on ALL, so one name would mean six things. The
+                 same argument `dailyRsi` settled, and the label says it. */
+              React.createElement(
+                BaseColumn,
+                { "data-base-patterns-col": "1" },
+                React.createElement(
+                  BaseSectionLabel,
+                  { "data-base-patterns": "1" },
+                  msg("cp_section", "Candlestick patterns · daily candles"),
+                ),
+                React.createElement(
+                  BaseEmpty,
+                  null,
+                  patternsLive.length
+                    ? msg(
+                        "cp_on_today",
+                        "Today's candle is $1. What followed the last times it appeared is under it; the other shapes this coin's history has shown are below that.",
+                        patternsLive
+                          .map((p) => p.title.toLowerCase())
+                          .join(", "),
+                      )
+                    : msg(
+                        "cp_none_today",
+                        "Today's candle is none of the $1 shapes this panel looks for. That is the ordinary case — most candles are not a pattern. The ones this coin's history has shown are below.",
+                        String(patterns.length),
+                      ),
+                ),
+                ...patternsLive.map((r) => this.renderRow(r)),
+                ...patternsRest.map((r) => this.renderRow(r)),
+                /* **Chart patterns** (27 Sep 2026) — the geometric ones, by
+                   rule on swing points. Counted; see `price-patterns.js` and
+                   the preregistration it points to. */
+                React.createElement(
+                  BaseSectionLabel,
+                  { "data-base-shapes": String(readings.shapes.length) },
+                  msg("cpat_section", "Chart patterns · daily candles"),
+                ),
+                React.createElement(
+                  BaseEmpty,
+                  null,
+                  msg(
+                    "cpat_intro2",
+                    "Found by rule on swing points five days either side, and followed for 90 days to the measured move or the invalidation, whichever came first. The same rules found 60 of these in eleven years of four coins together — rare enough that none of them can be compared with an ordinary day yet.",
+                  ),
+                ),
+                ...PRICE_PATTERNS.map((def) =>
+                  this.renderShape(def, readings.shapes),
+                ),
+                /* **Strategy setups** (27 Sep 2026) — what trend, breakout,
+                   mean-reversion and volatility strategies wait for, counted
+                   on the same candles. */
+                React.createElement(
+                  BaseSectionLabel,
+                  { "data-base-setups": "1" },
+                  msg("ss_section", "Strategy setups · daily candles"),
+                ),
+                React.createElement(
+                  BaseEmpty,
+                  null,
+                  msg(
+                    "ss_intro",
+                    "What common strategies wait for — crosses, breakouts, closes outside the bands, Supertrend flips — with what followed each time on this coin, beside an ordinary day. The chart companion names them where they happened.",
+                  ),
+                ),
+                ...STRATEGY_SETUPS.map((def) =>
+                  this.renderSetup(def, readings),
+                ),
+                React.createElement(
+                  BaseNote,
+                  { "data-base-setups-note": "1" },
+                  msg(
+                    "ss_note",
+                    "Tested together on BTC, ETH, SOL and LTC on 27 September 2026, after correcting for the 48 comparisons, none of these twelve was distinguishable from an ordinary day. A difference that looks large on one coin is the size chance produces across this many rows — on LTC the largest ones point against the setup's own claim — so none is called better or worse here.",
+                  ),
+                ),
+              ),
             ),
           React.createElement(
             BaseNote,

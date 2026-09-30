@@ -101,6 +101,31 @@ const ICON_SHAPES = {
    * two lines diverging from a shared origin collapsed into a "<", two trend
    * lines turned to mush, and a pair of peaks read as a scribble. This one
    * survives 17px with its arrowheads open. */
+  /* The chart's own settings: three rails with a knob on each.
+   *
+   * Deliberately **not** the gear. The gear is the Settings panel's, it sits
+   * in the corner of the same screen, and two gears that open two different
+   * things is the kind of ambiguity a 17px icon cannot survive. Rails read as
+   * "adjust what is in front of you", which is what the drawer is. */
+  sliders: () => [
+    React.createElement("path", { key: "r1", d: "M4 7h16" }),
+    React.createElement("circle", { key: "k1", cx: "9", cy: "7", r: "2.1", fill: "currentColor", stroke: "none" }),
+    React.createElement("path", { key: "r2", d: "M4 12h16" }),
+    React.createElement("circle", { key: "k2", cx: "15.5", cy: "12", r: "2.1", fill: "currentColor", stroke: "none" }),
+    React.createElement("path", { key: "r3", d: "M4 17h16" }),
+    React.createElement("circle", { key: "k3", cx: "7.5", cy: "17", r: "2.1", fill: "currentColor", stroke: "none" }),
+  ],
+
+  /* Widgets: four cards, one of them taller — the drawer holds cards of
+   * different heights in two columns, and four equal squares read as an app
+   * launcher grid rather than as a set of readings. */
+  widgets: () => [
+    React.createElement("rect", { key: "a", x: 3.5, y: 3.5, width: 7.5, height: 10, rx: 1.6 }),
+    React.createElement("rect", { key: "b", x: 13, y: 3.5, width: 7.5, height: 6, rx: 1.6 }),
+    React.createElement("rect", { key: "c", x: 3.5, y: 15.5, width: 7.5, height: 5, rx: 1.6 }),
+    React.createElement("rect", { key: "d", x: 13, y: 11.5, width: 7.5, height: 9, rx: 1.6 }),
+  ],
+
   compare: () => [
     React.createElement("path", { key: "t", d: "M3.5 8.5h15" }),
     React.createElement("path", { key: "th", d: "M15.2 5 18.7 8.5 15.2 12" }),
@@ -133,6 +158,27 @@ const ICON_SHAPES = {
     }),
   ],
 
+  /* **Futures: a candle with a leveraged arm.**
+   *
+   * Everything obvious was taken or wrong. A bull/bear pair is two glyphs; a
+   * percentage sign is the widget panel's; a bell means "tell me when" and
+   * belongs to targets; the grid with a claimed square is calls, which is the
+   * neighbour this most needs to be told apart from. What a futures position
+   * actually is, drawn: a price bar with a wick, and a bracket reaching out
+   * from it — the leverage — with the two ends the position lives between.
+   * One filled body so it reads as a *position* rather than as a chart at
+   * button size, where three hairlines close into a smudge. */
+  futures: () => [
+    React.createElement("path", { key: "wick", d: "M9 3.4v17.2" }),
+    React.createElement("rect", {
+      key: "body", x: 6.4, y: 7.6, width: 5.2, height: 8.8, rx: 1,
+      fill: "currentColor", stroke: "none",
+    }),
+    React.createElement("path", { key: "arm", d: "M14 7.6h6" }),
+    React.createElement("path", { key: "arm2", d: "M14 16.4h6" }),
+    React.createElement("path", { key: "tie", d: "M19.4 7.6v8.8" }),
+  ],
+
   /* A plain chevron, pointing down. The settings groups used the text glyph
    * "▾" for this, at 0.6rem and 0.7 opacity — a 9.6px character drawn by
    * whatever font the operating system picked, which is the same reason the
@@ -162,8 +208,59 @@ const ICON_SHAPES = {
     React.createElement("path", { key: "col2", d: "M7 16 H14" }),
   ],
 
+  /* Base rates: a count, drawn as one — four bars on a baseline, the tallest
+   * not at the end, so it reads as a distribution rather than as a chart
+   * going up (the panel exists because nothing here is a signal). It had no
+   * icon while it had no control of its own; it has a tab on the right-hand
+   * spine since 26 Sep 2026. */
+  baserates: () => [
+    React.createElement("path", { key: "base", d: "M3.5 20.5h17" }),
+    React.createElement("path", { key: "a", d: "M6.5 20.5v-5" }),
+    React.createElement("path", { key: "b", d: "M10.5 20.5v-12" }),
+    React.createElement("path", { key: "c", d: "M14.5 20.5v-8" }),
+    React.createElement("path", { key: "d", d: "M18.5 20.5v-3" }),
+  ],
+
   // Chain link: two interlocking pills. On the diagonal they read as a
   // chain; laid out horizontally they looked like a toggle switch.
+  /* A bookmark: the news panel's "keep this". Filled once kept — the same
+     outline, so the two states read as one control. */
+  /* The chart's tools (chart-tools.js). Each shows the mark it leaves: a
+     ruler's ticks, a level across, a line between two points, one that runs
+     on, a box, a note. Drawn for 18px at a 1.6 stroke (30 Sep 2026): the
+     handles are open rings the line stops short of, because a ring with a
+     line through it read as a blot at that size. */
+  ruler: () => [
+    React.createElement("path", { key: "r", d: "M4 16 16 4l4 4L8 20z" }),
+    React.createElement("path", { key: "t", d: "M8.5 11.5l1.75 1.75M11.25 8.75 13 10.5M14 6l1.75 1.75" }),
+  ],
+  hline: () => [
+    React.createElement("path", { key: "l", d: "M3 12h6.5M14.5 12H21" }),
+    React.createElement("circle", { key: "c", cx: "12", cy: "12", r: "2.5" }),
+  ],
+  trend: () => [
+    React.createElement("path", { key: "l", d: "M8 16 16 8" }),
+    React.createElement("circle", { key: "a", cx: "6.25", cy: "17.75", r: "2.25" }),
+    React.createElement("circle", { key: "b", cx: "17.75", cy: "6.25", r: "2.25" }),
+  ],
+  ray: () => [
+    React.createElement("path", { key: "l", d: "M7.75 16.25 20 4" }),
+    React.createElement("path", { key: "h", d: "M14.5 4H20v5.5" }),
+    React.createElement("circle", { key: "a", cx: "6", cy: "18", r: "2.25" }),
+  ],
+  box: () => React.createElement("rect", { x: "4", y: "6", width: "16", height: "12", rx: "2" }),
+  note: () => [
+    React.createElement("path", {
+      key: "p",
+      d: "M6 4.5h12A2 2 0 0 1 20 6.5v8a2 2 0 0 1-2 2h-6.5L7 20v-3.5H6a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2z",
+    }),
+    React.createElement("path", { key: "t", d: "M8 9h8M8 12h5" }),
+  ],
+  // The chart tools' + (turned to an × while they are out)
+  plus: () => React.createElement("path", { d: "M12 5v14M5 12h14" }),
+  bookmark: () => React.createElement("path", { d: "M6.5 3.5h11v17l-5.5-4-5.5 4z" }),
+  bookmarkOn: () =>
+    React.createElement("path", { d: "M6.5 3.5h11v17l-5.5-4-5.5 4z", fill: "currentColor" }),
   link: () =>
     React.createElement(
       "g",

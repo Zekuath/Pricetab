@@ -162,14 +162,30 @@ const chartBoardGeometry = (chart) => ({
       const to = chart.props.boardZoom > 0 ? chart.props.boardZoom : 1;
       const anim = chart.zoomAnim;
       let shown = to;
+      chart._zoomTo = to;
+      chart._zoomEased = 1;
+      chart._zoomT = 1;
       if (anim) {
         const t = (Date.now() - anim.start) / BOARD_ZOOM_MS;
         if (t >= 1) chart.zoomAnim = null;
         else {
-          // Ease-out on the *ratio*, since zoom is multiplicative —
-          // interpolating 1→16 linearly spends most of the animation already
-          // zoomed out
-          const eased = 1 - Math.pow(1 - t, 3);
+          /* Ease-in-out on the *ratio*, since zoom is multiplicative —
+           * interpolating 1→16 linearly spends most of the animation already
+           * zoomed out.
+           *
+           * In-out rather than out. A pure ease-out leaves at full speed from
+           * the first frame, and a scale that is already moving fast in the
+           * frame after the click reads as a jump followed by a settle rather
+           * than as one movement; the eye never sees it start. The in half is
+           * what makes it look like the board was pushed. */
+          const eased = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+          chart._zoomEased = eased;
+          /* The *raw* fraction is kept as well as the eased one. The label
+             fade is a bell over the travel's own clock, and an eased clock
+             rushes through its own middle — the dip never got deep enough to
+             hide the churning figures it exists to hide (measured: 0.43 at
+             its lowest against the 0.12 intended). */
+          chart._zoomT = t;
           shown = anim.from * Math.pow(to / anim.from, eased);
         }
       }
@@ -181,9 +197,14 @@ const chartBoardGeometry = (chart) => ({
 
     runZoomAnim: () => {
       chart.zoomRaf = 0;
-      if (!chart.zoomAnim) return;
+      /* Keeps going a few frames past the travel, while the labels come back.
+       * Their ink is no longer a bell over one travel's clock — see
+       * `labelInk` in `updateGrid` — so the frame that ends the travel is not
+       * the frame that ends the drawing. */
+      const settling = (chart._labelInk === undefined ? 1 : chart._labelInk) < 0.995;
+      if (!chart.zoomAnim && !settling) return;
       chart.updatePath();
-      if (chart.zoomAnim) {
+      if (chart.zoomAnim || (chart._labelInk === undefined ? 1 : chart._labelInk) < 0.995) {
         chart.zoomRaf = requestAnimationFrame(chart.runZoomAnim);
       } else {
         chart.updatePath(); // the last frame, on the exact value
@@ -219,8 +240,17 @@ const chartBoardGeometry = (chart) => ({
       if (e.ctrlKey || e.metaKey) return;
       e.preventDefault();
       const now = Date.now();
-      // A trackpad fires a stream of small deltas; one notch per gesture beat
-      if (now - (chart._lastWheel || 0) < 220) return;
+      /* A trackpad fires a stream of small deltas; one notch per gesture beat.
+       *
+       * **The beat has to be at least one travel long, and it was not.** It
+       * was a flat 220ms against a `BOARD_ZOOM_MS` that had grown to 340, so
+       * a continuous scroll started a new travel every 220ms on top of one
+       * still running — each restart re-anchoring the step interpolation and
+       * restarting the label fade, which is what the shaking was. Measured on
+       * a two-second trackpad scroll: eight notches, eight animation
+       * restarts, and the price labels going bright-dim-bright eight times.
+       * Tied to the constant now, so the two cannot drift apart again. */
+      if (now - (chart._lastWheel || 0) < BOARD_ZOOM_MS) return;
       chart._lastWheel = now;
       chart.zoomBoard(e.deltaY > 0 ? 1 : -1);
     },
@@ -334,7 +364,11 @@ const chartBoardGeometry = (chart) => ({
        * invites — has nothing to point at. One size cannot serve both, so the
        * size is yours. */
       const zoom = chart.effectiveZoom();
-      const need = (fair > 0 ? Math.min(fit, Math.max(fair, fit / 2)) : fit) * zoom;
+      /* What one square is worth at a given zoom, before the ladder. Lifted
+       * out because the travel needs it at *both* ends of the animation, not
+       * only at the value the eye is currently on. */
+      const needAt = (z) => (fair > 0 ? Math.min(fit, Math.max(fair, fit / 2)) : fit) * z;
+      const need = needAt(zoom);
       /* Sticky around the target rather than around the range. It used to hold
        * while the range still fitted, which is a test the new sizing can fail
        * by design — a band around what the square is *for* keeps the same
@@ -353,12 +387,36 @@ const chartBoardGeometry = (chart) => ({
         held.step = seed;
         return seed;
       }
-      const power = Math.pow(10, Math.floor(Math.log10(need)));
       // 1 · 2 · 2.5 · 5 · 10, the ladder whose rungs are all still round
       // numbers to print on an axis
-      const step =
-        [1, 2, 2.5, 5, 10].map((m) => m * power).find((v) => v >= need) ||
-        power * 10;
+      const rung = (want) => {
+        const power = Math.pow(10, Math.floor(Math.log10(want)));
+        return (
+          [1, 2, 2.5, 5, 10].map((m) => m * power).find((v) => v >= want) || power * 10
+        );
+      };
+      /* **The ladder is where the travel lands, not what it walks along.**
+       *
+       * Snapping every frame was the whole of what made a zoom feel rough:
+       * the eased size glides, the ladder does not, so the lattice sat still
+       * and then jumped a rung — twice on a ×2 press, five or six times on a
+       * long one — and every gridline, label and locked box moved together at
+       * each jump. It read as stuttering because it *was* three or four
+       * discrete relayouts wearing an animation.
+       *
+       * So during the travel the step is interpolated between the two rungs
+       * the press actually goes from and to, geometrically for the reason the
+       * eased zoom is geometric. In between it is not a round number, which
+       * costs nothing — nobody reads an axis label mid-gesture — and it
+       * arrives exactly on the rung, which is what has to be true when the
+       * hand stops. */
+      if (travelling) {
+        const from = rung(needAt(chart.zoomAnim.from));
+        const to = rung(needAt(chart._zoomTo || zoom));
+        const t = chart._zoomEased || 0;
+        if (from > 0 && to > 0) return from * Math.pow(to / from, t);
+      }
+      const step = rung(need);
       if (!travelling) held.step = step;
       return step;
     },
@@ -480,6 +538,60 @@ const chartBoardGeometry = (chart) => ({
      * added afterwards: the range has to fit inside `rows − 2` squares, so
      * there is always a whole square of empty at both ends to point at.
      */
+    /* Where the walk has got to, in rows, eased.
+     *
+     * Held as an integer (`chart.boardPan`) and shown as whatever the travel
+     * is currently between, for the reason the zoom is: a window that jumps a
+     * square leaves you working out what moved, and the whole value of the
+     * board is that you can watch your own locked calls slide rather than
+     * find them somewhere new. Additive here, not multiplicative — a pan is a
+     * distance, and the eased lerp is between two counts of squares. */
+    boardPanRows: () => {
+      const to = chart.boardPan || 0;
+      const anim = chart.panAnim;
+      if (!anim) return to;
+      const t = (Date.now() - anim.start) / BOARD_PAN_MS;
+      if (t >= 1) {
+        chart.panAnim = null;
+        return to;
+      }
+      const eased = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+      chart._panShown = anim.from + (to - anim.from) * eased;
+      return chart._panShown;
+    },
+
+    /* One square of walk, or back to the price with `to`. Clamped, because a
+     * board panned a hundred squares from the price is a screen with nothing
+     * on it and no way to tell which way home is. */
+    panBoard: (rows, absolute) => {
+      if (!chart.props.predict) return;
+      const now = chart.boardPan || 0;
+      const want = absolute ? rows : now + rows;
+      const next = Math.max(-BOARD_PAN_MAX, Math.min(BOARD_PAN_MAX, Math.round(want)));
+      if (next === now) return;
+      chart._panShown = chart.boardPanRows();
+      chart.boardPan = next;
+      chart.panAnim = { from: chart._panShown, start: Date.now() };
+      /* A draft belongs to the square it was pointed at, and that square is
+       * about to be somewhere else. */
+      chart.draftAt = null;
+      chart.unlockId = null;
+      chart.clearHover();
+      if (!chart.panRaf) chart.panRaf = requestAnimationFrame(chart.runPanAnim);
+      chart.updatePath();
+    },
+
+    runPanAnim: () => {
+      chart.panRaf = 0;
+      if (!chart.panAnim) return;
+      chart.updatePath();
+      if (chart.panAnim) {
+        chart.panRaf = requestAnimationFrame(chart.runPanAnim);
+      } else {
+        chart.updatePath(); // the last frame, on the exact square
+      }
+    },
+
     boardGeometry: () => {
       const slice = chart.visibleSlice();
       if (!slice || !chart.height) return null;
@@ -592,7 +704,23 @@ const chartBoardGeometry = (chart) => ({
         held.base = base;
         held.baseStep = step;
       }
-      const domain = [base, base + span];
+      /* **And then wherever you have walked to.**
+       *
+       * The window follows the price, which is right and is not enough: the
+       * board reaches about three squares either side of where the price is,
+       * so a band you actually want to name — the one a real fall would end
+       * at — has no square on the screen and no way to get one. The pan is
+       * that way. It is an offset in **whole squares** applied to the
+       * displayed window only; `base` above stays anchored to the price
+       * exactly as before, so the anchoring cannot fight the walk and a
+       * lattice line still lands where the last one was.
+       *
+       * Relative rather than absolute, deliberately: "four squares above the
+       * window" survives the price moving, where an absolute level would need
+       * the window to re-place itself around it and put you somewhere you did
+       * not ask to be. */
+      const shift = chart.boardPanRows() * step;
+      const domain = [base + shift, base + span + shift];
 
       const priceToY = scaleLinear().range([bottom, top]).domain(domain);
       /* Levels are the whole multiples of the step, so they are anchored to
@@ -617,6 +745,29 @@ const chartBoardGeometry = (chart) => ({
       };
     },
 
+    /* **Is the price axis logarithmic right now?**
+     *
+     * One rule, asked in every place that scales a series — the redraw, the
+     * mount and the two reference levels — because copies of it drift, and the
+     * way they would drift is a chart drawn logarithmically on open and
+     * linearly on the first refresh.
+     *
+     * **A drawn lattice is the veto, not a computable one.** The first version
+     * of this asked whether `gridGeometry()` returned anything, and it almost
+     * always does: `gridGeometryFor` works out a mesh from the data whether or
+     * not one is on screen, so the option was dead on arrival and the test
+     * caught it reading 0.13 where it should have read 0.5. What actually
+     * conflicts is a lattice that is *drawn*: the mesh and the board are a
+     * **uniform step in price**, and evenly spaced in price is not evenly
+     * spaced in pixels on a log axis — the cells would be a dozen different
+     * heights and a call's box would change shape depending on where it sat.
+     * So the two switches that put one on screen are the two that stand this
+     * one down. */
+    logAxis: () =>
+      chart.props.logScale === true &&
+      chart.props.predict !== true &&
+      chart.props.grid !== true,
+
     gridGeometry: () => {
       const data = safePrices(chart.props.prices);
       const first = data[0];
@@ -629,6 +780,17 @@ const chartBoardGeometry = (chart) => ({
         chart.props.predict ? chart.props.futureShare : 0,
         // …and on how far it reaches in price
         chart.props.predict ? Math.round(chart.effectiveZoom() * 1000) : 0,
+        /* …and on how far it has been walked from the price. **The cache is
+         * keyed on everything the window depends on, and the pan was the
+         * first thing added that was not** — the arrows moved `boardPan`, the
+         * board redrew, and this returned the geometry it had already worked
+         * out for the un-panned window, so the whole control did nothing at
+         * all while every other sign of it (the way-back chip appearing, the
+         * arrows dimming at the limit) said it was working. Rounded rather
+         * than truncated because the value is fractional through the travel:
+         * the key has to change on every frame of it or the walk arrives in
+         * one jump at the end. */
+        chart.props.predict ? Math.round(chart.boardPanRows() * 1000) : 0,
         chart.props.grid,
         // the step and the window are remembered per range, so the answer is
         // a different one on a different range even for identical-looking data

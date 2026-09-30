@@ -243,4 +243,17 @@ const isLeadingCall = vm.runInContext("isLeadingCall", sandbox);
   assert.ok(!isLeadingCall(null, cols), "and nothing is not a leader");
 }
 
+// --- how sure the caller said they were survives the store ----------------
+{
+  r = load([
+    { ...call("sure", 2, 1, 43000, 43100, 0), confidence: "sure" },
+    { ...call("junk", 3, 1, 43200, 43300, 0), confidence: "certain" },
+    call("none", 4, 1, 43400, 43500, 0),
+  ]);
+  const by = Object.fromEntries([...r.open].map((c) => [c.id, c.confidence]));
+  assert.strictEqual(by.sure, "sure", "a confidence level is kept");
+  assert.strictEqual(by.junk, null, "…a word nobody offers is dropped, not the call");
+  assert.strictEqual(by.none, null, "…and none is null, not undefined");
+}
+
 console.log("ALL CALLS TESTS PASSED");

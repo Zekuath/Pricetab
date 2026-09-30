@@ -245,8 +245,10 @@ const json = (b) => ({
   await board.waitForSelector("svg path", { timeout: 15000 });
   await board.waitForTimeout(2500);
 
+  /* The board's lines, not the axes' — the price scale and the time axis
+     carry tick marks whose number follows the width (29 Sep 2026). */
   const meshCount = `[...window.__svg.querySelectorAll("line")]
-    .filter((e) => e.getAttribute("visibility") !== "hidden").length`;
+    .filter((e) => e.getAttribute("visibility") !== "hidden" && !e.closest("[data-axes]")).length`;
   await board.evaluate(`(() => {
     window.__svg = [...document.querySelectorAll("svg")]
       .map((e) => ({ e, r: e.getBoundingClientRect() }))

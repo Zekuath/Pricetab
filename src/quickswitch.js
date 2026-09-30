@@ -46,11 +46,24 @@ const quickSwitchMatches = (query, coinOptions, exclude, pool) => {
     if (dropped && dropped.has(sym)) continue;
     const s = score(sym);
     if (s < 0) continue;
-    results.push({ coin: sym, owned: owned.has(sym), score: s });
+    results.push({
+      coin: sym,
+      owned: owned.has(sym),
+      score: s,
+      chartable: SUGGESTED_COINS.includes(sym),
+    });
   }
   results.sort((a, b) => {
     if (a.owned !== b.owned) return a.owned ? -1 : 1;
     if (a.score !== b.score) return a.score - b.score;
+    /* **A coin with a chart before one without**, when nothing else separates
+     * them. The wide pool is the portfolio's — `HOLDABLE_COINS`, which carries
+     * the tokens and the price-only tier this app can price and cannot draw —
+     * and the tiebreak below it is alphabetical, so the day Ethereum Classic
+     * became holdable, typing "ET" started offering it above Ethereum. Nothing
+     * is hidden: the narrower one simply goes first, and the row that cannot
+     * be drawn says so. */
+    if (a.chartable !== b.chartable) return a.chartable ? -1 : 1;
     return a.coin.localeCompare(b.coin);
   });
   return results.slice(0, QUICK_SWITCH_MAX_RESULTS);

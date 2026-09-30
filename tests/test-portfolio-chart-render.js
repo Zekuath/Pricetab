@@ -104,8 +104,11 @@ const CHART_PATH = `(() => {
  * ancestors too, because `textContent` bubbles: a parent whose opacity is
  * untouched then reports the readout as visible after it was hidden, which
  * reads as "Escape did not clear it" when Escape worked perfectly. */
+/* The stage's readout, not the glance's: both carry "since …" now that the
+   glance reads on hover, and the glance comes first in the document. */
 const READOUT_TEXT = `(() => {
-  const node = [...document.querySelectorAll("div[style*='opacity']")].find((n) =>
+  const frame = document.querySelector("[data-pc-plot]");
+  const node = frame && [...frame.querySelectorAll("div[style*='opacity']")].find((n) =>
     /since/i.test(n.textContent || ""));
   if (!node) return "";
   return node.style.opacity === "0" ? "" : node.textContent.trim();
@@ -169,6 +172,9 @@ const READOUT_TEXT = `(() => {
   await page.waitForSelector("svg path", { timeout: 20000 });
 
   // --- open the portfolio, then bring the chart forward -------------------
+  /* Its tab rests in the screens' drawer on the right edge since 26 Sep
+     2026: the pull first, as a person does it. */
+  await page.click("[data-screen-tabs-handle]");
   await page.click("[data-tour='portfolio']");
 
   /* Wait for the value series, not a fixed delay: the stage only renders once
@@ -183,6 +189,36 @@ const READOUT_TEXT = `(() => {
     )
     .catch(() => {});
   await page.waitForTimeout(4000);
+
+  /* **The glance reads on hover, without opening the stage.** A real mouse,
+   * because a dispatched event skips the hit-testing that decides whether
+   * the frame gets it; and the short readout — date, value, the move since
+   * the range began — with no composition rows, which stay on the stage. */
+  {
+    const glance = await page.evaluate(`(() => {
+      const n = document.querySelector("[data-pc-glance]");
+      if (!n) return null;
+      const r = n.getBoundingClientRect();
+      return [r.left + r.width * 0.6, r.top + r.height * 0.5];
+    })()`);
+    if (glance) await page.mouse.move(glance[0], glance[1]);
+    await page.waitForTimeout(400);
+    const read = await page.evaluate(`(() => {
+      const frame = document.querySelector("[data-pc-glance]");
+      const box = frame && [...frame.querySelectorAll("div")].find((d) => getComputedStyle(d).position === "absolute" && d.getAttribute("aria-hidden") === "true");
+      if (!box) return null;
+      const lines = box.innerText.split("\\n").map((t) => t.trim()).filter(Boolean);
+      return { opacity: Number(getComputedStyle(box).opacity), lines, rows: box.querySelectorAll("[style*='background']").length };
+    })()`);
+    const okRead = read && read.opacity > 0.9 && read.lines.length >= 2
+      && /^[A-Z]{3} \d/i.test(read.lines[0]) && /\$[\d,]+\.\d\d/.test(read.lines[1]);
+    if (okRead) ok(`the glance reads a date and a value on hover (${read.lines.slice(0, 2).join(" · ")})`);
+    else fail("the glance reads a date and a value on hover", JSON.stringify(read));
+    if (read && !read.lines.some((t) => /^(BTC|ETH)\b.*%$/.test(t))) ok("…and keeps the composition rows for the stage");
+    else fail("…and keeps the composition rows for the stage", JSON.stringify(read && read.lines));
+    await page.mouse.move(5, 5);
+    await page.waitForTimeout(300);
+  }
 
   /* Clicked through the DOM rather than with the mouse: the wallpaper chart
    * sits over this control and intercepts pointer events, so a real click
@@ -210,7 +246,7 @@ const READOUT_TEXT = `(() => {
   }
 
   // --- 2. every mode draws, and none of them produces NaN ----------------
-  for (const label of ["By coin", "P/L", "Peak", "vs BTC", "What moved it", "Total"]) {
+  for (const label of ["By coin", "As held", "Mix", "P/L", "Peak", "vs BTC", "What moved it", "Total"]) {
     const hit = await page.evaluate(`(() => {
       const b = [...document.querySelectorAll("button")].find(
         (n) => n.textContent.trim() === ${JSON.stringify("")} + ${JSON.stringify(label)});
@@ -227,6 +263,52 @@ const READOUT_TEXT = `(() => {
       `[...document.querySelectorAll("svg *")].some((n) =>
         [...n.attributes].some((a) => /NaN|Infinity/.test(a.value)))`,
     );
+
+    /* **As held** (27 Sep 2026): the value of what was held on each day
+     * against what it had cost by then — a dashed step, drawn on the same
+     * scale, and the strip names the money in it. The fixture's two
+     * purchases (20,000 and 6,000) are both inside the range or before it,
+     * so by the end 26,000 had been paid in. */
+    if (label === "As held") {
+      const held = await page.evaluate(`(() => {
+        const step = document.querySelector("[data-pc-plot] [data-pc-paid]");
+        const cell = document.querySelector("[data-portfolio-strip-cell='paid']");
+        return {
+          step: step ? (step.getAttribute("d") || "").length : 0,
+          paid: cell ? cell.innerText.replace(/\\s+/g, " ") : null,
+          cost: Boolean(document.querySelector("[data-portfolio-strip-cell='cost']")),
+        };
+      })()`);
+      if (held.step > 20 && !bad) ok(`${label} draws what was paid in as a step beside the value, every attribute a number`);
+      else fail(`${label} draws the paid-in step`, JSON.stringify(held));
+      if (held.paid && /26,000\.00/.test(held.paid) && !held.cost) ok(`${label} names the money paid in (${held.paid}) and not a second, constant cost`);
+      else fail(`${label} names the money paid in`, JSON.stringify(held));
+      continue;
+    }
+
+    /* **Mix**: each coin's share of the total, stacked to 100% — the axis
+     * tops out at 100% and the legend prints each share once. */
+    if (label === "Mix") {
+      const mix = await page.evaluate(`(() => {
+        const svg = document.querySelector("[data-pc-plot] svg");
+        const labels = svg ? [...svg.querySelectorAll("text")].map((t) => t.textContent.trim()) : [];
+        // The legend is the plot frame's next sibling in the chart's wrapper
+        const legend = document.querySelector("[data-pc-plot]") && document.querySelector("[data-pc-plot]").nextElementSibling;
+        const items = legend ? [...legend.children] : [];
+        return {
+          top: labels.includes("100%"),
+          items: items.length,
+          // one percentage per coin: the share, said once
+          percents: items.map((n) => (n.innerText.match(/%/g) || []).length),
+          money: legend ? /\\$/.test(legend.innerText) : null,
+        };
+      })()`);
+      if (mix.top && !bad) ok(`${label} stacks the shares to 100%, every attribute a number`);
+      else fail(`${label} stacks the shares to 100%`, JSON.stringify(mix));
+      if (mix.items >= 2 && mix.percents.every((n) => n === 1) && mix.money === false) ok(`${label}'s legend prints each share once, and no money`);
+      else fail(`${label}'s legend prints each share once, and no money`, JSON.stringify(mix));
+      continue;
+    }
 
     if (label === "vs BTC") {
       /* Two lines, one scale. The benchmark is told apart by its dash rather
@@ -460,6 +542,79 @@ const READOUT_TEXT = `(() => {
     );
     if (lingering === 0) ok("no finished animation is left in the page's list");
     else fail("no finished animation is left in the page's list", `${lingering} lingering`);
+  }
+
+  /* --- the chart's own card ------------------------------------------------
+   *
+   * The stage was a chart floating on the page with its range switcher and
+   * its view chips scattered below it; it is a framed card now, the way the
+   * derivatives page frames its market, with the controls at its head and the
+   * figures the drawn range carries under them. What is asserted here is what
+   * that buys: the controls sit above the plot, and the strip reads the
+   * series the plot is drawing — which is the defect the strip shipped with,
+   * printing money figures with a percent sign in the percent modes. */
+  {
+    const card = await page.evaluate(`(() => {
+      const c = document.querySelector("[data-portfolio-chart-card]");
+      if (!c) return null;
+      /* The plot, not the Holdings button's icon: the biggest svg in the card. */
+      const plot = [...c.querySelectorAll("svg")].sort((a, b) => b.getBoundingClientRect().width - a.getBoundingClientRect().width)[0];
+      const chips = [...c.querySelectorAll("button")].filter((b) => /^(Total|By coin|P\\/L|1D|1W|1M|1Y|ALL)$/.test(b.textContent.trim()));
+      const strip = c.querySelector("[data-portfolio-strip]");
+      return {
+        mode: c.getAttribute("data-portfolio-chart-card"),
+        chips: chips.length,
+        above: chips.length ? Math.max(...chips.map((b) => b.getBoundingClientRect().bottom)) <= plot.getBoundingClientRect().top + 1 : false,
+        cells: strip ? [...strip.children].map((n) => n.innerText.replace(/\\n/g, " ")) : null,
+      };
+    })()`);
+    if (card && card.chips >= 8 && card.above) {
+      ok(`the chart is a card with its controls at its head (${card.chips} chips above the plot)`);
+    } else {
+      fail("the chart is a card with its controls at its head", JSON.stringify(card));
+    }
+    const money = card && card.cells && card.cells.every((t) => /\$/.test(t) && !/%/.test(t));
+    if (money) ok("…and the range strip is in money on the value chart");
+    else fail("…and the range strip is in money on the value chart", JSON.stringify(card && card.cells));
+  }
+
+  /* **The two percent modes speak percent everywhere.** `formatMoney` is a
+     percent formatter in Peak and vs BTC — right for the axis and the
+     headline, wrong for a band's value, which is money in every mode. Both
+     were wrong in opposite directions: the axis printed "$-7" for a
+     percentage and the legend printed "+63074.2%" for $63,074.23. */
+  {
+    const hit = await page.evaluate(`(() => {
+      const b = [...document.querySelectorAll("button")].find((n) => n.textContent.trim() === "Peak");
+      if (b) b.click();
+      return Boolean(b);
+    })()`);
+    await page.waitForTimeout(1200);
+    const units = await page.evaluate(`(() => {
+      const card = document.querySelector("[data-portfolio-chart-card]");
+      const svg = [...card.querySelectorAll("svg")].sort((a, b) => b.getBoundingClientRect().width - a.getBoundingClientRect().width)[0];
+      const axis = [...svg.querySelectorAll("text")].map((t) => t.textContent.trim())
+        .filter((t) => /[0-9]/.test(t) && !/^[A-Z][a-z]{2} /.test(t));
+      const legend = [...card.querySelectorAll("[data-portfolio-legend] span")].map((n) => n.textContent.trim())
+        .filter((t) => /[0-9]/.test(t) && /[.,]/.test(t));
+      const strip = [...card.querySelectorAll("[data-portfolio-strip] > *")].map((n) => n.innerText.replace(/\\n/g, " "));
+      return { axis: axis.slice(0, 6), legend: legend.slice(0, 4), strip };
+    })()`);
+    if (hit && units.axis.length && units.axis.every((t) => /%$/.test(t) && !/\$/.test(t))) {
+      ok("a percent mode's axis is in percent, with no currency sign");
+    } else {
+      fail("a percent mode's axis is in percent, with no currency sign", JSON.stringify(units.axis));
+    }
+    if (units.legend.length && units.legend.every((t) => /\$/.test(t) && !/%$/.test(t))) {
+      ok("…while a holding's value in the legend stays money");
+    } else {
+      fail("…while a holding's value in the legend stays money", JSON.stringify(units.legend));
+    }
+    if (units.strip.length && units.strip.every((t) => /%/.test(t) && !/\$/.test(t))) {
+      ok("…and the strip reads the series the plot draws");
+    } else {
+      fail("…and the strip reads the series the plot draws", JSON.stringify(units.strip));
+    }
   }
 
   // --- 5. nothing threw along the way ------------------------------------

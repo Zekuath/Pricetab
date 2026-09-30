@@ -18,8 +18,10 @@
  * Loads before `app.js` in `index.html`.
  */
 const newsHandlers = (app) => ({
-    /* Who wants the feed. Three consumers now — the scrolling row, the
-     * move-headlines line under the price, and the news panel — and the loader
+    /* Who wants the feed. Four consumers now — the scrolling row, the
+     * move-headlines line under the price, the news panel, and the derivatives
+     * workspace, whose left column lists what has been written about the
+     * market you are about to open on — and the loader
      * and the poller have to agree about it or one of them is always wrong.
      * That was not hypothetical: the poller once asked only about the row, so
      * a tab with headlines on and the ticker off made no news request at all
@@ -35,11 +37,27 @@ const newsHandlers = (app) => ({
       Boolean(
         app.state.newsTicker ||
           app.state.moveHeadlines ||
-          app.state.showNews,
+          app.state.showNews ||
+          /* The futures screen, by exactly the rule the news panel follows:
+             nothing is fetched until it is open, and opening it is a
+             deliberate act. Its headline strip is drawn from the same feed
+             and asks for nothing of its own, so this is the one line that
+             makes the strip fill rather than sit empty for anybody with the
+             ticker off. */
+          app.state.alertsView === "futures",
       ),
 
-    fetchNewsData: async () => {
+    /* `options`: `force` skips the cache (a source was just granted or
+       switched on); `poll` is the interval's and the returning tab's own ask,
+       which takes the cache only while it is younger than half the refresh.
+       The interval runs at the refresh itself, jittered a tenth either way,
+       so a poll that lands just under it found the cache "fresh", asked
+       nothing, and the next real fetch came a whole period later — up to
+       nineteen minutes between refreshes instead of ten. */
+    fetchNewsData: async (options) => {
       if (!app.newsWanted()) return;
+      const force = Boolean(options && options.force === true);
+      const poll = Boolean(options && options.poll === true);
       /* A fetch already running does not mean this one has nothing to do.
        *
        * `refreshNewsSources` is called the moment a permission is granted, and
@@ -51,7 +69,11 @@ const newsHandlers = (app) => ({
        * is remembered and re-run when the current one lands, rather than
        * dropped. */
       if (app._newsFetching) {
-        app._newsAgain = true;
+        /* …and a forced ask stays forced. The fetch in flight writes a fresh
+           cache when it lands, so a re-run that consulted the cache found it
+           fresh and asked nothing: a newsroom granted during a fetch did not
+           appear until the next poll, the very case this re-run exists for. */
+        app._newsAgain = app._newsAgain === "force" || force ? "force" : true;
         return;
       }
 
@@ -61,10 +83,18 @@ const newsHandlers = (app) => ({
        * survives the check, fall through and fetch rather than render the
        * remains: an empty row from a corrupt cache would look like a dead
        * feature and would keep looking like one for the rest of the TTL. */
-      const cached = loadJsonSetting(NEWS_CACHE_KEY);
-      if (cached && Date.now() - cached.t < NEWS_REFRESH_MS) {
-        const items = sanitizeNewsItems(cached.items);
+      const cached = force ? null : loadJsonSetting(NEWS_CACHE_KEY);
+      const fresh = poll ? NEWS_REFRESH_MS / 2 : NEWS_REFRESH_MS;
+      if (cached && Date.now() - cached.t < fresh) {
+        /* The cache this tab already shows is not handed over again: every
+           open and close of the panel restarts the loader, and a freshly
+           sanitized copy of the same headlines is a new array — which
+           reopened the headline row's PureComponent subtree and recomputed
+           the panel for nothing. */
+        if (app._newsCacheT === cached.t && app.state.newsItems.length) return;
+        const items = sanitizeNewsItems(cached.items, NEWS_FEED_MAX);
         if (items.length) {
+          app._newsCacheT = cached.t;
           app.setState({ newsItems: items });
           return;
         }
@@ -84,7 +114,10 @@ const newsHandlers = (app) => ({
         const granted = await grantedNewsSources();
         app.setState({ newsGranted: granted });
         const sources = NEWS_SOURCES.filter(
-          (src) => !src.optional || granted.includes(src.id),
+          (src) =>
+            (!src.optional || granted.includes(src.id)) &&
+            // An opt-in source is not asked anything until it is switched on
+            (!src.optIn || (app.state.newsSources || {})[src.name] === true),
         );
         const results = await Promise.all(sources.map(fetchNewsSource));
 
@@ -113,11 +146,19 @@ const newsHandlers = (app) => ({
           .filter(Boolean)
           .reduce((all, list) => all.concat(list), [])
           .sort((a, b) => (b.time || 0) - (a.time || 0));
-        const items = mergeNewsItems(ranked);
+        const items = balanceNewsItems(mergeNewsItems(Infinity, ranked));
 
         if (items.length) {
+          const t = Date.now();
+          app._newsCacheT = t;
           app.setState({ newsItems: items });
-          saveJsonSetting(NEWS_CACHE_KEY, { t: Date.now(), items });
+          saveJsonSetting(NEWS_CACHE_KEY, { t, items });
+          /* …and kept. The line above replaces the cache wholesale every ten
+           * minutes, which is right for "the news right now" and is why this
+           * app used to throw away every headline it had ever shown. The
+           * archive answers the weeks the network archive has not reached —
+           * see `api.js`. */
+          archiveNewsItems(items);
         }
       } catch (error) {
         // Silently fail — the news row simply stays hidden
@@ -131,8 +172,9 @@ const newsHandlers = (app) => ({
          * cleared here, in `finally`, or the throw path leaves the same lie. */
         app.setState({ newsLoading: false });
         if (app._newsAgain) {
+          const again = app._newsAgain;
           app._newsAgain = false;
-          app.fetchNewsData();
+          app.fetchNewsData(again === "force" ? { force: true } : undefined);
         }
       }
     },
@@ -143,17 +185,40 @@ const newsHandlers = (app) => ({
      * The cache is cleared first, or the poll would serve the old answer. */
     refreshNewsSources: () => {
       saveJsonSetting(NEWS_CACHE_KEY, { t: 0, items: [] });
-      app.setState({ newsItems: [] }, app.fetchNewsData);
+      app._newsCacheT = 0;
+      app.setState({ newsItems: [] }, () => app.fetchNewsData({ force: true }));
+    },
+
+    /* After "Not now", the panel's quiet line leads to Settings →
+       Permissions. A method rather than an arrow written into the panel's
+       props: the panel is a PureComponent, and a new function on every render
+       of the app redrew all of it on every price tick. */
+    openNewsPermissions: () => {
+      app.setState({ showNews: false, showSettings: true, settingsTab: "permissions" });
     },
 
     handleNewsSourceToggle: (name) => {
-      app.setState((prev) => {
-        const next = { ...prev.newsSources };
-        if (next[name] === false) delete next[name];
-        else next[name] = false;
-        saveNewsPanelSources(next);
-        return { newsSources: next };
-      });
+      /* An opt-in source is off unless stored on, so both states are
+         written; switching one on asks it straight away rather than at the
+         next poll, which would make the chip look as if it did nothing. */
+      const src = NEWS_SOURCES.find((s) => s.name === name);
+      const optIn = Boolean(src && src.optIn);
+      let turnedOn = false;
+      app.setState(
+        (prev) => {
+          const next = { ...prev.newsSources };
+          if (optIn) {
+            turnedOn = next[name] !== true;
+            next[name] = turnedOn;
+          } else if (next[name] === false) delete next[name];
+          else next[name] = false;
+          saveNewsPanelSources(next);
+          return { newsSources: next };
+        },
+        () => {
+          if (turnedOn) app.refreshNewsSources();
+        },
+      );
     },
 
     handleNewsScopeChange: (value) => {
@@ -241,11 +306,32 @@ const newsHandlers = (app) => ({
     filteredNews: () => {
       const items = app.state.newsItems;
       const mode = app.state.newsFilter;
-      if (mode === "coins") return newsForCoins(items, app.state.coinOptions);
-      if (mode === "portfolio") {
-        return newsForCoins(items, (app.state.portfolio || []).map((h) => h.coin));
+      const coins = app.state.coinOptions;
+      const portfolio = app.state.portfolio;
+      const previous = app._filteredNews;
+      if (
+        previous &&
+        previous.items === items &&
+        previous.mode === mode &&
+        previous.coins === coins &&
+        previous.portfolio === portfolio
+      ) {
+        return previous.value;
       }
-      return items;
+      let value = items;
+      if (mode === "coins") value = newsForCoins(items, coins);
+      if (mode === "portfolio") {
+        value = newsForCoins(items, (portfolio || []).map((h) => h.coin));
+      }
+      /* The row draws each headline twice for its loop; the feed is kept
+         longer than that for the panel (NEWS_FEED_MAX), so the row takes
+         the newest of it. */
+      if (Array.isArray(value) && value.length > MAX_NEWS_ITEMS) value = value.slice(0, MAX_NEWS_ITEMS);
+      /* A filtered mode returns a new array. Without retaining it, every
+         unrelated root update handed the PureComponent ticker a different
+         prop and reopened the two-thousand-node subtree this cache protects. */
+      app._filteredNews = { items, mode, coins, portfolio, value };
+      return value;
     },
 
     handleNewsFilterChange: (value) => {
@@ -268,11 +354,16 @@ const newsHandlers = (app) => ({
         return;
       }
       app.fetchNewsData();
+      /* Jittered by a tenth either way. Every tab on every machine polling on
+         the same ten-minute beat from the same install time is how a public
+         feed sees a burst rather than a reader; a little spread costs nothing
+         and is the polite shape. */
+      const period = Math.round(NEWS_REFRESH_MS * (0.9 + Math.random() * 0.2));
       app.newsRefreshInterval = setInterval(() => {
         if (!document.hidden) {
-          app.fetchNewsData();
+          app.fetchNewsData({ poll: true });
         }
-      }, NEWS_REFRESH_MS);
+      }, period);
     },
 
     stopNewsTicker: () => {

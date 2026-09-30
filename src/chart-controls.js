@@ -97,6 +97,12 @@ const PeriodText = styled.span`
   z-index: 1;
 `;
 
+/* The chart-settings opener lived here for a few hours on 23 Sep 2026, as a
+ * chip at the end of these six. It was wrong twice over and the owner said so
+ * at once: beside ALL it reads as a seventh range, and a control that opens a
+ * panel belongs with the other controls that open panels — where it also
+ * inherits the quiet-chrome rule, which it was breaking (it rested at full
+ * opacity while its neighbours sat at 0.14). It is a corner control now. */
 class PeriodItem extends PureComponent {
   constructor(...args) {
     super(...args);

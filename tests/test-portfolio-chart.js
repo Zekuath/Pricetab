@@ -42,6 +42,12 @@ const sandbox = {
    * interpolated into a styled block by every file has to be stubbed
    * here too, or the file throws before a single assertion runs. */
   themedScrollbar: "",
+  touchTarget: "",
+  motionMs: (ms) => ms,
+  reducedMotion: () => false,
+  touchBox: "",
+  besideScreenSpine: "",
+  refusedField: "",
   withTheme: (c) => c,
   React: { createElement: (...args) => ({ args }), Fragment: Symbol("Fragment") },
   Component: class { constructor(p) { this.props = p; } setState() {} },

@@ -4,27 +4,33 @@
 
 This checklist is used to verify all requirements are met before submitting to Chrome Web Store.
 
+> **Working-tree audit, 28 Sep 2026:** `[x]` means repository inspection, a
+> direct probe or the full automated check proves the item; `[~]` means part
+> exists but the next release still needs work. Dashboard fields, a
+> clean-profile pass and submission stay unchecked because they cannot be
+> inferred from source.
+
 ---
 
 ## 1. Manifest Checks
 
 ### Basic Requirements
-- [ ] Using `manifest_version: 3`
-- [ ] `name` is 75 characters or less
-- [ ] `description` is 132 characters or less
-- [ ] `version` follows semantic versioning (x.y.z)
-- [ ] All icon sizes present (16, 48, 128)
+- [x] Using `manifest_version: 3`
+- [x] `name` is 75 characters or less (41)
+- [x] `description` is 132 characters or less (123)
+- [x] `version` follows semantic versioning (1.5.0)
+- [x] All icon sizes present and measured (16, 48, 128)
 
 ### Permissions
-- [ ] Only necessary permissions requested
-- [ ] Unused permissions removed
-- [ ] Host permissions minimized
-- [ ] Justification exists for broad permissions
+- [x] Only necessary permissions requested — none at install; notifications and eight newsroom origins are optional
+- [x] Unused permissions removed
+- [x] Host permissions minimized — no `host_permissions`; eight exact optional origins
+- [x] Each optional permission has a justification; no broad permission exists
 
 ### PriceTab Specific
-- [x] Zero permissions (localStorage doesn't require permission)
+- [x] Zero permissions at install (`localStorage` requires none)
 - [x] Using `chrome_url_overrides.newtab`
-- [x] All JS files local (vendor/)
+- [x] All scripts local (`src/` and `vendor/`)
 - [x] CSP compliant (no eval, no inline scripts)
 
 ---
@@ -32,45 +38,45 @@ This checklist is used to verify all requirements are met before submitting to C
 ## 2. Code Quality
 
 ### Manifest V3 Compliance
-- [ ] No external script tags
-- [ ] No eval() usage
-- [ ] No remote code execution
-- [ ] All logic within extension
+- [x] No external script tags
+- [x] No `eval()` or `new Function` usage
+- [x] No remote code execution
+- [x] All executable logic ships within the extension
 
 ### Readability
-- [ ] Code not obfuscated
-- [ ] Minification acceptable
-- [ ] Functionality discernible from code
+- [x] Product code is not obfuscated
+- [x] Only the named vendored libraries are minified
+- [x] Functionality is discernible from source
 
 ### Security
-- [ ] XSS protections in place
-- [ ] Input validation implemented
-- [ ] Sensitive data encrypted (if applicable)
-- [ ] Using HTTPS (API calls)
+- [x] XSS protections enforced — no `innerHTML`, `outerHTML` or `document.write`
+- [x] Stored data passes through tested validators and sanitizers
+- [x] No secret, credential or private key is stored; local portfolio data is not encrypted and the privacy policy says so
+- [x] Remote API calls use HTTPS
 
 ---
 
 ## 3. Store Listing
 
 ### Required Fields
-- [ ] Extension name (max 75 characters)
-- [ ] Short description (max 132 characters)
-- [ ] Detailed description
-- [ ] At least 1 screenshot
-- [ ] Icon (128x128)
+- [x] Extension name (max 75 characters)
+- [x] Short description (max 132 characters)
+- [~] Detailed description exists in 13 languages but predates the practice account and tax guide
+- [x] At least 1 screenshot — five 1280×800 images exist
+- [x] Icon (128×128)
 - [ ] Category selected
 - [ ] Language selected
 
 ### Optional Fields
-- [ ] Promotional images
+- [x] Promotional images — 440×280, 920×680 and 1400×560
 - [ ] Website URL
 - [ ] Support URL
 
 ### Content Quality
-- [ ] Description written in natural language
-- [ ] NO keyword spam
-- [ ] NO long coin/feature lists
-- [ ] NO misleading statements
+- [x] Description written in natural language
+- [x] No keyword spam
+- [x] No long coin or ticker lists
+- [ ] No misleading or missing claims — re-check after the release scope and copy are final
 - [ ] All links working
 - [ ] Screenshots up to date
 
@@ -79,12 +85,12 @@ This checklist is used to verify all requirements are met before submitting to C
 ## 4. Privacy
 
 ### Privacy Policy
-- [ ] Privacy policy URL exists
+- [x] Privacy policy URL exists and answered HTTP 200 on 28 Sep 2026
 - [ ] URL entered in designated field (NOT in description!)
-- [ ] Policy accessible and current
-- [ ] Data collection practices explained
-- [ ] Data usage purpose stated
-- [ ] Third-party sharing listed
+- [~] Policy is accessible, but the live page is still the 6 Aug copy; publish the current 28 Sep file
+- [x] Data collection practices explained
+- [x] Data usage purpose stated
+- [x] Third-party services and the absence of sharing are explained
 
 ### Data Collection Declaration (Dashboard)
 - [ ] "Does your extension collect user data?" answered correctly
@@ -95,21 +101,24 @@ This checklist is used to verify all requirements are met before submitting to C
 - [x] No user data collected
 - [x] No analytics
 - [x] No tracking
-- [x] Only localStorage used (preferences)
+- [x] App records stay in browser-local storage; there is no account or server
 
 ---
 
 ## 5. Single Purpose Policy
 
 ### Check Questions
-- [ ] Does extension have narrow focus or function?
+- [~] The single-purpose position is documented; final confirmation waits for the release scope
 - [ ] Are all features directly related to this purpose?
-- [ ] Does it modify browser behavior predictably?
-- [ ] Does it request only necessary permissions?
+- [x] It predictably replaces only the new-tab page and adds a toolbar popup
+- [x] It requests only the optional access described above
 
 ### PriceTab Specific
-- [x] Single purpose: "Displaying crypto price charts"
-- [x] All features serve this purpose
+- [x] Single purpose: reading the crypto market on the new tab page
+- [ ] Every feature in *this* build serves it, and the single-purpose
+      description names each one — re-check the calls board, the practice
+      account and the tax guide against `PRICETAB_COMPLIANCE.md` before each
+      submission
 - [x] No search functionality (Search API not required)
 - [x] No interference with user settings
 
@@ -118,9 +127,7 @@ This checklist is used to verify all requirements are met before submitting to C
 ## 6. New Tab Page Specific
 
 ### Search Requirements
-- [ ] Does web search functionality EXIST?
-  - [ ] YES: Is Chrome Search API being used?
-  - [ ] NO: Search requirements NOT APPLICABLE
+- [x] No web search functionality exists; Chrome Search API requirements are not applicable
 
 ### PriceTab Specific
 - [x] No web search functionality
@@ -133,19 +140,19 @@ This checklist is used to verify all requirements are met before submitting to C
 
 ### Functionality Tests
 - [ ] Extension loads via chrome://extensions
-- [ ] New tab opens correctly
-- [ ] Price data loads
-- [ ] Theme switching works
-- [ ] Settings panel opens/closes
-- [ ] Coin add/remove works
-- [ ] Period switching works
-- [ ] Currency switching works
+- [x] New-tab page renders in real Chromium with the network stubbed
+- [x] Price data loads in the API and render suites
+- [ ] Theme switching works in an installed-extension pass
+- [x] Settings panel opens/closes in the render suite
+- [x] Coin add/remove works in the render suite
+- [x] Period switching works in the chart and render suites
+- [ ] Currency switching works in an installed-extension pass
 
 ### Error States
-- [ ] Graceful fail in offline state
-- [ ] Graceful fail on API errors
-- [ ] Validation on invalid coin input
-- [ ] Retry on network timeouts
+- [ ] Graceful fail in an installed-extension offline pass
+- [ ] Graceful fail on live API errors
+- [x] Validation on invalid coin input
+- [x] Network failures follow the tested retry/failover rules
 
 ### Browser Compatibility
 - [ ] Tested in Chrome stable
@@ -192,9 +199,9 @@ This checklist is used to verify all requirements are met before submitting to C
 ## PriceTab Specific Notes
 
 ### Strengths (Easy Approval)
-- Zero permissions
+- Zero permissions at install
 - Full Manifest V3 compliance
-- All JS local
+- All scripts local
 - No search functionality
 - No user data collection
 

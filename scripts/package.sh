@@ -31,7 +31,7 @@ FILES=(
   manifest.json
   index.html
   privacy.html
-  rate.html
+  popup.html
   LICENSE
 )
 DIRS=(

@@ -52,95 +52,48 @@
  */
 /* THE BAND PALETTE — one ramp, ordered, biggest first.
  *
- * It was six saturated hues (blue, orange, green, amber, pink, green), and the
- * complaint that replaced them was exact: they were neither this app's colours
- * nor the coins' own. They were arbitrary labels pretending to be identities.
+ * It was six saturated hues, then a sequential green ramp; both were measured
+ * and both are in ref/portfolio.md. **It is grey since 27 Sep 2026**, asked
+ * for in as many words: *"portföyde yeşil ve tonlarını kullanmıştık bu
+ * coinlerin grafları için ve alt çizgileri için, bunları beyaz gri türevi bir
+ * şey kullanalım, tasarım dilimize uymuyor"*. The interface is monospaced ink
+ * on a plain ground with green and red kept for *direction*; a green ramp was
+ * the one object on the screen that used the direction colour for something
+ * that is not a direction, and every step had to be held ΔE 20 from the
+ * up-green so a large holding would not read as a gain. Grey has neither
+ * problem.
  *
- * What replaced them is a **sequential green ramp**, which says the thing that
- * is actually true of the order it is drawn in — so the strip can be read
- * without a legend. The interface is monospaced near-black on near-white with
- * green and red reserved for *direction*; six competing hues were the only
- * object breaking that.
+ * **A ramp in lightness alone**, which is also the one axis no colour-vision
+ * deficiency touches: the separation below is the same for everybody, by
+ * construction rather than by measurement. The deepest ink is the largest
+ * holding in both themes, fading toward the ground as the holdings get
+ * smaller — the direction the green ramp settled on, kept.
  *
- * **The largest holding is the greenest, and that direction is the point.**
- * The first version ran the other way on the dark theme — biggest was a pale
- * near-white mint and the slivers were vivid — because on black the brightest
- * step is the most prominent one. That is true of *luminance* and wrong about
- * what the eye reads here: a saturated green is stronger than a washed-out
- * pale, whatever their luminances say, and "the majority should be the green
- * one" is what anybody looking at a share bar expects. So index 0 is the
- * deepest, most saturated green in both themes and the ramp fades toward pale
- * as the holdings get smaller. Flipping it also **gained** separation rather
- * than costing any: worst-case adjacent ΔE went 12.7 → 13.1 (dark).
+ *   light  #242424 → #d6d6d6   L* 14.2 → 85.6   adjacent ΔL 10.8–12.5
+ *   dark   #575757 → #f2f2f2   L* 37.0 → 95.5   adjacent ΔL  9.5–10.1
  *
- * **Green, and the two hard parts of making it green.**
+ * Every light step clears 1.45:1 against white and every dark one 2.91:1
+ * against black — large filled areas, each labelled inside when it is wide
+ * enough and named in the list beside it. **"Other" is the faintest step**,
+ * as it was: the smallest, last, and already named in the list and legend.
  *
- * The first is that green is exactly the hue red-green deficiency compresses:
- * a flat brand-green ramp measured ΔE **6.9** (dark) / **7.5** (light) between
- * adjacent steps, the worst of everything tried. The way out is that
- * deficiency preserves the **blue–yellow** axis, so the ramp travels *within*
- * green — teal-green at the strong end to a yellow-green at the faint end
- * (hue 85→135 dark, 95→135 light — deep and saturated at the big end, pale at the small) — which is separation a red-green-deficient
- * eye can still see. That is what takes it from 6.9 to **10.9**.
- *
- * **And then the saturation was pulled back, deliberately.** At full chroma
- * this ramp separated best (worst ΔE 13.1) and read as a lime gradient — the
- * loudest object on a screen whose entire complaint about the six hues was
- * that they were loud. Measured: dropping peak chroma from 98 to **69** costs
- * 2.2 ΔE and nothing else. Below about chroma 58 the separation stops falling
- * at all (10.2), so there are two quieter notches available for free if this
- * still shouts: saturation 0.48→0.22 and 0.36→0.18.
- *
- * Reversing the hue journey — deep emerald at the big end instead of a deep
- * yellow-green — was tried for the same reason and is a worse trade: the best
- * emerald-first ramp measured 11.4 at chroma 73, so it buys less quiet for
- * more separation.
- *
- * The second is that **green already means "up" on this screen**, two inches
- * from the P/L figures. Every step is held at least ΔE 20 from the app's own
- * up-green (measured: 24.5 dark, 18.8 light), so a large holding cannot read
- * as a gain.
- *
- * **The trade against the old palette is stated, not hidden.** Adjacent-step
- * CIE ΔE, under normal vision and under simulated deuteranopia and protanopia:
- *
- *   | | normal | deuteranopia | protanopia |
- *   |---|---|---|---|
- *   | the old six hues | 73–75 | 43–46 | **22–24** |
- *   | a flat green ramp | 10.8–13.6 | 6.9–7.5 | 7.2–7.7 |
- *   | this ramp | 13.7 / 19.8 | 12.7 / 15.3 | 13.5 / 16.6 |
- *
- * Lower in absolute terms, and **the same for everybody** where the old set
- * lost two thirds of its separation to protanopia. What pays for the drop is
- * that a ramp is read as an order rather than as six labels, the strip writes
- * the coin's name inside every segment wide enough to hold one, and the
- * holdings list repeats the same ink on every row.
- *
- * Also constrained: every step clears 3.36:1 (dark) / 1.38:1 (light) against
- * its own ground — these are large filled areas, not text.
- *
- * **"Other" is the last step of the ramp, not a separate grey.** It used to be
- * `textSecondary`, which against a neutral ramp would be a seventh shade of
- * the same thing; as the faintest step it is exactly what it means — the
- * smallest, last, and already named in the list and the legend.
- *
- * `PORTFOLIO_BAND_INK` is the label colour **per step**, and it has to be: a
- * ramp crosses the point where white stops being legible and black starts, so
- * one fixed ink is unreadable at one end of it whichever end you choose. Every
- * entry clears 4.8:1 against its own band, which is why the label that used to
- * carry a drop shadow no longer needs one.
+ * `PORTFOLIO_BAND_INK` is the label colour **per step**, because a ramp
+ * crosses the point where white stops being legible and black starts. Every
+ * entry clears 4.8:1 against its own band (the lowest: 4.89 light, 5.02 dark).
  */
 const PORTFOLIO_BAND_COLORS = {
-  light: ["#1c310c", "#305e1c", "#40882f", "#4faf46", "#73bf75", "#a1cea7", "#cce1d1"],
-  dark: ["#496a1b", "#59922b", "#63b63f", "#78c369", "#98cf96", "#bfdec3", "#e5f0e8"],
+  light: ["#242424", "#3f3f3f", "#5c5c5c", "#7a7a7a", "#999999", "#b8b8b8", "#d6d6d6"],
+  dark: ["#575757", "#6f6f6f", "#878787", "#a0a0a0", "#bababa", "#d6d6d6", "#f2f2f2"],
 };
 const PORTFOLIO_BAND_INK = {
-  light: ["#ffffff", "#ffffff", "#000000", "#000000", "#000000", "#000000", "#000000"],
-  dark: ["#ffffff", "#000000", "#000000", "#000000", "#000000", "#000000", "#000000"],
+  light: ["#ffffff", "#ffffff", "#ffffff", "#000000", "#000000", "#000000", "#000000"],
+  dark: ["#ffffff", "#ffffff", "#000000", "#000000", "#000000", "#000000", "#000000"],
 };
 // The ramp's faintest step, which is what msg("po_other", "Other") is drawn in
 const bandPalette = (theme) =>
-  isLightTheme(theme) ? PORTFOLIO_BAND_COLORS.light : PORTFOLIO_BAND_COLORS.dark;
+  isLightTheme(theme)
+    ? PORTFOLIO_BAND_COLORS.light
+    : PORTFOLIO_BAND_COLORS.dark;
 const bandOtherIndex = (theme) => bandPalette(theme).length - 1;
 
 const PORTFOLIO_MAX_BANDS = 6;
@@ -209,9 +162,11 @@ const PcReadout = styled.div`
   pointer-events: none;
   opacity: 0;
   transition: opacity 0.12s ease;
-  min-width: 11rem;
-  max-width: 17rem;
-  padding: 0.55rem 0.7rem;
+  /* The glance's readout is three lines in a 15rem frame, so it is the
+     narrow, quiet one; the stage's carries the composition and gets room. */
+  min-width: ${({ compact }) => (compact ? "0" : "11rem")};
+  max-width: ${({ compact }) => (compact ? "14rem" : "17rem")};
+  padding: ${({ compact }) => (compact ? "0.4rem 0.55rem" : "0.55rem 0.7rem")};
   border-radius: 0.5rem;
   border: 1px solid ${({ theme }) => theme.color.border};
   background: ${({ theme }) => theme.color.bg};
@@ -361,6 +316,8 @@ class PortfolioChartBase extends Component {
     const uid = Math.random().toString(36).slice(2, 9);
     this.clipUpId = "pcUp_" + uid;
     this.clipDownId = "pcDown_" + uid;
+    this.clipPaidUpId = "pcPaidUp_" + uid;
+    this.clipPaidDownId = "pcPaidDown_" + uid;
     this.hintId = "pcHint_" + uid;
 
     this.frameRef = createRef();
@@ -465,7 +422,8 @@ class PortfolioChartBase extends Component {
     const from = this._drawnD;
     this._drawnD = next;
     if (!node || !next || !from || from === next) return;
-    if (typeof interpolatePath !== "function" || typeof select !== "function") return;
+    if (typeof interpolatePath !== "function" || typeof select !== "function")
+      return;
     /* Somebody who asked not to be moved is not shown a morph — they get the
      * new shape, which is the thing they came for. */
     if (prefersReducedMotion()) return;
@@ -473,7 +431,7 @@ class PortfolioChartBase extends Component {
       .interrupt()
       .attr("d", from)
       .transition()
-      .duration(PC_MORPH_MS)
+      .duration(motionMs(PC_MORPH_MS))
       .attrTween("d", () => interpolatePath(from, next))
       /* Land on the exact string React rendered rather than on the tween's
        * last frame, so the DOM and the virtual DOM agree once it is over. */
@@ -580,7 +538,8 @@ class PortfolioChartBase extends Component {
    */
   geometry() {
     const { series, costBasis, theme } = this.props;
-    const stacked = this.props.mode === "bycoin";
+    // "mix" is the same stack in shares — see mixParts in portfolio.js
+    const stacked = this.props.mode === "bycoin" || this.props.mode === "mix";
     const { w, h } = this.state;
     if (!Array.isArray(series) || series.length < 2) return null;
     if (!(w > 40) || !(h > 60)) return null;
@@ -604,12 +563,30 @@ class PortfolioChartBase extends Component {
      * does. So the benchmark's range is folded into the domain before it is
      * fixed, and both lines fit by construction rather than one being clipped
      * at the top. */
-    const compare = Array.isArray(this.props.compare) ? this.props.compare : null;
+    const compare = Array.isArray(this.props.compare)
+      ? this.props.compare
+      : null;
     if (compare && compare.length > 1) {
       const [cLo, cHi] = extent(compare, (d) => d.price);
       if (isFinite(cLo) && isFinite(cHi)) {
         dataLo = Math.min(dataLo, cLo);
         dataHi = Math.max(dataHi, cHi);
+      }
+    }
+    /* **What had been paid in, on the same scale** (the "as held" view): a
+       step line the value is read against, so it joins the domain like the
+       benchmark does rather than being clipped. Only when it is the same
+       length as the series — it is sampled on the same times or it means
+       nothing. */
+    const paid =
+      Array.isArray(this.props.paid) && this.props.paid.length === series.length
+        ? this.props.paid
+        : null;
+    if (paid) {
+      const [pLo, pHi] = extent(paid, (d) => d.price);
+      if (isFinite(pLo) && isFinite(pHi)) {
+        dataLo = Math.min(dataLo, pLo);
+        dataHi = Math.max(dataHi, pHi);
       }
     }
     const span = dataHi - dataLo || Math.abs(dataHi) * 0.02 || 1;
@@ -698,6 +675,7 @@ class PortfolioChartBase extends Component {
         compare && compare.length > 1
           ? compare.map((d) => ({ x: x(new Date(+d.time)), y: y(d.price) }))
           : null,
+      paidPoints: paid ? paid.map((d) => ({ x: x(new Date(+d.time)), y: y(d.price) })) : null,
       cost: reachable ? cost : null,
       costY: reachable ? y(cost) : null,
       top: PC_PAD.top,
@@ -718,6 +696,25 @@ class PortfolioChartBase extends Component {
     return points.map((p, i) => `${i ? "L" : "M"}${p.x},${p.y}`).join("");
   }
 
+  /* A step, not a slope: money paid in changes on the day of a purchase and
+     holds until the next — a line drawn between two purchase days would
+     claim money went in on every day between them. */
+  stepPath(points) {
+    return points
+      .map((p, i) => (i ? `L${p.x},${points[i - 1].y}L${p.x},${p.y}` : `M${p.x},${p.y}`))
+      .join("");
+  }
+
+  /* The same step walked backwards — the other half of the band between the
+     value and what was paid for it. */
+  stepPathBack(points) {
+    let out = "";
+    for (let i = points.length - 1; i >= 1; i--) {
+      out += `L${points[i].x},${points[i].y}L${points[i].x},${points[i - 1].y}`;
+    }
+    return `${out}L${points[0].x},${points[0].y}`;
+  }
+
   /* One stacked band as a closed polygon: along its own top, back along the
    * top of the band below it. Written out rather than fed through `d3.area`
    * because the cumulative sums are the part worth reading. */
@@ -731,10 +728,13 @@ class PortfolioChartBase extends Component {
   }
 
   handlePointerMove(e) {
-    /* The glance has no crosshair: the pointer is over it in order to click
-     * through to the stage, and a readout appearing under a cursor that is
-     * about to open something else is noise. */
-    if (this.props.compact) return;
+    /* **The glance reads too.** It used to refuse the pointer — the cursor
+     * was over it to click through to the stage — but a chart you cannot ask
+     * "what was it worth on Tuesday" without opening another screen is a
+     * picture. Asked for on 19 Sep 2026: "büyütmeden üzerinde gezinince
+     * tarih fiyat versin". The glance's readout is the short one (date,
+     * value, the move since the range began); the composition and the
+     * marked purchases stay on the stage, where there is room for them. */
     const box = this.frameRef.current;
     if (!box) return;
     // Moving the pointer hands control back to it; two inputs fighting over
@@ -770,7 +770,7 @@ class PortfolioChartBase extends Component {
     if (!series.length) return;
     const last = series.length - 1;
     const at = this.keyIndex >= 0 ? this.keyIndex : last;
-    let next = null;
+    let next;
 
     if (e.key === "ArrowRight") next = Math.min(last, at + 1);
     else if (e.key === "ArrowLeft") next = Math.max(0, at - 1);
@@ -890,11 +890,15 @@ class PortfolioChartBase extends Component {
 
     this.write(this.roDateRef, crosshairDate(series[i].time, period));
     this.write(this.roTotalRef, formatMoney(total, false));
+    /* In the shares view the roof is 100% at every point, so a change
+       "since" it began is always nothing; the readout keeps to the shares. */
     this.write(
       this.roDeltaRef,
-      `${formatMoney(delta, true)}${
-        pct != null ? ` (${pct >= 0 ? "+" : ""}${pct.toFixed(2)}%)` : ""
-      } since ${crosshairDate(series[0].time, period)}`,
+      this.props.mode === "mix"
+        ? ""
+        : `${formatMoney(delta, true)}${
+            pct != null ? ` (${pct >= 0 ? "+" : ""}${pct.toFixed(2)}%)` : ""
+          } since ${crosshairDate(series[0].time, period)}`,
     );
     if (this.roDeltaRef.current) {
       this.roDeltaRef.current.style.color =
@@ -908,14 +912,19 @@ class PortfolioChartBase extends Component {
     /* Against cost, which is the question the line alone cannot answer: a
      * portfolio that is up over the window can still be under water since you
      * bought, and those are different facts. */
-    const cost = this.props.costBasis;
+    const paidHere =
+      Array.isArray(this.props.paid) && this.props.paid[i] ? this.props.paid[i].price : null;
+    const cost = paidHere != null ? paidHere : this.props.costBasis;
     const costNode = this.roCostRef.current;
     if (costNode) {
       if (isFinite(cost) && cost > 0) {
         const over = total - cost;
-        costNode.textContent = `${formatMoney(Math.abs(over), false)} ${
-          over >= 0 ? "above" : "below"
-        } cost`;
+        /* In the "as held" view the level is what had been paid in by that
+           day, and the words say so. */
+        costNode.textContent =
+          paidHere != null
+            ? `${formatMoney(Math.abs(over), false)} ${over >= 0 ? "above" : "below"} ${msg("pc_paid_in_short", "paid in")} (${formatMoney(cost, false)})`
+            : `${formatMoney(Math.abs(over), false)} ${over >= 0 ? "above" : "below"} cost`;
         costNode.style.color =
           over >= 0 ? theme.color.chartLineGreen : theme.color.chartLineRed;
         costNode.style.display = "";
@@ -929,7 +938,7 @@ class PortfolioChartBase extends Component {
      * Shown in both modes, not only when the bands are painted: composition is
      * asked for just as often of the plain line, and the numbers exist either
      * way. `stacked` decides what is drawn, never what can be read. */
-    const bands = this._bands;
+    const bands = this.props.compact ? [] : this._bands;
     let shown = 0;
     for (let b = 0; b < this.roRows.length; b++) {
       const row = this.roRows[b];
@@ -944,8 +953,15 @@ class PortfolioChartBase extends Component {
       node.style.display = "";
       shown++;
       if (row.dot.current) row.dot.current.style.background = band.color;
-      this.write(row.name, band.other ? msg("po_other_count", "Other ($1)", band.count) : band.coin);
-      this.write(row.value, formatMoney(value, false));
+      this.write(
+        row.name,
+        band.other
+          ? msg("po_other_count", "Other ($1)", band.count)
+          : band.coin,
+      );
+      /* Money, whatever the axis is quoting: a band is a holding's value,
+         and in the percent modes `formatMoney` is a percent formatter. */
+      this.write(row.value, this.money(value, false));
       this.write(
         row.share,
         total > 0 ? `${((value / total) * 100).toFixed(0)}%` : "",
@@ -963,17 +979,18 @@ class PortfolioChartBase extends Component {
      * happened; only this says what. */
     const eventNode = this.roEventRef.current;
     if (eventNode) {
-      const near = this._clusters.find(
-        (c) => Math.abs(c.x - px) <= PC_EVENT_REACH,
-      );
+      const near = this.props.compact
+        ? null
+        : this._clusters.find((c) => Math.abs(c.x - px) <= PC_EVENT_REACH);
       if (near) {
         const lines = near.items.slice(0, 3).map((ev) => {
           const what = `${ev.kind === "buy" ? msg("pc_bought", "▲ Bought") : msg("pc_sold", "▼ Sold")} ${formatAmount(
             ev.amount,
           )} ${ev.coin}`;
-          return ev.cash > 0 ? `${what} · ${formatMoney(ev.cash, false)}` : what;
+          return ev.cash > 0 ? `${what} · ${this.money(ev.cash, false)}` : what;
         });
-        if (near.items.length > 3) lines.push(msg("pc_more", "+$1 more", near.items.length - 3));
+        if (near.items.length > 3)
+          lines.push(msg("pc_more", "+$1 more", near.items.length - 3));
         eventNode.textContent = lines.join("\n");
         eventNode.style.display = "";
       } else {
@@ -1005,6 +1022,16 @@ class PortfolioChartBase extends Component {
    * a reading, it is a rumour. Drawing the surface colour underneath as a 3px
    * stroke (paint-order puts it behind the glyph) keeps the same label legible
    * on the surface, on a band, and on the line, without a box around it. */
+  /* **What a holding is worth, in money.** The two percent modes hand the
+   * chart a percent formatter as `formatMoney` — right for the axis and the
+   * headline, wrong for a band's value, which is money in every mode. The
+   * screen passes `formatValue` for those; without one this is the same
+   * formatter as before. */
+  money(value, sign) {
+    const fn = this.props.formatValue || this.props.formatMoney;
+    return fn(value, sign);
+  }
+
   axisLabel(props, text) {
     const { theme } = this.props;
     return React.createElement(
@@ -1027,7 +1054,7 @@ class PortfolioChartBase extends Component {
   }
 
   renderGrid(geo) {
-    const { currency, period, theme } = this.props;
+    const { currency, period, theme, hidden, unit, formatMoney } = this.props;
     const symbol = getCurrencySymbol(currency);
     const out = [];
     geo.levels.forEach((v, k) => {
@@ -1043,21 +1070,36 @@ class PortfolioChartBase extends Component {
           stroke: theme.color.border,
           strokeWidth: 1,
         }),
-        /* In the gutter, right-aligned against the plot, on the gridline it
-         * belongs to. It used to be painted in full ink over the stacked
-         * bands because grey at 9px on saturated green is unreadable — that
-         * special case is gone with the reason for it: nothing is drawn over
-         * the data any more, so the axis can be as quiet here as anywhere. */
-        this.axisLabel(
-          {
-            key: `gt${k}`,
-            x: geo.left - 8,
-            y: ly + 3,
-            textAnchor: "end",
-          },
-          formatAxisPrice(v, geo.step, symbol),
-        ),
       );
+      /* In the gutter, right-aligned against the plot, on the gridline it
+       * belongs to. It used to be painted in full ink over the stacked
+       * bands because grey at 9px on saturated green is unreadable — that
+       * special case is gone with the reason for it: nothing is drawn over
+       * the data any more, so the axis can be as quiet here as anywhere.
+       *
+       * **The gridlines survive a hidden portfolio and the labels do not.**
+       * These numbers are the value of the thing the header has just masked,
+       * and a masked total above a labelled axis is not hidden, it is
+       * annotated. The lines themselves say nothing but where the steps are,
+       * which is the shape, and the shape was never the secret. */
+      if (!hidden) {
+        out.push(
+          this.axisLabel(
+            {
+              key: `gt${k}`,
+              x: geo.left - 8,
+              y: ly + 3,
+              textAnchor: "end",
+            },
+            /* **A percent scale has no currency sign.** Peak and vs BTC draw
+               a percentage, and the axis was still formatting it as money:
+               "$-7" for "7% below its own peak". `unit` says which. */
+            unit === "percent"
+              ? formatMoney(v, false)
+              : formatAxisPrice(v, geo.step, symbol),
+          ),
+        );
+      }
     });
     geo.columns.forEach((t, k) => {
       const cx = geo.x(t);
@@ -1168,6 +1210,31 @@ class PortfolioChartBase extends Component {
     const { theme } = this.props;
     const last = geo.points[geo.points.length - 1].x;
     const firstX = geo.points[0].x;
+    /* **Against what it had cost by then**: the band between the value and
+       the paid-in step, green where the value was above it and red where it
+       was below — the constant cost's wash, with a cost that moves when a
+       purchase or a sale does. */
+    if (geo.paidPoints) {
+      const band = `${d}${this.stepPathBack(geo.paidPoints)}Z`;
+      return [
+        React.createElement("path", {
+          key: "paid-up",
+          d: band,
+          fill: theme.color.chartLineGreen,
+          fillOpacity: 0.16,
+          clipPath: `url(#${this.clipPaidUpId})`,
+          "data-pc-paid-band": "up",
+        }),
+        React.createElement("path", {
+          key: "paid-down",
+          d: band,
+          fill: theme.color.chartLineRed,
+          fillOpacity: 0.16,
+          clipPath: `url(#${this.clipPaidDownId})`,
+          "data-pc-paid-band": "down",
+        }),
+      ];
+    }
     if (geo.costY == null) {
       return React.createElement("path", {
         d: `${d}L${last},${geo.bottom}L${firstX},${geo.bottom}Z`,
@@ -1242,7 +1309,11 @@ class PortfolioChartBase extends Component {
   renderReadout() {
     return React.createElement(
       PcReadout,
-      { innerRef: this.readoutRef, "aria-hidden": true },
+      {
+        innerRef: this.readoutRef,
+        "aria-hidden": true,
+        compact: this.props.compact,
+      },
       React.createElement(PcReadoutDate, { innerRef: this.roDateRef }),
       React.createElement(PcReadoutTotal, { innerRef: this.roTotalRef }),
       React.createElement(PcReadoutLine, { innerRef: this.roDeltaRef }),
@@ -1266,7 +1337,6 @@ class PortfolioChartBase extends Component {
   }
 
   renderLegend(bands) {
-    const { formatMoney } = this.props;
     if (bands.length < 2) return null;
     /* Not on the glance.
      *
@@ -1287,7 +1357,7 @@ class PortfolioChartBase extends Component {
     const total = bands.reduce((sum, b) => sum + last(b), 0);
     return React.createElement(
       PcLegend,
-      null,
+      { "data-portfolio-legend": String(bands.length) },
       ...bands.map((band, i) =>
         React.createElement(
           PcLegendItem,
@@ -1296,10 +1366,13 @@ class PortfolioChartBase extends Component {
           React.createElement(
             PcLegendName,
             null,
-            band.other ? msg("po_other_count", "Other ($1)", band.count) : band.coin,
+            band.other
+              ? msg("po_other_count", "Other ($1)", band.count)
+              : band.coin,
           ),
           total > 0 ? `${((last(band) / total) * 100).toFixed(0)}%` : "",
-          React.createElement("span", null, formatMoney(last(band), false)),
+          // In the shares view the band's value *is* its share: said once
+          this.props.mode === "mix" ? null : React.createElement("span", null, this.money(last(band), false)),
         ),
       ),
     );
@@ -1307,7 +1380,8 @@ class PortfolioChartBase extends Component {
 
   render() {
     const { theme } = this.props;
-    const stacked = this.props.mode === "bycoin";
+    // "mix" is the same stack in shares — see mixParts in portfolio.js
+    const stacked = this.props.mode === "bycoin" || this.props.mode === "mix";
     const geo = this.geometry();
     const bands = this.bands();
     this._geo = geo;
@@ -1391,6 +1465,26 @@ class PortfolioChartBase extends Component {
             role: "img",
             "aria-label": msg("pc_title", "Portfolio value over time"),
           },
+          geo.paidPoints &&
+            (() => {
+              const step = this.stepPath(geo.paidPoints);
+              const first = geo.paidPoints[0].x;
+              const lastX = geo.paidPoints[geo.paidPoints.length - 1].x;
+              return React.createElement(
+                "defs",
+                null,
+                React.createElement(
+                  "clipPath",
+                  { id: this.clipPaidUpId },
+                  React.createElement("path", { d: `${step}L${lastX},-10L${first},-10Z` }),
+                ),
+                React.createElement(
+                  "clipPath",
+                  { id: this.clipPaidDownId },
+                  React.createElement("path", { d: `${step}L${lastX},${this.state.h + 10}L${first},${this.state.h + 10}Z` }),
+                ),
+              );
+            })(),
           geo.costY != null &&
             React.createElement(
               "defs",
@@ -1450,13 +1544,43 @@ class PortfolioChartBase extends Component {
               opacity: 0.85,
               "aria-hidden": true,
             }),
+          geo.paidPoints &&
+            React.createElement(
+              Fragment,
+              null,
+              React.createElement("path", {
+                d: this.stepPath(geo.paidPoints),
+                fill: "none",
+                stroke: theme.color.textSecondary,
+                strokeWidth: 1.25,
+                strokeDasharray: "4 3",
+                opacity: 0.95,
+                "data-pc-paid": "1",
+              }),
+              this.axisLabel(
+                {
+                  x: geo.right - 4,
+                  y: geo.paidPoints[geo.paidPoints.length - 1].y - 5,
+                  textAnchor: "end",
+                },
+                msg(
+                  "pc_paid_in",
+                  "PAID IN $1",
+                  this.props.formatMoney(this.props.paid[this.props.paid.length - 1].price, false),
+                ),
+              ),
+            ),
           geo.costY != null &&
             React.createElement(
               Fragment,
               null,
               React.createElement("line", {
-                x1: 0,
-                x2: this.state.w,
+                /* From the plot's edge, not the frame's: drawn from 0 the
+                   dashes ran through the axis label in the left gutter
+                   ("$40K" struck through whenever the cost sat near a
+                   gridline). */
+                x1: geo.left,
+                x2: geo.right,
                 y1: geo.costY,
                 y2: geo.costY,
                 stroke: theme.color.textSecondary,
@@ -1483,7 +1607,11 @@ class PortfolioChartBase extends Component {
                 // The same line, named for the question each view is asking
                 this.props.mode === "pnl"
                   ? msg("pc_break_even", "BREAK EVEN")
-                  : msg("pc_cost", "COST $1", this.props.formatMoney(geo.cost, false)),
+                  : msg(
+                      "pc_cost",
+                      "COST $1",
+                      this.props.formatMoney(geo.cost, false),
+                    ),
               ),
             ),
           this.renderEvents(geo, clusters, surface),
