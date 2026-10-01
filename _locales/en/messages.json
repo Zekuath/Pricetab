@@ -12368,6 +12368,9 @@
       }
     }
   },
+  "view_zoomed_short": {
+    "message": "Zoomed"
+  },
   "wd_all_hidden": {
     "message": "Every widget is hidden."
   },

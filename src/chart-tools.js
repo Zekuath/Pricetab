@@ -398,8 +398,10 @@ const chartTools = (chart) => ({
     const { color } = chart.props.theme;
     const w = text.length * AXIS_CHAR + 8;
     const left = anchor === "end" ? x - w : x;
-    chart.toolRect(left, y - 11, w, 15, color.bg, color.border, 0.92, null, "words");
-    chart.toolText(left + 4, y, text, ink, "start");
+    const pill = chart.toolRect(left, y - 11, w, 15, color.bg, color.border, 0.92, null, "words");
+    const word = chart.toolText(left + 4, y, text, ink, "start");
+    // To the plot's one label lane (edgeMark, chart-axes.js)
+    if (chart._edgeTools) chart._edgeTools.push({ nodes: [pill, word], rank: 4 });
   },
 
   // One drawing, in `ink`, with a dash when it is only a preview
@@ -455,8 +457,10 @@ const chartTools = (chart) => ({
     const pools = chart._tools;
     const kinds = ["lines", "fillRects", "wordRects", "texts", "circles"];
     for (const k of kinds) pools[k].at = 0;
+    chart._edgeTools = [];
     const done = () => {
       for (const k of kinds) chart.hideRest(pools[k]);
+      chart.edgeMark("tools", chart._edgeTools);
     };
     const sc = chart.drawScale();
     if (!sc || !(chart.width > 0)) {

@@ -2832,6 +2832,11 @@ const AlertPosWhat = styled.button.attrs({ type: "button" })`
     border-color: ${({ theme }) => theme.color.borderHover};
   }
   ${touchTarget};
+  /* Its finger-sized box reaches the row of buttons under the alarm's head
+     (390px): above them, or the lower half presses "Chrome notification". */
+  @media (pointer: coarse) {
+    z-index: 1;
+  }
 `;
 
 /* **A card under the control, not a popover over it.** The rule the panel's

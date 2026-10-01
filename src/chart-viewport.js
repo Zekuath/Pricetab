@@ -313,6 +313,153 @@ const chartSummaryText = (points, opts) => {
   );
 };
 
+/* **The whole range, drawn small** — the navigator's line (30 Sep 2026, left
+ * from Phase 2). About one point for every one and a half pixels, in a box
+ * w × h, the first and last points always in. Pure. */
+const navSparkPath = (prices, w, h) => {
+  const list = (Array.isArray(prices) ? prices : []).filter((p) => p && Number(p.price) > 0);
+  if (list.length < 2 || !(w > 0) || !(h > 2)) return "";
+  const t0 = viewMs(list[0].time);
+  const t1 = viewMs(list[list.length - 1].time);
+  let lo = Infinity;
+  let hi = -Infinity;
+  for (const p of list) {
+    const v = Number(p.price);
+    if (v < lo) lo = v;
+    if (v > hi) hi = v;
+  }
+  const span = t1 - t0 || 1;
+  const range = hi - lo || 1;
+  const step = Math.max(1, Math.floor(list.length / (w * 1.5)));
+  const pts = [];
+  for (let i = 0; i < list.length; i += step) pts.push(list[i]);
+  if (pts[pts.length - 1] !== list[list.length - 1]) pts.push(list[list.length - 1]);
+  return pts
+    .map((p, i) => {
+      const x = ((viewMs(p.time) - t0) / span) * w;
+      const y = h - 1 - ((Number(p.price) - lo) / range) * (h - 2);
+      return `${i ? "L" : "M"}${x.toFixed(1)},${y.toFixed(1)}`;
+    })
+    .join("");
+};
+
+const NAV_W = 140;
+const NAV_H = 18;
+
+/* The navigator's strip: the range's line, and the window as a box on it. */
+const NavStrip = styled.svg`
+  display: block;
+  flex: 0 0 auto;
+  width: ${NAV_W}px;
+  height: ${NAV_H}px;
+  cursor: grab;
+  touch-action: none;
+  pointer-events: auto;
+  path {
+    fill: none;
+    stroke: ${({ theme }) => theme.color.textSecondary};
+    stroke-width: 1;
+    vector-effect: non-scaling-stroke;
+  }
+  rect {
+    fill: ${({ theme }) => theme.color.text};
+    fill-opacity: 0.12;
+    stroke: ${({ theme }) => theme.color.text};
+    stroke-opacity: 0.55;
+    stroke-width: 1;
+    vector-effect: non-scaling-stroke;
+  }
+  @media (max-width: 1023px) {
+    width: 92px;
+  }
+`;
+
+/* **Where the window is, and a way to move it** (30 Sep 2026, left from
+ * Phase 2). The range's own line drawn small with the window over it as a
+ * box: a drag walks the window — the chart follows frame by frame through
+ * ChartView's `show` and hears once, through `commit`, as a pan does —
+ * and a press beside the box brings the window there first. It is rendered
+ * by the app (app-view.js) and drives the chart through its ref, so it can
+ * sit outside the plot, at the range row's left end opposite the tools. */
+class ChartNavigator extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { drag: null };
+    this.stripRef = createRef();
+    this._drag = null;
+    this.onDown = (e) => {
+      if (e.button !== 0) return;
+      const svg = this.stripRef.current;
+      const view = this.props.viewRef && this.props.viewRef.current;
+      if (!svg || !view || !view.enabled()) return;
+      const b = view.bounds();
+      const v = view.current();
+      if (!b || !v) return;
+      const r = svg.getBoundingClientRect();
+      const at = b.lo + ((e.clientX - r.left) / r.width) * (b.hi - b.lo);
+      const inside = at >= v.t0 && at <= v.t1;
+      const from = inside ? v : panView(v, at - (v.t0 + v.t1) / 2, b.lo, b.hi) || v;
+      if (!inside) view.show(from);
+      this._drag = { x: e.clientX, w: r.width, from, last: from, b };
+      this.setState({ drag: from });
+      if (svg.setPointerCapture) svg.setPointerCapture(e.pointerId);
+      e.preventDefault();
+    };
+    this.onMove = (e) => {
+      const d = this._drag;
+      const view = this.props.viewRef && this.props.viewRef.current;
+      if (!d || !view) return;
+      const next = panView(d.from, ((e.clientX - d.x) / d.w) * (d.b.hi - d.b.lo), d.b.lo, d.b.hi);
+      if (!next) return;
+      d.last = next;
+      view.show(next);
+      this.setState({ drag: next });
+    };
+    this.onUp = () => {
+      const d = this._drag;
+      const view = this.props.viewRef && this.props.viewRef.current;
+      this._drag = null;
+      this.setState({ drag: null });
+      if (d && view) view.commit(d.last);
+    };
+  }
+
+  render() {
+    const { prices, view } = this.props;
+    const list = Array.isArray(prices) ? prices : [];
+    if (list.length < 2) return null;
+    const lo = viewMs(list[0].time);
+    const hi = viewMs(list[list.length - 1].time);
+    const w = this.state.drag || resolveView(view, lo, hi, 0);
+    if (!w || !(hi > lo)) return null;
+    const x0 = Math.max(0, ((w.t0 - lo) / (hi - lo)) * NAV_W);
+    const x1 = Math.min(NAV_W, ((w.t1 - lo) / (hi - lo)) * NAV_W);
+    return React.createElement(
+      NavStrip,
+      {
+        innerRef: this.stripRef,
+        viewBox: `0 0 ${NAV_W} ${NAV_H}`,
+        preserveAspectRatio: "none",
+        "aria-hidden": "true",
+        "data-chart-nav-strip": "1",
+        onPointerDown: this.onDown,
+        onPointerMove: this.onMove,
+        onPointerUp: this.onUp,
+        onPointerCancel: this.onUp,
+      },
+      React.createElement("path", { d: navSparkPath(list, NAV_W, NAV_H) }),
+      React.createElement("rect", {
+        "data-chart-nav-window": "1",
+        x: x0.toFixed(1),
+        y: 0.5,
+        width: Math.max(3, x1 - x0).toFixed(1),
+        height: NAV_H - 1,
+        rx: 2,
+      }),
+    );
+  }
+}
+
 /* ── The component ───────────────────────────────────────────────────────── */
 
 let viewSummarySeq = 0;

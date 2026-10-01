@@ -354,6 +354,8 @@ const chartStudies = (chart) => ({
     if (tag) el.setAttribute("data-study", tag);
     else el.removeAttribute("data-study");
     if (el.textContent !== text) el.textContent = text;
+    // To the plot's one label lane (edgeMark, chart-axes.js)
+    if (chart._edgeStudies) chart._edgeStudies.push({ nodes: [pill, el], rank: 1 });
     return el;
   },
 
@@ -404,8 +406,10 @@ const chartStudies = (chart) => ({
     const kinds = ["rects", "paths", "lines", "pills", "texts"];
     for (const k of kinds) pools[k].at = 0;
     chart._studyBoxes = [];
+    chart._edgeStudies = [];
     const done = () => {
       for (const k of kinds) chart.hideRest(pools[k]);
+      chart.edgeMark("studies", chart._edgeStudies);
     };
     const sc = chart.studiesOn() ? chart.plotScale() : null;
     if (!sc || !(chart.width > 0) || !(chart.height > 0)) {

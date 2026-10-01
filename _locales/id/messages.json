@@ -8395,6 +8395,9 @@
   "view_zoomed": {
     "message": "Diperbesar · $1"
   },
+  "view_zoomed_short": {
+    "message": "Diperbesar"
+  },
   "wd_all_hidden": {
     "message": "Semua widget disembunyikan."
   },

@@ -1499,9 +1499,12 @@ class LineBase extends PureComponent {
       this._tgtTags.at = 0;
       const list = Array.isArray(this.props.targets) ? this.props.targets : [];
       const color = this.props.theme.color;
+      // The tags go to the plot's one label lane (edgeMark, chart-axes.js)
+      const tags = [];
       if (!list.length || !this.height || !this.width) {
         this.hideRest(this._tgtLines);
         this.hideRest(this._tgtTags);
+        this.edgeMark("targets", []);
         return;
       }
       const right = this.width;
@@ -1523,6 +1526,7 @@ class LineBase extends PureComponent {
         tag.setAttribute("stroke-width", "3");
         tag.setAttribute("paint-order", "stroke");
         tag.textContent = text;
+        tags.push({ nodes: [tag], rank: 5 });
       };
 
       /* The left-hand end of the label lane, so a target tag and the
@@ -1594,6 +1598,7 @@ class LineBase extends PureComponent {
 
       this.hideRest(this._tgtLines);
       this.hideRest(this._tgtTags);
+      this.edgeMark("targets", tags);
     });
 
     _defineProperty(this, "updateMoveMarks", () => {
@@ -5190,6 +5195,7 @@ class LineBase extends PureComponent {
       );
       label.setAttribute("y", Math.max(10, last.price - 6));
       label.setAttribute("opacity", "1");
+      this.edgeMark("average", [{ nodes: [label], rank: 2 }]);
     });
 
     /* **US CPI releases, where they fall on the drawn range** (27 Sep 2026).
@@ -5775,9 +5781,11 @@ class LineBase extends PureComponent {
       if (!layer) return;
       this._ovlPaths.at = 0;
       this._ovlTags.at = 0;
+      const ovlLabels = [];
       const done = () => {
         this.hideRest(this._ovlPaths);
         this.hideRest(this._ovlTags);
+        this.edgeMark("overlay", ovlLabels);
       };
       /* A list of overlays since 27 Sep 2026 — any number at once, each
          `{ kind, lines }` from `indicatorOverlaySeries`. */
@@ -5870,6 +5878,7 @@ class LineBase extends PureComponent {
         tagEl.setAttribute("paint-order", "stroke");
         tagEl.setAttribute("data-overlay-label", lab.kind);
         tagEl.textContent = names[lab.kind] || "";
+        ovlLabels.push({ nodes: [tagEl], rank: 2 });
       }
       done();
     });
@@ -6401,6 +6410,7 @@ class LineBase extends PureComponent {
     }
     window.removeEventListener("resize", this.handleResize);
     if (this.hoverRaf) cancelAnimationFrame(this.hoverRaf);
+    if (this._edgeRaf) cancelAnimationFrame(this._edgeRaf);
     if (this.dragRaf) cancelAnimationFrame(this.dragRaf);
     if (this.callDragRaf) cancelAnimationFrame(this.callDragRaf);
     if (this.zoomRaf) cancelAnimationFrame(this.zoomRaf);

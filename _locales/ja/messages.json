@@ -8411,6 +8411,9 @@
   "view_zoomed": {
     "message": "拡大 · $1"
   },
+  "view_zoomed_short": {
+    "message": "拡大中"
+  },
   "wd_all_hidden": {
     "message": "すべてのウィジェットが非表示です。"
   },

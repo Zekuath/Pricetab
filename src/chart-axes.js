@@ -146,6 +146,85 @@ const placeLabels = (items, lo, hi, gap = 2) => {
 };
 
 const chartAxes = (chart) => ({
+  /* **The labels inside the plot, one lane** (30 Sep 2026, left from Phase
+   * 1). Targets, the drawings' pills, the overlays' names, the average's
+   * label and the studies' words each kept clear of their own kind and
+   * printed over each other's: three targets and a line near the price were
+   * one grey smear. Each layer hands over what it drew (`edgeMark`, a list
+   * per layer, replaced on every draw, so a label a layer stopped drawing
+   * leaves with it), and once a frame the labels that share a stretch of x
+   * are run through `placeLabels` — the most urgent nearest its own
+   * height. A label is moved by a transform, never by its own y, so the
+   * layer that drew it still owns where it wanted to be. Ranks: a target 5,
+   * a drawing 4, an overlay's name or the average 2, a study 1. */
+  edgeMark: (layer, items) => {
+    if (!chart._edgeSets) chart._edgeSets = {};
+    chart._edgeSets[layer] = Array.isArray(items) ? items : [];
+    if (!chart._edgeRaf) chart._edgeRaf = requestAnimationFrame(chart.layoutEdge);
+  },
+
+  layoutEdge: () => {
+    chart._edgeRaf = 0;
+    const svg = chart.svgRef && chart.svgRef.current;
+    if (!svg || !(chart.height > 0)) return;
+    const top = svg.getBoundingClientRect().top;
+    const items = [];
+    const sets = chart._edgeSets || {};
+    for (const layer of Object.keys(sets)) {
+      for (const it of sets[layer]) {
+        const nodes = (it.nodes || []).filter(
+          (n) => n && n.isConnected && n.getAttribute("visibility") !== "hidden" && n.getAttribute("opacity") !== "0",
+        );
+        let l = Infinity;
+        let r = -Infinity;
+        let t = Infinity;
+        let b = -Infinity;
+        for (const n of nodes) {
+          const bx = n.getBoundingClientRect();
+          if (!(bx.width > 0) || !(bx.height > 0)) continue;
+          const dy = n.__edgeDy || 0;
+          l = Math.min(l, bx.left);
+          r = Math.max(r, bx.right);
+          t = Math.min(t, bx.top - dy);
+          b = Math.max(b, bx.bottom - dy);
+        }
+        if (r > l) items.push({ nodes, l, r, y: (t + b) / 2 - top, h: b - t, rank: it.rank || 0 });
+      }
+    }
+    const moved = new Set();
+    items.sort((a, c) => a.l - c.l);
+    let group = [];
+    let reach = -Infinity;
+    const settle = () => {
+      if (group.length > 1) {
+        const at = placeLabels(group.map((it, i) => ({ id: i, y: it.y, h: it.h, priority: it.rank })), 0, chart.height, 2);
+        group.forEach((it, i) => {
+          const dy = at[i] == null ? 0 : at[i] - it.y;
+          if (Math.abs(dy) < 0.5) return;
+          for (const n of it.nodes) {
+            n.setAttribute("transform", `translate(0 ${dy.toFixed(1)})`);
+            n.__edgeDy = dy;
+            moved.add(n);
+          }
+        });
+      }
+      group = [];
+    };
+    for (const it of items) {
+      if (it.l > reach + 4) settle();
+      group.push(it);
+      reach = group.length === 1 ? it.r : Math.max(reach, it.r);
+    }
+    settle();
+    for (const n of chart._edgeMoved || []) {
+      if (!moved.has(n)) {
+        n.removeAttribute("transform");
+        n.__edgeDy = 0;
+      }
+    }
+    chart._edgeMoved = moved;
+  },
+
   /* Only on the main chart (the portfolio's background chart has none) and
      only where there is room for one. */
   axesOn: () => Boolean(chart.props.axes) && (chart.svgW || 0) >= AXIS_MIN_SVG_W,

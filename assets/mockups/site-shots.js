@@ -214,6 +214,50 @@ const SCENES = {
       await page.waitForTimeout(14000);
     },
   },
+  /* The chart's own tools (30 Sep 2026): zoomed into the day — the navigator
+   * at the range row's left end — with a level, a trend line and a note drawn
+   * on it, the price scale and the time axis round it. Anchored to the live
+   * price, so the drawings sit on the line whatever the market did. */
+  tools: {
+    store: (px) => {
+      const now = Date.now();
+      const p = px.BTC;
+      return {
+        crypto_chart_drawings: JSON.stringify({
+          BTC: [
+            { id: "d-1", kind: "hline", currency: "USD", a: { t: now - 3 * HOUR_MS, p: Math.round(p * 1.004) }, at: 1 },
+            { id: "d-2", kind: "trend", currency: "USD", a: { t: now - 7 * HOUR_MS, p: Math.round(p * 0.993) }, b: { t: now - HOUR_MS, p: Math.round(p * 0.999) }, at: 2 },
+            { id: "d-3", kind: "note", currency: "USD", a: { t: now - 5 * HOUR_MS, p: Math.round(p * 1.006) }, note: "Watching this level", at: 3 },
+          ],
+        }),
+      };
+    },
+    run: async (page) => {
+      await page.keyboard.press("2"); // 1D
+      await page.waitForTimeout(3000);
+      await page.mouse.move(W / 2, 40);
+      await page.keyboard.press("=");
+      await page.waitForTimeout(600);
+      await page.keyboard.press("=");
+      await page.waitForTimeout(3500); // the finer candles for the window
+      if (!(await page.$("[data-chart-nav-strip]"))) throw new Error("tools: no navigator — the chart did not zoom");
+    },
+  },
+  /* Counted studies (30 Sep 2026): volume by price, the usual range's cone,
+   * the regimes' shading and the levels where the price has turned, on a
+   * month, over a year of daily candles. */
+  studies: {
+    store: () => ({
+      crypto_chart_studies: JSON.stringify(["where", "profile", "regimes", "usualRange", "turnLevels"]),
+      crypto_chart_macro_events: "false",
+      crypto_chart_chart_type: "candles",
+    }),
+    run: async (page) => {
+      await page.keyboard.press("4"); // 1M
+      await page.waitForTimeout(14000); // years of daily candles, paged
+      await page.mouse.move(W / 2, 40);
+    },
+  },
   targets: {
     store: (px) => ({ crypto_chart_alerts: JSON.stringify(alertsFor(px)) }),
     run: async (page) => {

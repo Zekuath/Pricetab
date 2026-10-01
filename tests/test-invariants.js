@@ -426,8 +426,8 @@ check("no hardcoded API keys or tokens in src/", () =>
  * that came out of it — one canonical source — is only enforceable if
  * something checks the copies still agree.
  *
- * Conditional like the rest: the store docs are tracked, but this stays quiet
- * if a checkout does not have them. */
+ * The working store copy is deliberately local-only. These checks still run
+ * when that copy is present, while the manifest limit applies in every clone. */
 check("the store summary says the same thing everywhere", () => {
   const out = [];
   const manifestPath = path.join(ROOT, "manifest.json");
@@ -447,8 +447,8 @@ check("the store summary says the same thing everywhere", () => {
     out.push(`manifest description is ${summary.length} chars — the store cuts at 132`);
   }
   for (const doc of [
-    "docs/store/STORE_DESCRIPTION.md",
-    "docs/store/STORE_ASSETS.md",
+    "docs/internal/store/STORE_DESCRIPTION.md",
+    "docs/internal/store/STORE_ASSETS.md",
   ]) {
     const full = path.join(ROOT, doc);
     if (!fs.existsSync(full)) continue;
@@ -462,7 +462,7 @@ check("the store summary says the same thing everywhere", () => {
   /* And the thing that got it rejected in the first place: a run of tickers.
    * Checked on the detailed description, which is the block that is pasted
    * into the dashboard. */
-  const descPath = path.join(ROOT, "docs/store/STORE_DESCRIPTION.md");
+  const descPath = path.join(ROOT, "docs/internal/store/STORE_DESCRIPTION.md");
   if (fs.existsSync(descPath)) {
     const text = fs.readFileSync(descPath, "utf8");
     const at = text.indexOf("## Detailed Description");

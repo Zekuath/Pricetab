@@ -335,7 +335,7 @@ for (const f of ["i18n.js", "utils.js", "api.js", "widgets-data.js"]) {
   vm.runInContext(fs.readFileSync(path.join(__dirname, "..", "src", f), "utf8"), sandbox, { filename: f });
 }
 const run = (c) => vm.runInContext(c, sandbox);
-// vm-created objects need stringify comparison (see tests/README)
+// Objects created inside a vm have different prototypes; compare their JSON.
 const json = (c) => JSON.parse(JSON.stringify(run(c)));
 
 (async () => {
@@ -881,7 +881,7 @@ const json = (c) => JSON.parse(JSON.stringify(run(c)));
 
   // Unknown tokens and junk addresses never reach the network
   fetchCalls = [];
-  // Objects made inside the vm need stringify comparison (see tests/README)
+  // Objects created inside a vm have different prototypes; compare their JSON.
   assert.strictEqual(
     JSON.stringify(await run(`fetchErc20Balances("${ethAddr}", ["NOTATOKEN"])`)),
     "{}",

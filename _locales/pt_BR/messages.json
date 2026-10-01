@@ -8395,6 +8395,9 @@
   "view_zoomed": {
     "message": "Ampliado · $1"
   },
+  "view_zoomed_short": {
+    "message": "Ampliado"
+  },
   "wd_all_hidden": {
     "message": "Todos os widgets estão ocultos."
   },

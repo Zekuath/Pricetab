@@ -209,10 +209,22 @@ const AlertsOverlay = styled.div`
      can live in a short sheet because the chart above is half the point of
      flipping one. This holds a list, a form and the alarm row: at 70vh of a
      780px phone the list band came out 150px and the empty state was cut off
-     below its own icon. Six rem leaves the range switcher and the price
-     readout above it. */
+     below its own icon.
+
+     **From the chart's top edge down** (30 Sep 2026). It was 100vh less six
+     rem, which was meant to leave the price and the ranges above it and, at
+     390x844, put its top edge through the middle of "BTC PRICE" — the calls
+     sheet's through the range row. It starts where the chart does now
+     (--plot-top, measured as a drawer opens), the line the chart's own
+     drawer already starts at; on a short phone, where that would leave the
+     form too little room, it takes the whole height instead, so its edge
+     never crosses a line of text. */
   @media (max-width: 600px) {
-    max-height: calc(100vh - 6rem);
+    top: var(--plot-top, 0px);
+    max-height: none;
+  }
+  @media (max-width: 600px) and (max-height: 760px) {
+    top: 0;
   }
 `;
 
@@ -239,8 +251,12 @@ const AlertsCard = styled.div`
      that scrolls — was left a 30px slot with the targets in it (measured on
      an iPhone Pro Max in landscape: one row, unreachable). Below that height
      it scrolls as one surface, top to bottom, and the form is simply further
-     down rather than always on screen. */
-  @media (max-height: 520px) {
+     down rather than always on screen.
+
+     **A phone's bottom sheet does the same** (30 Sep 2026): at 360x780 the
+     form alone is taller than the sheet under the chart, and the list was
+     squeezed to a 30px band that showed nothing, not even "No targets yet". */
+  @media (max-height: 520px), (max-width: 600px) {
     overflow-y: auto;
     ${themedScrollbar};
   }
@@ -275,8 +291,8 @@ const AlertsBody = styled.div`
         : `${ALERTS_FADE}px 1.1rem calc(${ALERTS_FADE}px + 1px)`};
   }
 
-  /* The card is the scroller on a short screen (see AlertsCard). */
-  @media (max-height: 520px) {
+  /* The card is the scroller on a short screen or a phone (see AlertsCard). */
+  @media (max-height: 520px), (max-width: 600px) {
     flex: none;
     overflow: visible;
   }
@@ -1432,7 +1448,13 @@ const AlertInput = styled.input`
 // make something happen, and it read as another input before
 const AlertAdd = styled.button.attrs({ type: "button" })`
   flex: 0 0 auto;
+  min-height: 2.5rem;
   padding: 0 1.2rem;
+  /* Wrapped onto a line of its own (360px), it took its text's height,
+     15px, and the width of one word: it fills that line now. */
+  @media (max-width: ${({ theme }) => theme.breakpoint.down.xs}px) {
+    flex-grow: 1;
+  }
   font-family: ${({ theme }) => theme.font.primary};
   font-size: ${posType.body};
   font-weight: 600;

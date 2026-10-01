@@ -8395,6 +8395,9 @@
   "view_zoomed": {
     "message": "Увеличено · $1"
   },
+  "view_zoomed_short": {
+    "message": "Увеличено"
+  },
   "wd_all_hidden": {
     "message": "Все виджеты скрыты."
   },

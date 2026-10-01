@@ -15086,6 +15086,110 @@ const perpFromCoinbase = (handler) => async (r) => {
       await ctx.close();
     }
   }
+  /* §80 — the work Phases 1 and 2 left (30 Sep 2026, "ertelenen işlerle
+   * devam et"): the readout's head says the move since the first point
+   * where the pills already print the time; the window has a navigator at
+   * the range row's left end, dragged to move it; zooming out past the whole
+   * range moves to the next range, framed on the old one's span; and two
+   * fingers pinch. */
+  {
+    const NOW80 = Date.now();
+    const spans = { hour: 3600e3, day: 86400e3, week: 7 * 86400e3, month: 30 * 86400e3, year: 365 * 86400e3, all: 3650 * 86400e3 };
+    const mk = (span) => Array.from({ length: 300 }, (_, i) => { const t = NOW80 - span + (span * i) / 299; return { price: (43000 + Math.sin(t / 3e6) * 400 + i).toFixed(2), time: Math.floor(t / 1000) }; });
+    const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 }, hasTouch: true });
+    await ctx.route("**/*", (r) => {
+      const u = r.request().url();
+      if (u.startsWith("file://")) return r.continue();
+      if (u.includes("historic")) return r.fulfill(json({ data: { prices: mk(spans[(u.match(/period=(\w+)/) || [])[1]] || spans.day) } }));
+      if (u.includes("spot")) return r.fulfill(json({ data: { amount: "43300.00", currency: "USD" } }));
+      return r.fulfill(json(u.includes("candles") ? [] : { data: {} }));
+    });
+    await ctx.addInitScript(`localStorage.setItem("crypto_chart_onboarding_seen", "1"); localStorage.setItem("crypto_chart_page_ticker_enabled", "false");`);
+    const page = await ctx.newPage();
+    const errors = [];
+    page.on("pageerror", (e) => errors.push(e.message));
+    await page.goto(INDEX, { waitUntil: "load" });
+    await page.waitForSelector("[data-axes]", { timeout: 20000 });
+    await page.waitForTimeout(1500);
+    const box = await page.evaluate(`(() => { const r = document.querySelector("[data-axes]").ownerSVGElement.getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height }; })()`);
+    const win = () => page.evaluate(`(() => { const w = document.querySelector("[data-chart-viewport]").getAttribute("data-chart-window"); return w ? w.split("-").map(Number) : null; })()`);
+    const period = () => page.evaluate(`[...document.querySelectorAll("[data-tour='period'] button")].find((b) => b.querySelector("span") && Number(getComputedStyle(b.querySelector("span")).fontWeight) >= 500).textContent`);
+
+    // The readout's head
+    await page.mouse.move(box.x + box.w * 0.6, box.y + box.h * 0.5);
+    await page.waitForTimeout(250);
+    const head = await page.evaluate(`[...document.querySelectorAll("svg text")].map((t) => t.textContent).find((t) => / since /.test(t)) || ""`);
+    check(/^[+−-]?\d+\.\d\d% since /.test(head), "the readout's head is the move since the first point — the time is on the axis", JSON.stringify(head));
+
+    // Zoom out past the whole 1H: the next range, framed on an hour
+    for (let i = 0; i < 5; i++) { await page.mouse.wheel(0, 120); await page.waitForTimeout(30); }
+    await page.waitForTimeout(1500);
+    const past = { period: await period(), win: await win() };
+    /* The notches after the switch go on widening it inside 1D — the zoom
+       carries on from the hour just left, it does not restart. */
+    check(past.period === "1D" && past.win && past.win[1] - past.win[0] >= 3500e3 && past.win[1] - past.win[0] < 3 * 3600e3,
+      "wheeling out past the whole 1H opens 1D on a window about the hour just left", JSON.stringify(past));
+
+    // The navigator, at the range row's left end
+    const nav = await page.evaluate(`(() => { const s = document.querySelector("[data-chart-nav-strip]"); const r = document.querySelector("[data-chart-nav-window]"); const ranges = document.querySelector("[data-tour='period'] button").getBoundingClientRect(); if (!s || !r) return null; const a = s.getBoundingClientRect(), b = r.getBoundingClientRect(); return { left: a.right < ranges.left, level: a.top < ranges.bottom && a.bottom > ranges.top, x: b.x + b.width / 2, y: b.y + b.height / 2, sx: a.x, sw: a.width, chip: document.querySelector("[data-chart-view-chip]").innerText }; })()`);
+    check(nav && nav.left && nav.level && /^Zoomed/.test(nav.chip), "zoomed, the navigator sits at the range row's left end, level with the ranges", JSON.stringify(nav));
+    await page.mouse.move(nav.x, nav.y);
+    await page.mouse.down();
+    for (let i = 1; i <= 8; i++) await page.mouse.move(nav.x - i * 8, nav.y);
+    await page.mouse.up();
+    await page.waitForTimeout(800);
+    const moved = await win();
+    check(moved && moved[1] < past.win[1] - 3600e3 && Math.abs(moved[1] - moved[0] - (past.win[1] - past.win[0])) < 120e3,
+      "dragging the navigator's box walks the window back, the same width", JSON.stringify({ before: past.win, after: moved }));
+
+    // Two fingers
+    const cdp = await ctx.newCDPSession(page);
+    const touch = (type, pts) => cdp.send("Input.dispatchTouchEvent", { type, touchPoints: pts.map(([x, y], i) => ({ x, y, id: i + 1 })) });
+    const cx = box.x + box.w * 0.5, cy = box.y + box.h * 0.5;
+    const before = await win();
+    await touch("touchStart", [[cx - 150, cy]]);
+    await touch("touchStart", [[cx - 150, cy], [cx + 150, cy]]);
+    for (let i = 1; i <= 8; i++) { await touch("touchMove", [[cx - 150 + i * 12, cy], [cx + 150 - i * 12, cy]]); await page.waitForTimeout(16); }
+    await touch("touchEnd", []);
+    await page.waitForTimeout(800);
+    const pinched = await win();
+    check(before && pinched && (pinched[1] - pinched[0]) > (before[1] - before[0]) * 2,
+      "two fingers pinched together widen the window", JSON.stringify({ before, pinched }));
+    check(errors.length === 0, "nothing threw", errors.join(" | "));
+    await ctx.close();
+  }
+  /* §81 — the plot's labels share one lane (30 Sep 2026, left from Phase 1).
+   * Three targets a hair apart, a drawn line between them and the average's
+   * label were each kept clear of their own kind and printed over each
+   * other. With `edgeMark` / `layoutEdge` (chart-axes.js) no two labels in
+   * the plot overlap, and the most urgent — a target — stays nearest its
+   * own line. */
+  {
+    const last = Number(PRICES[PRICES.length - 1].price);
+    const alerts = [
+      { id: "l1", coin: "BTC", kind: "price", direction: "above", target: Math.round(last * 1.0003), currency: "USD", created: Date.now() },
+      { id: "l2", coin: "BTC", kind: "price", direction: "above", target: Math.round(last * 1.0006), currency: "USD", created: Date.now() },
+      { id: "l3", coin: "BTC", kind: "price", direction: "below", target: Math.round(last * 0.9997), currency: "USD", created: Date.now() },
+    ];
+    const drawings = { BTC: [{ id: "d-l", kind: "hline", currency: "USD", a: { t: Date.now() - 600000, p: Math.round(last * 1.00045) }, at: 1 }] };
+    const { ctx, page, errors } = await newCtx(browser, `localStorage.setItem("crypto_chart_onboarding_seen", "1"); localStorage.setItem("crypto_chart_average", "true"); localStorage.setItem("crypto_chart_alerts", ${JSON.stringify(JSON.stringify(alerts))}); localStorage.setItem("crypto_chart_drawings", ${JSON.stringify(JSON.stringify(drawings))});`);
+    await page.mouse.move(5, 5);
+    await page.waitForTimeout(500);
+    const lane = await page.evaluate(`(() => {
+      const svg = document.querySelector("[data-axes]").ownerSVGElement;
+      const shown = (n) => { for (let m = n; m && m !== svg; m = m.parentNode) { if (m.getAttribute && (m.getAttribute("visibility") === "hidden" || m.getAttribute("opacity") === "0")) return false; } return Number(getComputedStyle(n).opacity) > 0.05; };
+      const boxes = [...svg.querySelectorAll("text")].filter((t) => t.textContent.trim() && !t.closest("[data-axes]") && shown(t)).map((t) => ({ t: t.textContent.trim(), b: t.getBoundingClientRect() }));
+      const over = [];
+      for (let i = 0; i < boxes.length; i++) for (let j = i + 1; j < boxes.length; j++) {
+        const a = boxes[i].b, c = boxes[j].b;
+        if (Math.min(a.right, c.right) - Math.max(a.left, c.left) > 1 && Math.min(a.bottom, c.bottom) - Math.max(a.top, c.top) > 1) over.push(boxes[i].t + " × " + boxes[j].t);
+      }
+      return { targets: boxes.filter((x) => /^target/.test(x.t)).length, over };
+    })()`);
+    check(lane.targets === 3 && lane.over.length === 0, "three targets, a drawn line and the average's label share the plot's lane — none printed over another", JSON.stringify(lane));
+    check(errors.length === 0, "nothing threw", errors.join(" | "));
+    await ctx.close();
+  }
   await browser.close();
   if (failed) {
     console.error(`\n✘ ${failed} POLISH CHECK(S) FAILED`);

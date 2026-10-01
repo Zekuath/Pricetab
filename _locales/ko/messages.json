@@ -8411,6 +8411,9 @@
   "view_zoomed": {
     "message": "확대 · $1"
   },
+  "view_zoomed_short": {
+    "message": "확대됨"
+  },
   "wd_all_hidden": {
     "message": "모든 위젯이 숨겨져 있습니다."
   },

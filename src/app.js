@@ -6168,7 +6168,6 @@ class CryptoChart extends PureComponent {
                   { "data-chart-age": "1", role: "status" },
                   pricesAgeNote,
                 ),
-              !chartStale && hasChart && this.renderViewChip(),
             ),
           ),
           /* **The chart's tools, at the range row's right end** (30 Sep
@@ -6178,8 +6177,14 @@ class CryptoChart extends PureComponent {
              + is an svg, and the first svg in the document has to be the
              chart's — see the note on the openers below. */
           hasChart &&
-            this.chartToolsOn() &&
-            React.createElement(ChartToolsRail, null, this.renderToolStrip()),
+            (this.chartToolsOn() || this.chartViewNow()) &&
+            React.createElement(
+              ChartToolsRail,
+              null,
+              this.renderToolStrip(),
+              // The window's navigator, at the row's other end (app-view.js)
+              !chartStale && this.renderViewChip(),
+            ),
           /* **Last inside the shell, after the chart.** These carry icons,
              and an icon is a path inside an svg — so drawn before the chart
              the first such path in the document is a corner control's, and

@@ -528,6 +528,11 @@ const NewsChip = styled.button.attrs({ type: "button" })`
     opacity: 1;
   }
   ${touchTarget};
+
+  /* A finger's height on a phone, where these are the sources' only switches */
+  @media (max-width: 600px) {
+    min-height: 2rem;
+  }
 `;
 
 /* The age on a source that has stopped publishing. It carries the down colour

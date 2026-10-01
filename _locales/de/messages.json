@@ -8395,6 +8395,9 @@
   "view_zoomed": {
     "message": "Vergrößert · $1"
   },
+  "view_zoomed_short": {
+    "message": "Vergrößert"
+  },
   "wd_all_hidden": {
     "message": "Alle Widgets sind ausgeblendet."
   },

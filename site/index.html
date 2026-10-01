@@ -3,6 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#000000" />
+    <meta name="color-scheme" content="dark" />
     <title>PriceTab — Live Crypto Charts on Every New Tab</title>
     <meta
       name="description"
@@ -796,6 +798,17 @@
         .tab-corner { display: none; }
         .tab-ui { padding-top: 1.6rem; }
       }
+      /* Six buttons at 3.5rem each and their gaps are 25.5rem: past the
+         glass at 360px. On a phone they share the row instead. */
+      @media (max-width: 440px) {
+        .tab-ranges { gap: 0.25rem; padding: 1rem 0.75rem 2rem; }
+        .tab-ranges button {
+          flex: 1 1 0;
+          min-width: 0;
+          padding: 0;
+          letter-spacing: 0.06em;
+        }
+      }
 
       /* A soft ground under the words.
          The chart is taller now and its peaks run straight through the
@@ -824,7 +837,9 @@
         position: relative;
         z-index: 2;
         text-align: center;
-        padding: 0 0 10vh;
+        /* The sides are .wrap's gutter: written as one shorthand here, they
+           were zero, and on a phone the tagline ran to the glass. */
+        padding: 0 1.25rem 10vh;
         /* Leaves first, on its own stage, and is gone before the chart starts
            changing. A headline still dissolving underneath a section head
            reads as an overlap rather than a handover. */
@@ -1680,6 +1695,17 @@
         margin-right: 1.5rem;
         text-decoration: none;
       }
+      /* A finger needs more than a 14px line: on a touch screen each link
+         is a 44px row of its own width, wrapped as it fits. */
+      @media (pointer: coarse) {
+        footer .links { display: flex; flex-wrap: wrap; column-gap: 1.5rem; }
+        footer .links a {
+          display: inline-flex;
+          align-items: center;
+          min-height: 2.75rem;
+          margin-right: 0;
+        }
+      }
       .disclaimer {
         max-width: 44rem;
         margin: 0;
@@ -2169,7 +2195,7 @@
         <div class="grid">
           <div class="card">
             <div class="card-head"><h3>Live charts</h3><span class="card-num">01</span></div>
-            <p>Line or candlesticks over six ranges, a log axis, and an average that says what it covers. Hover for that point's open, high, low, close and volume. US inflation releases are marked where they fall.</p>
+            <p>Line or candlesticks over six ranges, with a price scale and a time axis. Scroll to zoom into any stretch — finer candles load as you go in — drag through time, or pinch on a touch screen. A log axis, an average that says what it covers, US inflation releases marked where they fall, and every point readable from the keyboard.</p>
             <div class="viz"><svg viewBox="0 0 200 46" preserveAspectRatio="none" aria-hidden="true">
               <defs><linearGradient id="vFill" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stop-color="#34d399" stop-opacity="0.3"/>
@@ -2180,7 +2206,29 @@
             </svg></div>
           </div>
           <div class="card">
-            <div class="card-head"><h3>Compare two coins</h3><span class="card-num">02</span></div>
+            <div class="card-head"><h3>Draw and measure</h3><span class="card-num">02</span></div>
+            <p>Lines, trend lines, rays, boxes and notes that stay with the coin at their price and time. A ruler that says the change, the time and how often a move that far happened in that long. A line can become a price target.</p>
+            <div class="viz"><svg viewBox="0 0 200 46" preserveAspectRatio="none" aria-hidden="true">
+              <path class="v-line" d="M0,34 L20,30 L40,36 L60,24 L80,28 L100,16 L120,22 L140,12 L160,18 L180,8 L200,12"/>
+              <line class="v-zero" x1="0" y1="14" x2="200" y2="14"/>
+              <line x1="10" y1="40" x2="190" y2="10" stroke="#ffffff" stroke-width="1" stroke-opacity="0.7"/>
+              <circle cx="10" cy="40" r="2.5" fill="none" stroke="#ffffff" stroke-width="1"/>
+              <circle cx="190" cy="10" r="2.5" fill="none" stroke="#ffffff" stroke-width="1"/>
+            </svg></div>
+          </div>
+          <div class="card">
+            <div class="card-head"><h3>Counted studies</h3><span class="card-num">03</span></div>
+            <p>Volume by price, where the price sits in each range, the usual range ahead as a cone, regimes and the levels where it has turned. Each was tested on years of history first, and each says what it counts — never what comes next.</p>
+            <div class="viz"><svg viewBox="0 0 200 46" preserveAspectRatio="none" aria-hidden="true">
+              <path class="v-line" d="M0,30 L25,26 L50,32 L75,20 L100,24 L120,18"/>
+              <path d="M120,18 L200,2 L200,40 Z" fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.3)" stroke-width="1" stroke-dasharray="2 2"/>
+              <rect x="0" y="10" width="46" height="4" fill="rgba(255,255,255,0.14)"/>
+              <rect x="0" y="16" width="70" height="4" fill="rgba(255,255,255,0.22)"/>
+              <rect x="0" y="22" width="34" height="4" fill="rgba(255,255,255,0.14)"/>
+            </svg></div>
+          </div>
+          <div class="card">
+            <div class="card-head"><h3>Compare two coins</h3><span class="card-num">04</span></div>
             <p>Both drawn as percent change from the same moment, on one shared axis — so where the lines cross is where the market put them, not where a second scale was placed.</p>
             <div class="viz"><svg viewBox="0 0 200 46" preserveAspectRatio="none" aria-hidden="true">
               <line class="v-zero" x1="0" y1="23" x2="200" y2="23"/>
@@ -2189,7 +2237,7 @@
             </svg></div>
           </div>
           <div class="card">
-            <div class="card-head"><h3>Chart companion</h3><span class="card-num">03</span></div>
+            <div class="card-head"><h3>Chart companion</h3><span class="card-num">05</span></div>
             <p>Head and shoulders, double tops and twelve common strategy setups, named where they appear — each beside what followed its past appearances on this coin. Counted, never scored.</p>
             <div class="viz"><svg viewBox="0 0 200 46" preserveAspectRatio="none" aria-hidden="true">
               <line class="v-zero" x1="52" y1="30" x2="186" y2="30"/>
@@ -2197,7 +2245,7 @@
             </svg></div>
           </div>
           <div class="card">
-            <div class="card-head"><h3>Call the next move</h3><span class="card-num">04</span></div>
+            <div class="card-head"><h3>Call the next move</h3><span class="card-num">06</span></div>
             <p>The right of the chart becomes a board of empty squares — real price bands at real moments ahead. Point at one, click twice, and it settles itself: called it, or missed. The score is local, worth nothing, and never leaves.</p>
             <div class="viz"><svg viewBox="0 0 200 46" preserveAspectRatio="none" aria-hidden="true">
               <path class="v-line" d="M0,36 L22,32 L44,37 L66,26 L88,30 L110,20 L124,24"/>
@@ -2208,17 +2256,17 @@
             </svg></div>
           </div>
           <div class="card">
-            <div class="card-head"><h3>Price targets</h3><span class="card-num">05</span></div>
+            <div class="card-head"><h3>Price targets</h3><span class="card-num">07</span></div>
             <p>"BTC rises above 80,000", or "BTC falls 5% in 1h, 4h or 24h". Reported next time you open a tab — even a move that happened and reverted overnight — and, only if you switch it on, as a Chrome notification.</p>
             <div class="viz"><div class="v-meter"><i></i><b></b><span>TARGET</span></div></div>
           </div>
           <div class="card">
-            <div class="card-head"><h3>Portfolio</h3><span class="card-num">06</span></div>
+            <div class="card-head"><h3>Portfolio</h3><span class="card-num">08</span></div>
             <p>Holdings by amount, or a public address read for its balance. Dated purchases, sales and income; cost basis by FIFO, LIFO or HIFO; the return month by month. Press <kbd>H</kbd> and the amounts are masked.</p>
             <div class="viz"><div class="v-bars"><i style="height:78%"></i><i style="height:54%"></i><i class="red" style="height:31%"></i><i style="height:66%"></i><i style="height:42%"></i><i style="height:88%"></i></div></div>
           </div>
           <div class="card">
-            <div class="card-head"><h3>Crypto tax guide</h3><span class="card-num">07</span></div>
+            <div class="card-head"><h3>Crypto tax guide</h3><span class="card-num">09</span></div>
             <p>The crypto tax rules of 244 countries and territories — what is taxed and what is not, the rates, the tax year — each read from the country's own tax authority or law, linked and dated. Where none was confirmed, it says so. Not tax advice.</p>
             <div class="viz"><svg class="v-cells" viewBox="0 0 200 46" preserveAspectRatio="none" aria-hidden="true">
               <rect class="on" x="0.0" y="0.0" width="13.4" height="11.5" rx="1.5"/>
@@ -2260,7 +2308,7 @@
             </svg></div>
           </div>
           <div class="card">
-            <div class="card-head"><h3>Practice derivatives</h3><span class="card-num">08</span></div>
+            <div class="card-head"><h3>Practice derivatives</h3><span class="card-num">10</span></div>
             <p>A perpetual-contract terminal priced from a real venue's public quotes: long or short up to 200x, stops, limit orders, funding and liquidation. Settled in Practice Units that cannot be bought or cashed out — no real money, ever.</p>
             <div class="viz"><svg class="v-candles" viewBox="0 0 200 46" preserveAspectRatio="none" aria-hidden="true">
               <line class="v-zero" x1="0" y1="37" x2="200" y2="37"/>
@@ -2277,17 +2325,17 @@
             </svg></div>
           </div>
           <div class="card">
-            <div class="card-head"><h3>News, dated</h3><span class="card-num">09</span></div>
-            <p>Thirteen sources, filtered to your coins or your holdings, read by day or by coverage, with advertising kept out and one story written up four times shown once. Eight newsrooms are optional, and only ever asked for from a button.</p>
+            <div class="card-head"><h3>News, dated</h3><span class="card-num">11</span></div>
+            <p>Fourteen sources, filtered to your coins or your holdings, read by day or by coverage, with advertising kept out and one story written up four times shown once. Eight newsrooms and an exchange's delisting notices are optional, and only ever asked for from a button.</p>
             <div class="viz"><div class="v-news"><i style="width:88%"></i><i class="up" style="width:66%"></i><i class="dn" style="width:76%"></i></div></div>
           </div>
           <div class="card">
-            <div class="card-head"><h3>Has this happened before?</h3><span class="card-num">10</span></div>
+            <div class="card-head"><h3>Has this happened before?</h3><span class="card-num">12</span></div>
             <p>What followed every past time this coin entered the state it is in now — with the count behind every figure, and no comparison at all below twelve episodes. What got built instead of buy and sell signals.</p>
             <div class="viz"><div class="v-rate"><span>This state</span><i style="width:58%"></i><span>Any day</span><i class="base" style="width:44%"></i></div></div>
           </div>
           <div class="card">
-            <div class="card-head"><h3>18 market widgets</h3><span class="card-num">11</span></div>
+            <div class="card-head"><h3>18 market widgets</h3><span class="card-num">13</span></div>
             <p>Fear &amp; Greed, market overview, halving, difficulty, fees, gas, RSI, funding, open interest, liquidations, long/short, alt season, regimes, watchlist, top movers and more. Every one optional, off until you want it.</p>
             <div class="viz"><svg viewBox="0 0 200 46" aria-hidden="true">
               <path d="M60,40 A40,40 0 0,1 140,40" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="5" stroke-linecap="round"/>
@@ -2297,8 +2345,8 @@
             </svg></div>
           </div>
           <div class="card">
-            <div class="card-head"><h3>Yours to arrange</h3><span class="card-num">12</span></div>
-            <p>81 coins, 37 currencies, 13 languages, dark / light / auto, four modes, four widget sizes, and a keyboard shortcut for everything. Press <kbd>?</kbd> to see them.</p>
+            <div class="card-head"><h3>Yours to arrange</h3><span class="card-num">14</span></div>
+            <p>81 coins, 37 currencies, 13 languages, dark / light / auto, blue and orange for colour-blind eyes, four modes, four widget sizes, and a keyboard shortcut for everything. Press <kbd>?</kbd> to see them.</p>
             <div class="viz"><div class="v-keys"><kbd>/</kbd><kbd>C</kbd><kbd>K</kbd><kbd>P</kbd><kbd>F</kbd><kbd>?</kbd></div></div>
           </div>
         </div>
@@ -2317,6 +2365,14 @@
           <figure>
             <img class="gallery-img" src="shots/calls.png" alt="The board, one day ahead: two squares called, each waiting for the price at its own moment" loading="lazy" width="1280" height="800" />
             <figcaption>The board: squares of real price and real time ahead. Click one twice to call it; it settles itself against the price at that moment.</figcaption>
+          </figure>
+          <figure>
+            <img class="gallery-img" src="shots/tools.png" alt="A day of Bitcoin zoomed in, with a drawn level, a trend line and a note, the price scale and the navigator" loading="lazy" width="1280" height="800" />
+            <figcaption>Zoomed into a day: a level, a trend line and a note drawn on it, and the whole range drawn small to show where you are.</figcaption>
+          </figure>
+          <figure>
+            <img class="gallery-img" src="shots/studies.png" alt="A month of Bitcoin candles with volume by price, the usual range as a cone, regimes and turn levels" loading="lazy" width="1280" height="800" />
+            <figcaption>Counted studies: where the volume traded, the range the price usually covers from here, and the levels it has turned at — each with its count.</figcaption>
           </figure>
           <figure>
             <img class="gallery-img" src="shots/compare.png" alt="Bitcoin and Ethereum drawn together as percent change over one month" loading="lazy" width="1280" height="800" />

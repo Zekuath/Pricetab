@@ -8411,6 +8411,9 @@
   "view_zoomed": {
     "message": "已放大 · $1"
   },
+  "view_zoomed_short": {
+    "message": "已放大"
+  },
   "wd_all_hidden": {
     "message": "所有小组件都已隐藏。"
   },

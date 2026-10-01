@@ -8372,6 +8372,9 @@
   "view_zoomed": {
     "message": "Yakınlaştırıldı · $1"
   },
+  "view_zoomed_short": {
+    "message": "Yakınlaştırıldı"
+  },
   "wd_all_hidden": {
     "message": "Tüm widget'lar gizli."
   },

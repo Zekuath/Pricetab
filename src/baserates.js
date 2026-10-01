@@ -29,7 +29,7 @@
  * count sits beside every figure at almost the same weight.
  *
  * There is also a compliance reason, which is not taste either.
- * `docs/store/policies/` bans gambling outright and the extension's declared
+ * Chrome Web Store policy bans gambling outright and the extension's declared
  * single purpose is *crypto price charts*. A buy point moves it to investment
  * advice; a count of what has happened does not.
  */

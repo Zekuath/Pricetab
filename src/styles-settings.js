@@ -1921,7 +1921,7 @@ const PresetButton = styled.button.attrs({ type: "button" })`
   font-family: ${({ theme }) => theme.font.primary};
   font-size: 0.66rem;
   font-weight: ${({ active, theme }) =>
-    active ? theme.fontWeight.medium : theme.fontWeight.normal};
+    active ? theme.fontWeight.medium : theme.fontWeight.regular};
   letter-spacing: 0.02em;
   cursor: pointer;
   transition:

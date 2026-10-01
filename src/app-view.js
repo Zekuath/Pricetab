@@ -181,7 +181,11 @@ const viewHandlers = (app) => ({
     return `${n.toFixed(Math.min(8, digits))} ${app.state.compareCoin || ""}`.trim();
   },
 
-  /* The chip over the chart: what the window is, and the way back. */
+  /* **The window, at the range row's left end** (30 Sep 2026): "Zoomed",
+     the navigator — the whole range small with the window on it, dragged to
+     move it — and the way back. It was a chip over the plot's top-left,
+     on the companion's index; the dates it printed are on the time axis,
+     and in its label for a reader. */
   renderViewChip: () => {
     const v = app.chartViewNow();
     if (!v || !app.chartViewEnabled()) return null;
@@ -190,14 +194,15 @@ const viewHandlers = (app) => ({
     const hi = viewMs(series[series.length - 1].time);
     const span = v.t1 - v.t0;
     const t1 = v.atNow ? hi : v.t1;
+    const said = msg("view_zoomed", "Zoomed · $1", viewWindowText(t1 - span, t1));
     return React.createElement(
-      ChartViewChip,
-      { "data-chart-view-chip": "1" },
+      ChartNavDock,
+      null,
       React.createElement(
-        "span",
-        null,
-        msg("view_zoomed", "Zoomed · $1", viewWindowText(t1 - span, t1)),
-      ),
+      ChartViewChip,
+      { "data-chart-view-chip": "1", role: "group", "aria-label": said, title: said },
+      React.createElement(ChartNavWord, null, msg("view_zoomed_short", "Zoomed")),
+      React.createElement(ChartNavigator, { prices: series, view: v, viewRef: app.viewRef }),
       React.createElement(
         ChartViewReset,
         {
@@ -205,6 +210,7 @@ const viewHandlers = (app) => ({
           title: msg("view_reset_title", "Show the whole range again (double-click the chart)"),
         },
         msg("view_reset", "Whole range"),
+      ),
       ),
     );
   },

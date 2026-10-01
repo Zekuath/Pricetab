@@ -194,11 +194,17 @@ const WidgetsSizeButton = styled.button.attrs({ type: "button" })`
   color: ${({ active, theme }) => (active ? theme.color.text : theme.color.textSecondary)};
   font-family: ${({ theme }) => theme.font.primary};
   font-size: 0.66rem;
-  font-weight: ${({ active, theme }) => (active ? theme.fontWeight.semibold : theme.fontWeight.normal)};
+  font-weight: ${({ active, theme }) => (active ? theme.fontWeight.semibold : theme.fontWeight.regular)};
   line-height: 1;
   cursor: pointer;
   transition: background 0.15s ease, color 0.15s ease;
   ${touchTarget};
+  /* Four 28px letters side by side: each one's finger box overlapped the
+     next, so a press off centre took the neighbour. Drawn wider on touch. */
+  @media (pointer: coarse) {
+    min-width: 2.25rem;
+    min-height: 2rem;
+  }
 
   /* Rounded at the ends by hand: an overflow: hidden on the group would
      clip the finger-sized box touchTarget draws round each letter. */

@@ -145,7 +145,7 @@ const makeSandbox = (store) => {
       .map((p) => Math.round(p.price));
   `, box);
   // Stringified: an array built inside the vm is not `deepStrictEqual` to one
-  // built out here, whatever it holds (see tests/README)
+  // built out here, whatever it holds.
   assert.strictEqual(
     JSON.stringify(zeroed), "[400,0]",
     "a range that reaches zero falls back to linear",

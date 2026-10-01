@@ -734,6 +734,40 @@ const ChartViewChip = styled.div`
   line-height: 1.4;
 `;
 
+/* The window's place at the range row's left end, level with the ranges —
+   the tools' dock mirrored (ChartToolsBox). On a phone the ranges fill the
+   row, so it sits over the plot's top-left, where the chip was. */
+const ChartNavDock = styled.div`
+  position: absolute;
+  bottom: ${({ theme }) => theme.spacing.large}rem;
+  left: ${({ theme }) => theme.spacing.medium - theme.spacing.large * 2}rem;
+  height: ${({ theme }) => theme.spacing.large * 1.5}rem;
+  display: flex;
+  align-items: center;
+
+  @media (max-width: ${({ theme }) => theme.breakpoint.down.md}px) {
+    left: 0;
+  }
+
+  @media (max-width: ${({ theme }) => theme.breakpoint.down.sm}px) {
+    bottom: auto;
+    top: 0.5rem;
+    height: auto;
+  }
+`;
+
+// "Zoomed": said on a wide screen, left to the label where room is short
+const ChartNavWord = styled.span`
+  @media (max-width: 1023px) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+`;
+
 const ChartViewReset = styled.button.attrs({ type: "button" })`
   ${touchTarget};
   pointer-events: auto;
@@ -1445,6 +1479,20 @@ const pullOut = css`
 `;
 
 const DrawerTabsHandle = styled.button.attrs({ type: "button" })`
+  /* 14px drawn at the window's edge; on a touch screen the press reaches
+     40px in and 8px above and below (30 Sep 2026, measured at 390px). The
+     shared touchBox is not used here: it centres a 36px box on the pull,
+     half of which is past the edge of the window. */
+  @media (pointer: coarse) {
+    &::after {
+      content: "";
+      position: absolute;
+      top: -8px;
+      bottom: -8px;
+      ${({ side }) => (side === "right" ? "right: 0;" : "left: 0;")}
+      width: 40px;
+    }
+  }
   position: fixed;
   ${({ side }) => (side === "right" ? "right: 0;" : "left: 0;")}
   ${chromeUnderTicker};
@@ -1527,7 +1575,6 @@ const DrawerTabsHandle = styled.button.attrs({ type: "button" })`
         : ""}
   }
 
-  ${touchBox};
 `;
 
 /* **An open screen's ×, in the screen's top-right corner** (26 Sep 2026,

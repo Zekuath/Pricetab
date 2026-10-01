@@ -59,7 +59,7 @@ for (const f of ["storage.js", "i18n.js", "config.js", "widgets-data.js", "utils
 }
 
 const run = (code) => vm.runInContext(code, sandbox);
-// vm-created objects need stringify comparison (see tests/README)
+// Objects created inside a vm have different prototypes; compare their JSON.
 const json = (code) => JSON.parse(JSON.stringify(run(code)));
 
 // --- theme ---
