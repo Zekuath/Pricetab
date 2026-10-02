@@ -107,8 +107,8 @@
   "al_calls": {
     "message": "Tahminler"
   },
-  "al_calls_info": {
-    "message": "Bir tahmin bir iddiadır: «bana ne zaman olduğunu söyle» değil, «nerede olacağını ben söylüyorum». Grafiğin sağındaki boş şeritte bir kareyi işaret ettiğinde bir fiyat bandı ve bir an belirlemiş olursun — bir tık taslak yapar, ikincisi kilitler. Bir dahaki sekmede kendi kendine, o andaki fiyata karşı sonuçlanır ve kutu grafikte kalıp haklı olup olmadığını söyler. O şeridin ne kadar uzandığına sen karar verirsin: «şimdi» çizgisini sola çekersen tahta büyür, sağa çekersen geçmiş."
+  "al_calls_info_b": {
+    "message": "Tahmin bir iddiadır: “bana ne zaman olduğunu söyle” değil, “nerede olacağını ben söylüyorum”. Grafiğin sağındaki boş şeritte bir kareyi gösterdiğinde bir fiyat bandı ve bir an adlandırırsın — bir tıklama taslak yapar, ikincisi kilitler. Bir sonraki sekmeyi açtığında o anki fiyata göre kendiliğinden sonuçlanır ve kutu grafikte kalıp haklı olup olmadığını söyler. Her kare olasılığını taşır: bu coin'in kendi mumlarından, şu anki hareketine göre ölçeklenmiş ve tahtaya girmeden önce yıllarca geçmiş karede ölçülmüş — bir olasılık, tavsiye değil. Başka fiyatlar için tahtayı yukarı ya da aşağı, daha çok tahta ya da geçmiş için sola ya da sağa sürükle."
   },
   "al_calls_learn_more": {
     "message": "How calls work"
@@ -136,6 +136,12 @@
       }
     }
   },
+  "al_calls_state_off": {
+    "message": "Kapalı"
+  },
+  "al_calls_state_on": {
+    "message": "Açık"
+  },
   "al_calls_step_1": {
     "message": "Turn calls on and go to the board."
   },
@@ -144,6 +150,18 @@
   },
   "al_calls_step_3": {
     "message": "Come back with K to track open and settled calls."
+  },
+  "al_calls_switch": {
+    "message": "Grafikte tahminler"
+  },
+  "al_calls_switch_title": {
+    "message": "Grafikte tahminler — tahminlerin ve skorun her iki durumda da saklanır (L)"
+  },
+  "al_cell_odds": {
+    "message": "olasılıklar"
+  },
+  "al_cell_odds_hint": {
+    "message": "Her kareye, sütunu bittiğinde fiyatın o karede olma olasılığını yazar — bu coin'in kendi mumlarından, şu anki hareketine göre ölçeklenmiş ve tahtaya girmeden önce yıllarca karede sınanmış"
   },
   "al_clear_settled": {
     "message": "sonuçlananları temizle"
@@ -175,8 +193,8 @@
   "al_direction": {
     "message": "Hedef yönü"
   },
-  "al_drag_hint": {
-    "message": "Tahtayı büyütmek ya da küçültmek için noktalı çizginin kendisini sürükle."
+  "al_drag_hint_b": {
+    "message": "Başka fiyatlara bakmak için tahtayı yukarı ya da aşağı, büyütüp küçültmek için yana sürükle."
   },
   "al_drops_below": {
     "message": "şunun altına düşer"
@@ -400,17 +418,6 @@
   "al_open_now_hint": {
     "message": "Open calls currently waiting to settle"
   },
-  "al_open_settled_fig": {
-    "message": "$1 open · $2 settled",
-    "placeholders": {
-      "arg1": {
-        "content": "$1"
-      },
-      "arg2": {
-        "content": "$2"
-      }
-    }
-  },
   "al_order_hint": {
     "message": "Switch between due-first and newest-first ordering for open calls"
   },
@@ -461,6 +468,9 @@
   },
   "al_rearm_hint": {
     "message": "Bu hedefi yeniden kur"
+  },
+  "al_record": {
+    "message": "Kayıt"
   },
   "al_record_kept": {
     "message": "Kaydın saklanır. Yalnızca bu cihazda yaşar ve hiçbir değeri yoktur"
@@ -528,9 +538,6 @@
   "al_still_settling": {
     "message": "hâlâ sonuçlanıyor"
   },
-  "al_stop_calls_hint": {
-    "message": "Tahminleri durdur. Tahminlerin ve puanın saklanır; L tuşu da grafikten aynısını yapar"
-  },
   "al_target_coin": {
     "message": "Hedef coin"
   },
@@ -575,9 +582,6 @@
   },
   "al_turn_calls_on": {
     "message": "Tahminleri aç"
-  },
-  "al_turn_off": {
-    "message": "kapat"
   },
   "al_view": {
     "message": "View"
@@ -770,9 +774,6 @@
   },
   "app_dismiss": {
     "message": "Kapat"
-  },
-  "app_dismiss_rating": {
-    "message": "Puan isteğini kapat"
   },
   "app_error": {
     "message": "Bir şeyler ters gitti."
@@ -1258,6 +1259,27 @@
   "br_across_one_episode": {
     "message": " 1 kez yaşandı. "
   },
+  "br_ah_move": {
+    "message": "sonraki $1 günde $3 seferin $2'inde olağandan fazla hareket etti; yarısı ederdi."
+  },
+  "br_ah_never": {
+    "message": "sayılacak daha eski bir örnek yok."
+  },
+  "br_ah_none": {
+    "message": "Bu ekrandaki hiçbir formasyon, kurulum ya da okuma son on gününde oluşmadı. Olağan durum bu."
+  },
+  "br_ah_note": {
+    "message": "Bunlar ardından ne geldiğinin sayımıdır, tahmin değildir ve toplanmazlar. Gösterilmeden önce dört coinde test edildi: okumaların ve kurulumların hiçbiri sonraki on günü herhangi on günden ayırt edemedi; benzer geçmiş sıradan bir günden iyi değildi; formasyonlardan yalnızca aşağı kırılan üçgen ayırt edildi — o da ölçülen hareketine üç seferde bir önce ulaştı."
+  },
+  "br_ah_pattern": {
+    "message": "$1 tarihinde kırıldı: ölçülen hareket $2, geçersizlik $3, ikisine de henüz ulaşılmadı."
+  },
+  "br_ah_title": {
+    "message": "Şu an geçerli olanlardan sonra ne geldi"
+  },
+  "br_ah_up": {
+    "message": "$1 gün sonra $3 seferin %$2'sinde yukarıda; herhangi $1 gün: %$4 yukarıda."
+  },
   "br_close": {
     "message": "Baz oranları kapat"
   },
@@ -1372,6 +1394,21 @@
   "br_rsi_label": {
     "message": "RSI 14 · günlük kapanış · 0–100"
   },
+  "br_sim_intro": {
+    "message": "Bu coinin geçmişinde son $2 günü, son $2 günle aynı şekli taşıyan $1 dönem — seviyesi ya da büyüklüğü değil, yolu — her biri ardından gelen $3 günle."
+  },
+  "br_sim_line": {
+    "message": "Son $2 güne en çok benzeyen $2 günlük $1 dönem, $4 gün sonra $1 seferin $3'ünde yukarıdaydı; ortadaki $5."
+  },
+  "br_sim_note": {
+    "message": "2021'den bu yana her gün BTC, ETH, SOL ve LTC üzerinde test edildi: en benzer dönemlerin ardından gelenler, sonraki on gün hakkında herhangi bir günün ardından gelenlerden fazlasını söylemedi; çoğunlukları yönü aşağı yukarı yarı yarıya bildi. Bu yüzden burada bir liste olarak duruyorlar, grafikte bir çizgi olarak değil."
+  },
+  "br_sim_section": {
+    "message": "Benzer geçmiş · günlük mumlar"
+  },
+  "br_sim_title": {
+    "message": "En benzer geçmiş"
+  },
   "br_that_is": {
     "message": "Yani $1."
   },
@@ -1393,6 +1430,18 @@
   "br_typically": {
     "message": "tipik olarak $1, zamanın %$2'sinde yükseldi"
   },
+  "br_wd_note": {
+    "message": "Ertesi günün ne sıklıkla daha yukarıda kapandığı, kapanışın haftanın gününe göre (UTC), $1 gün üzerinden; herhangi bir gün: %$2. Dört coinde test edildi; bu coinin hafta günleri birbirinden şanstan fazla ayrıştı — bir günün yönünde küçük bir fark, büyüklük değil, ve bu hafta hakkında hiçbir şey değil."
+  },
+  "br_wd_same": {
+    "message": "Bu coinde test edildi: hiçbir hafta gününün ertesi günü diğerlerinden farklı değildi."
+  },
+  "br_wd_section": {
+    "message": "Haftanın gününe göre ertesi gün"
+  },
+  "br_wd_untested": {
+    "message": "BTC, ETH, SOL ve LTC üzerinde test edildi: ertesi günün yönü yalnızca ETH ve LTC'de hafta gününe göre farklıydı. $1 test edilmedi."
+  },
   "ch_band": {
     "message": "Bant"
   },
@@ -1408,9 +1457,6 @@
   "ch_drag_now": {
     "message": "Ne kadar ileriyi tahmin edebileceğini değiştirmek için sürükle"
   },
-  "ch_drag_or_keys": {
-    "message": "Sürükleyerek ya da ok tuşlarıyla ne kadar ileriyi tahmin edebileceğini değiştir"
-  },
   "ch_gap": {
     "message": "Fark"
   },
@@ -1420,26 +1466,17 @@
   "ch_low": {
     "message": "Düşük"
   },
+  "ch_now_keys": {
+    "message": "Ne kadar ileriyi tahmin edebileceğini değiştirmek için sürükle ya da ← ve → kullan — ↑ ve ↓ tahtayı kaydırır"
+  },
   "ch_now_label": {
     "message": "Ne kadar ileriyi tahmin edebilirsin"
   },
   "ch_open": {
     "message": "Açılış"
   },
-  "ch_pan_down": {
-    "message": "Daha düşük fiyatlara bak"
-  },
-  "ch_pan_hint": {
-    "message": "Bas, ya da basılı tut, tahta o yöne yürüsün"
-  },
-  "ch_pan_hint_hold": {
-    "message": "Bas, ya da basılı tut, ekranın ne kadarının tahta olacağını değiştir"
-  },
   "ch_pan_home": {
     "message": "Tahtayı fiyata geri getir"
-  },
-  "ch_pan_left": {
-    "message": "Daha az tahta, daha çok geçmiş göster"
   },
   "ch_pan_off": {
     "message": "$1 uzakta · geri",
@@ -1448,12 +1485,6 @@
         "content": "$1"
       }
     }
-  },
-  "ch_pan_right": {
-    "message": "Daha ileride daha çok kare göster"
-  },
-  "ch_pan_up": {
-    "message": "Daha yüksek fiyatlara bak"
   },
   "ch_pts": {
     "message": "puan"
@@ -1470,6 +1501,14 @@
   "ch_volume": {
     "message": "Hacim"
   },
+  "ch_volume_at": {
+    "message": "Hacim · $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
   "ch_zoom_hint": {
     "message": " — grafiğin üzerinde kaydır ya da [ ve ]"
   },
@@ -1484,6 +1523,30 @@
   },
   "ch_zoom_out_label": {
     "message": "Tahtayı uzaklaştır — büyük bir hareketi tahmin edecek kadar geniş bir bant"
+  },
+  "chance_aria": {
+    "message": "Olasılıklar, bu coin'in kendi geçmişinden sayılmış"
+  },
+  "chance_head": {
+    "message": "Olasılıklar"
+  },
+  "chance_range_key": {
+    "message": "sonraki $1"
+  },
+  "chance_range_title": {
+    "message": "Bu aralığın kendi adımlarının $1 tekrarının $2 sonra bittiği yer: %90'ı bu iki fiyat arasında, $3'ü bugünkünün üstünde. Bir sayım, tahmin değil."
+  },
+  "chance_range_value": {
+    "message": "$1 – $2 · üstte $3"
+  },
+  "chance_regime_key": {
+    "message": "20g $1 · $2g"
+  },
+  "chance_regime_title": {
+    "message": "Markov sorusu, sayılmış: $2 durumuna geçmişteki $1 giriş ve 20 gün sonraki durum — yükseliş $3, yatay $4, düşüş $5. Herhangi bir günde: $6, $7, $8. Dört coin'de böyle hiçbir hücre herhangi bir günden 10 puan uzak değildi."
+  },
+  "chance_regime_value": {
+    "message": "20g sonra: yükseliş $1 · yatay $2 · düşüş $3"
   },
   "chart_avg_label": {
     "message": "ort. $1"
@@ -1594,8 +1657,13 @@
   "chrome_calls": {
     "message": "Tahminler"
   },
-  "chrome_compare_stop": {
-    "message": "$1 ile karşılaştırmayı durdur"
+  "chrome_compare_with": {
+    "message": "$1 ile karşılaştırılıyor — Compare'i aç",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
   },
   "chrome_futures": {
     "message": "Türev piyasası"
@@ -1654,6 +1722,9 @@
   "cmp_c_hit": {
     "message": "Boyun çizgisini $1 kırdı; ölçülen hareketi $2 tamamladı."
   },
+  "cmp_c_hit_s": {
+    "message": "$1 kırıldı; ölçülen hareketi $2 tamamladı."
+  },
   "cmp_c_levels": {
     "message": "Ölçülen hareket $1 · geçersizlik $2"
   },
@@ -1666,8 +1737,14 @@
   "cmp_c_neither": {
     "message": "Boyun çizgisini $1 kırdı; $2 gün içinde iki seviyeye de ulaşılmadı."
   },
+  "cmp_c_neither_s": {
+    "message": "$1 kırıldı; $2 gün içinde iki seviyeye de ulaşılmadı."
+  },
   "cmp_c_open": {
     "message": "Boyun çizgisini $1 $2 seviyesinde kırdı — iki seviyeye de henüz ulaşılmadı."
+  },
+  "cmp_c_open_s": {
+    "message": "$1 $2 seviyesinde kırıldı — iki seviyeye de henüz ulaşılmadı."
   },
   "cmp_c_pin": {
     "message": "Açık kalması için tıklayın"
@@ -1681,8 +1758,14 @@
   "cmp_c_stop": {
     "message": "Boyun çizgisini $1 kırdı; önce geçersizlik seviyesine ulaşıldı, $2."
   },
+  "cmp_c_stop_s": {
+    "message": "$1 kırıldı; önce geçersizlik seviyesine ulaşıldı, $2."
+  },
   "cmp_c_tested": {
     "message": "Bu uygulamanın verisiyle birlikte test edildiğinde, on iki kurulumun hiçbiri sıradan bir günden farklı çıkmadı."
+  },
+  "cmp_c_tested_r": {
+    "message": "Dört coinde birlikte test edildi ($1 test); $2 okumanın hiçbiri sıradan bir günden farklı çıkmadı."
   },
   "cmp_c_unpin": {
     "message": "Açık tutuluyor · kapatmak için grafiğe tıklayın"
@@ -1693,14 +1776,104 @@
   "cmp_c_when": {
     "message": "$1 · $2 fiyatında · o zamandan beri $3"
   },
+  "cmp_change": {
+    "message": "Değiştir"
+  },
+  "cmp_change_hint": {
+    "message": "$1 karşılaştırmasını $2 yerine başka bir coinle yap",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "cmp_corr_hint": {
+    "message": "İki coinin adımlarının ekrandaki $1 adım boyunca ne kadar birlikte hareket ettiği: 1 tam birlikte, 0 ilgisiz, −1 zıt. Bu pencerenin bir tarifi, tahmin değil.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "cmp_corr_label": {
+    "message": "adımların korelasyonu"
+  },
   "cmp_days_ago": {
     "message": "$1 gün önce"
   },
-  "cmp_gap": {
-    "message": "fark $1 puan"
+  "cmp_drawer_close": {
+    "message": "Karşılaştırmayı kapat"
+  },
+  "cmp_drawer_foot": {
+    "message": "Yazıp Enter'a basmak ilk eşleşmeyi seçer. Bu çekmece: "
+  },
+  "cmp_drawer_found": {
+    "message": "Bulunanlar"
+  },
+  "cmp_drawer_from_1d": {
+    "message": "1D'de açılır"
+  },
+  "cmp_drawer_market_aria": {
+    "message": "$1 karşılaştırma için sunulsun",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "cmp_drawer_markets": {
+    "message": "Piyasalar"
+  },
+  "cmp_drawer_markets_note": {
+    "message": "S&P 500 ve Nasdaq 100, SPY ve QQQ ETF'lerinin Kraken'deki token'larıdır; USD cinsinden günün her saati fiyatlanır: altı ayda fiyatları ETF'lerden %2,5 içinde, hareketleri bir puan içinde kaldı. Dakika dakika az işlem gördükleri için 1D ve üstünde çizilirler."
+  },
+  "cmp_drawer_more": {
+    "message": "Diğer coin'ler — herhangi birini bulmak için yaz"
+  },
+  "cmp_drawer_none": {
+    "message": "Eşleşen yok"
+  },
+  "cmp_drawer_now": {
+    "message": "$1 ile $2",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "cmp_drawer_on": {
+    "message": "Açık"
+  },
+  "cmp_drawer_search": {
+    "message": "$1 neyle karşılaştırılsın…",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "cmp_drawer_settings": {
+    "message": "Bu listedeki piyasalar"
+  },
+  "cmp_drawer_yours": {
+    "message": "Coin'lerin"
   },
   "cmp_gap_hint": {
     "message": "Karşılaştırılan coinin hareketi eksi bu coinin hareketi, yüzde puanı olarak"
+  },
+  "cmp_gap_label": {
+    "message": "$1 başından beri fark",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
   },
   "cmp_hint": {
     "message": "Okumak için bir işarete gelin · açık kalması için tıklayın"
@@ -1710,6 +1883,43 @@
   },
   "cmp_measured": {
     "message": "ölçülen hareket"
+  },
+  "cmp_mkt_from_1d": {
+    "message": "$1 1D ve üstünde çizilir — dakika dakika az işlem görür",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "cmp_mkt_gold": {
+    "message": "Altın"
+  },
+  "cmp_mkt_gold_what": {
+    "message": "PAXG — bir troy ons için token, Coinbase'de"
+  },
+  "cmp_mkt_ndx": {
+    "message": "Nasdaq 100"
+  },
+  "cmp_mkt_ndx_what": {
+    "message": "QQQx — QQQ ETF'inin Kraken'deki token'ı"
+  },
+  "cmp_mkt_spx": {
+    "message": "S&P 500"
+  },
+  "cmp_mkt_spx_what": {
+    "message": "SPYx — SPY ETF'inin Kraken'deki token'ı"
+  },
+  "cmp_mkt_usd": {
+    "message": "$1, USD cinsinden",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "cmp_pts": {
+    "message": "puan"
   },
   "cmp_ratio": {
     "message": "$2 cinsinden $1"
@@ -1735,11 +1945,11 @@
   "cmp_today": {
     "message": "bugün"
   },
-  "cmp_together": {
-    "message": "aynı yöne $2 adımın $1'i"
-  },
   "cmp_together_hint": {
     "message": "Bu grafikte iki coinin de hareket ettiği adımlar ve bunların kaçının aynı yöne gittiği. Olanın sayımı, tahmin değil."
+  },
+  "cmp_together_label": {
+    "message": "aynı yönde adım"
   },
   "cost_fee": {
     "message": "Her gerçekleşmede ücret"
@@ -1935,6 +2145,204 @@
   },
   "cpi_line_soon": {
     "message": "ABD TÜFE $1 · $2"
+  },
+  "cr_ath": {
+    "message": "Yeni bir tüm zamanların zirvesi"
+  },
+  "cr_ath_claim": {
+    "message": "devam eden bir güç olduğu söylenir"
+  },
+  "cr_ath_what": {
+    "message": "tüm geçmişin en yüksek kapanışı"
+  },
+  "cr_fib_down": {
+    "message": "%61,8 düzeltmesinde durdu"
+  },
+  "cr_fib_down_claim": {
+    "message": "tepkiyi durduracağı söylenir"
+  },
+  "cr_fib_down_what": {
+    "message": "%15 ya da daha fazla düşüşten sonra %61,8 düzeltmesine ulaştı ve %78,6'nın altında kapandı"
+  },
+  "cr_fib_up": {
+    "message": "%61,8 düzeltmesini tuttu"
+  },
+  "cr_fib_up_claim": {
+    "message": "tutup yeniden yukarı döneceği söylenir"
+  },
+  "cr_fib_up_what": {
+    "message": "%15 ya da daha fazla yükselişten sonra %61,8 düzeltmesine ulaştı ve %78,6'nın üstünde kapandı"
+  },
+  "cr_ichi_above": {
+    "message": "Bulutun üstünde"
+  },
+  "cr_ichi_above_claim": {
+    "message": "bir yükseliş trendi başlattığı söylenir"
+  },
+  "cr_ichi_above_what": {
+    "message": "Ichimoku bulutunun (9, 26, 52) üstünde kapandı"
+  },
+  "cr_ichi_below": {
+    "message": "Bulutun altında"
+  },
+  "cr_ichi_below_claim": {
+    "message": "bir düşüş trendi başlattığı söylenir"
+  },
+  "cr_ichi_below_what": {
+    "message": "Ichimoku bulutunun (9, 26, 52) altında kapandı"
+  },
+  "cr_inside": {
+    "message": "İç gün"
+  },
+  "cr_inside_claim": {
+    "message": "hangi yöne olursa olsun daha büyük bir hareketin öncüsü olduğu söylenir"
+  },
+  "cr_inside_what": {
+    "message": "günün yükseği de düşüğü de bir önceki günün içinde"
+  },
+  "cr_intro": {
+    "message": "Grafik araçlarının sırada ne olduğunu söylemek için grafikten okudukları — uyumsuzluklar, Ichimoku bulutu, stokastik, Fibonacci düzeltmeleri, haftalık pivotlar, yeni zirveler, seriler, Mayer çarpanı, sakin günler — her birinin ardından bu coinde on gün içinde ne geldiği, herhangi on günün yanında."
+  },
+  "cr_macd_bear": {
+    "message": "MACD uyumsuzluğu, aşağı"
+  },
+  "cr_macd_bear_claim": {
+    "message": "momentumun aşağı döndüğünü işaret ettiği söylenir"
+  },
+  "cr_macd_bear_what": {
+    "message": "MACD çizgisi daha düşük bir tepe yaparken daha yüksek bir tepe, sıfırın üstünde"
+  },
+  "cr_macd_bull": {
+    "message": "MACD uyumsuzluğu, yukarı"
+  },
+  "cr_macd_bull_claim": {
+    "message": "momentumun yukarı döndüğünü işaret ettiği söylenir"
+  },
+  "cr_macd_bull_what": {
+    "message": "MACD çizgisi daha yüksek bir dip yaparken daha düşük bir dip, sıfırın altında"
+  },
+  "cr_mayer_high": {
+    "message": "Mayer çarpanı 2,4'ün üstünde"
+  },
+  "cr_mayer_high_claim": {
+    "message": "aşırı ısındığı söylenir"
+  },
+  "cr_mayer_high_what": {
+    "message": "kapanış 200 günlük ortalamasının 2,4 katı ya da fazlası"
+  },
+  "cr_mayer_low": {
+    "message": "Mayer çarpanı 0,8'in altında"
+  },
+  "cr_mayer_low_claim": {
+    "message": "değerinin altında olduğu söylenir"
+  },
+  "cr_mayer_low_what": {
+    "message": "kapanış 200 günlük ortalamasının 0,8 katı ya da daha azı"
+  },
+  "cr_note": {
+    "message": "1 Ekim 2026'da BTC, ETH, SOL ve LTC üzerinde birlikte test edildi — 88 karşılaştırma, hiçbiri sayılmadan önce yazıya geçirildi — bunların hiçbiri sıradan bir günden ayırt edilemedi; en küçük düzeltilmiş q 0,63'tü. Bu yüzden burada hiçbiri daha iyi ya da daha kötü diye anılmaz."
+  },
+  "cr_nr7": {
+    "message": "Yedi günün en dar günü"
+  },
+  "cr_nr7_claim": {
+    "message": "hangi yöne olursa olsun daha büyük bir hareketin öncüsü olduğu söylenir"
+  },
+  "cr_nr7_what": {
+    "message": "günün aralığı son yedi günün en darı"
+  },
+  "cr_pivot_r1": {
+    "message": "Geçen haftanın R1'inin üstünde"
+  },
+  "cr_pivot_r1_claim": {
+    "message": "haftanın aralığından yukarı kırdığı söylenir"
+  },
+  "cr_pivot_r1_what": {
+    "message": "geçen haftanın klasik pivot R1'inin üstünde kapandı"
+  },
+  "cr_pivot_s1": {
+    "message": "Geçen haftanın S1'inin altında"
+  },
+  "cr_pivot_s1_claim": {
+    "message": "haftanın aralığından aşağı kırdığı söylenir"
+  },
+  "cr_pivot_s1_what": {
+    "message": "geçen haftanın klasik pivot S1'inin altında kapandı"
+  },
+  "cr_rsi_bear": {
+    "message": "RSI uyumsuzluğu, aşağı"
+  },
+  "cr_rsi_bear_claim": {
+    "message": "alımların tükendiği anlamına geldiği söylenir"
+  },
+  "cr_rsi_bear_what": {
+    "message": "RSI (14) daha düşük bir tepe yaparken daha yüksek bir tepe, 50'nin üstünde"
+  },
+  "cr_rsi_bull": {
+    "message": "RSI uyumsuzluğu, yukarı"
+  },
+  "cr_rsi_bull_claim": {
+    "message": "satışların tükendiği anlamına geldiği söylenir"
+  },
+  "cr_rsi_bull_what": {
+    "message": "RSI (14) daha yüksek bir dip yaparken daha düşük bir dip, 50'nin altında"
+  },
+  "cr_section": {
+    "message": "Okumalar · günlük mumlar"
+  },
+  "cr_stoch_down": {
+    "message": "Stokastik 80'in üstünden aşağı"
+  },
+  "cr_stoch_down_claim": {
+    "message": "aşırı alımdan aşağı döndüğü söylenir"
+  },
+  "cr_stoch_down_what": {
+    "message": "yavaş stokastik (14, 3, 3) iki çizgi de 80'in üstündeyken aşağı kesti"
+  },
+  "cr_stoch_up": {
+    "message": "Stokastik 20'nin altından yukarı"
+  },
+  "cr_stoch_up_claim": {
+    "message": "aşırı satımdan yukarı döndüğü söylenir"
+  },
+  "cr_stoch_up_what": {
+    "message": "yavaş stokastik (14, 3, 3) iki çizgi de 20'nin altındayken yukarı kesti"
+  },
+  "cr_streak_down": {
+    "message": "Beş düşük kapanış"
+  },
+  "cr_streak_down_claim": {
+    "message": "fazla gerildiği ve sekeceği söylenir"
+  },
+  "cr_streak_down_what": {
+    "message": "art arda beşinci kez bir öncekinin altında kapanış"
+  },
+  "cr_streak_up": {
+    "message": "Beş yüksek kapanış"
+  },
+  "cr_streak_up_claim": {
+    "message": "fazla gerildiği ve aşağı döneceği söylenir"
+  },
+  "cr_streak_up_what": {
+    "message": "art arda beşinci kez bir öncekinin üstünde kapanış"
+  },
+  "cr_tk_down": {
+    "message": "Tenkan, kijun'un altında"
+  },
+  "cr_tk_down_claim": {
+    "message": "momentumun aşağı döndüğünü işaret ettiği söylenir"
+  },
+  "cr_tk_down_what": {
+    "message": "Ichimoku'nun 9 günlük çizgisi 26 günlük çizgisinin altına kesti"
+  },
+  "cr_tk_up": {
+    "message": "Tenkan, kijun'un üstünde"
+  },
+  "cr_tk_up_claim": {
+    "message": "momentumun yukarı döndüğünü işaret ettiği söylenir"
+  },
+  "cr_tk_up_what": {
+    "message": "Ichimoku'nun 9 günlük çizgisi 26 günlük çizgisinin üstüne kesti"
   },
   "cs_close": {
     "message": "Grafik ayarlarını kapat"
@@ -2176,6 +2584,156 @@
   "mins_5": {
     "message": "5 dakika"
   },
+  "mo_band_title": {
+    "message": "$1 kapanışı için modelin dağılımının ortadaki %80'i — bir bant, bir yol değil",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "mo_insufficient": {
+    "message": "Geçmiş yetersiz: tamamlanmış saat çok az ya da yakın zamanda işlem boşluğu var"
+  },
+  "mo_invalid": {
+    "message": "Veri yok"
+  },
+  "mo_just_now": {
+    "message": "az önce"
+  },
+  "mo_local_empty": {
+    "message": "burada: kaydediliyor — henüz sonuçlanan saat yok"
+  },
+  "mo_local_line": {
+    "message": "burada: şimdiye dek $2 saatin $1'i bandın içinde",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "mo_median": {
+    "message": "medyan"
+  },
+  "mo_median_line": {
+    "message": "$1 · $2 kapanışı",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "mo_minutes_ago": {
+    "message": "$1 dk önce",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "mo_no_target": {
+    "message": "Kapanıştaki olasılığını görmek için USD cinsinden bir BTC fiyat hedefi kur"
+  },
+  "mo_origin_line": {
+    "message": "$1 kapanışından $2 · $3",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      }
+    }
+  },
+  "mo_stale": {
+    "message": "Eski: son tamamlanan saat iki saatten daha eski"
+  },
+  "mo_target_line": {
+    "message": "$1 üstünde kapanış: $2",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "mo_target_title": {
+    "message": "Bir kapanış olasılığı — $1 kapanışının hedefin üstünde olması, yolda ona dokunması değil. Testte $2–$3% verilen saatler $4% oranında seviyelerinin ötesinde kapandı",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      },
+      "arg4": {
+        "content": "$4"
+      }
+    }
+  },
+  "mo_target_title_plain": {
+    "message": "Bir kapanış olasılığı — kapanışın hedefin üstünde olması, yolda ona dokunması değil"
+  },
+  "mo_tested_line": {
+    "message": "test: $2 saatin %$1'i %80 bandının içinde kapandı",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "mo_tested_title": {
+    "message": "Model tahmini: Student-t yenilikli EWMA varyansı (λ $1, ν $2), $3 tarihine kadarki Coinbase BTC-USD saatlik kapanışlarına oturtuldu. $5 – $6 arasında $4 saatte test edildi: %80 bandı zamanın %$7'sinde tuttu (nominal %80), aralık skoru 24 saatlik kayan oynaklığı geçti (DM t $8).",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      },
+      "arg4": {
+        "content": "$4"
+      },
+      "arg5": {
+        "content": "$5"
+      },
+      "arg6": {
+        "content": "$6"
+      },
+      "arg7": {
+        "content": "$7"
+      },
+      "arg8": {
+        "content": "$8"
+      }
+    }
+  },
+  "mo_unavailable": {
+    "message": "Veri yok: model yalnızca Coinbase BTC-USD saatlik kapanışlarında test edildi"
+  },
+  "mo_withheld": {
+    "message": "Değerlendirme geçmedi — tahmin gösterilmiyor"
+  },
   "news_allow_rest": {
     "message": "Kalanlara izin ver"
   },
@@ -2279,6 +2837,30 @@
   "news_hn_points": {
     "message": "$1 puan"
   },
+  "news_kind_business": {
+    "message": "iş dünyası"
+  },
+  "news_kind_funds": {
+    "message": "fonlar ve ETF'ler"
+  },
+  "news_kind_macro": {
+    "message": "ekonomi"
+  },
+  "news_kind_markets": {
+    "message": "piyasalar ve işlem"
+  },
+  "news_kind_mining": {
+    "message": "madencilik"
+  },
+  "news_kind_regulation": {
+    "message": "düzenleme"
+  },
+  "news_kind_security": {
+    "message": "güvenlik"
+  },
+  "news_kind_technology": {
+    "message": "teknoloji"
+  },
   "news_more_in_settings": {
     "message": "$1 haber odası daha, vermediğiniz bir izne ihtiyaç duyuyor."
   },
@@ -2333,11 +2915,214 @@
   "news_order_newest_title": {
     "message": "En yeniler önce, her gün için bir başlık"
   },
+  "news_preview_close": {
+    "message": "Önizlemeyi kapat (Esc)"
+  },
+  "news_preview_label": {
+    "message": "Haber, listenin yanında okunuyor"
+  },
+  "news_preview_open": {
+    "message": "$1 sitesinde oku ↗",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "news_preview_save": {
+    "message": "Kaydet"
+  },
+  "news_preview_saved": {
+    "message": "Kaydedildi"
+  },
+  "news_read_allow": {
+    "message": "$1 için izin ver",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "news_read_coins": {
+    "message": "Adı geçen coinler"
+  },
+  "news_read_coins_none": {
+    "message": "bu uygulamanın izlediği coinlerden hiçbiri"
+  },
+  "news_read_coverage": {
+    "message": "Kapsam"
+  },
+  "news_read_coverage_n": {
+    "message": "bu akışta $1 haber kuruluşu yayımladı",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "news_read_coverage_one": {
+    "message": "bu akışta yalnızca bu kuruluş"
+  },
+  "news_read_down_words": {
+    "message": "aşağı: $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "news_read_figures": {
+    "message": "Alıntılanan rakamlar"
+  },
+  "news_read_figures_none": {
+    "message": "yok"
+  },
+  "news_read_from_article": {
+    "message": "Haberin kendi kelimelerinden sayıldı. Burada hiçbir şey bir fiyatın ne yapacağını söylemez."
+  },
+  "news_read_from_summary": {
+    "message": "Yalnızca başlık ve özetten sayıldı. Burada hiçbir şey bir fiyatın ne yapacağını söylemez."
+  },
+  "news_read_head": {
+    "message": "Bir okuma — sayılmış, yargılanmamış"
+  },
+  "news_read_kind": {
+    "message": "Türü"
+  },
+  "news_read_kind_none": {
+    "message": "hiçbir haber türünün kelimeleri öne çıkmıyor"
+  },
+  "news_read_sentences": {
+    "message": "Kendi cümleleri, en çok tekrarlanan kelimeler"
+  },
+  "news_read_shown": {
+    "message": "$2 paragrafın ilk $1'i, toplam yaklaşık $3 kelime, resimsiz. Gerisi $4 sitesinde.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      },
+      "arg4": {
+        "content": "$4"
+      }
+    }
+  },
+  "news_read_shown_all": {
+    "message": "Metnin tamamı, yaklaşık $1 kelime, resimsiz. Sayfanın kendisi $2 sitesinde.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "news_read_since": {
+    "message": "O zamandan beri"
+  },
+  "news_read_since_line": {
+    "message": "$1 grafikte, yayımlandığından bu yana geçen $3 içinde %$2 hareket etti — aynı saatler, bir neden değil",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      }
+    }
+  },
+  "news_read_text": {
+    "message": "Haberden"
+  },
+  "news_read_text_feed": {
+    "message": "Akıştan"
+  },
+  "news_read_tone": {
+    "message": "İfade"
+  },
+  "news_read_tone_down": {
+    "message": "aşağı ifadeli"
+  },
+  "news_read_tone_mixed": {
+    "message": "karışık ifadeli"
+  },
+  "news_read_tone_none": {
+    "message": "hiçbir yöne — sayılan kelime yok"
+  },
+  "news_read_tone_up": {
+    "message": "yukarı ifadeli"
+  },
+  "news_read_up_words": {
+    "message": "yukarı: $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "news_read_why_ask": {
+    "message": "$1 haberleri izin verildiğinde burada okunabilir — başlıklarının kullandığı aynı izin.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "news_read_why_cooling": {
+    "message": "$1 bu tarayıcıdan yavaşlamasını istedi, bu yüzden bir süre rahat bırakılıyor.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "news_read_why_failed": {
+    "message": "Haber şu an okunamadı."
+  },
+  "news_read_why_no": {
+    "message": "$1, kendi sitesi dışındaki bir sayfanın haberlerini okumasına izin vermiyor; bu yüzden bu, akışın özeti.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
   "news_reading_all": {
     "message": "$1 haber kaynağı doğrudan okunuyor."
   },
   "news_reading_some": {
     "message": "$2 haber kaynağının $1 tanesi okunuyor."
+  },
+  "news_row_open_title": {
+    "message": "$1 sitesinde okumak için tekrar bas · $2 — yeni sekmede açılır",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "news_row_preview_title": {
+    "message": "Listenin yanında oku · $1 · $2 — ikinci basış açar",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
   },
   "news_save": {
     "message": "Sonra okumak için kaydet"
@@ -2440,6 +3225,18 @@
   },
   "num_only": {
     "message": "Yalnızca sayı — o karakter girilmedi."
+  },
+  "odds_chance": {
+    "message": "olasılık $1"
+  },
+  "odds_chance_measured": {
+    "message": "olasılık $1 · $2–$3 verilen geçmiş karelerin $4'ü tuttu"
+  },
+  "odds_refused": {
+    "message": "olasılık yok: geçmişte bu uzunlukta çok az dilim var"
+  },
+  "odds_uncalibrated": {
+    "message": "olasılık yazılmadı: bu aralıkta model kalibre değildi"
   },
   "ovl_averages": {
     "message": "50 ve 200 günlük ortalama · günlük"
@@ -5256,6 +6053,9 @@
   "pp_gate_tape_text": {
     "message": "Son $2 işlemin %$1'i alıcı."
   },
+  "pp_h_15m": {
+    "message": "15dk"
+  },
   "pp_h_1d": {
     "message": "1d"
   },
@@ -5270,6 +6070,9 @@
   },
   "pp_h_4h": {
     "message": "4h"
+  },
+  "pp_h_5m": {
+    "message": "5dk"
   },
   "pp_lean_long": {
     "message": "Long'a eğilimli"
@@ -5883,6 +6686,33 @@
   "pref_candlesticks_title": {
     "message": "Mum grafiği"
   },
+  "pref_chance_range": {
+    "message": "Aralık"
+  },
+  "pref_chance_regime": {
+    "message": "Rejim"
+  },
+  "pref_chance_squares": {
+    "message": "Kareler"
+  },
+  "pref_chances_aria": {
+    "message": "Hangi olasılıklar gösterilsin"
+  },
+  "pref_chances_desc": {
+    "message": "Bu coin'in kendi geçmişinden sayılmış olasılıklar — tahtanın karelerinde ve fiyatın altındaki bir satırda"
+  },
+  "pref_chances_heading": {
+    "message": "Olasılıklar"
+  },
+  "pref_chances_keywords": {
+    "message": "olasılık şans markov rejim görünüm aralık kareler tahta tahmin"
+  },
+  "pref_chances_note": {
+    "message": "Kareler, tahmin tahtasının her karesine sütunu bittiğinde fiyatın o karede olma olasılığını yazar; izin verilmeden önce dört coin'de örneklem dışında sınandı (saat, gün, hafta, ay ve yıl tahtalarında; başarısız olduğu tüm zamanlarda değil). Rejim, Rejimler widget'ının bugünkü satırıdır — coin'in şu an bulunduğu duruma geçmişteki girişler ve 20 gün sonraki durum, sayılmış Markov sorusu; ölçüldüğünde böyle hiçbir satır herhangi bir günden 10 puan ayrılmadı. Aralık, Görünüm widget'ının bir sonraki dilim için %5–%95 aralığıdır; bu aralığın kendi adımlarının tekrarlarından gelir. Hiçbiri nasıl işlem yapılacağını söylemez."
+  },
+  "pref_chances_title": {
+    "message": "Olasılıklar"
+  },
   "pref_chart_color_aria": {
     "message": "Grafik rengini aç/kapat"
   },
@@ -5943,6 +6773,17 @@
   "pref_chart_sub_on": {
     "message": "Üzerine çizilenler"
   },
+  "pref_companion_all": {
+    "message": "Tümü"
+  },
+  "pref_companion_all_aria": {
+    "message": "$1 içinden hepsini göster",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
   "pref_companion_aria": {
     "message": "Grafik eşlikçisini aç/kapat"
   },
@@ -5955,6 +6796,17 @@
   "pref_companion_keywords": {
     "message": "eşlikçi formasyon omuz baş omuz ikili tepe dip kurulum strateji teknik analiz"
   },
+  "pref_companion_none": {
+    "message": "Hiçbiri"
+  },
+  "pref_companion_none_aria": {
+    "message": "$1 içinden hepsini gizle",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
   "pref_companion_note2": {
     "message": "Günlük mumlarda kuralla bulunur, asla göz kararıyla değil. Bir formasyon dönüş noktalarından okunur — iki yanındaki beşer günden daha yüksek (ya da düşük) bir gün, ancak o beş gün geçtikten sonra kullanılır — ve noktaları, boyun çizgisi, yüksekliğinin ölçtüğü hedef ve onu bozacak seviyeyle çizilip 90 gün izlenir; dört formasyon BTC, ETH, SOL ve LTC'nin birlikte on bir yılında 60 kez tamamlandı, sıradan bir günle karşılaştırılamayacak kadar seyrek. On iki strateji kurulumu — kesişimler, 20 günlük kırılımlar, Bollinger bantlarının dışında kapanışlar, Supertrend dönüşleri, sıkışmalar — yakın zamanda oluştuysa son girişiyle grafikte numaralanır ve köşedeki listede fiyatın on gün sonra ne sıklıkla yukarıda olduğuyla, sıradan bir günün yanında yazılır; aynı dört coinde birlikte test edildiğinde hiçbiri sıradan bir günden ayırt edilemedi. Bu yüzden burada hiçbir şey daha iyi ya da daha kötü diye anılmaz ve hiçbir şey sinyal değildir. Coinin tüm günlük geçmişini okur; ilk seferde yaklaşık on beş istek, sonra on iki saat önbellekten — açılana kadar kapalı olmasının nedeni bu."
   },
@@ -5964,11 +6816,28 @@
   "pref_companion_patterns_aria": {
     "message": "Eşlikçinin adlandıracağı formasyonlar"
   },
+  "pref_companion_readings": {
+    "message": "Okumalar"
+  },
+  "pref_companion_readings_aria": {
+    "message": "Eşlikçinin adlandırdığı okumalar — uyumsuzluklar, Ichimoku, stokastik, seviyeler, gerilmeler"
+  },
   "pref_companion_setups": {
     "message": "Strateji kurulumları"
   },
   "pref_companion_setups_aria": {
     "message": "Eşlikçinin adlandıracağı strateji kurulumları"
+  },
+  "pref_companion_shown": {
+    "message": "$2 içinden $1 gösteriliyor",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
   },
   "pref_companion_title": {
     "message": "Grafik eşlikçisi"
@@ -6521,6 +7390,21 @@
   "pref_study_where": {
     "message": "Nerede duruyor"
   },
+  "pref_tab_keys_aria": {
+    "message": "Sekmelerdeki kısayol harflerini göster"
+  },
+  "pref_tab_keys_desc": {
+    "message": "İki kenardaki her sekmenin altındaki kısayol harfi. Kapalıyken yalnızca harfler gizlenir — tuşlar yine çalışır, her sekmenin ipucu da tuşunu söylemeye devam eder"
+  },
+  "pref_tab_keys_heading": {
+    "message": "Sekmelerdeki Tuşlar"
+  },
+  "pref_tab_keys_keywords": {
+    "message": "klavye kısayol tuş harf sekme kenar sütun çekme gizle göster"
+  },
+  "pref_tab_keys_title": {
+    "message": "Sekmelerdeki Tuşlar"
+  },
   "pref_tab_ticker_aria": {
     "message": "Sekme şeridini aç/kapat"
   },
@@ -6635,12 +7519,6 @@
   "pt_tab_targets": {
     "message": "Hedefler"
   },
-  "qs_compare_label": {
-    "message": "Bir coin ile karşılaştır"
-  },
-  "qs_compare_with": {
-    "message": "$1 ile karşılaştır…"
-  },
   "qs_jump_label": {
     "message": "Bir coin'e atla"
   },
@@ -6649,6 +7527,12 @@
   },
   "qs_no_match": {
     "message": "Eşleşen coin yok."
+  },
+  "rate_later": {
+    "message": "Şimdi değil — sonra tekrar sor"
+  },
+  "rate_never": {
+    "message": "Bir daha sorma"
   },
   "read_candle": {
     "message": "$1 — açılış $2, en yüksek $3, en düşük $4, kapanış $5"
@@ -6688,6 +7572,9 @@
   },
   "sc_base_rates": {
     "message": "Baz oranlar — bu coin daha önce kaç kez buradaydı"
+  },
+  "sc_board_walk": {
+    "message": "Tahtanın şimdi çizgisi odaktayken: tahtayı daha yüksek / düşük fiyatlara kaydır"
   },
   "sc_board_zoom": {
     "message": "Tahta menzili: uzaklaş / yakınlaş (tahminler açıkken)"
@@ -6929,9 +7816,6 @@
   "set_rate": {
     "message": "Puan ver"
   },
-  "set_rate_dismiss": {
-    "message": "Puan hatırlatmasını kapat"
-  },
   "set_remove_coin": {
     "message": "$1 kaldır"
   },
@@ -7000,9 +7884,6 @@
   },
   "set_tab_widgets": {
     "message": "Widget'lar"
-  },
-  "set_toggle_widget": {
-    "message": "$1 widget'ını aç veya kapat"
   },
   "set_undo": {
     "message": "Geri al"
@@ -7106,6 +7987,9 @@
   "ss_move_detail": {
     "message": "Sonraki 30 gün, $2 bölümün $1'inde bu coinin sıradan 30 gününden fazla hareket etti — bir anlamı olmasaydı yarısında olurdu."
   },
+  "ss_move_detail_h": {
+    "message": "Sonraki $3 gün, $2 bölümün $1'inde bu coinin sıradan $3 gününden fazla hareket etti — bir anlamı olmasaydı yarısında olurdu."
+  },
   "ss_none": {
     "message": "Bu coinin günlük geçmişinde bir kez bile yok."
   },
@@ -7198,6 +8082,93 @@
   },
   "sum_up": {
     "message": "$1 yükseliş"
+  },
+  "swp_asc": {
+    "message": "Yükselen üçgen"
+  },
+  "swp_asc_claim": {
+    "message": "yukarı kıracağı söylenir"
+  },
+  "swp_bflag": {
+    "message": "Boğa bayrağı"
+  },
+  "swp_bflag_claim": {
+    "message": "direğin boyu kadar süreceği söylenir"
+  },
+  "swp_desc": {
+    "message": "Alçalan üçgen"
+  },
+  "swp_desc_claim": {
+    "message": "aşağı kıracağı söylenir"
+  },
+  "swp_fwedge": {
+    "message": "Düşen kama"
+  },
+  "swp_fwedge_claim": {
+    "message": "yukarı kıracağı söylenir"
+  },
+  "swp_intro": {
+    "message": "Üçgenler, kamalar, aralıklar, bayraklar ve üçlü tepeler — uydurulmadan, salınım noktalarından çizilir; her biri ölçülen hareketine ya da geçersizliğine kadar 90 gün izlenir. Her birinin altında, aynı kuralın dört coinde birlikte, sıradan bir günden aynı iki mesafeye karşı nasıl sonuç verdiği."
+  },
+  "swp_rect_down": {
+    "message": "Aralık, aşağı kırıldı"
+  },
+  "swp_rect_down_claim": {
+    "message": "aralığın yüksekliği kadar gideceği söylenir"
+  },
+  "swp_rect_up": {
+    "message": "Aralık, yukarı kırıldı"
+  },
+  "swp_rect_up_claim": {
+    "message": "aralığın yüksekliği kadar gideceği söylenir"
+  },
+  "swp_rwedge": {
+    "message": "Yükselen kama"
+  },
+  "swp_rwedge_claim": {
+    "message": "aşağı kıracağı söylenir"
+  },
+  "swp_section": {
+    "message": "Diğer grafik formasyonları · günlük mumlar"
+  },
+  "swp_sflag": {
+    "message": "Ayı bayrağı"
+  },
+  "swp_sflag_claim": {
+    "message": "direğin boyu kadar düşeceği söylenir"
+  },
+  "swp_sym_down": {
+    "message": "Üçgen, aşağı kırıldı"
+  },
+  "swp_sym_down_claim": {
+    "message": "kırdığı yöne devam edeceği söylenir"
+  },
+  "swp_sym_up": {
+    "message": "Üçgen, yukarı kırıldı"
+  },
+  "swp_sym_up_claim": {
+    "message": "kırdığı yöne devam edeceği söylenir"
+  },
+  "swp_t_diff": {
+    "message": "Dört coinde test edildi: $2 tanesinin $1'i önce ölçülen harekete ulaştı; sıradan bir günden aynı mesafeler bunu zamanın %$3'ünde yaptı."
+  },
+  "swp_t_rare": {
+    "message": "Dört coinde, on bir yıla varan geçmişte $1 kez bulundu — test edilemeyecek kadar nadir."
+  },
+  "swp_t_same": {
+    "message": "Dört coinde test edildi: $2 tanesinin $1'i önce ölçülen harekete ulaştı, sıradan bir günden %$3'e karşı — ondan ayırt edilemedi."
+  },
+  "swp_tbot": {
+    "message": "Üçlü dip"
+  },
+  "swp_tbot_claim": {
+    "message": "tabanı işaret ettiği söylenir"
+  },
+  "swp_ttop": {
+    "message": "Üçlü tepe"
+  },
+  "swp_ttop_claim": {
+    "message": "tavanı işaret ettiği söylenir"
   },
   "tax_band": {
     "message": "Bir tahmin · kurallar $1 tarihinde okundu"
@@ -8231,6 +9202,9 @@
   "tour_chapter_the_chart": {
     "message": "Grafik"
   },
+  "tour_chapter_whats_new": {
+    "message": "Yenilikler"
+  },
   "tour_chapter_your_money": {
     "message": "Paran"
   },
@@ -8249,8 +9223,8 @@
   "tour_skip": {
     "message": "Turu atla"
   },
-  "tour_text_01": {
-    "message": "Her yeni sekmede canlı kripto grafikleri, hiçbir şey istemeden — hesap yok, izin yok ve sana dair hiçbir şey bu cihazdan çıkmıyor. Bu tur, beş bölümde yirmi kısa adım. İstediğin an atla; Ayarlar → Tercihler tekrar oynatabilir."
+  "tour_text_01c": {
+    "message": "Her yeni sekmede canlı kripto grafikleri, hiçbir şey istemeden — hesap yok, kurulumda izin yok ve sizinle ilgili hiçbir şey bu cihazdan çıkmıyor. Bu tur beş bölümde birkaç kısa adım. İstediğiniz an geçebilirsiniz; Ayarlar yeniden oynatabilir."
   },
   "tour_text_02": {
     "message": "Aktif coin'in ve canlı fiyatı — sekme açıkken yenilenir, değilken durur. Coin listende gezinmek için üzerine tıkla ya da ok tuşlarını kullan."
@@ -8264,23 +9238,17 @@
   "tour_text_05": {
     "message": "Bir sembol ya da isim yaz. Kendi coin'lerin önce sıralanır ve henüz takip etmediğin birini seçmek onu ekler. Aynı arama, bir fiyat hedefi için de coin seçer."
   },
-  "tour_text_06": {
-    "message": "İkisi de aralığın başından itibaren yüzde değişim olarak, tek bir ortak ölçekte çizilir — asla iki eksen kullanılmaz; herhangi iki çizgiyi ilişkili gösteren numara odur. Kaldırmak için tekrar C ya da Esc."
+  "tour_text_06_drawer": {
+    "message": "Grafiğin üzerine ne konacağını seçtiğin bir çekmece: coin'lerin, herhangi bir coin ve piyasalar — S&P 500, Nasdaq 100, altın. İki çizgi de aralığın başından itibaren yüzde değişimdir, tek ortak ölçekte — asla iki eksen değil; o, herhangi iki çizgiyi ilişkili gösteren bir hiledir. Durdur çekmecede ve fiyatın altında."
   },
   "tour_text_07": {
     "message": "T çizgiyi mumlarla değiştirir. G, bir seviyeyi okuyabilmen için grafiğin arkasına fiyat ve zaman ağı koyar. Fiyatın altında aralığın en yükseği ve en düşüğü ile — mum verisi zaten yüklüyse — hacim ağırlıklı ortalama fiyat yer alır; bunun için ayrıca istek yapılmaz."
   },
-  "tour_text_08": {
-    "message": "Varsayılan olarak kapalı, Ayarlar → Grafik altında. Fiyatın bu coin için sıra dışı bir şey yaptığı anları işaretler — kendi oynaklığına göre ölçülür, yani sakin bir stablecoin'de de çılgın bir coin'de de doğrudur — ve bir tık, o günün çevresinde yayınlanan başlıkları gösterir. Onların sebep olduğunu asla iddia etmez, çünkü bunu kimse bilmez."
-  },
   "tour_text_09": {
     "message": "Bir tahmin bir iddiadır: bu coin, bu fiyat bandında, bu zamanda. Sonraki bir sekmede kendi kendine sonuçlanır ve senin tuttuğun bir kayda geçer. Hiçbir şey puanlanıp değer kazanmaz, hiçbir şey bir değer taşımaz ve hiçbir şey cihazdan çıkmaz — bu, gerçekten iyi olup olmadığını öğrenmenin bir yolu."
   },
-  "tour_text_10": {
-    "message": "Tahminleri aç, grafik şimdinin sağında karelerden bir tahta çıkarsın. Bir karenin üzerine gel, bir tık taslak yapar, ikinci tık kilitler — iki tık, çünkü yanlışlıkla atılan bir tık bir tahmini bağlamamalı. Geçmişle tahtayı takas etmek için noktalı çizgiyi sürükle, bir karenin değerini değiştirmek için sağ üstteki hapı kullan."
-  },
-  "tour_text_11": {
-    "message": "Tahminler panelinde Göster altında bir yol bandı var. Bu coin'in bir karenin değdiği süre boyunca gerçekten kat ettiği mesafeleri gölgeler — ortadaki yarı ve ortadaki %80. Bilerek bir öngörü değildir: yön, çizilmeden önce sayılardan çıkarılır; yani bütün hafta yükselmiş bir coin bile hiçbir yana eğilmeyen bir bant alır. Bir karenin neredeyse kesin mi yoksa uzak ihtimal mi olduğunu söyler ve bu her coin'de farklı bir sorudur."
+  "tour_text_10b": {
+    "message": "Tahminleri aç; şimdinin sağında karelerden bir tahta belirir, her karede sütunu bittiğinde fiyatın orada olma olasılığı yazar — bu coin'in kendi mumlarından sayılmış ve izin verilmeden önce yıllarca karede sınanmış. Bir kareye bir kez tıklayınca taslak olur, bir kez daha tıklayınca kilitlenir: iki tıklama, çünkü kaza eseri tek bir tıklama bir tahmini bağlamamalı. Başka fiyatlara bakmak için tahtayı yukarı ya da aşağı, geçmişle tahtayı takas etmek için yana sürükle; bir karenin değerini sağ üstteki hapla değiştir."
   },
   "tour_text_12": {
     "message": "Kendi yazdığın miktarlar; maliyet ve kâr istiyorsan alımlar ve satışlarla birlikte. FIFO, LIFO ya da HIFO — bir raporlama yöntemi, vergi hesabı değil; rapor her satırın hangi yöntemi kullandığını yazar. Her şey bu cihazda saklanır ve bağlanacak bir cüzdan yoktur."
@@ -8288,35 +9256,50 @@
   "tour_text_13": {
     "message": "Herkese açık bir Bitcoin, Ethereum, Litecoin, Dogecoin, Bitcoin Cash ya da Zcash adresi yapıştır; bakiye senin için okunur — bir Ethereum adresindeki ERC-20 token'lar dahil, tek bir istekle. Adres yalnızca bakiye servisine gider ve bir zincir okunamıyorsa PriceTab hangi zincir olduğunu söyler, gayet doğru bir adresi kontrol etmeni istemez."
   },
-  "tour_text_14": {
-    "message": "BTC bir sayının üstüne çıkınca, ya da bir günde %5 hareket edince, ya da elimdeki her şey X'ten az edince haber ver. Bunu bir sonraki yeni sekmende öğrenirsin; gece olan bir tetiklenme de bulunur, çünkü kontrol bir hafta geriye bakar. Sana hiçbir şey itilmez — uzantının izinsiz kalmasının yolu budur."
+  "tour_text_14b": {
+    "message": "BTC bir sayının üstüne çıkınca, bir günde %5 oynayınca ya da elimdeki her şey X'ten az ettiğinde haber ver. Bir hedef grafikte bir çizgidir ve grafiğe tıklamak fiyatını seçer. Bir sonraki yeni sekmenizde söylenir — ya da alarmı açarsanız bir bildirim ve bir sesle; o izin yalnızca o zaman istenir."
   },
-  "tour_text_15": {
-    "message": "Her başlık kaynağı, yaşı ve bir özetiyle, en yenisi üstte; coin'e, kaynağa göre ya da yazarak daraltılabilir. Yayın yapmayı bırakmış bir kaynak kendi yaşını kırmızıyla gösterir — canlı görünen ölü bir akış, bunun yapılma sebebidir. Reklam etiketlenmez, atılır."
+  "tour_text_15c": {
+    "message": "Her başlık kaynağı ve yaşıyla, coine, kaynağa ya da aramaya göre daraltılır, reklamlar ayıklanır. Bir başlığa bir kez basın, listenin yanında açılır — haber merkezi izin veriyorsa haberin kendi metni ve sayılmış bir okuması; sayfayı açmak için bir kez daha basın."
   },
-  "tour_text_16": {
-    "message": "Bu coin'in yıllarca süren günlük kapanışlarını okur ve belirli bir durumda olduğu her seferde ne olduğunu sayar. Her rakam kaç olaya dayandığını da taşır ve bu sayı küçükse sonuç çıkarmayı reddeder. Sana asla al ya da sat demez — 21.669 günlük kapanış üzerinde denenen dokuz ders kitabı kuralı, düzgün bir düzeltmeden sağ çıkan hiçbir şey bırakmadı; bunu söylemek bir oktan daha yararlıdır."
+  "tour_text_16b": {
+    "message": "Bu coinin yıllarca günlük mumu ve bir durumda her bulunduğunda ardından ne geldiği, sıradan bir günün yanında — her sayının kaç kez üzerine kurulduğuyla. Şu an geçerli olan her şeyden sonra ne geldiğiyle açılır. Asla al ya da sat demez: test edildiğinde neredeyse hiçbiri sonraki günleri herhangi günlerden ayıramadı, bunu söylemek bir oktan daha yararlı."
   },
-  "tour_text_17_drawer": {
-    "message": "Takip listesi, Korku ve açgözlülük, fonlama, açık pozisyon, ağ ücretleri, aralıktaki en sert düşüş ve dahası, sol kenardaki bir çekmecede. Açmak için içindeki Seç'e bas — hazır paketler de var — sonra sıralamak için kartı sürükle ya da bir kartın üzerine gelip × ile gizle."
+  "tour_text_17_pin": {
+    "message": "İzleme listesi, Korku ve Açgözlülük, fonlama, ücretler ve daha fazlası, sol kenarda bir çekmecede, bir telefonun widget'ları dizdiği gibi. Düzenle'ye basın, sonra + kaydırdığınız boyutta bir tane ekler; bir karta basılı tutun ya da sağ tıklayın: boyutu, kaldırma ya da ana ekrana sabitleme."
   },
   "tour_text_19": {
     "message": "Coin'ler, para birimi, tema, widget'lar ve şeritler; Tercihler'in tepesinde bir arama kutusuyla. Modlar satırı bunların bir düzinesini birden ayarlar — Sade, Hızlı, Alım satım, Yatırımcı — ve para biriminle, sayı biçiminle, temanla asla oynamaz."
   },
+  "tour_text_companion": {
+    "message": "Grafik ayarlarından (V) grafik eşlikçisini açın; bulduğu formasyonları, kurulumları ve okumaları — üçgenler, kesişimler, uyumsuzluklar, Ichimoku bulutu — oldukları yerde adlandırır, her birinin bu coinde ardından ne geldiğiyle ve dört coinde test edildiğinde nasıl sonuç verdiğiyle. Çoğu sıradan bir günden iyi değildi ve bunu söyler."
+  },
+  "tour_text_drag": {
+    "message": "Grafiği istediğiniz yöne sürükleyin: yana zamanda, yukarı aşağı fiyatlarda. Tekerlek ya da iki parmak gösterdiğiniz yere yakınlaşır, en eski noktanın ötesine sürüklemek daha uzun aralığı açar, çift tıklama her şeyi geri koyar. Grafik odaktayken ← ve → onu nokta nokta okur."
+  },
+  "tour_text_tools": {
+    "message": "Aralık satırının sonundaki + araçları açar: o büyüklükte bir hareketin ne sıklıkla olduğunu söyleyen bir cetvel; coinle birlikte kalan çizgiler, ışınlar, kutular ve notlar. Shift ile sürüklemek her yerde ölçer; yatay bir çizgi fiyat hedefine dönüşebilir."
+  },
+  "tour_text_whats_new": {
+    "message": "Son sürümünüzden bu yana neyin değiştiğine dair birkaç kısa adım. İstediğiniz an geçebilirsiniz; Ayarlar turun tamamını yeniden oynatabilir."
+  },
   "tour_title_change": {
     "message": "Değişim"
   },
+  "tour_title_companion": {
+    "message": "Sayan bir eşlikçi"
+  },
   "tour_title_compare_two_coins": {
     "message": "İki coin'i karşılaştır"
+  },
+  "tour_title_draw_measure": {
+    "message": "Çizin ve ölçün"
   },
   "tour_title_everything_else_lives_here": {
     "message": "Geri kalan her şey burada"
   },
   "tour_title_has_this_happened_before": {
     "message": "Bu daha önce oldu mu?"
-  },
-  "tour_title_how_far_it_usually_travels": {
-    "message": "Genelde ne kadar yol alır"
   },
   "tour_title_it_is_faster_from_the_keyboard": {
     "message": "Klavyeyle daha hızlı"
@@ -8326,6 +9309,9 @@
   },
   "tour_title_live_price": {
     "message": "Canlı fiyat"
+  },
+  "tour_title_move_around": {
+    "message": "İçinde gezinin"
   },
   "tour_title_news": {
     "message": "Haberler"
@@ -8354,8 +9340,8 @@
   "tour_title_welcome_to_pricetab": {
     "message": "PriceTab'e hoş geldin"
   },
-  "tour_title_what_happened_here": {
-    "message": "Burada ne oldu?"
+  "tour_title_whats_new": {
+    "message": "PriceTab güncellendi"
   },
   "tour_title_widgets": {
     "message": "Widget'lar"
@@ -8378,11 +9364,14 @@
   "wd_all_hidden": {
     "message": "Tüm widget'lar gizli."
   },
+  "wd_all_widgets": {
+    "message": "‹ Tüm widget'lar"
+  },
+  "wd_cancel": {
+    "message": "Vazgeç"
+  },
   "wd_card_size": {
     "message": "Kart boyutu"
-  },
-  "wd_choose": {
-    "message": "Widget seç"
   },
   "wd_close": {
     "message": "Widget'ları kapat"
@@ -8390,11 +9379,20 @@
   "wd_done": {
     "message": "Tamam"
   },
-  "wd_edit": {
-    "message": "Seç"
+  "wd_edit_widgets": {
+    "message": "Düzenle"
   },
-  "wd_foot_cards": {
-    "message": "Taşımak için kartı sürükle, gizlemek için ×. Bu çekmece: "
+  "wd_foot_editing": {
+    "message": "Taşımak için sürükle, kaldırmak için −, eklemek için +. Bitince Bitti. Bu çekmece: "
+  },
+  "wd_foot_rest": {
+    "message": "Boyutu için bir widget'a basılı tut ya da sağ tıkla. Bu çekmece: "
+  },
+  "wd_fri": {
+    "message": "Cum"
+  },
+  "wd_mon": {
+    "message": "Pzt"
   },
   "wd_none_on": {
     "message": "Açık widget yok."
@@ -8411,11 +9409,26 @@
   "wd_resize_title": {
     "message": "Genişletmek ya da daraltmak için sürükle · varsayılan genişlik için çift tıkla"
   },
+  "wd_sat": {
+    "message": "Cmt"
+  },
   "wd_show_n_hidden": {
     "message": "Gizli $1 widget'ı göster"
   },
   "wd_size_aria": {
     "message": "$1 kartlar"
+  },
+  "wd_sun": {
+    "message": "Paz"
+  },
+  "wd_thu": {
+    "message": "Per"
+  },
+  "wd_tue": {
+    "message": "Sal"
+  },
+  "wd_wed": {
+    "message": "Çar"
   },
   "wdesc_altcoin_season": {
     "message": "Altcoin'ler Bitcoin'i geçiyor mu?"
@@ -8450,6 +9463,9 @@
   "wdesc_mempool": {
     "message": "Kaç işlem bekliyor ve kuyruk ne kadar derin — komisyon kartının arkasındaki okuma"
   },
+  "wdesc_model_outlook": {
+    "message": "BTC-USD'nin bir sonraki tamamlanan saati, bir modelin tahminiyle: medyan, %80 bandı, bir hedefin kapanıştaki olasılığı — ve testte bandın ne sıklıkla tuttuğu"
+  },
   "wdesc_open_interest": {
     "message": "Açık vadeli işlem sözleşmelerinin değeri"
   },
@@ -8466,7 +9482,7 @@
     "message": "Bugünün en çok yükselen ve düşenleri"
   },
   "wdesc_watchlist": {
-    "message": "Coin'lerin 24 saatlik renkli bir tabloda"
+    "message": "Coin'lerin fiyatı ve 24 saatlik değişimiyle, harekete göre renklendirilmiş"
   },
   "wdesc_worst_fall": {
     "message": "Ekrandaki aralıkta tepeden dibe en derin düşüş"
@@ -8579,6 +9595,25 @@
   "widget_btc_halving": {
     "message": "BTC halving"
   },
+  "widget_bundle_desc": {
+    "message": "$1 widget, buradakilerin yerine",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "widget_card_aria": {
+    "message": "$1 widget'ı, $2 — boyut ve seçenekler için Enter",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
   "widget_difficulty": {
     "message": "BTC Zorluk"
   },
@@ -8615,8 +9650,23 @@
   "widget_funding_rate": {
     "message": "$1 fonlama oranı"
   },
-  "widget_hide_one": {
-    "message": "$1 gizle"
+  "widget_gallery_add": {
+    "message": "Widget Ekle"
+  },
+  "widget_gallery_added": {
+    "message": "Eklendi"
+  },
+  "widget_gallery_none": {
+    "message": "Eşleşen widget yok"
+  },
+  "widget_gallery_search": {
+    "message": "Widget ara"
+  },
+  "widget_gallery_sizes": {
+    "message": "Boyutlar — her birini görmek için ← ve →"
+  },
+  "widget_gallery_use_size": {
+    "message": "Bu Boyutu Kullan"
   },
   "widget_liquidations": {
     "message": "$1 tasfiyeler 24s"
@@ -8641,6 +9691,38 @@
   },
   "widget_mempool_waiting": {
     "message": "$1 bekliyor"
+  },
+  "widget_menu_aria": {
+    "message": "$1 widget'ı",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "widget_menu_edit": {
+    "message": "Widget'ları Düzenle"
+  },
+  "widget_menu_pin": {
+    "message": "Ana Ekrana Sabitle"
+  },
+  "widget_menu_pin_full": {
+    "message": "Dört tane sabitli — önce birini kaldır"
+  },
+  "widget_menu_remove": {
+    "message": "Widget'ı Kaldır"
+  },
+  "widget_menu_remove_confirm": {
+    "message": "Kaldır — tekrar bas"
+  },
+  "widget_menu_sizes": {
+    "message": "Boyut"
+  },
+  "widget_menu_unpin": {
+    "message": "Ana Ekrandan Kaldır"
+  },
+  "widget_model_outlook": {
+    "message": "BTC 1s · model"
   },
   "widget_next_block": {
     "message": "sonraki blok"
@@ -8672,6 +9754,14 @@
   "widget_peak_to_trough": {
     "message": "tepeden dibe"
   },
+  "widget_pinned_aria2": {
+    "message": "$1, sabitli — Enter widget'ları açar, menü tuşu seçeneklerini",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
   "widget_regime_axes": {
     "message": "Satır: nasıl başladığı. Sütun: 20 gün sonrası."
   },
@@ -8687,11 +9777,28 @@
   "widget_regimes": {
     "message": "$1 Rejimler · 20g"
   },
+  "widget_remove_aria": {
+    "message": "$1 kaldır",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
   "widget_rsi": {
     "message": "$1 RSI · $2"
   },
   "widget_show_hidden": {
     "message": "Gizli widget'ları göster"
+  },
+  "widget_size_large": {
+    "message": "büyük"
+  },
+  "widget_size_medium": {
+    "message": "orta"
+  },
+  "widget_size_small": {
+    "message": "küçük"
   },
   "widget_top_movers": {
     "message": "En çok hareket edenler 24s"
@@ -8713,6 +9820,12 @@
   },
   "widget_unit_years": {
     "message": "Yıl"
+  },
+  "widget_via_blockchair": {
+    "message": "Blockchair üzerinden"
+  },
+  "widget_via_blockchair_hint": {
+    "message": "mempool.space bu tarayıcıdan erişilemedi; bu Blockchair'in rakamı"
   },
   "widget_watchlist": {
     "message": "Takip listesi"
@@ -8752,6 +9865,9 @@
   },
   "wname_mempool": {
     "message": "BTC Mempool"
+  },
+  "wname_model_outlook": {
+    "message": "Sonraki saat · model"
   },
   "wname_open_interest": {
     "message": "Açık pozisyon"

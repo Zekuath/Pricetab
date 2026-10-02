@@ -13,7 +13,9 @@ permissions at install.
   time axis, comparison, drawing tools and a ruler, indicators, counted
   studies, zoom, pan and pinch with a navigator, and point-by-point keyboard
   and screen-reader reading.
-- Price targets and a private calls record stored on the device.
+- Price targets and a private calls record stored on the device; the calls
+  board is dragged like the chart and writes each square's chance, computed
+  from the coin's own history and checked against years of past squares.
 - Portfolio tracking with lots, sales, cost basis, performance views and CSV
   export. Public addresses can be watched read-only; PriceTab never connects to
   a wallet or asks for a private key.
@@ -23,8 +25,19 @@ permissions at install.
 - Optional market widgets, news, base-rate counts and a country-by-country tax
   guide. Market readings report their sample rather than giving buy or sell
   advice.
+- Drag the chart in any direction without zooming first; the chart companion
+  names sixteen patterns, twelve setups and twenty-one readings where they
+  appear, each with what followed it on the coin and how it did when tested.
+- Widgets arranged like a phone's and pinned to the home screen, comparison
+  with the S&P 500, the Nasdaq 100 or gold, and news stories read beside the
+  list.
 - Dark and light themes, a blue/orange palette for colour-blind readers, 13
-  languages, a toolbar popup and keyboard shortcuts.
+  languages, a toolbar popup, keyboard shortcuts, and a short tour for new
+  installs and for what changed in an update.
+
+The [website](https://zekuath.github.io/Pricetab/site/) is in the same 13
+languages, works on a phone, and remembers your theme and language on your
+device without cookies.
 
 Press `?` in PriceTab for the complete shortcut list.
 

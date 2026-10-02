@@ -2297,8 +2297,8 @@ class AlertsPanel extends PureComponent {
             AlertsEmptyText,
             null,
             msg(
-              "al_drag_hint",
-              "Drag the dotted line itself to make the board bigger or smaller.",
+              "al_drag_hint_b",
+              "Drag the board up or down to look at other prices, and sideways to make it bigger or smaller.",
             ),
           ),
           /* The only thing to do on this screen is on the chart behind it. */
@@ -2496,8 +2496,11 @@ class AlertsPanel extends PureComponent {
           ),
         ),
 
+      /* Only once there is something to filter: with no call at all the empty
+         state above already says so, and these two lines said it twice more. */
       showOpen &&
         shownOpen.length === 0 &&
+        ((Array.isArray(this.props.calls) ? this.props.calls.length : 0) + (Array.isArray(this.props.settledCalls) ? this.props.settledCalls.length : 0)) > 0 &&
         React.createElement(
           AlertsNote,
           null,
@@ -2588,6 +2591,7 @@ class AlertsPanel extends PureComponent {
 
       showDone &&
         done.length === 0 &&
+        ((Array.isArray(this.props.calls) ? this.props.calls.length : 0) + (Array.isArray(this.props.settledCalls) ? this.props.settledCalls.length : 0)) > 0 &&
         React.createElement(
           AlertsNote,
           null,
@@ -2634,9 +2638,10 @@ class AlertsPanel extends PureComponent {
 
   renderCallsFoot() {
     const {
-      onPredictChange,
       callsShowSettled,
       travelBand,
+      cellOdds,
+      onCellOddsChange,
       onTravelBandChange,
       onCallsShowSettledChange,
       callsCelebrate,
@@ -2831,6 +2836,8 @@ class AlertsPanel extends PureComponent {
           stepper,
         ),
 
+      // Filters for a list that exists — not drawn before the first call
+      openCount + doneCount > 0 &&
       React.createElement(
         AlertCallsStrip,
         null,
@@ -2911,6 +2918,18 @@ class AlertsPanel extends PureComponent {
          * actually travels in a square's worth of time. Worded as what it is —
          * a record of distances, with the direction deliberately removed — so
          * nothing here can be read as a call the app is making. */
+        /* The chance on each square (cell-odds.js): computed from the coin's
+         * own bars, calibrated out of sample before it was allowed on the
+         * board, and shaded in ink — never the direction colours. */
+        toggle(
+          msg("al_cell_odds", "chances"),
+          cellOdds !== false,
+          () => onCellOddsChange && onCellOddsChange(cellOdds === false),
+          msg(
+            "al_cell_odds_hint",
+            "Write on each square the chance the price is in it when its column ends — from this coin's own bars, scaled to how it is moving now, and checked against years of squares before it was allowed on the board",
+          ),
+        ),
         toggle(
           msg("al_travel_band", "travel band"),
           travelBand === true,
@@ -2928,35 +2947,16 @@ class AlertsPanel extends PureComponent {
             "A burst on the chart the first time you open a tab after getting one right",
           ),
         ),
-        React.createElement(AlertStripGap, null),
-        React.createElement(
-          AlertStripFigures,
-          null,
-          msg(
-            "al_open_settled_fig",
-            "$1 open · $2 settled",
-            openCount,
-            doneCount,
-          ),
-        ),
       ),
 
-      /* The mode and the record. Turning calls off sits where the eye lands,
-       * and the two things that cannot be undone at the far end, away from it. */
+      /* The record. Turning calls off moved to the panel's head (30 Sep
+       * 2026); what is left here is the record's own three actions, and the
+       * row is not drawn while there is nothing to export, clear or reset. */
+      (record.total > 0 || doneCount > 0) &&
       React.createElement(
         AlertCallsStrip,
-        null,
-        React.createElement(AlertStripLabel, null, msg("al_calls", "Calls")),
-        action(
-          msg("al_turn_off", "turn off"),
-          () => onPredictChange && onPredictChange(false),
-          msg(
-            "al_stop_calls_hint",
-            "Stop calls. Your calls and score are kept, and L does the same from the chart",
-          ),
-          { strong: true },
-        ),
-        React.createElement(AlertStripGap, null),
+        { "data-calls-record": "true" },
+        React.createElement(AlertStripLabel, null, msg("al_record", "Record")),
         /* The record as a file. It is the one thing in this panel that is
          * yours and nowhere else, and a record you cannot take with you is
          * one you cannot trust to survive a reinstall. JSON, the same shape
@@ -3129,8 +3129,8 @@ class AlertsPanel extends PureComponent {
         AlertsInfoText,
         null,
         msg(
-          "al_calls_info",
-          "A call is a claim: not “tell me when”, but “I say where”. Point at a square in the empty strip to the right of the chart and you are naming a price band and a moment — one click drafts it, a second locks it. It settles itself the next time you open a tab, against the price at that moment, and the box stays on the chart saying whether you were right. How far that strip reaches is yours to set: drag the “now” line left for more board, right for more history.",
+          "al_calls_info_b",
+          "A call is a claim: not “tell me when”, but “I say where”. Point at a square in the empty strip to the right of the chart and you are naming a price band and a moment — one click drafts it, a second locks it. It settles itself the next time you open a tab, against the price at that moment, and the box stays on the chart saying whether you were right. Each square carries its chance: from this coin's own bars, scaled to how it is moving now, and measured on years of past squares before it was allowed on the board — a chance, not a tip. Drag the board up or down to look at other prices, and left or right for more board or more history.",
         ),
       ),
       React.createElement(AlertsInfoState, null, ...state.map(line)),
@@ -3313,6 +3313,29 @@ class AlertsPanel extends PureComponent {
             AlertsHeadRight,
             null,
             React.createElement(AlertsTally, null, tally),
+            /* **Calls on and off, where the eye lands** (30 Sep 2026, "calls
+             * modunu turn off etmek kullanıcı için zor, butonu bulması zor").
+             * It was "turn off" in the last row of the panel's foot, under
+             * five rows of board settings and at the fold on a laptop. It is
+             * the panel's first control now, the same switch Settings uses. */
+            onCalls &&
+              React.createElement(
+                AlertsCallsSwitch,
+                { "data-calls-switch": this.props.predict === true ? "on" : "off" },
+                React.createElement(
+                  AlertsCallsSwitchText,
+                  { "aria-hidden": "true" },
+                  this.props.predict === true ? msg("al_calls_state_on", "On") : msg("al_calls_state_off", "Off"),
+                ),
+                React.createElement(ToggleSwitch, {
+                  active: this.props.predict === true,
+                  role: "switch",
+                  "aria-checked": this.props.predict === true ? "true" : "false",
+                  "aria-label": msg("al_calls_switch", "Calls on the chart"),
+                  title: msg("al_calls_switch_title", "Calls on the chart — your calls and score are kept either way (L)"),
+                  onClick: () => this.props.onPredictChange && this.props.onPredictChange(this.props.predict !== true),
+                }),
+              ),
             React.createElement(
               AlertsInfoBtn,
               {

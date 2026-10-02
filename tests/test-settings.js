@@ -488,7 +488,14 @@ const handled = {
 /* A modifier held through a gesture is read by the gesture, not by the key
    handler: Shift + drag is the ruler (29 Sep 2026), read on the press in
    chart-viewport.js. It is advertised all the same, and must be read there. */
-const gestures = { Shift: [fs.readFileSync(`${base}/chart-viewport.js`, "utf8"), "e.shiftKey"] };
+/* And a key read by a focused control rather than the page: ↑ / ↓ walk the
+   board from its "now" handle (handleNowKey, 30 Sep 2026). */
+const chartSrc = fs.readFileSync(`${base}/chart.js`, "utf8");
+const gestures = {
+  Shift: [fs.readFileSync(`${base}/chart-viewport.js`, "utf8"), "e.shiftKey"],
+  "↑": [chartSrc, '"ArrowUp" ? 1 : -1'],
+  "↓": [chartSrc, 'e.key === "ArrowDown"'],
+};
 for (const key of advertised) {
   if (key === "–") continue; // a range dash, not a key
   if (gestures[key]) {

@@ -306,24 +306,71 @@ const PriceStatItem = styled.span`
  *
  * The second leg's ink is asked of `chart.js` (`compareInk`) — the blue may
  * be named there and nowhere else, and a legend in another colour would be
- * for another chart. The strip keeps the stats row's height and type, so
- * the range switcher under it does not move when a comparison starts. */
+ * for another chart. */
+/* **The comparison as a scoreboard** (1 Oct 2026, *"compare'ı tasarımsal
+ * olarak geliştirelim … şu anki tasarımımıza uygun"*). It was one line of
+ * 9px capitals — two legs, the gap, a count, "since", three buttons — run
+ * together. Now each figure is the price head's own grammar, the value over
+ * a small tracked label: the two legs in their inks, then the gap, the count
+ * of steps that went the same way and how closely the steps moved together,
+ * a rule apart; the buttons at the end. About as tall as the stats row and
+ * the chances line it stands in for, so the range row barely moves. */
 const CompareStrip = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
   flex-wrap: wrap;
-  gap: 0.3rem 1.1rem;
+  gap: 0.6rem 1.5rem;
   margin-top: ${({ theme }) => theme.spacing.small}rem;
   min-height: 1.2rem;
   font-size: 0.7rem;
   color: ${({ theme }) => theme.color.textSecondary};
+
+  @media (max-width: 600px) {
+    gap: 0.5rem 1rem;
+  }
 `;
 
-const CompareLeg = styled.span`
-  display: inline-flex;
+const CompareGroup = styled.div`
+  display: flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 1.25rem;
+
+  & + & {
+    padding-left: 1.5rem;
+    border-left: 1px solid ${({ theme }) => theme.color.border};
+  }
+
+  /* A phone has no room for three figures and their labels on one line
+     (390px: the group ran off both edges, 1 Oct 2026) — they share the
+     width and a label may take two lines. */
+  @media (max-width: 600px) {
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 0.6rem 1rem;
+    max-width: 100%;
+
+    & + & {
+      padding-left: 0;
+      border-left: none;
+    }
+  }
+`;
+
+/* A leg: its move over its line's swatch and name. The DOM keeps swatch,
+   name, value in that order (what a reader of the source expects); the grid
+   puts the value on top. */
+const CompareLeg = styled.span`
+  display: inline-grid;
+  grid-template-areas:
+    "value value"
+    "swatch coin";
+  grid-template-columns: auto auto;
+  justify-content: start;
+  align-items: center;
+  column-gap: 0.4rem;
+  row-gap: 0.15rem;
   white-space: nowrap;
 `;
 
@@ -331,6 +378,7 @@ const CompareLeg = styled.span`
  * stroke, and a swatch the shape of the mark is the one legend nobody has to
  * decode. */
 const CompareSwatch = styled.span`
+  grid-area: swatch;
   display: inline-block;
   width: 0.9rem;
   height: 2px;
@@ -339,6 +387,7 @@ const CompareSwatch = styled.span`
 `;
 
 const CompareCoin = styled.span`
+  grid-area: coin;
   font-size: 0.6rem;
   font-weight: ${({ theme }) => theme.fontWeight.bold};
   letter-spacing: 0.1em;
@@ -346,10 +395,17 @@ const CompareCoin = styled.span`
   color: ${({ theme, second }) => compareInk(theme, second)};
 `;
 
-const CompareValue = styled.span`
+const compareFigure = css`
+  font-size: 1rem;
+  line-height: 1.15;
   font-weight: ${({ theme }) => theme.fontWeight.semibold};
   font-variant-numeric: tabular-nums;
   color: ${({ theme }) => theme.color.text};
+`;
+
+const CompareValue = styled.span`
+  grid-area: value;
+  ${compareFigure};
 `;
 
 const CompareNote = styled.span`
@@ -359,22 +415,55 @@ const CompareNote = styled.span`
   white-space: nowrap;
 `;
 
+/* A figure about the pair: value over its label. */
+const CompareTile = styled.span`
+  display: inline-flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  white-space: nowrap;
+
+  @media (max-width: 600px) {
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: 8rem;
+    align-items: center;
+    text-align: center;
+
+    ${CompareNote} {
+      white-space: normal;
+      line-height: 1.35;
+    }
+  }
+`;
+
+const CompareTileValue = styled.span`
+  ${compareFigure};
+`;
+
+const CompareTileUnit = styled.span`
+  margin-left: 0.2rem;
+  font-size: 0.66rem;
+  font-weight: ${({ theme }) => theme.fontWeight.regular};
+  color: ${({ theme }) => theme.color.textSecondary};
+`;
+
 const CompareStripButton = styled.button.attrs({ type: "button" })`
   /* A button that stays down (the ratio) says so; the others never are */
-  ${({ on, theme }) => (on ? `background: ${theme.color.bgSecondary}; color: ${theme.color.text};` : "")}
-  padding: 0.12rem 0.45rem;
+  padding: 0.35rem 0.6rem;
   border: 1px solid ${({ theme }) => theme.color.border};
   border-radius: 6px;
-  background: transparent;
+  background: ${({ on, theme }) => (on ? theme.color.bgSecondary : "transparent")};
   font-family: ${({ theme }) => theme.font.primary};
   font-size: 0.6rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: ${({ theme }) => theme.color.textSecondary};
+  white-space: nowrap;
+  color: ${({ on, theme }) => (on ? theme.color.text : theme.color.textSecondary)};
   cursor: pointer;
   transition:
     color 0.15s ease,
-    border-color 0.15s ease;
+    border-color 0.15s ease,
+    background 0.15s ease;
 
   &:hover,
   &:focus-visible {
@@ -383,6 +472,12 @@ const CompareStripButton = styled.button.attrs({ type: "button" })`
     border-color: ${({ theme }) => theme.color.borderHover};
   }
   ${touchTarget};
+`;
+
+const CompareActions = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
 `;
 
 const PriceStatKey = styled.span`
@@ -1185,6 +1280,25 @@ const WhereMark = styled.span`
   background: ${({ theme }) => theme.color.text};
 `;
 
+/* The regime row's three shares as one bar: rising, flat, falling in a grey
+   ramp — never the direction colours, which on this app mean a price moved. */
+const ChanceTrack = styled.span`
+  display: inline-flex;
+  width: 3rem;
+  height: 0.375rem;
+  border-radius: 999px;
+  overflow: hidden;
+  gap: 1px;
+  background: ${({ theme }) => theme.color.border};
+`;
+
+const ChanceSeg = styled.span`
+  flex: 1 1 0;
+  min-width: 1px;
+  background: ${({ theme }) => theme.color.text};
+  opacity: ${({ step }) => (step === 0 ? 0.85 : step === 1 ? 0.45 : 0.2)};
+`;
+
 const WhereValue = styled.span`
   min-width: 3ch;
   color: ${({ theme }) => theme.color.text};
@@ -1827,6 +1941,12 @@ const DrawerTabKey = styled.span`
      keyboard to press it on, and the key made every tab a line taller, which
      put the column hung from the foot over the stats row. */
   @media (max-width: 600px), (hover: none) {
+    display: none;
+  }
+
+  /* Switched off in Settings (TAB_KEYS_KEY): the root carries the choice so
+     both columns' tabs answer it from one place. */
+  html[data-tab-keys="off"] & {
     display: none;
   }
 `;

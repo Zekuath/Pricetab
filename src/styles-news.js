@@ -113,11 +113,17 @@ const NewsBody = styled.div`
 
   /* The feed at a reading measure and the column beside it (30 Sep 2026):
      at 1440 the feed took 1,000px and a summary ran to 110 characters a
-     line. Whatever the window has left over sits past the column, on the
-     screens' own left edge. */
+     line. What the window has left over goes to the column (30 Sep 2026):
+     left past it, it was a black band as wide as the column itself at 1440,
+     between the column's words and the screens' tabs. */
   @media (min-width: 1100px) {
-    grid-template-columns: minmax(0, 54rem) 21rem;
-    justify-content: start;
+    grid-template-columns: minmax(0, 54rem) minmax(21rem, 1fr);
+  }
+
+  /* A story open beside the list (1 Oct 2026): the list keeps a headline's
+     measure and the story takes the rest — at 1440 it had the narrow third. */
+  @media (min-width: 1100px) {
+    ${({ reading }) => (reading ? "grid-template-columns: minmax(26rem, 40%) minmax(0, 1fr);" : "")}
   }
 `;
 
@@ -295,14 +301,18 @@ const NewsSourceName = styled.span`
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  text-decoration: ${({ off }) => (off ? "line-through" : "none")};
+  color: ${({ theme, off }) => (off ? theme.color.textSecondary : "inherit")};
 `;
 
 const NewsSourceState = styled.span`
   font-size: 0.64rem;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
-  color: ${({ theme, warn }) => (warn ? theme.color.chartLineRed : theme.color.textSecondary)};
+  /* A quiet or paused source is the one line here that asks to be read, and
+     it says so in weight and full ink — not in the down colour, which on
+     this app means a price fell (30 Sep 2026). */
+  font-weight: ${({ theme, warn }) => (warn ? theme.fontWeight.semibold : theme.fontWeight.regular)};
+  color: ${({ theme, warn }) => (warn ? theme.color.text : theme.color.textSecondary)};
 `;
 
 const NewsControls = styled.div`
@@ -315,8 +325,6 @@ const NewsControls = styled.div`
   /* The same width as the feed and its column below, so the last control
      ends where the column's words do. */
   @media (min-width: 1100px) {
-    box-sizing: border-box;
-    max-width: 75rem;
     padding-right: 1rem;
   }
 
@@ -381,6 +389,23 @@ const NewsScopeRow = styled.div`
 
   @media (max-width: 600px) {
     display: ${({ wide }) => (wide ? "none" : "inline-flex")};
+  }
+`;
+
+/* The saved view's label: "Saved · 3" in full, the count alone beside the
+   scope on a phone, where the full label put the tray on a line of its own. */
+const NewsSavedLong = styled.span`
+  @media (max-width: 600px) {
+    display: none;
+  }
+`;
+
+const NewsSavedShort = styled.span`
+  display: none;
+  font-variant-numeric: tabular-nums;
+
+  @media (max-width: 600px) {
+    display: inline;
   }
 `;
 
@@ -499,8 +524,17 @@ const NewsChips = styled.div`
   gap: 0.3rem;
   padding: 0 2.5rem 0.85rem;
 
+  /* One line on a phone, moved sideways (30 Sep 2026): wrapped, six sources
+     took two rows, and with the other controls the first headline started
+     300px down a 844px screen. */
   @media (max-width: 600px) {
-    padding: 0 1rem 0.7rem;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding: 0.2rem 1rem 0.7rem;
+    scrollbar-width: none;
+    &::-webkit-scrollbar {
+      display: none;
+    }
   }
 
   /* From 1100px every source is a line in the column beside the feed, with
@@ -512,7 +546,8 @@ const NewsChips = styled.div`
 
 /* Off is a real state, not a dimmer one: a chip you have switched off has to
  * look switched off from across the room, or the panel looks like it has lost
- * a source rather than hidden one. */
+ * a source rather than hidden one. A dashed edge says it (30 Sep 2026) — a
+ * line through the name read as an error, and made it hard to read. */
 const NewsChip = styled.button.attrs({ type: "button" })`
   ${newsPill};
   display: inline-flex;
@@ -521,8 +556,9 @@ const NewsChip = styled.button.attrs({ type: "button" })`
   background: transparent;
   color: ${({ theme, active }) =>
     active ? theme.color.text : theme.color.textSecondary};
-  opacity: ${({ active }) => (active ? 1 : 0.45)};
-  text-decoration: ${({ active }) => (active ? "none" : "line-through")};
+  opacity: ${({ active }) => (active ? 1 : 0.55)};
+  border-style: ${({ active }) => (active ? "solid" : "dashed")};
+  flex: none;
 
   &:hover {
     opacity: 1;
@@ -535,16 +571,15 @@ const NewsChip = styled.button.attrs({ type: "button" })`
   }
 `;
 
-/* The age on a source that has stopped publishing. It carries the down colour
- * rather than the text colour, because it is the one thing on this panel that
- * is a warning: everything else here is a headline or a control, and a stale
- * feed reading exactly like a live one is the failure this panel was built
- * for. Not a colour on its own — the number is the message, and the colour
- * only makes it findable. */
+/* The age on a source that has stopped publishing — the one thing on this
+ * panel that is a warning, because a stale feed reading exactly like a live
+ * one is the failure this panel was built for. The number is the message;
+ * weight makes it findable. It was the down colour until 30 Sep 2026, and
+ * red on this app means a price fell. */
 const NewsChipAge = styled.span`
   font-size: 0.58rem;
-  color: ${({ theme }) => theme.color.chartLineRed};
-  opacity: 0.9;
+  font-weight: ${({ theme }) => theme.fontWeight.semibold};
+  color: ${({ theme }) => theme.color.text};
 `;
 
 const NewsList = styled.div`
@@ -704,7 +739,10 @@ const NewsSaveBtn = styled.button.attrs({ type: "button" })`
   @media (max-width: 620px) {
     right: 0.5rem;
   }
-  ${touchTarget};
+  /* touchBox and not touchTarget: the latter sets position: relative on a
+     touch screen, which pulled this button out of its corner and onto a
+     line of its own under the row (390px, 30 Sep 2026). */
+  ${touchBox};
 `;
 
 const NewsRow = styled.a`
@@ -740,6 +778,12 @@ const NewsRow = styled.a`
      stored here — and only colour, the one property :visited may change. */
   &:visited ${NewsRowTitle} {
     color: ${({ theme }) => theme.color.textSecondary};
+  }
+  /* The story open in the preview: the row stays lit and carries a rule on
+     its reading edge, so the list says which one the column is about. */
+  &[aria-current="true"] {
+    background: ${({ theme }) => theme.color.bgSecondary};
+    box-shadow: inset 3px 0 0 ${({ theme }) => theme.color.text};
   }
 `;
 
@@ -1072,10 +1116,21 @@ const NewsEmpty = styled.div`
   }
 `;
 
+/* What the sources' ages and "none" mean. It was pinned under the list,
+   40–80px of prose on every screen for as long as one feed was quiet; it is
+   the list's last line now, and from 1100px it sits under the sources in the
+   column instead (30 Sep 2026). */
 const NewsStale = styled.div`
-  padding: 0.6rem clamp(1rem, 3vw, 2.5rem);
-  border-top: 1px solid ${({ theme }) => theme.color.border};
+  padding: 1rem 3.5rem 1.2rem 2.5rem;
   font-size: 0.66rem;
+
+  @media (max-width: 620px) {
+    padding: 0.9rem 1rem 1rem;
+  }
+
+  @media (min-width: 1100px) {
+    display: none;
+  }
   line-height: 1.5;
   color: ${({ theme }) => theme.color.textSecondary};
 `;
@@ -1161,5 +1216,193 @@ const NewsAccessOff = styled.button.attrs({ type: "button" })`
   &:hover {
     color: ${({ theme }) => theme.color.chartLineRed};
     border-color: ${({ theme }) => theme.color.chartLineRed};
+  }
+`;
+
+/* THE PREVIEW (1 Oct 2026) — a story read beside the list, in the column
+   the overview otherwise holds. The list narrows to a reading measure and the
+   column takes what is left, because the text is now the thing being read. */
+const NewsPreview = styled.aside`
+  display: none;
+  min-height: 0;
+  overflow-y: auto;
+  border-left: 1px solid ${({ theme }) => theme.color.border};
+  border-top: 1px solid ${({ theme }) => theme.color.border};
+  background: ${({ theme }) => theme.color.bg};
+  ${themedScrollbar};
+
+  @media (min-width: 1100px) {
+    display: block;
+  }
+`;
+
+const NewsPreviewInner = styled.article`
+  max-width: 46rem;
+  padding: 1.1rem 2rem 2.5rem;
+`;
+
+const NewsPreviewBar = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.66rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: ${({ theme }) => theme.color.textSecondary};
+`;
+
+const NewsPreviewSource = styled.span`
+  font-weight: ${({ theme }) => theme.fontWeight.semibold};
+  color: ${({ theme }) => theme.color.text};
+`;
+
+const NewsPreviewSpacer = styled.span`
+  flex: 1;
+`;
+
+const newsPreviewBtn = css`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  height: 2rem;
+  padding: 0 0.75rem;
+  border: 1px solid ${({ theme }) => theme.color.border};
+  border-radius: 6px;
+  background: transparent;
+  font: inherit;
+  font-size: 0.72rem;
+  letter-spacing: 0;
+  text-transform: none;
+  text-decoration: none;
+  color: ${({ theme }) => theme.color.text};
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+
+  &:hover,
+  &:focus-visible {
+    background: ${({ theme }) => theme.color.bgSecondary};
+    border-color: ${({ theme }) => theme.color.borderHover};
+  }
+
+  &:focus {
+    outline: none;
+  }
+
+  &:focus-visible {
+    box-shadow: 0 0 0 2px ${({ theme }) => theme.color.borderHover};
+  }
+  ${touchBox};
+`;
+
+const NewsPreviewBtn = styled.button.attrs({ type: "button" })`
+  ${newsPreviewBtn};
+`;
+
+const NewsPreviewLink = styled.a`
+  ${newsPreviewBtn};
+`;
+
+const NewsPreviewTitle = styled.h3`
+  margin: 0.9rem 0 0.4rem;
+  font-size: 1.15rem;
+  line-height: 1.4;
+  font-weight: ${({ theme }) => theme.fontWeight.semibold};
+  color: ${({ theme }) => theme.color.text};
+`;
+
+const NewsPreviewWhen = styled.div`
+  font-size: 0.68rem;
+  color: ${({ theme }) => theme.color.textSecondary};
+`;
+
+const NewsPreviewActions = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.9rem 0 1.1rem;
+`;
+
+const NewsPreviewSection = styled.section`
+  padding: 0.9rem 0 1rem;
+  border-top: 1px solid ${({ theme }) => theme.color.border};
+`;
+
+/* The reading as a ledger: a label column and what was counted beside it. */
+const NewsReadGrid = styled.dl`
+  display: grid;
+  grid-template-columns: 9rem minmax(0, 1fr);
+  gap: 0.5rem 1rem;
+  margin: 0;
+  font-size: 0.76rem;
+  line-height: 1.5;
+`;
+
+const NewsReadKey = styled.dt`
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding-top: 0.2rem;
+  color: ${({ theme }) => theme.color.textSecondary};
+`;
+
+const NewsReadValue = styled.dd`
+  margin: 0;
+  color: ${({ theme }) => theme.color.text};
+  font-variant-numeric: tabular-nums;
+`;
+
+const NewsReadQuiet = styled.span`
+  color: ${({ theme }) => theme.color.textSecondary};
+`;
+
+const NewsReadSentence = styled.blockquote`
+  margin: 0 0 0.6rem;
+  padding: 0 0 0 0.8rem;
+  border-left: 2px solid ${({ theme }) => theme.color.border};
+  font-size: 0.8rem;
+  line-height: 1.6;
+  color: ${({ theme }) => theme.color.text};
+`;
+
+/* The text itself, at a reading measure and size. */
+const NewsReadText = styled.div`
+  font-size: 0.86rem;
+  line-height: 1.75;
+  color: ${({ theme }) => theme.color.text};
+
+  p {
+    margin: 0 0 0.9rem;
+  }
+
+  h4 {
+    margin: 1.1rem 0 0.5rem;
+    font-size: 0.8rem;
+    font-weight: ${({ theme }) => theme.fontWeight.semibold};
+  }
+`;
+
+const NewsReadNote = styled.p`
+  margin: 0.6rem 0 0;
+  font-size: 0.66rem;
+  line-height: 1.55;
+  color: ${({ theme }) => theme.color.textSecondary};
+`;
+
+const newsReadPulse = keyframes`
+  0%, 100% { opacity: 0.45; }
+  50% { opacity: 0.9; }
+`;
+
+const NewsReadSkeleton = styled.div`
+  height: 0.7rem;
+  margin: 0 0 0.7rem;
+  width: ${({ w }) => w || "100%"};
+  border-radius: 4px;
+  background: ${({ theme }) => theme.color.bgSecondary};
+  animation: ${newsReadPulse} 1.4s ease-in-out infinite;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
   }
 `;

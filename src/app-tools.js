@@ -215,6 +215,7 @@ const toolHandlers = (app) => ({
       ChartToolsBox,
       {
         "data-chart-tools": open ? "open" : "shut",
+        "data-tour": "tools",
         onMouseEnter: app.toolsPointerIn,
         onMouseLeave: app.toolsPointerOut,
       },

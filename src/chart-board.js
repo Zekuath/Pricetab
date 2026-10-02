@@ -411,10 +411,25 @@ const chartBoardGeometry = (chart) => ({
        * arrives exactly on the rung, which is what has to be true when the
        * hand stops. */
       if (travelling) {
-        const from = rung(needAt(chart.zoomAnim.from));
-        const to = rung(needAt(chart._zoomTo || zoom));
+        /* From the step **on screen** when the travel began, not the rung its
+         * zoom would have chosen (30 Sep 2026): the two differ whenever the
+         * step was held by its stickiness, and the first frame then jumped to
+         * the other one. Worked out once per travel and kept with it, so the
+         * frames between are one geometric glide from what you saw to the
+         * rung it lands on. */
         const t = chart._zoomEased || 0;
-        if (from > 0 && to > 0) return from * Math.pow(to / from, t);
+        let ends = chart._zoomEnds;
+        if (!ends || ends.start !== chart.zoomAnim.start) {
+          const from = chart._shownStep > 0 ? chart._shownStep : rung(needAt(chart.zoomAnim.from));
+          ends = {
+            start: chart.zoomAnim.start,
+            fromStep: from,
+            toStep: rung(needAt(chart._zoomTo || zoom)),
+            fromCentre: chart._shownCentre,
+          };
+          chart._zoomEnds = ends;
+        }
+        if (ends.fromStep > 0 && ends.toStep > 0) return ends.fromStep * Math.pow(ends.toStep / ends.fromStep, t);
       }
       const step = rung(need);
       if (!travelling) held.step = step;
@@ -547,6 +562,8 @@ const chartBoardGeometry = (chart) => ({
      * find them somewhere new. Additive here, not multiplicative — a pan is a
      * distance, and the eased lerp is between two counts of squares. */
     boardPanRows: () => {
+      // While the hand holds the board it is wherever the hand put it
+      if (chart._panDrag != null) return chart._panDrag;
       const to = chart.boardPan || 0;
       const anim = chart.panAnim;
       if (!anim) return to;
@@ -672,17 +689,49 @@ const chartBoardGeometry = (chart) => ({
       const roomy = hi - lo <= span - step * 2;
       const keepLo = roomy ? lo : last;
       const keepHi = roomy ? hi : last;
-      const anchor = roomy
-        ? slice[0]
-          ? Number(slice[0].price)
-          : (lo + hi) / 2
-        : last;
+      // (where the window is anchored lives in `placeFor`, per step)
       const inside = (base) =>
         keepLo >= base + step * 0.999 && keepHi <= base + span - step * 0.999;
       const held = chart.board();
       const guard = Math.ceil(rows) * 4;
+      /* The placement below, for any step — the travel needs it for the step
+         it lands on before that step is on screen. */
+      const placeFor = (st) => {
+        const sp = rows * st;
+        /* Whether the slice fits is a question about *this* step's window:
+           read off the frame's interpolated span, it flipped halfway through
+           a wheel zoom and moved the travel's target by a square and a half. */
+        const fits = hi - lo <= sp - st * 2;
+        const kLo = fits ? lo : last;
+        const kHi = fits ? hi : last;
+        const at = fits ? (slice[0] ? Number(slice[0].price) : (lo + hi) / 2) : last;
+        let b = Math.floor(at / st) * st - Math.floor((Math.floor(rows) - 1) / 2) * st;
+        for (let i = 0; i < guard && kLo < b + st * 0.999; i++) b -= st;
+        for (let i = 0; i < guard && kHi > b + sp - st * 0.999; i++) b += st;
+        return b;
+      };
       let base = held.base;
-      if (!(held.baseStep === step && isFinite(base) && inside(base))) {
+      const ends = chart.zoomAnim ? chart._zoomEnds : null;
+      if (ends && ends.start === chart.zoomAnim.start && ends.toStep > 0) {
+        /* **No snapping while the board zooms** (30 Sep 2026, "calls modunda
+         * hâlâ saçma titremeler"). Mid-travel the step is not a round number
+         * and changes every frame, and the window was re-placed on every
+         * frame as a whole multiple of it — so the base jumped by up to a
+         * square, back and forth: measured, the live price dot went
+         * 630 → 672 → 632 → 689 px over consecutive frames, 46 reversals in
+         * four presses, the line and the whole lattice with it. Now the
+         * window's middle glides, on the same eased clock as the step, from
+         * where it was on screen to where the landing step will place it;
+         * the snap to whole squares happens once, at the landing, where the
+         * two agree. Nothing is remembered while travelling. */
+        // Where it lands, worked out once — the price ticking mid-travel must
+        // not move the target under the glide
+        if (!isFinite(ends.toCentre)) ends.toCentre = placeFor(ends.toStep) + (rows * ends.toStep) / 2;
+        const toCentre = ends.toCentre;
+        const fromCentre = isFinite(ends.fromCentre) ? ends.fromCentre : toCentre;
+        const t = chart._zoomEased || 0;
+        base = fromCentre + (toCentre - fromCentre) * t - span / 2;
+      } else if (!(held.baseStep === step && isFinite(base) && inside(base))) {
         /* The anchor's own square, put near the middle of the window.
          *
          * `ceil` was tried here, to hand a fall the spare square on an uneven
@@ -695,12 +744,9 @@ const chartBoardGeometry = (chart) => ({
          * full height of the chart, which is a whole extra row and costs
          * nothing at the other end; leaning the window as well was a guess
          * with a real price and no evidence behind it. */
-        base =
-          Math.floor(anchor / step) * step -
-          Math.floor((Math.floor(rows) - 1) / 2) * step;
         // …then slid, a square at a time, until the window holds what it must
-        for (let i = 0; i < guard && keepLo < base + step * 0.999; i++) base -= step;
-        for (let i = 0; i < guard && keepHi > base + span - step * 0.999; i++) base += step;
+        // (`placeFor`, the one the zoom's landing is aimed at)
+        base = placeFor(step);
         held.base = base;
         held.baseStep = step;
       }
@@ -721,12 +767,38 @@ const chartBoardGeometry = (chart) => ({
        * not ask to be. */
       const shift = chart.boardPanRows() * step;
       const domain = [base + shift, base + span + shift];
+      // What is on screen, for a travel that starts from here
+      chart._shownStep = step;
+      chart._shownCentre = base + span / 2;
 
       const priceToY = scaleLinear().range([bottom, top]).domain(domain);
       /* Levels are the whole multiples of the step, so they are anchored to
        * absolute price the way the columns are anchored to absolute time —
        * $43,000 is on a line whatever the window happens to be showing. */
-      const firstLevel = Math.ceil(domain[0] / step) * step;
+      let firstLevel = Math.ceil(domain[0] / step) * step;
+      /* **…except while the board zooms**, where whole multiples of a step
+       * that changes every frame put the lines somewhere new each frame: the
+       * lattice's phase went 0.40, 0.63, 0.32, 0.67 of a square on
+       * consecutive frames, a shimmer across every row. During the travel the
+       * lines hang from one reference level that glides, on the same clock,
+       * from a line of the old lattice to a line of the new one — on screen
+       * where they were when it starts and where they will be when it lands. */
+      const zEnds = chart.zoomAnim ? chart._zoomEnds : null;
+      if (zEnds && zEnds.start === chart.zoomAnim.start && zEnds.fromStep > 0 && zEnds.toStep > 0 && isFinite(zEnds.toCentre)) {
+        if (!isFinite(zEnds.fromRef)) {
+          /* A line actually on screen, not a multiple worked out again: a
+             press landing before the last travel finished found a lattice
+             hanging from that travel's reference, and a rounded multiple of
+             its not-quite-round step sat half a square away from it. */
+          const c = isFinite(zEnds.fromCentre) ? zEnds.fromCentre : zEnds.toCentre;
+          zEnds.fromRef = isFinite(chart._shownRef) ? chart._shownRef : Math.round(c / zEnds.fromStep) * zEnds.fromStep;
+        }
+        if (!isFinite(zEnds.toRef)) zEnds.toRef = Math.round(zEnds.toCentre / zEnds.toStep) * zEnds.toStep;
+        const tz = chart._zoomEased || 0;
+        const ref = zEnds.fromRef + (zEnds.toRef - zEnds.fromRef) * tz;
+        firstLevel = ref + Math.ceil((domain[0] - ref) / step) * step;
+      }
+      chart._shownRef = firstLevel;
       const count = Math.floor((domain[1] - firstLevel) / step) + 1;
       const levels = [];
       // By index, not by accumulating a float: at 0.0001 steps the drift is

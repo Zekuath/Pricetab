@@ -1,48 +1,4 @@
 /* WIDGET PANEL STYLES */
-/* Hidden until the card is hovered — except where there is no hover to give.
- * On a tablet the widget row sits at the bottom of the screen and this was
- * the only way to dismiss a card, so it was unreachable on exactly the
- * devices that have the least room for the row. */
-const WidgetHideButton = styled.button.attrs({ type: "button" })`
-  position: absolute;
-  top: 0.4em;
-  right: 0.55em;
-  width: 1.15em;
-  height: 1.15em;
-  padding: 0;
-  border: none;
-  background: transparent;
-  color: ${({ theme }) => theme.color.text};
-  font-size: 0.75em;
-  cursor: pointer;
-  line-height: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0;
-  transition: opacity 0.15s ease;
-  border-radius: 50%;
-
-  &:hover {
-    background: ${({ theme }) => theme.color.border}44;
-  }
-
-  @media (hover: none) {
-    opacity: 0.55;
-  }
-
-  /* On a touch screen the whole corner of the card is the button — the box
-     the shared touch fragment would draw reaches past the card's edge, where
-     the next card or the chart takes the press instead. The glyph stays the
-     size it is; the button around it grows, in em like everything in a card. */
-  @media (pointer: coarse) {
-    top: 0;
-    right: 0;
-    width: 2.6em;
-    height: 2.6em;
-  }
-`;
-
 /* **The widgets are a drawer now, not a rail** (25 Sep 2026, *"soldan
  * hoverlanabilir olan menülerin yani widget, chart settings, targets, calls
  * kısmı soldan… folder tag gibi"*). They were a column of cards pinned down
@@ -92,6 +48,37 @@ const WidgetsDrawer = styled.aside`
  * drawer is two cards wide, and a column of one would leave half of it empty
  * while the list scrolled. min(100%, …) so a single XL card still fits a
  * phone's sheet instead of overflowing it. */
+const widgetJiggle = keyframes`
+  0% { transform: rotate(-0.5deg); }
+  50% { transform: rotate(0.5deg); }
+  100% { transform: rotate(-0.5deg); }
+`;
+
+/* Edit mode on the grid: every card jiggles (offset so they do not move as
+   one), and is a drag handle. Only while editing — an idle new tab runs no
+   animation — and never under reduced motion. */
+const widgetEditing = css`
+  & > [data-widget] {
+    cursor: grab;
+    animation: ${widgetJiggle} 0.32s ease-in-out infinite;
+  }
+  & > [data-widget]:nth-child(2n) {
+    animation-delay: -0.16s;
+    animation-duration: 0.36s;
+  }
+  /* The card under the pointer or the focus holds still, so its "−" is a
+     target that stays where it is pressed. */
+  & > [data-widget]:hover,
+  & > [data-widget]:focus-within {
+    animation-play-state: paused;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    & > [data-widget] {
+      animation: none;
+    }
+  }
+`;
+
 const WidgetPanel = styled.div`
   display: grid;
   /* **The column floor rides the card size** (27 Sep 2026). It was 12.5rem
@@ -100,12 +87,28 @@ const WidgetPanel = styled.div`
      made the text bigger and the cards no wider. Now the drawer holds as
      many of the chosen size as fit, and widening it (the right edge) is how
      to get two XL cards side by side. */
+  /* **iOS's grid** (1 Oct 2026): a column is a small card and a medium or
+     large card spans two. Dense, so a small card fills the hole a wide one
+     leaves. */
   grid-template-columns: repeat(
     auto-fill,
-    minmax(min(100%, ${({ scale }) => 12.5 * (scale || 1)}rem), 1fr)
+    minmax(min(100%, ${({ scale }) => 9.5 * (scale || 1)}rem), 1fr)
   );
+
+  /* One column (the drawer at its floor, a large type scale): every card
+     takes the row, whatever its size — see watchWidgetPanel. */
+  /* Doubled to outrank the card's own size rules, written later. */
+  &&[data-cols="1"] > * {
+    grid-column: auto;
+    grid-row: auto;
+  }
+  grid-auto-flow: row dense;
+
+  &[data-editing="true"] {
+    ${widgetEditing};
+  }
   align-content: start;
-  gap: 0.5rem;
+  gap: 0.7rem;
   /* Room for the cards' own shadow inside the scroller, which would
      otherwise clip it at the edges. */
   padding: 3px;
@@ -418,28 +421,56 @@ const WidgetCard = styled.div`
   position: relative;
   flex: 0 0 auto;
   font-size: ${({ scale }) => scale || 1}rem;
+  /* iOS's families on the grid: small one column, medium two, large two by
+     two — and a floor so a short card is still a tile, not a strip. Read
+     from the attribute, so the gallery's previews and the cards share one
+     rule. */
+  grid-column: span 1;
+  grid-row: span 1;
+  min-height: 8.25em;
+  /* Each card its own height: stretched to a taller neighbour's row, a
+     small card was a tall tile with its figure at the top (640px drawer,
+     1 Oct 2026). Large still fills the two rows it spans. */
+  align-self: start;
+  &[data-size="m"] {
+    grid-column: span 2;
+  }
+  &[data-size="l"] {
+    grid-column: span 2;
+    grid-row: span 2;
+    min-height: 17em;
+    align-self: stretch;
+  }
+  /* The card a menu is open for stands forward, like iOS's lifted widget. */
+  &[data-menu-open="true"] {
+    transform: scale(1.02);
+    z-index: 2;
+  }
+  display: flex;
+  flex-direction: column;
   /* A card in the phone's scrolling row keeps a width its title and its ×
      both fit in; a narrower one drew the × over the title. */
   @media (max-width: 600px) {
     min-width: 11em;
   }
-  background: ${({ theme }) =>
-    theme.color.bg === "#ffffff"
-      ? "rgba(255, 255, 255, 0.95)"
-      : "rgba(15, 15, 15, 0.9)"};
-  backdrop-filter: blur(8px);
-  border: 1px solid ${({ theme }) => theme.color.border};
-  border-radius: 0.6em;
-  padding: 0.55em 0.85em 0.65em;
+  /* **iOS's surface** (1 Oct 2026): a filled tile with a continuous-looking
+     corner, no outline in the light theme and a hairline in the dark one
+     (where a shadow says nothing), the shadow soft and wide. */
+  background: ${({ theme }) => (theme.color.bg === "#ffffff" ? "#ffffff" : "#1c1c1e")};
+  border: 1px solid ${({ theme }) => (theme.color.bg === "#ffffff" ? "transparent" : "rgba(255, 255, 255, 0.07)")};
+  border-radius: 1.35em;
+  padding: 0.85em 0.95em 0.9em;
   /* A ledger, not a badge. Every card was centred — title, figure, caption —
      which reads as a row of tiles on a dashboard poster. Left-aligned, with
      the title as a head bar and the figure under it, the column reads like a
      desk's readings: the eye runs down one edge and every card starts where
      the last one did. The meters and bars are full-width either way. */
   text-align: left;
-  box-shadow: 0 2px 8px ${({ theme }) => theme.color.shadow};
-  cursor: grab;
+  box-shadow: ${({ theme }) =>
+    theme.color.bg === "#ffffff" ? "0 1px 2px rgba(0, 0, 0, 0.06), 0 8px 24px rgba(0, 0, 0, 0.07)" : "0 8px 24px rgba(0, 0, 0, 0.35)"};
+  cursor: default;
   user-select: none;
+  -webkit-touch-callout: none;
   transition:
     opacity 0.15s ease,
     transform 0.15s ease,
@@ -448,26 +479,31 @@ const WidgetCard = styled.div`
   opacity: ${({ dragging }) => (dragging ? 0.4 : 1)};
   transform: ${({ dragging }) => (dragging ? "scale(0.97)" : "scale(1)")};
 
-  &:hover {
-    border-color: ${({ theme }) => theme.color.borderHover};
+
+  /* Focus from the keyboard: the card is what opens its menu (Enter). */
+  &:focus {
+    outline: none;
   }
 
-  &:hover ${WidgetHideButton}, &:focus-within ${WidgetHideButton} {
-    opacity: 0.55;
+  &:focus-visible {
+    box-shadow: 0 0 0 2px ${({ theme }) => theme.color.borderHover};
   }
 
-  &:hover ${WidgetHideButton}:hover, ${WidgetHideButton}:focus {
-    opacity: 1;
+  /* A phone's sheet is one column of whatever fits: no spans there. */
+  @media (max-width: 600px) {
+    grid-column: auto;
+    grid-row: auto;
   }
+
 
   /* Tablet */
   @media (max-width: 1024px) {
-    padding: 0.45em 0.65em;
+    padding: 0.7em 0.8em;
   }
 
   /* Phone */
   @media (max-width: 600px) {
-    padding: 0.35em 0.55em;
+    padding: 0.6em 0.7em;
   }
 `;
 
@@ -477,14 +513,18 @@ const WidgetCard = styled.div`
  * effective contrast was lower than the number suggested. */
 /* The card's head bar: the title on its own line with a hairline under it,
  * and room at the right end for the × so the two never meet. */
+/* iOS's widget head: the name in a small semibold line, no rule under it —
+   the tile's own edge already says where the card is. The whole width is the
+   name's: nothing sits on a card's edge since the controls moved to its menu
+   (a small card read "FEAR & GR…" while room was kept for them). */
 const WidgetLabel = styled.div`
-  font-size: 0.62em;
-  letter-spacing: 0.1em;
+  font-size: 0.66em;
+  font-weight: ${({ theme }) => theme.fontWeight.semibold};
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: ${({ theme }) => theme.color.textSecondary};
-  padding: 0 1.6em 0.45em 0;
-  margin-bottom: 0.5em;
-  border-bottom: 1px solid ${({ theme }) => theme.color.border};
+  padding: 0;
+  margin-bottom: 0.55em;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -494,8 +534,8 @@ const WidgetLabel = styled.div`
  * the title over it — the rule every readings card on the derivatives page
  * follows, brought to the column. */
 const WidgetValue = styled.div`
-  font-size: 1.15em;
-  font-weight: ${({ theme }) => theme.fontWeight.semibold};
+  font-size: 1.4em;
+  font-weight: ${({ theme }) => theme.fontWeight.bold};
   letter-spacing: 0.01em;
   font-variant-numeric: tabular-nums;
   line-height: 1.2;
@@ -757,5 +797,471 @@ const RsiLabels = styled.div`
   justify-content: space-between;
   font-size: 0.68em;
   color: ${({ theme }) => theme.color.textSecondary};
+`;
+
+
+/* **What a size shows** (1 Oct 2026): the card's content, cut by size. A
+ * small card keeps its figure and its first line; medium four lines; large
+ * everything. A list is cut by rows instead — three, six, all — so a small
+ * watchlist is still a list. Hidden, not unmounted: every card builds its
+ * content the same way, and a size is how much of it shows. */
+const WidgetBody = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.2em;
+  flex: 1;
+  min-width: 0;
+
+  &[data-size="s"] > :nth-child(n + 3) {
+    display: none;
+  }
+
+  &[data-size="m"] > :nth-child(n + 5) {
+    display: none;
+  }
+
+  &[data-size="s"] ${WidgetCoinList} > :nth-child(n + 4) {
+    display: none;
+  }
+
+  /* Six rows, and the movers' divider between them counted as a seventh. */
+  &[data-size="m"] ${WidgetCoinList} > :nth-child(n + 8) {
+    display: none;
+  }
+
+  /* A list that is the card's first child is the card: it stays. */
+  &[data-size="s"] > ${WidgetCoinList} {
+    min-width: 0;
+  }
+`;
+
+/* Large's extra: the sentence that says what the card is. */
+const WidgetFootnote = styled.div`
+  margin-top: auto;
+  padding-top: 0.7em;
+  font-size: 0.64em;
+  line-height: 1.45;
+  color: ${({ theme }) => theme.color.textSecondary};
+`;
+
+/* ── iOS's way of arranging widgets (1 Oct 2026, *"kenardan özelleştirme
+ * yapmayalım, eklerken Apple iOS gibi yapalım"*) ──────────────────────────
+ * Researched against Apple's own pages: a widget is added from a gallery
+ * where its sizes are swiped through as previews and "Add Widget" places
+ * it; a widget's size is changed from the menu a long press opens (iOS 18:
+ * shape icons above "Edit Widget" and "Remove Widget", the removal asked
+ * twice); arranging is an edit mode — the widgets jiggle, a "−" removes,
+ * a drag moves, "Done" ends it. Nothing sits on a card's edge at rest. */
+
+/* iOS's "−": a grey disc on the card's top-left corner, in edit mode only. */
+const WidgetRemoveBadge = styled.button.attrs({ type: "button" })`
+  position: absolute;
+  top: -0.45em;
+  left: -0.45em;
+  z-index: 3;
+  width: 1.5em;
+  height: 1.5em;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: ${({ theme }) => (theme.color.bg === "#ffffff" ? "#d1d1d6" : "#636366")};
+  color: ${({ theme }) => (theme.color.bg === "#ffffff" ? "#1c1c1e" : "#ffffff")};
+  font-family: ${({ theme }) => theme.font.primary};
+  font-size: 0.9em;
+  font-weight: ${({ theme }) => theme.fontWeight.bold};
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+
+  &:focus {
+    outline: none;
+  }
+  &:focus-visible {
+    box-shadow: 0 0 0 2px ${({ theme }) => theme.color.borderHover};
+  }
+`;
+
+/* The menu a long press, a right click or Enter opens: sizes as shapes,
+   then the two actions. A fixed layer over the drawer, placed by the app
+   under (or over) the card it belongs to. */
+const WidgetMenu = styled.div`
+  position: fixed;
+  z-index: 200;
+  width: 15.5rem;
+  padding: 0.35rem;
+  border-radius: 0.9rem;
+  background: ${({ theme }) => (theme.color.bg === "#ffffff" ? "rgba(255, 255, 255, 0.96)" : "rgba(44, 44, 46, 0.96)")};
+  backdrop-filter: blur(20px);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3), 0 0 0 1px ${({ theme }) => theme.color.border};
+  font-family: ${({ theme }) => theme.font.primary};
+  animation: ${widgetAppear} 0.18s cubic-bezier(0.22, 1, 0.36, 1);
+`;
+
+const WidgetMenuSizes = styled.div`
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.3rem;
+  padding: 0.2rem 0.2rem 0.45rem;
+  margin-bottom: 0.25rem;
+  border-bottom: 1px solid ${({ theme }) => theme.color.border};
+`;
+
+const WidgetMenuSize = styled.button.attrs({ type: "button" })`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 2.6rem;
+  border: none;
+  border-radius: 0.6rem;
+  background: ${({ active, theme }) => (active ? theme.color.bgSecondary : "transparent")};
+  cursor: pointer;
+
+  &:hover,
+  &:focus-visible {
+    background: ${({ theme }) => theme.color.bgSecondary};
+    outline: none;
+  }
+`;
+
+/* The size as its shape, the way iOS 18's menu draws it. */
+const WidgetMenuShape = styled.span`
+  display: block;
+  width: ${({ size }) => (size === "s" ? "0.9rem" : "1.9rem")};
+  height: ${({ size }) => (size === "l" ? "1.9rem" : "0.9rem")};
+  border-radius: 0.28rem;
+  border: 1.6px solid ${({ active, theme }) => (active ? theme.color.text : theme.color.textSecondary)};
+  background: ${({ active, theme }) => (active ? theme.color.text : "transparent")};
+`;
+
+const WidgetMenuItem = styled.button.attrs({ type: "button" })`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0.6rem 0.7rem;
+  border: none;
+  border-radius: 0.55rem;
+  background: transparent;
+  font-family: inherit;
+  font-size: 0.8rem;
+  text-align: left;
+  color: ${({ destructive, theme }) => (destructive ? (theme.color.bg === "#ffffff" ? "#d70015" : "#ff6961") : theme.color.text)};
+  cursor: pointer;
+
+  &:hover,
+  &:focus-visible {
+    background: ${({ theme }) => theme.color.bgSecondary};
+    outline: none;
+  }
+`;
+
+/* ── the gallery ── */
+const WidgetGallery = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+`;
+
+const WidgetGallerySearch = styled.input`
+  width: 100%;
+  box-sizing: border-box;
+  height: 2.3rem;
+  padding: 0 0.85rem;
+  border: none;
+  border-radius: 0.7rem;
+  background: ${({ theme }) => theme.color.bgSecondary};
+  color: ${({ theme }) => theme.color.text};
+  font-family: ${({ theme }) => theme.font.primary};
+  font-size: 0.8rem;
+
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px ${({ theme }) => theme.color.borderHover};
+  }
+`;
+
+const WidgetGalleryGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  border-radius: 0.9rem;
+  overflow: hidden;
+  background: ${({ theme }) => (theme.color.bg === "#ffffff" ? "#f2f2f7" : "#1c1c1e")};
+`;
+
+const WidgetGalleryHead = styled.div`
+  margin: 0.4rem 0 0.1rem 0.85rem;
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: ${({ theme }) => theme.color.textSecondary};
+`;
+
+const WidgetGalleryRow = styled.button.attrs({ type: "button" })`
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.7rem 0.85rem;
+  border: none;
+  background: transparent;
+  text-align: left;
+  font-family: ${({ theme }) => theme.font.primary};
+  color: ${({ theme }) => theme.color.text};
+  cursor: pointer;
+
+  & + & {
+    border-top: 1px solid ${({ theme }) => theme.color.border};
+  }
+
+  &:hover,
+  &:focus-visible {
+    background: ${({ theme }) => theme.color.bgSecondary};
+    outline: none;
+  }
+`;
+
+const WidgetGalleryName = styled.span`
+  display: block;
+  font-size: 0.82rem;
+  font-weight: ${({ theme }) => theme.fontWeight.semibold};
+`;
+
+const WidgetGalleryDesc = styled.span`
+  display: block;
+  margin-top: 0.2rem;
+  font-size: 0.68rem;
+  line-height: 1.45;
+  color: ${({ theme }) => theme.color.textSecondary};
+`;
+
+const WidgetGalleryTag = styled.span`
+  font-size: 0.66rem;
+  color: ${({ theme }) => theme.color.textSecondary};
+  white-space: nowrap;
+`;
+
+/* A widget's page: its name and sentence, its sizes swiped through as live
+   previews, the dots, and Add Widget. */
+const WidgetDetail = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  text-align: center;
+`;
+
+const WidgetDetailTitle = styled.h3`
+  margin: 0.4rem 0 0;
+  font-size: 1rem;
+  font-weight: ${({ theme }) => theme.fontWeight.bold};
+  color: ${({ theme }) => theme.color.text};
+`;
+
+const WidgetDetailDesc = styled.p`
+  margin: 0;
+  max-width: 24rem;
+  font-size: 0.72rem;
+  line-height: 1.5;
+  color: ${({ theme }) => theme.color.textSecondary};
+`;
+
+const WidgetCarousel = styled.div`
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 100%;
+  width: 100%;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+  border-radius: 1rem;
+  &:focus {
+    outline: none;
+  }
+  &:focus-visible {
+    box-shadow: inset 0 0 0 2px ${({ theme }) => theme.color.borderHover};
+  }
+  @media (prefers-reduced-motion: reduce) {
+    scroll-behavior: auto;
+  }
+`;
+
+/* One size's page: a two-column grid like the drawer's, so the preview is
+   exactly as wide as the card would be. */
+const WidgetSlide = styled.div`
+  scroll-snap-align: center;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-content: center;
+  justify-items: stretch;
+  gap: 0.7rem;
+  padding: 0.9rem 0.6rem;
+  min-height: 19rem;
+  pointer-events: none;
+
+  & > [data-widget][data-size="s"] {
+    grid-column: 1 / span 1;
+    transform: translateX(calc(50% + 0.35rem));
+  }
+`;
+
+const WidgetSlideName = styled.div`
+  margin-top: 0.1rem;
+  font-size: 0.72rem;
+  font-weight: ${({ theme }) => theme.fontWeight.semibold};
+  color: ${({ theme }) => theme.color.text};
+`;
+
+const WidgetDots = styled.div`
+  display: flex;
+  gap: 0.15rem;
+`;
+
+const WidgetDot = styled.button.attrs({ type: "button" })`
+  width: 1.4rem;
+  height: 1.4rem;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  position: relative;
+
+  &::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 0.45rem;
+    height: 0.45rem;
+    margin: -0.225rem 0 0 -0.225rem;
+    border-radius: 50%;
+    background: ${({ active, theme }) => (active ? theme.color.text : theme.color.border)};
+  }
+
+  &:focus {
+    outline: none;
+  }
+  &:focus-visible::after {
+    box-shadow: 0 0 0 2px ${({ theme }) => theme.color.borderHover};
+  }
+`;
+
+/* iOS's filled pill. */
+const WidgetAddButton = styled.button.attrs({ type: "button" })`
+  min-width: 11rem;
+  height: 2.6rem;
+  padding: 0 1.4rem;
+  border: none;
+  border-radius: 1.3rem;
+  background: ${({ theme }) => theme.color.text};
+  color: ${({ theme }) => theme.color.bg};
+  font-family: ${({ theme }) => theme.font.primary};
+  font-size: 0.82rem;
+  font-weight: ${({ theme }) => theme.fontWeight.semibold};
+  cursor: pointer;
+
+  &:focus {
+    outline: none;
+  }
+  &:focus-visible {
+    box-shadow: 0 0 0 3px ${({ theme }) => theme.color.borderHover};
+  }
+`;
+
+/* ── the pinned stack (mockup C, 1 Oct 2026) ─────────────────────────────
+ * The chart's lower-left corner, above the time axis. The stack takes no
+ * pointer events; its cards do, so the chart under the gaps still answers. */
+const PinnedStack = styled.div`
+  position: fixed;
+  left: 3.25rem;
+  bottom: ${({ lift }) => (lift ? "7.5rem" : "4.75rem")};
+  z-index: 90;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 0.5rem;
+  pointer-events: none;
+
+  @media (max-width: 600px) {
+    display: none;
+  }
+`;
+
+/* At rest: the edge and faint figures, nothing filled — the chart reads
+   through. Under the pointer or the focus: the tile, full ink, a line more. */
+const PinnedCard = styled.div`
+  pointer-events: auto;
+  width: 11.5em;
+  /* The size the card's menu sets: medium and large are wider, and show as
+     much as they do in the drawer when pointed at. */
+  &[data-size="m"],
+  &[data-size="l"] {
+    width: 17em;
+  }
+  font-size: ${({ scale }) => scale || 1}rem;
+  padding: 0.6em 0.8em 0.65em;
+  border-radius: 1.1em;
+  border: 1px solid ${({ theme }) => theme.color.borderHover};
+  background: transparent;
+  /* No fill, but what runs behind is softened: a monospace figure has gaps
+     between its glyphs that no halo covers, and the line read through them. */
+  backdrop-filter: blur(4px);
+  color: ${({ theme }) => theme.color.textSecondary};
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  /* Transparent, and still readable where the line runs through a figure:
+     a halo in the ground's colour, the way a map keeps its labels over roads
+     (1 Oct 2026 — the first cut had $84,907 crossed out by the price). */
+  text-shadow: ${({ theme }) =>
+    [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, -1], [1, -1], [-1, 1], [2, 0], [-2, 0], [0, 2], [0, -2]]
+      .map(([x, y]) => `${x}px ${y}px 0 ${theme.color.bg}`)
+      .join(", ")};
+
+  ${WidgetLabel} {
+    margin-bottom: 0.3em;
+    padding-right: 0;
+  }
+
+  ${WidgetValue} {
+    color: ${({ theme }) => theme.color.textSecondary};
+    font-size: 1.15em;
+    transition: color 0.2s ease;
+  }
+
+  &:not(:hover):not(:focus-within):not([data-menu-open="true"]) [data-widget-body] > :nth-child(n + 2) {
+    display: none;
+  }
+
+  &:not(:hover):not(:focus-within):not([data-menu-open="true"]) ${WidgetCoinList} > :nth-child(n + 4) {
+    display: none;
+  }
+
+  &:hover,
+  &:focus-within,
+  &[data-menu-open="true"] {
+    background: ${({ theme }) => (theme.color.bg === "#ffffff" ? "#ffffff" : "#1c1c1e")};
+    color: ${({ theme }) => theme.color.text};
+    border-color: transparent;
+    text-shadow: none;
+    box-shadow: ${({ theme }) => (theme.color.bg === "#ffffff" ? "0 8px 24px rgba(0, 0, 0, 0.1)" : "0 8px 24px rgba(0, 0, 0, 0.45)")};
+  }
+
+  &:hover ${WidgetValue}, &:focus-within ${WidgetValue}, &[data-menu-open="true"] ${WidgetValue} {
+    color: ${({ theme }) => theme.color.text};
+  }
+
+  &:focus {
+    outline: none;
+  }
+  &:focus-visible {
+    box-shadow: 0 0 0 2px ${({ theme }) => theme.color.borderHover};
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 `;
 

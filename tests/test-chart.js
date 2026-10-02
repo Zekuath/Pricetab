@@ -101,7 +101,7 @@ vm.createContext(sandbox);
  * `chart.js` calls `chartBoardGeometry` from the constructor, and a sandbox
  * that omits it fails at the first `new LineBase()` rather than at an
  * assertion. */
-for (const f of ["i18n.js", "config.js", "utils.js", "chart-board.js", "chart-axes.js", "chart-tools.js", "chart-studies.js", "chart.js", "chart-image.js"]) {
+for (const f of ["i18n.js", "config.js", "utils.js", "cell-odds.js", "chart-board.js", "chart-axes.js", "chart-tools.js", "chart-studies.js", "chart-odds.js", "chart.js", "chart-image.js"]) {
   vm.runInContext(fs.readFileSync(path.join(__dirname, "..", "src", f), "utf8"), sandbox, {
     filename: f,
   });
@@ -952,6 +952,16 @@ assert.deepStrictEqual(json("compareSameDirection(__upA, __upA)"), { same: 5, n:
 assert.deepStrictEqual(json("compareSameDirection(__upA, __zig)"), { same: 3, n: 5 },
   "a steady rise against a zigzag agrees on the zig's rising steps only");
 assert.strictEqual(run("compareSameDirection(__upA, [])"), null, "nothing to count against is null, not zero of zero");
+
+/* How closely their steps moved together: +1 for a coin and a multiple of
+   itself, -1 for its mirror, null under twenty steps. */
+sandbox.__walk = Array.from({ length: 41 }, (_, i) => ({ price: 100 * Math.exp(0.01 * Math.sin(i * 1.7) + 0.003 * i), time: new Date(i * 1000) }));
+sandbox.__twice = sandbox.__walk.map((p) => ({ price: p.price * 2, time: p.time }));
+sandbox.__mirror = sandbox.__walk.map((p) => ({ price: 10000 / p.price, time: p.time }));
+const together = json("compareCorrelation(__walk, __twice)");
+assert.ok(Math.abs(together.r - 1) < 1e-9 && together.n === 40, `a coin and twice itself move together exactly over 40 steps — got ${JSON.stringify(together)}`);
+assert.ok(Math.abs(json("compareCorrelation(__walk, __mirror)").r + 1) < 1e-9, "its mirror moves exactly against it");
+assert.strictEqual(run("compareCorrelation(__upA, __zig)"), null, "five steps are too few to say");
 
 /* The 0% baseline is what both lines are read against, so it must always be
  * drawable. Both series start at 0% by construction, so the domain can never

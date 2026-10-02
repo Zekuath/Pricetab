@@ -199,11 +199,9 @@ const runScenario = ({ hydrated = false, background = false, candles = false, co
           } else {
             btn.dispatchEvent(new w.MouseEvent("click", { bubbles: true }));
           }
-          // The picker takes over the keyboard; Enter accepts the top result,
-          // which is the user's first coin other than the one on screen
-          const input = w.document.querySelector(
-            'input[aria-label="Compare with a coin"]',
-          );
+          // The compare drawer's search (since 1 Oct 2026); Enter with nothing
+          // typed takes the user's first coin other than the one on screen
+          const input = w.document.querySelector("input[data-compare-search]");
           if (input) {
             input.dispatchEvent(
               new w.KeyboardEvent("keydown", { key: "Enter", bubbles: true }),
@@ -214,7 +212,7 @@ const runScenario = ({ hydrated = false, background = false, candles = false, co
         /* Once comparing, the button has to say so and offer the exit. It is
          * an icon, so the coin's name lives in the accessible label — which
          * is the only place a screen reader would find it either. */
-        const active = w.document.querySelector('button[aria-label^="Stop comparing"]');
+        const active = w.document.querySelector('button[aria-label^="Comparing with"]');
         if (active) compareButtonLabel = active.getAttribute("aria-label");
         const group = w.document.querySelector("[data-compare]");
         if (group && Number(group.getAttribute("opacity")) > 0.5) {
@@ -308,9 +306,9 @@ const runScenario = ({ hydrated = false, background = false, candles = false, co
         );
       } else if (r.compareLineStillUp) {
         problems.push("the single-coin price line stayed visible under the comparison");
-      } else if (!/^Stop comparing with [A-Z]+$/.test(r.compareButtonLabel || "")) {
+      } else if (!/^Comparing with [A-Z]+ — open Compare$/.test(r.compareButtonLabel || "")) {
         problems.push(
-          `the button must offer to stop and name the coin, got ${JSON.stringify(r.compareButtonLabel)}`,
+          `the tab must name what is compared and where to change it, got ${JSON.stringify(r.compareButtonLabel)}`,
         );
       }
     }

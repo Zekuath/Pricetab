@@ -38,7 +38,7 @@ const HOUR_MS = 3600000;
 const ago = (days) => Math.floor(Date.now() / 1000) - days * DAY;
 const WIDGET_KEYS = ["watchlist", "topMovers", "fearGreed", "marketOverview", "halvingCountdown", "difficulty",
   "ethGas", "btcFees", "mempool", "rsiWidget", "outlook", "regimes", "worstFall", "fundingRate",
-  "longShortRatio", "openInterest", "liquidations", "altcoinSeason"];
+  "longShortRatio", "openInterest", "liquidations", "altcoinSeason", "modelOutlook"];
 
 const TYPES = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json",
   ".png": "image/png", ".svg": "image/svg+xml", ".woff2": "font/woff2", ".ttf": "font/ttf" };
@@ -153,16 +153,74 @@ const SCENES = {
       if (open < 2) throw new Error(`calls: ${open} locked, expected 2`);
     },
   },
+  /* Bitcoin against the S&P 500 (Kraken's SPYx) over a month — the compare
+     drawer's markets, 1 Oct 2026. */
   compare: {
     store: () => ({}),
     run: async (page) => {
       await page.keyboard.press("4"); // 1M
       await page.waitForTimeout(2500);
       await page.keyboard.press("c");
-      await page.waitForTimeout(500);
-      await page.keyboard.type("ETH");
-      await page.keyboard.press("Enter");
+      await page.waitForSelector("[data-compare-pick='SPYx']", { timeout: 6000 });
+      await page.click("[data-compare-pick='SPYx']");
+      await page.waitForSelector("[data-compare-strip]", { timeout: 10000 });
       await page.waitForTimeout(5000);
+    },
+  },
+  /* The store's first frame: the new tab as it opens — one coin, a day,
+     nothing switched on. Written to site/shots/hero.png; the store frame
+     reads it from there (assets/mockups/store-frames.html). */
+  hero: {
+    // Shorter than the rest: the store frame shows the top of a shot, and at 800 tall the chart sat below it
+    size: [1280, 540],
+    store: () => ({}),
+    run: async (page) => {
+      await page.keyboard.press("2"); // 1D
+      await page.waitForTimeout(6000);
+      await page.mouse.move(640, 790);
+    },
+  },
+  /* The widgets drawer arranged the way a phone arranges them: three sizes
+     on one grid. */
+  widgets: {
+    store: () => ({
+      crypto_chart_widgets: JSON.stringify({ ...Object.fromEntries(WIDGET_KEYS.map((k) => [k, false])),
+        watchlist: true, fearGreed: true, marketOverview: true, btcFees: true, modelOutlook: true, altcoinSeason: true, regimes: true }),
+      crypto_chart_widget_card_sizes: JSON.stringify({ watchlist: "m", fearGreed: "s", marketOverview: "s", btcFees: "s", modelOutlook: "m", altcoinSeason: "s", regimes: "m" }),
+      crypto_chart_widgets_width: "560",
+    }),
+    run: async (page) => {
+      await page.keyboard.press("w");
+      await page.waitForSelector("[data-widgets-drawer='open'] [data-widget]", { timeout: 8000 });
+      await page.waitForTimeout(9000);
+    },
+  },
+  /* Three widgets pinned to the home screen's corner, one under the pointer. */
+  pinned: {
+    store: () => ({
+      crypto_chart_widgets: JSON.stringify({ ...Object.fromEntries(WIDGET_KEYS.map((k) => [k, false])), fearGreed: true, btcFees: true, watchlist: true }),
+      crypto_chart_pinned_widgets: JSON.stringify(["fearGreed", "btcFees", "watchlist"]),
+    }),
+    run: async (page) => {
+      await page.keyboard.press("2"); // 1D
+      await page.waitForTimeout(9000);
+      const box = await (await page.waitForSelector("[data-pinned='btcFees']", { timeout: 8000 })).boundingBox();
+      await page.mouse.move(box.x + 30, box.y + 18);
+      await page.waitForTimeout(800);
+    },
+  },
+  /* A story read beside the list, with the counted reading of it. */
+  newspreview: {
+    store: () => ({}),
+    run: async (page) => {
+      await page.keyboard.press("n");
+      await page.waitForTimeout(12000);
+      const rows = await page.$$("a:has(.pt-news-title)");
+      let target = null;
+      for (const r of rows) if (/cryptopotato/i.test((await r.getAttribute("href")) || "")) { target = r; break; }
+      await (target || rows[0]).click();
+      await page.waitForSelector("[data-news-preview] [data-news-read-state]:not([data-news-read-state='loading'])", { timeout: 15000 });
+      await page.waitForTimeout(1200);
     },
   },
   companion: {
@@ -284,7 +342,8 @@ const SCENES = {
   try {
     for (const name of names) {
       const scene = SCENES[name];
-      const ctx = await browser.newContext({ viewport: { width: W, height: H }, deviceScaleFactor: 1, colorScheme: "dark" });
+      const [vw, vh] = scene.size || [W, H];
+      const ctx = await browser.newContext({ viewport: { width: vw, height: vh }, deviceScaleFactor: 1, colorScheme: "dark" });
       const store = { ...BASE, ...scene.store(px) };
       await ctx.addInitScript((s) => {
         if (sessionStorage.getItem("__seeded")) return;

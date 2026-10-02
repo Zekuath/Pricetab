@@ -27,6 +27,17 @@ const WIDGET_CACHE_TTL = {
    * every two weeks and its estimate barely drifts inside an hour. */
   mempool: 60000, // 1 minute
   difficulty: 3600000, // 1 hour
+  /* Blockchair's Bitcoin stats: the four chain cards' second source when
+   * mempool.space cannot be reached (1 Oct 2026). Blockchair answers a burst
+   * with 430 for the whole origin, so one request serves all four and is kept
+   * for five minutes. */
+  btcChainStats: 300000, // 5 minutes
+  // A market's series for the compare drawer, about a bar's worth per range
+  marketSeriesDay: 900000, // 15 min (15m bars)
+  marketSeriesWeek: 3600000, // 1 h
+  marketSeriesMonth: 14400000, // 4 h
+  marketSeriesYear: 21600000, // 6 h
+  marketSeriesAll: 21600000, // 6 h
   // A daily series: one new row a day, so six hours is fresh enough and a
   // new tab on the derivatives page asks at most four times a day per coin.
   crowdHistory: 21600000, // 6 hours
@@ -615,10 +626,22 @@ const fetchHalvingData = async () => {
   if (cached) return cached;
 
   try {
-    const response = await politeFetch(MEMPOOL_API);
-    if (!response.ok) throw new Error("Mempool API error");
-
-    const blockHeight = await response.json();
+    /* mempool.space first; Blockchair's height when it cannot be reached —
+       measured 1 Oct 2026 on a network that resets every TLS connection to
+       mempool.space while every other host answers. */
+    let blockHeight = null;
+    try {
+      // mempoolFetch (widgets-data.js): six seconds, then the second source
+      const response = await mempoolFetch(MEMPOOL_API);
+      if (response && response.ok) blockHeight = await response.json();
+    } catch (e) {
+      blockHeight = null;
+    }
+    if (!(Number(blockHeight) > 0)) {
+      const stats = await fetchBtcChainStats();
+      blockHeight = stats ? stats.height : null;
+    }
+    if (!(Number(blockHeight) > 0)) throw new Error("No block height");
     const HALVING_INTERVAL = 210000;
     const nextHalvingBlock =
       Math.ceil((blockHeight + 1) / HALVING_INTERVAL) * HALVING_INTERVAL;
@@ -1735,6 +1758,145 @@ const fetchViewCandles = async (coin, currency, g, from, to) => {
     out.push({ time: r[0], low: r[1], high: r[2], open: r[3], close: r[4], volume: r[5] });
   }
   return out.length >= 2 ? out : null;
+};
+
+/* ── The bars the calls board's chances are read from ─────────────────────
+ *
+ * `cell-odds.js` needs the coin's last 3,000 bars at the granularity a
+ * square's span wants (one minute on a 1H board, fifteen on a day…), or every
+ * daily bar for the two long ranges — which is `fetchDailyCandles`, already
+ * kept for the base-rate screen. The intraday bars come from the same
+ * Coinbase Exchange candles endpoint the zoomed chart reads (no new host),
+ * ten pages of 300 the first time and **only the newest page after that**:
+ * the series is kept, closes alone, and a refresh appends what is new.
+ * Persisted like every cache here, so a new tab does not pay again; the key
+ * is in `EPHEMERAL_CACHE_KEYS` and lives in this file because the cache
+ * hydrates before config.js loads. A pair Coinbase Exchange does not quote
+ * in the display currency is read in USD — a chance is a statement about
+ * log returns, which the exchange rate barely moves over a square. */
+const ODDS_SERIES_KEY = "crypto_chart_odds_series";
+const ODDS_SERIES_BARS = 3000;
+const ODDS_SERIES_STORED = 4;
+const ODDS_SERIES_MAX_AGE = 3 * 86400000;
+const oddsSeriesCache = new Map(); // "COIN-PAIRCUR-g" → { at, t0, closes }
+const oddsSeriesInFlight = new Map();
+let oddsSeriesPersistTimer = null;
+
+const persistOddsSeries = () => {
+  clearTimeout(oddsSeriesPersistTimer);
+  oddsSeriesPersistTimer = setTimeout(() => {
+    try {
+      const entries = Array.from(oddsSeriesCache.entries())
+        .sort((a, b) => b[1].at - a[1].at)
+        .slice(0, ODDS_SERIES_STORED)
+        .map(([key, v]) => [key, { at: v.at, t0: v.t0, closes: v.closes.map((c) => +c.toPrecision(8)), missing: v.missing || [] }]);
+      localStorage.setItem(ODDS_SERIES_KEY, JSON.stringify(entries));
+    } catch (error) {
+      // Storage full or unavailable — the next board simply asks again
+    }
+  }, PRICE_CACHE_PERSIST_DELAY);
+};
+
+const hydrateOddsSeries = () => {
+  try {
+    const saved = JSON.parse(localStorage.getItem(ODDS_SERIES_KEY));
+    if (!Array.isArray(saved)) return;
+    const now = Date.now();
+    for (const entry of saved) {
+      if (!Array.isArray(entry) || typeof entry[0] !== "string") continue;
+      const v = entry[1];
+      if (!v || !Number.isFinite(v.at) || v.at > now || now - v.at > ODDS_SERIES_MAX_AGE) continue;
+      if (!Number.isFinite(v.t0) || !Array.isArray(v.closes)) continue;
+      // Untrusted: every close a positive finite number
+      if (!v.closes.length || !v.closes.every((c) => Number.isFinite(c) && c > 0)) continue;
+      const missing = Array.isArray(v.missing) ? v.missing.filter((i) => Number.isInteger(i) && i >= 0 && i < v.closes.length) : [];
+      oddsSeriesCache.set(entry[0], { at: v.at, t0: v.t0, closes: v.closes, missing });
+    }
+  } catch (error) {
+    // Corrupt entry — the next persist overwrites it
+  }
+};
+
+hydrateOddsSeries();
+
+const fetchOddsPage = async (pair, g, start, end) => {
+  const res = await fetchWithRetry(
+    `${CANDLES_API}${encodeURIComponent(pair)}/candles` +
+      `?granularity=${g}&start=${new Date(start).toISOString()}&end=${new Date(end).toISOString()}`,
+    {},
+    1,
+  );
+  if (!res.ok) throw new Error("candles request failed");
+  const body = await res.json();
+  if (!Array.isArray(body)) throw new Error("no candles");
+  // [time, low, high, open, close, volume], newest first
+  return body
+    .map((r) => (Array.isArray(r) ? r.slice(0, 6).map(Number) : null))
+    .filter((r) => r && r.length === 6 && r.every((n) => Number.isFinite(n)) && r[4] > 0)
+    .map((r) => ({ time: r[0] * 1000, low: r[1], high: r[2], close: r[4], volume: r[5] }));
+};
+
+/* `{ coin, currency, g, at, closes }` — the bars oldest first on a regular
+   clock — or null where there is nothing to read. */
+const fetchOddsSeries = async (coin, currency, g) => {
+  if (!coin || !(g > 0)) return null;
+  if (g >= 86400) {
+    const candles = await fetchDailyCandles(coin);
+    if (!Array.isArray(candles) || !candles.length) return null;
+    return { coin, currency, g: 86400, at: Date.now(), closes: candles.map((c) => c.close) };
+  }
+  if (effectiveProvider(coin) !== "coinbase") return null;
+  const pairCurrency = OHLC_CURRENCIES.includes(currency) ? currency : "USD";
+  const pair = `${coin}-${pairCurrency}`;
+  const key = `${pair}-${g}`;
+  const step = g * 1000;
+  // `t0` and `missing` (hours with no trade, as indices) let a reader rebuild
+  // each bar's time and tell a gap from a flat hour — the model outlook does
+  const answer = (v) => ({ coin, currency, g, at: v.at, closes: v.closes, t0: v.t0, missing: v.missing || [] });
+  const hit = oddsSeriesCache.get(key);
+  if (hit && Date.now() - hit.at < step) return answer(hit);
+  const shared = oddsSeriesInFlight.get(key);
+  if (shared) return shared;
+  const run = (async () => {
+    const now = Math.floor(Date.now() / step) * step;
+    const size = 300 * step;
+    const rows = new Map();
+    let from = now - ODDS_SERIES_BARS * step;
+    if (hit) {
+      // What is kept, and only what came after it. A kept hour that had no
+      // trade stays missing: put back as a real row it would read as a trade.
+      const gaps = new Set(hit.missing || []);
+      hit.closes.forEach((c, i) => {
+        if (!gaps.has(i)) rows.set(hit.t0 + i * step, { time: hit.t0 + i * step, close: c, high: c, low: c, volume: 0 });
+      });
+      from = Math.max(from, hit.t0 + (hit.closes.length - 2) * step);
+    }
+    try {
+      let first = true;
+      for (let end = now; end > from; end -= size) {
+        if (!first) await sleep(DAILY_CLOSES_PAGE_GAP);
+        first = false;
+        const page = await fetchOddsPage(pair, g, Math.max(from, end - size + step), end);
+        for (const r of page) rows.set(r.time, r);
+        if (!page.length && !hit) break; // before the pair was listed
+      }
+    } catch (error) {
+      if (hit) return answer(hit); // a stale series beats none
+      if (!rows.size) return null;
+    }
+    const sorted = Array.from(rows.values()).sort((a, b) => a.time - b.time);
+    const regular = oddsRegular(sorted, g);
+    if (regular.close.length < ODDS_MIN_BARS) return null;
+    const keep = Math.max(0, regular.close.length - ODDS_SERIES_BARS);
+    const missing = [];
+    for (let i = keep; i < regular.filled.length; i++) if (regular.filled[i]) missing.push(i - keep);
+    const entry = { at: Date.now(), t0: regular.time[keep], closes: regular.close.slice(keep), missing };
+    oddsSeriesCache.set(key, entry);
+    persistOddsSeries();
+    return answer(entry);
+  })().finally(() => oddsSeriesInFlight.delete(key));
+  oddsSeriesInFlight.set(key, run);
+  return run;
 };
 
 /* Candles for target checking. Hourly granularity covers ~14 days in one

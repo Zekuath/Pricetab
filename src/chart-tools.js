@@ -122,6 +122,7 @@ const chartTools = (chart) => ({
       if (v > hi) hi = v;
     }
     if (!(hi > lo)) return null;
+    [lo, hi] = shiftDomain(lo, hi, chart.yShift(), chart.logAxis() && canScaleLog([lo, hi]));
     const top = PADDING;
     const bottom = chart.height - PADDING;
     const log = chart.logAxis() && canScaleLog([lo, hi]);

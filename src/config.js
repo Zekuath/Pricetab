@@ -230,6 +230,30 @@ const COIN_NAMES = {
   DCR: "Decred",
 };
 
+/* **Markets to compare a coin with** (1 Oct 2026, *"S&P 500 ve major
+ * şeylerle compare de edebiliriz ve onu compare ayarlarından seçebiliriz"*).
+ * Measured before any of it was built, with a chrome-extension:// Origin:
+ * Yahoo answers 429, Stooq a script challenge, Nasdaq and Stooq send no CORS
+ * header, CNBC's chart service sits behind a bot wall (1 of 36 asks
+ * answered). What answers is **Kraken** — already the price failover — whose
+ * tokenized ETFs trade around the clock: SPYx (the SPY ETF, S&P 500) and
+ * QQQx (QQQ, Nasdaq 100). Against the real ETFs over 126 trading days
+ * (Apr–Sep 2026): prices within −0.6%…+2.4%, six-month moves +17.25% vs
+ * +16.39% and +27.37% vs +26.61%. They trade thinly by the minute (5-minute
+ * bars flat half the time), so they are offered from 1D up. Gold is PAXG on
+ * Coinbase, a coin this app already charts. No new host. `id` is what
+ * `compareCoin` holds and the chart's labels print. */
+const COMPARE_MARKETS = [
+  { id: "SPYx", name: msg("cmp_mkt_spx", "S&P 500"), source: "kraken", pair: "SPYxUSD", what: msg("cmp_mkt_spx_what", "SPYx — the SPY ETF as a token on Kraken") },
+  { id: "QQQx", name: msg("cmp_mkt_ndx", "Nasdaq 100"), source: "kraken", pair: "QQQxUSD", what: msg("cmp_mkt_ndx_what", "QQQx — the QQQ ETF as a token on Kraken") },
+  { id: "PAXG", name: msg("cmp_mkt_gold", "Gold"), source: "coin", what: msg("cmp_mkt_gold_what", "PAXG — a token for one troy ounce, on Coinbase") },
+];
+const COMPARE_MARKETS_KEY = "crypto_chart_compare_markets";
+const DEFAULT_COMPARE_MARKETS = ["SPYx", "QQQx", "PAXG"];
+const compareMarket = (id) => COMPARE_MARKETS.find((m) => m.id === id) || null;
+// The ranges a Kraken market is drawn on: from 1D, where its bars are trades
+const COMPARE_MARKET_PERIODS = ["day", "week", "month", "year", "all"];
+
 const PERIOD_OPTIONS = [
   { value: "hour", label: "1H", title: "1 Hour" },
   { value: "day", label: "1D", title: "1 Day" },
@@ -238,6 +262,17 @@ const PERIOD_OPTIONS = [
   { value: "year", label: "1Y", title: "1 Year" },
   { value: "all", label: "ALL", title: msg("period_all", "All Time") },
 ];
+
+/* What each range covers, for the zoom that crosses from one into the next
+ * (app-view.js, `chartFinerSpan`). ALL has no fixed length and is never the
+ * shorter range of anything. */
+const PERIOD_SPAN_MS = {
+  hour: 3600e3,
+  day: 86400e3,
+  week: 7 * 86400e3,
+  month: 30 * 86400e3,
+  year: 365 * 86400e3,
+};
 
 /* Backing off a provider that keeps refusing. Doubling from the refresh
  * interval, capped: at the default 30s that is 60s, 2m, 4m, then 5m. Five
@@ -882,7 +917,17 @@ const AUTO_ROTATE_OPTIONS = [
   { value: 900000, label: msg("every_15m", "Every 15 minutes") },
 ];
 const RATE_PROMPT_DISMISSED_KEY = "crypto_chart_rate_prompt_dismissed";
-/* The rating ask: **once**, a day after first use, and never again.
+/* The rating ask: a day after first use, and then **at most three more
+ * times, further apart each time** (1 Oct 2026, the owner's choice of a
+ * capped schedule over asking once): × is "not now" and the next ask waits
+ * `RATE_PROMPT_SNOOZE_DAYS` — 3, then 7, then 30 days — until
+ * `RATE_PROMPT_MAX_ASKS`; "Rate" and "Don't ask again" end it for good. A
+ * review cannot be detected — the store has no API for it and an extension
+ * cannot read the store's pages — so a press on "Rate" is taken as done.
+ * Shown only `RATE_PROMPT_SETTLE_MS` after the tab opens, on a visible tab
+ * with no screen or drawer out. The history below is the first version's.
+ *
+ * The rating ask: **once**, a day after first use, and never again.
  *
  * A day rather than two because a new-tab extension is used many times a day —
  * by the second day somebody either likes it or has uninstalled it, and asking
@@ -898,6 +943,10 @@ const RATE_PROMPT_DISMISSED_KEY = "crypto_chart_rate_prompt_dismissed";
 const FIRST_USE_KEY = "crypto_chart_first_use";
 const RATE_PROMPT_SHOWN_KEY = "crypto_chart_rate_prompt_shown";
 const RATE_PROMPT_DELAY_MS = 24 * 60 * 60 * 1000;
+const RATE_PROMPT_ASKS_KEY = "crypto_chart_rate_prompt_asks";
+const RATE_PROMPT_SNOOZE_DAYS = [3, 7, 30];
+const RATE_PROMPT_MAX_ASKS = 4;
+const RATE_PROMPT_SETTLE_MS = 20000;
 /* PRICE PROVIDERS
  * Coinbase serves everything by default. Coins it doesn't list are routed
  * to Kraken, whose public OHLC endpoint is keyless and CORS-enabled and
@@ -1149,8 +1198,9 @@ const DEFAULT_CHART_AVERAGE = false;
    stay drawn, the list in the drawer stays, and Shift + drag still measures. */
 const CHART_TOOLS_KEY = "crypto_chart_tools";
 const DEFAULT_CHART_TOOLS = true;
-// How long the pointer rests on the + before it opens by itself
-const CHART_TOOLS_DWELL_MS = 1000;
+// How long the pointer rests on the + before it opens by itself — half a
+// second since 1 Oct 2026 ("yarım saniye hover"); a full one read as broken
+const CHART_TOOLS_DWELL_MS = 500;
 // …and how long the open strip lingers after the pointer leaves it
 const CHART_TOOLS_LINGER_MS = 700;
 
@@ -1281,6 +1331,16 @@ const INDICATOR_MIN_POINTS = 5;
  * that is on. Each says what it counts; the four that could be read as a claim
  * were preregistered and measured first, and their wording follows the result
  * (research/studies-prereg.md). */
+/* The widgets' chances, spread under the chart's price (30 Sep 2026): the
+ * regime grid's row for today (the Markov question, counted) and the outlook's
+ * range for the next stretch, each a switch in the chart's settings beside
+ * the board's own chances (CELL_ODDS_KEY). **Range is on by default and
+ * Regime is not**: the range reads the series already on screen, the regime
+ * reads years of daily candles — about twenty requests on a cold tab, the
+ * cost the companion and the Regimes widget are off by default for. */
+const CHART_CHANCES_KEY = "crypto_chart_chances";
+const CHART_CHANCES = ["regime", "range"];
+const DEFAULT_CHART_CHANCES = ["range"];
 const CHART_STUDIES_KEY = "crypto_chart_studies";
 const CHART_STUDIES = ["where", "profile", "volumeEvents", "regimes", "usualRange", "turnLevels"];
 // The studies that read the coin's daily candles (fetchDailyCandles, shared
@@ -1335,31 +1395,19 @@ const BOARD_PAN_MS = 190;
 /* Twenty squares each way. Far enough to reach the band a real fall ends at,
  * near enough that the way back is a few presses rather than a search. */
 const BOARD_PAN_MAX = 20;
-/* Press-and-hold: the wait before it starts repeating, and the gap between
- * repeats after that. The first is long enough that a single press is a
- * single square; the second is one pan's travel, so the board arrives before
- * it is asked to leave again. */
-const BOARD_PAN_HOLD_MS = 320;
-const BOARD_PAN_REPEAT_MS = 190;
-/* **How long the pointer has to rest on an arrow before it starts walking.**
- *
- * Hovering is the fastest way to use these — the pointer is already on the
- * chart and the arrows are at its edges — but an arrow that fires the instant
- * it is touched fires while you are on your way somewhere else, and a board
- * that walks off on its own is worse than one you have to click. The dwell is
- * what separates "I am pointing at this" from "I passed over it": long enough
- * that no crossing gesture reaches it, short enough that the control does not
- * read as broken while you wait. Two seconds was suggested and is the safe
- * end of that; it is also long enough to look like nothing is happening, so
- * this sits below it and the arrow lights up the moment the dwell starts, to
- * say the wait is doing something. */
-const BOARD_PAN_DWELL_MS = 700;
 
 /* Quiet controls: the corner buttons rest almost invisible and come up under
  * the pointer. Nothing is hidden and nothing becomes unclickable — a control
  * you cannot see but can still press is a trap, so they fade to a ghost rather
  * than to nothing, and each one lights up on hover and on keyboard focus. */
 const QUIET_CHROME_KEY = "crypto_chart_quiet_chrome";
+
+/* The key under each tab on the two edges' columns (KeyCap), shown or not
+ * (1 Oct 2026, *"kenardaki çentiklerdeki kısayol tuşlarının görünüp
+ * görünmeyeceği seçilebilsin"*). Shown by default; off hides the letters
+ * only — the keys still work, and every tab's tooltip still names its key. */
+const TAB_KEYS_KEY = "crypto_chart_tab_keys";
+const DEFAULT_TAB_KEYS = true;
 
 /* **Which of the app's features are switched on.**
  *
@@ -1694,6 +1742,12 @@ const MAX_FUTURE_SHARE = 0.95;
  * what ships. See `updateTravelBand` in chart.js for why it is a description
  * rather than a forecast, and `travelBand` in utils.js for the arithmetic. */
 const TRAVEL_BAND_KEY = "crypto_chart_travel_band";
+/* The chance written on each square of the board (cell-odds.js, chart-odds.js),
+ * on with the board: the board is off by default, and a chance is what makes
+ * naming a square a question with an answer attached. Its bars cost a few
+ * requests the first time a board is opened on a coin and range, kept after. */
+const CELL_ODDS_KEY = "crypto_chart_cell_odds";
+const DEFAULT_CELL_ODDS = true;
 const DEFAULT_TRAVEL_BAND = false;
 
 const CALLS_SHOW_SETTLED_KEY = "crypto_chart_calls_show_settled";
@@ -1853,6 +1907,12 @@ const DEFAULT_PRACTICE_SHARE = 25;
 const PRACTICE_ENABLED_KEY = "crypto_chart_practice_enabled";
 
 const CALLS_KEY = "crypto_chart_calls";
+/* The model outlook's own record (model-outlook.js): each hourly forecast as
+ * it was issued, and — in a separate key, so a forecast is never rewritten —
+ * the outcome once its hour has closed. A person's local record: in the
+ * backup, never ephemeral. */
+const MODEL_OUTLOOK_RECORDS_KEY = "crypto_chart_model_outlook_records";
+const MODEL_OUTLOOK_OUTCOMES_KEY = "crypto_chart_model_outlook_outcomes";
 const MAX_OPEN_CALLS = 40;              // ten squares across a few coins
 const MAX_DONE_CALLS = 24;              // settled ones kept for the record
 
@@ -1998,6 +2058,8 @@ const LAST_SEEN_MIN_PCT = 0.05;
 
 // First-run onboarding tour (shown once, then dismissed)
 const ONBOARDING_SEEN_KEY = "crypto_chart_onboarding_seen";
+// The edition of "what's new" (onboarding.js WHATS_NEW_ID) last shown
+const WHATS_NEW_KEY = "crypto_chart_whats_new_seen";
 // Tracking-only portfolio: [{ coin, amount, paid, address }] manually
 // entered, all local (paid = optional total spent on the position, 0 = not
 // set; address = optional watched on-chain address, "" = none)

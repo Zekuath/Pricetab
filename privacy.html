@@ -33,7 +33,7 @@
     <header>
       <a href="https://zekuath.github.io/Pricetab/site/">← Back to PriceTab</a>
       <h1>Privacy Policy</h1>
-      <p class="meta">Last updated: September 30, 2026</p>
+      <p class="meta">Last updated: October 1, 2026</p>
     </header>
 
     <p>PriceTab has no user account, advertising, analytics, or telemetry. The
@@ -57,7 +57,7 @@
     <p>PriceTab sends HTTPS requests directly from your browser to third-party
       public data services when their related features are used. The providers are:</p>
     <ul>
-      <li>Coinbase, Kraken, Coinlore, Alternative.me, OKX, Bybit, and mempool.space for market, exchange-rate, derivatives, sentiment, or Bitcoin network data;</li>
+      <li>Coinbase, Kraken, Coinlore, Alternative.me, OKX, Bybit, mempool.space, and Blockchair for market, exchange-rate, index-comparison, derivatives, sentiment, or Bitcoin network data;</li>
       <li>mempool.space, Blockchair, and PublicNode for optional public-address watching; and</li>
       <li>CNBC, MarketWatch/Dow Jones, Bitcoin.com, CryptoPotato, Algolia's Hacker News search, and Blockchair for news available without extra permission. Optional news sources are Cointelegraph, Decrypt, CryptoSlate, Bitcoin Magazine, CoinJournal, BBC, CoinDesk, and The Block.</li>
     </ul>
@@ -65,7 +65,7 @@
     <ul>
       <li>market prices, charts, exchange rates, derivatives data, sentiment data, and transaction-fee estimates are requested from the providers used by the app;</li>
       <li>a watched public blockchain address is sent to the selected blockchain data provider so its balance and activity can be retrieved; and</li>
-      <li>news feeds are requested from their publishers when you enable or open the relevant news source.</li>
+      <li>news feeds are requested from their publishers when you enable or open the relevant news source, and the text of a story is requested from its publisher when you open that story in the news preview.</li>
     </ul>
     <p>PriceTab does not add your portfolio, settings, or other local records to
       these requests. As with an ordinary web request, the service operator can
@@ -81,7 +81,7 @@
       ask for these optional permissions only when you enable the related feature:</p>
     <ul>
       <li><code>notifications</code>, to show a price-target notification; and</li>
-      <li>access to individual news publisher origins, to load those feeds.</li>
+      <li>access to individual news publisher origins, to load those feeds and the stories you open from them.</li>
     </ul>
     <p>Optional permissions can be revoked in Chrome's extension settings. A
       local notification does not send its contents to the developer.</p>
@@ -99,6 +99,16 @@
       extension's storage, or uninstall the extension. Cached public data
       expires or is replaced as the app refreshes it. You can export supported
       records before removing them.</p>
+
+    <h2>The website</h2>
+    <p>The project website (zekuath.github.io/Pricetab) remembers three things
+      in your browser's local storage, on that device: the theme you chose, the
+      language you chose, and whether you have seen its "what's new" note, with
+      a count of visits that decides when the note appears. It sets no cookie,
+      has no analytics, and sends none of this anywhere. To draw its live chart
+      and price bar it asks Coinbase and Coinlore for public prices directly
+      from your browser, the same kind of request the extension makes. Clearing
+      the site's data in your browser removes what it remembered.</p>
 
     <h2>Changes and contact</h2>
     <p>Material changes will be reflected here and in the extension's release

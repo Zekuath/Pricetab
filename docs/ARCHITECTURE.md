@@ -19,11 +19,11 @@ extension loads no remote code.
 |---|---|
 | Theme, icons and configuration | `theme*.js`, `icons.js`, `config.js`, `i18n.js` |
 | Data and persistence | `api.js`, `storage.js`, `widgets-data.js` |
-| Chart | `chart*.js`, `outlook.js`, `regime-grid.js`, `*-patterns.js`, `strategy-setups.js` |
+| Chart | `chart*.js`, `cell-odds.js`, `outlook.js`, `model-outlook.js` (+ the generated `outlook-model.js`), `regime-grid.js`, `*-patterns.js`, `strategy-setups.js` |
 | Settings and onboarding | `settings*.js`, `onboarding.js`, `shortcuts.js` |
 | Portfolio and tax guide | `portfolio*.js`, `tax-*.js` |
 | Derivatives practice | `practice*.js`, `assistant.js`, `alerts-futures.js` |
-| Targets, calls and news | `alerts.js`, `notify.js`, `news.js`, `baserates.js` |
+| Targets, calls and news | `alerts.js`, `notify.js`, `news-reader.js`, `news-preview.js`, `news.js`, `baserates.js` |
 | Root application | `app-*.js`, `app.js` |
 
 `app.js` owns the root `CryptoChart` class and its state. Area-specific handler

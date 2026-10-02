@@ -1514,6 +1514,28 @@ const callHandlers = (app) => ({
       app.setState({ travelBand: v });
     },
 
+    handleCellOddsChange: (v) => {
+      saveCellOdds(v);
+      app.setState({ cellOdds: v });
+    },
+
+    /* The board asks for the bars its chances read, at the granularity its
+       squares want (chart-odds.js). Kept only if the chart is still on the
+       coin and currency it was asked for. */
+    handleNeedOdds: (g) => {
+      const coin = app.state.coinOptions[app.state.coinIndex];
+      const currency = app.state.currency;
+      fetchOddsSeries(coin, currency, g)
+        .then((series) => {
+          if (!series) return;
+          const still = app.state.coinOptions[app.state.coinIndex] === series.coin && app.state.currency === series.currency;
+          if (still) app.setState({ oddsSeries: series });
+        })
+        .catch(() => {
+          /* no chances this time; the board is unchanged */
+        });
+    },
+
     handleCallsShowSettledChange: (v) => {
       saveCallsShowSettled(v);
       app.setState({ callsShowSettled: v });

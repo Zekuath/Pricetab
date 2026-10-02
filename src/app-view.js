@@ -67,18 +67,32 @@ const viewHandlers = (app) => ({
    * new picture — the next notch out widens it within the new range. The
    * window is stamped with the new range, so it applies the moment that
    * range's prices land. Nothing past ALL. */
-  handleChartZoomPast: (span) => {
+  /* Out past the whole range (dir 1) or in past the shorter range's length
+     (dir −1): the neighbouring range, opened on the span the zoom was at,
+     ending now — so the zoom goes on from where it was in either direction. */
+  handleChartZoomPast: (span, dir = 1, win = null) => {
     const at = PERIOD_OPTIONS.findIndex((o) => o.value === app.state.period);
-    const next = at >= 0 ? PERIOD_OPTIONS[at + 1] : null;
+    const next = at >= 0 ? PERIOD_OPTIONS[at + (dir < 0 ? -1 : 1)] : null;
     if (!next || !(span > 0)) return false;
     const coin = app.state.coinOptions[app.state.coinIndex];
     const now = Date.now();
     app.setPeriod(null, next.value);
+    // Zooming in keeps the window it was on; out opens one ending now
+    const view = win && !win.atNow
+      ? { t0: win.t0, t1: win.t1, atNow: false }
+      : { t0: now - span, t1: now, atNow: true };
     app.setState({
-      chartView: { t0: now - span, t1: now, atNow: true, coin, period: next.value, currency: app.state.currency },
+      chartView: { ...view, coin, period: next.value, currency: app.state.currency },
     });
     app.queueChartDetail();
     return true;
+  },
+
+  /* The shorter range's length, which a zoom in at now crosses into it. */
+  chartFinerSpan: () => {
+    const at = PERIOD_OPTIONS.findIndex((o) => o.value === app.state.period);
+    const finer = at > 0 ? PERIOD_OPTIONS[at - 1].value : null;
+    return finer ? PERIOD_SPAN_MS[finer] || null : null;
   },
 
   queueChartDetail: () => {

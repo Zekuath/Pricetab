@@ -35,6 +35,7 @@ let chainFail = false; // simulates the balance providers going down
 // A 200 with a body that is not the shape we asked for — the failure these
 // two cards have to answer with null rather than with zeros
 let mempoolBroken = false;
+let mempoolUnreachable = false; // the TLS reset measured 1 Oct 2026
 let coinbaseDown = false; // an edge error: a rejected fetch, as the browser sees it
 let krakenError = false; // Kraken reports failures in a 200 response body
 const sandbox = {
@@ -107,6 +108,14 @@ const sandbox = {
         asks: [["100.5", "10", "0", "3"], ["100.6", "20", "0", "4"], ["0", "5", "0", "1"]],
         bids: [["100.4", "40", "0", "2"], ["100.3", "5", "0", "1"]],
       }] }) };
+    }
+    if (mempoolUnreachable && url.includes("mempool.space")) throw new TypeError("Failed to fetch");
+    if (mempoolUnreachable && url.includes("blockchair.com/bitcoin/stats")) {
+      return { ok: true, status: 200, json: async () => ({ data: {
+        best_block_height: 969460, difficulty: 132757073449487.5, next_difficulty_estimate: 127642743570342,
+        next_retarget_time_estimate: "2099-01-01 00:00:00", suggested_transaction_fee_per_byte_sat: 2,
+        mempool_transactions: 4977, mempool_size: 5392404,
+      } }) };
     }
     if (url.includes("fees/recommended")) {
       return { ok: true, status: 200, json: async () => (
@@ -1373,6 +1382,21 @@ const json = (c) => JSON.parse(JSON.stringify(run(c)));
     assert.strictEqual(await run("fetchDifficulty()"), null,
       "…and so is a difficulty response");
     mempoolBroken = false;
+
+    /* **A second source when mempool.space cannot be reached** (1 Oct 2026:
+     * a network that resets every TLS connection to it left four cards
+     * dead). Blockchair's one stats answer feeds all four, once. */
+    for (const k of ["mempool", "difficulty", "btcFees", "halvingCountdown", "btcChainStats"]) run(`widgetCache.delete("${k}")`);
+    mempoolUnreachable = true;
+    fetchCalls = [];
+    const [fm, fd, ff, fh] = await Promise.all([run("fetchMempool()"), run("fetchDifficulty()"), run("fetchBtcFees()"), run("fetchHalvingData()")]);
+    assert.ok(fm && fm.count === 4977 && Math.abs(fm.blocks - 5.392404) < 1e-9 && fm.source === "blockchair", "the queue from Blockchair, marked as such");
+    assert.ok(fd && Math.abs(fd.change - (127642743570342 / 132757073449487.5 - 1) * 100) < 1e-9 && fd.remaining === 969696 - 969460 && fd.source === "blockchair",
+      `the retarget from Blockchair's estimate, its blocks to go counted to the next multiple of 2016 — got ${JSON.stringify(fd)}`);
+    assert.ok(ff && ff.rate === 2 && ff.source === "blockchair", "the fee from Blockchair's suggestion");
+    assert.ok(fh && fh.blocksLeft === 1050000 - 969460, `the halving from Blockchair's height — got ${JSON.stringify(fh && fh.blocksLeft)}`);
+    assert.strictEqual(fetchCalls.filter((u) => u.includes("blockchair")).length, 1, "…all four from one Blockchair request");
+    mempoolUnreachable = false;
   }
 
   /* THE ORDER BOOK ---------------------------------------------------------

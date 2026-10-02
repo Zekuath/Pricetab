@@ -37,6 +37,50 @@ const loadWidgetSizeFromStorage = () =>
 
 const saveWidgetSizeToStorage = (size) => saveSetting(WIDGET_SIZE_KEY, size);
 
+/* **Each card's own size** (1 Oct 2026, *"widget'ları yeniden
+ * boyutlandırabilelim, boyut büyüdükçe detayları artsın … iOS'vari"*) —
+ * iOS's three families on the drawer's grid: small is one column, medium two,
+ * large two by two. A bigger card shows more of what it already has (more
+ * rows, more lines, and on large the sentence that explains it); a smaller
+ * one keeps the figure and its first line. Separate from the type scale
+ * above, which sizes the text of every card at once. Absent means the
+ * card's default: medium for the cards that are lists or tables, small for
+ * the rest. Chosen the way iOS chooses it — in the gallery and in the menu
+ * a long press opens (app-widgets.js). */
+const WIDGET_CARD_SIZES_KEY = "crypto_chart_widget_card_sizes";
+const WIDGET_CARD_SIZES = ["s", "m", "l"];
+const WIDGET_CARD_MEDIUM = ["watchlist", "topMovers", "regimes", "outlook", "modelOutlook", "halvingCountdown"];
+
+const widgetCardSize = (sizes, key) =>
+  sizes && WIDGET_CARD_SIZES.includes(sizes[key]) ? sizes[key] : WIDGET_CARD_MEDIUM.includes(key) ? "m" : "s";
+
+// Only widgets that exist and sizes that do — a stored file is not trusted
+const sanitizeWidgetCardSizes = (raw) => {
+  const out = {};
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return out;
+  for (const key of Object.keys(raw)) {
+    if (Object.prototype.hasOwnProperty.call(DEFAULT_WIDGETS, key) && WIDGET_CARD_SIZES.includes(raw[key])) out[key] = raw[key];
+  }
+  return out;
+};
+
+/* **Widgets pinned to the home screen** (1 Oct 2026, mockup C of four:
+ * *"widget kısmında sabitle … kenarları hariç her şey şeffaflaşacak, ana
+ * ekranda sürekli görünüyor"*). A stack in the chart's lower-left corner,
+ * outlines at rest and filled under the pointer (app-widgets.js). At most
+ * WIDGET_PIN_MAX, oldest first; only widgets that exist. */
+const PINNED_WIDGETS_KEY = "crypto_chart_pinned_widgets";
+const WIDGET_PIN_MAX = 4;
+const sanitizePinnedWidgets = (raw) =>
+  Array.isArray(raw)
+    ? raw.filter((k, i) => typeof k === "string" && Object.prototype.hasOwnProperty.call(DEFAULT_WIDGETS, k) && raw.indexOf(k) === i).slice(0, WIDGET_PIN_MAX)
+    : [];
+const loadPinnedWidgets = () => sanitizePinnedWidgets(loadJsonSetting(PINNED_WIDGETS_KEY, null));
+const savePinnedWidgets = (keys) => saveJsonSetting(PINNED_WIDGETS_KEY, sanitizePinnedWidgets(keys));
+
+const loadWidgetCardSizes = () => sanitizeWidgetCardSizes(loadJsonSetting(WIDGET_CARD_SIZES_KEY, null));
+const saveWidgetCardSizes = (sizes) => saveJsonSetting(WIDGET_CARD_SIZES_KEY, sanitizeWidgetCardSizes(sizes));
+
 /* The widgets drawer's width, in pixels, where its right edge was let go
  * (27 Sep 2026). **Absent means the 30rem it opens at** — nothing is written
  * until the edge is moved, and a double-click on it writes null back. The
@@ -82,6 +126,7 @@ const DEFAULT_WIDGETS = {
   mempool: false,
   rsiWidget: false,
   outlook: false,
+  modelOutlook: false,
   regimes: false,
   worstFall: false,
   fundingRate: false,
@@ -141,7 +186,7 @@ const WIDGET_GROUPS = [
       {
         key: "watchlist",
         label: msg("wname_watchlist", "Watchlist"),
-        desc: msg("wdesc_watchlist", "Your coins as a colour-coded 24h grid"),
+        desc: msg("wdesc_watchlist", "Your coins with their price and 24h change, tinted by the move"),
       },
       {
         key: "topMovers",
@@ -175,6 +220,14 @@ const WIDGET_GROUPS = [
         key: "outlook",
         label: msg("wname_outlook", "Outlook"),
         desc: msg("wdesc_outlook", "Where this range's own steps land at the next horizons — a counted band, not a call"),
+      },
+      /* A model's estimate, not a count: the next completed hour of BTC-USD on
+       * Coinbase from an EWMA-t fitted and tested offline (model-outlook.js),
+       * with how its 80% band did out of sample. */
+      {
+        key: "modelOutlook",
+        label: msg("wname_model_outlook", "Next hour · model"),
+        desc: msg("wdesc_model_outlook", "BTC-USD's next completed hour as a model estimates it: a median, an 80% band, a target's chance at the close — and how often the band held when tested"),
       },
       /* The 3×3 regime picture the sector draws, counted the way this app
        * counts: each entry into a state and the state 20 days later, beside
@@ -663,6 +716,36 @@ const STABLE_SYMBOLS = new Set([
   "USDT","USDC","BUSD","DAI","TUSD","USDP","FRAX","LUSD","GUSD","USDD","USDE","FDUSD",
 ]);
 
+/* The model outlook for the widget (model-outlook.js): the bars are always
+ * BTC-USD on Coinbase Exchange, whatever the chart shows — the market the model
+ * was fitted and tested on; a coin that failed over to Kraken answers null and
+ * the card says the data is unavailable rather than apply the model to another
+ * venue's prices. The forecast is written to the local record before its hour
+ * closes, once per origin, and earlier ones are settled from the same bars. */
+const fetchModelOutlook = async (targetPrice) => {
+  const series = await fetchOddsSeries("BTC", "USD", 3600);
+  if (!series || !Array.isArray(series.closes)) return { forecast: { state: "unavailable" }, at: Date.now() };
+  const gaps = new Set(series.missing || []);
+  const bars = [];
+  series.closes.forEach((close, i) => {
+    if (!gaps.has(i)) bars.push({ time: series.t0 + i * 3600e3, close });
+  });
+  const now = Date.now();
+  const forecast = modelOutlookForecast(OUTLOOK_MODEL, bars, now, targetPrice);
+  // Read, change and write in one turn, so two tabs cannot lose each other's hour
+  let records = loadModelOutlookRecords();
+  const rec = OUTLOOK_MODEL.evaluation && OUTLOOK_MODEL.evaluation.status === "passed" ? modelOutlookRecord(forecast, "coinbase") : null;
+  const next = modelOutlookAppend(records, rec);
+  if (next !== records) {
+    records = next;
+    saveModelOutlookRecords(records);
+  }
+  const before = loadModelOutlookOutcomes();
+  const outcomes = modelOutlookSettle(records, before, bars, now);
+  if (outcomes !== before) saveModelOutlookOutcomes(outcomes);
+  return { forecast, tally: modelOutlookTally(records, outcomes), lastBar: bars.length ? bars[bars.length - 1].time : null, at: now };
+};
+
 /* The regime grid for one coin, from the daily closes the base-rate screen
    reads (twelve hours in the cache, so a card that refreshes every few
    minutes asks nothing new). Null below a hundred days: a grid of a few
@@ -784,6 +867,92 @@ const fetchEthGas = async () => {
   }
 };
 
+/* **Bitcoin's chain, from a second host** (1 Oct 2026). The halving,
+ * difficulty, fees and mempool cards all read mempool.space, and on a network
+ * that resets every TLS connection to it (measured: four cards "Couldn't load
+ * this one", every other host answering) all four were dead. Blockchair is
+ * already a declared host — the address watcher reads it — and one
+ * `/bitcoin/stats` answer carries what the four need. It is the second
+ * source, asked only when mempool.space failed; concurrent asks share one
+ * request, because Blockchair answers a burst with 430 for the whole origin.
+ * Each card's data says `source: "blockchair"` and the card names it. */
+const BTC_RETARGET_BLOCKS = 2016;
+
+/* **A request to mempool.space gives up after six seconds** (1 Oct 2026).
+ * On the network that blocks it the connection was sometimes refused at
+ * once and sometimes left hanging — and a hanging request never reached the
+ * second source, so the card said "Loading" for good. An abort is a failure
+ * like any other, and the fallback below takes it. */
+const MEMPOOL_TIMEOUT_MS = 6000;
+const mempoolFetch = (url) => {
+  const ctrl = typeof AbortController === "function" ? new AbortController() : null;
+  const timer = ctrl ? setTimeout(() => ctrl.abort(), MEMPOOL_TIMEOUT_MS) : null;
+  return politeFetch(url, ctrl ? { signal: ctrl.signal } : undefined)
+    .catch(() => null)
+    .finally(() => timer && clearTimeout(timer));
+};
+let btcChainStatsAsk = null;
+
+const fetchBtcChainStats = async () => {
+  const cached = getWidgetCache("btcChainStats");
+  if (cached) return cached;
+  if (btcChainStatsAsk) return btcChainStatsAsk;
+  btcChainStatsAsk = (async () => {
+    try {
+      const res = await politeFetch("https://api.blockchair.com/bitcoin/stats");
+      if (!res.ok) return null;
+      const json = await res.json();
+      const d = json && json.data;
+      const height = Number(d && d.best_block_height);
+      if (!(height > 0)) return null;
+      const num = (v) => (isFinite(Number(v)) ? Number(v) : null);
+      const retargetAt = d.next_retarget_time_estimate ? Date.parse(`${String(d.next_retarget_time_estimate).replace(" ", "T")}Z`) : NaN;
+      const data = {
+        height,
+        difficulty: num(d.difficulty),
+        nextDifficulty: num(d.next_difficulty_estimate),
+        retargetAt: isFinite(retargetAt) ? retargetAt : null,
+        feeRate: num(d.suggested_transaction_fee_per_byte_sat),
+        mempoolCount: num(d.mempool_transactions),
+        mempoolBytes: num(d.mempool_size),
+      };
+      setWidgetCache("btcChainStats", data);
+      return data;
+    } catch (e) {
+      return null;
+    } finally {
+      btcChainStatsAsk = null;
+    }
+  })();
+  return btcChainStatsAsk;
+};
+
+/* The four cards' readings from Blockchair's stats, or null. */
+const btcFeesFromStats = (st) =>
+  st && st.feeRate > 0
+    ? { rate: st.feeRate, fastest: st.feeRate, hour: st.feeRate, transferBtc: (st.feeRate * BTC_TYPICAL_VBYTES) / 1e8, source: "blockchair" }
+    : null;
+
+// Blockchair reports the queue in bytes, not vbytes: "blocks deep" is near enough to say, and marked as from there
+const mempoolFromStats = (st) =>
+  st && st.mempoolCount >= 0 && st.mempoolBytes >= 0
+    ? { count: st.mempoolCount, vsize: st.mempoolBytes, blocks: st.mempoolBytes / MEMPOOL_BLOCK_VBYTES, feesBtc: null, source: "blockchair" }
+    : null;
+
+const difficultyFromStats = (st, now) => {
+  if (!st || !(st.difficulty > 0) || !(st.nextDifficulty > 0)) return null;
+  const next = Math.ceil((st.height + 1) / BTC_RETARGET_BLOCKS) * BTC_RETARGET_BLOCKS;
+  const remaining = next - st.height;
+  return {
+    change: (st.nextDifficulty / st.difficulty - 1) * 100,
+    remaining,
+    progress: ((BTC_RETARGET_BLOCKS - remaining) / BTC_RETARGET_BLOCKS) * 100,
+    remainingMs: st.retargetAt ? Math.max(0, st.retargetAt - (now || Date.now())) : null,
+    previous: null,
+    source: "blockchair",
+  };
+};
+
 /* Bitcoin's fee market, from mempool.space's own recommendation.
  *
  * The headline is the **half-hour** rate rather than the fastest: the fastest
@@ -796,11 +965,14 @@ const fetchBtcFees = async () => {
   const cached = getWidgetCache("btcFees");
   if (cached) return cached;
   try {
-    const res = await politeFetch("https://mempool.space/api/v1/fees/recommended");
-    if (!res.ok) return null;
-    const json = await res.json();
+    const res = await mempoolFetch("https://mempool.space/api/v1/fees/recommended");
+    const json = res && res.ok ? await res.json() : null;
     const rate = Number(json && json.halfHourFee);
-    if (!isFinite(rate) || rate <= 0) return null;
+    if (!isFinite(rate) || rate <= 0) {
+      const second = btcFeesFromStats(await fetchBtcChainStats());
+      if (second) setWidgetCache("btcFees", second);
+      return second;
+    }
     const data = {
       rate,
       fastest: Number(json.fastestFee) || rate,
@@ -834,12 +1006,15 @@ const fetchMempool = async () => {
   const cached = getWidgetCache("mempool");
   if (cached) return cached;
   try {
-    const res = await politeFetch("https://mempool.space/api/mempool");
-    if (!res.ok) return null;
-    const json = await res.json();
+    const res = await mempoolFetch("https://mempool.space/api/mempool");
+    const json = res && res.ok ? await res.json() : null;
     const count = Number(json && json.count);
     const vsize = Number(json && json.vsize);
-    if (!isFinite(count) || count < 0 || !isFinite(vsize) || vsize < 0) return null;
+    if (!json || !isFinite(count) || count < 0 || !isFinite(vsize) || vsize < 0) {
+      const second = mempoolFromStats(await fetchBtcChainStats());
+      if (second) setWidgetCache("mempool", second);
+      return second;
+    }
     const data = {
       count,
       vsize,
@@ -871,12 +1046,15 @@ const fetchDifficulty = async () => {
   const cached = getWidgetCache("difficulty");
   if (cached) return cached;
   try {
-    const res = await politeFetch("https://mempool.space/api/v1/difficulty-adjustment");
-    if (!res.ok) return null;
-    const json = await res.json();
+    const res = await mempoolFetch("https://mempool.space/api/v1/difficulty-adjustment");
+    const json = res && res.ok ? await res.json() : null;
     const change = Number(json && json.difficultyChange);
     const remaining = Number(json && json.remainingBlocks);
-    if (!isFinite(change) || !isFinite(remaining) || remaining < 0) return null;
+    if (!json || !isFinite(change) || !isFinite(remaining) || remaining < 0) {
+      const second = difficultyFromStats(await fetchBtcChainStats());
+      if (second) setWidgetCache("difficulty", second);
+      return second;
+    }
     const data = {
       change,
       remaining,
@@ -909,6 +1087,7 @@ const DEFAULT_WIDGET_ORDER = [
   "mempool",
   "rsiWidget",
   "outlook",
+  "modelOutlook",
   "regimes",
   "worstFall",
   "fundingRate",
@@ -1378,4 +1557,44 @@ const loadWidgetOrderFromStorage = () => {
 
 const saveWidgetOrderToStorage = (order) =>
   saveJsonSetting(WIDGET_ORDER_KEY, order);
+
+/* **A market's series for the comparison** (COMPARE_MARKETS): Kraken's OHLC
+ * for a tokenized ETF, one bar size per range, cut to the range's window and
+ * shaped like `valueHistory` (`{ price, time }`, oldest first) so the
+ * comparison reads it unchanged. A bar with no trade repeats the last close
+ * on Kraken's side — it is drawn as it comes, flat. In USD whatever the app
+ * shows; the strip says so. Null on any failure: the line is simply not
+ * drawn, as with a coin whose history will not load. */
+const MARKET_SERIES = {
+  day: [15, 86400e3, "marketSeriesDay"],
+  week: [60, 7 * 86400e3, "marketSeriesWeek"],
+  month: [240, 30 * 86400e3, "marketSeriesMonth"],
+  year: [1440, 365 * 86400e3, "marketSeriesYear"],
+  all: [1440, Infinity, "marketSeriesAll"],
+};
+const fetchMarketSeries = async (id, period) => {
+  const market = compareMarket(id);
+  const spec = MARKET_SERIES[period];
+  if (!market || market.source !== "kraken" || !spec) return null;
+  const [interval, span, name] = spec;
+  const key = `${name}:${id}`;
+  const cached = getWidgetCache(key);
+  if (cached) return cached.map((p) => ({ price: p.price, time: new Date(p.time) }));
+  try {
+    const res = await politeFetch(`https://api.kraken.com/0/public/OHLC?pair=${market.pair}&interval=${interval}&asset_class=tokenized_asset`);
+    if (!res.ok) return null;
+    const json = await res.json();
+    const rows = json && json.result ? Object.values(json.result).find(Array.isArray) : null;
+    if (!rows || !rows.length) return null;
+    const last = Number(rows[rows.length - 1][0]) * 1000;
+    const series = rows
+      .map((r) => ({ price: Number(r[4]), time: Number(r[0]) * 1000 }))
+      .filter((p) => p.price > 0 && last - p.time <= span);
+    if (series.length < 2) return null;
+    setWidgetCache(key, series);
+    return series.map((p) => ({ price: p.price, time: new Date(p.time) }));
+  } catch (e) {
+    return null;
+  }
+};
 

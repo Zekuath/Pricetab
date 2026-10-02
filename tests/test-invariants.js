@@ -221,11 +221,39 @@ check("updateTabTitle() is called from app.js only inside setTabTitle", () => {
 // that includes the drawer the cards live in, its empty state and its one
 // button, which are sized with the other drawers, not with the cards. Since
 // 27 Sep 2026 also the drawer head's tools, its card-size letters and its
-// resize edge — the head of the drawer, never inside a card.
+// resize edge — the head of the drawer, never inside a card. Since 1 Oct
+// 2026 the iOS arrangement's chrome (app-widgets.js): the long-press menu, a
+// fixed layer over the drawer, and the gallery that replaces the cards while
+// a widget is added — its search, rows, page, carousel, slides, dots and the
+// Add Widget pill. A preview card inside a slide is still a WidgetCard and
+// still em.
 const REM_ALLOWED_OUTSIDE_CARD = new Set([
   "WidgetRestoreButton",
   "WidgetPanel",
-  "WidgetHideButton",
+  "WidgetMenu",
+  "WidgetMenuSizes",
+  "WidgetMenuSize",
+  "WidgetMenuShape",
+  "WidgetMenuItem",
+  "WidgetGallery",
+  "WidgetGallerySearch",
+  "WidgetGalleryGroup",
+  "WidgetGalleryHead",
+  "WidgetGalleryRow",
+  "WidgetGalleryName",
+  "WidgetGalleryDesc",
+  "WidgetGalleryTag",
+  "WidgetDetail",
+  "WidgetDetailTitle",
+  "WidgetDetailDesc",
+  "WidgetCarousel",
+  "WidgetSlide",
+  "WidgetSlideName",
+  "WidgetDots",
+  "WidgetDot",
+  "WidgetAddButton",
+  // The pinned stack's frame, fixed to the page's corner (its cards are em)
+  "PinnedStack",
   "WidgetsDrawer",
   "WidgetsDrawerEmpty",
   "WidgetsDrawerAction",

@@ -498,8 +498,17 @@ const chartAxes = (chart) => ({
     const clear = (y) => y >= 6 && y <= H - 4 && taken.every((t) => Math.abs(t.y - y) >= t.h / 2 + 5);
     const floor = range && range.bottom != null ? range.bottom : H;
     const shown = thinAxisLabels(levels.filter((l) => l.y != null && isFinite(l.y) && l.y <= floor && clear(l.y)), AXIS_PRICE_GAP, "y");
+    /* **The board's figures are not printed while it zooms** (30 Sep 2026).
+       Mid-travel the step is interpolated, so a level is not a round number
+       and its figure changed every frame — the board's own labels learned
+       never to rewrite during a travel, and that rule did not come with them
+       when the axis took over printing them: measured, the gutter's eight
+       figures were rewritten ~60 times through four presses. The ticks stay;
+       the figures return, round, as the ink comes back after the landing. */
+    const travelling = Boolean(gridLevels && chart.zoomAnim);
     for (const l of shown) {
       chart.axisLine(W, l.y, W + AXIS_TICK, l.y, color.border, 1);
+      if (travelling) continue;
       const el = chart.axisText(W + AXIS_TICK + 4, l.y + 3.5, l.text, "start", color.textSecondary, ink >= 0.999 ? 1 : ink.toFixed(3));
       el.setAttribute("data-axis-tick", l.text);
     }
@@ -548,7 +557,8 @@ const chartAxes = (chart) => ({
       if (pointerTime && left < pointerTime.x + pointerTime.w + 4 && left + w > pointerTime.x - 4) continue;
       lastRight = left + w;
       chart.axisLine(t.x, H, t.x, H + AXIS_TICK, color.border, 1);
-      const el = chart.axisText(t.start ? t.x + 3 : t.x, H + 14, t.text, t.start ? "start" : "middle", color.textSecondary, gridTimes ? (ink >= 0.999 ? 1 : ink.toFixed(3)) : 1);
+      // Full ink always: a board zoom is a zoom in price, and the times do not change
+      const el = chart.axisText(t.start ? t.x + 3 : t.x, H + 14, t.text, t.start ? "start" : "middle", color.textSecondary, 1);
       el.setAttribute("data-axis-time", t.text);
     }
 
@@ -612,7 +622,7 @@ const chartAxes = (chart) => ({
     const move = chart.handlePointerMove;
     chart.handlePointerMove = (e) => {
       const outside = chart.axesOn() && (e.offsetX > chart.width || e.offsetY > chart.height);
-      if (outside && !chart.nowDrag && !chart.callDrag) {
+      if (outside && !chart.nowDrag && !chart.boardDrag) {
         if (chart.hoverX !== -1 || chart._axisPointerY != null) chart.clearHover();
         return;
       }

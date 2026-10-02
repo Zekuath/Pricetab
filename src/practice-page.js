@@ -2979,7 +2979,7 @@ const practicePage = (panel) => ({
         /* The card that says what the screen cannot: the three costs, the
            walls the account can be stopped by, and the live funding rate —
            fetched when the card opens and nowhere else. */
-        panel.state.info ? panel.renderFuturesInfo() : null,
+        panel.state.info ? React.createElement(PracticeInfoWrap, null, panel.renderFuturesInfo()) : null,
         ready && panel.state.ppSettings ? panel.renderPageSettings() : null,
         ready
           ? React.createElement(

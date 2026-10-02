@@ -402,8 +402,204 @@ class BaseRatesPanel extends PureComponent {
       /* The strategy setups, entered on a day's close — see
          `strategy-setups.js` and setups-prereg.md. */
       setups: strategySetupStates(candles),
+      /* The second round (1 Oct 2026, companions-prereg.md): twelve more
+         swing patterns, twenty-one daily readings, the stretches most like
+         the last thirty days, and the next day by weekday. */
+      swing: detectSwingPatterns(candles),
+      readingStates: companionReadingStates(candles),
+      similar: similarStretches(candles),
+      weekday: weekdayShares(candles),
       closes,
     };
+  }
+
+  /* **What came after, for what is true now** (1 Oct 2026, *"gelecekte ne
+   * olabileceğini anlayabileceğimiz bir yardımcı"*). Everything on this
+   * screen that holds today — a setup or reading formed inside its horizon,
+   * a pattern still being walked, the similar past — gathered in one place
+   * with each one's own count. Never combined into a score or a direction:
+   * tested, almost none of them told the next ten days apart from any ten
+   * days, and the last sentence says so. */
+  renderAhead(readings) {
+    const items = [];
+    const day = (t) =>
+      new Date(t * 1000).toLocaleDateString(intlTag(activeLocale()), { day: "numeric", month: "short" });
+    const money = (v) => formatAxisPrice(v, v / 2000, "");
+    for (const def of COMPANION_SETUP_DEFS) {
+      const states = readings.setups[def.id] || readings.readingStates[def.id];
+      if (!states) continue;
+      const entries = strategySetupEntries(states);
+      const last = entries[entries.length - 1];
+      if (last == null) continue;
+      const ago = states.length - 1 - last;
+      const horizon = def.horizon || (def.kind === "move" ? SETUP_MOVE_HORIZON : SETUP_HORIZON);
+      // Inside its horizon, the rule the row's own " · now" uses
+      if (ago >= (def.recentDays || SETUP_HORIZON)) continue;
+      let record;
+      if (def.kind === "move") {
+        const m = moveRateFor(readings.closes, states, horizon);
+        record = m && m.n
+          ? msg("br_ah_move", "the next $1 days moved more than usual $2 of $3 times; half would.", String(horizon), String(m.bigger), String(m.n))
+          : msg("br_ah_never", "nothing earlier to count.");
+      } else {
+        const r = baseRateFor(readings.closes, states, (v) => v, horizon);
+        record = r && r.n
+          ? msg("br_ah_up", "$1 days later up $2% of $3 times; any $1 days up $4%.", String(horizon), r.up.toFixed(0), String(r.n), r.baseUp.toFixed(0))
+          : msg("br_ah_never", "nothing earlier to count.");
+      }
+      const when =
+        ago === 0 ? msg("ss_formed_today", "Formed on today's close.") : ago === 1 ? msg("ss_formed_yesterday", "Formed yesterday.") : msg("ss_formed_ago", "Formed $1 days ago.", String(ago));
+      items.push({ key: `s-${def.id}`, title: def.title, text: `${when} ${capitalFirst(record)}` });
+    }
+    const shapes = readings.shapes.concat(readings.swing);
+    for (const def of COMPANION_PATTERN_DEFS) {
+      const mine = shapes.filter((e) => e.kind === def.id);
+      const latest = mine[mine.length - 1];
+      if (!latest || latest.out !== "pending") continue;
+      const tested = SWING_PATTERNS.includes(def) ? ` ${swingTestedText(def.id)}` : "";
+      items.push({
+        key: `p-${def.id}`,
+        title: def.title,
+        text:
+          msg("br_ah_pattern", "Broke out on $1: measured move $2, invalidation $3, neither reached yet.", day(latest.at), money(latest.target), money(latest.stop)) +
+          tested,
+      });
+    }
+    const sim = readings.similar;
+    return [
+      React.createElement(BaseSectionLabel, { key: "ahead-label", "data-base-ahead": String(items.length) }, msg("br_ah_title", "What came after, for what is true now")),
+      items.length
+        ? null
+        : React.createElement(
+            BaseEmpty,
+            { key: "ahead-none" },
+            msg("br_ah_none", "No pattern, setup or reading on this screen has formed in its last ten days. The ordinary case."),
+          ),
+      ...items.map((it) =>
+        React.createElement(
+          BaseRow,
+          { key: it.key, live: true, "data-base-ahead-item": it.key },
+          React.createElement(BaseRowTitle, null, it.title),
+          React.createElement(BaseDetail, null, it.text),
+        ),
+      ),
+      sim
+        ? React.createElement(
+            BaseRow,
+            { key: "ahead-similar", "data-base-ahead-similar": "1" },
+            React.createElement(BaseRowTitle, null, msg("br_sim_title", "The most similar past")),
+            React.createElement(
+              BaseDetail,
+              null,
+              msg(
+                "br_sim_line",
+                "The $1 stretches of $2 days most like the last $2 were up $3 of $1 times $4 days later, by $5 in the middle one.",
+                String(sim.n),
+                String(ANALOG_WINDOW),
+                String(sim.up),
+                String(ANALOG_AHEAD),
+                `${signedFixed(sim.median, 1)}%`,
+              ),
+            ),
+          )
+        : null,
+      React.createElement(
+        BaseNote,
+        { key: "ahead-note", "data-base-ahead-note": "1" },
+        msg(
+          "br_ah_note",
+          "These are counts of what followed, not a forecast, and they are not added up. Tested on four coins before they were shown, none of the readings and none of the setups told the next ten days apart from any ten days; the similar past did no better than an ordinary day; of the patterns only a triangle broken downwards did — and it reached its measured move first one time in three.",
+        ),
+      ),
+    ];
+  }
+
+  /* **The similar past, listed** (companions-prereg.md, group 4): the
+   * twenty stretches and what each was followed by. Listed, never drawn —
+   * scored from 2021 on, they said no more about the next ten days than an
+   * ordinary day did. */
+  renderSimilar(readings) {
+    const sim = readings.similar;
+    if (!sim) return [];
+    const day = (t) =>
+      new Date(t * 1000).toLocaleDateString(intlTag(activeLocale()), { day: "numeric", month: "short", year: "numeric" });
+    const list = sim.stretches
+      .slice()
+      .sort((a, b) => b.t - a.t)
+      .map((s) => `${day(s.t)} ${signedFixed(s.after, 1)}%`)
+      .join(" · ");
+    return [
+      React.createElement(BaseSectionLabel, { key: "sim-label", "data-base-similar": String(sim.n) }, msg("br_sim_section", "The similar past · daily candles")),
+      React.createElement(
+        BaseEmpty,
+        { key: "sim-intro" },
+        msg(
+          "br_sim_intro",
+          "The $1 stretches of this coin's history whose last $2 days had the shape of the last $2 — the path, not the level or the size — each with the $3 days that followed it.",
+          String(sim.n),
+          String(ANALOG_WINDOW),
+          String(ANALOG_AHEAD),
+        ),
+      ),
+      React.createElement(BaseDetail, { key: "sim-list", "data-base-similar-list": "1" }, list),
+      React.createElement(
+        BaseNote,
+        { key: "sim-note" },
+        msg(
+          "br_sim_note",
+          "Tested on BTC, ETH, SOL and LTC from 2021 on, every day: what followed the most similar stretches said no more about the next ten days than what followed any day, and their majority called the direction about half the time. That is why they are a list here and not a line on the chart.",
+        ),
+      ),
+    ];
+  }
+
+  /* **The next day, by weekday** (group 3): printed as a difference only on
+   * a coin where it was tested and differed — ETH and LTC. */
+  renderWeekday(readings) {
+    const { coin } = this.props;
+    const q = WEEKDAY_TESTED[coin];
+    const w = readings.weekday;
+    const label = React.createElement(BaseSectionLabel, { key: "wd-label" }, msg("br_wd_section", "The next day, by weekday"));
+    if (q == null || !w)
+      return [
+        label,
+        React.createElement(
+          BaseEmpty,
+          { key: "wd-none" },
+          msg("br_wd_untested", "Tested on BTC, ETH, SOL and LTC: the next day's direction differed by weekday on ETH and LTC only. $1 was not tested.", coin),
+        ),
+      ];
+    if (q >= 0.05)
+      return [
+        label,
+        React.createElement(
+          BaseEmpty,
+          { key: "wd-same" },
+          msg("br_wd_same", "Tested on this coin: no weekday's next day differed from the others'."),
+        ),
+      ];
+    const names = [
+      msg("wd_mon", "Mon"), msg("wd_tue", "Tue"), msg("wd_wed", "Wed"), msg("wd_thu", "Thu"),
+      msg("wd_fri", "Fri"), msg("wd_sat", "Sat"), msg("wd_sun", "Sun"),
+    ];
+    return [
+      label,
+      React.createElement(
+        BaseDetail,
+        { key: "wd-list", "data-base-weekday": coin },
+        w.shares.map((s, d) => `${names[d]} ${s.toFixed(0)}%`).join(" · "),
+      ),
+      React.createElement(
+        BaseNote,
+        { key: "wd-note" },
+        msg(
+          "br_wd_note",
+          "How often the next day closed higher, by the weekday of the close (UTC), over $1 days; any day: $2%. Tested on four coins, this coin's weekdays differed from one another by more than chance — a small difference in a day's direction, not a size, and nothing about this week.",
+          String(w.n),
+          w.all.toFixed(0),
+        ),
+      ),
+    ];
   }
 
   /* **One strategy setup's record here** (27 Sep 2026). The numbers only:
@@ -414,16 +610,25 @@ class BaseRatesPanel extends PureComponent {
    * pointed against its own claim. Marked "now" when it was entered in the
    * last ten days. */
   renderSetup(def, readings) {
-    const states = readings.setups[def.id];
+    // A reading of 1 Oct 2026 carries its own horizon (companion-readings.js)
+    const states = readings.setups[def.id] || readings.readingStates[def.id] || [];
     const entries = strategySetupEntries(states);
     const last = entries[entries.length - 1];
     const ago = last == null ? null : states.length - 1 - last;
-    const live = ago != null && ago < SETUP_HORIZON;
+    const live = ago != null && ago < (def.recentDays || SETUP_HORIZON);
     const detail = (() => {
       if (def.kind === "move") {
-        const m = moveRateFor(readings.closes, states, SETUP_MOVE_HORIZON);
+        const m = moveRateFor(readings.closes, states, def.horizon || SETUP_MOVE_HORIZON);
         if (!m || !m.n)
           return msg("ss_none", "Not once in this coin's daily history.");
+        if (def.horizon)
+          return msg(
+            "ss_move_detail_h",
+            "The next $3 days moved more than an ordinary $3 days of this coin in $1 of $2 episodes — half would, if it meant nothing.",
+            String(m.bigger),
+            String(m.n),
+            String(def.horizon),
+          );
         return msg(
           "ss_move_detail",
           "The next 30 days moved more than an ordinary 30 days of this coin in $1 of $2 episodes — half would, if it meant nothing.",
@@ -431,7 +636,7 @@ class BaseRatesPanel extends PureComponent {
           String(m.n),
         );
       }
-      const r = baseRateFor(readings.closes, states, (v) => v, SETUP_HORIZON);
+      const r = baseRateFor(readings.closes, states, (v) => v, def.horizon || SETUP_HORIZON);
       if (!r || !r.n)
         return msg("ss_none", "Not once in this coin's daily history.");
       return msg(
@@ -537,6 +742,10 @@ class BaseRatesPanel extends PureComponent {
               "Not once in this coin's daily history, by these rules.",
             ),
       ),
+      // The pooled count only beside this coin's own — a row of "not once here" printing a rate is a rate without its count
+      SWING_PATTERNS.includes(def) && rec.found
+        ? React.createElement(BaseDetail, { "data-base-shape-tested": def.id }, swingTestedText(def.id))
+        : null,
       live
         ? React.createElement(
             BaseDetail,
@@ -739,6 +948,7 @@ class BaseRatesPanel extends PureComponent {
               React.createElement(
                 BaseColumn,
                 { "data-base-states": "1" },
+                ...this.renderAhead(readings),
                 React.createElement(
                   BaseSectionLabel,
                   null,
@@ -769,6 +979,8 @@ class BaseRatesPanel extends PureComponent {
                   : null,
                 ...restRows,
                 ...this.renderCpi(),
+                ...this.renderSimilar(readings),
+                ...this.renderWeekday(readings),
               ),
               /* **The candlestick shapes, counted.** Whatever range is on the
                  chart, these are read off the daily candle — a pattern is a
@@ -846,6 +1058,51 @@ class BaseRatesPanel extends PureComponent {
                   msg(
                     "ss_note",
                     "Tested together on BTC, ETH, SOL and LTC on 27 September 2026, after correcting for the 48 comparisons, none of these twelve was distinguishable from an ordinary day. A difference that looks large on one coin is the size chance produces across this many rows — on LTC the largest ones point against the setup's own claim — so none is called better or worse here.",
+                  ),
+                ),
+                /* **More chart patterns** (1 Oct 2026) — triangles, wedges,
+                   ranges, flags and triple tops through swing points, by
+                   rules written before they were counted. */
+                React.createElement(
+                  BaseSectionLabel,
+                  { "data-base-swing": String(readings.swing.length) },
+                  msg("swp_section", "More chart patterns · daily candles"),
+                ),
+                React.createElement(
+                  BaseEmpty,
+                  null,
+                  msg(
+                    "swp_intro",
+                    "Triangles, wedges, ranges, flags and triple tops, drawn through swing points rather than fitted, each followed for 90 days to its measured move or its invalidation. Under each, how the same rule did on four coins together against the same two distances from an ordinary day.",
+                  ),
+                ),
+                ...SWING_PATTERNS.map((def) =>
+                  this.renderShape(def, readings.swing),
+                ),
+                /* **Readings** (1 Oct 2026) — divergences, Ichimoku, the
+                   stochastic, Fibonacci, pivots, highs, streaks and quiet days. */
+                React.createElement(
+                  BaseSectionLabel,
+                  { "data-base-readings": "1" },
+                  msg("cr_section", "Readings · daily candles"),
+                ),
+                React.createElement(
+                  BaseEmpty,
+                  null,
+                  msg(
+                    "cr_intro",
+                    "What chart tools read off a chart to say what comes next — divergences, the Ichimoku cloud, the stochastic, Fibonacci retracements, weekly pivots, new highs, streaks, the Mayer multiple, quiet days — with what followed each on this coin over ten days, beside any ten days.",
+                  ),
+                ),
+                ...COMPANION_READINGS.map((def) =>
+                  this.renderSetup(def, readings),
+                ),
+                React.createElement(
+                  BaseNote,
+                  { "data-base-readings-note": "1" },
+                  msg(
+                    "cr_note",
+                    "Tested together on BTC, ETH, SOL and LTC on 1 October 2026 — 88 comparisons, written down before any was counted — none of these was distinguishable from an ordinary day; the smallest corrected q was 0.63. So none is called better or worse here.",
                   ),
                 ),
               ),

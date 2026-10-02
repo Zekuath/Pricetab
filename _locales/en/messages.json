@@ -216,8 +216,8 @@
   "al_calls": {
     "message": "Calls"
   },
-  "al_calls_info": {
-    "message": "A call is a claim: not “tell me when”, but “I say where”. Point at a square in the empty strip to the right of the chart and you are naming a price band and a moment — one click drafts it, a second locks it. It settles itself the next time you open a tab, against the price at that moment, and the box stays on the chart saying whether you were right. How far that strip reaches is yours to set: drag the “now” line left for more board, right for more history."
+  "al_calls_info_b": {
+    "message": "A call is a claim: not “tell me when”, but “I say where”. Point at a square in the empty strip to the right of the chart and you are naming a price band and a moment — one click drafts it, a second locks it. It settles itself the next time you open a tab, against the price at that moment, and the box stays on the chart saying whether you were right. Each square carries its chance: from this coin's own bars, scaled to how it is moving now, and measured on years of past squares before it was allowed on the board — a chance, not a tip. Drag the board up or down to look at other prices, and left or right for more board or more history."
   },
   "al_calls_learn_more": {
     "message": "How calls work"
@@ -245,6 +245,12 @@
       }
     }
   },
+  "al_calls_state_off": {
+    "message": "Off"
+  },
+  "al_calls_state_on": {
+    "message": "On"
+  },
   "al_calls_step_1": {
     "message": "Turn calls on and go to the board."
   },
@@ -253,6 +259,18 @@
   },
   "al_calls_step_3": {
     "message": "Come back with K to track open and settled calls."
+  },
+  "al_calls_switch": {
+    "message": "Calls on the chart"
+  },
+  "al_calls_switch_title": {
+    "message": "Calls on the chart — your calls and score are kept either way (L)"
+  },
+  "al_cell_odds": {
+    "message": "chances"
+  },
+  "al_cell_odds_hint": {
+    "message": "Write on each square the chance the price is in it when its column ends — from this coin's own bars, scaled to how it is moving now, and checked against years of squares before it was allowed on the board"
   },
   "al_clear_settled": {
     "message": "clear settled"
@@ -289,8 +307,8 @@
   "al_direction": {
     "message": "Target direction"
   },
-  "al_drag_hint": {
-    "message": "Drag the dotted line itself to make the board bigger or smaller."
+  "al_drag_hint_b": {
+    "message": "Drag the board up or down to look at other prices, and sideways to make it bigger or smaller."
   },
   "al_drops_below": {
     "message": "drops below"
@@ -664,17 +682,6 @@
   "al_open_now_hint": {
     "message": "Open calls currently waiting to settle"
   },
-  "al_open_settled_fig": {
-    "message": "$1 open · $2 settled",
-    "placeholders": {
-      "arg1": {
-        "content": "$1"
-      },
-      "arg2": {
-        "content": "$2"
-      }
-    }
-  },
   "al_order_hint": {
     "message": "Switch between due-first and newest-first ordering for open calls"
   },
@@ -780,6 +787,9 @@
   "al_rearm_hint": {
     "message": "Arm this target again"
   },
+  "al_record": {
+    "message": "Record"
+  },
   "al_record_kept": {
     "message": "Your record is kept. It lives on this device only and is worth nothing"
   },
@@ -884,9 +894,6 @@
   "al_still_settling": {
     "message": "still settling"
   },
-  "al_stop_calls_hint": {
-    "message": "Stop calls. Your calls and score are kept, and L does the same from the chart"
-  },
   "al_target_coin": {
     "message": "Target coin"
   },
@@ -946,9 +953,6 @@
   },
   "al_turn_calls_on": {
     "message": "Turn calls on"
-  },
-  "al_turn_off": {
-    "message": "turn off"
   },
   "al_view": {
     "message": "View"
@@ -1270,9 +1274,6 @@
   },
   "app_dismiss": {
     "message": "Dismiss"
-  },
-  "app_dismiss_rating": {
-    "message": "Dismiss rating request"
   },
   "app_error": {
     "message": "Something went wrong."
@@ -2150,6 +2151,63 @@
   "br_across_one_episode": {
     "message": " across 1 episode. "
   },
+  "br_ah_move": {
+    "message": "the next $1 days moved more than usual $2 of $3 times; half would.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      }
+    }
+  },
+  "br_ah_never": {
+    "message": "nothing earlier to count."
+  },
+  "br_ah_none": {
+    "message": "No pattern, setup or reading on this screen has formed in its last ten days. The ordinary case."
+  },
+  "br_ah_note": {
+    "message": "These are counts of what followed, not a forecast, and they are not added up. Tested on four coins before they were shown, none of the readings and none of the setups told the next ten days apart from any ten days; the similar past did no better than an ordinary day; of the patterns only a triangle broken downwards did — and it reached its measured move first one time in three."
+  },
+  "br_ah_pattern": {
+    "message": "Broke out on $1: measured move $2, invalidation $3, neither reached yet.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      }
+    }
+  },
+  "br_ah_title": {
+    "message": "What came after, for what is true now"
+  },
+  "br_ah_up": {
+    "message": "$1 days later up $2% of $3 times; any $1 days up $4%.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      },
+      "arg4": {
+        "content": "$4"
+      }
+    }
+  },
   "br_close": {
     "message": "Close base rates"
   },
@@ -2353,6 +2411,49 @@
   "br_rsi_label": {
     "message": "RSI 14 · daily closes · 0–100"
   },
+  "br_sim_intro": {
+    "message": "The $1 stretches of this coin's history whose last $2 days had the shape of the last $2 — the path, not the level or the size — each with the $3 days that followed it.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      }
+    }
+  },
+  "br_sim_line": {
+    "message": "The $1 stretches of $2 days most like the last $2 were up $3 of $1 times $4 days later, by $5 in the middle one.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      },
+      "arg4": {
+        "content": "$4"
+      },
+      "arg5": {
+        "content": "$5"
+      }
+    }
+  },
+  "br_sim_note": {
+    "message": "Tested on BTC, ETH, SOL and LTC from 2021 on, every day: what followed the most similar stretches said no more about the next ten days than what followed any day, and their majority called the direction about half the time. That is why they are a list here and not a line on the chart."
+  },
+  "br_sim_section": {
+    "message": "The similar past · daily candles"
+  },
+  "br_sim_title": {
+    "message": "The most similar past"
+  },
   "br_that_is": {
     "message": "That is $1.",
     "placeholders": {
@@ -2397,6 +2498,31 @@
       }
     }
   },
+  "br_wd_note": {
+    "message": "How often the next day closed higher, by the weekday of the close (UTC), over $1 days; any day: $2%. Tested on four coins, this coin's weekdays differed from one another by more than chance — a small difference in a day's direction, not a size, and nothing about this week.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "br_wd_same": {
+    "message": "Tested on this coin: no weekday's next day differed from the others'."
+  },
+  "br_wd_section": {
+    "message": "The next day, by weekday"
+  },
+  "br_wd_untested": {
+    "message": "Tested on BTC, ETH, SOL and LTC: the next day's direction differed by weekday on ETH and LTC only. $1 was not tested.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
   "ch_band": {
     "message": "Band"
   },
@@ -2417,9 +2543,6 @@
   "ch_drag_now": {
     "message": "Drag to change how far ahead you can call"
   },
-  "ch_drag_or_keys": {
-    "message": "Drag, or use the arrow keys, to change how far ahead you can call"
-  },
   "ch_gap": {
     "message": "Gap"
   },
@@ -2429,26 +2552,17 @@
   "ch_low": {
     "message": "Low"
   },
+  "ch_now_keys": {
+    "message": "Drag, or use ← and →, to change how far ahead you can call — ↑ and ↓ walk the board"
+  },
   "ch_now_label": {
     "message": "How far ahead you can call"
   },
   "ch_open": {
     "message": "Open"
   },
-  "ch_pan_down": {
-    "message": "Look at lower prices"
-  },
-  "ch_pan_hint": {
-    "message": "Rest the pointer here to walk the board that way — or press it, or use the arrow keys"
-  },
-  "ch_pan_hint_hold": {
-    "message": "Press, or hold, to change how much of the chart is board"
-  },
   "ch_pan_home": {
     "message": "Bring the board back to the price"
-  },
-  "ch_pan_left": {
-    "message": "Show less board and more history"
   },
   "ch_pan_off": {
     "message": "$1 off · back",
@@ -2457,12 +2571,6 @@
         "content": "$1"
       }
     }
-  },
-  "ch_pan_right": {
-    "message": "Show more squares further ahead"
-  },
-  "ch_pan_up": {
-    "message": "Look at higher prices"
   },
   "ch_pts": {
     "message": "pts"
@@ -2487,6 +2595,14 @@
   "ch_volume": {
     "message": "Volume"
   },
+  "ch_volume_at": {
+    "message": "Volume · $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
   "ch_zoom_hint": {
     "message": " — scroll over the chart, or [ and ]"
   },
@@ -2501,6 +2617,102 @@
   },
   "ch_zoom_out_label": {
     "message": "Zoom the board out — a wider band, far enough to call a big move"
+  },
+  "chance_aria": {
+    "message": "Chances, counted from this coin's own history"
+  },
+  "chance_head": {
+    "message": "Chances"
+  },
+  "chance_range_key": {
+    "message": "next $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "chance_range_title": {
+    "message": "Where $1 replays of this range's own steps ended $2 ahead: 90% between these two prices, $3 of them above today's. A count, not a call.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      }
+    }
+  },
+  "chance_range_value": {
+    "message": "$1 – $2 · $3 above",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      }
+    }
+  },
+  "chance_regime_key": {
+    "message": "20d $1 · $2d",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "chance_regime_title": {
+    "message": "The Markov question, counted: the $1 past entries into $2 and the state 20 days later — rising $3, flat $4, falling $5. On any day: $6, $7, $8. On four coins no such cell was 10 points from any day.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      },
+      "arg4": {
+        "content": "$4"
+      },
+      "arg5": {
+        "content": "$5"
+      },
+      "arg6": {
+        "content": "$6"
+      },
+      "arg7": {
+        "content": "$7"
+      },
+      "arg8": {
+        "content": "$8"
+      }
+    }
+  },
+  "chance_regime_value": {
+    "message": "in 20d: rise $1 · flat $2 · fall $3",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      }
+    }
   },
   "chart_avg_label": {
     "message": "avg $1",
@@ -2704,8 +2916,8 @@
   "chrome_calls": {
     "message": "Calls"
   },
-  "chrome_compare_stop": {
-    "message": "Stop comparing with $1",
+  "chrome_compare_with": {
+    "message": "Comparing with $1 — open Compare",
     "placeholders": {
       "arg1": {
         "content": "$1"
@@ -2790,6 +3002,17 @@
       }
     }
   },
+  "cmp_c_hit_s": {
+    "message": "Broke out $1; reached the measured move $2.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
   "cmp_c_levels": {
     "message": "Measured move $1 · invalidation $2",
     "placeholders": {
@@ -2840,8 +3063,30 @@
       }
     }
   },
+  "cmp_c_neither_s": {
+    "message": "Broke out $1; neither level was reached within $2 days.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
   "cmp_c_open": {
     "message": "Broke its neckline $1 at $2 — neither level reached yet.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "cmp_c_open_s": {
+    "message": "Broke out $1 at $2 — neither level reached yet.",
     "placeholders": {
       "arg1": {
         "content": "$1"
@@ -2885,8 +3130,30 @@
       }
     }
   },
+  "cmp_c_stop_s": {
+    "message": "Broke out $1; the invalidation level was reached first, $2.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
   "cmp_c_tested": {
     "message": "Tested together on this app's data, none of the twelve setups differed from an ordinary day."
+  },
+  "cmp_c_tested_r": {
+    "message": "Tested together on four coins ($1 tests), none of the $2 readings differed from an ordinary day.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
   },
   "cmp_c_unpin": {
     "message": "Kept open · click the chart to put it away"
@@ -2934,6 +3201,31 @@
       }
     }
   },
+  "cmp_change": {
+    "message": "Change"
+  },
+  "cmp_change_hint": {
+    "message": "Compare $1 with another coin instead of $2",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "cmp_corr_hint": {
+    "message": "How closely the two coins' steps moved together over the $1 steps on screen: 1 is in lockstep, 0 unrelated, −1 opposite. A description of this window, not a forecast.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "cmp_corr_label": {
+    "message": "correlation of steps"
+  },
   "cmp_days_ago": {
     "message": "$1d ago",
     "placeholders": {
@@ -2942,16 +3234,76 @@
       }
     }
   },
-  "cmp_gap": {
-    "message": "gap $1 pts",
+  "cmp_drawer_close": {
+    "message": "Close compare"
+  },
+  "cmp_drawer_foot": {
+    "message": "Type and Enter picks the first match. This drawer: "
+  },
+  "cmp_drawer_found": {
+    "message": "Found"
+  },
+  "cmp_drawer_from_1d": {
+    "message": "opens on 1D"
+  },
+  "cmp_drawer_market_aria": {
+    "message": "Offer $1 to compare with",
     "placeholders": {
       "arg1": {
         "content": "$1"
       }
     }
   },
+  "cmp_drawer_markets": {
+    "message": "Markets"
+  },
+  "cmp_drawer_markets_note": {
+    "message": "The S&P 500 and the Nasdaq 100 are Kraken's tokens for the SPY and QQQ ETFs, priced in USD around the clock: over six months their price stayed within 2.5% of the ETFs and their moves within a point. They trade thinly minute by minute, so they are drawn from 1D up."
+  },
+  "cmp_drawer_more": {
+    "message": "More coins — type to find any"
+  },
+  "cmp_drawer_none": {
+    "message": "Nothing matches that"
+  },
+  "cmp_drawer_now": {
+    "message": "$1 against $2",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "cmp_drawer_on": {
+    "message": "On"
+  },
+  "cmp_drawer_search": {
+    "message": "Compare $1 with…",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "cmp_drawer_settings": {
+    "message": "Markets in this list"
+  },
+  "cmp_drawer_yours": {
+    "message": "Your coins"
+  },
   "cmp_gap_hint": {
     "message": "The compared coin's move minus this coin's, in percentage points"
+  },
+  "cmp_gap_label": {
+    "message": "gap since the start of $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
   },
   "cmp_hint": {
     "message": "Point at a mark to read it · click to keep it open"
@@ -2961,6 +3313,43 @@
   },
   "cmp_measured": {
     "message": "measured move"
+  },
+  "cmp_mkt_from_1d": {
+    "message": "$1 is drawn from 1D up — it trades thinly by the minute",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "cmp_mkt_gold": {
+    "message": "Gold"
+  },
+  "cmp_mkt_gold_what": {
+    "message": "PAXG — a token for one troy ounce, on Coinbase"
+  },
+  "cmp_mkt_ndx": {
+    "message": "Nasdaq 100"
+  },
+  "cmp_mkt_ndx_what": {
+    "message": "QQQx — the QQQ ETF as a token on Kraken"
+  },
+  "cmp_mkt_spx": {
+    "message": "S&P 500"
+  },
+  "cmp_mkt_spx_what": {
+    "message": "SPYx — the SPY ETF as a token on Kraken"
+  },
+  "cmp_mkt_usd": {
+    "message": "$1 in USD",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "cmp_pts": {
+    "message": "pts"
   },
   "cmp_ratio": {
     "message": "$1 in $2",
@@ -3015,19 +3404,11 @@
   "cmp_today": {
     "message": "today"
   },
-  "cmp_together": {
-    "message": "same way $1 of $2 steps",
-    "placeholders": {
-      "arg1": {
-        "content": "$1"
-      },
-      "arg2": {
-        "content": "$2"
-      }
-    }
-  },
   "cmp_together_hint": {
     "message": "Steps of this chart where both coins moved, and how many of them went the same way. A count of what happened, not a forecast."
+  },
+  "cmp_together_label": {
+    "message": "steps the same way"
   },
   "cost_fee": {
     "message": "Fee on every fill"
@@ -3288,6 +3669,204 @@
         "content": "$2"
       }
     }
+  },
+  "cr_ath": {
+    "message": "A new all-time high"
+  },
+  "cr_ath_claim": {
+    "message": "said to be strength that runs on"
+  },
+  "cr_ath_what": {
+    "message": "the highest close of the whole history"
+  },
+  "cr_fib_down": {
+    "message": "Capped at the 61.8% retracement"
+  },
+  "cr_fib_down_claim": {
+    "message": "said to cap the bounce"
+  },
+  "cr_fib_down_what": {
+    "message": "after a fall of 15% or more, reached its 61.8% retracement and closed under the 78.6%"
+  },
+  "cr_fib_up": {
+    "message": "Held the 61.8% retracement"
+  },
+  "cr_fib_up_claim": {
+    "message": "said to hold and turn back up"
+  },
+  "cr_fib_up_what": {
+    "message": "after a rise of 15% or more, reached its 61.8% retracement and closed above the 78.6%"
+  },
+  "cr_ichi_above": {
+    "message": "Above the cloud"
+  },
+  "cr_ichi_above_claim": {
+    "message": "said to start an uptrend"
+  },
+  "cr_ichi_above_what": {
+    "message": "closed above the Ichimoku cloud (9, 26, 52)"
+  },
+  "cr_ichi_below": {
+    "message": "Below the cloud"
+  },
+  "cr_ichi_below_claim": {
+    "message": "said to start a downtrend"
+  },
+  "cr_ichi_below_what": {
+    "message": "closed below the Ichimoku cloud (9, 26, 52)"
+  },
+  "cr_inside": {
+    "message": "Inside day"
+  },
+  "cr_inside_claim": {
+    "message": "said to come before a bigger move, either way"
+  },
+  "cr_inside_what": {
+    "message": "the day's high and low both inside the day before"
+  },
+  "cr_intro": {
+    "message": "What chart tools read off a chart to say what comes next — divergences, the Ichimoku cloud, the stochastic, Fibonacci retracements, weekly pivots, new highs, streaks, the Mayer multiple, quiet days — with what followed each on this coin over ten days, beside any ten days."
+  },
+  "cr_macd_bear": {
+    "message": "MACD divergence, down"
+  },
+  "cr_macd_bear_claim": {
+    "message": "said to mark momentum turning down"
+  },
+  "cr_macd_bear_what": {
+    "message": "a higher high while the MACD line made a lower one, over zero"
+  },
+  "cr_macd_bull": {
+    "message": "MACD divergence, up"
+  },
+  "cr_macd_bull_claim": {
+    "message": "said to mark momentum turning up"
+  },
+  "cr_macd_bull_what": {
+    "message": "a lower low while the MACD line made a higher one, under zero"
+  },
+  "cr_mayer_high": {
+    "message": "Mayer multiple over 2.4"
+  },
+  "cr_mayer_high_claim": {
+    "message": "said to be overheated"
+  },
+  "cr_mayer_high_what": {
+    "message": "the close 2.4 times its 200-day average or more"
+  },
+  "cr_mayer_low": {
+    "message": "Mayer multiple under 0.8"
+  },
+  "cr_mayer_low_claim": {
+    "message": "said to be undervalued"
+  },
+  "cr_mayer_low_what": {
+    "message": "the close 0.8 times its 200-day average or less"
+  },
+  "cr_note": {
+    "message": "Tested together on BTC, ETH, SOL and LTC on 1 October 2026 — 88 comparisons, written down before any was counted — none of these was distinguishable from an ordinary day; the smallest corrected q was 0.63. So none is called better or worse here."
+  },
+  "cr_nr7": {
+    "message": "Narrowest day of seven"
+  },
+  "cr_nr7_claim": {
+    "message": "said to come before a bigger move, either way"
+  },
+  "cr_nr7_what": {
+    "message": "the day's range the narrowest of the last seven"
+  },
+  "cr_pivot_r1": {
+    "message": "Over last week's R1"
+  },
+  "cr_pivot_r1_claim": {
+    "message": "said to break out of the week's range"
+  },
+  "cr_pivot_r1_what": {
+    "message": "closed above last week's classic pivot R1"
+  },
+  "cr_pivot_s1": {
+    "message": "Under last week's S1"
+  },
+  "cr_pivot_s1_claim": {
+    "message": "said to break down out of the week's range"
+  },
+  "cr_pivot_s1_what": {
+    "message": "closed below last week's classic pivot S1"
+  },
+  "cr_rsi_bear": {
+    "message": "RSI divergence, down"
+  },
+  "cr_rsi_bear_claim": {
+    "message": "said to mean the buying is running out"
+  },
+  "cr_rsi_bear_what": {
+    "message": "a higher high while RSI (14) made a lower one, over 50"
+  },
+  "cr_rsi_bull": {
+    "message": "RSI divergence, up"
+  },
+  "cr_rsi_bull_claim": {
+    "message": "said to mean the selling is running out"
+  },
+  "cr_rsi_bull_what": {
+    "message": "a lower low while RSI (14) made a higher one, under 50"
+  },
+  "cr_section": {
+    "message": "Readings · daily candles"
+  },
+  "cr_stoch_down": {
+    "message": "Stochastic down from over 80"
+  },
+  "cr_stoch_down_claim": {
+    "message": "said to turn down from overbought"
+  },
+  "cr_stoch_down_what": {
+    "message": "slow stochastic (14, 3, 3) crossed down with both lines over 80"
+  },
+  "cr_stoch_up": {
+    "message": "Stochastic up from under 20"
+  },
+  "cr_stoch_up_claim": {
+    "message": "said to turn up from oversold"
+  },
+  "cr_stoch_up_what": {
+    "message": "slow stochastic (14, 3, 3) crossed up with both lines under 20"
+  },
+  "cr_streak_down": {
+    "message": "Five lower closes"
+  },
+  "cr_streak_down_claim": {
+    "message": "said to be stretched and due to bounce"
+  },
+  "cr_streak_down_what": {
+    "message": "the fifth close in a row under the one before"
+  },
+  "cr_streak_up": {
+    "message": "Five higher closes"
+  },
+  "cr_streak_up_claim": {
+    "message": "said to be stretched and due to turn down"
+  },
+  "cr_streak_up_what": {
+    "message": "the fifth close in a row above the one before"
+  },
+  "cr_tk_down": {
+    "message": "Tenkan under kijun"
+  },
+  "cr_tk_down_claim": {
+    "message": "said to mark momentum turning down"
+  },
+  "cr_tk_down_what": {
+    "message": "Ichimoku's 9-day line crossed below its 26-day line"
+  },
+  "cr_tk_up": {
+    "message": "Tenkan over kijun"
+  },
+  "cr_tk_up_claim": {
+    "message": "said to mark momentum turning up"
+  },
+  "cr_tk_up_what": {
+    "message": "Ichimoku's 9-day line crossed above its 26-day line"
   },
   "cs_close": {
     "message": "Close the chart settings"
@@ -3585,6 +4164,156 @@
   "mins_5": {
     "message": "5 minutes"
   },
+  "mo_band_title": {
+    "message": "The central 80% of the model's distribution for the close at $1 — a band, not a path",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "mo_insufficient": {
+    "message": "Insufficient history: too few completed hours, or a recent gap in trading"
+  },
+  "mo_invalid": {
+    "message": "Data unavailable"
+  },
+  "mo_just_now": {
+    "message": "just now"
+  },
+  "mo_local_empty": {
+    "message": "here: recording — no hour settled yet"
+  },
+  "mo_local_line": {
+    "message": "here: $1 of $2 inside so far",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "mo_median": {
+    "message": "median"
+  },
+  "mo_median_line": {
+    "message": "$1 · close at $2",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "mo_minutes_ago": {
+    "message": "$1 min ago",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "mo_no_target": {
+    "message": "Set a BTC price target in USD to see its chance at the close"
+  },
+  "mo_origin_line": {
+    "message": "from the $1 close $2 · $3",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      }
+    }
+  },
+  "mo_stale": {
+    "message": "Stale: the latest completed hour is more than two hours old"
+  },
+  "mo_target_line": {
+    "message": "close above $1: $2",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "mo_target_title": {
+    "message": "A terminal probability — the close at $1 above the target, not touching it on the way. When tested, hours given $2–$3% closed beyond their level $4% of the time",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      },
+      "arg4": {
+        "content": "$4"
+      }
+    }
+  },
+  "mo_target_title_plain": {
+    "message": "A terminal probability — the close above the target, not touching it on the way"
+  },
+  "mo_tested_line": {
+    "message": "tested: $1% of $2 hours closed inside the 80% band",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "mo_tested_title": {
+    "message": "Model estimate: EWMA variance (λ $1) with Student-t innovations (ν $2), fitted on Coinbase BTC-USD hourly closes up to $3. Tested on $4 hours from $5 to $6: the 80% band held $7% of the time (nominal 80%), its interval score beat a 24-hour rolling volatility (DM t $8).",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      },
+      "arg4": {
+        "content": "$4"
+      },
+      "arg5": {
+        "content": "$5"
+      },
+      "arg6": {
+        "content": "$6"
+      },
+      "arg7": {
+        "content": "$7"
+      },
+      "arg8": {
+        "content": "$8"
+      }
+    }
+  },
+  "mo_unavailable": {
+    "message": "Data unavailable: the model is tested on Coinbase BTC-USD hourly closes only"
+  },
+  "mo_withheld": {
+    "message": "Evaluation not passed — no estimate is shown"
+  },
   "news_allow_rest": {
     "message": "Allow the rest"
   },
@@ -3754,6 +4483,30 @@
       }
     }
   },
+  "news_kind_business": {
+    "message": "business"
+  },
+  "news_kind_funds": {
+    "message": "funds and ETFs"
+  },
+  "news_kind_macro": {
+    "message": "the economy"
+  },
+  "news_kind_markets": {
+    "message": "markets and trading"
+  },
+  "news_kind_mining": {
+    "message": "mining"
+  },
+  "news_kind_regulation": {
+    "message": "regulation"
+  },
+  "news_kind_security": {
+    "message": "security"
+  },
+  "news_kind_technology": {
+    "message": "technology"
+  },
   "news_more_in_settings": {
     "message": "$1 more newsrooms need a permission you have not granted.",
     "placeholders": {
@@ -3828,6 +4581,187 @@
   "news_order_newest_title": {
     "message": "Newest first, a heading for each day"
   },
+  "news_preview_close": {
+    "message": "Close the preview (Esc)"
+  },
+  "news_preview_label": {
+    "message": "The story, read beside the list"
+  },
+  "news_preview_open": {
+    "message": "Read it on $1 ↗",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "news_preview_save": {
+    "message": "Save"
+  },
+  "news_preview_saved": {
+    "message": "Saved"
+  },
+  "news_read_allow": {
+    "message": "Allow $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "news_read_coins": {
+    "message": "Coins named"
+  },
+  "news_read_coins_none": {
+    "message": "none of the coins this app follows"
+  },
+  "news_read_coverage": {
+    "message": "Coverage"
+  },
+  "news_read_coverage_n": {
+    "message": "$1 newsrooms in this feed ran it",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "news_read_coverage_one": {
+    "message": "this newsroom alone, in this feed"
+  },
+  "news_read_down_words": {
+    "message": "down: $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "news_read_figures": {
+    "message": "Figures cited"
+  },
+  "news_read_figures_none": {
+    "message": "none"
+  },
+  "news_read_from_article": {
+    "message": "Counted from the article's own words. Nothing here says what a price will do."
+  },
+  "news_read_from_summary": {
+    "message": "Counted from the headline and summary only. Nothing here says what a price will do."
+  },
+  "news_read_head": {
+    "message": "A reading — counted, not judged"
+  },
+  "news_read_kind": {
+    "message": "Reads as"
+  },
+  "news_read_kind_none": {
+    "message": "no one kind of story's words stand out"
+  },
+  "news_read_sentences": {
+    "message": "Its own sentences, the most repeated words"
+  },
+  "news_read_shown": {
+    "message": "The opening $1 of $2 paragraphs, about $3 words in all, without pictures. The rest is on $4.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      },
+      "arg4": {
+        "content": "$4"
+      }
+    }
+  },
+  "news_read_shown_all": {
+    "message": "The whole text, about $1 words, without pictures. The page itself is on $2.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "news_read_since": {
+    "message": "Since then"
+  },
+  "news_read_since_line": {
+    "message": "$1 on the chart moved $2% in the $3 since it was published — the same hours, not a cause",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      }
+    }
+  },
+  "news_read_text": {
+    "message": "From the article"
+  },
+  "news_read_text_feed": {
+    "message": "From the feed"
+  },
+  "news_read_tone": {
+    "message": "Wording"
+  },
+  "news_read_tone_down": {
+    "message": "worded down"
+  },
+  "news_read_tone_mixed": {
+    "message": "mixed wording"
+  },
+  "news_read_tone_none": {
+    "message": "neither way — no counted word"
+  },
+  "news_read_tone_up": {
+    "message": "worded up"
+  },
+  "news_read_up_words": {
+    "message": "up: $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "news_read_why_ask": {
+    "message": "$1's articles can be read here once it is allowed — the same permission its headlines use.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "news_read_why_cooling": {
+    "message": "$1 asked this browser to slow down, so it is left alone for a while.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "news_read_why_failed": {
+    "message": "The article could not be read just now."
+  },
+  "news_read_why_no": {
+    "message": "$1 does not let a page outside its own site read its articles, so this is the feed's summary.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
   "news_reading_all": {
     "message": "Reading $1 newsrooms directly.",
     "placeholders": {
@@ -3838,6 +4772,28 @@
   },
   "news_reading_some": {
     "message": "Reading $1 of $2 newsrooms.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "news_row_open_title": {
+    "message": "Press again to read it on $1 · $2 — opens in a new tab",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "news_row_preview_title": {
+    "message": "Read it beside the list · $1 · $2 — a second press opens it",
     "placeholders": {
       "arg1": {
         "content": "$1"
@@ -3995,6 +4951,37 @@
   },
   "num_only": {
     "message": "Numbers only — that character was not entered."
+  },
+  "odds_chance": {
+    "message": "chance $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "odds_chance_measured": {
+    "message": "chance $1 · of past squares given $2–$3, $4 came true",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      },
+      "arg4": {
+        "content": "$4"
+      }
+    }
+  },
+  "odds_refused": {
+    "message": "no chance: the history holds too few stretches this long"
+  },
+  "odds_uncalibrated": {
+    "message": "no chance printed: on this range the model was not calibrated"
   },
   "ovl_averages": {
     "message": "50 & 200-day averages · daily"
@@ -8267,6 +9254,9 @@
       }
     }
   },
+  "pp_h_15m": {
+    "message": "15m"
+  },
   "pp_h_1d": {
     "message": "1d"
   },
@@ -8281,6 +9271,9 @@
   },
   "pp_h_4h": {
     "message": "4h"
+  },
+  "pp_h_5m": {
+    "message": "5m"
   },
   "pp_lean_long": {
     "message": "Leans long"
@@ -9291,6 +10284,33 @@
   "pref_candlesticks_title": {
     "message": "Candlesticks"
   },
+  "pref_chance_range": {
+    "message": "Range"
+  },
+  "pref_chance_regime": {
+    "message": "Regime"
+  },
+  "pref_chance_squares": {
+    "message": "Squares"
+  },
+  "pref_chances_aria": {
+    "message": "Which chances to show"
+  },
+  "pref_chances_desc": {
+    "message": "Probabilities counted from this coin's own history — on the board's squares and in a line under the price"
+  },
+  "pref_chances_heading": {
+    "message": "Chances"
+  },
+  "pref_chances_keywords": {
+    "message": "chance chances probability odds markov regime outlook range squares board calls forecast"
+  },
+  "pref_chances_note": {
+    "message": "Squares writes on each square of the calls board the chance the price is in it when its column ends; it was checked out of sample on four coins before it was allowed on (on the hour, day, week, month and year boards; not on all time, where it failed). Regime is the Regimes widget's row for today — the past entries into the state the coin is in and the state 20 days later, the Markov question counted; measured, no such row differed from any day by 10 points. Range is the Outlook widget's 5th–95th range for the next stretch, from replays of this range's own steps. None of them says which way to trade."
+  },
+  "pref_chances_title": {
+    "message": "Chances"
+  },
   "pref_chart_color_aria": {
     "message": "Toggle chart color"
   },
@@ -9351,6 +10371,17 @@
   "pref_chart_sub_on": {
     "message": "Drawn on it"
   },
+  "pref_companion_all": {
+    "message": "All"
+  },
+  "pref_companion_all_aria": {
+    "message": "Show every one of $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
   "pref_companion_aria": {
     "message": "Toggle the chart companion"
   },
@@ -9363,6 +10394,17 @@
   "pref_companion_keywords": {
     "message": "companion pattern patterns head and shoulders double top bottom formation setup strategy technical analysis"
   },
+  "pref_companion_none": {
+    "message": "None"
+  },
+  "pref_companion_none_aria": {
+    "message": "Hide every one of $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
   "pref_companion_note2": {
     "message": "Found by rule on the daily candles, never by eye. A pattern is read from swing points — a day higher (or lower) than the five on either side, used only once those five days have happened — and drawn with its points, its neckline, the target its height measures and the level that would undo it, followed for 90 days; the four patterns completed 60 times in eleven years of BTC, ETH, SOL and LTC together, too rare to compare with an ordinary day. The twelve strategy setups — crosses, 20-day breakouts, closes outside the Bollinger bands, Supertrend flips, squeezes — are numbered on the chart by their latest entry when it is recent and listed in its corner with how often the price was up ten days later, beside an ordinary day; tested together on the same four coins, none of them was distinguishable from an ordinary day either. So nothing here is called better or worse, and nothing is a signal. It reads the coin's whole daily history, about fifteen requests the first time and then twelve hours from the cache, which is why it is off until switched on."
   },
@@ -9372,11 +10414,28 @@
   "pref_companion_patterns_aria": {
     "message": "Which patterns the companion names"
   },
+  "pref_companion_readings": {
+    "message": "Readings"
+  },
+  "pref_companion_readings_aria": {
+    "message": "Which readings the companion names — divergences, Ichimoku, stochastic, levels, stretches"
+  },
   "pref_companion_setups": {
     "message": "Strategy setups"
   },
   "pref_companion_setups_aria": {
     "message": "Which strategy setups the companion names"
+  },
+  "pref_companion_shown": {
+    "message": "$1 of $2 shown",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
   },
   "pref_companion_title": {
     "message": "Chart Companion"
@@ -9934,6 +10993,21 @@
   "pref_study_where": {
     "message": "Where it sits"
   },
+  "pref_tab_keys_aria": {
+    "message": "Show the shortcut letters on the tabs"
+  },
+  "pref_tab_keys_desc": {
+    "message": "The shortcut letter under each tab on the two edges. Off hides the letters only — the keys still work, and each tab's tooltip still names its key"
+  },
+  "pref_tab_keys_heading": {
+    "message": "Keys on the Tabs"
+  },
+  "pref_tab_keys_keywords": {
+    "message": "keyboard shortcut keys letters tabs edge column pull hide show keycap"
+  },
+  "pref_tab_keys_title": {
+    "message": "Keys on the Tabs"
+  },
   "pref_tab_ticker_aria": {
     "message": "Toggle tab ticker"
   },
@@ -10058,17 +11132,6 @@
   "pt_tab_targets": {
     "message": "Targets"
   },
-  "qs_compare_label": {
-    "message": "Compare with a coin"
-  },
-  "qs_compare_with": {
-    "message": "Compare $1 with…",
-    "placeholders": {
-      "arg1": {
-        "content": "$1"
-      }
-    }
-  },
   "qs_jump_label": {
     "message": "Jump to a coin"
   },
@@ -10077,6 +11140,12 @@
   },
   "qs_no_match": {
     "message": "No coin matches that."
+  },
+  "rate_later": {
+    "message": "Not now — ask again later"
+  },
+  "rate_never": {
+    "message": "Don't ask again"
   },
   "read_candle": {
     "message": "$1 — open $2, high $3, low $4, close $5",
@@ -10155,6 +11224,9 @@
   },
   "sc_base_rates": {
     "message": "Base rates — how often this coin has been here before"
+  },
+  "sc_board_walk": {
+    "message": "With the board's now line focused: walk the board to higher / lower prices"
   },
   "sc_board_zoom": {
     "message": "Board reach: zoom out / in (calls on)"
@@ -10411,9 +11483,6 @@
   "set_rate": {
     "message": "Rate"
   },
-  "set_rate_dismiss": {
-    "message": "Dismiss rating reminder"
-  },
   "set_remove_coin": {
     "message": "Remove $1",
     "placeholders": {
@@ -10492,14 +11561,6 @@
   },
   "set_tab_widgets": {
     "message": "Widgets"
-  },
-  "set_toggle_widget": {
-    "message": "Toggle $1 widget",
-    "placeholders": {
-      "arg1": {
-        "content": "$1"
-      }
-    }
   },
   "set_undo": {
     "message": "Undo"
@@ -10608,6 +11669,20 @@
   "ss_move_detail": {
     "message": "The next 30 days moved more than an ordinary 30 days of this coin in $1 of $2 episodes — half would, if it meant nothing.",
     "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "ss_move_detail_h": {
+    "message": "The next $3 days moved more than an ordinary $3 days of this coin in $1 of $2 episodes — half would, if it meant nothing.",
+    "placeholders": {
+      "arg3": {
+        "content": "$3"
+      },
       "arg1": {
         "content": "$1"
       },
@@ -10796,6 +11871,120 @@
         "content": "$1"
       }
     }
+  },
+  "swp_asc": {
+    "message": "Ascending triangle"
+  },
+  "swp_asc_claim": {
+    "message": "said to break upwards"
+  },
+  "swp_bflag": {
+    "message": "Bull flag"
+  },
+  "swp_bflag_claim": {
+    "message": "said to run on by the pole's length"
+  },
+  "swp_desc": {
+    "message": "Descending triangle"
+  },
+  "swp_desc_claim": {
+    "message": "said to break downwards"
+  },
+  "swp_fwedge": {
+    "message": "Falling wedge"
+  },
+  "swp_fwedge_claim": {
+    "message": "said to break upwards"
+  },
+  "swp_intro": {
+    "message": "Triangles, wedges, ranges, flags and triple tops, drawn through swing points rather than fitted, each followed for 90 days to its measured move or its invalidation. Under each, how the same rule did on four coins together against the same two distances from an ordinary day."
+  },
+  "swp_rect_down": {
+    "message": "Range, broken down"
+  },
+  "swp_rect_down_claim": {
+    "message": "said to run the range's height"
+  },
+  "swp_rect_up": {
+    "message": "Range, broken up"
+  },
+  "swp_rect_up_claim": {
+    "message": "said to run the range's height"
+  },
+  "swp_rwedge": {
+    "message": "Rising wedge"
+  },
+  "swp_rwedge_claim": {
+    "message": "said to break downwards"
+  },
+  "swp_section": {
+    "message": "More chart patterns · daily candles"
+  },
+  "swp_sflag": {
+    "message": "Bear flag"
+  },
+  "swp_sflag_claim": {
+    "message": "said to fall on by the pole's length"
+  },
+  "swp_sym_down": {
+    "message": "Triangle, broken down"
+  },
+  "swp_sym_down_claim": {
+    "message": "said to run on the way it broke"
+  },
+  "swp_sym_up": {
+    "message": "Triangle, broken up"
+  },
+  "swp_sym_up_claim": {
+    "message": "said to run on the way it broke"
+  },
+  "swp_t_diff": {
+    "message": "Tested on four coins: $1 of $2 reached the measured move first; the same distances from an ordinary day did $3% of the time.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      }
+    }
+  },
+  "swp_t_rare": {
+    "message": "Found $1 times on four coins in up to eleven years — too rare to test.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "swp_t_same": {
+    "message": "Tested on four coins: $1 of $2 reached the measured move first, against $3% from an ordinary day — not told apart from one.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      }
+    }
+  },
+  "swp_tbot": {
+    "message": "Triple bottom"
+  },
+  "swp_tbot_claim": {
+    "message": "said to mark a floor"
+  },
+  "swp_ttop": {
+    "message": "Triple top"
+  },
+  "swp_ttop_claim": {
+    "message": "said to mark a ceiling"
   },
   "tax_band": {
     "message": "An estimate · rules read $1",
@@ -12222,6 +13411,9 @@
   "tour_chapter_the_chart": {
     "message": "The chart"
   },
+  "tour_chapter_whats_new": {
+    "message": "What's new"
+  },
   "tour_chapter_your_money": {
     "message": "Your money"
   },
@@ -12240,8 +13432,8 @@
   "tour_skip": {
     "message": "Skip tour"
   },
-  "tour_text_01": {
-    "message": "Live crypto charts on every new tab, asking for nothing — no account, no permissions, and nothing about you leaving this device. This tour is twenty short steps in five chapters. Skip it whenever you like; Settings → Preferences can replay it."
+  "tour_text_01c": {
+    "message": "Live crypto charts on every new tab, asking for nothing — no account, no permissions at install, and nothing about you leaving this device. This tour is a few short steps in five chapters. Skip it whenever you like; Settings can replay it."
   },
   "tour_text_02": {
     "message": "Your active coin and its live price, refreshed while the tab is open and paused while it is not. Click it, or use the arrow keys, to move through your coin list."
@@ -12255,23 +13447,17 @@
   "tour_text_05": {
     "message": "Type a symbol or a name. Your own coins rank first, and picking one you do not track yet adds it. The same search chooses a coin for a price target."
   },
-  "tour_text_06": {
-    "message": "Both drawn as percent change from the start of the range, on one shared scale — never two axes, which is the trick that makes any two lines look related. Press C again or Esc to drop it."
+  "tour_text_06_drawer": {
+    "message": "A drawer of what to lay over the chart: your coins, any coin, and markets — the S&P 500, the Nasdaq 100, gold. Both lines are percent change from the start of the range, on one shared scale — never two axes, which is the trick that makes any two lines look related. Stop is in the drawer and under the price."
   },
   "tour_text_07": {
     "message": "T swaps the line for candlesticks. G puts a price and time mesh behind the chart so you can read a level off it. Under the price sits the range high and low, and the volume-weighted average price when the candle data happens to be loaded — it is never fetched just for that."
   },
-  "tour_text_08": {
-    "message": "Off by default, in Settings → Chart. It marks the moments the price did something unusual for this coin — measured against its own volatility, so it is right on a quiet stablecoin and on a wild one — and a click shows the headlines published around that day. It never claims they are the cause, because nobody knows that."
-  },
   "tour_text_09": {
     "message": "A call is a claim: this coin, in this price band, at this time. It settles itself on a later tab and goes on a record you keep. Nothing is scored, nothing is worth anything, and nothing leaves the device — it is a way to find out whether you are actually any good."
   },
-  "tour_text_10": {
-    "message": "Turn calls on and the chart grows a board of squares to the right of now. Two ways to name one: click once to draft it and again to lock it — two clicks, because one stray click should not commit a prediction — or press and drag onto the square you mean and let go, which is one gesture with the box under your hand the whole way. Drag the dotted now line to trade history for board, and use the pill at its top right to change what one square is worth."
-  },
-  "tour_text_11": {
-    "message": "In the calls panel under Show there is a travel band. It shades the distances this coin has actually covered over each square's worth of time — the middle half and the middle 80%. It is deliberately not a forecast: the direction is stripped out of the figures before they are drawn, so a coin that rose all week still gets a band that leans neither way. It answers whether a square is a near-certainty or a long shot, which is a different question on every coin."
+  "tour_text_10b": {
+    "message": "Turn calls on and the chart grows a board of squares to the right of now, each with the chance the price is in it when its column ends — counted from this coin's own bars and checked against years of squares before it was allowed on. Click a square once to draft it and again to lock it: two clicks, because one stray click should not commit a prediction. Drag the board up or down to look at other prices, sideways to trade history for board, and use the pill at its top right to change what one square is worth."
   },
   "tour_text_12": {
     "message": "Amounts you type in, with purchases and sales if you want cost basis and profit. FIFO, LIFO or HIFO — a reporting method, not a tax calculation, and the report says which method every line used. Everything is stored on this device and there is no wallet to connect."
@@ -12279,35 +13465,50 @@
   "tour_text_13": {
     "message": "Paste a public Bitcoin, Ethereum, Litecoin, Dogecoin, Bitcoin Cash or Zcash address and the balance is read for you — including the ERC-20 tokens an Ethereum address holds, in one request. The address is only ever sent to the balance service, and if a chain cannot be read PriceTab says which chain it is rather than telling you to check a perfectly good address."
   },
-  "tour_text_14": {
-    "message": "Tell me when BTC rises above a number, or moves 5% in a day, or when everything I hold is worth less than X. You are told on your next new tab, and a hit overnight is still found because the check looks back through the week. Nothing is pushed at you, which is how the extension stays permission-free."
+  "tour_text_14b": {
+    "message": "Tell me when BTC rises above a number, or moves 5% in a day, or when everything I hold is worth less than X. A target is a line on the chart, and a click on the chart picks its price. You are told on your next new tab — or, if you switch the alarm on, by a notification and a tone; that permission is asked for only then."
   },
-  "tour_text_15": {
-    "message": "Every headline with its source, its age and a summary, newest first, narrowed by coin or by source or by typing. A source that has stopped publishing shows its own age in red — a dead feed looking exactly like a live one is the thing this was built for. Advertising is dropped rather than badged."
+  "tour_text_15c": {
+    "message": "Every headline with its source and its age, narrowed by coin, source or search, with advertising dropped. Press a headline once and it opens beside the list — the story's own text where the newsroom allows it, and a counted reading of it; press again to open the page."
   },
-  "tour_text_16": {
-    "message": "Reads years of this coin's daily closes and counts what followed each time it was in a given state. Every figure carries how many times it is based on, and where that number is small it refuses to draw a conclusion. It will never tell you to buy or sell — nine textbook rules tested over 21,669 daily closes produced nothing that survived proper correction, and saying so is more useful than an arrow."
+  "tour_text_16b": {
+    "message": "Years of this coin's daily candles, and what followed each time it was in a state, beside an ordinary day — with how many times every figure is based on. It opens on what came after everything true right now. It never says buy or sell: tested, almost none of it told the next days apart from any days, and saying so is more useful than an arrow."
   },
-  "tour_text_17_drawer": {
-    "message": "Watchlist, Fear & Greed, funding, open interest, network fees, the worst fall in the range and more, in a drawer on the left edge. Press Choose in it to switch them on — there are ready-made bundles — then drag a card to reorder it, or hover one and click its × to hide it."
+  "tour_text_17_pin": {
+    "message": "Watchlist, Fear & Greed, funding, fees and more, in a drawer on the left edge, arranged the way a phone arranges widgets. Edit, then + adds one at the size you swipe to; hold or right-click a card for its size, to remove it, or to pin it to the home screen."
   },
   "tour_text_19": {
     "message": "Coins, currency, theme, widgets and the tickers, with a search box at the top of Preferences. The modes row sets a dozen of them at once — Minimal, Fast, Trader, Holder — and never touches your currency, number format or theme."
   },
+  "tour_text_companion": {
+    "message": "Switch on the chart companion in the chart's settings (V) and it names the patterns, setups and readings it finds — triangles, crosses, divergences, the Ichimoku cloud — where they happened, each with what followed it on this coin and how it did when tested on four coins. Most did no better than an ordinary day, and it says so."
+  },
+  "tour_text_drag": {
+    "message": "Drag the chart any way: sideways through time, up and down through prices. The wheel or two fingers zoom where you point, a drag past the oldest point opens the longer range, and a double-click puts it all back. With the chart focused, ← and → read it point by point."
+  },
+  "tour_text_tools": {
+    "message": "The + at the end of the range row opens the tools: a ruler that says how often a move that size has happened, and lines, rays, boxes and notes that stay with the coin. Shift and a drag measure anywhere; a horizontal line can become a price target."
+  },
+  "tour_text_whats_new": {
+    "message": "A few short steps on what changed since your last version. Skip it whenever you like; Settings can replay the whole tour."
+  },
   "tour_title_change": {
     "message": "Change"
   },
+  "tour_title_companion": {
+    "message": "A companion that counts"
+  },
   "tour_title_compare_two_coins": {
     "message": "Compare two coins"
+  },
+  "tour_title_draw_measure": {
+    "message": "Draw and measure"
   },
   "tour_title_everything_else_lives_here": {
     "message": "Everything else lives here"
   },
   "tour_title_has_this_happened_before": {
     "message": "Has this happened before?"
-  },
-  "tour_title_how_far_it_usually_travels": {
-    "message": "How far it usually travels"
   },
   "tour_title_it_is_faster_from_the_keyboard": {
     "message": "It is faster from the keyboard"
@@ -12317,6 +13518,9 @@
   },
   "tour_title_live_price": {
     "message": "Live price"
+  },
+  "tour_title_move_around": {
+    "message": "Move around it"
   },
   "tour_title_news": {
     "message": "News"
@@ -12345,8 +13549,8 @@
   "tour_title_welcome_to_pricetab": {
     "message": "Welcome to PriceTab"
   },
-  "tour_title_what_happened_here": {
-    "message": "What happened here?"
+  "tour_title_whats_new": {
+    "message": "PriceTab has been updated"
   },
   "tour_title_widgets": {
     "message": "Widgets"
@@ -12374,11 +13578,14 @@
   "wd_all_hidden": {
     "message": "Every widget is hidden."
   },
+  "wd_all_widgets": {
+    "message": "‹ All widgets"
+  },
+  "wd_cancel": {
+    "message": "Cancel"
+  },
   "wd_card_size": {
     "message": "Card size"
-  },
-  "wd_choose": {
-    "message": "Choose widgets"
   },
   "wd_close": {
     "message": "Close the widgets"
@@ -12386,11 +13593,20 @@
   "wd_done": {
     "message": "Done"
   },
-  "wd_edit": {
-    "message": "Choose"
+  "wd_edit_widgets": {
+    "message": "Edit"
   },
-  "wd_foot_cards": {
-    "message": "Drag a card to move it, × to hide it. This drawer: "
+  "wd_foot_editing": {
+    "message": "Drag to move, − to remove, + to add. Done when finished. This drawer: "
+  },
+  "wd_foot_rest": {
+    "message": "Hold or right-click a widget for its size. This drawer: "
+  },
+  "wd_fri": {
+    "message": "Fri"
+  },
+  "wd_mon": {
+    "message": "Mon"
   },
   "wd_none_on": {
     "message": "No widgets are switched on."
@@ -12412,6 +13628,9 @@
   "wd_resize_title": {
     "message": "Drag to widen or narrow · double-click for the default width"
   },
+  "wd_sat": {
+    "message": "Sat"
+  },
   "wd_show_n_hidden": {
     "message": "Show $1 hidden",
     "placeholders": {
@@ -12427,6 +13646,18 @@
         "content": "$1"
       }
     }
+  },
+  "wd_sun": {
+    "message": "Sun"
+  },
+  "wd_thu": {
+    "message": "Thu"
+  },
+  "wd_tue": {
+    "message": "Tue"
+  },
+  "wd_wed": {
+    "message": "Wed"
   },
   "wdesc_altcoin_season": {
     "message": "Are altcoins outperforming Bitcoin?"
@@ -12461,6 +13692,9 @@
   "wdesc_mempool": {
     "message": "How many transactions are waiting, and how deep the queue is — the reading under the fee card"
   },
+  "wdesc_model_outlook": {
+    "message": "BTC-USD's next completed hour as a model estimates it: a median, an 80% band, a target's chance at the close — and how often the band held when tested"
+  },
   "wdesc_open_interest": {
     "message": "Value of open futures contracts"
   },
@@ -12477,7 +13711,7 @@
     "message": "Today's biggest gainers and losers"
   },
   "wdesc_watchlist": {
-    "message": "Your coins as a colour-coded 24h grid"
+    "message": "Your coins with their price and 24h change, tinted by the move"
   },
   "wdesc_worst_fall": {
     "message": "The deepest peak-to-trough fall inside the range on screen"
@@ -12639,6 +13873,25 @@
   "widget_btc_halving": {
     "message": "BTC Halving"
   },
+  "widget_bundle_desc": {
+    "message": "$1 widgets, in place of the ones here",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "widget_card_aria": {
+    "message": "$1 widget, $2 — Enter for size and options",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
   "widget_difficulty": {
     "message": "BTC Difficulty"
   },
@@ -12714,13 +13967,23 @@
       }
     }
   },
-  "widget_hide_one": {
-    "message": "Hide $1",
-    "placeholders": {
-      "arg1": {
-        "content": "$1"
-      }
-    }
+  "widget_gallery_add": {
+    "message": "Add Widget"
+  },
+  "widget_gallery_added": {
+    "message": "Added"
+  },
+  "widget_gallery_none": {
+    "message": "No widget matches that"
+  },
+  "widget_gallery_search": {
+    "message": "Search widgets"
+  },
+  "widget_gallery_sizes": {
+    "message": "Sizes — ← and → to see each"
+  },
+  "widget_gallery_use_size": {
+    "message": "Use This Size"
   },
   "widget_liquidations": {
     "message": "$1 Liquidations 24h",
@@ -12765,6 +14028,38 @@
         "content": "$1"
       }
     }
+  },
+  "widget_menu_aria": {
+    "message": "$1 widget",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "widget_menu_edit": {
+    "message": "Edit Widgets"
+  },
+  "widget_menu_pin": {
+    "message": "Pin to Home"
+  },
+  "widget_menu_pin_full": {
+    "message": "Four are pinned — unpin one first"
+  },
+  "widget_menu_remove": {
+    "message": "Remove Widget"
+  },
+  "widget_menu_remove_confirm": {
+    "message": "Remove — press again"
+  },
+  "widget_menu_sizes": {
+    "message": "Size"
+  },
+  "widget_menu_unpin": {
+    "message": "Unpin from Home"
+  },
+  "widget_model_outlook": {
+    "message": "BTC 1h · model"
   },
   "widget_next_block": {
     "message": "next block"
@@ -12830,6 +14125,14 @@
   "widget_peak_to_trough": {
     "message": "peak to trough"
   },
+  "widget_pinned_aria2": {
+    "message": "$1, pinned — Enter opens the widgets, the menu key its options",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
   "widget_regime_axes": {
     "message": "Row: how it began. Column: 20 days later."
   },
@@ -12863,6 +14166,14 @@
       }
     }
   },
+  "widget_remove_aria": {
+    "message": "Remove $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
   "widget_rsi": {
     "message": "$1 RSI · $2",
     "placeholders": {
@@ -12876,6 +14187,15 @@
   },
   "widget_show_hidden": {
     "message": "Show hidden widgets"
+  },
+  "widget_size_large": {
+    "message": "large"
+  },
+  "widget_size_medium": {
+    "message": "medium"
+  },
+  "widget_size_small": {
+    "message": "small"
   },
   "widget_top_movers": {
     "message": "Top Movers 24h"
@@ -12902,6 +14222,12 @@
   },
   "widget_unit_years": {
     "message": "Yrs"
+  },
+  "widget_via_blockchair": {
+    "message": "via Blockchair"
+  },
+  "widget_via_blockchair_hint": {
+    "message": "mempool.space could not be reached from this browser, so this is Blockchair's figure"
   },
   "widget_watchlist": {
     "message": "Watchlist"
@@ -12949,6 +14275,9 @@
   },
   "wname_mempool": {
     "message": "BTC Mempool"
+  },
+  "wname_model_outlook": {
+    "message": "Next hour · model"
   },
   "wname_open_interest": {
     "message": "Open Interest"

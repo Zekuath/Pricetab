@@ -205,7 +205,13 @@ class NewsPanel extends PureComponent {
       /* "newest", or "covered": the stories more newsrooms ran first. Not
          stored — the panel opens on the newest, which is what a feed is. */
       order: "newest",
+      /* The story read in the column beside the list, and its text once read
+         (news-preview.js). Neither is stored: a reading history on disk is
+         the one record this panel must not keep. */
+      preview: null,
+      article: null,
     };
+    Object.assign(this, newsPreviewHandlers(this));
     this.searchRef = createRef();
     // Bound in the constructor, like every other panel here — the vendored
     // React is 16.5 and this file is read next to `alerts.js`
@@ -225,6 +231,7 @@ class NewsPanel extends PureComponent {
 
   componentWillUnmount() {
     this.gone = true;
+    if (this.previewKeyOn) document.removeEventListener("keydown", this.handlePreviewKey, true);
   }
 
   refreshPermission() {
@@ -861,7 +868,7 @@ class NewsPanel extends PureComponent {
   /* What the feed adds up to, in the column beside it. Counts with what they
    * are counts of, and nothing that judges: the tone tiles are words, the
    * coin chips are mentions, the source table is ages. */
-  renderAside(all, matchers, newest) {
+  renderAside(all, matchers, newest, staleNote) {
     const tally = { up: 0, down: 0, flat: 0 };
     for (const row of all) {
       const t = row.toneRead ? row.toneRead.tone : null;
@@ -989,6 +996,7 @@ class NewsPanel extends PureComponent {
             "Read from your own browser, with your own address — there is no server in between. A host that asks us to slow down is left alone for a while and says so here.",
           ),
         ),
+        staleNote && React.createElement(NewsAsideNote, { "data-news-stale": "aside" }, staleNote),
       ),
       this.renderAccess(),
     );
@@ -1089,6 +1097,7 @@ class NewsPanel extends PureComponent {
       if (first > 0) dividerAt = first;
     }
     const matchers = this.coinMatcher();
+    const previewUrl = this.state.preview ? this.state.preview.url : null;
     const toneWord = (t) =>
       t === "up"
         ? msg("news_tone_up", "worded up")
@@ -1107,6 +1116,22 @@ class NewsPanel extends PureComponent {
     const anyNone = this.askedSources().some(
       (name) => !offOptIn(name) && !Object.prototype.hasOwnProperty.call(newest, name),
     );
+    const staleNote = anyQuiet || anyNone
+      ? [
+          anyQuiet
+            ? msg(
+                "news_stale_note",
+                "A source with an age beside its name has published nothing since then. That is the feed being quiet, not PriceTab failing to ask.",
+              )
+            : "",
+          anyNone
+            ? msg(
+                "news_none_note",
+                "One marked “none” answered, and had nothing on this beat this time.",
+              )
+            : "",
+        ].filter(Boolean).join(" ")
+      : "";
 
     return React.createElement(
       NewsOverlay,
@@ -1175,12 +1200,27 @@ class NewsPanel extends PureComponent {
                     active: this.state.savedOnly,
                     "aria-pressed": this.state.savedOnly,
                     "data-news-saved-view": this.state.savedOnly ? "on" : "off",
+                    // The phone draws the count alone; the name stays whole
+                    "aria-label": msg(
+                      "news_saved_chip",
+                      "Saved · $1",
+                      String((Array.isArray(this.props.saved) ? this.props.saved : []).length),
+                    ),
                     onClick: () => this.setState((p) => ({ savedOnly: !p.savedOnly })),
                   },
                   icon(this.state.savedOnly ? "bookmarkOn" : "bookmark", 0.8, 2),
-                  msg(
-                    "news_saved_chip",
-                    "Saved · $1",
+                  React.createElement(
+                    NewsSavedLong,
+                    null,
+                    msg(
+                      "news_saved_chip",
+                      "Saved · $1",
+                      String((Array.isArray(this.props.saved) ? this.props.saved : []).length),
+                    ),
+                  ),
+                  React.createElement(
+                    NewsSavedShort,
+                    null,
                     String((Array.isArray(this.props.saved) ? this.props.saved : []).length),
                   ),
                 ),
@@ -1269,7 +1309,7 @@ class NewsPanel extends PureComponent {
 
         React.createElement(
           NewsBody,
-          null,
+          { reading: Boolean(previewUrl) },
           React.createElement(
             NewsMain,
             null,
@@ -1335,12 +1375,17 @@ class NewsPanel extends PureComponent {
                     href: item.url || undefined,
                     target: "_blank",
                     rel: "noopener noreferrer",
+                    // The first press reads it beside the list (news-preview.js)
+                    onClick: (e) => this.handlePreviewPress(e, item),
+                    "aria-current": previewUrl && item.url === previewUrl ? "true" : undefined,
                     /* The exact moment, because the row shows a relative age.
                      * "4h" is the right thing to scan a list by and the wrong
                      * thing to work out whether two stories are about the same
                      * hour. */
                     title: item.url
-                      ? `Read on ${item.source}${newsExactTime(item.time)} — opens in a new tab`
+                      ? previewUrl === item.url
+                        ? msg("news_row_open_title", "Press again to read it on $1 · $2 — opens in a new tab", item.source, newsExactTime(item.time).replace(/^ · /, ""))
+                        : msg("news_row_preview_title", "Read it beside the list · $1 · $2 — a second press opens it", item.source, newsExactTime(item.time).replace(/^ · /, ""))
                       : item.title,
                   },
                   React.createElement(
@@ -1515,33 +1560,16 @@ class NewsPanel extends PureComponent {
                 null,
                 this.emptyReason(loading),
               ),
+          /* The one fact a ticker could never show — whether what you are
+           * reading is current — as the list's last line; from 1100px it is
+           * under the sources in the column (renderAside). */
+          staleNote && React.createElement(NewsStale, { "data-news-stale": "list" }, staleNote),
         ),
-
-        /* The foot carries the one fact a ticker could never show: whether what
-         * you are reading is current. */
-        (anyQuiet || anyNone) &&
-          React.createElement(
-            NewsStale,
-            null,
-            anyQuiet
-              ? msg(
-                  "news_stale_note",
-                  "A source with an age beside its name has published nothing since then. That is the feed being quiet, not PriceTab failing to ask.",
-                )
-              : null,
-            anyQuiet && anyNone ? " " : null,
-            anyNone
-              ? msg(
-                  "news_none_note",
-                  "One marked “none” answered, and had nothing on this beat this time.",
-                )
-              : null,
-          ),
             /* Under the list only where the column is not drawn — the same
                line lives at the foot of the aside from 1100px up. */
             React.createElement(NewsFootOnly, null, this.renderAccess()),
           ),
-          this.renderAside(all, matchers, newest),
+          previewUrl ? renderNewsPreview(this) : this.renderAside(all, matchers, newest, staleNote),
         ),
       ),
     );

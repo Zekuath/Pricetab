@@ -63,6 +63,9 @@ const EPHEMERAL_CACHE_KEYS = [
      candles reduced to eight numbers a release. Rebuildable from the
      network, so it goes before anything a person typed. */
   "crypto_chart_cpi_moves",
+  /* The bars the board's chances are read from (api.js, `fetchOddsSeries`):
+     closes only, a few coins' worth, every one refetchable. */
+  "crypto_chart_odds_series",
 ];
 
 /* Write, and if the quota refuses, spend the caches to make room.
@@ -190,6 +193,37 @@ const loadRatePromptShown = () => {
 };
 
 const saveRatePromptShown = () => saveSetting(RATE_PROMPT_SHOWN_KEY, "true");
+
+/* How many times the rating has been asked for, and the earliest moment the
+ * next ask may come — see RATE_PROMPT_SNOOZE_DAYS. An install from before the
+ * schedule that saw the one-time ask counts as one ask, due now. Broken
+ * storage is "asked enough": never nag. */
+const loadRateAsks = () => {
+  try {
+    const v = JSON.parse(localStorage.getItem(RATE_PROMPT_ASKS_KEY));
+    if (v && Number.isFinite(v.n) && v.n >= 0)
+      return { n: Math.min(Math.floor(v.n), RATE_PROMPT_MAX_ASKS), next: Number.isFinite(v.next) ? v.next : 0 };
+    return { n: loadRatePromptShown() ? 1 : 0, next: 0 };
+  } catch (error) {
+    return { n: RATE_PROMPT_MAX_ASKS, next: Infinity };
+  }
+};
+
+// Is an ask due now: past the first delay, not ended, under the cap, past the snooze
+const rateAskDue = (now = Date.now()) => {
+  if (loadRatePromptDismissed()) return false;
+  if (now - getOrInitFirstUse() < RATE_PROMPT_DELAY_MS) return false;
+  const a = loadRateAsks();
+  return a.n < RATE_PROMPT_MAX_ASKS && now >= a.next;
+};
+
+// One ask shown: counted, and the next one put off by the schedule's next step
+const recordRateAsk = (now = Date.now()) => {
+  const a = loadRateAsks();
+  const days = RATE_PROMPT_SNOOZE_DAYS[Math.min(a.n, RATE_PROMPT_SNOOZE_DAYS.length - 1)];
+  saveJsonSetting(RATE_PROMPT_ASKS_KEY, { n: a.n + 1, next: now + days * 86400000 });
+  saveRatePromptShown();
+};
 
 const loadNewsTickerFromStorage = () =>
   loadBoolSetting(NEWS_TICKER_STORAGE_KEY, false);
@@ -602,6 +636,12 @@ const loadChartStudies = () => {
   return Array.isArray(saved) ? CHART_STUDIES.filter((k) => saved.includes(k)) : [];
 };
 const saveChartStudies = (ids) => saveJsonSetting(CHART_STUDIES_KEY, ids);
+// The chances under the price — see CHART_CHANCES_KEY
+const loadChartChances = () => {
+  const saved = loadJsonSetting(CHART_CHANCES_KEY);
+  return Array.isArray(saved) ? CHART_CHANCES.filter((k) => saved.includes(k)) : DEFAULT_CHART_CHANCES.slice();
+};
+const saveChartChances = (ids) => saveJsonSetting(CHART_CHANCES_KEY, ids);
 // Headlines kept to read later — see NEWS_SAVED_KEY. Rebuilt field by field:
 // only an https link is kept, since the row opens it, and each link once.
 const sanitizeNewsSaved = (list) => {
@@ -681,9 +721,10 @@ const saveDrawings = (all) => saveJsonSetting(DRAWINGS_KEY, all);
 
 // The companion's metrics switched off — see COMPANION_HIDDEN_KEY. Only
 // strings are kept; an id nothing knows any more simply matches nothing.
+// Room for every metric switched off at once: 49 since 1 Oct 2026.
 const loadCompanionHidden = () => {
   const saved = loadJsonSetting(COMPANION_HIDDEN_KEY);
-  return Array.isArray(saved) ? saved.filter((id) => typeof id === "string" && id.length < 40).slice(0, 40) : [];
+  return Array.isArray(saved) ? saved.filter((id) => typeof id === "string" && id.length < 40).slice(0, 100) : [];
 };
 const saveCompanionHidden = (ids) => saveJsonSetting(COMPANION_HIDDEN_KEY, ids);
 // The chart companion — see COMPANION_KEY
@@ -748,6 +789,9 @@ const loadQuietChrome = () =>
 
 const saveQuietChrome = (enabled) => saveSetting(QUIET_CHROME_KEY, enabled);
 
+const loadTabKeys = () => loadBoolSetting(TAB_KEYS_KEY, DEFAULT_TAB_KEYS);
+const saveTabKeys = (enabled) => saveSetting(TAB_KEYS_KEY, enabled);
+
 const loadPredict = () => loadBoolSetting(PREDICT_KEY, DEFAULT_PREDICT);
 const savePredict = (enabled) => saveSetting(PREDICT_KEY, enabled);
 
@@ -771,6 +815,8 @@ const saveCallsShowSettled = (v) => saveSetting(CALLS_SHOW_SETTLED_KEY, v);
 const loadTravelBand = () =>
   loadBoolSetting(TRAVEL_BAND_KEY, DEFAULT_TRAVEL_BAND);
 const saveTravelBand = (v) => saveSetting(TRAVEL_BAND_KEY, v);
+const loadCellOdds = () => loadBoolSetting(CELL_ODDS_KEY, DEFAULT_CELL_ODDS);
+const saveCellOdds = (v) => saveSetting(CELL_ODDS_KEY, v);
 
 const loadCallsCelebrate = () =>
   loadBoolSetting(CALLS_CELEBRATE_KEY, DEFAULT_CALLS_CELEBRATE);
@@ -1110,6 +1156,60 @@ const sanitizeCalls = (raw) => {
   return { record, open, done };
 };
 
+/* The model outlook's forecasts as issued. Rebuilt field by field and
+   bounded; a record whose numbers do not hang together (an origin off the
+   hour, a band out of order, a probability outside [0, 1]) is dropped. */
+const MODEL_OUTLOOK_HOUR_MS = 3600e3;
+const sanitizeModelOutlookRecords = (raw) => {
+  if (!Array.isArray(raw)) return [];
+  const out = [];
+  const seen = new Set();
+  for (const r of raw) {
+    if (!r || typeof r !== "object" || typeof r.id !== "string" || r.id.length > 80 || seen.has(r.id)) continue;
+    const origin = Number(r.origin);
+    const target = Number(r.target);
+    const s0 = Number(r.s0);
+    const lo = Number(r.lo);
+    const median = Number(r.median);
+    const hi = Number(r.hi);
+    if (!Number.isInteger(origin) || origin % MODEL_OUTLOOK_HOUR_MS !== 0 || target !== origin + MODEL_OUTLOOK_HOUR_MS) continue;
+    if (!(s0 > 0 && lo > 0 && lo <= median && median <= hi && Number.isFinite(hi))) continue;
+    const rec = {
+      id: r.id,
+      model: typeof r.model === "string" ? r.model.slice(0, 40) : "",
+      source: typeof r.source === "string" ? r.source.slice(0, 20) : "",
+      origin, target, s0, lo, median, hi,
+    };
+    const k = Number(r.targetPrice);
+    const p = Number(r.pAbove);
+    if (k > 0 && p >= 0 && p <= 1) {
+      rec.targetPrice = k;
+      rec.pAbove = p;
+    }
+    seen.add(rec.id);
+    out.push(rec);
+  }
+  return out.slice(-MODEL_OUTLOOK_RECORDS_MAX);
+};
+const sanitizeModelOutlookOutcomes = (raw) => {
+  const out = {};
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return out;
+  for (const [id, o] of Object.entries(raw).slice(-MODEL_OUTLOOK_RECORDS_MAX)) {
+    if (typeof id !== "string" || id.length > 80 || !o || typeof o !== "object") continue;
+    if (o.none === true) {
+      out[id] = { none: true };
+      continue;
+    }
+    const close = Number(o.close);
+    if (!(close > 0) || typeof o.inside !== "boolean") continue;
+    out[id] = { close, inside: o.inside, ...(typeof o.above === "boolean" ? { above: o.above } : {}) };
+  }
+  return out;
+};
+const loadModelOutlookRecords = () => sanitizeModelOutlookRecords(loadJsonSetting(MODEL_OUTLOOK_RECORDS_KEY, null));
+const saveModelOutlookRecords = (list) => saveJsonSetting(MODEL_OUTLOOK_RECORDS_KEY, sanitizeModelOutlookRecords(list));
+const loadModelOutlookOutcomes = () => sanitizeModelOutlookOutcomes(loadJsonSetting(MODEL_OUTLOOK_OUTCOMES_KEY, null));
+const saveModelOutlookOutcomes = (map) => saveJsonSetting(MODEL_OUTLOOK_OUTCOMES_KEY, sanitizeModelOutlookOutcomes(map));
 const loadCalls = () => sanitizeCalls(loadJsonSetting(CALLS_KEY, null));
 const saveCalls = (calls) => saveJsonSetting(CALLS_KEY, sanitizeCalls(calls));
 
@@ -1625,3 +1725,10 @@ const clearBackupUndo = () => {
     return false;
   }
 };
+
+/* Which markets the compare drawer offers (COMPARE_MARKETS); absent = all. */
+const sanitizeCompareMarkets = (raw) =>
+  Array.isArray(raw) ? COMPARE_MARKETS.map((m) => m.id).filter((id) => raw.includes(id)) : DEFAULT_COMPARE_MARKETS.slice();
+const loadCompareMarkets = () => sanitizeCompareMarkets(loadJsonSetting(COMPARE_MARKETS_KEY, null));
+const saveCompareMarkets = (ids) => saveJsonSetting(COMPARE_MARKETS_KEY, sanitizeCompareMarkets(ids));
+

@@ -107,8 +107,8 @@
   "al_calls": {
     "message": "Pronostics"
   },
-  "al_calls_info": {
-    "message": "Un pronostic est une affirmation : non pas « préviens-moi quand », mais « je dis où ». Visez une case de la bande vide à droite du graphique et vous nommez une fourchette de prix et un moment — un clic l'esquisse, un second la verrouille. Il se règle tout seul au prochain onglet, face au prix de cet instant, et la case reste sur le graphique en disant si vous aviez raison. Jusqu'où va cette bande, c'est vous qui décidez : glissez la ligne « maintenant » vers la gauche pour plus de plateau, vers la droite pour plus d'historique."
+  "al_calls_info_b": {
+    "message": "Une prédiction est une affirmation : pas « préviens-moi quand », mais « je dis où ». Désignez une case dans la bande vide à droite du graphique et vous nommez une fourchette de prix et un moment — un clic l'esquisse, un second la verrouille. Elle se règle d'elle-même à la prochaine ouverture d'onglet, contre le prix à ce moment, et la case reste sur le graphique en disant si vous aviez raison. Chaque case porte sa probabilité : à partir des propres bougies de cette crypto, mise à l'échelle de son mouvement actuel, et mesurée sur des années de cases passées avant d'être admise sur le plateau — une probabilité, pas un conseil. Faites glisser le plateau vers le haut ou le bas pour d'autres prix, à gauche ou à droite pour plus de plateau ou plus d'historique."
   },
   "al_calls_learn_more": {
     "message": "How calls work"
@@ -136,6 +136,12 @@
       }
     }
   },
+  "al_calls_state_off": {
+    "message": "Non"
+  },
+  "al_calls_state_on": {
+    "message": "Oui"
+  },
   "al_calls_step_1": {
     "message": "Turn calls on and go to the board."
   },
@@ -144,6 +150,18 @@
   },
   "al_calls_step_3": {
     "message": "Come back with K to track open and settled calls."
+  },
+  "al_calls_switch": {
+    "message": "Prédictions sur le graphique"
+  },
+  "al_calls_switch_title": {
+    "message": "Prédictions sur le graphique — vos prédictions et votre score sont conservés dans tous les cas (L)"
+  },
+  "al_cell_odds": {
+    "message": "probabilités"
+  },
+  "al_cell_odds_hint": {
+    "message": "Écrire sur chaque case la probabilité que le prix y soit à la fin de sa colonne — à partir des propres bougies de cette crypto, mise à l'échelle de son mouvement actuel, et vérifiée sur des années de cases avant d'être admise sur le plateau"
   },
   "al_clear_settled": {
     "message": "effacer les réglées"
@@ -175,8 +193,8 @@
   "al_direction": {
     "message": "Sens de l'objectif"
   },
-  "al_drag_hint": {
-    "message": "Glissez la ligne pointillée elle-même pour agrandir ou réduire le plateau."
+  "al_drag_hint_b": {
+    "message": "Faites glisser le plateau vers le haut ou le bas pour voir d'autres prix, et sur le côté pour l'agrandir ou le réduire."
   },
   "al_drops_below": {
     "message": "descend sous"
@@ -400,17 +418,6 @@
   "al_open_now_hint": {
     "message": "Open calls currently waiting to settle"
   },
-  "al_open_settled_fig": {
-    "message": "$1 open · $2 settled",
-    "placeholders": {
-      "arg1": {
-        "content": "$1"
-      },
-      "arg2": {
-        "content": "$2"
-      }
-    }
-  },
   "al_order_hint": {
     "message": "Switch between due-first and newest-first ordering for open calls"
   },
@@ -461,6 +468,9 @@
   },
   "al_rearm_hint": {
     "message": "Réarmer cet objectif"
+  },
+  "al_record": {
+    "message": "Bilan"
   },
   "al_record_kept": {
     "message": "Votre palmarès est conservé. Il ne vit que sur cet appareil et ne vaut rien"
@@ -528,9 +538,6 @@
   "al_still_settling": {
     "message": "toujours en cours de règlement"
   },
-  "al_stop_calls_hint": {
-    "message": "Arrêter les pronostics. Vos pronostics et votre score sont conservés, et L fait la même chose depuis le graphique"
-  },
   "al_target_coin": {
     "message": "Crypto de l'objectif"
   },
@@ -575,9 +582,6 @@
   },
   "al_turn_calls_on": {
     "message": "Activer les pronostics"
-  },
-  "al_turn_off": {
-    "message": "désactiver"
   },
   "al_view": {
     "message": "View"
@@ -770,9 +774,6 @@
   },
   "app_dismiss": {
     "message": "Ignorer"
-  },
-  "app_dismiss_rating": {
-    "message": "Ignorer la demande de note"
   },
   "app_error": {
     "message": "Une erreur est survenue."
@@ -1258,6 +1259,27 @@
   "br_across_one_episode": {
     "message": " sur 1 épisode. "
   },
+  "br_ah_move": {
+    "message": "les $1 jours suivants ont bougé plus que d'habitude $2 fois sur $3 ; la moitié le ferait."
+  },
+  "br_ah_never": {
+    "message": "rien d'antérieur à compter."
+  },
+  "br_ah_none": {
+    "message": "Aucune figure, configuration ni lecture de cet écran ne s'est formée dans ses dix derniers jours. C'est le cas ordinaire."
+  },
+  "br_ah_note": {
+    "message": "Ce sont des comptes de ce qui a suivi, pas une prévision, et ils ne s'additionnent pas. Testés sur quatre cryptos avant d'être montrés : aucune des lectures ni des configurations n'a distingué les dix jours suivants de dix jours quelconques ; le passé semblable n'a pas fait mieux qu'un jour ordinaire ; parmi les figures, seul un triangle cassé vers le bas l'a fait — et il a atteint d'abord son mouvement mesuré une fois sur trois."
+  },
+  "br_ah_pattern": {
+    "message": "Cassure le $1 : mouvement mesuré $2, invalidation $3, aucun atteint pour l'instant."
+  },
+  "br_ah_title": {
+    "message": "Ce qui a suivi, pour ce qui est vrai maintenant"
+  },
+  "br_ah_up": {
+    "message": "$1 jours plus tard, en hausse $2 % de $3 fois ; $1 jours quelconques : en hausse $4 %."
+  },
   "br_close": {
     "message": "Fermer les taux de base"
   },
@@ -1372,6 +1394,21 @@
   "br_rsi_label": {
     "message": "RSI 14 · clôtures quotidiennes · 0–100"
   },
+  "br_sim_intro": {
+    "message": "Les $1 périodes de l'histoire de cette crypto dont les $2 derniers jours avaient la forme des $2 derniers — le parcours, pas le niveau ni la taille —, chacune avec les $3 jours qui l'ont suivie."
+  },
+  "br_sim_line": {
+    "message": "Les $1 périodes de $2 jours les plus proches des $2 derniers étaient en hausse $3 fois sur $1 $4 jours plus tard, celle du milieu de $5."
+  },
+  "br_sim_note": {
+    "message": "Testé sur BTC, ETH, SOL et LTC depuis 2021, chaque jour : ce qui a suivi les périodes les plus semblables n'en disait pas plus sur les dix jours suivants que ce qui a suivi n'importe quel jour, et leur majorité a trouvé la direction environ une fois sur deux. C'est pourquoi elles sont ici une liste et non une ligne sur le graphique."
+  },
+  "br_sim_section": {
+    "message": "Le passé semblable · bougies journalières"
+  },
+  "br_sim_title": {
+    "message": "Le passé le plus semblable"
+  },
   "br_that_is": {
     "message": "C'est $1."
   },
@@ -1393,6 +1430,18 @@
   "br_typically": {
     "message": "$1 en général, en hausse $2% du temps"
   },
+  "br_wd_note": {
+    "message": "À quelle fréquence le jour suivant a clôturé plus haut, selon le jour de la semaine de la clôture (UTC), sur $1 jours ; n'importe quel jour : $2 %. Testés sur quatre cryptos, les jours de la semaine de celle-ci ont différé entre eux plus que le hasard — une petite différence dans la direction d'un jour, pas dans son ampleur, et rien sur cette semaine."
+  },
+  "br_wd_same": {
+    "message": "Testé sur cette crypto : le lendemain d'aucun jour de la semaine n'a différé des autres."
+  },
+  "br_wd_section": {
+    "message": "Le lendemain, par jour de la semaine"
+  },
+  "br_wd_untested": {
+    "message": "Testé sur BTC, ETH, SOL et LTC : la direction du lendemain n'a différé selon le jour de la semaine que sur ETH et LTC. $1 n'a pas été testé."
+  },
   "ch_band": {
     "message": "Bande"
   },
@@ -1408,9 +1457,6 @@
   "ch_drag_now": {
     "message": "Glissez pour changer jusqu'où vous pouvez pronostiquer"
   },
-  "ch_drag_or_keys": {
-    "message": "Glissez, ou utilisez les flèches, pour changer jusqu'où vous pouvez pronostiquer"
-  },
   "ch_gap": {
     "message": "Écart"
   },
@@ -1420,26 +1466,17 @@
   "ch_low": {
     "message": "Bas"
   },
+  "ch_now_keys": {
+    "message": "Faites glisser, ou utilisez ← et →, pour changer jusqu'où vous pouvez prédire — ↑ et ↓ déplacent le plateau"
+  },
   "ch_now_label": {
     "message": "Jusqu'où vous pouvez pronostiquer"
   },
   "ch_open": {
     "message": "Ouv."
   },
-  "ch_pan_down": {
-    "message": "Regarder des prix plus bas"
-  },
-  "ch_pan_hint": {
-    "message": "Appuyez, ou maintenez, pour déplacer le plateau dans cette direction"
-  },
-  "ch_pan_hint_hold": {
-    "message": "Appuyez ou maintenez pour changer la part du graphique occupée par le plateau"
-  },
   "ch_pan_home": {
     "message": "Ramener le plateau au prix"
-  },
-  "ch_pan_left": {
-    "message": "Montrer moins de plateau et plus d'historique"
   },
   "ch_pan_off": {
     "message": "$1 d'écart · retour",
@@ -1448,12 +1485,6 @@
         "content": "$1"
       }
     }
-  },
-  "ch_pan_right": {
-    "message": "Montrer plus de cases plus loin"
-  },
-  "ch_pan_up": {
-    "message": "Regarder des prix plus hauts"
   },
   "ch_pts": {
     "message": "pts"
@@ -1470,6 +1501,14 @@
   "ch_volume": {
     "message": "Volume"
   },
+  "ch_volume_at": {
+    "message": "Volume · $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
   "ch_zoom_hint": {
     "message": " — faites défiler sur le graphique, ou [ et ]"
   },
@@ -1484,6 +1523,30 @@
   },
   "ch_zoom_out_label": {
     "message": "Dézoomer le plateau — une bande plus large, assez pour pronostiquer un grand mouvement"
+  },
+  "chance_aria": {
+    "message": "Probabilités, comptées sur l'historique propre de cette crypto"
+  },
+  "chance_head": {
+    "message": "Probabilités"
+  },
+  "chance_range_key": {
+    "message": "prochaines $1"
+  },
+  "chance_range_title": {
+    "message": "Où $1 rejeux des propres pas de cette période ont fini $2 plus tard : 90 % entre ces deux prix, $3 au-dessus de celui d'aujourd'hui. Un décompte, pas une prévision."
+  },
+  "chance_range_value": {
+    "message": "$1 – $2 · $3 au-dessus"
+  },
+  "chance_regime_key": {
+    "message": "20j $1 · $2j"
+  },
+  "chance_regime_title": {
+    "message": "La question de Markov, comptée : les $1 entrées passées en $2 et l'état 20 jours plus tard — hausse $3, plat $4, baisse $5. Un jour quelconque : $6, $7, $8. Sur quatre cryptos, aucune case de ce genre n'était à 10 points d'un jour quelconque."
+  },
+  "chance_regime_value": {
+    "message": "dans 20j : hausse $1 · plat $2 · baisse $3"
   },
   "chart_avg_label": {
     "message": "moy. $1"
@@ -1594,8 +1657,13 @@
   "chrome_calls": {
     "message": "Pronostics"
   },
-  "chrome_compare_stop": {
-    "message": "Arrêter de comparer avec $1"
+  "chrome_compare_with": {
+    "message": "Comparé avec $1 — ouvrir Compare",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
   },
   "chrome_futures": {
     "message": "Marché des dérivés"
@@ -1654,6 +1722,9 @@
   "cmp_c_hit": {
     "message": "A franchi sa ligne de cou $1 ; a atteint le mouvement mesuré $2."
   },
+  "cmp_c_hit_s": {
+    "message": "Cassure $1 ; a atteint le mouvement mesuré $2."
+  },
   "cmp_c_levels": {
     "message": "Mouvement mesuré $1 · invalidation $2"
   },
@@ -1666,8 +1737,14 @@
   "cmp_c_neither": {
     "message": "A franchi sa ligne de cou $1 ; aucun des deux niveaux n’a été atteint en $2 jours."
   },
+  "cmp_c_neither_s": {
+    "message": "Cassure $1 ; aucun des deux niveaux atteint en $2 jours."
+  },
   "cmp_c_open": {
     "message": "A franchi sa ligne de cou $1 à $2 — aucun des deux niveaux n’est encore atteint."
+  },
+  "cmp_c_open_s": {
+    "message": "Cassure $1 à $2 — aucun des deux niveaux atteint pour l'instant."
   },
   "cmp_c_pin": {
     "message": "Cliquez pour la garder ouverte"
@@ -1681,8 +1758,14 @@
   "cmp_c_stop": {
     "message": "A franchi sa ligne de cou $1 ; le niveau d’invalidation a été atteint en premier, $2."
   },
+  "cmp_c_stop_s": {
+    "message": "Cassure $1 ; le niveau d'invalidation a été atteint d'abord, $2."
+  },
   "cmp_c_tested": {
     "message": "Testées ensemble sur les données de cette app, aucune des douze configurations ne s’est distinguée d’un jour ordinaire."
+  },
+  "cmp_c_tested_r": {
+    "message": "Testées ensemble sur quatre cryptos ($1 tests), aucune des $2 lectures n'a différé d'un jour ordinaire."
   },
   "cmp_c_unpin": {
     "message": "Gardée ouverte · cliquez sur le graphique pour la fermer"
@@ -1693,14 +1776,104 @@
   "cmp_c_when": {
     "message": "$1 · à $2 · $3 depuis"
   },
+  "cmp_change": {
+    "message": "Changer"
+  },
+  "cmp_change_hint": {
+    "message": "Comparer $1 à une autre crypto au lieu de $2",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "cmp_corr_hint": {
+    "message": "À quel point les pas des deux cryptos ont bougé ensemble sur les $1 pas à l'écran : 1 à l'unisson, 0 sans lien, −1 opposés. Une description de cette fenêtre, pas une prévision.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "cmp_corr_label": {
+    "message": "corrélation des pas"
+  },
   "cmp_days_ago": {
     "message": "il y a $1 j"
   },
-  "cmp_gap": {
-    "message": "écart $1 pts"
+  "cmp_drawer_close": {
+    "message": "Fermer la comparaison"
+  },
+  "cmp_drawer_foot": {
+    "message": "Taper puis Entrée choisit le premier résultat. Ce tiroir : "
+  },
+  "cmp_drawer_found": {
+    "message": "Trouvés"
+  },
+  "cmp_drawer_from_1d": {
+    "message": "s'ouvre sur 1D"
+  },
+  "cmp_drawer_market_aria": {
+    "message": "Proposer $1 à la comparaison",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "cmp_drawer_markets": {
+    "message": "Marchés"
+  },
+  "cmp_drawer_markets_note": {
+    "message": "Le S&P 500 et le Nasdaq 100 sont les jetons de Kraken pour les ETF SPY et QQQ, cotés en USD en continu : sur six mois, leur prix est resté à moins de 2,5 % des ETF et leurs mouvements à moins d'un point. Peu échangés minute par minute, ils sont tracés à partir de 1D."
+  },
+  "cmp_drawer_more": {
+    "message": "Autres cryptos — tapez pour en trouver une"
+  },
+  "cmp_drawer_none": {
+    "message": "Aucune correspondance"
+  },
+  "cmp_drawer_now": {
+    "message": "$1 contre $2",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "cmp_drawer_on": {
+    "message": "Actif"
+  },
+  "cmp_drawer_search": {
+    "message": "Comparer $1 avec…",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "cmp_drawer_settings": {
+    "message": "Marchés de cette liste"
+  },
+  "cmp_drawer_yours": {
+    "message": "Vos cryptos"
   },
   "cmp_gap_hint": {
     "message": "Le mouvement de la monnaie comparée moins celui de celle-ci, en points de pourcentage"
+  },
+  "cmp_gap_label": {
+    "message": "écart depuis le début de $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
   },
   "cmp_hint": {
     "message": "Pointez une marque pour la lire · cliquez pour la garder ouverte"
@@ -1710,6 +1883,43 @@
   },
   "cmp_measured": {
     "message": "mouvement mesuré"
+  },
+  "cmp_mkt_from_1d": {
+    "message": "$1 est tracé à partir de 1D — peu échangé minute par minute",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "cmp_mkt_gold": {
+    "message": "Or"
+  },
+  "cmp_mkt_gold_what": {
+    "message": "PAXG — un jeton pour une once troy, sur Coinbase"
+  },
+  "cmp_mkt_ndx": {
+    "message": "Nasdaq 100"
+  },
+  "cmp_mkt_ndx_what": {
+    "message": "QQQx — l'ETF QQQ en jeton sur Kraken"
+  },
+  "cmp_mkt_spx": {
+    "message": "S&P 500"
+  },
+  "cmp_mkt_spx_what": {
+    "message": "SPYx — l'ETF SPY en jeton sur Kraken"
+  },
+  "cmp_mkt_usd": {
+    "message": "$1 en USD",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "cmp_pts": {
+    "message": "pts"
   },
   "cmp_ratio": {
     "message": "$1 en $2"
@@ -1735,11 +1945,11 @@
   "cmp_today": {
     "message": "aujourd'hui"
   },
-  "cmp_together": {
-    "message": "même sens $1 pas sur $2"
-  },
   "cmp_together_hint": {
     "message": "Pas de ce graphique où les deux cryptos ont bougé, et combien sont allés dans le même sens. Un décompte de ce qui s'est passé, pas une prévision."
+  },
+  "cmp_together_label": {
+    "message": "pas dans le même sens"
   },
   "cost_fee": {
     "message": "Frais sur chaque exécution"
@@ -1935,6 +2145,204 @@
   },
   "cpi_line_soon": {
     "message": "IPC américain $1 · $2"
+  },
+  "cr_ath": {
+    "message": "Un nouveau plus haut historique"
+  },
+  "cr_ath_claim": {
+    "message": "serait une force qui se prolonge"
+  },
+  "cr_ath_what": {
+    "message": "la plus haute clôture de toute l'histoire"
+  },
+  "cr_fib_down": {
+    "message": "Plafonné au retracement de 61,8 %"
+  },
+  "cr_fib_down_claim": {
+    "message": "plafonnerait le rebond"
+  },
+  "cr_fib_down_what": {
+    "message": "après une baisse de 15 % ou plus, a atteint son retracement de 61,8 % et clôturé sous les 78,6 %"
+  },
+  "cr_fib_up": {
+    "message": "A tenu le retracement de 61,8 %"
+  },
+  "cr_fib_up_claim": {
+    "message": "tiendrait et repartirait à la hausse"
+  },
+  "cr_fib_up_what": {
+    "message": "après une hausse de 15 % ou plus, a atteint son retracement de 61,8 % et clôturé au-dessus des 78,6 %"
+  },
+  "cr_ichi_above": {
+    "message": "Au-dessus du nuage"
+  },
+  "cr_ichi_above_claim": {
+    "message": "lancerait une tendance haussière"
+  },
+  "cr_ichi_above_what": {
+    "message": "a clôturé au-dessus du nuage Ichimoku (9, 26, 52)"
+  },
+  "cr_ichi_below": {
+    "message": "Sous le nuage"
+  },
+  "cr_ichi_below_claim": {
+    "message": "lancerait une tendance baissière"
+  },
+  "cr_ichi_below_what": {
+    "message": "a clôturé sous le nuage Ichimoku (9, 26, 52)"
+  },
+  "cr_inside": {
+    "message": "Jour intérieur"
+  },
+  "cr_inside_claim": {
+    "message": "précéderait un mouvement plus grand, dans un sens ou dans l'autre"
+  },
+  "cr_inside_what": {
+    "message": "le plus haut et le plus bas du jour, tous deux dans la veille"
+  },
+  "cr_intro": {
+    "message": "Ce que les outils graphiques lisent sur un graphique pour dire ce qui vient — divergences, nuage Ichimoku, stochastique, retracements de Fibonacci, pivots hebdomadaires, nouveaux plus hauts, séries, multiple de Mayer, jours calmes — avec ce qui a suivi chacun sur cette crypto en dix jours, à côté de dix jours quelconques."
+  },
+  "cr_macd_bear": {
+    "message": "Divergence MACD, baissière"
+  },
+  "cr_macd_bear_claim": {
+    "message": "marquerait le retournement baissier de l'élan"
+  },
+  "cr_macd_bear_what": {
+    "message": "un plus haut plus haut tandis que la ligne MACD en faisait un plus bas, au-dessus de zéro"
+  },
+  "cr_macd_bull": {
+    "message": "Divergence MACD, haussière"
+  },
+  "cr_macd_bull_claim": {
+    "message": "marquerait le retournement haussier de l'élan"
+  },
+  "cr_macd_bull_what": {
+    "message": "un plus bas plus bas tandis que la ligne MACD en faisait un plus haut, sous zéro"
+  },
+  "cr_mayer_high": {
+    "message": "Multiple de Mayer au-dessus de 2,4"
+  },
+  "cr_mayer_high_claim": {
+    "message": "serait en surchauffe"
+  },
+  "cr_mayer_high_what": {
+    "message": "la clôture à 2,4 fois sa moyenne sur 200 jours ou plus"
+  },
+  "cr_mayer_low": {
+    "message": "Multiple de Mayer sous 0,8"
+  },
+  "cr_mayer_low_claim": {
+    "message": "serait sous-évalué"
+  },
+  "cr_mayer_low_what": {
+    "message": "la clôture à 0,8 fois sa moyenne sur 200 jours ou moins"
+  },
+  "cr_note": {
+    "message": "Testées ensemble sur BTC, ETH, SOL et LTC le 1er octobre 2026 — 88 comparaisons, écrites avant d'en compter une seule —, aucune ne s'est distinguée d'un jour ordinaire ; le plus petit q corrigé était 0,63. Aucune n'est donc dite meilleure ou pire ici."
+  },
+  "cr_nr7": {
+    "message": "Le jour le plus étroit sur sept"
+  },
+  "cr_nr7_claim": {
+    "message": "précéderait un mouvement plus grand, dans un sens ou dans l'autre"
+  },
+  "cr_nr7_what": {
+    "message": "l'amplitude du jour, la plus étroite des sept derniers"
+  },
+  "cr_pivot_r1": {
+    "message": "Au-dessus du R1 de la semaine passée"
+  },
+  "cr_pivot_r1_claim": {
+    "message": "sortirait par le haut du range de la semaine"
+  },
+  "cr_pivot_r1_what": {
+    "message": "a clôturé au-dessus du pivot classique R1 de la semaine passée"
+  },
+  "cr_pivot_s1": {
+    "message": "Sous le S1 de la semaine passée"
+  },
+  "cr_pivot_s1_claim": {
+    "message": "sortirait par le bas du range de la semaine"
+  },
+  "cr_pivot_s1_what": {
+    "message": "a clôturé sous le pivot classique S1 de la semaine passée"
+  },
+  "cr_rsi_bear": {
+    "message": "Divergence RSI, baissière"
+  },
+  "cr_rsi_bear_claim": {
+    "message": "signifierait que les achats s'épuisent"
+  },
+  "cr_rsi_bear_what": {
+    "message": "un plus haut plus haut tandis que le RSI (14) en faisait un plus bas, au-dessus de 50"
+  },
+  "cr_rsi_bull": {
+    "message": "Divergence RSI, haussière"
+  },
+  "cr_rsi_bull_claim": {
+    "message": "signifierait que les ventes s'épuisent"
+  },
+  "cr_rsi_bull_what": {
+    "message": "un plus bas plus bas tandis que le RSI (14) en faisait un plus haut, sous 50"
+  },
+  "cr_section": {
+    "message": "Lectures · bougies journalières"
+  },
+  "cr_stoch_down": {
+    "message": "Stochastique en baisse depuis plus de 80"
+  },
+  "cr_stoch_down_claim": {
+    "message": "se retournerait à la baisse depuis le surachat"
+  },
+  "cr_stoch_down_what": {
+    "message": "le stochastique lent (14, 3, 3) a croisé vers le bas, les deux lignes au-dessus de 80"
+  },
+  "cr_stoch_up": {
+    "message": "Stochastique en hausse depuis moins de 20"
+  },
+  "cr_stoch_up_claim": {
+    "message": "se retournerait à la hausse depuis la survente"
+  },
+  "cr_stoch_up_what": {
+    "message": "le stochastique lent (14, 3, 3) a croisé vers le haut, les deux lignes sous 20"
+  },
+  "cr_streak_down": {
+    "message": "Cinq clôtures plus basses"
+  },
+  "cr_streak_down_claim": {
+    "message": "serait trop étiré et devrait rebondir"
+  },
+  "cr_streak_down_what": {
+    "message": "la cinquième clôture d'affilée sous la précédente"
+  },
+  "cr_streak_up": {
+    "message": "Cinq clôtures plus hautes"
+  },
+  "cr_streak_up_claim": {
+    "message": "serait trop étiré et devrait se retourner"
+  },
+  "cr_streak_up_what": {
+    "message": "la cinquième clôture d'affilée au-dessus de la précédente"
+  },
+  "cr_tk_down": {
+    "message": "Tenkan sous kijun"
+  },
+  "cr_tk_down_claim": {
+    "message": "marquerait le retournement baissier de l'élan"
+  },
+  "cr_tk_down_what": {
+    "message": "la ligne à 9 jours d'Ichimoku a croisé sous sa ligne à 26 jours"
+  },
+  "cr_tk_up": {
+    "message": "Tenkan au-dessus de kijun"
+  },
+  "cr_tk_up_claim": {
+    "message": "marquerait le retournement haussier de l'élan"
+  },
+  "cr_tk_up_what": {
+    "message": "la ligne à 9 jours d'Ichimoku a croisé au-dessus de sa ligne à 26 jours"
   },
   "cs_close": {
     "message": "Fermer les réglages du graphique"
@@ -2176,6 +2584,156 @@
   "mins_5": {
     "message": "5 minutes"
   },
+  "mo_band_title": {
+    "message": "Les 80 % centraux de la distribution du modèle pour la clôture de $1 — une bande, pas une trajectoire",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "mo_insufficient": {
+    "message": "Historique insuffisant : trop peu d'heures complètes ou un trou récent dans les échanges"
+  },
+  "mo_invalid": {
+    "message": "Données indisponibles"
+  },
+  "mo_just_now": {
+    "message": "à l'instant"
+  },
+  "mo_local_empty": {
+    "message": "ici : enregistrement — aucune heure clôturée pour l'instant"
+  },
+  "mo_local_line": {
+    "message": "ici : $1 sur $2 dans la bande jusqu'ici",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "mo_median": {
+    "message": "médiane"
+  },
+  "mo_median_line": {
+    "message": "$1 · clôture à $2",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "mo_minutes_ago": {
+    "message": "il y a $1 min",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "mo_no_target": {
+    "message": "Fixez un objectif de prix BTC en USD pour voir sa probabilité à la clôture"
+  },
+  "mo_origin_line": {
+    "message": "depuis la clôture de $1 $2 · $3",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      }
+    }
+  },
+  "mo_stale": {
+    "message": "Périmé : la dernière heure complète date de plus de deux heures"
+  },
+  "mo_target_line": {
+    "message": "clôture au-dessus de $1 : $2",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "mo_target_title": {
+    "message": "Une probabilité de clôture — la clôture de $1 au-dessus de l'objectif, pas un contact en chemin. En test, les heures données à $2–$3 % ont clôturé au-delà de leur niveau $4 % du temps",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      },
+      "arg4": {
+        "content": "$4"
+      }
+    }
+  },
+  "mo_target_title_plain": {
+    "message": "Une probabilité de clôture — la clôture au-dessus de l'objectif, pas un contact en chemin"
+  },
+  "mo_tested_line": {
+    "message": "testé : $1 % de $2 heures ont clôturé dans la bande à 80 %",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "mo_tested_title": {
+    "message": "Estimation de modèle : variance EWMA (λ $1) avec innovations de Student (ν $2), ajustée sur les clôtures horaires BTC-USD de Coinbase jusqu'au $3. Testée sur $4 heures du $5 au $6 : la bande à 80 % a tenu $7 % du temps (nominal 80 %), son interval score a battu une volatilité glissante sur 24 heures (DM t $8).",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      },
+      "arg4": {
+        "content": "$4"
+      },
+      "arg5": {
+        "content": "$5"
+      },
+      "arg6": {
+        "content": "$6"
+      },
+      "arg7": {
+        "content": "$7"
+      },
+      "arg8": {
+        "content": "$8"
+      }
+    }
+  },
+  "mo_unavailable": {
+    "message": "Données indisponibles : le modèle n'est testé que sur les clôtures horaires BTC-USD de Coinbase"
+  },
+  "mo_withheld": {
+    "message": "Évaluation non validée — aucune estimation n'est affichée"
+  },
   "news_allow_rest": {
     "message": "Autoriser le reste"
   },
@@ -2294,6 +2852,30 @@
   "news_hn_points": {
     "message": "$1 points"
   },
+  "news_kind_business": {
+    "message": "entreprises"
+  },
+  "news_kind_funds": {
+    "message": "fonds et ETF"
+  },
+  "news_kind_macro": {
+    "message": "l'économie"
+  },
+  "news_kind_markets": {
+    "message": "marchés et trading"
+  },
+  "news_kind_mining": {
+    "message": "minage"
+  },
+  "news_kind_regulation": {
+    "message": "réglementation"
+  },
+  "news_kind_security": {
+    "message": "sécurité"
+  },
+  "news_kind_technology": {
+    "message": "technologie"
+  },
   "news_more_in_settings": {
     "message": "$1 rédactions de plus ont besoin d'une autorisation que vous n'avez pas accordée."
   },
@@ -2348,11 +2930,214 @@
   "news_order_newest_title": {
     "message": "Les plus récentes d’abord, un titre par jour"
   },
+  "news_preview_close": {
+    "message": "Fermer l'aperçu (Échap)"
+  },
+  "news_preview_label": {
+    "message": "L'article, lu à côté de la liste"
+  },
+  "news_preview_open": {
+    "message": "Lire sur $1 ↗",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "news_preview_save": {
+    "message": "Enregistrer"
+  },
+  "news_preview_saved": {
+    "message": "Enregistré"
+  },
+  "news_read_allow": {
+    "message": "Autoriser $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "news_read_coins": {
+    "message": "Cryptos citées"
+  },
+  "news_read_coins_none": {
+    "message": "aucune des cryptos suivies par cette app"
+  },
+  "news_read_coverage": {
+    "message": "Couverture"
+  },
+  "news_read_coverage_n": {
+    "message": "$1 rédactions de ce flux l'ont publié",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "news_read_coverage_one": {
+    "message": "cette rédaction seule, dans ce flux"
+  },
+  "news_read_down_words": {
+    "message": "baisse : $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "news_read_figures": {
+    "message": "Chiffres cités"
+  },
+  "news_read_figures_none": {
+    "message": "aucun"
+  },
+  "news_read_from_article": {
+    "message": "Compté à partir des propres mots de l'article. Rien ici ne dit ce que fera un prix."
+  },
+  "news_read_from_summary": {
+    "message": "Compté à partir du titre et du résumé seulement. Rien ici ne dit ce que fera un prix."
+  },
+  "news_read_head": {
+    "message": "Une lecture — comptée, non jugée"
+  },
+  "news_read_kind": {
+    "message": "Se lit comme"
+  },
+  "news_read_kind_none": {
+    "message": "aucun type d'article ne ressort par ses mots"
+  },
+  "news_read_sentences": {
+    "message": "Ses propres phrases, les mots les plus répétés"
+  },
+  "news_read_shown": {
+    "message": "Les $1 premiers de $2 paragraphes, environ $3 mots en tout, sans images. La suite est sur $4.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      },
+      "arg4": {
+        "content": "$4"
+      }
+    }
+  },
+  "news_read_shown_all": {
+    "message": "Le texte entier, environ $1 mots, sans images. La page elle-même est sur $2.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "news_read_since": {
+    "message": "Depuis"
+  },
+  "news_read_since_line": {
+    "message": "$1 a bougé de $2 % sur le graphique dans les $3 depuis la publication — les mêmes heures, pas une cause",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      }
+    }
+  },
+  "news_read_text": {
+    "message": "De l'article"
+  },
+  "news_read_text_feed": {
+    "message": "Du flux"
+  },
+  "news_read_tone": {
+    "message": "Formulation"
+  },
+  "news_read_tone_down": {
+    "message": "formulé à la baisse"
+  },
+  "news_read_tone_mixed": {
+    "message": "formulation mixte"
+  },
+  "news_read_tone_none": {
+    "message": "dans aucun sens — aucun mot compté"
+  },
+  "news_read_tone_up": {
+    "message": "formulé à la hausse"
+  },
+  "news_read_up_words": {
+    "message": "hausse : $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "news_read_why_ask": {
+    "message": "Les articles de $1 peuvent être lus ici une fois autorisé — la même permission que ses titres.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "news_read_why_cooling": {
+    "message": "$1 a demandé à ce navigateur de ralentir ; il est donc laissé tranquille un moment.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "news_read_why_failed": {
+    "message": "L'article n'a pas pu être lu pour l'instant."
+  },
+  "news_read_why_no": {
+    "message": "$1 ne laisse pas une page extérieure à son site lire ses articles ; voici donc le résumé du flux.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
   "news_reading_all": {
     "message": "Lecture directe de $1 rédactions."
   },
   "news_reading_some": {
     "message": "Lecture de $1 rédactions sur $2."
+  },
+  "news_row_open_title": {
+    "message": "Appuyez à nouveau pour le lire sur $1 · $2 — s'ouvre dans un nouvel onglet",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "news_row_preview_title": {
+    "message": "Lire à côté de la liste · $1 · $2 — un second appui l'ouvre",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
   },
   "news_save": {
     "message": "Enregistrer pour plus tard"
@@ -2463,6 +3248,18 @@
   },
   "num_only": {
     "message": "Chiffres uniquement — ce caractère n'a pas été saisi."
+  },
+  "odds_chance": {
+    "message": "probabilité $1"
+  },
+  "odds_chance_measured": {
+    "message": "probabilité $1 · des cases passées données $2–$3, $4 se sont réalisées"
+  },
+  "odds_refused": {
+    "message": "pas de probabilité : l'historique contient trop peu de tronçons aussi longs"
+  },
+  "odds_uncalibrated": {
+    "message": "pas de probabilité affichée : sur cette période le modèle n'était pas calibré"
   },
   "ovl_averages": {
     "message": "moyennes 50 et 200 jours · journalier"
@@ -5279,6 +6076,9 @@
   "pp_gate_tape_text": {
     "message": "Acheteurs $1 % des $2 derniers prints."
   },
+  "pp_h_15m": {
+    "message": "15 min"
+  },
   "pp_h_1d": {
     "message": "1d"
   },
@@ -5293,6 +6093,9 @@
   },
   "pp_h_4h": {
     "message": "4h"
+  },
+  "pp_h_5m": {
+    "message": "5 min"
   },
   "pp_lean_long": {
     "message": "Penche long"
@@ -5906,6 +6709,33 @@
   "pref_candlesticks_title": {
     "message": "Bougies"
   },
+  "pref_chance_range": {
+    "message": "Fourchette"
+  },
+  "pref_chance_regime": {
+    "message": "Régime"
+  },
+  "pref_chance_squares": {
+    "message": "Cases"
+  },
+  "pref_chances_aria": {
+    "message": "Quelles probabilités afficher"
+  },
+  "pref_chances_desc": {
+    "message": "Des probabilités comptées sur l'historique propre de cette crypto — sur les cases du plateau et dans une ligne sous le prix"
+  },
+  "pref_chances_heading": {
+    "message": "Probabilités"
+  },
+  "pref_chances_keywords": {
+    "message": "probabilité probabilités markov régime perspective fourchette cases plateau prédictions"
+  },
+  "pref_chances_note": {
+    "message": "Cases écrit sur chaque case du plateau la probabilité que le prix y soit à la fin de sa colonne ; elle a été vérifiée hors échantillon sur quatre cryptos avant d'être admise (sur les plateaux heure, jour, semaine, mois et année ; pas sur tout l'historique, où elle a échoué). Régime est la ligne du jour du widget Régimes — les entrées passées dans l'état de la crypto et l'état 20 jours plus tard, la question de Markov comptée ; mesurée, aucune ligne de ce genre ne s'écartait de 10 points d'un jour quelconque. Fourchette est la fourchette du 5e au 95e du widget Perspective pour la prochaine période, à partir de rejeux des propres pas de cette période. Aucune ne dit comment trader."
+  },
+  "pref_chances_title": {
+    "message": "Probabilités"
+  },
   "pref_chart_color_aria": {
     "message": "Activer la couleur du graphique"
   },
@@ -5966,6 +6796,17 @@
   "pref_chart_sub_on": {
     "message": "Tracé dessus"
   },
+  "pref_companion_all": {
+    "message": "Tous"
+  },
+  "pref_companion_all_aria": {
+    "message": "Afficher tous : $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
   "pref_companion_aria": {
     "message": "Activer ou désactiver le compagnon du graphique"
   },
@@ -5978,6 +6819,17 @@
   "pref_companion_keywords": {
     "message": "compagnon figure motif tête épaules double sommet creux configuration stratégie analyse technique"
   },
+  "pref_companion_none": {
+    "message": "Aucun"
+  },
+  "pref_companion_none_aria": {
+    "message": "Masquer tous : $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
   "pref_companion_note2": {
     "message": "Trouvé par règle sur les bougies journalières, jamais à l'œil. Une figure se lit sur des points de retournement — un jour plus haut (ou plus bas) que les cinq de chaque côté, utilisé seulement une fois ces cinq jours passés — et se trace avec ses points, sa ligne de cou, l'objectif que mesure sa hauteur et le niveau qui l'annulerait, suivie 90 jours ; les quatre figures se sont achevées 60 fois en onze ans de BTC, ETH, SOL et LTC réunis, trop rares pour être comparées à un jour ordinaire. Les douze configurations de stratégie — croisements, cassures des 20 jours, clôtures hors des bandes de Bollinger, retournements du Supertrend, resserrements — sont numérotées sur le graphique par leur dernière entrée quand elle est récente et listées dans son coin avec la fréquence à laquelle le prix était plus haut dix jours après, face à un jour ordinaire ; testées ensemble sur les quatre mêmes cryptos, aucune ne se distinguait d'un jour ordinaire. Rien n'est donc dit meilleur ou pire ici, et rien n'est un signal. Il lit tout l'historique journalier de la crypto, une quinzaine de requêtes la première fois puis douze heures depuis le cache ; c'est pourquoi il reste éteint tant qu'on ne l'active pas."
   },
@@ -5987,11 +6839,28 @@
   "pref_companion_patterns_aria": {
     "message": "Quelles figures le compagnon nomme"
   },
+  "pref_companion_readings": {
+    "message": "Lectures"
+  },
+  "pref_companion_readings_aria": {
+    "message": "Quelles lectures le compagnon nomme — divergences, Ichimoku, stochastique, niveaux, étirements"
+  },
   "pref_companion_setups": {
     "message": "Configurations de stratégie"
   },
   "pref_companion_setups_aria": {
     "message": "Quelles configurations de stratégie le compagnon nomme"
+  },
+  "pref_companion_shown": {
+    "message": "$1 sur $2 affichés",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
   },
   "pref_companion_title": {
     "message": "Compagnon du graphique"
@@ -6544,6 +7413,21 @@
   "pref_study_where": {
     "message": "Où il se situe"
   },
+  "pref_tab_keys_aria": {
+    "message": "Afficher les lettres de raccourci sur les onglets"
+  },
+  "pref_tab_keys_desc": {
+    "message": "La lettre de raccourci sous chaque onglet des deux bords. Désactivé masque seulement les lettres — les touches marchent toujours et chaque info-bulle nomme sa touche"
+  },
+  "pref_tab_keys_heading": {
+    "message": "Touches sur les onglets"
+  },
+  "pref_tab_keys_keywords": {
+    "message": "clavier raccourci touches lettres onglets bord colonne masquer afficher"
+  },
+  "pref_tab_keys_title": {
+    "message": "Touches sur les onglets"
+  },
   "pref_tab_ticker_aria": {
     "message": "Activer le bandeau d'onglet"
   },
@@ -6658,12 +7542,6 @@
   "pt_tab_targets": {
     "message": "Objectifs"
   },
-  "qs_compare_label": {
-    "message": "Comparer avec une crypto"
-  },
-  "qs_compare_with": {
-    "message": "Comparer $1 avec…"
-  },
   "qs_jump_label": {
     "message": "Aller à une crypto"
   },
@@ -6672,6 +7550,12 @@
   },
   "qs_no_match": {
     "message": "Aucune crypto ne correspond."
+  },
+  "rate_later": {
+    "message": "Pas maintenant — redemander plus tard"
+  },
+  "rate_never": {
+    "message": "Ne plus demander"
   },
   "read_candle": {
     "message": "$1 — ouverture $2, plus haut $3, plus bas $4, clôture $5"
@@ -6711,6 +7595,9 @@
   },
   "sc_base_rates": {
     "message": "Taux de base — combien de fois cette crypto est déjà passée par là"
+  },
+  "sc_board_walk": {
+    "message": "Ligne « maintenant » du plateau sélectionnée : déplacer le plateau vers des prix plus hauts / plus bas"
   },
   "sc_board_zoom": {
     "message": "Portée du plateau : dézoomer / zoomer (avec pronostics)"
@@ -6952,9 +7839,6 @@
   "set_rate": {
     "message": "Noter"
   },
-  "set_rate_dismiss": {
-    "message": "Masquer le rappel de notation"
-  },
   "set_remove_coin": {
     "message": "Retirer $1"
   },
@@ -7023,9 +7907,6 @@
   },
   "set_tab_widgets": {
     "message": "Widgets"
-  },
-  "set_toggle_widget": {
-    "message": "Activer ou désactiver le widget $1"
   },
   "set_undo": {
     "message": "Annuler"
@@ -7129,6 +8010,9 @@
   "ss_move_detail": {
     "message": "Les 30 jours suivants ont davantage bougé que 30 jours ordinaires de cette crypto dans $1 épisodes sur $2 — la moitié le feraient si cela ne voulait rien dire."
   },
+  "ss_move_detail_h": {
+    "message": "Les $3 jours suivants ont bougé plus que $3 jours ordinaires de cette crypto dans $1 épisodes sur $2 — la moitié le ferait si cela ne voulait rien dire."
+  },
   "ss_none": {
     "message": "Pas une seule fois dans l'historique journalier de cette crypto."
   },
@@ -7221,6 +8105,93 @@
   },
   "sum_up": {
     "message": "en hausse de $1"
+  },
+  "swp_asc": {
+    "message": "Triangle ascendant"
+  },
+  "swp_asc_claim": {
+    "message": "casserait vers le haut"
+  },
+  "swp_bflag": {
+    "message": "Drapeau haussier"
+  },
+  "swp_bflag_claim": {
+    "message": "prolongerait de la longueur du mât"
+  },
+  "swp_desc": {
+    "message": "Triangle descendant"
+  },
+  "swp_desc_claim": {
+    "message": "casserait vers le bas"
+  },
+  "swp_fwedge": {
+    "message": "Biseau descendant"
+  },
+  "swp_fwedge_claim": {
+    "message": "casserait vers le haut"
+  },
+  "swp_intro": {
+    "message": "Triangles, biseaux, ranges, drapeaux et triples sommets, tracés par les points de retournement plutôt qu'ajustés, chacun suivi 90 jours jusqu'à son mouvement mesuré ou son invalidation. Sous chacun, ce qu'a donné la même règle sur quatre cryptos ensemble face aux mêmes deux distances depuis un jour ordinaire."
+  },
+  "swp_rect_down": {
+    "message": "Range, cassé vers le bas"
+  },
+  "swp_rect_down_claim": {
+    "message": "parcourrait la hauteur du range"
+  },
+  "swp_rect_up": {
+    "message": "Range, cassé vers le haut"
+  },
+  "swp_rect_up_claim": {
+    "message": "parcourrait la hauteur du range"
+  },
+  "swp_rwedge": {
+    "message": "Biseau ascendant"
+  },
+  "swp_rwedge_claim": {
+    "message": "casserait vers le bas"
+  },
+  "swp_section": {
+    "message": "Autres figures chartistes · bougies journalières"
+  },
+  "swp_sflag": {
+    "message": "Drapeau baissier"
+  },
+  "swp_sflag_claim": {
+    "message": "chuterait de la longueur du mât"
+  },
+  "swp_sym_down": {
+    "message": "Triangle, cassé vers le bas"
+  },
+  "swp_sym_down_claim": {
+    "message": "continuerait dans le sens de la cassure"
+  },
+  "swp_sym_up": {
+    "message": "Triangle, cassé vers le haut"
+  },
+  "swp_sym_up_claim": {
+    "message": "continuerait dans le sens de la cassure"
+  },
+  "swp_t_diff": {
+    "message": "Testé sur quatre cryptos : $1 sur $2 ont atteint d'abord le mouvement mesuré ; les mêmes distances depuis un jour ordinaire, $3 % du temps."
+  },
+  "swp_t_rare": {
+    "message": "Trouvé $1 fois sur quatre cryptos en jusqu'à onze ans — trop rare pour être testé."
+  },
+  "swp_t_same": {
+    "message": "Testé sur quatre cryptos : $1 sur $2 ont atteint d'abord le mouvement mesuré, contre $3 % depuis un jour ordinaire — impossible de les distinguer."
+  },
+  "swp_tbot": {
+    "message": "Triple creux"
+  },
+  "swp_tbot_claim": {
+    "message": "marquerait un plancher"
+  },
+  "swp_ttop": {
+    "message": "Triple sommet"
+  },
+  "swp_ttop_claim": {
+    "message": "marquerait un plafond"
   },
   "tax_band": {
     "message": "Une estimation · règles lues le $1"
@@ -8254,6 +9225,9 @@
   "tour_chapter_the_chart": {
     "message": "Le graphique"
   },
+  "tour_chapter_whats_new": {
+    "message": "Nouveautés"
+  },
   "tour_chapter_your_money": {
     "message": "Votre argent"
   },
@@ -8272,8 +9246,8 @@
   "tour_skip": {
     "message": "Passer la visite"
   },
-  "tour_text_01": {
-    "message": "Des graphiques crypto en direct sur chaque nouvel onglet, sans rien demander — pas de compte, pas de permissions, et rien de vous ne quitte cet appareil. Cette visite compte vingt étapes courtes en cinq chapitres. Passez-la quand vous voulez ; Paramètres → Préférences peut la rejouer."
+  "tour_text_01c": {
+    "message": "Des graphiques crypto en direct à chaque nouvel onglet, sans rien demander — pas de compte, aucune permission à l'installation, et rien sur vous ne quitte cet appareil. Cette visite fait quelques étapes courtes en cinq chapitres. Passez-la quand vous voulez ; les Réglages peuvent la rejouer."
   },
   "tour_text_02": {
     "message": "Votre crypto active et son prix en direct, actualisé tant que l'onglet est ouvert et en pause sinon. Cliquez dessus, ou utilisez les flèches, pour parcourir votre liste."
@@ -8287,23 +9261,17 @@
   "tour_text_05": {
     "message": "Tapez un symbole ou un nom. Vos cryptos passent en premier, et en choisir une que vous ne suivez pas encore l'ajoute. La même recherche choisit la crypto d'un objectif de prix."
   },
-  "tour_text_06": {
-    "message": "Les deux tracées en variation en pourcentage depuis le début de la période, sur une seule échelle partagée — jamais deux axes, c'est l'astuce qui fait paraître liées deux courbes quelconques. Appuyez de nouveau sur C ou Échap pour l'enlever."
+  "tour_text_06_drawer": {
+    "message": "Un tiroir de ce qu'on pose sur le graphique : vos cryptos, n'importe laquelle, et des marchés — le S&P 500, le Nasdaq 100, l'or. Les deux lignes sont la variation en pourcentage depuis le début de la période, sur une échelle commune — jamais deux axes, l'astuce qui fait paraître liées deux lignes quelconques. Arrêter est dans le tiroir et sous le prix."
   },
   "tour_text_07": {
     "message": "T remplace la ligne par des bougies. G place une grille prix/temps derrière le graphique pour lire un niveau. Sous le prix figurent le haut et le bas de la période, et le prix moyen pondéré par les volumes quand les bougies sont déjà chargées — jamais récupérées juste pour ça."
   },
-  "tour_text_08": {
-    "message": "Désactivé par défaut, dans Paramètres → Graphique. Cela marque les moments où le prix a fait quelque chose d'inhabituel pour cette crypto — mesuré face à sa propre volatilité, donc juste sur un stablecoin calme comme sur une crypto agitée — et un clic affiche les titres publiés autour de ce jour. Il ne prétend jamais qu'ils en sont la cause, parce que personne ne le sait."
-  },
   "tour_text_09": {
     "message": "Un pronostic est une affirmation : cette crypto, dans cette bande de prix, à ce moment. Il se règle tout seul sur un onglet ultérieur et rejoint un palmarès qui vous appartient. Rien n'a de valeur, rien ne vaut quoi que ce soit, et rien ne quitte l'appareil — c'est une façon de savoir si vous êtes vraiment doué."
   },
-  "tour_text_10": {
-    "message": "Activez les pronostics et le graphique fait pousser un plateau de cases à droite de maintenant. Survolez-en une, un clic l'esquisse, un second la verrouille — deux clics, car un clic malheureux ne doit pas engager un pronostic. Glissez la ligne pointillée pour échanger de l'historique contre du plateau, et utilisez la pastille en haut à droite pour changer ce que vaut une case."
-  },
-  "tour_text_11": {
-    "message": "Dans le panneau des pronostics, sous Afficher, il y a une bande de parcours. Elle ombre les distances que cette crypto a réellement parcourues sur la durée d'une case — la moitié centrale et les 80% centraux. Ce n'est délibérément pas une prévision : la direction est retirée des chiffres avant le tracé, donc une crypto qui a monté toute la semaine obtient quand même une bande qui ne penche pas. Elle répond si une case est quasi certaine ou improbable, question différente pour chaque crypto."
+  "tour_text_10b": {
+    "message": "Activez les prédictions et un plateau de cases pousse à droite de maintenant, chacune avec la probabilité que le prix y soit à la fin de sa colonne — comptée sur les propres bougies de cette crypto et vérifiée sur des années de cases avant d'être admise. Cliquez une fois sur une case pour l'esquisser et une seconde pour la verrouiller : deux clics, car un clic égaré ne doit pas engager une prédiction. Faites glisser le plateau vers le haut ou le bas pour voir d'autres prix, sur le côté pour échanger historique et plateau, et utilisez la pastille en haut à droite pour changer ce que vaut une case."
   },
   "tour_text_12": {
     "message": "Des montants que vous saisissez, avec achats et ventes si vous voulez le prix de revient et le gain. FIFO, LIFO ou HIFO — une méthode de déclaration, pas un calcul d'impôt, et le rapport indique la méthode de chaque ligne. Tout est stocké sur cet appareil et il n'y a aucun portefeuille à connecter."
@@ -8311,35 +9279,50 @@
   "tour_text_13": {
     "message": "Collez une adresse publique Bitcoin, Ethereum, Litecoin, Dogecoin, Bitcoin Cash ou Zcash et le solde est lu pour vous — y compris les jetons ERC-20 que détient une adresse Ethereum, en une seule requête. L'adresse n'est envoyée qu'au service de soldes, et si une chaîne ne peut pas être lue, PriceTab dit laquelle au lieu de vous demander de vérifier une adresse parfaitement valide."
   },
-  "tour_text_14": {
-    "message": "Préviens-moi quand BTC dépasse un nombre, ou bouge de 5% en une journée, ou quand tout ce que je détiens vaut moins que X. Vous êtes averti au prochain nouvel onglet, et un déclenchement nocturne est quand même retrouvé, car la vérification remonte toute la semaine. Rien ne vous est poussé, et c'est ainsi que l'extension reste sans permissions."
+  "tour_text_14b": {
+    "message": "Prévenez-moi quand le BTC passe au-dessus d'un nombre, bouge de 5 % en un jour, ou quand tout ce que je détiens vaut moins que X. Un objectif est une ligne sur le graphique, et un clic sur le graphique en choisit le prix. Vous l'apprenez au prochain nouvel onglet — ou, si vous activez l'alarme, par une notification et un son ; cette permission n'est demandée qu'à ce moment."
   },
-  "tour_text_15": {
-    "message": "Chaque titre avec sa source, son âge et un résumé, du plus récent au plus ancien, filtrable par crypto, par source ou en tapant. Une source qui a cessé de publier affiche son propre âge en rouge — un flux mort qui ressemble à un flux vivant est précisément ce pour quoi ceci existe. La publicité est écartée plutôt qu'étiquetée."
+  "tour_text_15c": {
+    "message": "Chaque titre avec sa source et son âge, filtré par crypto, source ou recherche, sans publicité. Appuyez une fois sur un titre et il s'ouvre à côté de la liste — le texte même de l'article quand la rédaction le permet, et une lecture comptée ; appuyez de nouveau pour ouvrir la page."
   },
-  "tour_text_16": {
-    "message": "Lit des années de clôtures quotidiennes de cette crypto et compte ce qui a suivi chaque fois qu'elle était dans un état donné. Chaque chiffre porte le nombre de cas sur lequel il repose, et quand ce nombre est petit il refuse de conclure. Il ne vous dira jamais d'acheter ou de vendre — neuf règles de manuel testées sur 21 669 clôtures quotidiennes n'ont rien laissé qui survive à une correction correcte, et le dire est plus utile qu'une flèche."
+  "tour_text_16b": {
+    "message": "Des années de bougies journalières de cette crypto, et ce qui a suivi chaque fois qu'elle était dans un état, à côté d'un jour ordinaire — avec le nombre de fois derrière chaque chiffre. L'écran s'ouvre sur ce qui a suivi tout ce qui est vrai maintenant. Il ne dit jamais d'acheter ou de vendre : testé, presque rien n'a distingué les jours suivants de jours quelconques, et le dire est plus utile qu'une flèche."
   },
-  "tour_text_17_drawer": {
-    "message": "Liste de suivi, Peur et avidité, financement, positions ouvertes, frais de réseau, la pire baisse de la période et plus encore, dans un panneau sur le bord gauche. Appuyez sur Choisir dedans pour les activer — il y a des ensembles tout prêts — puis glissez une carte pour la réordonner, ou survolez-la et cliquez son × pour la masquer."
+  "tour_text_17_pin": {
+    "message": "Liste de suivi, Fear & Greed, financement, frais et plus, dans un tiroir sur le bord gauche, rangés comme un téléphone range ses widgets. Modifier, puis + en ajoute un à la taille choisie en balayant ; maintenez ou faites un clic droit sur une carte pour sa taille, la retirer ou l'épingler à l'écran d'accueil."
   },
   "tour_text_19": {
     "message": "Cryptos, devise, thème, widgets et bandeaux, avec une recherche en haut des Préférences. La rangée de modes en règle une douzaine d'un coup — Minimal, Rapide, Trader, Détenteur — et ne touche jamais à votre devise, votre format de nombres ni votre thème."
   },
+  "tour_text_companion": {
+    "message": "Activez le compagnon dans les réglages du graphique (V) et il nomme les figures, configurations et lectures qu'il trouve — triangles, croisements, divergences, le nuage Ichimoku — là où elles sont apparues, chacune avec ce qui a suivi sur cette crypto et ce qu'elle a donné testée sur quatre cryptos. La plupart n'ont pas fait mieux qu'un jour ordinaire, et il le dit."
+  },
+  "tour_text_drag": {
+    "message": "Faites glisser le graphique dans tous les sens : sur les côtés dans le temps, de haut en bas dans les prix. La molette ou deux doigts zooment là où vous pointez, glisser au-delà du point le plus ancien ouvre la période plus longue, et un double-clic remet tout en place. Graphique sélectionné, ← et → le lisent point par point."
+  },
+  "tour_text_tools": {
+    "message": "Le + au bout de la ligne des périodes ouvre les outils : une règle qui dit combien de fois un mouvement de cette taille s'est produit, et des lignes, rayons, rectangles et notes qui restent avec la crypto. Maj et un glisser mesurent n'importe où ; une ligne horizontale peut devenir un objectif de prix."
+  },
+  "tour_text_whats_new": {
+    "message": "Quelques étapes courtes sur ce qui a changé depuis votre dernière version. Passez-les quand vous voulez ; les Réglages peuvent rejouer la visite complète."
+  },
   "tour_title_change": {
     "message": "Variation"
   },
+  "tour_title_companion": {
+    "message": "Un compagnon qui compte"
+  },
   "tour_title_compare_two_coins": {
     "message": "Comparer deux cryptos"
+  },
+  "tour_title_draw_measure": {
+    "message": "Dessiner et mesurer"
   },
   "tour_title_everything_else_lives_here": {
     "message": "Tout le reste est ici"
   },
   "tour_title_has_this_happened_before": {
     "message": "Est-ce déjà arrivé ?"
-  },
-  "tour_title_how_far_it_usually_travels": {
-    "message": "Jusqu'où il va d'habitude"
   },
   "tour_title_it_is_faster_from_the_keyboard": {
     "message": "C'est plus rapide au clavier"
@@ -8349,6 +9332,9 @@
   },
   "tour_title_live_price": {
     "message": "Prix en direct"
+  },
+  "tour_title_move_around": {
+    "message": "Se déplacer dedans"
   },
   "tour_title_news": {
     "message": "Actualités"
@@ -8377,8 +9363,8 @@
   "tour_title_welcome_to_pricetab": {
     "message": "Bienvenue sur PriceTab"
   },
-  "tour_title_what_happened_here": {
-    "message": "Que s'est-il passé ici ?"
+  "tour_title_whats_new": {
+    "message": "PriceTab a été mis à jour"
   },
   "tour_title_widgets": {
     "message": "Widgets"
@@ -8401,11 +9387,14 @@
   "wd_all_hidden": {
     "message": "Tous les widgets sont masqués."
   },
+  "wd_all_widgets": {
+    "message": "‹ Tous les widgets"
+  },
+  "wd_cancel": {
+    "message": "Annuler"
+  },
   "wd_card_size": {
     "message": "Taille des cartes"
-  },
-  "wd_choose": {
-    "message": "Choisir des widgets"
   },
   "wd_close": {
     "message": "Fermer les widgets"
@@ -8413,11 +9402,20 @@
   "wd_done": {
     "message": "Terminé"
   },
-  "wd_edit": {
-    "message": "Choisir"
+  "wd_edit_widgets": {
+    "message": "Modifier"
   },
-  "wd_foot_cards": {
-    "message": "Glissez une carte pour la déplacer, × pour la masquer. Ce panneau : "
+  "wd_foot_editing": {
+    "message": "Glissez pour déplacer, − pour retirer, + pour ajouter. OK une fois fini. Ce tiroir : "
+  },
+  "wd_foot_rest": {
+    "message": "Maintenez ou faites un clic droit sur un widget pour sa taille. Ce tiroir : "
+  },
+  "wd_fri": {
+    "message": "ven"
+  },
+  "wd_mon": {
+    "message": "lun"
   },
   "wd_none_on": {
     "message": "Aucun widget n'est activé."
@@ -8434,11 +9432,26 @@
   "wd_resize_title": {
     "message": "Faites glisser pour élargir ou rétrécir · double-clic pour la largeur par défaut"
   },
+  "wd_sat": {
+    "message": "sam"
+  },
   "wd_show_n_hidden": {
     "message": "Afficher $1 masqués"
   },
   "wd_size_aria": {
     "message": "Cartes $1"
+  },
+  "wd_sun": {
+    "message": "dim"
+  },
+  "wd_thu": {
+    "message": "jeu"
+  },
+  "wd_tue": {
+    "message": "mar"
+  },
+  "wd_wed": {
+    "message": "mer"
   },
   "wdesc_altcoin_season": {
     "message": "Les altcoins font-ils mieux que Bitcoin ?"
@@ -8473,6 +9486,9 @@
   "wdesc_mempool": {
     "message": "Combien de transactions attendent et quelle est la profondeur de la file — ce qu'il y a derrière la carte des frais"
   },
+  "wdesc_model_outlook": {
+    "message": "La prochaine heure complète de BTC-USD selon un modèle : médiane, bande à 80 %, la probabilité d'un objectif à la clôture — et la fréquence à laquelle la bande a tenu en test"
+  },
   "wdesc_open_interest": {
     "message": "Valeur des contrats à terme ouverts"
   },
@@ -8489,7 +9505,7 @@
     "message": "Les plus fortes hausses et baisses du jour"
   },
   "wdesc_watchlist": {
-    "message": "Vos cryptos dans une grille 24 h en couleurs"
+    "message": "Vos cryptos avec leur prix et la variation sur 24 h, teintées selon le mouvement"
   },
   "wdesc_worst_fall": {
     "message": "La plus forte baisse du sommet au creux sur la période affichée"
@@ -8602,6 +9618,25 @@
   "widget_btc_halving": {
     "message": "Halving BTC"
   },
+  "widget_bundle_desc": {
+    "message": "$1 widgets, à la place de ceux-ci",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "widget_card_aria": {
+    "message": "Widget $1, $2 — Entrée pour la taille et les options",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
   "widget_difficulty": {
     "message": "Difficulté BTC"
   },
@@ -8638,8 +9673,23 @@
   "widget_funding_rate": {
     "message": "Taux de financement $1"
   },
-  "widget_hide_one": {
-    "message": "Masquer $1"
+  "widget_gallery_add": {
+    "message": "Ajouter un widget"
+  },
+  "widget_gallery_added": {
+    "message": "Ajouté"
+  },
+  "widget_gallery_none": {
+    "message": "Aucun widget ne correspond"
+  },
+  "widget_gallery_search": {
+    "message": "Rechercher des widgets"
+  },
+  "widget_gallery_sizes": {
+    "message": "Tailles — ← et → pour les voir"
+  },
+  "widget_gallery_use_size": {
+    "message": "Utiliser cette taille"
   },
   "widget_liquidations": {
     "message": "Liquidations $1 24 h"
@@ -8664,6 +9714,38 @@
   },
   "widget_mempool_waiting": {
     "message": "$1 en attente"
+  },
+  "widget_menu_aria": {
+    "message": "Widget $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "widget_menu_edit": {
+    "message": "Modifier les widgets"
+  },
+  "widget_menu_pin": {
+    "message": "Épingler à l'accueil"
+  },
+  "widget_menu_pin_full": {
+    "message": "Quatre sont épinglés — retirez-en un d'abord"
+  },
+  "widget_menu_remove": {
+    "message": "Supprimer le widget"
+  },
+  "widget_menu_remove_confirm": {
+    "message": "Supprimer — appuyez à nouveau"
+  },
+  "widget_menu_sizes": {
+    "message": "Taille"
+  },
+  "widget_menu_unpin": {
+    "message": "Désépingler de l'accueil"
+  },
+  "widget_model_outlook": {
+    "message": "BTC 1h · modèle"
   },
   "widget_next_block": {
     "message": "prochain bloc"
@@ -8695,6 +9777,14 @@
   "widget_peak_to_trough": {
     "message": "du sommet au creux"
   },
+  "widget_pinned_aria2": {
+    "message": "$1, épinglé — Entrée ouvre les widgets, la touche menu ses options",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
   "widget_regime_axes": {
     "message": "Ligne : comment ça a commencé. Colonne : 20 jours plus tard."
   },
@@ -8710,11 +9800,28 @@
   "widget_regimes": {
     "message": "$1 Régimes · 20 j"
   },
+  "widget_remove_aria": {
+    "message": "Retirer $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
   "widget_rsi": {
     "message": "$1 RSI · $2"
   },
   "widget_show_hidden": {
     "message": "Afficher les widgets masqués"
+  },
+  "widget_size_large": {
+    "message": "grand"
+  },
+  "widget_size_medium": {
+    "message": "moyen"
+  },
+  "widget_size_small": {
+    "message": "petit"
   },
   "widget_top_movers": {
     "message": "Plus fortes variations 24 h"
@@ -8736,6 +9843,12 @@
   },
   "widget_unit_years": {
     "message": "Ans"
+  },
+  "widget_via_blockchair": {
+    "message": "via Blockchair"
+  },
+  "widget_via_blockchair_hint": {
+    "message": "mempool.space est injoignable depuis ce navigateur ; voici donc le chiffre de Blockchair"
   },
   "widget_watchlist": {
     "message": "Liste de suivi"
@@ -8775,6 +9888,9 @@
   },
   "wname_mempool": {
     "message": "Mempool BTC"
+  },
+  "wname_model_outlook": {
+    "message": "Heure suivante · modèle"
   },
   "wname_open_interest": {
     "message": "Positions ouvertes"

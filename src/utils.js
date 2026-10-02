@@ -197,6 +197,7 @@ const scaleCandles = (
   left = null,
   right = null,
   bottom = null,
+  shift = 0,
 ) => {
   if (!Array.isArray(candles) || candles.length < 1) return null;
   let min = Infinity;
@@ -211,6 +212,8 @@ const scaleCandles = (
     min -= 1;
     max += 1;
   }
+  // A vertical drag slides the bars' window as it slides the line's
+  if (shift) [min, max] = shiftDomain(min, max, shift);
   const y1 = bottom == null ? height - padding : bottom;
   const plotH = Math.max(1, y1 - padding);
   const x0 = left == null ? padding : left;
@@ -428,6 +431,26 @@ const candlePathData = (scaled, up) => {
 const canScaleLog = (domain) =>
   Array.isArray(domain) && domain[0] > 0 && domain[1] > 0;
 
+/* **The price window moved by a hand** (1 Oct 2026, "yakınlaştırma yapmadan
+ * sürükle bırak yukarı aşağı"). A vertical drag on the chart slides what it
+ * shows up or down without changing its scale: `f` is a share of the window's
+ * own height, positive to look higher. On a log axis the share is of the log
+ * span, so a drag moves the same distance on screen either way. A linear
+ * window is never slid below zero — there are no prices there for the axis to
+ * name. */
+const shiftDomain = (lo, hi, f, log = false) => {
+  if (!(hi > lo) || !isFinite(f) || f === 0) return [lo, hi];
+  if (log && lo > 0) {
+    const a = Math.log(lo);
+    const b = Math.log(hi);
+    const d = (b - a) * f;
+    return [Math.exp(a + d), Math.exp(b + d)];
+  }
+  const span = hi - lo;
+  const d = Math.max(span * f, -lo);
+  return [lo + d, hi + d];
+};
+
 const scalePricesCore = (
   data,
   height,
@@ -515,11 +538,14 @@ const priceToChartY = (
   paddingTop = 0,
   paddingBottom = 0,
   logScale = false,
+  shift = 0,
 ) => {
   if (!Array.isArray(data) || data.length < 2) return null;
   if (!isFinite(value)) return null;
-  const [min, max] = extent(data, (d) => d.price);
-  if (!isFinite(min) || !isFinite(max) || min === max) return null;
+  const [dataMin, dataMax] = extent(data, (d) => d.price);
+  if (!isFinite(dataMin) || !isFinite(dataMax) || dataMin === dataMax) return null;
+  // The window a vertical drag slid, or the data's own (`shiftDomain`)
+  const [min, max] = shiftDomain(dataMin, dataMax, shift, logScale && canScaleLog([dataMin, dataMax]));
   if (value < min || value > max) return null;
   // Same axis the series was drawn on, or a reference line lands somewhere the
   // price never was — see `scalePricesCore`
@@ -548,11 +574,13 @@ const chartYToPrice = (
   paddingTop = 0,
   paddingBottom = 0,
   logScale = false,
+  shift = 0,
 ) => {
   if (!Array.isArray(data) || data.length < 2) return null;
   if (!isFinite(y)) return null;
-  const [min, max] = extent(data, (d) => d.price);
-  if (!isFinite(min) || !isFinite(max) || min === max) return null;
+  const [dataMin, dataMax] = extent(data, (d) => d.price);
+  if (!isFinite(dataMin) || !isFinite(dataMax) || dataMin === dataMax) return null;
+  const [min, max] = shiftDomain(dataMin, dataMax, shift, logScale && canScaleLog([dataMin, dataMax]));
   const top = paddingTop;
   const bottom = height - paddingBottom;
   if (!(bottom > top)) return null;
@@ -631,7 +659,10 @@ const alignComparison = (historyA, historyB) => {
  * either stood still is not counted either way. A count and its
  * denominator — never a correlation coefficient dressed as a prediction.
  * Null when fewer than two steps can be read. */
-const compareSameDirection = (historyA, historyB) => {
+/* The two series' steps side by side: each of the chart coin's steps with
+ * the compared coin's over the same stretch of time, read off the same cut
+ * the chart draws (alignComparison). Null under three points. */
+const compareSteps = (historyA, historyB) => {
   const [a, b] = alignComparison(historyA, historyB);
   if (a.length < 3 || b.length < 2) return null;
   const t = (p) => Number(new Date(p.time));
@@ -646,16 +677,61 @@ const compareSameDirection = (historyA, historyB) => {
     }
     return Number(b[Math.abs(bt[hi] - ms) < Math.abs(bt[lo] - ms) ? hi : lo].price);
   };
+  const steps = [];
+  for (let i = 1; i < a.length; i += 1) {
+    const a0 = Number(a[i - 1].price);
+    const a1 = Number(a[i].price);
+    const b0 = priceB(t(a[i - 1]));
+    const b1 = priceB(t(a[i]));
+    steps.push([a0, a1, b0, b1]);
+  }
+  return steps;
+};
+
+const compareSameDirection = (historyA, historyB) => {
+  const steps = compareSteps(historyA, historyB);
+  if (!steps) return null;
   let same = 0;
   let n = 0;
-  for (let i = 1; i < a.length; i += 1) {
-    const da = Number(a[i].price) - Number(a[i - 1].price);
-    const db = priceB(t(a[i])) - priceB(t(a[i - 1]));
+  for (const [a0, a1, b0, b1] of steps) {
+    const da = a1 - a0;
+    const db = b1 - b0;
     if (!da || !db) continue;
     n += 1;
     if ((da > 0) === (db > 0)) same += 1;
   }
   return n >= 2 ? { same, n } : null;
+};
+
+/* How closely the two coins' steps moved together — the Pearson correlation
+ * of their log returns over the steps both moved, with that count. A
+ * description of the window on screen, never of the next one: null under
+ * COMPARE_CORR_MIN steps, where one jolt decides it. */
+const COMPARE_CORR_MIN = 20;
+const compareCorrelation = (historyA, historyB) => {
+  const steps = compareSteps(historyA, historyB);
+  if (!steps) return null;
+  const ra = [];
+  const rb = [];
+  for (const [a0, a1, b0, b1] of steps) {
+    if (!(a0 > 0 && a1 > 0 && b0 > 0 && b1 > 0) || a1 === a0 || b1 === b0) continue;
+    ra.push(Math.log(a1 / a0));
+    rb.push(Math.log(b1 / b0));
+  }
+  const n = ra.length;
+  if (n < COMPARE_CORR_MIN) return null;
+  const ma = ra.reduce((x, y) => x + y, 0) / n;
+  const mb = rb.reduce((x, y) => x + y, 0) / n;
+  let sab = 0;
+  let saa = 0;
+  let sbb = 0;
+  for (let i = 0; i < n; i += 1) {
+    sab += (ra[i] - ma) * (rb[i] - mb);
+    saa += (ra[i] - ma) ** 2;
+    sbb += (rb[i] - mb) ** 2;
+  }
+  if (!(saa > 0 && sbb > 0)) return null;
+  return { r: sab / Math.sqrt(saa * sbb), n };
 };
 
 /* Two coins that both sat still would otherwise be stretched to fill the

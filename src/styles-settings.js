@@ -324,6 +324,23 @@ const RatePromptLink = styled.a`
   cursor: pointer;
 `;
 
+// "Don't ask again": quieter than "Rate", a word rather than a mark
+const RatePromptNever = styled.button.attrs({ type: "button" })`
+  flex: 0 0 auto;
+  background: transparent;
+  border: none;
+  padding: 0;
+  font: inherit;
+  font-size: 0.75rem;
+  color: ${({ theme }) => theme.color.textSecondary};
+  text-decoration: underline;
+  cursor: pointer;
+
+  &:hover {
+    color: ${({ theme }) => theme.color.text};
+  }
+`;
+
 const RatePromptClose = styled.button.attrs({ type: "button" })`
   flex: 0 0 auto;
   background: transparent;
@@ -1543,6 +1560,78 @@ const MetricGroupLabel = styled.div`
   color: ${({ theme }) => theme.color.textSecondary};
 `;
 
+/* **The companion's chips as a block** (1 Oct 2026, *"chart companion
+   tarafı … birbirlerinin üzerine binme"*). Inside a reveal every direct child
+   is made a label + 13rem-lane grid, so the two groups landed with their names
+   centred in the left column and sixteen chips stacked one per line in the
+   lane — 536px tall, neighbouring chips touching. Written at this seam, not
+   on the reveal: `&&` outranks the reveal's child rule for this block only. */
+const CompanionMetrics = styled.div`
+  && {
+    display: block;
+  }
+  padding: 0.15rem 0 0.6rem;
+`;
+
+/* A group's name, how many of it are shown, and All / None. */
+const MetricGroupHead = styled.div`
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin: 0.75rem 0 0.4rem;
+
+  ${MetricGroupLabel} {
+    margin: 0;
+    white-space: nowrap;
+  }
+
+  /* On a phone the name keeps its line and the count goes under it, so
+     neither breaks mid-phrase (390px, 1 Oct 2026). */
+  @media (max-width: 420px) {
+    flex-wrap: wrap;
+    row-gap: 0.15rem;
+
+    ${MetricGroupLabel} {
+      flex: 1 0 100%;
+    }
+  }
+`;
+
+const MetricGroupCount = styled.span`
+  flex: 1;
+  white-space: nowrap;
+  font-size: 0.62rem;
+  font-variant-numeric: tabular-nums;
+  color: ${({ theme }) => theme.color.textSecondary};
+`;
+
+const MetricGroupAct = styled.button.attrs({ type: "button" })`
+  padding: 0.15rem 0.35rem;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  font-family: ${({ theme }) => theme.font.primary};
+  font-size: 0.64rem;
+  color: ${({ theme }) => theme.color.textSecondary};
+  cursor: pointer;
+
+  &:hover:not(:disabled),
+  &:focus-visible {
+    color: ${({ theme }) => theme.color.text};
+    background: ${({ theme }) => theme.color.bgSecondary};
+  }
+
+  &:focus {
+    outline: none;
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+  ${touchBox};
+`;
+
 const MetricChips = styled.div`
   display: flex;
   flex-wrap: wrap;
@@ -1761,23 +1850,7 @@ const ToggleLabel = styled.label`
   opacity: 0.6;
 `;
 
-const WidgetGroupTitle = styled.h4`
-  margin: ${({ theme }) => theme.spacing.medium}rem 0
-    ${({ theme }) => theme.spacing.xsmall}rem;
-  font-size: 0.66rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  text-align: left;
-  color: ${({ theme }) => theme.color.textSecondary};
-`;
 
-const ToggleTextCol = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  text-align: left;
-  gap: 2px;
-`;
 
 const ToggleDesc = styled.span`
   font-size: 0.62rem;
@@ -1856,26 +1929,7 @@ const PresetRow = styled.div`
   max-width: 36rem;
 `;
 
-/* **The widget list in two columns at full screen**, one group to a cell:
- * a title and its rows stay together, and the groups fill left then right in
- * the order the settings list gives them — the same rule the Preferences tab
- * follows with PrefColumns, for the same reason (a switch 1,000px from its
- * label is not beside it). Under 900px, and at the card size, the wrapper
- * dissolves and the list is the single column it always was. */
-const WidgetGroups = styled.div`
-  display: ${({ two }) => (two ? "grid" : "contents")};
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  column-gap: 3rem;
-  align-items: start;
 
-  @media (max-width: 900px) {
-    display: contents;
-  }
-`;
-
-const WidgetGroup = styled.div`
-  min-width: 0;
-`;
 
 /* Save, and deliberately **not** a `PresetButton`.
  *
@@ -1934,22 +1988,6 @@ const PresetButton = styled.button.attrs({ type: "button" })`
   }
 `;
 
-/* **The widgets' chooser, in the drawer** (widgetChooser, settings.js). The
- * rows are Settings' own; what changes is the room. PresetButton keeps a
- * 64px floor so a letter does not become a sliver on a full-screen tab, and
- * in the phone's sheet four of them needed 274px of 273 — so XL wrapped onto
- * a line of its own. Here they share the row whatever its width. Restyled at
- * this wrapper and nowhere else: the Settings panel's rows keep their floor. */
-const WidgetChooserFrame = styled.div`
-  ${PresetRow} {
-    flex-wrap: nowrap;
-  }
-
-  ${PresetButton} {
-    flex: 1 1 0;
-    min-width: 0;
-  }
-`;
 
 const ToggleSwitch = styled.button.attrs({ type: "button" })`
   position: relative;
@@ -2772,4 +2810,120 @@ const ChartDrawerSave = styled.button.attrs({ type: "button" })`
   &:focus-visible {
     box-shadow: 0 0 0 2px ${({ theme }) => theme.color.borderHover};
   }
+`;
+
+/* ── THE COMPARE DRAWER (1 Oct 2026, compare-drawer.js) ─────────────────
+ * A drawer beside the chart like the others on this column — the picker was
+ * a dialog over the whole screen, and choosing what to lay over the chart is
+ * a thing done beside it. */
+const CompareSearch = styled.input`
+  width: 100%;
+  box-sizing: border-box;
+  height: 2.3rem;
+  padding: 0 0.85rem;
+  margin: 0.75rem 0 0.25rem;
+  border: none;
+  border-radius: 0.7rem;
+  background: ${({ theme }) => theme.color.bgSecondary};
+  color: ${({ theme }) => theme.color.text};
+  font-family: ${({ theme }) => theme.font.primary};
+  font-size: 0.8rem;
+
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px ${({ theme }) => theme.color.borderHover};
+  }
+`;
+
+const CompareNow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+  padding: 0.65rem 0.8rem;
+  border-radius: 0.7rem;
+  background: ${({ theme }) => theme.color.bgSecondary};
+  font-size: 0.74rem;
+  color: ${({ theme }) => theme.color.text};
+`;
+
+const CompareSection = styled.div`
+  margin-top: 1rem;
+`;
+
+const CompareSectionHead = styled.div`
+  margin: 0 0 0.35rem 0.2rem;
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: ${({ theme }) => theme.color.textSecondary};
+`;
+
+const CompareList = styled.div`
+  display: flex;
+  flex-direction: column;
+  border-radius: 0.8rem;
+  overflow: hidden;
+  border: 1px solid ${({ theme }) => theme.color.border};
+`;
+
+const ComparePickRow = styled.button.attrs({ type: "button" })`
+  display: grid;
+  grid-template-columns: 6rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  border: none;
+  background: ${({ on, theme }) => (on ? theme.color.bgSecondary : "transparent")};
+  text-align: left;
+  font-family: ${({ theme }) => theme.font.primary};
+  color: ${({ theme }) => theme.color.text};
+  cursor: pointer;
+
+  & + & {
+    border-top: 1px solid ${({ theme }) => theme.color.border};
+  }
+
+  &:hover,
+  &:focus-visible {
+    background: ${({ theme }) => theme.color.bgSecondary};
+    outline: none;
+  }
+`;
+
+const ComparePickSym = styled.span`
+  font-size: 0.78rem;
+  font-weight: ${({ theme }) => theme.fontWeight.bold};
+`;
+
+const ComparePickName = styled.span`
+  font-size: 0.74rem;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+`;
+
+const ComparePickNote = styled.span`
+  display: block;
+  font-size: 0.64rem;
+  color: ${({ theme }) => theme.color.textSecondary};
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+`;
+
+const ComparePickTag = styled.span`
+  font-size: 0.66rem;
+  white-space: nowrap;
+  color: ${({ theme }) => theme.color.textSecondary};
+`;
+
+const CompareHint = styled.p`
+  margin: 0.5rem 0.2rem 0;
+  font-size: 0.66rem;
+  line-height: 1.5;
+  color: ${({ theme }) => theme.color.textSecondary};
 `;

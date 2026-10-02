@@ -25,6 +25,7 @@ const SHORTCUT_GROUPS = [
       { keys: ["G"], label: msg("sc_grid", "Price / time grid on the chart") },
       { keys: ["L"], label: msg("sc_calls", "Calls on / off") },
       { keys: ["[", "–", "]"], label: msg("sc_board_zoom", "Board reach: zoom out / in (calls on)") },
+      { keys: ["↑", "↓"], label: msg("sc_board_walk", "With the board's now line focused: walk the board to higher / lower prices") },
       { keys: ["+", "-"], label: msg("sc_view_zoom2", "Zoom the chart in / out — in time, or the board's reach while calls are on") },
       { keys: ["←", "→"], label: msg("sc_view_read", "With the chart focused: read it point by point — the window follows past its edge") },
       { keys: ["Home", "End"], label: msg("sc_view_ends", "With the chart focused: its first / latest point") },

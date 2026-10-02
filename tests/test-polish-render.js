@@ -407,11 +407,15 @@ const perpFromCoinbase = (handler) => async (r) => {
     await page.waitForTimeout(400);
     await page.keyboard.press("w");
     await page.waitForTimeout(600);
-    await page.click("[data-widgets-choose]");
+    /* Since 1 Oct 2026 a widget is added the way iOS adds one: Edit, then
+       "+", then the gallery (app-widgets.js). */
+    await page.click("[data-widgets-edit='off']");
+    await page.waitForTimeout(300);
+    await page.click("[data-widgets-add]");
     await page.waitForTimeout(400);
-    check(await page.evaluate(`Boolean(document.querySelector("[data-widgets-drawer='open'] [data-widget-chooser]"))`),
-      "the widgets' switches are in their drawer, behind Choose");
-    await sweep("widgets drawer · choose");
+    check(await page.evaluate(`Boolean(document.querySelector("[data-widgets-drawer='open'] [data-widget-gallery]"))`),
+      "the widgets' gallery is in their drawer, behind Edit and +");
+    await sweep("widgets drawer · gallery");
     await page.keyboard.press("Escape");
     await page.waitForTimeout(400);
     await page.keyboard.press("a");
@@ -2858,6 +2862,7 @@ const perpFromCoinbase = (handler) => async (r) => {
    * dismissing them left no way to rate at all. */
   {
     const DAY = 86400000;
+    const WHATS_NEW_ID = (require("fs").readFileSync(path.join(__dirname, "..", "src", "onboarding.js"), "utf8").match(/const WHATS_NEW_ID = "([^"]+)"/) || [])[1];
     const openSettings = async (page) => {
       await page.keyboard.press("s");
       await page.waitForTimeout(700);
@@ -2877,7 +2882,7 @@ const perpFromCoinbase = (handler) => async (r) => {
       await page.waitForTimeout(300);
       return seen;
     };
-    const profile = async (ageDays) => {
+    const profile = async (ageDays, seed = "") => {
       const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
       await ctx.route("**/*", (r) => {
         const u = r.request().url();
@@ -2890,6 +2895,9 @@ const perpFromCoinbase = (handler) => async (r) => {
       await ctx.addInitScript(`
         localStorage.setItem("crypto_chart_onboarding_seen", "1");
         localStorage.setItem("crypto_chart_first_use", String(Date.now() - ${ageDays} * ${DAY}));
+        // An aged install would be shown what's new first (onboarding.js)
+        localStorage.setItem("crypto_chart_whats_new_seen", "${WHATS_NEW_ID}");
+        ${seed}
       `);
       const page = await ctx.newPage();
       await page.goto(INDEX, { waitUntil: "load" });
@@ -2931,6 +2939,21 @@ const perpFromCoinbase = (handler) => async (r) => {
       used.opens.every((o) => o.link),
       "…and the permanent link survives the ask",
     );
+
+    /* **The schedule** (1 Oct 2026): × is "not now" — the next ask comes
+       after 3, then 7, then 30 days, four in all — and "Rate" or "Don't ask
+       again" end it. Seeded as the counter a past ask would have left. */
+    const asksSeed = (n, nextDays) =>
+      `localStorage.setItem("crypto_chart_rate_prompt_asks", JSON.stringify({ n: ${n}, next: Date.now() + ${nextDays} * ${DAY} }));`;
+    const due = await profile(10, asksSeed(1, -1));
+    check(due.opens[0].bar && !due.opens[1].bar, "once its snooze has passed, the next ask comes — once", JSON.stringify(due.opens));
+    const waiting = await profile(10, asksSeed(1, 2));
+    check(waiting.opens.every((o) => !o.bar), "…and not while the snooze is still running", JSON.stringify(waiting.opens));
+    const spent = await profile(90, asksSeed(4, -1));
+    check(spent.opens.every((o) => !o.bar) && !spent.card, "…and never after the fourth", JSON.stringify(spent.opens));
+    const ended = await profile(10, asksSeed(1, -1) + 'localStorage.setItem("crypto_chart_rate_prompt_dismissed", "true");');
+    check(ended.opens.every((o) => !o.bar), "\"Rate\" or \"Don't ask again\" ends it for good", JSON.stringify(ended.opens));
+    check(ended.opens.every((o) => o.link), "…with the permanent link still there");
   }
 
   /* §16 — nothing is drawn on top of an open panel.
@@ -3085,7 +3108,7 @@ const perpFromCoinbase = (handler) => async (r) => {
               a.effect.target.tagName === "DIV",
           ).length,
         said: /Couldn.t load this one/.test(globalThis.document.body.innerText),
-        cards: globalThis.document.querySelectorAll("[data-widgets-drawer='open'] [draggable='true']").length,
+        cards: globalThis.document.querySelectorAll("[data-widgets-drawer='open'] [data-widget-cards] > [data-widget]").length,
       }));
       /* The count first: with no card on the page the two checks below
          would pass on nothing. */
@@ -4270,8 +4293,9 @@ const perpFromCoinbase = (handler) => async (r) => {
     await ctx.close();
   }
 
-  /* §19 — the board takes a drag as well as two clicks, and still refuses one
-   * click.
+  /* §19 — the board takes two clicks, and still refuses one click; a drag
+   * walks it (30 Sep 2026 — it placed a call in one gesture until the board
+   * took the chart's own drag, see §21).
    *
    * Two clicks is the deliberate guard: a chart is a surface people click for
    * other reasons, and a stray click must not commit a prediction that goes
@@ -4349,7 +4373,9 @@ const perpFromCoinbase = (handler) => async (r) => {
       for (let i = 1; i <= 8; i += 1) await page.mouse.move(bx, y + 90 - (90 * i) / 8);
       await page.mouse.up();
       await page.waitForTimeout(400);
-      check((await calls()) === 2, "a drag onto a square calls it in one gesture");
+      /* Since 30 Sep 2026 a drag walks the board, the chart's own gesture —
+         so pulling across squares calls none of them. */
+      check((await calls()) === 1, "a drag across squares calls none of them — it walks the board");
 
       /* Let go outside the board: nothing placed, and no half-made call left
          sitting on the chart either. */
@@ -4361,8 +4387,8 @@ const perpFromCoinbase = (handler) => async (r) => {
       await page.mouse.up();
       await page.waitForTimeout(400);
       check(
-        (await calls()) === 2,
-        "…while letting go off the board calls nothing",
+        (await calls()) === 1,
+        "…nor does one that ends on the history",
         `${await calls()} call(s) after a drag that ended on the history`,
       );
     } else {
@@ -4681,7 +4707,9 @@ const perpFromCoinbase = (handler) => async (r) => {
    * The board reaches about three squares either side of the price, which is
    * the right default and is not everything: the call an hour chart most
    * invites — a real fall, a real spike — ends somewhere with no square on
-   * the screen. Four arrows walk the window, and they repeat while held.
+   * the screen. The board is walked by dragging it (30 Sep 2026 — the four
+   * arrows at its edges were replaced by the chart's own gesture): up and
+   * down move the price window, sideways moves the "now" line.
    *
    * The assertion that matters is the last one, and it is deliberately about
    * the *outcome* rather than about the control: a call actually placed at a
@@ -4710,77 +4738,26 @@ const perpFromCoinbase = (handler) => async (r) => {
     await page.goto(INDEX, { waitUntil: "load" });
     await page.waitForTimeout(1800);
 
-    const arrows = await page.evaluate(
-      `Array.from(document.querySelectorAll(".pt-pan-btn")).map((n) =>
-         n.getAttribute("aria-label"))`,
-    );
-    check(arrows.length === 4, "the board carries four arrows to walk it with", `${arrows.length}`);
     check(
-      arrows.every((a) => a && a.length > 4),
-      "…and every one of them says where it goes",
-      arrows.join(" | "),
+      (await page.$$(".pt-pan-btn")).length === 0,
+      "the board carries no arrows at its edges — it is dragged",
     );
-
-    /* **The left arrow can be pressed, and it is beside the line it moves.**
-     *
-     * It could not be, and had not been at either of the two places it has
-     * been put: it is the one control drawn under the price series, the line
-     * layer was hit-testing over it, and its `pointerdown` never arrived — a
-     * button that lit up on hover, took focus, and did nothing to the board.
-     * Nothing caught it because every other arrow stands over empty chart.
-     *
-     * So this presses it with a real mouse rather than dispatching a click,
-     * which is the whole difference: a synthetic click on the node would have
-     * passed throughout. And it holds the placement that made the fault
-     * visible — beside the "now" line, a grab-band clear of it so a press is
-     * a step and not the start of a drag, and clear of the price labels. */
-    const panGeo = await page.evaluate(
+    const geo = await page.evaluate(
       `(() => {
-         const box = (n) => (n ? n.getBoundingClientRect() : null);
-         const left = Array.from(document.querySelectorAll(".pt-pan-btn")).find((n) =>
-           /less board/i.test(n.getAttribute("aria-label")));
-         const grip = document.querySelector(".pt-now-grip");
-         /* The grid's price labels are on the price scale since 29 Sep
-            2026; the arrow's box must still meet none of them. */
-         const labels = Array.from(document.querySelectorAll("svg text"))
-           .filter((n) => n.getAttribute("visibility") !== "hidden" && /^[$\u20ac\u00a3]/.test(n.textContent.trim()))
-           .map((n) => n.getBoundingClientRect());
-         const l = box(left);
-         const g = box(grip);
-         if (!l || !g) return null;
-         return {
-           gap: Math.round(g.x + g.width / 2 - l.right),
-           clearsLabels: labels.length > 0 && labels.every((b) => b.right <= l.x || b.left >= l.right || b.bottom <= l.y || b.top >= l.bottom),
-           at: [Math.round(l.x + l.width / 2), Math.round(l.y + l.height / 2)],
-         };
+         const s = Array.from(document.querySelectorAll("svg")).sort(
+           (a, b) => b.getBoundingClientRect().width - a.getBoundingClientRect().width,
+         )[0];
+         const r = s.getBoundingClientRect();
+         const n = s.querySelector(".pt-now-line");
+         return n
+           ? { nx: Number(n.getAttribute("x1")), left: r.left, top: r.top, w: ${PLOT_BOX}(s).w, h: r.height }
+           : null;
        })()`,
     );
-    check(
-      panGeo && panGeo.gap >= 12 && panGeo.gap < 90,
-      "the arrow that gives back history stands beside the line it moves",
-      panGeo ? `${panGeo.gap}px from the line` : "not drawn",
-    );
-    check(
-      panGeo && panGeo.clearsLabels,
-      "…with its whole pointer area clear of the grid's price labels",
-    );
-    if (panGeo) {
-      const share = () =>
-        page.evaluate(`localStorage.getItem("crypto_chart_future_share")`);
-      const shareBefore = await share();
-      await page.mouse.click(panGeo.at[0], panGeo.at[1]);
-      await page.waitForTimeout(500);
-      check(
-        (await share()) !== shareBefore,
-        "…and a real press on it actually walks the board",
-        `${shareBefore} -> ${await share()}`,
+    const calls = () =>
+      page.evaluate(
+        `(() => { try { return (JSON.parse(localStorage.getItem("crypto_chart_calls") || "{}").open || []).length; } catch (e) { return -1; } })()`,
       );
-      await page.mouse.move(640, 20);
-      await page.waitForTimeout(200);
-    }
-
-    /* The top gridline label is the cheapest proof the window actually
-       moved — it is a price, and panning changes which price. */
     const topLabel = () =>
       page.evaluate(
         `(() => {
@@ -4791,74 +4768,74 @@ const perpFromCoinbase = (handler) => async (r) => {
            return t[0] || "";
          })()`,
       );
-    const before = await topLabel();
-    check(before.length > 0, "the board prints price levels to begin with", before);
-
-    const upAt = await page.evaluate(
-      `(() => {
-         const b = Array.from(document.querySelectorAll(".pt-pan-btn")).find((n) =>
-           /higher/i.test(n.getAttribute("aria-label")));
-         if (!b) return null;
-         const r = b.getBoundingClientRect();
-         return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
-       })()`,
-    );
-    if (!upAt) {
-      check(false, "the arrow that walks the board upward can be found");
+    if (!geo) {
+      check(false, "the board and its now line are drawn");
     } else {
+      const bx = geo.left + (geo.nx + geo.w) / 2;
+      /* **Sideways moves the line between history and board**, the setting
+         the now line's own drag writes. A real mouse, pressed on the board
+         rather than on the line. */
+      const share = () => page.evaluate(`localStorage.getItem("crypto_chart_future_share")`);
+      const shareBefore = await share();
+      await page.mouse.move(bx, geo.top + geo.h * 0.5);
+      await page.mouse.down();
+      for (let k = 1; k <= 8; k++) await page.mouse.move(bx - k * 20, geo.top + geo.h * 0.5 + (k % 2));
+      await page.mouse.up();
+      await page.waitForTimeout(500);
+      const shareAfter = await share();
+      check(
+        shareAfter !== null && Number(shareAfter) > Number(shareBefore || 0.18),
+        "dragging the board to the left gives it more squares",
+        `${shareBefore} -> ${shareAfter}`,
+      );
+      check((await calls()) === 0, "…and the drag called nothing");
+
+      const before = await topLabel();
+      check(before.length > 0, "the board prints price levels to begin with", before);
       check(
         (await page.$$(".pt-pan-home[tabindex]")).length === 0,
         "with the board at the price there is no way-back control to press",
       );
-      await page.mouse.move(upAt.x, upAt.y);
+      /* **Up and down walk the price window**: pulled down, the prices above
+         come into view, and it settles on a whole square when let go. */
+      const x2 = geo.left + (geo.nx + geo.w) / 2 + 30;
+      await page.mouse.move(x2, geo.top + geo.h * 0.3);
       await page.mouse.down();
-      await page.waitForTimeout(1500);
+      for (let k = 1; k <= 15; k++) await page.mouse.move(x2 + (k % 2), geo.top + geo.h * 0.3 + k * 20);
       await page.mouse.up();
-      await page.waitForTimeout(500);
+      await page.waitForTimeout(600);
       const after = await topLabel();
-      check(after !== before, "holding an arrow walks the board", `${before} -> ${after}`);
+      check(after !== before, "pulling the board down walks it to higher prices", `${before} -> ${after}`);
+      check((await calls()) === 0, "…without calling the square it was pressed on");
       check(
         (await page.$$(".pt-pan-home[tabindex]")).length === 1,
         "…and once walked, there is a control that brings it back",
       );
+      const chip = await page.evaluate(`(document.querySelector(".pt-pan-home text") || {}).textContent || ""`);
+      check(/^\+[1-9]\d* /.test(chip), "…saying how many whole squares up it is", chip);
 
       /* The point of the walk: a band that was off the board is callable. */
-      const geo = await page.evaluate(
+      const by = geo.top + geo.h * 0.5;
+      await page.mouse.click(bx, by);
+      await page.waitForTimeout(200);
+      await page.mouse.click(bx, by);
+      await page.waitForTimeout(500);
+      const call = await page.evaluate(
         `(() => {
-           const s = Array.from(document.querySelectorAll("svg")).sort(
-             (a, b) => b.getBoundingClientRect().width - a.getBoundingClientRect().width,
-           )[0];
-           const r = s.getBoundingClientRect();
-           const n = s.querySelector(".pt-now-line");
-           return n
-             ? { nx: Number(n.getAttribute("x1")), left: r.left, top: r.top, w: ${PLOT_BOX}(s).w, h: r.height }
-             : null;
+           try {
+             const open = JSON.parse(localStorage.getItem("crypto_chart_calls") || "{}").open || [];
+             return open[0] ? { lo: open[0].lo, hi: open[0].hi } : null;
+           } catch (e) {
+             return null;
+           }
          })()`,
       );
-      if (geo) {
-        const bx = geo.left + (geo.nx + geo.w) / 2;
-        const by = geo.top + geo.h * 0.5;
-        await page.mouse.click(bx, by);
-        await page.waitForTimeout(200);
-        await page.mouse.click(bx, by);
-        await page.waitForTimeout(500);
-        const call = await page.evaluate(
-          `(() => {
-             try {
-               const open = JSON.parse(localStorage.getItem("crypto_chart_calls") || "{}").open || [];
-               return open[0] ? { lo: open[0].lo, hi: open[0].hi } : null;
-             } catch (e) {
-               return null;
-             }
-           })()`,
-        );
-        check(call !== null, "a square over there can still be called");
-        check(
-          call !== null && call.lo > 113500,
-          "…at a band the board did not reach before the walk",
-          call ? `${call.lo} – ${call.hi}` : "no call",
-        );
-      }
+      check(call !== null, "a square over there can still be called — with two clicks");
+      check(
+        call !== null && call.lo > 113500,
+        "…at a band the board did not reach before the walk",
+        call ? `${call.lo} – ${call.hi}` : "no call",
+      );
 
       await page.click(".pt-pan-home");
       await page.waitForTimeout(600);
@@ -4925,7 +4902,11 @@ const perpFromCoinbase = (handler) => async (r) => {
                  .map((n) => Number(n.getAttribute("y1")))
                  .sort((a, b) => a - b)
              : [];
+           const dot = s.querySelector(".pt-live-dot");
+           const axis = Array.from(document.querySelectorAll("[data-axis-tick]")).filter(shown).map((n) => n.textContent).join("|");
            window.__zs.push({
+             axis,
+             dot: dot && dot.getAttribute("visibility") !== "hidden" ? Number(dot.getAttribute("cy")) : null,
              ink: labs[0] ? Number(labs[0].getAttribute("opacity")) : 1,
              lab: labs[0] ? labs[0].textContent : "",
              top: horiz[0] === undefined ? null : Number(horiz[0].toFixed(1)),
@@ -4959,13 +4940,42 @@ const perpFromCoinbase = (handler) => async (r) => {
            const s = window.__zs;
            let flashes = 0;
            let rewrites = 0;
+           let axisRewrites = 0;
            for (let i = 1; i < s.length; i += 1) {
              if (s[i - 1].ink <= 0.8 && s[i].ink > 0.8) flashes += 1;
              if (s[i - 1].lab !== s[i].lab) rewrites += 1;
+             if (s[i - 1].axis !== s[i].axis && s[i].axis) axisRewrites += 1;
+           }
+           // The window and the lattice through the travel: how far the live
+           // price jumps in a frame, how often it turns back, and how far the
+           // lattice's phase jumps in a frame (a wrap past a line is not one)
+           let dotJump = 0;
+           let dotTurns = 0;
+           let lastD = 0;
+           let phaseJump = 0;
+           for (let i = 1; i < s.length; i += 1) {
+             if (s[i].dot != null && s[i - 1].dot != null) {
+               const d = s[i].dot - s[i - 1].dot;
+               dotJump = Math.max(dotJump, Math.abs(d));
+               if (Math.abs(d) > 0.5) {
+                 if (lastD && Math.sign(d) !== Math.sign(lastD)) dotTurns += 1;
+                 lastD = d;
+               }
+             }
+             if (s[i].pitch > 0 && s[i - 1].pitch > 0 && s[i].top != null && s[i - 1].top != null) {
+               const a = (s[i - 1].top % s[i].pitch) / s[i].pitch;
+               const b = (s[i].top % s[i].pitch) / s[i].pitch;
+               const j = Math.abs(b - a);
+               phaseJump = Math.max(phaseJump, Math.min(j, 1 - j));
+             }
            }
            return {
              flashes,
              rewrites,
+             axisRewrites,
+             dotJump,
+             dotTurns,
+             phaseJump,
              tops: Array.from(new Set(s.map((x) => x.top))).length,
              pitches: Array.from(new Set(s.map((x) => x.pitch))).length,
              dimmed: Math.min.apply(null, s.map((x) => x.ink)),
@@ -4983,11 +4993,22 @@ const perpFromCoinbase = (handler) => async (r) => {
         "…and the numbers are not rewritten on every frame of the travel",
         `${seen.rewrites} label rewrites`,
       );
+      /* **The window glides; it does not jump** (30 Sep 2026). This check
+         used to say the lattice "does not move at all", and it did not — the
+         window was re-placed every frame as a whole multiple of a step that
+         changed every frame, which held the lines still and threw the price
+         and everything drawn on it up and down by up to a square: the live
+         dot went 630 → 672 → 632 → 689 px on consecutive frames. Now the
+         window's middle and one reference line glide on the zoom's clock,
+         so the lattice moves with the price as one surface. */
+      check(seen.axisRewrites <= 2, "…and neither are the price scale's figures", `${seen.axisRewrites} rewrites`);
+      check(seen.pitches === 1, "…the square stays square through it", `${seen.pitches} pitch(es)`);
       check(
-        seen.tops === 1 && seen.pitches === 1,
-        "…while the lattice itself does not move at all",
-        `${seen.tops} top position(s), ${seen.pitches} pitch(es)`,
+        seen.dotTurns <= 1 && seen.dotJump < 30,
+        "…and the price glides with the zoom instead of jumping",
+        `${seen.dotTurns} turn(s), largest step ${seen.dotJump.toFixed(1)}px`,
       );
+      check(seen.phaseJump < 0.35, "…and so does the lattice", `largest jump ${seen.phaseJump.toFixed(2)} of a square`);
     }
     check(boom.length === 0, "nothing threw", boom.join(" | "));
     await ctx.close();
@@ -9506,15 +9527,28 @@ const perpFromCoinbase = (handler) => async (r) => {
     check(/a count, not a call/.test(card.body), "…and says what it is not");
     check(errors.length === 0, "nothing threw on the widget", errors.join(" | "));
     await ctx.close();
-    const short = await newCtx(browser, () => {
+    /* An hour reads five and fifteen minutes ahead (1 Oct 2026): with an
+       hour the shortest horizon, the card opened empty on its default range. */
+    const hour = await newCtx(browser, () => {
       localStorage.setItem("crypto_chart_onboarding_seen", "1");
       localStorage.setItem("crypto_chart_widgets", JSON.stringify({ outlook: true }));
     });
+    await openWidgets(hour.page);
+    await hour.page.waitForTimeout(1200);
+    const hourRows = await hour.page.evaluate(`Array.from(document.querySelectorAll("[data-widget-outlook]")).map((n) => n.getAttribute("data-widget-outlook"))`);
+    check(hourRows.join(",") === "5m,15m", "on an hour of 30-second points the card reads 5 and 15 minutes ahead", JSON.stringify(hourRows));
+    await hour.ctx.close();
+    // Too short for any horizon, it says so instead of drawing one
+    const tiny = Array.from({ length: 20 }, (_, i) => ({ price: (43000 + i).toFixed(2), time: NOW_S - (20 - i) * 30 }));
+    const short = await newCtx(browser, () => {
+      localStorage.setItem("crypto_chart_onboarding_seen", "1");
+      localStorage.setItem("crypto_chart_widgets", JSON.stringify({ outlook: true }));
+    }, tiny);
     await openWidgets(short.page);
     await short.page.waitForTimeout(1200);
     const said = await short.page.evaluate(`document.body.innerText`);
     check(/Too few points on this range/.test(said) && !/of 2000 above/.test(said),
-      "on an hour of 30-second points no horizon fits, and the card says so instead of drawing one");
+      "on twenty points no horizon fits, and the card says so instead of drawing one");
     await short.ctx.close();
   }
 
@@ -9706,8 +9740,12 @@ const perpFromCoinbase = (handler) => async (r) => {
         there: Boolean(s),
         legs: legs.map((l) => ({ coin: l.children[1].innerText.trim(), value: l.children[2].innerText.trim(),
           ink: getComputedStyle(l.children[0]).backgroundColor })),
-        gap: s ? /GAP [+-]/.test(s.innerText) : false,
-        since: s ? /SINCE THE START OF/.test(s.innerText) : false,
+        gap: s ? /[+\u2212-]\\d+\\.\\d\\d\\s*PTS\\s*GAP SINCE THE START OF/i.test(s.innerText) : false,
+        text: s ? s.innerText : "",
+        since: s ? /SINCE THE START OF 1H/i.test(s.innerText) : false,
+        together: s ? (s.querySelector("[data-compare-together]") || {}).innerText || "" : "",
+        corr: s ? (s.querySelector("[data-compare-corr]") || {}).getAttribute?.("data-compare-corr") || null : null,
+        figures: s ? Array.from(s.querySelectorAll("[data-compare-leg] > :last-child")).map((n) => parseFloat(getComputedStyle(n).fontSize)) : [],
         buttons: s ? Array.from(s.querySelectorAll("button")).map((b) => b.innerText.trim()) : [],
         stats: Boolean(document.querySelector("[data-compare-strip]") === null && document.body.innerText.includes("MKT CAP")),
         ticks: ticks.map((t) => ({ text: t.textContent, inGutter: plotW != null && Number(t.getAttribute("x")) > plotW })),
@@ -9720,8 +9758,13 @@ const perpFromCoinbase = (handler) => async (r) => {
     check(on.legs.every((l) => /^[+-]\d+\.\d\d%$/.test(l.value)),
       "…each with where it stands since the range began", JSON.stringify(on.legs));
     check(on.legs[0].ink !== on.legs[1].ink, "…in two different inks");
-    check(on.gap && on.since, "…with the gap between them and since when", on.gap + " " + on.since);
-    check(on.buttons.includes("SWAP") && on.buttons.includes("STOP"), "…and the two things you can do about it", on.buttons.join(","));
+    check(on.gap && on.since, "…with the gap between them and since when", JSON.stringify(on.text));
+    check(on.buttons.includes("SWAP") && on.buttons.includes("STOP") && on.buttons.includes("CHANGE"), "…and the things you can do about it", on.buttons.join(","));
+    /* The scoreboard (1 Oct 2026): each figure the price head's grammar,
+       value over label, and how closely the steps moved, with its n. */
+    check(/^\d+\/\d+\s*\d+%/.test(on.together) && on.corr !== null && Number(on.corr) >= -1 && Number(on.corr) <= 1,
+      "…the steps that went the same way with their share, and how closely the steps moved together", JSON.stringify({ t: on.together, c: on.corr }));
+    check(on.figures.length === 2 && on.figures.every((f) => f >= 14), "…the legs' moves read as figures, not as caption text", JSON.stringify(on.figures));
     check(on.ticks.length >= 3 && on.ticks.every((t) => /%$/.test(t.text)) && on.ticks.some((t) => /^0(\.0+)?%$/.test(t.text)),
       "the chart prints the axis the comparison is read against, zero included", JSON.stringify(on.ticks));
     check(on.ticks.every((t) => t.inGutter),
@@ -11357,16 +11400,18 @@ const perpFromCoinbase = (handler) => async (r) => {
     check((await drawerOpen()) === "chart", "V opens the chart's drawer to start from");
     await page.click("[data-drawer-tab='compare']");
     await page.waitForTimeout(600);
+    /* Since 1 Oct 2026 Compare is a drawer on this column like the others
+       ("compare soldan gelse, ana ekranı direk kaplamasa"): it takes the
+       chart drawer's place, and its search has the focus. */
     const picker = await page.evaluate(`(() => {
-      const input = [...document.querySelectorAll("input")]
-        .find((n) => /^Compare/.test(n.getAttribute("placeholder") || ""));
+      const input = document.querySelector("[data-compare-drawer='open'] input[data-compare-search]");
       if (!input) return null;
       const r = input.getBoundingClientRect();
       const top = document.elementFromPoint(Math.round(r.left + 12), Math.round(r.top + r.height / 2));
       return { reachable: top === input, focused: document.activeElement === input };
     })()`);
-    check((await drawerOpen()) === "none" && picker && picker.reachable && picker.focused,
-      "Compare shuts the open drawer and brings the coin picker up in front of everything",
+    check((await drawerOpen()) === "compare" && picker && picker.reachable && picker.focused,
+      "Compare takes the chart drawer's place with its own drawer, its search ready",
       JSON.stringify({ drawer: await drawerOpen(), picker }));
 
     await page.keyboard.type("ETH");
@@ -11387,8 +11432,8 @@ const perpFromCoinbase = (handler) => async (r) => {
       };
     })()`);
     const comparing = await tabState();
-    check(comparing.pressed === "true" && comparing.lit && comparing.ink && comparing.strip,
-      "picking a coin compares, and only the tab's icon says so",
+    check(comparing.pressed === "false" && comparing.lit && comparing.ink && comparing.strip && (await drawerOpen()) === "none",
+      "picking a coin compares and puts the drawer away, and only the tab's icon says so",
       JSON.stringify(comparing));
     /* The column is back in its drawer once the pointer has gone, so the
        second press is the real gesture: the pull, then the tab. */
@@ -11397,6 +11442,11 @@ const perpFromCoinbase = (handler) => async (r) => {
     await page.click("[data-drawer-tabs-handle]");
     await page.waitForTimeout(400);
     await page.click("[data-drawer-tab='compare']");
+    await page.waitForTimeout(400);
+    const reopened = await tabState();
+    check(reopened.pressed === "true" && reopened.strip && (await page.$("[data-compare-now]")) !== null,
+      "…a second press opens the drawer again, naming what is compared, the comparison still on", JSON.stringify(reopened));
+    await page.click("[data-compare-stop]");
     /* Read off the pointer, or the hover colour is what gets measured —
        and before the column's linger runs out, which does not matter to a
        computed colour but keeps the reading honest about what is on screen. */
@@ -11404,7 +11454,7 @@ const perpFromCoinbase = (handler) => async (r) => {
     await page.waitForTimeout(250);
     const stopped = await tabState();
     check(stopped.pressed === "false" && !stopped.strip && !stopped.lit,
-      "…and a second press on it stops comparing", JSON.stringify(stopped));
+      "…and its Stop ends the comparison and puts the drawer away", JSON.stringify(stopped));
     /* With the coin in its name it grew to 142px against the others'
        85-114; the name no longer changes, so neither does the tab. */
     check(stopped.h === comparing.h && stopped.name === comparing.name,
@@ -11543,29 +11593,33 @@ const perpFromCoinbase = (handler) => async (r) => {
     const cards = () => page.evaluate(
       `document.querySelectorAll("[data-widgets-drawer='open'] [data-widget-cards] > *").length`);
     const before = await cards();
-    await page.click("[data-widgets-choose]");
+    await page.click("[data-widgets-edit='off']");
+    await page.waitForTimeout(300);
+    await page.click("[data-widgets-add]");
     await page.waitForTimeout(400);
     const chooser = await page.evaluate(`(() => {
-      const c = document.querySelector("[data-widgets-drawer='open'] [data-widget-chooser]");
+      const c = document.querySelector("[data-widgets-drawer='open'] [data-widget-gallery]");
       if (!c) return null;
       const d = c.closest("[data-widgets-drawer]").getBoundingClientRect();
       return {
-        switches: c.querySelectorAll("button[aria-pressed]").length,
+        rows: c.querySelectorAll("[data-widget-gallery-item]").length,
         spills: [...c.querySelectorAll("*")].filter((n) => {
           const q = n.getBoundingClientRect();
           return q.width && (q.right > d.right + 1 || q.left < d.left - 1);
         }).length,
       };
     })()`);
-    check(chooser && chooser.switches >= 10 && chooser.spills === 0,
-      "Choose turns the drawer to the widgets' switches, inside its width", JSON.stringify(chooser));
-    await page.click("[data-widgets-drawer='open'] [aria-label='Toggle Fear & Greed widget']");
-    await page.waitForTimeout(300);
-    await page.click("[data-widgets-choose]");
+    check(chooser && chooser.rows >= 10 && chooser.spills === 0,
+      "+ turns the drawer to the gallery of every widget, inside its width", JSON.stringify(chooser));
+    await page.click("[data-widgets-drawer='open'] [data-widget-gallery-item='fearGreed']");
+    await page.waitForTimeout(400);
+    await page.click("[data-widgets-drawer='open'] [data-widget-add='fearGreed']");
     await page.waitForTimeout(800);
     const after = await cards();
     check(after === before + 1,
-      "…and a card switched on there is on the desk when it goes back", `${before} → ${after}`);
+      "…and Add Widget puts the card on the desk", `${before} → ${after}`);
+    await page.click("[data-widgets-edit='on']");
+    await page.waitForTimeout(300);
     await page.keyboard.press("Escape");
     await page.waitForTimeout(700);
     check((await state()).shown === "false", "…and Escape shuts the drawer and the column with it");
@@ -11580,6 +11634,9 @@ const perpFromCoinbase = (handler) => async (r) => {
     await page.waitForTimeout(400);
     await page.keyboard.press("w");
     await page.waitForTimeout(700);
+    // The type scale is a setting of the arrangement: it is in the head while editing
+    await page.click("[data-widgets-edit='off']");
+    await page.waitForTimeout(400);
     const headAt = () => page.evaluate(`(() => {
       const d = document.querySelector("[data-widgets-drawer='open']");
       const sizes = [...d.querySelectorAll("[data-widgets-size] button")];
@@ -11596,12 +11653,12 @@ const perpFromCoinbase = (handler) => async (r) => {
     })()`);
     const wideHead = await headAt();
     check(wideHead.tops.length === 4 && new Set(wideHead.tops).size === 1 && wideHead.closeInside && wideHead.closeLast,
-      "at the phone rule's widest, where everything would fit one line, the sizes still go under Choose and ×", JSON.stringify(wideHead));
+      "at the phone rule's widest, where everything would fit one line, the sizes still go under Done and ×", JSON.stringify(wideHead));
     await page.setViewportSize({ width: 390, height: 800 });
     await page.waitForTimeout(500);
     const phoneHead = await headAt();
     check(phoneHead.tops.length === 4 && new Set(phoneHead.tops).size === 1 && phoneHead.closeInside && phoneHead.closeLast,
-      "on a phone the four sizes sit on one row under Choose and ×, and × stays inside the sheet", JSON.stringify(phoneHead));
+      "on a phone the four sizes sit on one row under Done and ×, and × stays inside the sheet", JSON.stringify(phoneHead));
     check(errors.length === 0, "nothing threw across the drawers", errors.join(" | "));
     await ctx.close();
 
@@ -12297,9 +12354,13 @@ const perpFromCoinbase = (handler) => async (r) => {
         if (u.includes("spot")) return r.fulfill(json({ data: { amount: "88.60", currency: "USD" } }));
         return r.fulfill(json({ data: {} }));
       });
+      /* The drawn head and shoulders is, by the swing patterns' own rules
+         (1 Oct 2026), a descending triangle too — a real finding, tested
+         elsewhere (test-companion-readings.js). Off here so this section
+         reads the head and shoulders alone. */
       await ctx.addInitScript(
         'localStorage.setItem("crypto_chart_onboarding_seen", "1");' +
-          (on ? 'localStorage.setItem("crypto_chart_companion", "true");' : ""),
+          (on ? 'localStorage.setItem("crypto_chart_companion", "true"); localStorage.setItem("crypto_chart_companion_hidden", JSON.stringify(["triple-top","triple-bottom","asc-triangle","desc-triangle","sym-triangle-up","sym-triangle-down","rising-wedge","falling-wedge","rect-up","rect-down","bull-flag","bear-flag"]));' : ""),
       );
       const page = await ctx.newPage();
       const errors = [];
@@ -12466,8 +12527,9 @@ const perpFromCoinbase = (handler) => async (r) => {
       note: (document.querySelector("[data-base-setups-note]") || {}).innerText || "",
       judged: [...document.querySelectorAll("[data-base-setup]")].some((r) => /That is|better than|worse than/.test(r.innerText)),
     }))()`);
-    check(base.rows.length === 12 && base.now.includes("breakout-high"),
-      "the base-rate screen lists all twelve setups, the breakout marked as now", JSON.stringify(base.now));
+    // Twelve setups and, since 1 Oct 2026, the twenty-one readings below them
+    check(base.rows.length === 33 && base.now.includes("breakout-high"),
+      "the base-rate screen lists all twelve setups and the twenty-one readings, the breakout marked as now", JSON.stringify(base.now));
     check(!base.judged && /none of these twelve was distinguishable from an ordinary day/.test(base.note),
       "…with no row judged and the test's result said once under them", base.note.slice(0, 80));
     check(errors.length === 0, "nothing threw", errors.join(" | "));
@@ -12640,6 +12702,15 @@ const perpFromCoinbase = (handler) => async (r) => {
         /* The reveal clips its row rather than unmounting it, so what is
            measured is the reveal around it, not the row's own height. */
         shown: !!wrap && wrap.parentElement.getBoundingClientRect().height > 20,
+        /* Laid out across the drawer, never stacked in the reveal's control
+           lane (1 Oct 2026): every pair of chips apart, and the block about
+           as wide as the drawer's text. */
+        touching: all.reduce((n, a, i) => n + all.slice(i + 1).filter((b) => {
+          const r = a.getBoundingClientRect(), q = b.getBoundingClientRect();
+          return Math.min(r.right, q.right) - Math.max(r.left, q.left) > 0.5 && Math.min(r.bottom, q.bottom) - Math.max(r.top, q.top) > 0.5;
+        }).length, 0),
+        wide: !!wrap && wrap.getBoundingClientRect().width > drawer.getBoundingClientRect().width * 0.7,
+        counts: [...drawer.querySelectorAll("[data-companion-count]")].map((n) => n.textContent),
       };
     })()`);
     await open();
@@ -12647,14 +12718,21 @@ const perpFromCoinbase = (handler) => async (r) => {
     await page.keyboard.press("v");
     await page.waitForTimeout(800);
     const c0 = await chips();
-    check(c0 && c0.ids.length === 16 && c0.off.length === 0 && c0.typed && c0.shown,
-      "with the companion on, the chart's drawer shows a chip for each of the four patterns and twelve setups, all on", JSON.stringify(c0));
+    check(c0 && c0.ids.length === 49 && c0.off.length === 0 && c0.typed && c0.shown,
+      "with the companion on, the chart's drawer shows a chip for each of the sixteen patterns, twelve setups and twenty-one readings, all on", JSON.stringify(c0));
+    check(c0 && c0.touching === 0 && c0.wide && c0.counts.join("|") === "16 of 16 shown|12 of 12 shown|21 of 21 shown",
+      "…laid across the drawer with no two chips touching, each group counting what it shows", JSON.stringify(c0 && { touching: c0.touching, wide: c0.wide, counts: c0.counts }));
     check(before.some((t) => /20-day breakout/.test(t)) && before.length >= 3,
       "…and the chart lists the breakout among the setups entered four days ago", JSON.stringify(before));
     await page.click("[data-chart-settings='open'] [data-companion-metric='breakout-high']");
     await page.waitForTimeout(800);
     const after = await list();
-    check(!after.some((t) => /20-day breakout/.test(t)) && after.length === before.length - 1,
+    /* The list is capped (COMPANION_MAX_SETUPS) and readings share it, so a
+       freed row may be taken by the next newest: what must hold is that the
+       breakout is gone and every other row it had is still there. */
+    const bare = (s) => s.replace(/^\S+\s+/, "");
+    check(!after.some((t) => /20-day breakout/.test(t)) &&
+      before.filter((t) => !/20-day breakout/.test(t)).every((b) => after.some((a) => bare(a) === bare(b))),
       "pressed off, the breakout leaves the chart's list and the others stay", JSON.stringify(after));
     check(after.map((t) => t.split(" ")[0]).join(",") === after.map((_, i) => String(i + 1)).join(","),
       "…numbered afresh from one", JSON.stringify(after));
@@ -12667,6 +12745,24 @@ const perpFromCoinbase = (handler) => async (r) => {
     await page.waitForTimeout(800);
     const c1 = await chips();
     check(c1 && c1.off.join(",") === "breakout-high", "…its chip the one not pressed", JSON.stringify(c1 && c1.off));
+    // A group's None hides all twelve setups at once, and All brings them back
+    await page.click("[data-chart-settings='open'] [aria-label='Hide every one of Strategy setups']");
+    await page.waitForTimeout(800);
+    const none = await chips();
+    // Readings stay on: the list keeps only what is not one of the twelve
+    const setupRows = await page.evaluate(`(() => {
+      const vis = (n) => getComputedStyle(n).display !== "none" && n.getAttribute("visibility") !== "hidden";
+      const ids = STRATEGY_SETUPS.map((d) => d.id);
+      return [...document.querySelectorAll("[data-companion-setup-name]")].filter(vis).filter((t) => ids.includes(t.getAttribute("data-companion-setup-name"))).length;
+    })()`);
+    check(none && none.off.length === 12 && none.counts[1] === "0 of 12 shown" && setupRows === 0,
+      "the setups' None hides all twelve, on the chart too", JSON.stringify(none && { counts: none.counts, setupRows }));
+    await page.click("[data-chart-settings='open'] [aria-label='Show every one of Strategy setups']");
+    await page.waitForTimeout(800);
+    const allBack = await chips();
+    check(allBack && allBack.off.length === 0, "…and All shows them all again", JSON.stringify(allBack && allBack.off));
+    await page.click("[data-chart-settings='open'] [data-companion-metric='breakout-high']");
+    await page.waitForTimeout(600);
     await page.click("[data-chart-settings='open'] [data-companion-metric='breakout-high']");
     await page.waitForTimeout(800);
     const back = await list();
@@ -12911,7 +13007,7 @@ const perpFromCoinbase = (handler) => async (r) => {
     await page.waitForTimeout(800);
     await page.keyboard.press("n");
     await page.waitForTimeout(1200);
-    const chip = await page.evaluate(`(document.querySelector("[data-news-saved-view]") || {}).textContent || null`);
+    const chip = await page.evaluate(`(document.querySelector("[data-news-saved-view]") || { getAttribute: () => null }).getAttribute("aria-label")`);
     check(chip === "Saved · 2", "the news panel counts what was saved — the script link was never kept", JSON.stringify(chip));
     await page.click("[data-news-saved-view]");
     await page.waitForTimeout(400);
@@ -13204,6 +13300,9 @@ const perpFromCoinbase = (handler) => async (r) => {
     const { ctx, page, errors } = await newCtx(browser, `localStorage.setItem("crypto_chart_onboarding_seen", "1");`);
     await openWidgets(page);
     await page.waitForTimeout(500);
+    // The type scale is in the head while arranging (iOS's edit mode, 1 Oct 2026)
+    await page.click("[data-widgets-edit='off']");
+    await page.waitForTimeout(300);
     const read = () => page.evaluate(`(() => {
       const d = document.querySelector("[data-widgets-drawer='open']");
       const g = d.querySelector("[data-widget-cards]");
@@ -13280,6 +13379,8 @@ const perpFromCoinbase = (handler) => async (r) => {
     await page.waitForTimeout(1200);
     await openWidgets(page);
     await page.waitForTimeout(500);
+    await page.click("[data-widgets-edit='off']");
+    await page.waitForTimeout(300);
     const again = await read();
     check(again.width === most.width && again.size === "xlarge",
       "the width and the size are both there after a reload", JSON.stringify({ was: most.width, now: again.width, size: again.size }));
@@ -13289,12 +13390,14 @@ const perpFromCoinbase = (handler) => async (r) => {
     check(reset.width === start.width && reset.edge === "default",
       "a double-click on the edge puts the default width back", JSON.stringify(reset));
 
-    /* The Choose view no longer carries a second size row. */
-    await page.click("[data-widgets-choose]");
+    /* The gallery carries no second size row. Still arranging from above. */
+    await page.click("[data-widgets-add]");
     await page.waitForTimeout(400);
-    const chooserSizes = await page.evaluate(`[...document.querySelectorAll("[data-widget-chooser] button")]
+    const chooserSizes = await page.evaluate(`[...document.querySelectorAll("[data-widget-gallery] button")]
       .filter((b) => /^(S|M|L|XL)$/.test(b.textContent.trim())).length`);
-    check(chooserSizes === 0, "…and Choose has no second size row", String(chooserSizes));
+    check(chooserSizes === 0, "…and the gallery has no second size row", String(chooserSizes));
+    await page.click("[data-widgets-done]");
+    await page.waitForTimeout(300);
 
     /* No edge on a phone, where the drawer is a sheet the screen's width. */
     await page.setViewportSize({ width: 390, height: 800 });
@@ -15190,6 +15293,926 @@ const perpFromCoinbase = (handler) => async (r) => {
     check(errors.length === 0, "nothing threw", errors.join(" | "));
     await ctx.close();
   }
+
+  /* §82 — the news room, second pass (30 Sep 2026, "news tasarımsal olarak
+   * biraz sıkıntılı"). On a touch screen the bookmark sat on a line of its own
+   * under its row (touchTarget's position: relative over its absolute
+   * corner); the note on what an age means was pinned under the list at
+   * every size; at 1440 a band as wide as the column was left black past it;
+   * a quiet source's age was the down colour and a switched-off source was
+   * struck through. */
+  {
+    const now = Date.now();
+    const items = [
+      ["CNBC", 18, "Bitcoin climbs above $86,000 as ETF inflows hit a three-week high"],
+      ["CryptoPotato", 34, "Ethereum gas fees hit a five-year low as layer-2 activity surges"],
+      ["Bitcoin.com", 52, "Tether mints another $1 billion USDT on Tron"],
+      ["MarketWatch", 95, "Gold and bitcoin both climb as the dollar weakens against the yen"],
+      ["Hacker News", 3 * 1440, "Show HN: a ledger for self-custody"],
+    ].map(([source, ago, title], i) => ({ source, title, summary: "A sentence the feed sent with it.", time: now - ago * 60000, url: `https://example.com/q${i}` }));
+    const open = async (opts) => {
+      const ctx = await browser.newContext(opts);
+      await ctx.route("**/*", (r) => {
+        const u = r.request().url();
+        if (u.startsWith("file://")) return r.continue();
+        if (u.includes("historic")) return r.fulfill(json({ data: { prices: PRICES } }));
+        if (u.includes("spot")) return r.fulfill(json({ data: { amount: "43480.00", currency: "USD" } }));
+        return r.fulfill(json({ data: {} }));
+      });
+      await ctx.addInitScript(`localStorage.setItem("crypto_chart_onboarding_seen", "1"); localStorage.setItem("crypto_chart_news_ask_seen", "true"); localStorage.setItem("crypto_chart_news_cache", ${JSON.stringify(JSON.stringify({ t: Date.now(), items }))});`);
+      const page = await ctx.newPage();
+      await page.goto(INDEX, { waitUntil: "load" });
+      await page.waitForSelector("svg path", { timeout: 20000 });
+      await page.waitForTimeout(800);
+      await page.keyboard.press("n");
+      await page.waitForTimeout(1200);
+      return { ctx, page };
+    };
+    const READ = `(() => {
+      const card = document.querySelector('[role="dialog"][aria-label="News"]');
+      const shown = (n) => Boolean(n && n.getClientRects().length);
+      const saves = [...card.querySelectorAll("[data-news-save]")].slice(0, 3).map((b) => {
+        const box = b.parentElement.getBoundingClientRect(), r = b.getBoundingClientRect();
+        return { inside: r.top >= box.top - 1 && r.bottom <= box.top + 60 && r.right > box.right - 80 };
+      });
+      const struck = [...card.querySelectorAll("*")].filter((n) => shown(n) && getComputedStyle(n).textDecorationLine.includes("line-through")).length;
+      const stale = [...card.querySelectorAll("[data-news-stale]")].filter(shown).map((n) => n.getAttribute("data-news-stale"));
+      const list = card.querySelector("[data-news-stale='list']");
+      const inScroller = Boolean(list && (() => { for (let p = list.parentElement; p && p !== card; p = p.parentElement) if (/(auto|scroll)/.test(getComputedStyle(p).overflowY)) return true; return false; })());
+      const aside = card.querySelector("[data-news-aside]");
+      const tabs = document.querySelector("[data-screen-spine]") || null;
+      const hn = [...card.querySelectorAll("[data-news-source]")].find((n) => /Hacker News/.test(n.textContent));
+      const age = hn && hn.lastElementChild ? getComputedStyle(hn.lastElementChild).color : null;
+      return { saves, struck, stale, inScroller, asideRight: shown(aside) ? Math.round(aside.getBoundingClientRect().right) : null,
+               width: innerWidth, age };
+    })()`;
+    {
+      const { ctx, page } = await open({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+      const r = await page.evaluate(READ);
+      check(r.saves.length === 3 && r.saves.every((x) => x.inside), "on a touch screen each bookmark sits in its row's top-right corner, not on a line under it", JSON.stringify(r.saves));
+      check(r.stale.length === 1 && r.stale[0] === "list" && r.inScroller, "the note on a quiet source is the list's last line, not pinned under it", JSON.stringify(r));
+      check(r.struck === 0, "nothing in the news room is struck through", String(r.struck));
+      check(r.age && !/rgb\(2(00|39), (30|68), (30|68)\)/.test(r.age), "a quiet source's age on its chip is not drawn in the down colour", String(r.age));
+      await ctx.close();
+    }
+    {
+      const { ctx, page } = await open({ viewport: { width: 1440, height: 900 } });
+      // Bybit's notices are off until asked for: the switched-off line
+      const r = await page.evaluate(READ);
+      check(r.stale.length === 1 && r.stale[0] === "aside", "from 1100px the note sits under the sources in the column", JSON.stringify(r.stale));
+      check(r.asideRight !== null && r.width - r.asideRight < 90, "at 1440 the column reaches the screens' tabs — no black band past it", JSON.stringify(r));
+      check(r.age && !/rgb\(2(00|39), (30|68), (30|68)\)/.test(r.age), "a quiet source's age is not drawn in the down colour", String(r.age));
+      check(r.struck === 0, "a switched-off source is not struck through", String(r.struck));
+      await ctx.close();
+    }
+  }
+
+  /* §83 — the chance on each square (30 Sep 2026, "kare seçimi
+   * olasılıklarını yazan bir mekanizma"). The board writes on every callable
+   * square the chance the price is in it at its column's end, from the coin's
+   * own bars (cell-odds.js). Asserted: it is drawn; a column's chances are
+   * slices of one distribution (they cannot add to more than a whole); one
+   * square a column is marked likeliest; the shading is ink, never a
+   * direction colour; the readout says the chance; the bars are asked for
+   * once and kept (a reload asks nothing); and the switch in the calls panel
+   * takes them all away. */
+  {
+    const hash = (n) => {
+      let x = Math.sin(n * 12.9898) * 43758.5453;
+      return x - Math.floor(x);
+    };
+    const candleAsks = [];
+    const open = async (ctx) => {
+      await ctx.route("**/*", (r) => {
+        const u = r.request().url();
+        if (u.startsWith("file://")) return r.continue();
+        if (u.includes("historic")) return r.fulfill(json({ data: { prices: PRICES } }));
+        if (u.includes("spot")) return r.fulfill(json({ data: { amount: PRICES[PRICES.length - 1].price, currency: "USD" } }));
+        if (u.includes("/candles")) {
+          candleAsks.push(u);
+          const q = new URL(u).searchParams;
+          const g = Number(q.get("granularity"));
+          const a = Math.floor(Date.parse(q.get("start")) / 1000 / g) * g;
+          const b = Math.floor(Date.parse(q.get("end")) / 1000 / g) * g;
+          const rows = [];
+          for (let t = b; t >= a; t -= g) {
+            // A walk with a fat tail, the same bar always the same price
+            const k = t / g;
+            let lvl = 0;
+            for (let j = 0; j < 40; j++) lvl += hash(k - j) - 0.5;
+            const close = 43000 * Math.exp(0.004 * lvl + 0.0006 * (hash(k * 3) - 0.5));
+            rows.push([t, close * 0.9995, close * 1.0005, close, close, 5 + 10 * hash(k * 7)]);
+          }
+          return r.fulfill(json(rows));
+        }
+        return r.fulfill(json({}));
+      });
+      await ctx.addInitScript(
+        'localStorage.setItem("crypto_chart_onboarding_seen", "1");' +
+          'localStorage.setItem("crypto_chart_predict", "true");' +
+          'localStorage.setItem("crypto_chart_future_share", "0.45");',
+      );
+      const page = await ctx.newPage();
+      const errs = [];
+      page.on("pageerror", (e) => errs.push(e.message));
+      await page.goto(INDEX, { waitUntil: "load" });
+      await page.waitForSelector("svg path", { timeout: 20000 });
+      await page.waitForTimeout(3500);
+      return { page, errs };
+    };
+    const READ = `(() => {
+      const shown = (n) => n.getAttribute("visibility") !== "hidden";
+      const cells = [...document.querySelectorAll("[data-odds-cell]")].filter(shown);
+      const byCol = {};
+      for (const c of cells) {
+        const x = Math.round(Number(c.getAttribute("x")));
+        byCol[x] = (byCol[x] || 0) + Number(c.getAttribute("data-odds-cell"));
+      }
+      const best = [...document.querySelectorAll("[data-odds-best='1']")].filter(shown);
+      const fills = [...new Set(cells.map((c) => c.getAttribute("fill")))];
+      const mid = cells[Math.floor(cells.length / 2)];
+      const box = mid ? mid.getBoundingClientRect() : null;
+      return { n: cells.length, cols: Object.keys(byCol).length, sums: Object.values(byCol).map((v) => Math.round(v * 10) / 10), best: best.length, fills,
+               at: box ? [box.x + box.width / 2, box.y + box.height / 2] : null };
+    })()`;
+    const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+    let { page, errs } = await open(ctx);
+    const r = await page.evaluate(READ);
+    check(r.n >= 12 && r.cols >= 3, "the board writes a chance on its squares", JSON.stringify({ n: r.n, cols: r.cols }));
+    check(r.sums.length > 0 && r.sums.every((v) => v <= 100.5), "…and a column's chances never add up to more than a whole", JSON.stringify(r.sums));
+    check(r.best === r.cols, "…with one square a column marked the likeliest", `${r.best} of ${r.cols}`);
+    check(r.fills.length === 1 && /^#(ffffff|1a1a1a)$/i.test(r.fills[0]), "…shaded in ink, never in a direction colour", JSON.stringify(r.fills));
+    const firstAsks = candleAsks.length;
+    check(firstAsks >= 1 && firstAsks <= 10, "the bars are asked for in at most ten pages", String(firstAsks));
+    if (r.at) {
+      await page.mouse.move(r.at[0], r.at[1]);
+      await page.waitForTimeout(600);
+      const note = await page.evaluate(`[...document.querySelectorAll("svg text")].map((t) => t.textContent).find((t) => /settles/.test(t)) || ""`);
+      check(/chance (<1|\d+)%/.test(note), "the square's readout says its chance", note);
+    }
+    await page.reload({ waitUntil: "load" });
+    await page.waitForSelector("svg path", { timeout: 20000 });
+    await page.waitForTimeout(3000);
+    const again = await page.evaluate(READ);
+    check(again.n > 0 && candleAsks.length === firstAsks, "a new tab draws them from what was kept, asking nothing", `${candleAsks.length - firstAsks} more asks, ${again.n} squares`);
+    await page.keyboard.press("k");
+    await page.waitForTimeout(700);
+    const hit = await page.evaluate(`(() => {
+      const b = [...document.querySelectorAll("button")].find((n) => /^chances/i.test(n.textContent.trim()));
+      if (!b) return false;
+      b.click();
+      return true;
+    })()`);
+    await page.waitForTimeout(500);
+    const off = await page.evaluate(READ);
+    check(hit && off.n === 0, "the calls panel's switch takes every chance away", `${hit} ${off.n}`);
+    /* ALL failed the preregistered calibration rule (ECE 2.5 points on 115
+       origins): with the switch back on, that range draws no chance, and a
+       square's readout says why. */
+    await page.evaluate(`(() => { const b = [...document.querySelectorAll("button")].find((n) => /^chances/i.test(n.textContent.trim())); if (b) b.click(); })()`);
+    await page.keyboard.press("Escape");
+    await page.waitForTimeout(300);
+    await page.evaluate(`(() => { const b = [...document.querySelectorAll("button")].find((n) => n.textContent.trim() === "ALL"); if (b) b.click(); })()`);
+    await page.waitForTimeout(3500);
+    const all = await page.evaluate(READ);
+    check(all.n === 0, "on ALL, which was not calibrated, no square carries a chance", String(all.n));
+    const allBoard = await page.evaluate(`(() => {
+      const s = [...document.querySelectorAll("svg")].sort((a, b) => b.getBoundingClientRect().width - a.getBoundingClientRect().width)[0];
+      const n = s.querySelector(".pt-now-line");
+      const r = s.getBoundingClientRect();
+      return n ? { x: r.left + (Number(n.getAttribute("x1")) + ${PLOT_BOX}(s).w) / 2, y: r.top + r.height * 0.55 } : null;
+    })()`);
+    if (allBoard) {
+      await page.mouse.move(allBoard.x, allBoard.y);
+      await page.waitForTimeout(600);
+      const note = await page.evaluate(`[...document.querySelectorAll("svg text")].map((t) => t.textContent).find((t) => /settles/.test(t)) || ""`);
+      check(/not calibrated/.test(note), "…and a square's readout says the model was not calibrated there", note);
+    }
+    check(errs.length === 0, "nothing threw", errs.join(" | "));
+    await ctx.close();
+  }
+
+  /* §84 — the chances hold still while the board zooms, and the widgets'
+   * chances are spread under the price (30 Sep 2026, "calls'un yakınlaşırken
+   * titreme sorunu" / "widgetlardaki olasılık markov muhabbetini grafiğe
+   * yaymaya … ayarlardan kapatıp açabilelim"). Mid-travel the step is not a
+   * round number, so the chances were rewritten every frame — 53 times over
+   * three presses, measured; they now fade and come back once. The regime
+   * grid's row for today is a line under the price, and the chart drawer's
+   * Chances chips switch each of the three off. */
+  {
+    const hash = (n) => {
+      const x = Math.sin(n * 12.9898) * 43758.5453;
+      return x - Math.floor(x);
+    };
+    const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+    await ctx.route("**/*", (r) => {
+      const u = r.request().url();
+      if (u.startsWith("file://")) return r.continue();
+      if (u.includes("historic")) return r.fulfill(json({ data: { prices: PRICES } }));
+      if (u.includes("spot")) return r.fulfill(json({ data: { amount: PRICES[PRICES.length - 1].price, currency: "USD" } }));
+      if (u.includes("/candles")) {
+        const q = new URL(u).searchParams;
+        const g = Number(q.get("granularity"));
+        const a = Math.floor(Date.parse(q.get("start")) / 1000 / g) * g;
+        const b = Math.floor(Date.parse(q.get("end")) / 1000 / g) * g;
+        const rows = [];
+        for (let t = b; t >= a; t -= g) {
+          const k = t / g;
+          let lvl = 0;
+          for (let j = 0; j < 40; j++) lvl += hash(k - j) - 0.5;
+          const close = 43000 * Math.exp((g >= 86400 ? 0.05 : 0.004) * lvl);
+          rows.push([t, close * 0.999, close * 1.001, close, close, 10]);
+        }
+        return r.fulfill(json(rows));
+      }
+      return r.fulfill(json({}));
+    });
+    await ctx.addInitScript(
+      'localStorage.setItem("crypto_chart_onboarding_seen", "1");' +
+        'localStorage.setItem("crypto_chart_predict", "true");' +
+        'localStorage.setItem("crypto_chart_future_share", "0.45");' +
+        // Regime is off by default (it reads years of daily candles)
+        'localStorage.setItem("crypto_chart_chances", JSON.stringify(["regime", "range"]));',
+    );
+    const page = await ctx.newPage();
+    const errs = [];
+    page.on("pageerror", (e) => errs.push(e.message));
+    await page.goto(INDEX, { waitUntil: "load" });
+    await page.waitForSelector("svg path", { timeout: 20000 });
+    await page.waitForTimeout(4000);
+    await page.evaluate(`(() => {
+      window.__odds = [];
+      const sample = () => {
+        window.__odds.push([...document.querySelectorAll("[data-odds-layer] text")].filter((n) => n.getAttribute("visibility") !== "hidden").map((n) => n.textContent + "@" + n.getAttribute("y")).join(","));
+        if (window.__odds.length < 110) requestAnimationFrame(sample);
+      };
+      requestAnimationFrame(sample);
+    })()`);
+    for (const k of ["]", "]", "["]) {
+      await page.keyboard.press(k);
+      await page.waitForTimeout(400);
+    }
+    await page.waitForTimeout(900);
+    const frames = await page.evaluate(`window.__odds`);
+    let rewrites = 0;
+    for (let i = 1; i < frames.length; i++) if (frames[i] !== frames[i - 1]) rewrites++;
+    check(frames[0].length > 0 && rewrites <= 3, "three zoom presses rewrite the chances at most a few times, not every frame", `${rewrites} rewrites over ${frames.length} frames`);
+    const opacity = await page.evaluate(`getComputedStyle(document.querySelector("[data-odds-layer]")).opacity`);
+    check(opacity === "1", "…and once the travel has settled they are back", opacity);
+    const regime = await page.evaluate(`(() => { const n = document.querySelector("[data-chance='regime']"); return n ? { text: n.textContent, title: n.title } : null; })()`);
+    check(regime && /in 20d: rise \d+% · flat \d+% · fall \d+%/.test(regime.text), "the regime grid's row for today is a line under the price", regime && regime.text);
+    check(regime && /past entries/.test(regime.title) && /any day/.test(regime.title), "…saying how many entries it counts and what any day did", regime && regime.title);
+    await page.keyboard.press("v");
+    await page.waitForTimeout(900);
+    const flip = (id) => page.evaluate(`(() => { const b = document.querySelector("[data-chance-choice='${id}']"); if (!b) return null; b.click(); return true; })()`);
+    check(await flip("regime"), "the chart's settings carry a Chances chip for the regime");
+    await page.waitForTimeout(400);
+    check((await page.$$("[data-chance='regime']")).length === 0, "…and it takes the line's regime away");
+    check(await page.evaluate(`localStorage.getItem("crypto_chart_chances")`) === '["range"]', "…and the choice is kept", await page.evaluate(`localStorage.getItem("crypto_chart_chances")`));
+    await flip("regime");
+    await page.waitForTimeout(1500);
+    check((await page.$$("[data-chance='regime']")).length === 1, "…and switching it back on brings the regime line back");
+    await flip("squares");
+    await page.waitForTimeout(500);
+    const left = await page.evaluate(`[...document.querySelectorAll("[data-odds-layer] text")].filter((n) => n.getAttribute("visibility") !== "hidden").length`);
+    check(left === 0, "the Squares chip takes the board's chances away", String(left));
+    check(errs.length === 0, "nothing threw", errs.join(" | "));
+    await ctx.close();
+  }
+
+  /* §85 — the calls panel, redesigned (30 Sep 2026, "target koyduk ya bu
+   * calls modunda görünüyor, bu da tasarımı bozuyor … calls modunu turn off
+   * etmek kullanıcı için zor, butonu bulması zor"). Turning calls off was the
+   * last row of the panel's foot, at the fold; it is a switch in the head
+   * now. A price target is not drawn on the board. With no call yet the foot
+   * carries no filters and the list no "no calls on this view" lines. */
+  {
+    const now = Date.now();
+    const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+    await ctx.route("**/*", (r) => {
+      const u = r.request().url();
+      if (u.startsWith("file://")) return r.continue();
+      if (u.includes("historic")) return r.fulfill(json({ data: { prices: PRICES } }));
+      if (u.includes("spot")) return r.fulfill(json({ data: { amount: PRICES[PRICES.length - 1].price, currency: "USD" } }));
+      return r.fulfill(json({}));
+    });
+    const mid = Number(PRICES[PRICES.length - 1].price);
+    await ctx.addInitScript(
+      'localStorage.setItem("crypto_chart_onboarding_seen", "1");' +
+        'localStorage.setItem("crypto_chart_predict", "true");' +
+        `localStorage.setItem("crypto_chart_alerts", ${JSON.stringify(JSON.stringify([{ id: "t1", coin: "BTC", currency: "USD", direction: "above", target: Math.round(mid + 40), createdAt: now }]))});`,
+    );
+    const page = await ctx.newPage();
+    const errs = [];
+    page.on("pageerror", (e) => errs.push(e.message));
+    await page.goto(INDEX, { waitUntil: "load" });
+    await page.waitForSelector("svg path", { timeout: 20000 });
+    await page.waitForTimeout(1800);
+    const targetText = () => page.evaluate(`[...document.querySelectorAll("svg text")].filter((n) => n.getAttribute("visibility") !== "hidden" && /^target/.test(n.textContent.trim())).length`);
+    check((await targetText()) === 0, "a price target is not drawn on the board", String(await targetText()));
+    await page.keyboard.press("k");
+    await page.waitForTimeout(900);
+    const head = await page.evaluate(`(() => {
+      const card = document.querySelector("[data-alerts-card]");
+      const sw = card && card.querySelector("[data-calls-switch] [role='switch']");
+      if (!sw) return null;
+      const r = sw.getBoundingClientRect();
+      const c = card.getBoundingClientRect();
+      return { x: r.x + r.width / 2, y: r.y + r.height / 2, top: Math.round(r.top - c.top), checked: sw.getAttribute("aria-checked"),
+               turnOff: [...card.querySelectorAll("button")].some((b) => /^turn off$/i.test(b.textContent.trim())),
+               view: [...card.querySelectorAll("*")].some((n) => n.children.length === 0 && n.textContent.trim() === "View"),
+               empties: /on this view/.test(card.textContent) };
+    })()`);
+    check(head && head.top < 60 && head.checked === "true", "the calls panel's head carries an on switch, at the top", JSON.stringify(head));
+    check(head && !head.turnOff, "…and the foot no longer hides a 'turn off' at the fold");
+    check(head && !head.view && !head.empties, "…and with no call yet there are no filters and no empty lines to read", JSON.stringify(head));
+    if (head) {
+      await page.mouse.click(head.x, head.y);
+      await page.waitForTimeout(700);
+      const off = await page.evaluate(`({ stored: localStorage.getItem("crypto_chart_predict"), checked: (document.querySelector("[data-calls-switch] [role='switch']") || {}).getAttribute ? document.querySelector("[data-calls-switch] [role='switch']").getAttribute("aria-checked") : null })`);
+      check(off.stored === "false" && off.checked === "false", "one press on the switch turns calls off", JSON.stringify(off));
+      await page.keyboard.press("Escape");
+      await page.waitForTimeout(500);
+      check((await targetText()) === 1, "…and with calls off the target is drawn again", String(await targetText()));
+    }
+    check(errs.length === 0, "nothing threw", errs.join(" | "));
+    await ctx.close();
+  }
+
+  /* §86 — the ranges are the zoom's steps, one at a time, both ways
+   * (30 Sep 2026, "uzaklaşırken 1H'den 1W'ye geçiyor ama küçülürken 1D'den
+   * 1H'ye geçiş olmuyor"). Out past the whole range opens the next range; in
+   * to the shorter range's length opens that one. A switch waits for the new
+   * range's points: until they land the bounds are still the old range's,
+   * which read as "whole" again and let the same flick switch twice — 1H
+   * straight to 1W. The 1D answer is held back here to make that window. */
+  {
+    const spans = { hour: 3600, day: 86400, week: 604800, month: 2592000, year: 31536000, all: 315360000 };
+    const series = (period) => {
+      const span = spans[period] || 3600;
+      return Array.from({ length: 300 }, (_, i) => ({
+        price: (43000 + Math.sin(i / 9) * 300 + i).toFixed(2),
+        time: NOW_S - Math.round(((300 - i) * span) / 300),
+      }));
+    };
+    const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+    await ctx.route("**/*", async (r) => {
+      const u = r.request().url();
+      if (u.startsWith("file://")) return r.continue();
+      if (u.includes("historic")) {
+        const period = (u.match(/period=(\w+)/) || [])[1] || "hour";
+        if (period === "day") await new Promise((res) => setTimeout(res, 2500));
+        return r.fulfill(json({ data: { prices: series(period) } }));
+      }
+      if (u.includes("spot")) return r.fulfill(json({ data: { amount: "43300.00", currency: "USD" } }));
+      return r.fulfill(json([]));
+    });
+    await ctx.addInitScript('localStorage.setItem("crypto_chart_onboarding_seen", "1");');
+    const page = await ctx.newPage();
+    const errs = [];
+    page.on("pageerror", (e) => errs.push(e.message));
+    await page.goto(INDEX, { waitUntil: "load" });
+    await page.waitForSelector("svg path", { timeout: 20000 });
+    await page.waitForTimeout(1500);
+    const range = () => page.evaluate(`(document.querySelector("[data-period-button][aria-pressed='true']") || {}).textContent || ""`);
+    check((await range()) === "1H", "the chart opens on 1H, and says so to a screen reader", await range());
+    const at = await page.evaluate(`(() => { const s = [...document.querySelectorAll("svg")].sort((a, b) => b.getBoundingClientRect().width - a.getBoundingClientRect().width)[0]; const r = s.getBoundingClientRect(); return [r.x + r.width * 0.6, r.y + r.height * 0.5]; })()`);
+    await page.mouse.move(at[0], at[1]);
+    // A long flick out: the first notches switch, the rest arrive before 1D's points
+    for (let i = 0; i < 40; i++) {
+      await page.mouse.wheel(0, 80);
+      await page.waitForTimeout(50);
+    }
+    await page.waitForTimeout(2500);
+    check((await range()) === "1D", "a long flick out of 1H stops at 1D while 1D's points are on their way", await range());
+    for (let i = 0; i < 40; i++) {
+      await page.mouse.wheel(0, -80);
+      await page.waitForTimeout(40);
+    }
+    await page.waitForTimeout(1500);
+    check((await range()) === "1H", "zooming in on 1D comes back to 1H", await range());
+    check(errs.length === 0, "nothing threw", errs.join(" | "));
+    await ctx.close();
+  }
+  /* §87 — the news preview (1 Oct 2026, "ilk tık ile sağda bir ön izleme …
+   * reading mode ile … resimsiz … algoritmik olarak yorumlasak"). From 1100px
+   * the first press on a row reads the story in the column beside the list —
+   * no tab — and a second press on the same row opens it. CryptoPotato's
+   * WordPress API answers CORS, so its text is read with no permission; CNBC's
+   * articles send no header and are never asked, so the column shows the
+   * feed's summary and says why. The text arrives without its pictures or the
+   * page's lists of other stories, Esc puts the story away without closing the
+   * panel, and a story is asked for once a tab. Under 1100px a press opens the
+   * story, as it always has. */
+  for (const width of [1440, 900]) {
+    const slugs = [];
+    const story = "https://cryptopotato.com/bitcoin-holds-near-83k-as-demand-stalls/";
+    const body =
+      "<p>Bitcoin is holding near $83,500 after bouncing from the mid-$70K area, with the daily chart showing a recovery that has yet to clear resistance.</p>" +
+      "<figure><img src='https://cryptopotato.com/a.png'><figcaption>Chart by TradingView, a caption long enough to count.</figcaption></figure>" +
+      "<p>On the downside, the first notable support is around $76K, where the latest rally originated, and the chart shows demand growth has stalled.</p>" +
+      "<p>Analysts at CryptoQuant said demand growth turned negative for a third week, while spot volume fell 12% from its September peak and traders cut leverage.</p>" +
+      "<div class='related-posts'><p><a href='https://cryptopotato.com/x'>Related: another story that is only a link to another page entirely</a></p></div>";
+    const ctx = await browser.newContext({ viewport: { width, height: 900 } });
+    await ctx.route("**/*", (r) => {
+      const u = r.request().url();
+      if (u.startsWith("file://")) return r.continue();
+      if (u.includes("cryptopotato.com/wp-json")) {
+        if (u.includes("slug=")) {
+          slugs.push(u);
+          return r.fulfill(json([{ content: { rendered: body } }]));
+        }
+        return r.fulfill(json([{
+          title: { rendered: "Bitcoin holds near $83K as demand growth stalls" },
+          link: story,
+          date_gmt: new Date(Date.now() - 3 * 3600e3).toISOString().slice(0, 19),
+          excerpt: { rendered: "<p>Bitcoin is holding near $83,500 after bouncing from the mid-$70K area.</p>" },
+        }]));
+      }
+      if (u.includes("search.cnbc.com")) {
+        return r.fulfill({ status: 200, contentType: "application/rss+xml", headers: { "access-control-allow-origin": "*" }, body:
+          `<rss><channel><item><title>Bitcoin ETF inflows hit a three-week high</title><link>https://www.cnbc.com/2026/10/01/bitcoin-etf.html</link><pubDate>${new Date(Date.now() - 5400e3).toUTCString()}</pubDate><description>Spot bitcoin funds took in $640 million on Monday.</description></item></channel></rss>` });
+      }
+      if (u.includes("www.cnbc.com")) {
+        slugs.push(u);
+        return r.fulfill({ status: 200, body: "" });
+      }
+      if (u.includes("historic")) return r.fulfill(json({ data: { prices: PRICES } }));
+      if (u.includes("spot")) return r.fulfill(json({ data: { amount: PRICES[PRICES.length - 1].price, currency: "USD" } }));
+      if (u.includes("hn.algolia")) return r.fulfill(json({ hits: [] }));
+      return r.fulfill(json({ data: {} }));
+    });
+    await ctx.addInitScript(() => {
+      localStorage.setItem("crypto_chart_onboarding_seen", "1");
+      localStorage.setItem("crypto_chart_news_ask_seen", "1");
+    });
+    const page = await ctx.newPage();
+    const errs = [];
+    page.on("pageerror", (e) => errs.push(e.message));
+    await page.goto(INDEX, { waitUntil: "load" });
+    await page.waitForSelector("svg path", { timeout: 20000 });
+    await page.keyboard.press("n");
+    await page.waitForFunction(`document.querySelectorAll(".pt-news-title").length >= 2`, null, { timeout: 15000 });
+    const rowOf = (text) => page.locator("a", { has: page.locator(".pt-news-title", { hasText: text }) });
+    if (width < 1100) {
+      const [tab] = await Promise.all([ctx.waitForEvent("page", { timeout: 4000 }).catch(() => null), rowOf("demand growth").click()]);
+      check(Boolean(tab) && tab.url() === story, "§87 under 1100px a press on a row opens the story, as before", tab ? tab.url() : "no tab");
+      check((await page.$$("[data-news-preview]")).length === 0, "§87 …and no preview column is drawn there");
+      check(errs.length === 0, "§87 nothing threw (narrow)", errs.join(" | "));
+      await ctx.close();
+      continue;
+    }
+    const before = ctx.pages().length;
+    await rowOf("demand growth").click();
+    await page.waitForSelector("[data-news-read-state='read']", { timeout: 10000 }).catch(() => {});
+    const read = await page.evaluate(`(() => {
+      const col = document.querySelector("[data-news-preview]");
+      const text = col ? col.querySelector("[data-news-read-state='read']") : null;
+      return {
+        url: col ? col.getAttribute("data-news-preview") : null,
+        paras: text ? [...text.querySelectorAll("[data-news-read-text] p")].map((p) => p.textContent) : [],
+        imgs: col ? col.querySelectorAll("img, picture, figure").length : -1,
+        rows: [...document.querySelectorAll("[data-news-read]")].map((n) => n.getAttribute("data-news-read")),
+        figures: (document.querySelector("[data-news-read='figures']") || {}).textContent || "",
+        kind: (document.querySelector("[data-news-read='kind']") || {}).textContent || "",
+        current: [...document.querySelectorAll("a[aria-current='true'] .pt-news-title")].map((n) => n.textContent),
+        aside: document.querySelectorAll("[data-news-access]").length,
+      };
+    })()`);
+    check(ctx.pages().length === before, "§87 the first press opens no tab", `${ctx.pages().length - before} new`);
+    check(read.url === story, "§87 …it reads the story in the column beside the list", read.url);
+    check(read.paras.length === 3 && read.paras[0].startsWith("Bitcoin is holding"), "§87 the article's own paragraphs, in order", JSON.stringify(read.paras));
+    check(read.imgs === 0, "§87 …without its pictures or captions", String(read.imgs));
+    check(!read.paras.some((p) => /Related/.test(p)), "§87 …and without the page's list of other stories");
+    check(["kind", "coins", "tone", "figures", "coverage"].every((k) => read.rows.includes(k)), "§87 the reading counts kind, coins, wording, figures and coverage", read.rows.join(","));
+    check(/\$83,500/.test(read.figures) && /12%/.test(read.figures), "§87 …the figures are the ones the story cites", read.figures);
+    check(/markets/.test(read.kind) && /\(/.test(read.kind), "§87 …and the kind names the words behind it", read.kind);
+    check(read.current.length === 1 && /demand growth/.test(read.current[0]), "§87 the row being read is marked as current", read.current.join("|"));
+    await rowOf("three-week high").click();
+    await page.waitForSelector("[data-news-read-state='no']", { timeout: 5000 }).catch(() => {});
+    const cnbc = await page.evaluate(`(document.querySelector("[data-news-read-state]") || {}).textContent || ""`);
+    check(/\$640 million/.test(cnbc) && /CNBC/.test(cnbc), "§87 a newsroom that does not answer CORS shows its summary and says why", cnbc.slice(0, 160));
+    check(!slugs.some((u) => u.includes("www.cnbc.com")), "§87 …and its article is never asked for", slugs.join(" "));
+    await page.keyboard.press("Escape");
+    await page.waitForTimeout(300);
+    check((await page.$$("[data-news-preview]")).length === 0 && (await page.$$(".pt-news-title")).length >= 2,
+      "§87 Esc puts the story away and leaves the panel open");
+    await rowOf("demand growth").click();
+    await page.waitForSelector("[data-news-read-state='read']", { timeout: 5000 }).catch(() => {});
+    const [tab] = await Promise.all([ctx.waitForEvent("page", { timeout: 4000 }).catch(() => null), rowOf("demand growth").click()]);
+    check(Boolean(tab) && tab.url() === story, "§87 a second press on the row being read opens it", tab ? tab.url() : "no tab");
+    check(slugs.filter((u) => u.includes("slug=")).length === 1, "§87 a story is asked for once a tab", String(slugs.length));
+    check(errs.length === 0, "§87 nothing threw", errs.join(" | "));
+    await ctx.close();
+  }
+
+  /* §88 — the widgets arranged the way iOS arranges them (1 Oct 2026:
+   * "widget'ları yeniden boyutlandırabilelim … iOS'vari", then "kenardan
+   * özelleştirme yapmayalım, eklerken Apple iOS gibi yapalım"). Nothing on a
+   * card's edge at rest; a right click, a long press or Enter opens its menu
+   * — sizes as shapes, Edit Widgets, Remove Widget asked twice; Edit makes
+   * them jiggle with a "−" each; "+" opens the gallery, where a widget's
+   * sizes are swiped through as previews and Add Widget places it first.
+   * Sizes: small one column, medium two, large two by two; a small list
+   * keeps three rows; large adds the card's sentence. */
+  {
+    const { ctx, page } = await newCtx(browser, () => {
+      localStorage.setItem("crypto_chart_onboarding_seen", "1");
+      localStorage.setItem("crypto_chart_widgets", JSON.stringify({ watchlist: true, fearGreed: true, marketOverview: true }));
+      localStorage.setItem("crypto_chart_coin_options", JSON.stringify(["BTC", "ETH", "XRP", "LTC"]));
+    });
+    const errs = [];
+    page.on("pageerror", (e) => errs.push(e.message));
+    await openWidgets(page);
+    await page.waitForTimeout(1200);
+    const cards = () => page.evaluate(`(() => Object.fromEntries([...document.querySelectorAll("[data-widgets-drawer='open'] [data-widget-cards] > [data-widget]")].map((c) => {
+      const r = c.getBoundingClientRect();
+      const rows = [...c.querySelectorAll("[data-widget-body] > div:first-child > *")].filter((n) => getComputedStyle(n).display !== "none").length;
+      return [c.getAttribute("data-widget"), { size: c.getAttribute("data-size"), w: Math.round(r.width), h: Math.round(r.height), x: Math.round(r.x), y: Math.round(r.y), rows, foot: !!c.querySelector("[data-widget-footnote]"), buttons: c.querySelectorAll("button").length }];
+    })))()`);
+    const stored = () => page.evaluate(`JSON.parse(localStorage.getItem("crypto_chart_widget_card_sizes") || "{}")`);
+    const menu = () => page.evaluate(`(() => { const m = document.querySelector("[data-widget-menu]"); return m ? { key: m.getAttribute("data-widget-menu"), sizes: [...m.querySelectorAll("[data-widget-menu-size]")].map((b) => b.getAttribute("data-widget-menu-size") + ":" + b.getAttribute("aria-checked")), focus: document.activeElement && document.activeElement.getAttribute("data-widget-menu-size") } : null; })()`);
+    const c0 = await cards();
+    check(c0.watchlist && c0.watchlist.size === "m" && c0.fearGreed.size === "s" && c0.marketOverview.size === "s",
+      "§88 a list opens medium and a single figure small", JSON.stringify(c0));
+    check(Math.abs(c0.fearGreed.w * 2 + 11 - c0.watchlist.w) < 14 && c0.fearGreed.y === c0.marketOverview.y,
+      "§88 …two small cards sit side by side in the width of one medium", JSON.stringify(c0));
+    check(Object.values(c0).every((c) => c.buttons === 0), "§88 at rest no card carries a control on its edge", JSON.stringify(Object.values(c0).map((c) => c.buttons)));
+    // A right click opens the menu, focus on the size it is
+    await page.click("[data-widget='fearGreed']", { button: "right" });
+    await page.waitForTimeout(300);
+    const m1 = await menu();
+    check(m1 && m1.key === "fearGreed" && m1.sizes.join(",") === "s:true,m:false,l:false" && m1.focus === "s",
+      "§88 a right click opens its menu: three sizes as shapes, the current one checked and focused", JSON.stringify(m1));
+    await page.click("[data-widget-menu] [data-widget-menu-size='m']");
+    await page.waitForTimeout(400);
+    const c1 = await cards();
+    check(c1.fearGreed.size === "m" && Math.abs(c1.fearGreed.w - c1.watchlist.w) < 3 && (await stored()).fearGreed === "m" && !(await menu()),
+      "§88 medium from the menu: as wide as the list, stored, and the menu gone", JSON.stringify(c1.fearGreed));
+    // A long press, held still
+    const mo = await (await page.$("[data-widget='marketOverview']")).boundingBox();
+    await page.mouse.move(mo.x + 30, mo.y + 30);
+    await page.mouse.down();
+    await page.waitForTimeout(700);
+    const m2 = await menu();
+    await page.mouse.up();
+    check(m2 && m2.key === "marketOverview", "§88 a long press opens the same menu", JSON.stringify(m2));
+    await page.click("[data-widget-menu] [data-widget-menu-size='l']");
+    await page.waitForTimeout(400);
+    const c2 = await cards();
+    check(c2.marketOverview.size === "l" && c2.marketOverview.h > c0.marketOverview.h * 1.8 && c2.marketOverview.foot,
+      "§88 large is two by two, with the card's sentence", JSON.stringify(c2.marketOverview));
+    // Enter from the keyboard, and Esc closes only the menu
+    await page.focus("[data-widget='watchlist']");
+    await page.keyboard.press("Enter");
+    await page.waitForTimeout(300);
+    check((await menu()) && (await menu()).key === "watchlist", "§88 Enter on a focused card opens its menu");
+    await page.keyboard.press("Escape");
+    await page.waitForTimeout(300);
+    check(!(await menu()) && (await page.$$("[data-widgets-drawer='open']")).length === 1 &&
+      (await page.evaluate(`document.activeElement.getAttribute("data-widget")`)) === "watchlist",
+      "§88 Esc closes the menu, not the drawer, and the focus goes back to the card");
+    await page.focus("[data-widget='watchlist']");
+    await page.keyboard.press("Enter");
+    await page.waitForTimeout(200);
+    await page.keyboard.press("Tab");
+    await page.click("[data-widget-menu] [data-widget-menu-size='s']");
+    await page.waitForTimeout(400);
+    check((await cards()).watchlist.rows === 3, "§88 a small watchlist shows three of its four coins", JSON.stringify((await cards()).watchlist));
+    // Remove Widget is asked twice
+    await page.click("[data-widget='marketOverview']", { button: "right" });
+    await page.click("[data-widget-menu-remove='ask']");
+    await page.waitForTimeout(200);
+    check(Boolean(await page.$("[data-widget-menu-remove='confirm']")) && Boolean((await cards()).marketOverview),
+      "§88 Remove Widget asks again before it removes");
+    await page.click("[data-widget-menu-remove='confirm']");
+    await page.waitForTimeout(400);
+    check(!(await cards()).marketOverview, "§88 …and removes on the second press");
+    // Edit: jiggle, a "−" each, drag handles; then the gallery
+    await page.click("[data-widgets-edit='off']");
+    await page.waitForTimeout(400);
+    const edit = await page.evaluate(`(() => { const cs = [...document.querySelectorAll("[data-widget-cards] > [data-widget]")]; return { badges: document.querySelectorAll("[data-widget-remove]").length, cards: cs.length, draggable: cs.every((c) => c.getAttribute("draggable") === "true"), moving: cs.some((c) => c.getAnimations().length > 0) }; })()`);
+    check(edit.badges === edit.cards && edit.cards === 2 && edit.draggable && edit.moving,
+      "§88 Edit: every card jiggles, carries a −, and can be dragged", JSON.stringify(edit));
+    await page.click("[data-widgets-add]");
+    await page.waitForTimeout(400);
+    await page.click("[data-widget-gallery-item='marketOverview']");
+    await page.waitForTimeout(800);
+    const detail = await page.evaluate(`(() => { const d = document.querySelector("[data-widget-detail]"); return d ? { slides: [...d.querySelectorAll("[data-widget-slide] > [data-widget]")].map((c) => c.getAttribute("data-size")), add: (d.querySelector("[data-widget-add]") || {}).textContent } : null; })()`);
+    check(detail && detail.slides.join(",") === "s,m,l" && /Add Widget/.test(detail.add),
+      "§88 a widget's page shows it at all three sizes, with Add Widget", JSON.stringify(detail));
+    // It opens on the size it last had (large); one step back is medium
+    const opened = await page.evaluate(`document.querySelector("[data-widget-dots] [aria-pressed='true'], [data-widget-detail] [aria-pressed='true']").getAttribute("aria-label")`);
+    check(opened === "large", "§88 …opening on the size it last had", String(opened));
+    await page.focus("[data-widget-carousel]");
+    await page.keyboard.press("ArrowLeft");
+    await page.waitForTimeout(700);
+    await page.click("[data-widget-add='marketOverview']");
+    await page.waitForTimeout(600);
+    const back = await page.evaluate(`[...document.querySelectorAll("[data-widget-cards] > [data-widget]")].map((c) => c.getAttribute("data-widget") + ":" + c.getAttribute("data-size"))`);
+    check(back[0] === "marketOverview:m" && (await stored()).marketOverview === "m",
+      "§88 Add Widget places it first, at the size swiped to, still editing", JSON.stringify(back));
+    await page.click("[data-widget-remove='fearGreed']", { force: true });
+    await page.waitForTimeout(400);
+    check(!(await cards()).fearGreed, "§88 the − removes a card");
+    await page.click("[data-widgets-edit='on']");
+    await page.waitForTimeout(300);
+    const boxes = Object.values(await cards());
+    let overlaps = 0;
+    for (let i = 0; i < boxes.length; i++) for (let j = i + 1; j < boxes.length; j++) {
+      const a = boxes[i], b = boxes[j];
+      if (Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x) > 1 && Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y) > 1) overlaps++;
+    }
+    check(overlaps === 0, "§88 no two cards overlap", String(overlaps));
+    // Reloaded, the sizes are what was left
+    await page.reload({ waitUntil: "load" });
+    await page.waitForSelector("svg path", { timeout: 20000 });
+    await openWidgets(page);
+    await page.waitForTimeout(800);
+    const c4 = await cards();
+    /* The context's init script writes the widget list again on every load,
+       so what a reload can show is the sizes. */
+    check(c4.watchlist.size === "s" && c4.marketOverview.size === "m", "§88 the sizes survive a reload", JSON.stringify(c4));
+    check(errs.length === 0, "§88 nothing threw", errs.join(" | "));
+    await ctx.close();
+  }
+
+  /* §89 — the compare drawer and its markets (1 Oct 2026, "compare soldan
+   * gelse, ana ekranı direk kaplamasa … S&P 500 ve major şeylerle compare de
+   * edebiliriz ve onu da compare ayarlarından seçebiliriz"). A drawer on the
+   * chart's column, not a dialog over the screen; markets first — the S&P 500
+   * and the Nasdaq 100 as Kraken's tokenized ETFs, gold as PAXG — then your
+   * coins; a market from Kraken opens the chart on 1D, is named by what it is
+   * on the strip, and cannot be swapped onto the chart; the drawer's own
+   * settings choose which markets it offers, and that is kept. */
+  {
+    const krakenAsked = [];
+    const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+    await ctx.route("**/*", (r) => {
+      const u = r.request().url();
+      if (u.startsWith("file://")) return r.continue();
+      if (u.includes("api.kraken.com/0/public/OHLC") && u.includes("SPYxUSD")) {
+        krakenAsked.push(u);
+        const interval = Number((u.match(/interval=(\d+)/) || [])[1]) || 15;
+        const step = interval * 60;
+        const rows = Array.from({ length: 120 }, (_, i) => {
+          const t = Math.floor(NOW_S / step) * step - (119 - i) * step;
+          const c = (760 + Math.sin(i / 7) * 4).toFixed(2);
+          return [t, c, c, c, c, c, "1.0", 3];
+        });
+        return r.fulfill(json({ error: [], result: { SPYxUSD: rows, last: rows[119][0] } }));
+      }
+      if (u.includes("historic")) {
+        const period = (u.match(/period=(\w+)/) || [])[1] || "hour";
+        const span = period === "day" ? 86400 : 3600;
+        return r.fulfill(json({ data: { prices: Array.from({ length: 200 }, (_, i) => ({ price: (43000 + Math.cos(i / 9) * 300).toFixed(2), time: NOW_S - Math.round(((200 - i) * span) / 200) })) } }));
+      }
+      if (u.includes("spot")) return r.fulfill(json({ data: { amount: "43000", currency: "USD" } }));
+      return r.fulfill(json({ data: {} }));
+    });
+    await ctx.addInitScript(() => localStorage.setItem("crypto_chart_onboarding_seen", "1"));
+    const page = await ctx.newPage();
+    const errs = [];
+    page.on("pageerror", (e) => errs.push(e.message));
+    await page.goto(INDEX, { waitUntil: "load" });
+    await page.waitForSelector("svg path", { timeout: 20000 });
+    await page.waitForTimeout(1200);
+    await page.keyboard.press("c");
+    await page.waitForTimeout(500);
+    const open = await page.evaluate(`(() => {
+      const d = document.querySelector("[data-compare-drawer='open']");
+      const overlay = [...document.querySelectorAll("input")].some((n) => /Jump to a coin/.test(n.getAttribute("placeholder") || ""));
+      return d ? {
+        sections: [...d.querySelectorAll("[data-compare-section]")].map((n) => n.getAttribute("data-compare-section")),
+        markets: [...d.querySelectorAll("[data-compare-section='markets'] [data-compare-pick]")].map((n) => n.getAttribute("data-compare-pick")),
+        focused: document.activeElement && document.activeElement.hasAttribute("data-compare-search"),
+        left: Math.round(d.getBoundingClientRect().left),
+        overlay,
+      } : null;
+    })()`);
+    check(open && open.markets.join(",") === "SPYx,QQQx,PAXG" && open.sections[0] === "markets" && open.focused && open.left < 100 && !open.overlay,
+      "§89 C opens a drawer on the left, markets first — S&P 500, Nasdaq 100, gold — its search ready, no dialog over the screen", JSON.stringify(open));
+    await page.keyboard.press("Escape");
+    await page.waitForTimeout(400);
+    check(!(await page.$("[data-compare-drawer='open']")), "§89 Esc from its search puts it away");
+    await page.keyboard.press("c");
+    await page.waitForTimeout(400);
+    await page.click("[data-compare-pick='SPYx']");
+    await page.waitForTimeout(2500);
+    const st = await page.evaluate(`(() => {
+      const s = document.querySelector("[data-compare-strip]");
+      return {
+        range: (document.querySelector("[data-period-button][aria-pressed='true']") || {}).textContent,
+        legs: s ? [...s.querySelectorAll("[data-compare-leg]")].map((l) => l.innerText.replace(/\\s+/g, " ")) : [],
+        swap: s ? [...s.querySelectorAll("button")].some((b) => /swap/i.test(b.innerText)) : null,
+        lines: [...document.querySelectorAll("[data-compare] path")].filter((p) => (p.getAttribute("d") || "").length > 50).length,
+        drawer: Boolean(document.querySelector("[data-compare-drawer='open']")),
+      };
+    })()`);
+    check(st.range === "1D" && st.legs.length === 2 && /S&P 500/.test(st.legs[1]) && /[+−-]\d+\.\d\d%/.test(st.legs[1]) && st.lines >= 2 && !st.drawer,
+      "§89 the S&P 500 from 1H opens the chart on 1D, drawn and named on the strip, the drawer put away", JSON.stringify(st));
+    check(st.swap === false, "§89 …and a market cannot be swapped onto the chart", JSON.stringify(st));
+    check(krakenAsked.length >= 1 && krakenAsked.every((u) => /interval=15/.test(u) && /asset_class=tokenized_asset/.test(u)),
+      "§89 …its series asked of Kraken in 15-minute bars for 1D", krakenAsked.join(" "));
+    // Back on 1H: the line stands down and the strip says why
+    await page.click("[data-period-button]");
+    await page.waitForTimeout(1500);
+    const hour = await page.evaluate(`(document.querySelector("[data-compare-market-note]") || {}).textContent || ""`);
+    check(/1D up/.test(hour), "§89 on 1H the strip says a market is drawn from 1D up", hour);
+    // The drawer's settings: a market switched off leaves the list, and stays off
+    await page.keyboard.press("c");
+    await page.waitForTimeout(400);
+    check(Boolean(await page.$("[data-compare-now='SPYx']")), "§89 the drawer opens naming what is compared");
+    await page.click("[data-compare-market-switch='QQQx']");
+    await page.waitForTimeout(300);
+    const after = await page.evaluate(`[...document.querySelectorAll("[data-compare-section='markets'] [data-compare-pick]")].map((n) => n.getAttribute("data-compare-pick"))`);
+    const stored = await page.evaluate(`localStorage.getItem("crypto_chart_compare_markets")`);
+    check(after.join(",") === "SPYx,PAXG" && stored === JSON.stringify(["SPYx", "PAXG"]),
+      "§89 a market switched off in its settings leaves the list, and is kept", JSON.stringify({ after, stored }));
+    await page.click("[data-compare-stop]");
+    await page.waitForTimeout(500);
+    check(!(await page.$("[data-compare-strip]")) && !(await page.$("[data-compare-drawer='open']")), "§89 Stop ends it and puts the drawer away");
+    check(errs.length === 0, "§89 nothing threw", errs.join(" | "));
+    await ctx.close();
+  }
+
+  /* §90 — widgets pinned to the home screen (1 Oct 2026, mockup C of four:
+   * "widget kısmında sabitle … kenarları hariç her şey şeffaflaşacak").
+   * Pinned from the card's menu, at most four; a stack in the chart's
+   * lower-left corner, unfilled at rest and filled under the pointer; a press
+   * opens the widgets drawer, and while that drawer is out the stack is not
+   * drawn; removing a widget unpins it. */
+  {
+    const { ctx, page } = await newCtx(browser, () => {
+      localStorage.setItem("crypto_chart_onboarding_seen", "1");
+      localStorage.setItem("crypto_chart_widgets", JSON.stringify({ watchlist: true, fearGreed: true, marketOverview: true, altcoinSeason: true, ethGas: true }));
+    });
+    const errs = [];
+    page.on("pageerror", (e) => errs.push(e.message));
+    await openWidgets(page);
+    await page.waitForTimeout(800);
+    const pin = async (k) => {
+      await page.click(`[data-widget='${k}']`, { button: "right" });
+      await page.waitForTimeout(200);
+      const item = await page.$("[data-widget-menu-pin]");
+      const state = item ? await item.getAttribute("data-widget-menu-pin") : null;
+      const disabled = item ? await item.getAttribute("aria-disabled") : null;
+      if (item) await item.click({ force: true });
+      await page.waitForTimeout(200);
+      if (await page.$("[data-widget-menu]")) await page.keyboard.press("Escape");
+      return { state, disabled };
+    };
+    for (const k of ["fearGreed", "ethGas", "marketOverview", "altcoinSeason"]) await pin(k);
+    const fifth = await pin("watchlist");
+    check(fifth.disabled === "true" && (await page.evaluate(`localStorage.getItem("crypto_chart_pinned_widgets")`)) === JSON.stringify(["fearGreed", "ethGas", "marketOverview", "altcoinSeason"]),
+      "§90 four pin from the menu, and a fifth is refused with the reason", JSON.stringify(fifth));
+    check((await page.$$("[data-pinned-stack]")).length === 0, "§90 while the widgets drawer is out, the stack is not drawn");
+    await page.keyboard.press("Escape");
+    await page.waitForTimeout(600);
+    await page.mouse.move(900, 300);
+    await page.waitForTimeout(300);
+    const rest = await page.evaluate(`(() => {
+      const cards = [...document.querySelectorAll("[data-pinned]")];
+      const r = cards.map((c) => c.getBoundingClientRect());
+      return { keys: cards.map((c) => c.getAttribute("data-pinned")), bg: cards.map((c) => getComputedStyle(c).backgroundColor), left: Math.round(Math.min(...r.map((x) => x.left))), bottom: Math.round(Math.max(...r.map((x) => x.bottom))), h: innerHeight, focusable: cards.every((c) => c.tabIndex === 0) };
+    })()`);
+    check(rest.keys.length === 4 && rest.bg.every((b) => b === "rgba(0, 0, 0, 0)") && rest.left < 120 && rest.bottom > rest.h * 0.6 && rest.focusable,
+      "§90 the four sit in the lower-left corner, unfilled, each reachable from the keyboard", JSON.stringify(rest));
+    const box = await (await page.$("[data-pinned='ethGas']")).boundingBox();
+    await page.mouse.move(box.x + 20, box.y + 12);
+    await page.waitForTimeout(400);
+    const hovered = await page.evaluate(`getComputedStyle(document.querySelector("[data-pinned='ethGas']")).backgroundColor`);
+    check(hovered !== "rgba(0, 0, 0, 0)", "§90 under the pointer a card fills in", hovered);
+    await page.mouse.click(box.x + 20, box.y + 12);
+    await page.waitForTimeout(600);
+    check((await page.$$("[data-widgets-drawer='open']")).length === 1, "§90 a press opens the widgets drawer");
+    await page.click("[data-widget='ethGas']", { button: "right" });
+    await page.click("[data-widget-menu-remove='ask']");
+    await page.click("[data-widget-menu-remove='confirm']");
+    await page.waitForTimeout(300);
+    check((await page.evaluate(`localStorage.getItem("crypto_chart_pinned_widgets")`)) === JSON.stringify(["fearGreed", "marketOverview", "altcoinSeason"]),
+      "§90 removing a widget unpins it");
+    await page.click("[data-widget='fearGreed']", { button: "right" });
+    const unpin = await page.getAttribute("[data-widget-menu-pin]", "data-widget-menu-pin");
+    await page.click("[data-widget-menu-pin]");
+    await page.waitForTimeout(300);
+    check(unpin === "on" && (await page.evaluate(`localStorage.getItem("crypto_chart_pinned_widgets")`)) === JSON.stringify(["marketOverview", "altcoinSeason"]),
+      "§90 Unpin from Home takes it off the stack", unpin);
+    /* A pinned card is edited where it is (1 Oct 2026, "ana ekrandaki
+       sabitlenmiş widget'lara sağ tıklayıp editleyebilmeliyiz"): a right
+       click opens the same menu over the home screen. */
+    await page.keyboard.press("Escape");
+    await page.waitForTimeout(600);
+    const pinnedW = () => page.evaluate(`Math.round(document.querySelector("[data-pinned='marketOverview']").getBoundingClientRect().width)`);
+    const w0 = await pinnedW();
+    await page.click("[data-pinned='marketOverview']", { button: "right" });
+    await page.waitForTimeout(300);
+    const pm = await page.evaluate(`(() => { const m = document.querySelector("[data-widget-menu]"); return m ? { key: m.getAttribute("data-widget-menu"), pin: (m.querySelector("[data-widget-menu-pin]") || {}).getAttribute && m.querySelector("[data-widget-menu-pin]").getAttribute("data-widget-menu-pin"), drawer: document.querySelectorAll("[data-widgets-drawer='open']").length, filled: getComputedStyle(document.querySelector("[data-pinned='marketOverview']")).backgroundColor } : null; })()`);
+    check(pm && pm.key === "marketOverview" && pm.pin === "on" && pm.drawer === 0 && pm.filled !== "rgba(0, 0, 0, 0)",
+      "§90 a right click on a pinned card opens its menu over the home screen, the card held filled", JSON.stringify(pm));
+    await page.click("[data-widget-menu] [data-widget-menu-size='l']", { force: true });
+    await page.waitForTimeout(400);
+    const w1 = await pinnedW();
+    check(w1 > w0 * 1.3 && (await page.evaluate(`JSON.parse(localStorage.getItem("crypto_chart_widget_card_sizes") || "{}").marketOverview`)) === "l",
+      "§90 …a size from it applies to the pinned card too, and is stored", JSON.stringify({ w0, w1 }));
+    await page.click("[data-pinned='altcoinSeason']", { button: "right" });
+    await page.waitForTimeout(300);
+    await page.click("[data-widget-menu] [data-widget-menu-edit]", { force: true });
+    await page.waitForTimeout(600);
+    check((await page.$$("[data-widgets-drawer='open'] [data-widget-cards][data-editing]")).length === 1,
+      "§90 …and Edit Widgets from it brings the drawer out, arranging");
+    await page.click("[data-widgets-edit='on']");
+    await page.keyboard.press("Escape");
+    await page.waitForTimeout(600);
+    await page.focus("[data-pinned='altcoinSeason']");
+    await page.keyboard.press("Shift+F10");
+    await page.waitForTimeout(300);
+    check((await page.evaluate(`(document.querySelector("[data-widget-menu]") || { getAttribute: () => null }).getAttribute("data-widget-menu")`)) === "altcoinSeason",
+      "§90 …and from the keyboard, Shift+F10 on a focused pinned card");
+    await page.click("[data-widget-menu] [data-widget-menu-pin='on']", { force: true });
+    await page.waitForTimeout(300);
+    check((await page.evaluate(`localStorage.getItem("crypto_chart_pinned_widgets")`)) === JSON.stringify(["marketOverview"]),
+      "§90 …where Unpin from Home takes it off the stack");
+    check(errs.length === 0, "§90 nothing threw", errs.join(" | "));
+    await ctx.close();
+  }
+
+  /* §91 — a press outside the widgets drawer puts it away, as every drawer
+   * on that column does (1 Oct 2026, "widget kısmı açıkken ana ekrana
+   * tıklayınca widget kapanmalı"); a press that only closes a card's menu
+   * closes nothing more; the compare drawer keeps the same rule. */
+  {
+    const { ctx, page } = await newCtx(browser, () => {
+      localStorage.setItem("crypto_chart_onboarding_seen", "1");
+      localStorage.setItem("crypto_chart_widgets", JSON.stringify({ fearGreed: true, ethGas: true }));
+    });
+    const errs = [];
+    page.on("pageerror", (e) => errs.push(e.message));
+    const widgetsOpen = async () => (await page.$$("[data-widgets-drawer='open']")).length === 1;
+    await openWidgets(page);
+    await page.waitForTimeout(500);
+    await page.mouse.click(900, 600);
+    await page.waitForTimeout(400);
+    check(!(await widgetsOpen()), "§91 a press on the chart puts the widgets drawer away");
+    await openWidgets(page);
+    await page.waitForTimeout(500);
+    await page.click("[data-widget='fearGreed']", { button: "right" });
+    await page.waitForTimeout(300);
+    await page.mouse.click(900, 600);
+    await page.waitForTimeout(400);
+    check((await widgetsOpen()) && !(await page.$("[data-widget-menu]")),
+      "§91 with a card's menu open, a press outside closes the menu and leaves the drawer");
+    await page.click("[data-widgets-edit='off']");
+    await page.waitForTimeout(300);
+    await page.click("[data-widgets-drawer='open'] [data-widgets-add]");
+    await page.waitForTimeout(300);
+    await page.click("[data-widgets-drawer='open'] [data-widget-gallery-item='marketOverview']");
+    await page.waitForTimeout(300);
+    check(await widgetsOpen(), "§91 presses inside it — the gallery, a widget's page — keep it open");
+    await page.mouse.click(900, 600);
+    await page.waitForTimeout(400);
+    check(!(await widgetsOpen()), "§91 …and a press outside puts it away from there too");
+    await page.keyboard.press("c");
+    await page.waitForTimeout(400);
+    await page.mouse.click(900, 600);
+    await page.waitForTimeout(400);
+    check(!(await page.$("[data-compare-drawer='open']")), "§91 the compare drawer keeps the same rule");
+    check(errs.length === 0, "§91 nothing threw", errs.join(" | "));
+    await ctx.close();
+  }
+
+  /* §92 — the tabs' key letters can be switched off (1 Oct 2026, "kenardaki
+   * çentiklerdeki kısayol tuşlarının görünüp görünmeyeceği seçilebilsin"):
+   * off hides the letters on both columns, the keys still work, and every
+   * tab's tooltip still names its key; the choice is kept. */
+  {
+    const { ctx, page } = await newCtx(browser, () => localStorage.setItem("crypto_chart_onboarding_seen", "1"));
+    const errs = [];
+    page.on("pageerror", (e) => errs.push(e.message));
+    const keys = () => page.evaluate(`(() => { const t = [...document.querySelectorAll("[data-drawer-tab], [data-screen-tab]")]; return { tabs: t.length, shown: t.filter((b) => [...b.querySelectorAll("kbd, span")].some((n) => n.textContent.trim().length === 1 && /^[A-Z,.?/]$/.test(n.textContent.trim()) && getComputedStyle(n).display !== "none" && n.getClientRects().length)).length, titled: t.every((b) => /\\([^)]+\\)$/.test(b.getAttribute("title") || "")) }; })()`);
+    await page.keyboard.press("v");
+    await page.waitForTimeout(600);
+    const on = await keys();
+    check(on.tabs >= 6 && on.shown >= 4, "§92 by default the tabs show their keys", JSON.stringify(on));
+    await page.click("[data-chart-settings='open'] [data-tab-keys-switch]");
+    await page.waitForTimeout(400);
+    const off = await keys();
+    check(off.shown === 0 && off.titled, "§92 switched off, no tab shows a key, and every tooltip still names it", JSON.stringify(off));
+    await page.keyboard.press("Escape");
+    await page.waitForTimeout(400);
+    await page.keyboard.press("w");
+    await page.waitForTimeout(500);
+    check((await page.$$("[data-widgets-drawer='open']")).length === 1, "§92 …and the keys still work");
+    await page.reload({ waitUntil: "load" });
+    await page.waitForSelector("svg path", { timeout: 20000 });
+    await page.keyboard.press("v");
+    await page.waitForTimeout(600);
+    check((await keys()).shown === 0 && (await page.evaluate(`document.documentElement.getAttribute("data-tab-keys")`)) === "off", "§92 the choice survives a reload");
+    check(errs.length === 0, "§92 nothing threw", errs.join(" | "));
+    await ctx.close();
+  }
+
   await browser.close();
   if (failed) {
     console.error(`\n✘ ${failed} POLISH CHECK(S) FAILED`);

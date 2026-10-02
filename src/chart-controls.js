@@ -120,7 +120,8 @@ class PeriodItem extends PureComponent {
 
     return React.createElement(
       PeriodButton,
-      { active: active, onClick: this.handleClick, title: title },
+      // The range on screen says so to a screen reader, not only in ink
+      { active: active, onClick: this.handleClick, title: title, "aria-pressed": active ? "true" : "false", "data-period-button": "1" },
       React.createElement(PeriodText, { active: active }, children),
     );
   }

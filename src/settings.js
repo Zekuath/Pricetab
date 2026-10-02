@@ -48,10 +48,8 @@ class SettingsPanel extends PureComponent {
        * `RATE_PROMPT_DELAY_MS` of use, and never if either surface has already
        * asked. Whichever is reached first is the one ask there is. The way to
        * the listing when it is gone is the permanent link in Preferences. */
-      showRatePrompt:
-        !loadRatePromptDismissed() &&
-        !loadRatePromptShown() &&
-        Date.now() - getOrInitFirstUse() >= RATE_PROMPT_DELAY_MS,
+      // The same schedule as the main screen's card (RATE_PROMPT_SNOOZE_DAYS)
+      showRatePrompt: rateAskDue(),
       undoCoins: null,
       /* The backup section's three transient things: what a file was found to
        * hold (read but not written), a sentence about what just happened, and
@@ -151,6 +149,10 @@ class SettingsPanel extends PureComponent {
 
     _defineProperty(this, "handleRatePromptDismiss", () => {
       saveRatePromptDismissed();
+      this.setState({ showRatePrompt: false });
+    });
+    // × on the bar is "not now", like the card's
+    _defineProperty(this, "handleRatePromptLater", () => {
       this.setState({ showRatePrompt: false });
     });
 
@@ -630,7 +632,7 @@ class SettingsPanel extends PureComponent {
      * in the constructor, where a side effect does not belong, and stamped at
      * all so the two surfaces share one ask: whichever is reached first is the
      * only time this extension asks for a rating. */
-    if (this.state.showRatePrompt) saveRatePromptShown();
+    if (this.state.showRatePrompt) recordRateAsk();
     // Opened straight onto Permissions (the news panel's line does this)
     if (this.state.activeTab === "permissions") this.refreshPermissions();
   }
@@ -791,10 +793,16 @@ class SettingsPanel extends PureComponent {
               msg("set_rate", "Rate"),
             ),
             React.createElement(
+              RatePromptNever,
+              { onClick: this.handleRatePromptDismiss, "data-rate-never": "1" },
+              msg("rate_never", "Don't ask again"),
+            ),
+            React.createElement(
               RatePromptClose,
               {
-                onClick: this.handleRatePromptDismiss,
-                "aria-label": msg("set_rate_dismiss", "Dismiss rating reminder"),
+                onClick: this.handleRatePromptLater,
+                "aria-label": msg("rate_later", "Not now — ask again later"),
+                title: msg("rate_later", "Not now — ask again later"),
               },
               "×",
             ),
@@ -1098,97 +1106,6 @@ class SettingsPanel extends PureComponent {
     );
   }
 }
-
-/* **THE WIDGETS' OWN SETTINGS, IN THE WIDGETS' DRAWER** (26 Sep 2026,
- * *"bu sol bardaki widgets ayarları widget kısmının içerisinde olsun, yani
- * onu normal ayarlardan çıkarıp bu kısım için uyumlu hale getirelim"*).
- *
- * They were Settings' third tab. Once the cards became a drawer of their
- * own (25 Sep) the cards and the switches that choose them were two panels
- * apart — a switch flipped in a full-screen Settings, with the cards it
- * changed hidden behind it, and a drawer whose empty state could only send
- * you away to that tab. They are the drawer's second view now ("Choose",
- * app.js), so a card switched on is there the moment you go back to the
- * cards.
- *
- * **Moved whole**: the same bundles, the same WIDGET_GROUPS list with its
- * descriptions — in one column, because the drawer opens 30rem wide. The
- * size row went to the drawer's head on 27 Sep 2026, beside the cards it
- * sizes (WidgetsSizeGroup). The one line that went is "Show data
- * widgets below chart", which stopped being where they are. A plain
- * function like renderPreferencesTab, because its owner is the drawer in
- * app.js and not this panel. */
-const widgetChooser = ({ widgets, onWidgetToggle, onWidgetPreset }) =>
-  React.createElement(
-    WidgetChooserFrame,
-    { "data-widget-chooser": "1" },
-    React.createElement(
-    ToggleSection,
-    null,
-    React.createElement(WidgetGroupTitle, null, msg("set_bundles", "Bundles")),
-    React.createElement(
-      PresetRow,
-      null,
-      React.createElement(
-        PresetButton,
-        {
-          type: "button",
-          active: isPresetActive(widgets, "holder"),
-          onClick: () => onWidgetPreset && onWidgetPreset("holder"),
-        },
-        msg("set_bundle_holder", "Holder"),
-      ),
-      React.createElement(
-        PresetButton,
-        {
-          type: "button",
-          active: isPresetActive(widgets, "trader"),
-          onClick: () => onWidgetPreset && onWidgetPreset("trader"),
-        },
-        msg("set_bundle_trader", "Trader"),
-      ),
-      React.createElement(
-        PresetButton,
-        {
-          type: "button",
-          active: isPresetActive(widgets, "minimal"),
-          onClick: () => onWidgetPreset && onWidgetPreset("minimal"),
-        },
-        msg("set_bundle_minimal", "Minimal"),
-      ),
-    ),
-    React.createElement(
-      WidgetGroups,
-      { two: false },
-      ...WIDGET_GROUPS.map((group) =>
-      React.createElement(
-        WidgetGroup,
-        { key: group.title },
-        React.createElement(WidgetGroupTitle, null, group.title),
-        ...group.items.map((item) =>
-          React.createElement(
-            ToggleRow,
-            { key: item.key },
-            React.createElement(
-              ToggleTextCol,
-              null,
-              React.createElement(ToggleLabel, null, item.label),
-              React.createElement(ToggleDesc, null, item.desc),
-            ),
-            React.createElement(ToggleSwitch, {
-              active: widgets[item.key],
-              "aria-pressed": (widgets[item.key]) ? "true" : "false",
-              onClick: () =>
-                onWidgetToggle && onWidgetToggle(item.key),
-              "aria-label": msg("set_toggle_widget", "Toggle $1 widget", item.label),
-            }),
-          ),
-        ),
-      ),
-      ),
-    ),
-    ),
-  );
 
 SettingsPanel.defaultProps = {
   coins: [],

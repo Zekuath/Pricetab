@@ -188,4 +188,37 @@ assert.deepStrictEqual(
   "present target is measured",
 );
 
+/* ── what's new, once per edition (1 Oct 2026) ─────────────────────────── */
+
+const DAY = 86400000;
+const newsSteps = run("WHATS_NEW_STEPS.length");
+const reset = () => {
+  for (const k of Object.keys(store)) delete store[k];
+  timers.length = 0;
+};
+// taken the tour, installed a week ago, this edition not shown → the news steps
+reset();
+store["crypto_chart_onboarding_seen"] = "1";
+store["crypto_chart_first_use"] = String(Date.now() - 7 * DAY);
+tour = mount();
+assert.strictEqual(timers.length, 1, "an updated install is shown what's new");
+timers.pop().fn();
+assert.strictEqual(tour.steps().length, newsSteps, "…the what's-new steps, not the whole tour");
+tour.handleKeyDown(keyEvent("Escape"));
+assert.strictEqual(store["crypto_chart_whats_new_seen"], run("WHATS_NEW_ID"), "…and skipping it marks the edition shown");
+tour = mount();
+assert.strictEqual(timers.length, 0, "…so it never comes back for this edition");
+// a profile that only just took the first tour is not shown it
+reset();
+store["crypto_chart_onboarding_seen"] = "1";
+store["crypto_chart_first_use"] = String(Date.now() - 1000);
+tour = mount();
+assert.strictEqual(timers.length, 0, "a fresh install is not shown what's new on top of the tour");
+// and finishing the first tour marks the edition shown too
+reset();
+tour = mount();
+timers.pop().fn();
+tour.handleKeyDown(keyEvent("Escape"));
+assert.strictEqual(store["crypto_chart_whats_new_seen"], run("WHATS_NEW_ID"), "the first tour, ended, counts as this edition's news");
+
 console.log("ONBOARDING TESTS OK");

@@ -226,11 +226,13 @@ const CHART_SETTING_KEYS = [
   "indicatorOverlay",
   "companion",
   "chartStudies",
+  "chartChances",
   "chartTools",
   "macroEvents",
   "moveNews",
   "chartDetails",
   "quietChrome",
+  "tabKeys",
 ];
 
 /* **Twelve rows in three kinds** (27 Sep 2026, *"özellikle chart
@@ -282,8 +284,10 @@ const settingSections = (panel) => {
   companionHidden, onCompanionMetricToggle,
   indicatorOverlays, onIndicatorOverlayChange,
   chartStudies, onChartStudyToggle,
+  chartChances, cellOdds, onChartChanceToggle,
   moveNews, onMoveNewsChange,
   quietChrome, onQuietChromeChange,
+  tabKeys, onTabKeysChange,
   chartToolsShown, onChartToolsShownChange,
   moveHeadlines, onMoveHeadlinesChange,
   ohlcEnabled, onOhlcChange,
@@ -555,6 +559,34 @@ const settingSections = (panel) => {
               onClick: () =>
                 onQuietChromeChange && onQuietChromeChange(quietChrome !== true),
               "aria-label": msg("pref_quiet_chrome_aria", "Toggle quiet controls"),
+            }),
+          ),
+        ),
+      ),
+    /* The key letters under the edges' tabs (TAB_KEYS_KEY), on or off. */
+    tabKeys: () =>
+      panel.section(
+        msg("pref_tab_keys_title", "Keys on the Tabs"),
+        msg("pref_tab_keys_keywords", "keyboard shortcut keys letters tabs edge column pull hide show keycap"),
+        React.createElement(
+          ToggleSection,
+          null,
+          settingTitle(panel, "tabKeys", msg("pref_tab_keys_heading", "Keys on the Tabs")),
+          React.createElement(
+            ToggleSectionDesc,
+            null,
+            msg("pref_tab_keys_desc", "The shortcut letter under each tab on the two edges. Off hides the letters only — the keys still work, and each tab's tooltip still names its key"),
+          ),
+          React.createElement(
+            ToggleRow,
+            null,
+            React.createElement(ToggleLabel, null, tabKeys !== false ? msg("toggle_on", "On") : msg("toggle_off", "Off")),
+            React.createElement(ToggleSwitch, {
+              active: tabKeys !== false,
+              "aria-pressed": tabKeys !== false ? "true" : "false",
+              onClick: () => onTabKeysChange && onTabKeysChange(tabKeys === false),
+              "aria-label": msg("pref_tab_keys_aria", "Show the shortcut letters on the tabs"),
+              "data-tab-keys-switch": "1",
             }),
           ),
         ),
@@ -988,6 +1020,34 @@ const settingSections = (panel) => {
           },
           label,
         );
+      /* A group: its name, how many are shown, All / None, then its chips
+         wrapping across the drawer's width. */
+      const group = (key, label, aria, list) => {
+        const ids = list.map((d) => d.id);
+        const shown = ids.filter((id) => !hidden.includes(id)).length;
+        const set = (on) => onCompanionMetricToggle && onCompanionMetricToggle(ids, on);
+        return React.createElement(
+          Fragment,
+          { key },
+          React.createElement(
+            MetricGroupHead,
+            null,
+            React.createElement(MetricGroupLabel, null, label),
+            React.createElement(MetricGroupCount, { "data-companion-count": key }, msg("pref_companion_shown", "$1 of $2 shown", String(shown), String(ids.length))),
+            React.createElement(
+              MetricGroupAct,
+              { onClick: () => set(true), disabled: shown === ids.length, "aria-label": msg("pref_companion_all_aria", "Show every one of $1", label) },
+              msg("pref_companion_all", "All"),
+            ),
+            React.createElement(
+              MetricGroupAct,
+              { onClick: () => set(false), disabled: shown === 0, "aria-label": msg("pref_companion_none_aria", "Hide every one of $1", label) },
+              msg("pref_companion_none", "None"),
+            ),
+          ),
+          React.createElement(MetricChips, { role: "group", "aria-label": aria }, ...list.map((d) => chip(d.id, d.title))),
+        );
+      };
       return React.createElement(
         Fragment,
         { key: "companion" },
@@ -996,20 +1056,11 @@ const settingSections = (panel) => {
           SettingReveal,
           { key: "companion-metrics", open: companion === true, "aria-hidden": companion === true ? undefined : "true" },
           React.createElement(
-            "div",
+            CompanionMetrics,
             { "data-companion-metrics": "true" },
-            React.createElement(MetricGroupLabel, null, msg("pref_companion_patterns", "Patterns")),
-            React.createElement(
-              MetricChips,
-              { role: "group", "aria-label": msg("pref_companion_patterns_aria", "Which patterns the companion names") },
-              ...PRICE_PATTERNS.map((d) => chip(d.id, d.title)),
-            ),
-            React.createElement(MetricGroupLabel, null, msg("pref_companion_setups", "Strategy setups")),
-            React.createElement(
-              MetricChips,
-              { role: "group", "aria-label": msg("pref_companion_setups_aria", "Which strategy setups the companion names") },
-              ...STRATEGY_SETUPS.map((d) => chip(d.id, d.title)),
-            ),
+            group("patterns", msg("pref_companion_patterns", "Patterns"), msg("pref_companion_patterns_aria", "Which patterns the companion names"), COMPANION_PATTERN_DEFS),
+            group("setups", msg("pref_companion_setups", "Strategy setups"), msg("pref_companion_setups_aria", "Which strategy setups the companion names"), STRATEGY_SETUPS),
+            group("readings", msg("pref_companion_readings", "Readings"), msg("pref_companion_readings_aria", "Which readings the companion names — divergences, Ichimoku, stochastic, levels, stretches"), COMPANION_READINGS),
           ),
         ),
       );
@@ -1113,6 +1164,53 @@ const settingSections = (panel) => {
                     "aria-pressed": (chartStudies || []).includes(id) ? "true" : "false",
                     "data-study-choice": id,
                     onClick: () => onChartStudyToggle && onChartStudyToggle(id),
+                  },
+                  label,
+                ),
+              ),
+            ),
+          ),
+        ),
+    /* **The chances, in one place** (30 Sep 2026, "bu olasılıkları
+     * ayarlardan kapatıp açabilelim"): the board's squares, the regime row
+     * and the outlook's range — each a chip, each with how it was measured. */
+    chartChances: () =>
+        panel.section(
+          msg("pref_chances_title", "Chances"),
+          msg("pref_chances_keywords", "chance chances probability odds markov regime outlook range squares board calls forecast"),
+          React.createElement(
+            ToggleSection,
+            null,
+            settingTitle(panel, "chartChances", msg("pref_chances_heading", "Chances")),
+            React.createElement(
+              ToggleSectionDesc,
+              null,
+              msg("pref_chances_desc", "Probabilities counted from this coin's own history — on the board's squares and in a line under the price"),
+            ),
+            settingNote(
+              panel,
+              "chartChances",
+              msg(
+                "pref_chances_note",
+                "Squares writes on each square of the calls board the chance the price is in it when its column ends; it was checked out of sample on four coins before it was allowed on (on the hour, day, week, month and year boards; not on all time, where it failed). Regime is the Regimes widget's row for today — the past entries into the state the coin is in and the state 20 days later, the Markov question counted; measured, no such row differed from any day by 10 points. Range is the Outlook widget's 5th–95th range for the next stretch, from replays of this range's own steps. None of them says which way to trade.",
+              ),
+            ),
+            React.createElement(
+              MetricChips,
+              { role: "group", "aria-label": msg("pref_chances_aria", "Which chances to show") },
+              ...[
+                ["squares", msg("pref_chance_squares", "Squares"), cellOdds !== false],
+                ["regime", msg("pref_chance_regime", "Regime"), (chartChances || []).includes("regime")],
+                ["range", msg("pref_chance_range", "Range"), (chartChances || []).includes("range")],
+              ].map(([id, label, active]) =>
+                React.createElement(
+                  MetricChip,
+                  {
+                    key: id,
+                    active,
+                    "aria-pressed": active ? "true" : "false",
+                    "data-chance-choice": id,
+                    onClick: () => onChartChanceToggle && onChartChanceToggle(id),
                   },
                   label,
                 ),

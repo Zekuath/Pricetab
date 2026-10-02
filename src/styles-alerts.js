@@ -725,6 +725,25 @@ const AlertsHeadRight = styled.div`
   gap: 0.55rem;
 `;
 
+/* The calls switch in the panel's head: its state in words, then the switch
+   Settings uses — one control, one look, wherever a thing is turned on. */
+const AlertsCallsSwitch = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding-left: 0.55rem;
+  border-left: 1px solid ${({ theme }) => theme.color.border};
+`;
+
+const AlertsCallsSwitchText = styled.span`
+  min-width: 2.5ch;
+  font-size: ${posType.micro};
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: ${({ theme }) => theme.color.text};
+  font-variant-numeric: tabular-nums;
+`;
+
 const AlertsTally = styled.div`
   flex: 0 0 auto;
   font-size: ${posType.micro};

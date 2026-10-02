@@ -3263,6 +3263,25 @@ const practicePanel = css`
   min-width: 0;
 `;
 
+/* **The About card, given room on this page** (1 Oct 2026, "dip dibe"). The
+ * card is the targets panel's (`AlertsInfo`), a band ruled under a panel's
+ * head; here it sat flush against the account head above and the market row
+ * below. Wrapped at this page's seam rather than restyled, so the panel that
+ * owns it keeps its band — a little air either side, the desk's 14px corner,
+ * and a touch more between its lines. */
+const PracticeInfoWrap = styled.div`
+  margin: 0.5rem 0 0.75rem;
+  & > div {
+    padding: 1rem 1.25rem 1.05rem;
+    border: 1px solid ${({ theme }) => theme.color.border};
+    border-radius: 14px;
+  }
+  & > div > div:nth-child(2) {
+    margin-top: 0.65rem;
+    gap: 0.3rem;
+  }
+`;
+
 const PracticePanel = styled.section`
   ${practicePanel};
 `;

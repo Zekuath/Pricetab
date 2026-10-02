@@ -105,25 +105,12 @@ const isCellSpan = (ms) => CELL_SPANS.some((v) => Math.abs(v - ms) < 1);
 /* How long the latch takes to close, and how long the draft's own pulse is
  * suppressed for so the two never play over each other. */
 const LOCK_PULSE_MS = 520;
-/* How far the pointer must travel before a press is a drag rather than a
- * click. Movement, never a timer: a press-and-hold that never moves is a
- * click that took a while, and a gesture keyed on how fast the hand is fails
- * on a trackpad. Six pixels is also about the distance a hand shakes on a
- * mouse button. */
-const CALL_DRAG_SLOP = 6;
-/* The pan arrows: the plate you can see, and the capsule that answers to the
- * pointer. The capsule is deliberately under one square in both directions
- * (a square is around 64px on a 900px window) — the arrow gets an area of its
- * own without taking a band you might want to call. */
-const PAN_PLATE = 28;
-const PAN_ZONE = 46;
-/* Room for the grid's own price labels down the left-hand edge, which the
- * left arrow must sit beside rather than on top of — and it is the *capsule*
- * that has to clear them, not the plate. Measured at 1280x800: a label runs
- * to x=47 and the capsule reached back to x=41, so resting on a price to read
- * it put the pointer inside a control, took the crosshair away and offered to
- * walk the board instead. The plate had cleared it by 3px and looked right. */
-const PAN_LEFT_GUTTER = 58;
+/* How far the pointer must travel before a press on the board is a drag
+ * rather than a click. Movement, never a timer: a press-and-hold that never
+ * moves is a click that took a while, and a gesture keyed on how fast the hand
+ * is fails on a trackpad. Six pixels is also about the distance a hand shakes
+ * on a mouse button — and the chart's own pan uses the same number. */
+const BOARD_DRAG_SLOP = 6;
 /* Letting go is quicker than locking. The latch is a commitment and is worth
  * watching land; a withdrawal is a correction, and dwelling on it would make
  * an accident feel like an event. */
@@ -215,10 +202,20 @@ const Svg = styled.svg`
     animation: ${draftGrow} 1.5s cubic-bezier(0.22, 1, 0.36, 1) infinite;
   }
 
+  /* **Three beats when a price lands, then still** (30 Sep 2026). It pulsed
+     for ever — and a transform on an SVG element is not composited in
+     Chrome, so an idle new tab paid a style and layout pass every frame:
+     measured, 93 ms of layout in three idle seconds with calls on (173 ms
+     with the chances drawn), and the pulse ran even while the dot was
+     hidden with calls off. The beats are restarted by updateLiveDot when the
+     last price changes, which is what they were saying anyway. */
   .pt-live-dot {
     transform-box: fill-box;
     transform-origin: center;
-    animation: ${liveDotPulse} 1.8s ease-in-out infinite;
+    animation: ${liveDotPulse} 1.8s ease-in-out 3;
+  }
+  .pt-live-dot[visibility="hidden"] {
+    animation: none;
   }
 
   height: 100%;
@@ -423,13 +420,12 @@ class LineBase extends PureComponent {
     this.hoverIndex = -1;
     this.hoverCellKey = null;     // which square the readout is describing
     this.nowDrag = null;          // { from, moved } while the now line is held
-    this.callDrag = null;         // { x, y, moved } while a square is dragged to
-    this.callDragRaf = 0;
+    this.boardDrag = null;        // { x0, y0, axis } while the board is pulled
+    this.boardDragRaf = 0;
+    this._panDrag = null;         // fractional squares walked while the hand holds it
     this.boardPan = 0;            // how many squares the board has been walked
     this.panAnim = null;          // { from, start } while that walk travels
     this.panRaf = 0;
-    this._panHold = 0;            // the wait before a held arrow starts repeating
-    this._panRepeat = 0;
     this.suppressClick = false;   // the click that ends a drag is not a click
     /* Kept and rewritten rather than rebuilt — see `poolNode`.
      *
@@ -548,16 +544,12 @@ class LineBase extends PureComponent {
     );
 
     _defineProperty(this, "handlePointerDown", (e) => {
-      /* A press on one of the pan arrows is that arrow's, whatever it is
-       * sitting over. The left one is placed a grab-band clear of the "now"
-       * line, but the board can be pulled out until there is one square of
-       * history left, and there the arrow has nowhere to go but onto the line
-       * — at which point the control that walks a square would have started a
-       * drag instead. The pan group already swallows its own clicks; this is
-       * the same rule one event earlier. */
-      if (e.target && e.target.closest && e.target.closest(".pt-pan")) return;
+      /* A press on the board's own controls — the way back, the zoom — is
+       * theirs; they swallow their clicks, and this is the same rule one
+       * event earlier. */
+      if (e.target && e.target.closest && e.target.closest(".pt-pan, .pt-zoom")) return;
       if (!this.nowLineAt(e.offsetX)) {
-        this.armCallDrag(e);
+        this.armBoardDrag(e);
         return;
       }
       this.nowDrag = { from: e.offsetX, x: e.offsetX, moved: false };
@@ -577,116 +569,126 @@ class LineBase extends PureComponent {
       this.updateCalls();
     });
 
-    /* **Drag a square to where you want it, and let go.**
+    /* **Drag the board to look somewhere else** (30 Sep 2026, *"ana ekranda
+     * yaptığımız sürükle bırak mantığını calls'a getirip kenardaki … oklarından
+     * kurtulmamızı istiyorum"*).
      *
-     * The board has always taken two clicks, and the reason is still good: a
-     * chart is a surface people click for other reasons, and one stray click
-     * must not commit a prediction that goes on a record. But two clicks is
-     * also the slowest way to say a thing you can already see — you are
-     * looking at the square, and pressing twice on it is a formality.
+     * The chart's own gesture, brought to the board: press anywhere and pull.
+     * Up and down walk the price window — the lattice follows the hand by
+     * fractions of a square and settles on the nearest whole one when let go,
+     * so a lattice line still lands where the last one was. Sideways moves
+     * the line between history and board, the setting the "now" line's own
+     * drag writes. The four arrows that did the same things a square at a
+     * time, from the board's edges, are gone; the way back to the price stays
+     * (`pt-pan-home`), because a double-click on this chart is two clicks and
+     * two clicks call a square.
      *
-     * So a **drag** is the second way in, and it is deliberately not a
-     * shortcut for one click: press, pull to the square you mean, let go, and
-     * it locks. One continuous gesture, with the box under the hand the whole
-     * time, which is how you point at something. Clicking still takes two,
-     * unchanged and untouched, so nothing anybody has learned stops working
-     * and a slipped click still cannot call anything.
+     * **The axis is chosen once**, by the first `BOARD_DRAG_SLOP` of travel:
+     * a walk up the board must not also nudge a stored setting by the few
+     * pixels a hand drifts sideways.
      *
-     * The two are told apart by movement, not by timing — a press-and-hold
-     * that never moves is a click that took a while, and a gesture that
-     * depends on how fast your hand is is a gesture that fails on a trackpad.
-     * `CALL_DRAG_SLOP` (6px) is the line, which is also the distance below
-     * which a "drag" is a hand shaking on a mouse button.
-     *
-     * Nothing is drafted on the press. Drafting there would make a plain
-     * click place a call on its own — the click handler would find its own
-     * draft already sitting under it and lock immediately, quietly deleting
-     * the two-click rule while every comment still claimed it. */
-    /* Let go of a held arrow — on release, on the pointer leaving it, and on
-     * unmount. A repeat that outlives the press walks the board on its own. */
-    _defineProperty(this, "stopPanHold", () => {
-      clearTimeout(this._panHold);
-      clearInterval(this._panRepeat);
-      this._panHold = 0;
-      this._panRepeat = 0;
+     * A drag used to place a call (press on a square, pull, let go). One
+     * press cannot mean both, and moving the board is what every chart
+     * answers a drag with; a call takes two clicks, as it always also did. */
+    _defineProperty(this, "armBoardDrag", (e) => {
+      if (!this.props.predict || !this.width) return;
+      this.boardDrag = {
+        x0: e.offsetX,
+        y0: e.offsetY,
+        x: e.offsetX,
+        y: e.offsetY,
+        axis: null,
+        pan0: this.boardPanRows(),
+        fw0: this.futureWidth(),
+        id: e.pointerId,
+      };
     });
 
-    _defineProperty(this, "armCallDrag", (e) => {
-      if (!this.props.predict || typeof this.props.onPlaceCall !== "function") return;
-      const cell = this.cellAt(e.offsetX, e.offsetY);
-      /* Only from an empty square. Starting on a locked box is how you take
-       * one back (two clicks, `unlockId`), and a drag beginning there would
-       * be two gestures fighting over one press. */
-      if (!cell || this.callOccupying(cell)) return;
-      this.callDrag = { x: e.offsetX, y: e.offsetY, fromX: e.offsetX, fromY: e.offsetY, moved: false };
-    });
-
-    /* One redraw per frame while the box follows the hand, the rule the "now"
-     * drag and the crosshair both already follow: a trackpad fires several
-     * moves per frame and each one that crossed a square would redraw the
-     * whole board, so the work piles up behind the hand. */
-    _defineProperty(this, "trackCallDrag", (e) => {
-      const d = this.callDrag;
+    /* One redraw per frame while the board follows the hand — a trackpad
+     * fires several moves a frame, the rule the crosshair and the "now" drag
+     * already follow. */
+    _defineProperty(this, "trackBoardDrag", (e) => {
+      const d = this.boardDrag;
       d.x = e.offsetX;
       d.y = e.offsetY;
-      if (
-        !d.moved &&
-        Math.abs(d.x - d.fromX) + Math.abs(d.y - d.fromY) >= CALL_DRAG_SLOP
-      ) {
-        d.moved = true;
-        /* The crosshair stands down for the same reason it does on the "now"
-         * handle: the chart is being operated, not read, and a price readout
-         * would sit on top of the box being placed. */
+      if (!d.axis) {
+        const dx = d.x - d.x0;
+        const dy = d.y - d.y0;
+        if (Math.abs(dx) + Math.abs(dy) < BOARD_DRAG_SLOP) return;
+        d.axis = Math.abs(dy) >= Math.abs(dx) ? "y" : "x";
+        /* The chart is being operated, not read: the readout, a draft and a
+         * pending withdrawal all belong to a square that is about to move. */
+        this.panAnim = null;
+        this.draftAt = null;
+        this.unlockId = null;
         this.clearHover();
+        this.updateCalls();
+        const svg = this.svgRef.current;
+        if (svg) {
+          svg.style.cursor = d.axis === "y" ? "grabbing" : "ew-resize";
+          if (svg.setPointerCapture) {
+            try {
+              svg.setPointerCapture(d.id);
+            } catch {
+              /* a pointer that has already gone; moves still arrive */
+            }
+          }
+        }
       }
-      if (!d.moved) return;
-      if (!this.callDragRaf) {
-        this.callDragRaf = requestAnimationFrame(this.applyCallDrag);
-      }
+      if (!this.boardDragRaf) this.boardDragRaf = requestAnimationFrame(this.applyBoardDrag);
     });
 
-    _defineProperty(this, "applyCallDrag", () => {
-      this.callDragRaf = 0;
-      const d = this.callDrag;
-      if (!d || !d.moved) return;
-      /* The **position** is held and the square re-derived from it, exactly as
-       * `draftAt` does between two clicks — the price domain moves under a
-       * refresh, so a stored cell would stop matching the lattice it was taken
-       * from. */
-      this.draftAt = { x: d.x, y: d.y };
-      this.unlockId = null;
-      this.updateCalls();
-      this.drawGridCell();
+    _defineProperty(this, "applyBoardDrag", () => {
+      this.boardDragRaf = 0;
+      const d = this.boardDrag;
+      if (!d || !d.axis) return;
+      if (d.axis === "y") {
+        const pitch = this.cellPitch || this.boardPitch();
+        if (!(pitch > 0)) return;
+        // The content follows the hand: pulling down brings higher prices in
+        const rows = Math.max(-BOARD_PAN_MAX, Math.min(BOARD_PAN_MAX, d.pan0 + (d.y - d.y0) / pitch));
+        if (rows !== this._panDrag) {
+          this._panDrag = rows;
+          this.updatePath();
+        }
+        return;
+      }
+      if (typeof this.props.onFutureShareChange !== "function") return;
+      const { least, most } = this.nowLimits();
+      const future = Math.min(most, Math.max(least, d.fw0 - (d.x - d.x0)));
+      const share = future / this.width;
+      if (share !== this.props.futureShare) this.props.onFutureShareChange(share);
     });
 
-    /* Let go: on a square, that is the call. Anywhere else, the draft goes
-     * with the gesture rather than being left on the chart — a half-made call
-     * nobody asked to keep. */
-    _defineProperty(this, "finishCallDrag", () => {
-      const d = this.callDrag;
-      this.callDrag = null;
-      if (this.callDragRaf) {
-        cancelAnimationFrame(this.callDragRaf);
-        this.callDragRaf = 0;
+    /* Let go: the last frame is honoured, and a walk settles on the nearest
+     * whole square with the pan's own travel. Returns whether it was a drag,
+     * so the click that follows a release is not taken as a click. */
+    _defineProperty(this, "finishBoardDrag", (e) => {
+      const d = this.boardDrag;
+      if (!d) return false;
+      if (this.boardDragRaf) {
+        cancelAnimationFrame(this.boardDragRaf);
+        this.boardDragRaf = 0;
       }
-      if (!d || !d.moved) return false;
-      const cell = this.cellAt(d.x, d.y);
-      this.draftAt = null;
-      this.unlockId = null;
-      if (cell && !this.callOccupying(cell)) {
-        // The same latch the second click plays, so the two ways in end
-        // identically — a call placed by dragging must not look different
-        // from one placed by clicking
-        this.lockPulse = cell;
-        clearTimeout(this.lockPulseTimer);
-        this.lockPulseTimer = setTimeout(() => {
-          this.lockPulse = null;
-          this.updateCalls();
-        }, LOCK_PULSE_MS);
-        this.props.onPlaceCall(cell);
+      if (d.axis) this.applyBoardDrag();
+      this.boardDrag = null;
+      const svg = this.svgRef.current;
+      if (svg) {
+        svg.style.cursor = "";
+        if (svg.releasePointerCapture && e && svg.hasPointerCapture && svg.hasPointerCapture(e.pointerId)) {
+          svg.releasePointerCapture(e.pointerId);
+        }
       }
-      this.updateCalls();
-      this.drawGridCell();
+      if (!d.axis) return false;
+      if (this._panDrag != null) {
+        const from = this._panDrag;
+        this._panDrag = null;
+        this.boardPan = Math.max(-BOARD_PAN_MAX, Math.min(BOARD_PAN_MAX, Math.round(from)));
+        this._panShown = from;
+        this.panAnim = { from, start: Date.now() };
+        if (!this.panRaf) this.panRaf = requestAnimationFrame(this.runPanAnim);
+      }
+      this.updatePath();
       return true;
     });
 
@@ -731,8 +733,17 @@ class LineBase extends PureComponent {
     _defineProperty(this, "handleNowKey", (e) => {
       const { least, most } = this.nowLimits();
       let cells;
-      if (e.key === "ArrowRight" || e.key === "ArrowUp") cells = NOW_STEP_CELLS;
-      else if (e.key === "ArrowLeft" || e.key === "ArrowDown") cells = -NOW_STEP_CELLS;
+      /* Up and down walk the board (30 Sep 2026): the arrows that did it
+       * from the board's edges were replaced by dragging, and this is where
+       * the keyboard reaches the same thing. */
+      if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+        e.preventDefault();
+        e.stopPropagation();
+        this.panBoard(e.key === "ArrowUp" ? 1 : -1);
+        return;
+      }
+      if (e.key === "ArrowRight") cells = NOW_STEP_CELLS;
+      else if (e.key === "ArrowLeft") cells = -NOW_STEP_CELLS;
       else if (e.key === "Home" || e.key === "End") {
         e.preventDefault();
         e.stopPropagation();
@@ -771,15 +782,11 @@ class LineBase extends PureComponent {
     });
 
     _defineProperty(this, "handlePointerUp", (e) => {
-      if (this.callDrag) {
+      if (this.boardDrag) {
         /* A drag that moved must not also arrive as a click — the click
          * fires after the release, and on this board a click drafts. Same
          * guard the "now" handle needs, for the same reason. */
-        if (this.finishCallDrag()) this.suppressClick = true;
-        const svgc = this.svgRef.current;
-        if (svgc && svgc.releasePointerCapture && e && svgc.hasPointerCapture(e.pointerId)) {
-          svgc.releasePointerCapture(e.pointerId);
-        }
+        if (this.finishBoardDrag(e)) this.suppressClick = true;
         return;
       }
       if (!this.nowDrag) return;
@@ -806,9 +813,9 @@ class LineBase extends PureComponent {
     _defineProperty(this, "handlePointerMove", (e) => {
       // A pan owns the pointer (chart-viewport.js); the readout waits for it
       if (this.props.panning) return;
-      if (this.callDrag) {
-        this.trackCallDrag(e);
-        if (this.callDrag.moved) return;
+      if (this.boardDrag) {
+        this.trackBoardDrag(e);
+        if (this.boardDrag.axis) return;
       }
       if (this.nowDrag) {
         /* One redraw per frame, not one per pointer event. A trackpad fires
@@ -966,19 +973,9 @@ class LineBase extends PureComponent {
       /* A drag that leaves the window is over. Without this the flag survived
        * — the pointer came back somewhere else on the chart and the line
        * followed it, having never been let go of. */
-      /* A drag that leaves the window is abandoned, never completed: the
-       * square under a pointer that has gone is not a square anybody chose. */
-      if (this.callDrag) {
-        this.callDrag = null;
-        if (this.callDragRaf) {
-          cancelAnimationFrame(this.callDragRaf);
-          this.callDragRaf = 0;
-        }
-        if (this.draftAt) {
-          this.draftAt = null;
-          this.updateCalls();
-        }
-      }
+      /* A walk that leaves the window ends where it was: the board is
+       * where the hand last put it, settled on a whole square. */
+      if (this.boardDrag && this.finishBoardDrag()) this.suppressClick = false;
       if (this.nowDrag) {
         this.nowDrag = null;
         this.suppressClick = false;
@@ -1026,6 +1023,17 @@ class LineBase extends PureComponent {
       const last = scaled[scaled.length - 1];
       const first = dot.getAttribute("visibility") === "hidden";
       dot.setAttribute("visibility", "visible");
+      // A new price: the dot beats three times again (see the CSS above)
+      const raw = safePrices(this.props.prices);
+      const price = raw.length ? Number(raw[raw.length - 1].price) : NaN;
+      if (price !== this._liveDotPrice) {
+        if (this._liveDotPrice !== undefined && !first) {
+          dot.style.animation = "none";
+          void dot.getBoundingClientRect();
+          dot.style.animation = "";
+        }
+        this._liveDotPrice = price;
+      }
       /* Straight there while the "now" line is being dragged. The dot moves on
        * a 300ms transition, which is right when the price arrives — it reads
        * as the price moving — and wrong under a hand: the chart slid with the
@@ -1187,6 +1195,26 @@ class LineBase extends PureComponent {
       };
     });
 
+    /* **The vertical drag's slide** (chart-viewport.js, 1 Oct 2026): a share
+     * of the window's height, read by every path from a price to a y that
+     * the line's own domain decides — the line, the candles, a level, a
+     * click, the axis, the tools. Nothing while a lattice owns the y or a
+     * comparison draws percent. */
+    _defineProperty(this, "yShift", () => {
+      if (this.priceToY || this.compareScaled || this.props.predict) return 0;
+      const f = Number(this.props.yPan);
+      return isFinite(f) ? f : 0;
+    });
+
+    // The line's window under a vertical drag; [null, null] is the data's own
+    _defineProperty(this, "slidWindow", () => {
+      const f = this.yShift();
+      if (!f) return [null, null];
+      const [lo, hi] = extent(safePrices(this.props.prices), (d) => d.price);
+      if (!(hi > lo)) return [null, null];
+      return shiftDomain(lo, hi, f, this.logAxis() && canScaleLog([lo, hi]));
+    });
+
     _defineProperty(this, "levelY", (v) => {
       if (!isFinite(v) || !(v > 0)) return null;
       if (this.priceToY) {
@@ -1205,6 +1233,7 @@ class LineBase extends PureComponent {
         PADDING,
         PADDING,
         this.logAxis(),
+        this.yShift(),
       );
     });
 
@@ -1229,6 +1258,7 @@ class LineBase extends PureComponent {
         if (price > hi) hi = price;
       }
       if (!isFinite(lo) || !isFinite(hi)) return null;
+      [lo, hi] = shiftDomain(lo, hi, this.yShift(), this.logAxis() && canScaleLog([lo, hi]));
       return v > hi ? "above" : v < lo ? "below" : null;
     });
 
@@ -1501,7 +1531,13 @@ class LineBase extends PureComponent {
       const color = this.props.theme.color;
       // The tags go to the plot's one label lane (edgeMark, chart-axes.js)
       const tags = [];
-      if (!list.length || !this.height || !this.width) {
+      /* **Not on the board** (30 Sep 2026, "target koyduk ya bu calls modunda
+         görünüyor, bu da tasarımı bozuyor"). A target is a request about the
+         price, a call is a claim about a square; drawn on the board, the
+         target's lines cut across the squares and its tags sat on the zoom
+         pill and the board's foot. The targets keep being checked — only the
+         drawing stands down while calls are on. */
+      if (!list.length || !this.height || !this.width || this.props.predict) {
         this.hideRest(this._tgtLines);
         this.hideRest(this._tgtTags);
         this.edgeMark("targets", []);
@@ -2490,6 +2526,7 @@ class LineBase extends PureComponent {
         PADDING,
         PADDING,
         this.logAxis(),
+        this.yShift(),
       );
     });
 
@@ -2923,6 +2960,7 @@ class LineBase extends PureComponent {
             noteText += ` · ${msg("board_ordinary", "as far in as long: $1 of $2", String(count.hits), String(count.windows))}`;
           }
         }
+        noteText += this.oddsNote(cellBox);
       }
       const note = this.hoverNoteRef.current;
       if (note) {
@@ -3008,7 +3046,7 @@ class LineBase extends PureComponent {
           msg("ch_high", "High"),
           msg("ch_low", "Low"),
           msg("ch_close", "Close"),
-          msg("ch_volume", "Volume"),
+          this.props.volumeVenue ? msg("ch_volume_at", "Volume · $1", this.props.volumeVenue) : msg("ch_volume", "Volume"),
         ];
         values = [
           fmt(candle.open),
@@ -3249,6 +3287,7 @@ class LineBase extends PureComponent {
         PADDING,
         plotRight,
         bandTop,
+        this.yShift(),
       );
       const previous = this.candleScale;
       this.candleScale = scaled;
@@ -3625,7 +3664,7 @@ class LineBase extends PureComponent {
        * lattice decides what is on screen and the line is drawn into it. They
        * would part company on the first refresh otherwise — the mesh holding
        * still while the line rescaled underneath it. */
-      const window = geo && geo.domain ? geo.domain : [null, null];
+      const window = geo && geo.domain ? geo.domain : this.slidWindow();
       const padY = this.plotPadY();
       const scaled = scalePrices(
         safePrices(prices),
@@ -3720,6 +3759,7 @@ class LineBase extends PureComponent {
        * game on it. Drawing is conditional; clearing must not be. */
       this.updateGrid();
       this.updateTravelBand();
+      this.updateCellOdds();
       this.updateCalls();
       this.updateLiveDot();
       /* And the last-price tag, for the reason the four above are here: it is
@@ -3922,6 +3962,11 @@ class LineBase extends PureComponent {
       texts: { list: [], at: 0 },
     };
     Object.assign(this, chartStudies(this));
+    /* The chance on each square of the board (chart-odds.js, cell-odds.js). */
+    this.oddsLayerRef = createRef();
+    this._oddsNodes = { rects: { list: [], at: 0 }, texts: { list: [], at: 0 } };
+    this._oddsCols = new Map();
+    Object.assign(this, chartOdds(this));
 
     _defineProperty(this, "updateGrid", () => {
       const g = this.gridRef.current;
@@ -3941,7 +3986,6 @@ class LineBase extends PureComponent {
       if (this._panUi && !this.props.predict) {
         this._panUi.setAttribute("visibility", "hidden");
         this._panUi.setAttribute("pointer-events", "none");
-        this.stopPanHold();
       }
       /* The mesh gets its own layer so the *mask* can be on the mesh alone.
        * The now-line's handle and the zoom pill live in this group too, and
@@ -4357,8 +4401,8 @@ class LineBase extends PureComponent {
             const gripTitle = document.createElementNS(ns, "title");
             gripTitle.textContent =
               msg(
-                "ch_drag_or_keys",
-                "Drag, or use the arrow keys, to change how far ahead you can call",
+                "ch_now_keys",
+                "Drag, or use ← and →, to change how far ahead you can call — ↑ and ↓ walk the board",
               );
             grip.appendChild(gripTitle);
             grip.addEventListener("keydown", this.handleNowKey);
@@ -4452,207 +4496,30 @@ class LineBase extends PureComponent {
             }
           }
         }
-      /* **The four arrows, and the way back to the price.**
+      /* **The way back to the price** (the four arrows beside it were
+       * replaced by dragging the board on 30 Sep 2026 — see `armBoardDrag`).
        *
-       * The board reaches about three squares either side of where the price
-       * is. That is the right default and it is not everything: the call an
-       * hour chart most invites — "it falls off a cliff" — ends at a band
-       * with no square on the screen, and until now there was no way to go
-       * and look. The zoom widens what a square is *worth*, which is a
-       * different question; this walks the window.
-       *
-       * Up and down move the price window a square at a time. Left and right
-       * move the boundary between history and board, which is the same
-       * setting the "now" line drags — one thing, two ways to reach it, and
-       * the arrows are the discoverable one: a line you have to know is a
-       * handle is not a control.
-       *
-       * **They repeat while held**, which is the whole ask. A press is one
-       * square; holding walks. The travel is eased and one repeat long, so
-       * the board arrives before it is asked to leave again and the walk
-       * reads as continuous rather than as a series of jumps.
-       *
-       * The fifth control exists only while it leads somewhere — the same
-       * rule the zoom pill's readout follows. Panned away, there is a chip
-       * that says how far and takes you back; at the price it is not drawn,
-       * because a button that cannot change anything is a promise the next
-       * click breaks. */
+       * It exists only while it leads somewhere — the rule the zoom pill's
+       * readout follows: walked away, a chip at the top of the board says how
+       * far and takes you back; at the price it is not drawn, because a
+       * button that cannot change anything is a promise the next click
+       * breaks. While the hand is on the board it counts the squares live.
+       * The keyboard walks the board from the "now" handle (↑ / ↓). */
       if (future > 0) {
         if (!this._panUi) {
           const ui = document.createElementNS(ns, "g");
           ui.setAttribute("class", "pt-pan");
           ui.setAttribute("pointer-events", "auto");
           ui.addEventListener("click", (e) => e.stopPropagation());
-          const parts = { arrows: [], home: null };
-          /* Chevrons rather than solid triangles: a filled arrowhead on this
-           * chart is the shape the "what happened here?" marks already use. */
-          const glyphs = {
-            up: "M-5,3 L0,-3 L5,3",
-            down: "M-5,-3 L0,3 L5,-3",
-            left: "M3,-5 L-3,0 L3,5",
-            right: "M-3,-5 L3,0 L-3,5",
-          };
-          for (const dir of ["up", "down", "left", "right"]) {
-            const b = document.createElementNS(ns, "g");
-            b.setAttribute("class", "pt-pan-btn");
-            b.setAttribute("tabindex", "0");
-            b.setAttribute("role", "button");
-            b.setAttribute(
-              "aria-label",
-              dir === "up"
-                ? msg("ch_pan_up", "Look at higher prices")
-                : dir === "down"
-                  ? msg("ch_pan_down", "Look at lower prices")
-                  : dir === "right"
-                    ? msg("ch_pan_right", "Show more squares further ahead")
-                    : msg("ch_pan_left", "Show less board and more history"),
-            );
-            /* **The area that answers to the pointer is its own, and it is
-             * bigger than the thing you can see.** A 22px plate is a hard
-             * target to land on and a harder one to rest on, and simply
-             * growing the plate to a comfortable size would put a control
-             * the size of a square on top of a square — so the visible plate
-             * grows a little and the *hit area* grows a lot, as a capsule
-             * around it that is deliberately smaller than one square in both
-             * directions. Hovering inside it means "walk", never "point at
-             * the band underneath", which is why the capsule also puts the
-             * crosshair away on the way in. */
-            const zone = document.createElementNS(ns, "rect");
-            zone.setAttribute("width", PAN_ZONE);
-            zone.setAttribute("height", PAN_ZONE);
-            zone.setAttribute("rx", 12);
-            zone.setAttribute("fill", "transparent");
-            b.appendChild(zone);
-            const plate = document.createElementNS(ns, "rect");
-            plate.setAttribute("width", PAN_PLATE);
-            plate.setAttribute("height", PAN_PLATE);
-            plate.setAttribute("rx", 8);
-            b.appendChild(plate);
-            const chev = document.createElementNS(ns, "path");
-            chev.setAttribute("d", glyphs[dir]);
-            chev.setAttribute("fill", "none");
-            chev.setAttribute("stroke-width", "1.6");
-            chev.setAttribute("stroke-linecap", "round");
-            chev.setAttribute("stroke-linejoin", "round");
-            b.appendChild(chev);
-            const title = document.createElementNS(ns, "title");
-            title.textContent =
-              dir === "up" || dir === "down"
-                ? msg(
-                    "ch_pan_hint",
-                    "Rest the pointer here to walk the board that way — or press it, or use the arrow keys",
-                  )
-                : msg(
-                    "ch_pan_hint_hold",
-                    "Press, or hold, to change how much of the chart is board",
-                  );
-            b.appendChild(title);
-            const step = () => {
-              /* Which arrow was last used, so the way back can be drawn
-                 beside it rather than in a corner of the board nobody is
-                 looking at. Only the two that produce an offset are worth
-                 remembering: left and right change how much board there is,
-                 which has its own way back — the "now" line. */
-              if (dir === "up" || dir === "down") this._panLast = dir;
-              if (dir === "up") this.panBoard(1);
-              else if (dir === "down") this.panBoard(-1);
-              else this.nudgeNow(dir === "right" ? 1 : -1);
-            };
-            const repeatFrom = (wait) => {
-              clearTimeout(this._panHold);
-              clearInterval(this._panRepeat);
-              this._panHold = setTimeout(() => {
-                this._panRepeat = setInterval(step, BOARD_PAN_REPEAT_MS);
-              }, wait);
-            };
-            /* Held down, not clicked repeatedly. The first repeat waits, so a
-             * single press is a single square and the control is still usable
-             * by someone who taps. */
-            const start = (e) => {
-              e.stopPropagation();
-              step();
-              repeatFrom(BOARD_PAN_HOLD_MS);
-            };
-            /* **And resting on it is enough.** The pointer is already on the
-             * chart and the arrows are at its edges, so hovering is the
-             * shortest route there is — but only after a dwell (see
-             * `BOARD_PAN_DWELL_MS`), or the board would walk off while the
-             * pointer was on its way somewhere else. Nothing happens on the
-             * first frame of the hover; what happens is the arrow comes to
-             * full strength, so the wait is visibly doing something. */
-            b.addEventListener("pointerenter", () => {
-              this._panHot = dir;
-              b.setAttribute("opacity", "1");
-              /* Inside the capsule the chart is being operated, not read —
-               * the same rule the "now" handle and the move marks follow.
-               * Left drawing, the crosshair would light the very square the
-               * arrow is about to move out from under the pointer. */
-              this.clearHover();
-              this.updateGrid();
-              /* **Only up and down answer to a hover, and the asymmetry is
-               * the point.** Those two move the *view*: walking is exactly
-               * what resting on them should do, it costs nothing and the way
-               * back is beside them. Left and right do not move a view — they
-               * rewrite `futureShare`, a stored setting shared with the "now"
-               * line — and resting the pointer near the edge of the chart
-               * must not quietly change a preference. It also made them hard
-               * to press: aiming at one takes about as long as the dwell, so
-               * the board had already started walking before the click
-               * landed and the click then added to it. */
-              if (dir === "up" || dir === "down") repeatFrom(BOARD_PAN_DWELL_MS);
-            });
-            b.addEventListener("pointerdown", start);
-            b.addEventListener("pointerup", this.stopPanHold);
-            b.addEventListener("pointerleave", () => {
-              this._panHot = null;
-              this.stopPanHold();
-              this.updateGrid();
-            });
-            b.addEventListener("pointercancel", this.stopPanHold);
-            b.addEventListener("focus", () => b.setAttribute("opacity", "1"));
-            b.addEventListener("blur", () => this.updateGrid());
-            /* **The arrow keys do the same thing, from any of the four.**
-             * Scoped to the focused arrow rather than taken globally: the
-             * unmodified arrow keys already move between coins, and a control
-             * that quietly redefines them from anywhere on the page is worse
-             * than one that cannot be reached by keyboard at all. Tab to an
-             * arrow and the four keys walk the board; Enter and Space step
-             * the one you are on. */
-            b.addEventListener("keydown", (e) => {
-              const byKey = {
-                ArrowUp: () => this.panBoard(1),
-                ArrowDown: () => this.panBoard(-1),
-                ArrowRight: () => this.nudgeNow(1),
-                ArrowLeft: () => this.nudgeNow(-1),
-              };
-              if (byKey[e.key]) {
-                e.preventDefault();
-                e.stopPropagation();
-                byKey[e.key]();
-                return;
-              }
-              if (e.key !== "Enter" && e.key !== " ") return;
-              e.preventDefault();
-              e.stopPropagation();
-              step();
-            });
-            ui.appendChild(b);
-            parts.arrows.push({ node: b, plate, chev, zone, dir });
-          }
           const home = document.createElementNS(ns, "g");
           home.setAttribute("class", "pt-pan-home");
-          home.setAttribute("tabindex", "0");
           home.setAttribute("role", "button");
-          home.setAttribute(
-            "aria-label",
-            msg("ch_pan_home", "Bring the board back to the price"),
-          );
+          home.setAttribute("aria-label", msg("ch_pan_home", "Bring the board back to the price"));
           const homeBox = document.createElementNS(ns, "rect");
           homeBox.setAttribute("height", 18);
           homeBox.setAttribute("rx", 5);
           home.appendChild(homeBox);
           const homeText = document.createElementNS(ns, "text");
-          homeText.setAttribute("y", 13);
           homeText.setAttribute("text-anchor", "middle");
           homeText.setAttribute("font-size", "9");
           homeText.setAttribute("letter-spacing", "0.06em");
@@ -4672,123 +4539,19 @@ class LineBase extends PureComponent {
             goHome();
           });
           ui.appendChild(home);
-          parts.home = home;
-          parts.homeBox = homeBox;
-          parts.homeText = homeText;
           this._panUi = ui;
-          this._panParts = parts;
+          this._panParts = { home, homeBox, homeText };
           g.appendChild(ui);
         }
-        const { arrows, home, homeBox, homeText } = this._panParts;
+        const { home, homeBox, homeText } = this._panParts;
         const midX = Math.round((nowX + this.width) / 2);
-        /* Clear of everything already drawn on the board: the time labels at
-         * the foot (the down arrow was on top of them, two readings in the
-         * same few pixels), the zoom pill at the top right, and the "now"
-         * grip at the top of the boundary line. */
-        const half = PAN_PLATE / 2;
-        /* **Where the four go.**
-         *
-         * Up and down sit at the top and bottom of the board, because what
-         * they move is the price window and those are its two ends.
-         *
-         * Left and right are a different pair: they do not move the window,
-         * they move the **line between history and board**. They were placed
-         * at the two ends of that line's span — one at each edge of the chart
-         * — on the reasoning that the thing they slide is between them. That
-         * shape reads at a glance and does not survive use. The left arrow
-         * ended up at the far edge of the screen from the line it moves, over
-         * the price series, with its capsule on the grid's price labels,
-         * while the right one happened to land where the board is. So the
-         * left arrow comes back to the boundary, on the history side of it,
-         * a grab-band clear of the line itself — the objection that moved it
-         * away was that it landed on the "now" grip, and the grip is at the
-         * top of the line while these two sit at mid-height. It travels with
-         * the line, which is the point rather than the cost: the line is what
-         * you are watching while you press.
-         *
-         * `PAN_LEFT_GUTTER` is the floor, keeping the capsule clear of the
-         * price labels down the left-hand edge when the board has been pulled
-         * out over nearly the whole width. */
-        const at = {
-          up: [midX, 34 + half],
-          down: [midX, this.height - 46 - half],
-          /* Just left of the line, on the history side of it. It sat at the
-           * chart's own left edge — the far end of the span it slides, which
-           * is a shape you can read but is not where the hand is: the thing
-           * you are watching is the boundary, and the button that moves it
-           * was a thousand pixels away from it, over the price line, with its
-           * capsule on the price labels. Beside the line is the same
-           * arrangement the way-back chip already uses — the control goes
-           * where you are looking.
-           *
-           * `NOW_GRAB` of clearance, because the line is grabbable for 12px
-           * either side along its whole height: any closer and a press meant
-           * to walk one square would start a drag instead. The floor keeps it
-           * off the price labels when the board has been pulled almost the
-           * whole width; at that point there is one square of history left
-           * and the arrow is at its own limit anyway. */
-          left: [
-            Math.max(
-              PAN_LEFT_GUTTER + half,
-              Math.round(nowX - NOW_GRAB - PAN_ZONE / 2),
-            ),
-            Math.round(this.height / 2),
-          ],
-          right: [this.width - 8 - half, Math.round(this.height / 2)],
-        };
-        /* The two horizontal arrows have ends too, and until now only the
-         * vertical pair said so: at the limits the drag already clamps to,
-         * pressing left or right moved nothing while the arrow stayed lit. */
-        const nowSpan = this.nowLimits();
-        const futureNow = this.futureWidth();
-        for (const a of arrows) {
-          const [cx, cy] = at[a.dir];
-          a.zone.setAttribute("x", cx - PAN_ZONE / 2);
-          a.zone.setAttribute("y", cy - PAN_ZONE / 2);
-          a.plate.setAttribute("x", cx - half);
-          a.plate.setAttribute("y", cy - half);
-          a.plate.setAttribute("fill", color.bgSecondary);
-          a.plate.setAttribute("stroke", color.border);
-          a.chev.setAttribute("transform", `translate(${cx},${cy})`);
-          a.chev.setAttribute("stroke", color.text);
-          /* At the end of its travel a direction stops being a control, the
-           * same rule the zoom's ± follow at the ends of the ladder. */
-          const spent =
-            (a.dir === "up" && this.boardPan >= BOARD_PAN_MAX) ||
-            (a.dir === "down" && this.boardPan <= -BOARD_PAN_MAX) ||
-            (a.dir === "left" && futureNow <= nowSpan.least + 0.5) ||
-            (a.dir === "right" && futureNow >= nowSpan.most - 0.5);
-          /* Full while the pointer is resting on it — which is also the
-           * signal that the dwell has started and something is about to
-           * happen. Quiet otherwise, the manners every control on this chart
-           * has. */
-          a.node.setAttribute(
-            "opacity",
-            spent ? "0.18" : this._panHot === a.dir ? "1" : "0.5",
-          );
-          a.node.setAttribute("pointer-events", spent ? "none" : "auto");
-          if (spent) a.node.removeAttribute("tabindex");
-          else a.node.setAttribute("tabindex", "0");
-        }
-        const panned = (this.boardPan || 0) !== 0;
-        const homeLabel = msg(
-          "ch_pan_off",
-          "$1 off · back",
-          `${this.boardPan > 0 ? "+" : ""}${this.boardPan}`,
-        );
+        const walked = this._panDrag != null ? Math.round(this._panDrag) : this.boardPan || 0;
+        const panned = walked !== 0 || (this.boardPan || 0) !== 0;
+        const homeLabel = msg("ch_pan_off", "$1 off · back", `${walked > 0 ? "+" : ""}${walked}`);
         if (homeText.textContent !== homeLabel) homeText.textContent = homeLabel;
         const homeW = homeLabel.length * 5.6 + 14;
-        /* **Beside the arrow that walked, not in a corner.** It sat at the
-         * foot of the board, which is nowhere near the hand: you walk with
-         * the up arrow at the top of the screen and the way back was two
-         * hundred pixels below, in a place there was no reason to look. It
-         * follows the last vertical arrow used — under the up arrow, over the
-         * down one — so the way back is where you already are. */
-        const beside = at[this._panLast === "down" ? "down" : "up"];
-        const homeY =
-          this._panLast === "down"
-            ? beside[1] - PAN_ZONE / 2 - 22
-            : beside[1] + PAN_ZONE / 2 + 4;
+        // Under the fade, clear of the zoom pill at the strip's top right
+        const homeY = Math.round(this.fadeEnd() + 6);
         homeBox.setAttribute("x", midX - homeW / 2);
         homeBox.setAttribute("y", homeY);
         homeBox.setAttribute("width", homeW);
@@ -4960,7 +4723,11 @@ class LineBase extends PureComponent {
         const { buttons, label, box, home, homeHit, homeRule, homeTitle } =
           this._zoomParts;
         const rows = this.callableRows();
-        const covers = step * rows;
+        /* Where the zoom is going, from its first frame: the travelling step
+           printed a new figure — and a new pill width — on every frame, so
+           the control shook while you used it (30 Sep 2026). */
+        const ends = this.zoomAnim ? this._zoomEnds : null;
+        const covers = (ends && ends.toStep > 0 ? ends.toStep : step) * rows;
         /* Decimals from the number being printed, not from the square's step:
          * with the step as the guide the same control read "±$1.0K" at one
          * notch and "±$2K" at the next. */
@@ -5333,9 +5100,14 @@ class LineBase extends PureComponent {
        * full; with nothing in focus the chart is exactly what it was. */
       const cards = new Map();
       const wanted = this._cmpHot || this._cmpPinned || null;
-      const shown = cmp.episodes
-        .filter((e) => e.at * 1000 >= t0 && e.at * 1000 <= t1)
-        .slice(-COMPANION_MAX);
+      /* The latest of each kind in the window (1 Oct 2026): with sixteen
+         patterns, wedges alone fire about once a month, and two of one kind
+         drew their names over each other while saying nothing the newer one
+         does not. The coin's record for the kind is in its card either way. */
+      const inWindow = cmp.episodes.filter((e) => e.at * 1000 >= t0 && e.at * 1000 <= t1);
+      const newest = new Map();
+      for (const e of inWindow) newest.set(e.kind, e);
+      const shown = inWindow.filter((e) => newest.get(e.kind) === e).slice(-COMPANION_MAX);
       const recentFrom = t1 - COMPANION_RECENT_DAYS * 86400000;
       const inRange = (cmp.setups || []).filter((m) => m.t * 1000 >= t0 && m.t * 1000 <= t1);
       const latest = new Map();
@@ -5345,8 +5117,14 @@ class LineBase extends PureComponent {
         if (!had || m.t > had.t) latest.set(m.id, m);
       }
       /* Newest first: the number 1 is the most recent. */
+      /* A reading that fires every few days (`recentDays`, companion-readings.js)
+         is named only on the latest days, or it would always be the newest. */
+      const recentFor = (m) => {
+        const d = COMPANION_SETUP_DEFS.find((x) => x.id === m.id);
+        return d && d.recentDays ? t1 - d.recentDays * 86400000 : recentFrom;
+      };
       const marks = [
-        ...Array.from(latest.values()).filter((m) => m.t * 1000 >= recentFrom),
+        ...Array.from(latest.values()).filter((m) => m.t * 1000 >= recentFor(m)),
         ...inRange.filter((m) => COMPANION_RARE_SETUPS.includes(m.id)),
       ]
         .sort((a, b) => b.t - a.t)
@@ -5411,7 +5189,7 @@ class LineBase extends PureComponent {
            on the dark ground. */
         const op = dim(key, live ? "0.95" : "0.6");
         const ink = e.bear ? color.chartLineRed : color.chartLineGreen;
-        const def = PRICE_PATTERNS.find((p) => p.id === e.kind);
+        const def = COMPANION_PATTERN_DEFS.find((p) => p.id === e.kind);
         let anchorX = null;
         let anchorY = null;
         for (const p of e.points) {
@@ -5451,6 +5229,16 @@ class LineBase extends PureComponent {
               return d <= 5 ? d : Infinity;
             },
           });
+        }
+        /* A swing pattern's other line — the triangle's second side, the
+           flag's pole (swing-patterns.js) — drawn quieter than the line the
+           close broke. */
+        for (const seg of e.lines || []) {
+          const ya2 = this.levelY(seg.from.price);
+          const yb2 = this.levelY(seg.to.price);
+          if (ya2 == null || yb2 == null) continue;
+          line(clampX(xAt(seg.from.t * 1000)), ya2, clampX(xAt(seg.to.t * 1000)), yb2, color.textSecondary, "2 2", op)
+            .setAttribute("data-companion-side", e.kind);
         }
         /* A resolved setup's levels run from its breakout to where one of
            them was reached. One still being walked has not got that far —
@@ -5514,7 +5302,7 @@ class LineBase extends PureComponent {
          "1·2·3" — or their numbers print over each other. */
       const rings = new Map();
       marks.forEach((m, k) => {
-        const def = STRATEGY_SETUPS.find((d) => d.id === m.id);
+        const def = COMPANION_SETUP_DEFS.find((d) => d.id === m.id);
         if (!def) return;
         const key = setupKey(m);
         const n = String(k + 1);
@@ -5620,7 +5408,7 @@ class LineBase extends PureComponent {
             msg(
               "cmp_c_move",
               "On this coin the next $1 days moved more than usual $2 of $3 times; an ordinary stretch does so half the time. $4",
-              String(SETUP_MOVE_HORIZON),
+              String(def.horizon || SETUP_MOVE_HORIZON),
               String(r.bigger),
               String(r.n),
               few(r.n),
@@ -5633,11 +5421,11 @@ class LineBase extends PureComponent {
             msg(
               "cmp_c_up",
               "On this coin, $1 days later it was up $2% of $3 times, typically $4; any $5 days: up $6%, typically $7. $8",
-              String(SETUP_HORIZON),
+              String(def.horizon || SETUP_HORIZON),
               r.up.toFixed(0),
               String(r.n),
               `${signedFixed(r.median, 1)}%`,
-              String(SETUP_HORIZON),
+              String(def.horizon || SETUP_HORIZON),
               r.baseUp.toFixed(0),
               `${signedFixed(r.baseMedian, 1)}%`,
               few(r.n),
@@ -5652,7 +5440,7 @@ class LineBase extends PureComponent {
         let up = 0;
         let down = 0;
         for (const mk of o.marks) {
-          const d = STRATEGY_SETUPS.find((x) => x.id === mk.id);
+          const d = COMPANION_SETUP_DEFS.find((x) => x.id === mk.id);
           if (d && d.kind === "up") up += 1;
           if (d && d.kind === "down") down += 1;
         }
@@ -5660,14 +5448,31 @@ class LineBase extends PureComponent {
           add(msg("cmp_c_mix", "Marks on screen: $1 said to point up, $2 said to point down.", String(up), String(down)), color.textSecondary);
         }
         add(
-          msg("cmp_c_tested", "Tested together on this app's data, none of the twelve setups differed from an ordinary day."),
+          COMPANION_READINGS.includes(def)
+            ? msg(
+                "cmp_c_tested_r",
+                "Tested together on four coins ($1 tests), none of the $2 readings differed from an ordinary day.",
+                String(COMPANION_READINGS_TESTED.tests),
+                String(COMPANION_READINGS.length),
+              )
+            : msg("cmp_c_tested", "Tested together on this app's data, none of the twelve setups differed from an ordinary day."),
           color.textSecondary,
         );
       } else {
         const { e, def, rec } = card;
         add(`${def.title} · ${def.claim}`, color.text, "title");
-        const status =
-          e.out === "pending"
+        /* A swing pattern breaks a line or a level, not a neckline — its own
+           words, and the pooled count it was tested on (swing-patterns.js). */
+        const swing = SWING_PATTERNS.includes(def);
+        const status = swing
+          ? e.out === "pending"
+            ? msg("cmp_c_open_s", "Broke out $1 at $2 — neither level reached yet.", o.ago(e.at), o.money(e.breakout))
+            : e.out === "target"
+              ? msg("cmp_c_hit_s", "Broke out $1; reached the measured move $2.", o.ago(e.at), o.ago(e.resolvedAt))
+              : e.out === "stop"
+                ? msg("cmp_c_stop_s", "Broke out $1; the invalidation level was reached first, $2.", o.ago(e.at), o.ago(e.resolvedAt))
+                : msg("cmp_c_neither_s", "Broke out $1; neither level was reached within $2 days.", o.ago(e.at), String(PRICE_PATTERN_WALK))
+          : e.out === "pending"
             ? msg("cmp_c_open", "Broke its neckline $1 at $2 — neither level reached yet.", o.ago(e.at), o.money(e.breakout))
             : e.out === "target"
               ? msg("cmp_c_hit", "Broke its neckline $1; reached the measured move $2.", o.ago(e.at), o.ago(e.resolvedAt))
@@ -5696,6 +5501,7 @@ class LineBase extends PureComponent {
             "record",
           );
         }
+        if (swing) add(swingTestedText(def.id), color.text, "tested");
         add(msg("cmp_c_rule", "Found by a fixed rule on daily candles, set before it was tested — no score, no entry."), color.textSecondary);
       }
       add(
@@ -5897,6 +5703,7 @@ class LineBase extends PureComponent {
               PADDING,
               PADDING,
               this.logAxis(),
+              this.yShift(),
             )
           : null;
       if (y == null) {
@@ -6085,7 +5892,8 @@ class LineBase extends PureComponent {
     ) {
       this.boardPan = 0;
       this.panAnim = null;
-      this.stopPanHold();
+      this._panDrag = null;
+      this.boardDrag = null;
     }
 
     /* **A new palette repaints what the chart draws itself** (30 Sep 2026).
@@ -6095,6 +5903,11 @@ class LineBase extends PureComponent {
      * landed, and the blue/orange palette would have waited the same way.
      * The resize path, which redraws all of it; skipped when new prices are
      * about to redraw it below anyway. */
+    // The window slid up or down by a hand: every layer, the bars with them
+    if (prevProps.yPan !== this.props.yPan && prevProps.prices === this.props.prices) {
+      this.updatePath();
+      this.updateCandles(false);
+    }
     if (prevProps.theme !== this.props.theme && prevProps.prices === this.props.prices) {
       this.updatePath();
       this.updateCandles(false);
@@ -6207,6 +6020,12 @@ class LineBase extends PureComponent {
        * later. Waiting costs nothing, because the commit that brings the
        * series redraws all of this anyway. */
       if (!this.reshape) this.updatePath();
+    } else if (
+      prevProps.cellOdds !== this.props.cellOdds ||
+      prevProps.oddsSeries !== this.props.oddsSeries
+    ) {
+      // The chances alone: the bars arrived, or the switch moved
+      this.updateCellOdds();
     } else if (
       prevProps.calls !== this.props.calls ||
       /* Settled calls are a second list and were not being watched, so
@@ -6412,10 +6231,9 @@ class LineBase extends PureComponent {
     if (this.hoverRaf) cancelAnimationFrame(this.hoverRaf);
     if (this._edgeRaf) cancelAnimationFrame(this._edgeRaf);
     if (this.dragRaf) cancelAnimationFrame(this.dragRaf);
-    if (this.callDragRaf) cancelAnimationFrame(this.callDragRaf);
+    if (this.boardDragRaf) cancelAnimationFrame(this.boardDragRaf);
     if (this.zoomRaf) cancelAnimationFrame(this.zoomRaf);
     if (this.panRaf) cancelAnimationFrame(this.panRaf);
-    this.stopPanHold();
     clearTimeout(this.lockPulseTimer);
     clearTimeout(this._fireworkSweep);
     const svg = this.svgRef.current;
@@ -6600,6 +6418,15 @@ class LineBase extends PureComponent {
           "aria-hidden": "true",
           pointerEvents: "none",
           mask: `url(#${this.fadeId})`,
+        }),
+        /* The chance on each square, shaded under the mesh's lines and the
+           call boxes and masked with them — what you point at stays on top. */
+        React.createElement("g", {
+          ref: this.oddsLayerRef,
+          "aria-hidden": "true",
+          pointerEvents: "none",
+          mask: `url(#${this.fadeId})`,
+          "data-odds-layer": "1",
         }),
         React.createElement("g", {
           ref: this.gridRef,

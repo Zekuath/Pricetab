@@ -61,7 +61,11 @@ const suites = [
   "test-candle-patterns.js",
   "test-price-patterns.js",
   "test-strategy-setups.js",
+  "test-companion-readings.js",
   "test-regime-grid.js",
+  "test-cell-odds.js",
+  "test-model-outlook.js",
+  "test-news-reader.js",
   // The outlook: counted readings of the next stretch, before a contract.
   "test-outlook.js",
   // The assistant: facts a desk checks, in three phases, never a verdict.
