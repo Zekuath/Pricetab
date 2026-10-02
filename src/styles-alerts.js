@@ -7,12 +7,43 @@
  * Loaded before alerts.js — see the script order in index.html.
  */
 
+/* In from the edge it is docked to, because it is a drawer now (23 Sep
+ * 2026) — and that edge is the left one since the 24th, so the slide came
+ * with it. It arrives mounted rather than sliding on a prop the way the
+ * chart's own drawer does, so the entrance is a keyframe and not a
+ * transition. */
 const alertIn = keyframes`
-  from { opacity: 0; transform: translateY(-10px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translateX(-18px); }
+  to   { opacity: 1; transform: translateX(0); }
+`;
+
+/* A timed notice leaving (see TimedToast): up and out, the way it came in
+   sideways — and the bar that says how long it has left. Transform and
+   opacity only; this is a new-tab page. */
+const toastOut = keyframes`
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(-10px); }
+`;
+
+const toastOutStill = keyframes`
+  from { opacity: 1; }
+  to   { opacity: 0; }
+`;
+
+const toastClock = keyframes`
+  from { transform: scaleX(1); }
+  to   { transform: scaleX(0); }
 `;
 
 // Fired-alert banners, stacked under the top edge
+/* **One type ladder, shared with the derivatives page.** This file used
+ * fifteen font sizes between 0.55rem and 0.9rem — twelve of them within a
+ * quarter of a rem of each other — which is why the panel read flat next to
+ * the practice page's five. Every size below is one of posType's rungs
+ * (styles-practice.js loads first): lead for the empty state's title,
+ * figure for rows and fields, body for prose and buttons, micro for labels,
+ * counts and hints. The toast keeps its own, larger, because it is read
+ * from across the room. */
 const AlertToastStack = styled.div`
   position: fixed;
   top: ${({ theme }) => theme.spacing.medium}rem;
@@ -22,6 +53,17 @@ const AlertToastStack = styled.div`
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
+
+  /* **On a phone the lane is at the foot.** At 430px the top of the page is
+     the price and the corner controls, and a toast there sat on both; the
+     bottom is where iOS puts its own, above the home indicator. */
+  @media (max-width: 520px) and (orientation: portrait) {
+    /* Under the header and above the drawing: the top of the chart is the
+       one band of a phone screen with nothing in it, and the foot is where
+       the widget dock and the app's own bar live. */
+    top: 23.5rem;
+    width: calc(100vw - 2rem);
+  }
   align-items: center;
 `;
 
@@ -46,22 +88,64 @@ const AlertToast = styled.div`
   font-size: 0.82rem;
   color: ${({ theme }) => theme.color.text};
   animation: ${alertIn} 0.25s ease-out;
+  /* For the time bar a timed notice carries along its foot. */
+  position: relative;
+  overflow: hidden;
+
+  ${({ leaving }) =>
+    leaving
+      ? css`
+          animation: ${toastOut} ${TOAST_LEAVE_MS}ms ease-in forwards;
+          pointer-events: none;
+
+          @media (prefers-reduced-motion: reduce) {
+            animation: ${toastOutStill} ${TOAST_LEAVE_MS}ms linear forwards;
+          }
+        `
+      : ""}
+`;
+
+/* How long a timed notice has left, as a hairline along its foot that
+   empties. It stops while the notice is held — under the pointer, holding
+   the focus, or on a tab nobody is looking at — because the time it
+   measures is time on screen. */
+const AlertToastTimer = styled.span`
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  transform-origin: left center;
+  background: ${({ theme, up }) =>
+    up ? theme.color.chartLineGreen : theme.color.chartLineRed};
+  opacity: 0.55;
+  animation: ${toastClock} ${({ ms }) => ms}ms linear forwards;
+  animation-play-state: ${({ held }) => (held ? "paused" : "running")};
+
+  @media (prefers-reduced-motion: reduce) {
+    display: none;
+  }
 `;
 
 // Direction as a shape as well as a colour
+/* The arrow. In a row it is a bare glyph on the coin's own baseline; the
+ * ring it used to sit in was chrome around a one-character fact, and it was
+ * the widest thing at the row's left edge. The toast keeps the ring — read
+ * from across the room, the arrow needs the weight. */
 const AlertDirBadge = styled.span`
   flex: 0 0 auto;
-  width: ${({ small }) => (small ? "1.35rem" : "1.6rem")};
-  height: ${({ small }) => (small ? "1.35rem" : "1.6rem")};
+  width: ${({ small }) => (small ? "1rem" : "1.6rem")};
+  height: ${({ small }) => (small ? "auto" : "1.6rem")};
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  font-size: ${({ small }) => (small ? "0.7rem" : "0.8rem")};
-  line-height: 1;
+  font-size: ${({ small }) => (small ? posType.figure : posType.figure)};
+  font-weight: ${({ theme }) => theme.fontWeight.bold};
+  line-height: ${({ small }) => (small ? "1.35" : "1")};
   color: ${({ theme, up }) =>
     up ? theme.color.chartLineGreen : theme.color.chartLineRed};
-  border: 1px solid
+  border: ${({ small }) => (small ? "none" : "1px solid")}
     ${({ theme, up }) =>
       up ? theme.color.chartLineGreen : theme.color.chartLineRed};
 `;
@@ -93,49 +177,124 @@ const AlertToastClose = styled.button.attrs({ type: "button" })`
   }
 `;
 
-/* Centred, not pinned near the top. The panel used to start at 12vh and grow
- * downwards, so a panel with one target sat high with a lake of dim under it
- * and a full one ran to the bottom edge — its size decided where it lived.
- * Centring fixes the eye in one place whatever is in it. */
+/* **THE TARGETS AND CALLS DRAWER.**
+ *
+ * It was a card in the middle of a covered screen. On 23 Sep 2026 it became
+ * a drawer beside the chart, on the surface the chart's own switches use:
+ * *"targets calls ve the chart'in opak olmamasi seffaf olmasi ama chart'in
+ * ayarlari gibi gelmesi"*.
+ *
+ * The argument is the same one that put the chart's switches there. A price
+ * target is a level on the axis you are looking at and a call is a box drawn
+ * on that board — you set both *against* the chart, and the panel that
+ * covered it made you set them from memory. With the drawer docked to the
+ * right the line stays on screen, live, with its crosshair: nothing here
+ * takes the pointer away from it, because there is no scrim. What closes it
+ * is Escape, its own ×, its tab, or a press outside it that alerts.js hears
+ * on the document — the same four the chart's drawer answers to.
+ *
+ * Everything the surface does, and the reason it is see-through at all, is
+ * in chartDrawerSurface (theme.js).
+ */
 const AlertsOverlay = styled.div`
-  position: fixed;
-  inset: 0;
-  z-index: 110;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 1rem;
-  background: ${({ theme }) =>
-    theme.color.bg === "#ffffff"
-      ? "rgba(255, 255, 255, 0.85)"
-      : "rgba(0, 0, 0, 0.88)"};
+  ${chartDrawerSurface};
+  /* **34rem, and it is the widest of the three drawers.** It carries a list
+     of rows with a figure column, and a form under them — the chart's nine
+     switches do not. Asked for with the transparency: *"bunlarin ekranlarini
+     daha da buyutebiliriz"*. */
+  width: min(34rem, 92vw);
+  ${chartDrawerPhone};
+
+  /* **A sheet with a form in it needs more than 70vh.** The chart's switches
+     can live in a short sheet because the chart above is half the point of
+     flipping one. This holds a list, a form and the alarm row: at 70vh of a
+     780px phone the list band came out 150px and the empty state was cut off
+     below its own icon.
+
+     **From the chart's top edge down** (30 Sep 2026). It was 100vh less six
+     rem, which was meant to leave the price and the ranges above it and, at
+     390x844, put its top edge through the middle of "BTC PRICE" — the calls
+     sheet's through the range row. It starts where the chart does now
+     (--plot-top, measured as a drawer opens), the line the chart's own
+     drawer already starts at; on a short phone, where that would leave the
+     form too little room, it takes the whole height instead, so its edge
+     never crosses a line of text. */
+  @media (max-width: 600px) {
+    top: var(--plot-top, 0px);
+    max-height: none;
+  }
+  @media (max-width: 600px) and (max-height: 760px) {
+    top: 0;
+  }
 `;
 
 /* Three bands: heading, scrolling list, form. Only the middle one scrolls, so
  * the tally stays readable and — the part that actually mattered — the form
  * stays reachable. With ten targets it used to sit below a long scroll, so
- * adding an eleventh meant scrolling past the ten you already had. */
+ * adding an eleventh meant scrolling past the ten you already had.
+ *
+ * **It is no longer a surface of its own.** The drawer around it carries the
+ * fill, the border, the radius and the shadow; a second bordered box inside
+ * one is a box drawn around nothing, and painting it would put an opaque
+ * panel back over the chart the drawer exists to show. */
 const AlertsCard = styled.div`
   display: flex;
   flex-direction: column;
-  width: min(36rem, 100%);
-  max-height: min(85vh, 44rem);
+  width: 100%;
+  height: 100%;
+  min-height: 0;
   overflow: hidden;
-  background: ${({ theme }) => theme.color.bgSecondary};
-  border: 1px solid ${({ theme }) => theme.color.border};
-  border-radius: 14px;
-  box-shadow: 0 8px 32px ${({ theme }) => theme.color.shadow};
-  animation: ${alertIn} 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+  animation: ${alertIn} 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* **A phone on its side has no room for three bands.** At 430px of height
+     the head and the form alone take the drawer, and the list — the one band
+     that scrolls — was left a 30px slot with the targets in it (measured on
+     an iPhone Pro Max in landscape: one row, unreachable). Below that height
+     it scrolls as one surface, top to bottom, and the form is simply further
+     down rather than always on screen.
+
+     **A phone's bottom sheet does the same** (30 Sep 2026): at 360x780 the
+     form alone is taller than the sheet under the chart, and the list was
+     squeezed to a 30px band that showed nothing, not even "No targets yet". */
+  @media (max-height: 520px), (max-width: 600px) {
+    overflow-y: auto;
+    ${themedScrollbar};
+  }
 `;
 
+/* How far the list fades at each end, and — the part that was missing — how
+ * far the content is held off that fade. The two are one number because they
+ * describe one edge: written as a bare `14px` in the mask alone, the body had
+ * no vertical padding at all, so the fade was drawn over the first and last
+ * *line* rather than over air. On futures that is the whole complaint —
+ * "Equity" at the top and the note under the balance box at the foot were
+ * both washed halfway out, on a screen that was not even scrolling, which
+ * reads as a panel whose padding has gone negative. */
+const ALERTS_FADE = 14;
+
 const AlertsBody = styled.div`
-  flex: 1 1 auto;
+  flex: ${({ collapsed }) => (collapsed ? "0 0 0" : "1 1 auto")};
   min-height: 0;
   overflow-y: auto;
-  padding: 0 1.5rem;
+  /* One extra pixel at the foot absorbs Chromium's fractional scroll rounding:
+     with the taller leverage preview the last line otherwise stopped 13.3px
+     into a 14px fade after scrolling all the way down. */
+  padding: ${({ collapsed }) =>
+    collapsed
+      ? "0 1.5rem"
+      : `${ALERTS_FADE}px 1.5rem calc(${ALERTS_FADE}px + 1px)`};
 
   @media (max-width: ${({ theme }) => theme.breakpoint.down.sm}px) {
-    padding: 0 1.1rem;
+    padding: ${({ collapsed }) =>
+      collapsed
+        ? "0 1.1rem"
+        : `${ALERTS_FADE}px 1.1rem calc(${ALERTS_FADE}px + 1px)`};
+  }
+
+  /* The card is the scroller on a short screen or a phone (see AlertsCard). */
+  @media (max-height: 520px), (max-width: 600px) {
+    flex: none;
+    overflow: visible;
   }
 
   /* The same scrollbar the settings panel uses.
@@ -157,8 +316,8 @@ const AlertsBody = styled.div`
   mask-image: linear-gradient(
     to bottom,
     transparent 0,
-    #000 14px,
-    #000 calc(100% - 14px),
+    #000 ${ALERTS_FADE}px,
+    #000 calc(100% - ${ALERTS_FADE}px),
     transparent 100%
   );
 
@@ -214,7 +373,7 @@ const AlertCallsStrip = styled.div`
 const AlertStripLabel = styled.span`
   flex: 0 0 auto;
   width: 4.1rem;
-  font-size: 0.58rem;
+  font-size: ${posType.micro};
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: ${({ theme }) => theme.color.textSecondary};
@@ -229,7 +388,7 @@ const AlertStripGap = styled.span`
  * underneath — the wrap was most of what made the foot feel cramped. */
 const AlertStripFigures = styled.span`
   flex: 0 0 auto;
-  font-size: 0.63rem;
+  font-size: ${posType.micro};
   color: ${({ theme }) => theme.color.textSecondary};
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
@@ -244,15 +403,17 @@ const AlertStateChip = styled.button.attrs({ type: "button" })`
   gap: 0.35rem;
   padding: 0.28rem 0.5rem;
   border: 1px solid ${({ theme }) => theme.color.border};
-  border-radius: 3px;
+  border-radius: 6px;
   background: transparent;
   color: ${({ theme, on }) =>
     on ? theme.color.text : theme.color.textSecondary};
   font-family: ${({ theme }) => theme.font.primary};
-  font-size: 0.68rem;
+  font-size: ${posType.micro};
   letter-spacing: 0.04em;
   cursor: pointer;
-  transition: border-color 0.15s ease, color 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    color 0.15s ease;
 
   &::before {
     content: "";
@@ -260,7 +421,8 @@ const AlertStateChip = styled.button.attrs({ type: "button" })`
     height: 0.42rem;
     border-radius: 50%;
     border: 1px solid
-      ${({ theme, on }) => (on ? theme.color.chartLineGreen : theme.color.border)};
+      ${({ theme, on }) =>
+        on ? theme.color.chartLineGreen : theme.color.border};
     background: ${({ theme, on }) =>
       on ? theme.color.chartLineGreen : "transparent"};
   }
@@ -273,6 +435,13 @@ const AlertStateChip = styled.button.attrs({ type: "button" })`
   &:focus-visible {
     outline: none;
     border-color: ${({ theme }) => theme.color.chartLineGreen};
+  }
+  ${touchTarget};
+
+  /* Inside a row that scrolls sideways on the phone the touch box is clipped
+     to the row, so the chip itself grows to a finger's height there. */
+  @media (pointer: coarse) {
+    min-height: 28px;
   }
 `;
 
@@ -303,15 +472,18 @@ const AlertActionKey = styled.button.attrs({ type: "button" })`
   padding: ${({ strong }) => (strong ? "0.34rem 0.9rem" : "0.28rem 0.55rem")};
   min-height: ${({ strong }) => (strong ? "1.8rem" : "auto")};
   border: 1px solid ${({ theme }) => theme.color.border};
-  border-radius: 3px;
+  border-radius: 6px;
   background: transparent;
   color: ${({ theme, strong }) =>
     strong ? theme.color.text : theme.color.textSecondary};
   font-family: ${({ theme }) => theme.font.primary};
-  font-size: ${({ strong }) => (strong ? "0.72rem" : "0.68rem")};
+  font-size: ${({ strong }) => (strong ? posType.body : posType.micro)};
   letter-spacing: 0.04em;
   cursor: pointer;
-  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease,
+  transition:
+    border-color 0.15s ease,
+    color 0.15s ease,
+    background 0.15s ease,
     opacity 0.15s ease;
 
   /* At the end of a ladder there is nothing to press. Dimmed *and* disabled:
@@ -350,11 +522,17 @@ const AlertStepper = styled.span`
   display: inline-flex;
   align-items: stretch;
   border: 1px solid ${({ theme }) => theme.color.border};
-  border-radius: 3px;
+  border-radius: 6px;
   overflow: hidden;
 
   &:hover {
     border-color: ${({ theme }) => theme.color.borderHover};
+  }
+
+  /* The buttons' touch boxes reach past the pill; clipping them here made
+     the zoom controls 20px tall on a phone. */
+  @media (pointer: coarse) {
+    overflow: visible;
   }
 `;
 
@@ -365,10 +543,13 @@ const AlertStepperBtn = styled.button.attrs({ type: "button" })`
   background: transparent;
   color: ${({ theme }) => theme.color.textSecondary};
   font-family: ${({ theme }) => theme.font.primary};
-  font-size: 0.75rem;
+  font-size: ${posType.body};
   line-height: 1;
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease, opacity 0.15s ease;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    opacity 0.15s ease;
 
   &:disabled {
     opacity: 0.3;
@@ -383,6 +564,7 @@ const AlertStepperBtn = styled.button.attrs({ type: "button" })`
     background: ${({ theme }) => theme.color.bgSecondary};
     color: ${({ theme }) => theme.color.chartLineGreen};
   }
+  ${touchTarget};
 `;
 
 /* The middle of the stepper: where the board is on the ladder, and the way
@@ -409,13 +591,15 @@ const AlertStepperValue = styled.span`
   color: ${({ theme, active }) =>
     active ? theme.color.text : theme.color.textSecondary};
   font-family: ${({ theme }) => theme.font.primary};
-  font-size: 0.63rem;
+  font-size: ${posType.micro};
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.02em;
   text-decoration: ${({ active }) => (active ? "underline" : "none")};
   text-underline-offset: 2px;
   cursor: ${({ active }) => (active ? "pointer" : "default")};
-  transition: background 0.15s ease, color 0.15s ease;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
 
   &:hover {
     background: ${({ theme, active }) =>
@@ -475,11 +659,15 @@ const AlertsHeadTitle = styled.h2`
   margin: 0;
   padding: 0.35rem 0.1rem 0.45rem;
   font-family: ${({ theme }) => theme.font.primary};
-  font-size: 0.72rem;
+  font-size: ${posType.body};
   font-weight: ${({ theme }) => theme.fontWeight.bold};
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: ${({ theme }) => theme.color.text};
+  /* Its key sits beside it — see KeyCap. */
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
 `;
 
 /* A labelled control line in the panel's bottom block: label left, control
@@ -500,19 +688,24 @@ const AlertPrimaryButton = styled.button.attrs({ type: "button" })`
     ghost ? "transparent" : theme.color.text};
   color: ${({ theme, ghost }) => (ghost ? theme.color.text : theme.color.bg)};
   font-family: ${({ theme }) => theme.font.primary};
-  font-size: 0.74rem;
+  font-size: ${posType.body};
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   cursor: pointer;
-  transition: transform 0.15s ease, opacity 0.15s ease;
+  transition:
+    transform 0.15s ease,
+    opacity 0.15s ease;
 
   &:hover {
     transform: translateY(-1px);
     border-color: ${({ theme, ghost }) =>
       ghost ? theme.color.borderHover : theme.color.text};
   }
-  &:active { transform: translateY(0); opacity: 0.85; }
+  &:active {
+    transform: translateY(0);
+    opacity: 0.85;
+  }
 
   &:focus-visible {
     outline: none;
@@ -520,65 +713,6 @@ const AlertPrimaryButton = styled.button.attrs({ type: "button" })`
       0 0 0 2px ${({ theme }) => theme.color.bg},
       0 0 0 4px ${({ theme }) => theme.color.chartLineGreen};
   }
-`;
-
-/* The live consequence of the squares setting, under its chips. */
-const AlertGeometryLine = styled.div`
-  margin-top: 0.55rem;
-  padding: 0.45rem 0.6rem;
-  border-radius: 7px;
-  background: ${({ theme }) => theme.color.bgSecondary};
-  font-size: 0.66rem;
-  line-height: 1.5;
-  color: ${({ theme }) => theme.color.textSecondary};
-`;
-
-const AlertGeometryFigure = styled.span`
-  color: ${({ theme }) => theme.color.text};
-  font-variant-numeric: tabular-nums;
-`;
-
-/* The settings group on the calls tab: separated from the list above by a
- * rule and some air, so it reads as controls rather than as more rows. */
-const AlertCallSettings = styled.div`
-  margin-top: 0.9rem;
-  padding-top: 0.4rem;
-  border-top: 1px solid ${({ theme }) => theme.color.border};
-`;
-
-const AlertSettingRow = styled.div`
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 0.9rem;
-  padding: 0.5rem 0;
-
-  & + & {
-    border-top: 1px solid ${({ theme }) => theme.color.border};
-  }
-`;
-
-const AlertSettingText = styled.div`
-  min-width: 0;
-`;
-
-const AlertSettingName = styled.div`
-  font-size: 0.72rem;
-  color: ${({ theme }) => theme.color.text};
-`;
-
-const AlertSettingHint = styled.div`
-  margin-top: 0.15rem;
-  font-size: 0.64rem;
-  line-height: 1.45;
-  color: ${({ theme }) => theme.color.textSecondary};
-`;
-
-const AlertsTitle = styled.div`
-  font-size: 0.66rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: ${({ theme }) => theme.color.textSecondary};
 `;
 
 /* The right-hand end of the head: the tally, and the button that explains it.
@@ -591,9 +725,28 @@ const AlertsHeadRight = styled.div`
   gap: 0.55rem;
 `;
 
+/* The calls switch in the panel's head: its state in words, then the switch
+   Settings uses — one control, one look, wherever a thing is turned on. */
+const AlertsCallsSwitch = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding-left: 0.55rem;
+  border-left: 1px solid ${({ theme }) => theme.color.border};
+`;
+
+const AlertsCallsSwitchText = styled.span`
+  min-width: 2.5ch;
+  font-size: ${posType.micro};
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: ${({ theme }) => theme.color.text};
+  font-variant-numeric: tabular-nums;
+`;
+
 const AlertsTally = styled.div`
   flex: 0 0 auto;
-  font-size: 0.66rem;
+  font-size: ${posType.micro};
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: ${({ theme }) => theme.color.textSecondary};
@@ -627,6 +780,7 @@ const AlertsInfoBtn = styled.button.attrs({ type: "button" })`
     color: ${({ theme }) => theme.color.text};
     opacity: 1;
   }
+  ${touchTarget};
 `;
 
 /* The explanation itself, between the head and the list rather than floating
@@ -639,7 +793,7 @@ const AlertsInfo = styled.div`
   padding: 0.85rem 1.5rem 0.95rem;
   border-bottom: 1px solid ${({ theme }) => theme.color.border};
   background: ${({ theme }) => theme.color.bgSecondary};
-  font-size: 0.72rem;
+  font-size: ${posType.body};
   line-height: 1.55;
   color: ${({ theme }) => theme.color.textSecondary};
 
@@ -701,7 +855,7 @@ const AlertsKey = styled.kbd`
   border-radius: 4px;
   background: ${({ theme }) => theme.color.bg};
   font-family: ${({ theme }) => theme.font.primary};
-  font-size: 0.66rem;
+  font-size: ${posType.micro};
   text-align: center;
   color: ${({ theme }) => theme.color.text};
 `;
@@ -709,7 +863,7 @@ const AlertsKey = styled.kbd`
 // Section heading between the armed targets and the ones already hit
 const AlertsSectionLabel = styled.div`
   margin: 0.9rem 0 0.5rem;
-  font-size: 0.6rem;
+  font-size: ${posType.micro};
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: ${({ theme }) => theme.color.textSecondary};
@@ -718,7 +872,7 @@ const AlertsSectionLabel = styled.div`
 // Same label, but heading a block that already has a rule above it
 const AlertsSectionLabelTight = styled.div`
   margin-bottom: 0.55rem;
-  font-size: 0.6rem;
+  font-size: ${posType.micro};
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: ${({ theme }) => theme.color.textSecondary};
@@ -752,7 +906,7 @@ const AlertUndoBar = styled.div`
   background: ${({ theme }) => theme.color.bg};
   border: 1px dashed ${({ theme }) => theme.color.border};
   border-radius: 10px;
-  font-size: 0.72rem;
+  font-size: ${posType.body};
   color: ${({ theme }) => theme.color.textSecondary};
 `;
 
@@ -760,7 +914,7 @@ const AlertUndoButton = styled.button.attrs({ type: "button" })`
   flex: 0 0 auto;
   padding: 0.2rem 0.5rem;
   font-family: ${({ theme }) => theme.font.primary};
-  font-size: 0.68rem;
+  font-size: ${posType.micro};
   font-weight: 600;
   color: ${({ theme }) => theme.color.text};
   background: transparent;
@@ -779,7 +933,7 @@ const AlertUndoButton = styled.button.attrs({ type: "button" })`
 const AlertRow = styled.div`
   display: flex;
   align-items: flex-start;
-  gap: 0.65rem;
+  gap: 0.6rem;
   /* Calls stack up in a way targets do not — you place several in a session
    * and they all sit there until they settle, so ten of them is normal rather
    * than exceptional. At the target tab's spacing that reads as a wall of
@@ -795,7 +949,7 @@ const AlertRow = styled.div`
           ? theme.color.chartLineGreen
           : theme.color.chartLineRed};
   border-radius: 10px;
-  font-size: 0.82rem;
+  font-size: ${posType.figure};
   opacity: ${({ muted }) => (muted ? 0.75 : 1)};
   transition:
     border-color 0.15s ease,
@@ -829,7 +983,7 @@ const AlertCoin = styled.span`
  * only question you open it to ask. */
 const AlertDetail = styled.div`
   margin-top: 0.2rem;
-  font-size: 0.68rem;
+  font-size: ${posType.micro};
   color: ${({ theme }) => theme.color.textSecondary};
 `;
 
@@ -847,16 +1001,70 @@ const AlertProgressTrack = styled.div`
 const AlertProgressFill = styled.div`
   height: 100%;
   border-radius: 1px;
-  background: ${({ theme, up }) =>
-    up ? theme.color.chartLineGreen : theme.color.chartLineRed};
+  /* neutral is time: an open call's track from when it was made to when it
+     settles. Green on that track would say the call is going well, which is
+     a claim the clock cannot make. (No backticks here: template literal.) */
+  background: ${({ theme, up, neutral }) =>
+    neutral
+      ? theme.color.textSecondary
+      : up
+        ? theme.color.chartLineGreen
+        : theme.color.chartLineRed};
   transition: width 0.4s cubic-bezier(0.22, 1, 0.36, 1);
 `;
 
 const AlertMeta = styled.span`
   flex: 0 0 auto;
-  font-size: 0.66rem;
+  align-self: center;
+  font-size: ${posType.micro};
   letter-spacing: 0.06em;
   text-transform: uppercase;
+  color: ${({ theme }) => theme.color.textSecondary};
+`;
+
+/* THE FIGURE COLUMN
+ *
+ * A row used to be a sentence with a number somewhere inside it: "Now
+ * $43,250.50 · 4.0% away". The one thing a person opens this panel to read —
+ * how close is it — was the fourth token of the second line, in the same
+ * grey as the words around it. A ledger puts that number in its own column,
+ * right-aligned, one weight heavier than the label under it, so the eye can
+ * run down the list and read every row's distance without reading a word.
+ * The sentence stays; the column is what it says, said as a figure.
+ *
+ * Right-aligned and tabular so the digits stack. The label is the unit or
+ * the verb — "away", "needs", "to go", "hit" — because a figure with no
+ * label is a number and a figure with one is a fact. */
+const AlertFigure = styled.div`
+  flex: 0 0 auto;
+  align-self: center;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.12rem;
+  min-width: 5ch;
+  text-align: right;
+`;
+
+const AlertFigureValue = styled.span`
+  font-size: ${posType.figure};
+  font-weight: ${({ theme }) => theme.fontWeight.semibold};
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  line-height: 1.2;
+  color: ${({ theme, tone }) =>
+    tone === "up"
+      ? theme.color.chartLineGreen
+      : tone === "down"
+        ? theme.color.chartLineRed
+        : theme.color.text};
+`;
+
+const AlertFigureLabel = styled.span`
+  font-size: ${posType.micro};
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
   color: ${({ theme }) => theme.color.textSecondary};
 `;
 
@@ -866,7 +1074,7 @@ const AlertRearm = styled.button.attrs({ type: "button" })`
   flex: 0 0 auto;
   padding: 0.2rem 0.45rem;
   font-family: ${({ theme }) => theme.font.primary};
-  font-size: 0.64rem;
+  font-size: ${posType.micro};
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: ${({ theme }) => theme.color.textSecondary};
@@ -928,73 +1136,41 @@ const AlertQuickRow = styled.div`
 `;
 
 const AlertQuickLabel = styled.span`
-  font-size: 0.62rem;
+  font-size: ${posType.micro};
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: ${({ theme }) => theme.color.textSecondary};
   margin-right: 0.15rem;
 `;
 
-/* A section label with a control on the right — the calls section needs to
- * carry its own switch, since it no longer has a settings tab to live in. */
-const AlertsSectionRow = styled.div`
+/* The second line of the form: the three things a target can carry besides
+ * its number — a note, a span, and whether it repeats. One row, under the
+ * quick chips, so the first row stays the sentence and nothing else. */
+const AlertOptionsRow = styled.div`
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-`;
-
-/* Neutral chip: the squares selector and the section's own switch.
- * AlertQuickChip is coloured by direction, which means nothing here.
- *
- * Sized to be hit, not just seen. The first version was 0.2rem of padding on
- * a 0.66rem label — about 20px tall, which is under any reasonable pointer
- * target and impossible on a touchpad in a hurry. The selected state is
- * carried by fill *and* border rather than border alone, so it survives being
- * looked at quickly. */
-const AlertPlainChip = styled.button.attrs({ type: "button" })`
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 2.1rem;
-  min-height: 1.9rem;
-  padding: 0 0.6rem;
-  font-family: ${({ theme }) => theme.font.primary};
-  font-size: 0.72rem;
-  letter-spacing: 0.04em;
-  color: ${({ theme, active }) =>
-    active ? theme.color.bg : theme.color.textSecondary};
-  background: ${({ theme, active }) =>
-    active ? theme.color.text : "transparent"};
-  border: 1px solid
-    ${({ theme, active }) =>
-      active ? theme.color.text : theme.color.border};
-  border-radius: 7px;
-  cursor: pointer;
-  transition:
-    border-color 0.15s ease,
-    background 0.15s ease,
-    color 0.15s ease;
-
-  &:hover {
-    border-color: ${({ theme }) => theme.color.borderHover};
-    color: ${({ theme, active }) => (active ? theme.color.bg : theme.color.text)};
-  }
-
-  &:focus-visible {
-    outline: none;
-    border-color: ${({ theme }) => theme.color.chartLineGreen};
-    box-shadow: 0 0 0 1px ${({ theme }) => theme.color.chartLineGreen};
-  }
-`;
-
-/* The squares row wraps at ten chips rather than squeezing them, and keeps
- * its label on its own line so the two never collide. */
-const AlertChipRow = styled.div`
-  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.55rem;
   flex-wrap: wrap;
-  gap: 0.35rem;
-  margin: 0.3rem 0 0.1rem;
+`;
+
+/* The reason a target was set, on its row. Ink, not grey: it is the one line
+ * on the row the person wrote themselves. */
+const AlertNoteLine = styled.div`
+  margin-top: 0.15rem;
+  font-size: ${posType.micro};
+  color: ${({ theme }) => theme.color.text};
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+`;
+
+/* The three confidence chips under an open call. */
+const AlertConfRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-top: 0.4rem;
 `;
 
 /* A settled call's verdict, in the row it belongs to */
@@ -1003,7 +1179,7 @@ const AlertVerdict = styled.span`
   align-self: center;
   padding: 0.1rem 0.45rem;
   border-radius: 5px;
-  font-size: 0.6rem;
+  font-size: ${posType.micro};
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: ${({ theme, hit }) =>
@@ -1014,30 +1190,97 @@ const AlertVerdict = styled.span`
   opacity: 0.85;
 `;
 
-/* The record line: its own block with real space around it, rather than a
- * note wedged against the form below it. */
+/* THE SCOREBOARD
+ *
+ * The record was one line of small grey text — "64% of 11 settled · streak 2
+ * · best 4" — which is four facts written as a sentence, at the size of a
+ * caption, above the thing it is the score of. A record is the one part of
+ * this panel that is a *figure* rather than a request or a claim, and it now
+ * reads like one: three tiles, figure over label, on the derivatives page's
+ * ladder (`lead` for the number, `micro` for the word), with a hairline
+ * between them and a meter under the hit rate showing what share of the
+ * settled calls it is — so "64%" is never printed without its `n`.
+ *
+ * No colour on any of it. A hit rate in green would grade the caller, and
+ * the panel's rule is that it counts and never judges. */
+const AlertScore = styled.div`
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  margin: 0.9rem 0 0.2rem;
+  border: 1px solid ${({ theme }) => theme.color.border};
+  border-radius: 10px;
+  background: ${({ theme }) => theme.color.bg};
+  overflow: hidden;
+`;
+
+const AlertScoreTile = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.18rem;
+  padding: 0.6rem 0.75rem 0.55rem;
+
+  & + & {
+    border-left: 1px solid ${({ theme }) => theme.color.border};
+  }
+`;
+
+const AlertScoreValue = styled.div`
+  font-size: ${posType.lead};
+  font-weight: ${({ theme }) => theme.fontWeight.bold};
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+  color: ${({ theme }) => theme.color.text};
+`;
+
+const AlertScoreLabel = styled.div`
+  font-size: ${posType.micro};
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: ${({ theme }) => theme.color.textSecondary};
+`;
+
+const AlertScoreMeter = styled.div`
+  height: 2px;
+  margin-top: 0.35rem;
+  border-radius: 1px;
+  background: ${({ theme }) => theme.color.border};
+  overflow: hidden;
+`;
+
+const AlertScoreFill = styled.div`
+  height: 100%;
+  width: ${({ share }) => Math.min(100, Math.max(0, share))}%;
+  border-radius: 1px;
+  background: ${({ theme }) => theme.color.text};
+`;
+
+/* What chance would have given, and what fair odds would have paid: the two
+ * lines that qualify the scoreboard. Plain lines under it now, not a second
+ * and third boxed bar — a box for every sentence was most of what made the
+ * top of this tab read as furniture. */
 const AlertRecordBar = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
-  margin: 0.6rem 0 0.2rem;
-  padding: 0.55rem 0.7rem;
-  border: 1px solid ${({ theme }) => theme.color.border};
-  border-radius: 8px;
-  font-size: 0.68rem;
+  margin: 0.35rem 0.1rem 0;
+  font-size: ${posType.micro};
   line-height: 1.5;
   color: ${({ theme }) => theme.color.textSecondary};
 `;
 
 const AlertRecordFigure = styled.span`
   color: ${({ theme }) => theme.color.text};
+  font-variant-numeric: tabular-nums;
 `;
 
 const AlertQuickChip = styled.button.attrs({ type: "button" })`
   padding: 0.2rem 0.5rem;
   font-family: ${({ theme }) => theme.font.primary};
-  font-size: 0.68rem;
+  font-size: ${posType.micro};
   color: ${({ theme, up }) =>
     up ? theme.color.chartLineGreen : theme.color.chartLineRed};
   background: transparent;
@@ -1050,6 +1293,7 @@ const AlertQuickChip = styled.button.attrs({ type: "button" })`
     border-color: ${({ theme, up }) =>
       up ? theme.color.chartLineGreen : theme.color.chartLineRed};
   }
+  ${touchTarget};
 `;
 
 const AlertForm = styled.div`
@@ -1089,12 +1333,13 @@ const AlertCoinInput = styled.input`
   width: 100%;
   padding: 0.6rem 0.55rem;
   font-family: ${({ theme }) => theme.font.primary};
-  font-size: 0.82rem;
+  font-size: ${posType.figure};
   letter-spacing: 0.04em;
   color: ${({ theme }) => theme.color.text};
   background: ${({ theme }) => theme.color.bg};
   border: 1px solid
-    ${({ theme, open }) => (open ? theme.color.borderHover : theme.color.border)};
+    ${({ theme, open }) =>
+      open ? theme.color.borderHover : theme.color.border};
   border-radius: 8px;
   cursor: text;
 
@@ -1133,7 +1378,8 @@ const AlertCoinMenu = styled.div`
   background: ${({ theme }) => theme.color.bg};
   border: 1px solid ${({ theme }) => theme.color.borderHover};
   border-radius: 8px;
-  box-shadow: 0 10px 28px ${({ theme }) => theme.color.shadow},
+  box-shadow:
+    0 10px 28px ${({ theme }) => theme.color.shadow},
     0 2px 6px ${({ theme }) => theme.color.shadow};
   ${themedScrollbar};
 
@@ -1153,7 +1399,7 @@ const AlertCoinOption = styled.button.attrs({ type: "button" })`
   border-radius: 6px;
   text-align: left;
   font-family: ${({ theme }) => theme.font.primary};
-  font-size: 0.76rem;
+  font-size: ${posType.body};
   cursor: pointer;
   color: ${({ theme }) => theme.color.text};
   background: ${({ theme, active }) =>
@@ -1171,20 +1417,20 @@ const AlertCoinName = styled.span`
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 0.68rem;
+  font-size: ${posType.micro};
   color: ${({ theme }) => theme.color.textSecondary};
 `;
 
 const AlertCoinEmpty = styled.div`
   padding: 0.4rem 0.42rem;
-  font-size: 0.72rem;
+  font-size: ${posType.body};
   color: ${({ theme }) => theme.color.textSecondary};
 `;
 
 const AlertSelect = styled.select`
   padding: 0.6rem 0.55rem;
   font-family: ${({ theme }) => theme.font.primary};
-  font-size: 0.82rem;
+  font-size: ${posType.figure};
   color: ${({ theme }) => theme.color.text};
   background: ${({ theme }) => theme.color.bg};
   border: 1px solid ${({ theme }) => theme.color.border};
@@ -1203,7 +1449,7 @@ const AlertInput = styled.input`
   box-sizing: border-box;
   padding: 0.6rem 0.65rem;
   font-family: ${({ theme }) => theme.font.primary};
-  font-size: 0.82rem;
+  font-size: ${posType.figure};
   color: ${({ theme }) => theme.color.text};
   background: ${({ theme }) => theme.color.bg};
   border: 1px solid ${({ theme }) => theme.color.border};
@@ -1213,15 +1459,23 @@ const AlertInput = styled.input`
     outline: none;
     border-color: ${({ theme }) => theme.color.borderHover};
   }
+
+  ${refusedField};
 `;
 
 // Filled rather than outlined: it is the one thing in the panel you press to
 // make something happen, and it read as another input before
 const AlertAdd = styled.button.attrs({ type: "button" })`
   flex: 0 0 auto;
+  min-height: 2.5rem;
   padding: 0 1.2rem;
+  /* Wrapped onto a line of its own (360px), it took its text's height,
+     15px, and the width of one word: it fills that line now. */
+  @media (max-width: ${({ theme }) => theme.breakpoint.down.xs}px) {
+    flex-grow: 1;
+  }
   font-family: ${({ theme }) => theme.font.primary};
-  font-size: 0.78rem;
+  font-size: ${posType.body};
   font-weight: 600;
   color: ${({ theme }) => theme.color.bg};
   background: ${({ theme }) => theme.color.text};
@@ -1254,7 +1508,7 @@ const AlertKindRow = styled.div`
 const AlertKindButton = styled.button.attrs({ type: "button" })`
   padding: 0.25rem 0.55rem;
   font-family: ${({ theme }) => theme.font.primary};
-  font-size: 0.68rem;
+  font-size: ${posType.micro};
   color: ${({ theme, active }) =>
     active ? theme.color.bg : theme.color.textSecondary};
   background: ${({ theme, active }) =>
@@ -1271,11 +1525,26 @@ const AlertKindButton = styled.button.attrs({ type: "button" })`
   &:hover {
     border-color: ${({ theme }) => theme.color.borderHover};
   }
+  ${touchTarget};
+`;
+
+/* **A band of its own, in both panels.** The alarm row lands under a
+ * paragraph in Targets and under a list in Futures, and in both it is a
+ * different kind of thing from what is above it — a setting, not a reading.
+ * A rule and some air is the whole separation it needs.
+ *
+ * Wrapped here rather than by restyling `AlertPosStep`, which the Account tab
+ * uses four times over and which must not learn about this one screen. */
+const AlertsAlarmBand = styled.div`
+  margin-top: 0.85rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid ${({ theme }) => theme.color.border};
 `;
 
 const AlertsNote = styled.div`
-  margin-top: 0.9rem;
-  font-size: 0.68rem;
+  margin-top: 0.75rem;
+  font-size: ${posType.micro};
+  line-height: 1.5;
   color: ${({ theme }) => theme.color.textSecondary};
 `;
 
@@ -1284,7 +1553,7 @@ const AlertsNote = styled.div`
 // before you commit rather than after the target fires instantly
 const AlertHint = styled.div`
   margin-top: 0.5rem;
-  font-size: 0.68rem;
+  font-size: ${posType.micro};
   color: ${({ theme, warn }) =>
     warn ? theme.color.chartLineRed : theme.color.textSecondary};
 `;
@@ -1319,8 +1588,66 @@ const AlertsEmptyTitle = styled.div`
 
 const AlertsEmptyText = styled.div`
   max-width: 24rem;
-  font-size: 0.76rem;
+  font-size: ${posType.body};
   line-height: 1.5;
+`;
+
+const AlertsEmptySteps = styled.div`
+  width: min(26rem, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-top: 0.25rem;
+  text-align: left;
+`;
+
+const AlertsEmptyStep = styled.div`
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: start;
+  gap: 0.45rem;
+`;
+
+const AlertsEmptyStepNo = styled.span`
+  width: 1.15rem;
+  height: 1.15rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid ${({ theme }) => theme.color.border};
+  border-radius: 999px;
+  font-size: ${posType.micro};
+  color: ${({ theme }) => theme.color.textSecondary};
+`;
+
+const AlertsEmptyStepText = styled.span`
+  font-size: ${posType.body};
+  line-height: 1.45;
+  color: ${({ theme }) => theme.color.text};
+`;
+
+const AlertsEmptyActions = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+`;
+
+const AlertsEmptyPanel = styled.div`
+  width: min(26rem, 100%);
+  margin-top: 0.15rem;
+  padding: 0.55rem 0.6rem 0.65rem;
+  border: 1px solid ${({ theme }) => theme.color.border};
+  border-radius: 8px;
+  background: ${({ theme }) => theme.color.bgSecondary};
+`;
+
+const AlertsEmptyPanelTitle = styled.div`
+  font-size: ${posType.micro};
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: ${({ theme }) => theme.color.textSecondary};
 `;
 
 /* What an off screen is actually for.
@@ -1357,12 +1684,12 @@ const AlertsEmptyFact = styled.div`
 
 const AlertsEmptyFactValue = styled.div`
   color: ${({ theme }) => theme.color.text};
-  font-size: 0.82rem;
+  font-size: ${posType.figure};
   font-variant-numeric: tabular-nums;
 `;
 
 const AlertsEmptyFactLabel = styled.div`
-  font-size: 0.55rem;
+  font-size: ${posType.micro};
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: ${({ theme }) => theme.color.textSecondary};

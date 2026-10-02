@@ -1,23 +1,29 @@
 {
   "manifest_version": 3,
   "name": "PriceTab - Crypto Charts on Every New Tab",
-  "version": "1.4.0",
+  "version": "1.5.0",
+  "default_locale": "en",
   "description": "Every new tab opens a live crypto chart. Follow your coins, call where the price goes next, and keep the score. No account.",
   "chrome_url_overrides": {
     "newtab": "index.html"
   },
   "permissions": [],
+  "optional_permissions": [
+    "notifications"
+  ],
   "optional_host_permissions": [
     "https://cointelegraph.com/*",
     "https://decrypt.co/*",
     "https://cryptoslate.com/*",
     "https://bitcoinmagazine.com/*",
     "https://coinjournal.net/*",
-    "https://feeds.bbci.co.uk/*"
+    "https://feeds.bbci.co.uk/*",
+    "https://www.coindesk.com/*",
+    "https://www.theblock.co/*"
   ],
   "action": {
-    "default_title": "PriceTab - Rate on Chrome Web Store",
-    "default_popup": "rate.html"
+    "default_title": "PriceTab",
+    "default_popup": "popup.html"
   },
   "icons": {
     "16": "assets/icons/icon16.png",

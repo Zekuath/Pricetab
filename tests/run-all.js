@@ -29,6 +29,7 @@ const suites = [
   "test-invariants.js",
   "test-load.js",
   "test-storage.js",
+  "test-i18n.js",
   "test-api.js",
   "test-provider.js",
   "test-cache.js",
@@ -38,6 +39,37 @@ const suites = [
   "test-onboarding.js",
   "test-settings.js",
   "test-chart.js",
+  // The chart's axes: ticks, time labels and the lane allocator, on real d3.
+  "test-axes.js",
+  // The chart's window in time: the window arithmetic, the cut series, LTTB.
+  "test-viewport.js",
+  // The chart's tools: the ruler's count, hit distances, a drawing moved.
+  "test-tools.js",
+  // The chart's counted studies: profile, unusual volume, regimes, turns, where.
+  "test-studies.js",
+  // The palettes: contrast in both themes and palettes, up/down apart for colour-blind readers.
+  "test-palette.js",
+  // The positions model behind Calls: pure arithmetic, no DOM and no clock.
+  "test-practice-model.js",
+  "test-practice-fuzz.js",
+  "test-tax-report.js",
+  // The portfolio's ledger: records in date order, and the return with the
+  // money moved in and out taken out of it.
+  "test-portfolio-ledger.js",
+  "test-crowd.js",
+  // The candlestick shapes, and the counting rule they are read through.
+  "test-candle-patterns.js",
+  "test-price-patterns.js",
+  "test-strategy-setups.js",
+  "test-companion-readings.js",
+  "test-regime-grid.js",
+  "test-cell-odds.js",
+  "test-model-outlook.js",
+  "test-news-reader.js",
+  // The outlook: counted readings of the next stretch, before a contract.
+  "test-outlook.js",
+  // The assistant: facts a desk checks, in three phases, never a verdict.
+  "test-assistant.js",
   "test-quickswitch.js",
   "test-alerts.js",
   "test-calls.js",
@@ -49,8 +81,17 @@ const suites = [
   "test-calls-render.js",
   "test-modes-render.js",
   "test-polish-render.js",
+  "test-i18n-render.js",
+  "test-portfolio-chart-render.js",
   "test-transition-render.js",
 ];
+/* Suites a checkout may or may not have: `tests/local-*.js` is git-ignored, so
+ * these guard local working material rather than the extension and are simply
+ * absent in CI. Sorted so the run order is the same everywhere. */
+for (const f of fs.readdirSync(__dirname).sort()) {
+  if (/^local-.*\.js$/.test(f)) suites.push(f);
+}
+
 for (const suite of suites) {
   step(suite, () =>
     execFileSync("node", [path.join(__dirname, suite)], { stdio: "pipe" }),

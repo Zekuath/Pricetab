@@ -15,6 +15,13 @@ GEMINI.md
 # They are checkpoint EXTRA_PATHS, so a snapshot still holds them: ignored
 # means "not part of the shipped history", not "disposable".
 docs/internal/
+# The working list is a session scratchpad in an agent's own voice, not
+# product documentation. It stays in the tree and out of the history.
+docs/product/TODAY.md
+# The derivatives simulator research and agent implementation hand-off are
+# local product working material. Keep the complete directory out of GitHub;
+# checkpoints still preserve it with the rest of the dirty tree.
+docs/product/derivatives-simulator/
 MONETIZATION.md
 BUSINESS_IDEAS.md
 
@@ -44,8 +51,21 @@ npm-debug.log*
 assets/upload/
 *.zip
 
+# Suites that check the local working notes rather than the extension. They
+# name files that are themselves ignored, so they stay out of the history too;
+# `run-all.js` picks up anything matching this pattern when it is present.
+tests/local-*.js
+
 # Test dependencies (dev-only)
 tests/node_modules/
 # package-lock.json is deliberately TRACKED: it pins every transitive dev
 # dependency to an exact resolved version + integrity hash, which is the only
 # real defence against a dependency being hijacked between installs.
+
+# The iPhone app: generated artefacts only — the project comes from ios/project.yml, the page from scripts/build-webapp.sh
+ios/WebApp/
+ios/PriceTab.xcodeproj/
+ios/PriceTab/Assets.xcassets/
+ios/PriceTabWidget/Assets.xcassets/
+ios/build/
+ios/DerivedData/

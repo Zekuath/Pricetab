@@ -20,86 +20,282 @@
  *   keys      shortcut chips under the title
  *   keyGrid   the closing step's mini shortcut list
  */
-const ONBOARDING_STEPS = [
-  {
+/* The steps, named, so the first-run tour and the "what's new" tour of an
+ * update can share them (1 Oct 2026: the tour refreshed — moving around the
+ * chart, the tools, the companion, the news preview, pinned widgets and the
+ * optional alarm are in it; the travel band and "what happened here?" left
+ * it for the calls drawer and Settings, where they live). */
+const TOUR = {
+  welcome: {
     selector: null,
-    title: "Welcome to PriceTab 👋",
-    text: "Live crypto charts on every new tab. Here's a quick run through what's here — skip it any time.",
+    chapter: msg("tour_chapter_start_here", "Start here"),
+    title: msg("tour_title_welcome_to_pricetab", "Welcome to PriceTab"),
+    text: msg(
+      "tour_text_01c",
+      "Live crypto charts on every new tab, asking for nothing — no account, no permissions at install, and nothing about you leaving this device. This tour is a few short steps in five chapters. Skip it whenever you like; Settings can replay it.",
+    ),
   },
-  {
+  price: {
     selector: '[data-tour="price"]',
-    title: "Live price",
-    text: "Your active coin and its live price. Click it — or use the arrow keys — to move through your coin list.",
-    keys: ["←", "→"],
+    chapter: msg("tour_chapter_the_chart", "The chart"),
+    title: msg("tour_title_live_price", "Live price"),
+    text: msg(
+      "tour_text_02",
+      "Your active coin and its live price, refreshed while the tab is open and paused while it is not. Click it, or use the arrow keys, to move through your coin list.",
+    ),
+    keys: ["\u2190", "\u2192"],
   },
-  {
+  change: {
     selector: '[data-tour="change"]',
-    title: "Change",
-    text: "How the price moved over the range. Click it to flip between percentage and absolute change.",
+    chapter: msg("tour_chapter_the_chart", "The chart"),
+    title: msg("tour_title_change", "Change"),
+    text: msg(
+      "tour_text_03",
+      "How the price moved across the range on screen — not a fixed 24 hours. Click it to flip between a percentage and an amount.",
+    ),
     keys: ["X"],
   },
-  {
+  range: {
     selector: '[data-tour="period"]',
-    title: "Time range",
-    text: "Anywhere from the last hour (1H) to all time (ALL). The number keys jump straight to a range.",
-    keys: ["1", "–", "6"],
+    chapter: msg("tour_chapter_the_chart", "The chart"),
+    title: msg("tour_title_time_range", "Time range"),
+    text: msg(
+      "tour_text_04",
+      "The last hour through all time. Each range keeps its own settings — the board you set up on 1H is still there when you come back to it.",
+    ),
+    keys: ["1", "\u2013", "6"],
   },
-  {
+  drag: {
+    selector: '[data-tour="chart"]',
+    chapter: msg("tour_chapter_the_chart", "The chart"),
+    title: msg("tour_title_move_around", "Move around it"),
+    text: msg(
+      "tour_text_drag",
+      "Drag the chart any way: sideways through time, up and down through prices. The wheel or two fingers zoom where you point, a drag past the oldest point opens the longer range, and a double-click puts it all back. With the chart focused, ← and → read it point by point.",
+    ),
+    keys: ["+", "\u2212"],
+  },
+  jump: {
     selector: null,
-    title: "Jump to any coin",
-    text: "Press / and type a symbol or a name. Your own coins rank first, and picking one you don't track yet adds it to your list.",
+    chapter: msg("tour_chapter_the_chart", "The chart"),
+    title: msg("tour_title_jump_to_any_coin", "Jump to any coin"),
+    text: msg(
+      "tour_text_05",
+      "Type a symbol or a name. Your own coins rank first, and picking one you do not track yet adds it. The same search chooses a coin for a price target.",
+    ),
     keys: ["/"],
   },
-  {
+  compare: {
     selector: '[data-tour="compare"]',
-    title: "Compare two coins",
-    text: "Pick a second coin and both are drawn as percent change from the start of the range — one shared scale, so the lines can be trusted. Press C again or Esc to drop it.",
+    chapter: msg("tour_chapter_the_chart", "The chart"),
+    title: msg("tour_title_compare_two_coins", "Compare two coins"),
+    text: msg(
+      "tour_text_06_drawer",
+      "A drawer of what to lay over the chart: your coins, any coin, and markets — the S&P 500, the Nasdaq 100, gold. Both lines are percent change from the start of the range, on one shared scale — never two axes, which is the trick that makes any two lines look related. Stop is in the drawer and under the price.",
+    ),
     keys: ["C"],
   },
-  {
-    selector: '[data-tour="alerts"]',
-    title: "Price targets",
-    text: "Set “BTC rises above…” and PriceTab tells you on your next new tab when it was hit — even overnight, while no tab was open. Nothing is pushed, which is how it stays permission-free.",
-    keys: ["A"],
+  tools: {
+    selector: '[data-tour="tools"]',
+    optional: true,
+    chapter: msg("tour_chapter_the_chart", "The chart"),
+    title: msg("tour_title_draw_measure", "Draw and measure"),
+    text: msg(
+      "tour_text_tools",
+      "The + at the end of the range row opens the tools: a ruler that says how often a move that size has happened, and lines, rays, boxes and notes that stay with the coin. Shift and a drag measure anywhere; a horizontal line can become a price target.",
+    ),
   },
-  {
+  twoWays: {
+    selector: null,
+    chapter: msg("tour_chapter_the_chart", "The chart"),
+    title: msg(
+      "tour_title_two_more_ways_to_read_it",
+      "Two more ways to read it",
+    ),
+    text: msg(
+      "tour_text_07",
+      "T swaps the line for candlesticks. G puts a price and time mesh behind the chart so you can read a level off it. Under the price sits the range high and low, and the volume-weighted average price when the candle data happens to be loaded — it is never fetched just for that.",
+    ),
+    keys: ["T", "G"],
+  },
+  companion: {
+    selector: null,
+    chapter: msg("tour_chapter_the_chart", "The chart"),
+    title: msg("tour_title_companion", "A companion that counts"),
+    text: msg(
+      "tour_text_companion",
+      "Switch on the chart companion in the chart's settings (V) and it names the patterns, setups and readings it finds — triangles, crosses, divergences, the Ichimoku cloud — where they happened, each with what followed it on this coin and how it did when tested on four coins. Most did no better than an ordinary day, and it says so.",
+    ),
+    keys: ["V"],
+  },
+  calls: {
+    selector: '[data-tour="calls"]',
+    chapter: msg("tour_chapter_calling_a_square", "Calling a square"),
+    title: msg(
+      "tour_title_say_where_you_think_it_goes",
+      "Say where you think it goes",
+    ),
+    text: msg(
+      "tour_text_09",
+      "A call is a claim: this coin, in this price band, at this time. It settles itself on a later tab and goes on a record you keep. Nothing is scored, nothing is worth anything, and nothing leaves the device — it is a way to find out whether you are actually any good.",
+    ),
+    keys: ["K"],
+  },
+  board: {
+    selector: null,
+    chapter: msg("tour_chapter_calling_a_square", "Calling a square"),
+    title: msg("tour_title_the_board", "The board"),
+    text: msg(
+      "tour_text_10b",
+      "Turn calls on and the chart grows a board of squares to the right of now, each with the chance the price is in it when its column ends — counted from this coin's own bars and checked against years of squares before it was allowed on. Click a square once to draft it and again to lock it: two clicks, because one stray click should not commit a prediction. Drag the board up or down to look at other prices, sideways to trade history for board, and use the pill at its top right to change what one square is worth.",
+    ),
+    keys: ["L", "[", "\u2013", "]"],
+  },
+  portfolio: {
     selector: '[data-tour="portfolio"]',
-    title: "Portfolio",
-    text: "Track holdings by amount, or paste a public address and let it read the balance. Value, cost basis and 24h P/L — stored only on this device, no wallet connection.",
+    chapter: msg("tour_chapter_your_money", "Your money"),
+    title: msg("tour_title_portfolio", "Portfolio"),
+    text: msg(
+      "tour_text_12",
+      "Amounts you type in, with purchases and sales if you want cost basis and profit. FIFO, LIFO or HIFO — a reporting method, not a tax calculation, and the report says which method every line used. Everything is stored on this device and there is no wallet to connect.",
+    ),
     keys: ["P"],
   },
-  {
-    selector: '[data-tour="widgets"]',
-    optional: true, // nothing to point at until a widget is switched on
-    title: "Widgets",
-    text: "Watchlist, Fear & Greed, funding rates, market overview and more. Switch them on in Settings → Widgets — there are ready-made bundles — then drag them to reorder, or hover one and click × to hide just that card.",
+  address: {
+    selector: null,
+    chapter: msg("tour_chapter_your_money", "Your money"),
+    title: msg("tour_title_or_watch_an_address", "Or watch an address"),
+    text: msg(
+      "tour_text_13",
+      "Paste a public Bitcoin, Ethereum, Litecoin, Dogecoin, Bitcoin Cash or Zcash address and the balance is read for you — including the ERC-20 tokens an Ethereum address holds, in one request. The address is only ever sent to the balance service, and if a chain cannot be read PriceTab says which chain it is rather than telling you to check a perfectly good address.",
+    ),
   },
-  {
-    selector: '[data-tour="widget-toggle"]',
-    // Deliberately not `optional`: this step describes a button, so with no
-    // button on screen it has nothing to say and is better skipped. The step
-    // before it is the one that has to survive, and it does.
-    title: "Clear the row",
-    text: "This clears every widget at once, and brings them all back. Nothing is switched off, so they return exactly as you arranged them.",
+  targets: {
+    selector: '[data-tour="alerts"]',
+    chapter: msg("tour_chapter_your_money", "Your money"),
+    title: msg("tour_title_price_targets", "Price targets"),
+    text: msg(
+      "tour_text_14b",
+      "Tell me when BTC rises above a number, or moves 5% in a day, or when everything I hold is worth less than X. A target is a line on the chart, and a click on the chart picks its price. You are told on your next new tab — or, if you switch the alarm on, by a notification and a tone; that permission is asked for only then.",
+    ),
+    keys: ["A"],
+  },
+  news: {
+    selector: '[data-tour="news"]',
+    chapter: msg("tour_chapter_reading_the_market", "Reading the market"),
+    title: msg("tour_title_news", "News"),
+    text: msg(
+      "tour_text_15c",
+      "Every headline with its source and its age, narrowed by coin, source or search, with advertising dropped. Press a headline once and it opens beside the list — the story's own text where the newsroom allows it, and a counted reading of it; press again to open the page.",
+    ),
+    keys: ["N"],
+  },
+  baseRates: {
+    selector: null,
+    chapter: msg("tour_chapter_reading_the_market", "Reading the market"),
+    title: msg("tour_title_has_this_happened_before", "Has this happened before?"),
+    text: msg(
+      "tour_text_16b",
+      "Years of this coin's daily candles, and what followed each time it was in a state, beside an ordinary day — with how many times every figure is based on. It opens on what came after everything true right now. It never says buy or sell: tested, almost none of it told the next days apart from any days, and saying so is more useful than an arrow.",
+    ),
+    keys: ["B"],
+  },
+  widgets: {
+    selector: '[data-tour="widgets"]',
+    // The Widgets tab on the left edge, which is always there; optional all
+    // the same, so a tour replayed with the feature off still says its piece
+    optional: true,
+    chapter: msg("tour_chapter_reading_the_market", "Reading the market"),
+    title: msg("tour_title_widgets", "Widgets"),
+    text: msg(
+      "tour_text_17_pin",
+      "Watchlist, Fear & Greed, funding, fees and more, in a drawer on the left edge, arranged the way a phone arranges widgets. Edit, then + adds one at the size you swipe to; hold or right-click a card for its size, to remove it, or to pin it to the home screen.",
+    ),
     keys: ["W"],
   },
-  {
+  settings: {
     selector: '[data-tour="settings"]',
-    title: "Everything else lives here",
-    text: "Coins, currency, theme, widgets and the tickers. There's a search box at the top of Preferences if you can't find something.",
+    chapter: msg("tour_chapter_making_it_yours", "Making it yours"),
+    title: msg(
+      "tour_title_everything_else_lives_here",
+      "Everything else lives here",
+    ),
+    text: msg(
+      "tour_text_19",
+      "Coins, currency, theme, widgets and the tickers, with a search box at the top of Preferences. The modes row sets a dozen of them at once — Minimal, Fast, Trader, Holder — and never touches your currency, number format or theme.",
+    ),
     keys: ["S"],
   },
-  {
+  keyboard: {
     selector: null,
-    title: "It's faster from the keyboard",
-    text: "Press ? any time for the full list. A few more worth knowing:",
+    chapter: msg("tour_chapter_making_it_yours", "Making it yours"),
+    title: msg(
+      "tour_title_it_is_faster_from_the_keyboard",
+      "It is faster from the keyboard",
+    ),
+    text: msg(
+      "tour_keys_intro",
+      "Press ? at any time for the full list. A few worth knowing now:",
+    ),
     keyGrid: [
-      { keys: ["T"], label: "Line or candlesticks" },
       { keys: ["D"], label: "Light or dark" },
-      { keys: ["Space"], label: "Rotate through your coins" },
+      {
+        keys: ["Space"],
+        label: msg("tour_key_rotate", "Rotate through your coins"),
+      },
       { keys: ["R"], label: "Refresh now" },
+      { keys: ["Esc"], label: msg("sc_close_open", "Close whatever is open") },
     ],
   },
+  whatsNew: {
+    selector: null,
+    chapter: msg("tour_chapter_whats_new", "What's new"),
+    title: msg("tour_title_whats_new", "PriceTab has been updated"),
+    text: msg(
+      "tour_text_whats_new",
+      "A few short steps on what changed since your last version. Skip it whenever you like; Settings can replay the whole tour.",
+    ),
+  },
+};
+
+// The first-run tour, in the order the eye goes down the page
+const ONBOARDING_STEPS = [
+  TOUR.welcome,
+  TOUR.price,
+  TOUR.change,
+  TOUR.range,
+  TOUR.drag,
+  TOUR.jump,
+  TOUR.compare,
+  TOUR.tools,
+  TOUR.twoWays,
+  TOUR.companion,
+  TOUR.calls,
+  TOUR.board,
+  TOUR.portfolio,
+  TOUR.address,
+  TOUR.targets,
+  TOUR.news,
+  TOUR.baseRates,
+  TOUR.widgets,
+  TOUR.settings,
+  TOUR.keyboard,
+];
+
+/* **What's new, once per edition** (1 Oct 2026): the steps of the tour
+ * that changed, shown once to somebody who had already taken it — and only
+ * to an install at least a day old, so a first run never gets both. Bump
+ * `WHATS_NEW_ID` with a release that deserves one, and list its steps here. */
+const WHATS_NEW_ID = "2026-10";
+const WHATS_NEW_STEPS = [
+  TOUR.whatsNew,
+  TOUR.drag,
+  TOUR.compare,
+  TOUR.tools,
+  TOUR.companion,
+  TOUR.news,
+  TOUR.widgets,
+  TOUR.baseRates,
 ];
 
 const SPOTLIGHT_PADDING = 8; // px of breathing room around the highlighted element
@@ -158,6 +354,22 @@ const OnbCard = styled.div`
   transition:
     top 0.35s cubic-bezier(0.22, 1, 0.36, 1),
     left 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+`;
+
+/* Which chapter this step is in.
+ *
+ * Twenty steps is a lot to be walked through, and a bare "7 / 20" says how far
+ * you have to go without saying what any of it is about. The chapter name
+ * turns the same twenty into five short subjects, so somebody who only wants
+ * the chart knows the moment the tour has left it — and Skip is always one
+ * click away. A tour long enough to be worth taking has to be navigable, and
+ * an eyebrow costs one line. */
+const OnbChapter = styled.div`
+  font-size: 0.6rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: ${({ theme }) => theme.color.textSecondary};
+  margin-bottom: 0.3rem;
 `;
 
 const OnbTitle = styled.div`
@@ -281,7 +493,8 @@ const OnbBtn = styled.button.attrs({ type: "button" })`
     ${({ theme, primary }) => (primary ? theme.color.text : theme.color.border)};
   background: ${({ theme, primary }) =>
     primary ? theme.color.text : "transparent"};
-  color: ${({ theme, primary }) => (primary ? theme.color.bg : theme.color.text)};
+  color: ${({ theme, primary }) =>
+    primary ? theme.color.bg : theme.color.text};
   transition:
     background 0.15s ease,
     border-color 0.15s ease,
@@ -307,16 +520,30 @@ class OnboardingTour extends React.Component {
     this.rafId = null;
   }
 
+  // The list this tour walks: the whole tour, or an update's "what's new"
+  steps() {
+    return this._steps || ONBOARDING_STEPS;
+  }
+
   componentDidMount() {
     // `replay` is Settings asking for the tour again — it ignores the flag
     if (!this.props.replay) {
-      let seen = false;
-      try {
-        seen = localStorage.getItem(ONBOARDING_SEEN_KEY) === "1";
-      } catch (e) {
-        seen = false;
+      const read = (key) => {
+        try {
+          return localStorage.getItem(key);
+        } catch (e) {
+          return null;
+        }
+      };
+      if (read(ONBOARDING_SEEN_KEY) === "1") {
+        /* Taken before: the edition's "what's new", once, and only on an
+           install at least a day old — a profile that only just finished
+           the first tour has nothing new to be shown. */
+        const first = Number(read(FIRST_USE_KEY));
+        const old = Number.isFinite(first) && first > 0 && Date.now() - first >= 86400000;
+        if (!old || read(WHATS_NEW_KEY) === WHATS_NEW_ID) return;
+        this._steps = WHATS_NEW_STEPS;
       }
-      if (seen) return;
     }
     // Let the app finish its first render (skeleton -> real elements) first
     this.startTimer = setTimeout(
@@ -354,7 +581,7 @@ class OnboardingTour extends React.Component {
     // budget would just leave a step the user is about to skip past on screen.
     const tries =
       typeof retries === "number" ? retries : this.state.step <= 1 ? 12 : 2;
-    const step = ONBOARDING_STEPS[this.state.step];
+    const step = this.steps()[this.state.step];
     if (!step || !step.selector) {
       this.setState({ rect: null });
       return;
@@ -401,7 +628,7 @@ class OnboardingTour extends React.Component {
   }
 
   goNext() {
-    if (this.state.step >= ONBOARDING_STEPS.length - 1) {
+    if (this.state.step >= this.steps().length - 1) {
       this.finish();
       return;
     }
@@ -420,6 +647,8 @@ class OnboardingTour extends React.Component {
   finish() {
     try {
       localStorage.setItem(ONBOARDING_SEEN_KEY, "1");
+      // Either tour, ended or skipped, has shown this edition's news
+      localStorage.setItem(WHATS_NEW_KEY, WHATS_NEW_ID);
     } catch (e) {
       /* localStorage unavailable — tour just won't persist */
     }
@@ -434,7 +663,7 @@ class OnboardingTour extends React.Component {
   // Position the tooltip relative to the cutout (or center it when there's none)
   cardStyle() {
     const { rect } = this.state;
-    const step = ONBOARDING_STEPS[this.state.step] || {};
+    const step = this.steps()[this.state.step] || {};
     const vw = window.innerWidth;
     const vh = window.innerHeight;
     // Rough card height. The steps vary a lot now — two lines of text or
@@ -478,9 +707,9 @@ class OnboardingTour extends React.Component {
   render() {
     const { active, step, rect } = this.state;
     if (!active) return null;
-    const current = ONBOARDING_STEPS[step];
+    const current = this.steps()[step];
     if (!current) return null;
-    const isLast = step === ONBOARDING_STEPS.length - 1;
+    const isLast = step === this.steps().length - 1;
     const children = [
       React.createElement(OnbBackdrop, { key: "bg", dim: !rect }),
     ];
@@ -501,6 +730,9 @@ class OnboardingTour extends React.Component {
       React.createElement(
         OnbCard,
         { key: "card", style: this.cardStyle() },
+        current.chapter
+          ? React.createElement(OnbChapter, null, current.chapter)
+          : null,
         React.createElement(OnbTitle, null, current.title),
         current.keys &&
           React.createElement(
@@ -541,12 +773,12 @@ class OnboardingTour extends React.Component {
             React.createElement(
               OnbSkip,
               { type: "button", onClick: () => this.finish() },
-              "Skip tour",
+              msg("tour_skip", "Skip tour"),
             ),
           React.createElement(
             OnbCount,
-            { "aria-label": `Step ${step + 1} of ${ONBOARDING_STEPS.length}` },
-            `${step + 1} / ${ONBOARDING_STEPS.length}`,
+            { "aria-label": `Step ${step + 1} of ${this.steps().length}` },
+            `${step + 1} / ${this.steps().length}`,
           ),
           React.createElement(
             OnbButtons,
@@ -555,12 +787,12 @@ class OnboardingTour extends React.Component {
               React.createElement(
                 OnbBtn,
                 { type: "button", onClick: () => this.goPrev() },
-                "Back",
+                msg("tour_back", "Back"),
               ),
             React.createElement(
               OnbBtn,
               { type: "button", primary: true, onClick: () => this.goNext() },
-              isLast ? "Done" : "Next",
+              isLast ? msg("tour_done", "Done") : msg("tour_next", "Next"),
             ),
           ),
         ),
@@ -569,7 +801,7 @@ class OnboardingTour extends React.Component {
           null,
           React.createElement(OnbProgressFill, {
             style: {
-              width: `${((step + 1) / ONBOARDING_STEPS.length) * 100}%`,
+              width: `${((step + 1) / this.steps().length) * 100}%`,
             },
           }),
         ),

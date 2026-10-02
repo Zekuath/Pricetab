@@ -79,15 +79,19 @@ const newCtx = async (browser) => {
   return { ctx, page, errors };
 };
 
+/* Settings, on its Modes section: the first of the preferences in its
+   menu since 26 Sep 2026, when the tabs and the accordions became a menu of
+   sections. Pressed, not searched for by text — a conditional click on a
+   moved control is how a test goes on passing against the wrong screen. */
 const openPrefs = async (page) => {
   await page.keyboard.press("s");
   await page.waitForTimeout(500);
-  await page.evaluate(`(() => {
-    const b = [...document.querySelectorAll("button")]
-      .find((e) => e.textContent.trim() === "Preferences");
-    if (b) b.click();
-  })()`);
-  await page.waitForTimeout(500);
+  await page.click("[data-tab='preferences']");
+  await page.waitForTimeout(400);
+};
+const openSection = async (page, key) => {
+  await page.click(`[data-pref-group='${key}']`);
+  await page.waitForTimeout(350);
 };
 
 const HEADINGS = `[...document.querySelectorAll("h4")].map((h) => ({
@@ -104,34 +108,32 @@ const HEADINGS = `[...document.querySelectorAll("h4")].map((h) => ({
     process.exit(0);
   }
 
-  // ── 1. the tab is a table of contents, not a wall ──────────────────────
+  // ── 1. a menu of sections, not a wall ──────────────────────────────────
+  /* Every group open was one long scroll; accordions made it a list of
+   * headings that said nothing of what was behind them; since 26 Sep 2026 it
+   * is a menu naming every section with its count, and one section on screen
+   * at a time. The count and the rows cannot disagree: they are one list. */
   {
     const { ctx, page, errors } = await newCtx(browser);
     await openPrefs(page);
-    const groups = await page.evaluate(`(${HEADINGS})`);
-    check(groups.length >= 5, "the settings are grouped", `${groups.length} groups`);
-    /* Every group used to start open, which made the tab one long scroll. The
-     * two people touch most stay open; the rest are a list of headings. */
-    const open = groups.filter((g) => g.open);
-    check(
-      open.length >= 1 && open.length < groups.length,
-      "some groups start open and some start closed",
-      groups.map((g) => `${g.title}:${g.open ? "open" : "shut"}`).join(" "),
-    );
-    // A closed group opens on its heading, which is the whole point of one
-    const title = groups.find((g) => !g.open).title;
-    await page.evaluate(`(() => {
-      const h = [...document.querySelectorAll("h4")]
-        .find((e) => e.textContent.replace("▾", "").trim() === ${JSON.stringify(title)});
-      if (h) h.click();
-    })()`);
-    await page.waitForTimeout(400);
-    const after = await page.evaluate(`(${HEADINGS})`);
-    check(
-      (after.find((g) => g.title === title) || {}).open === true,
-      "and a closed one opens when its heading is clicked",
-      title,
-    );
+    const menu = await page.evaluate(`[...document.querySelectorAll("[data-pref-group]")].map((b) => ({
+      key: b.getAttribute("data-pref-group"),
+      count: (b.children[1] || { textContent: "" }).textContent.trim(),
+    }))`);
+    check(menu.length >= 7 && menu.filter((m) => m.key !== "modes").every((m) => /^[0-9]+$/.test(m.count)),
+      "the menu names every section, each group with its count", JSON.stringify(menu));
+    const basics = menu.find((m) => m.key === "basics");
+    await openSection(page, "basics");
+    const shown = await page.evaluate(`(() => ({
+      section: document.querySelector("[data-settings-section]").getAttribute("data-settings-section"),
+      rows: document.querySelectorAll("[data-pref-section='basics'] > *").length,
+    }))()`);
+    check(shown.section === "basics" && String(shown.rows) === basics.count,
+      "a section shows its own rows, as many as the menu says", JSON.stringify({ shown, basics }));
+    await openSection(page, "chart");
+    check(await page.evaluate(`!document.querySelector("[data-pref-section='basics']") &&
+      Boolean(document.querySelector("[data-pref-section='chart']"))`),
+      "and another section replaces it rather than stacking under it");
     check(errors.length === 0, "nothing threw", errors[0]);
     await ctx.close();
   }
@@ -150,7 +152,13 @@ const HEADINGS = `[...document.querySelectorAll("h4")].map((h) => ({
     check(errors.length === 0, "and typing throws nothing", errors[0]);
     const groups = await page.evaluate(`(${HEADINGS})`);
     check(
-      groups.length === 1 && groups[0].title === "Chart",
+      /* The name is the group's own, so a regrouping updates it here too —
+         which is the point: this check exists to catch the search collapsing
+         to the *wrong* group, and a name it does not know is indistinguishable
+         from that. "Chart" became "The chart" when the six groups became five
+         and Chart Colour and Quiet Controls joined the settings they are
+         about. */
+      groups.length === 1 && groups[0].title === "The chart",
       "a search collapses the panel to the group that matches",
       groups.map((g) => g.title).join(","),
     );
@@ -193,7 +201,8 @@ const HEADINGS = `[...document.querySelectorAll("h4")].map((h) => ({
     );
     /* Through the switches, not around them: the point of applying a mode by
      * calling each setting's own handler is that the panel below it tells the
-     * truth afterwards. */
+     * truth afterwards. Quiet Controls is in the chart's section. */
+    await openSection(page, "chart");
     const switches = await page.evaluate(`(() => {
       const rows = [...document.querySelectorAll("div")]
         .filter((d) => /QUIET CONTROLS/i.test(d.textContent) && d.children.length < 6);
@@ -204,6 +213,8 @@ const HEADINGS = `[...document.querySelectorAll("h4")].map((h) => ({
     check(switches.quietSectionFound, "the Quiet Controls row is in the panel");
 
     // The pill lights up because the settings say so, not because it was clicked
+    await page.click("[data-tab='preferences']");
+    await page.waitForTimeout(350);
     const activePill = await page.evaluate(`(() => {
       const pills = [...document.querySelectorAll("button")]
         .filter((b) => ["Minimal", "Fast", "Trader", "Holder"].includes(b.textContent.trim()));
@@ -245,12 +256,7 @@ const HEADINGS = `[...document.querySelectorAll("h4")].map((h) => ({
 
     /* And one switch away from it, no mode claims to be on — nothing stored
      * says "Minimal", so nothing can go on saying it. */
-    await page.evaluate(`(() => {
-      const h = [...document.querySelectorAll("h4")]
-        .find((e) => /Tickers/.test(e.textContent));
-      if (h) h.click();
-    })()`);
-    await page.waitForTimeout(400);
+    await openSection(page, "tabTickers");
     await page.evaluate(`(() => {
       const row = [...document.querySelectorAll("div")]
         .find((d) => /Price Ticker Bar/.test(d.textContent) && d.children.length < 6);
@@ -281,42 +287,43 @@ const HEADINGS = `[...document.querySelectorAll("h4")].map((h) => ({
     await page.keyboard.press("Escape");
     await page.waitForTimeout(900);
 
-    const corner = `[...document.querySelectorAll("button")]
-      .filter((b) => b.querySelector("svg") && /settings|portfolio|targets|Compare/i.test(b.getAttribute("aria-label") || ""))`;
-    const resting = await page.evaluate(`(() => ${corner}
-      .map((b) => ({ label: b.getAttribute("aria-label"), o: +getComputedStyle(b).opacity })))()`);
-    check(resting.length >= 2, "the corner controls are still there", `${resting.length}`);
-    check(
-      resting.every((b) => b.o < 0.5),
-      "every one of them is resting well under half opacity",
-      resting.map((b) => `${b.label}=${b.o}`).join(" "),
-    );
-    /* The gear rests brightest of them: it is the way back to the setting that
-     * quietened everything, so it is the one that must stay findable. */
-    const gear = resting.find((b) => /settings/i.test(b.label));
-    check(
-      gear && resting.every((b) => b === gear || b.o <= gear.o),
-      "the gear is the brightest of them",
-      resting.map((b) => `${b.label}=${b.o}`).join(" "),
-    );
+    /* **What rests on the page is the two pulls** (26 Sep 2026): the
+       corner's openers became tabs on the two edges' spines, each resting in
+       a drawer behind a pull, and Quiet Controls is the pulls' weight now.
+       Measured without the setting as well, so the check cannot pass on a
+       pull that is simply always faint. */
+    const pulls = `(() => [...document.querySelectorAll("[data-drawer-tabs-handle], [data-screen-tabs-handle]")]
+      .map((b) => +getComputedStyle(b).opacity))()`;
+    const resting = await page.evaluate(pulls);
+    check(resting.length === 2 && resting.every((o) => o < 0.5),
+      "with Quiet Controls on, both pulls rest well under half opacity", JSON.stringify(resting));
 
     // Pointing at one brings it back — nothing is hidden or unclickable
-    await page.hover('[aria-label="Open settings"]');
-    await page.waitForTimeout(400);
+    await page.hover("[data-screen-tabs-handle]");
+    /* Past the 0.2s fade and short of the dwell, after which the column
+       comes out and the pull steps aside under it. */
+    await page.waitForTimeout(250);
     const hovered = await page.evaluate(
-      `(() => +getComputedStyle(document.querySelector('[aria-label="Open settings"]')).opacity)()`,
+      `(() => +getComputedStyle(document.querySelector("[data-screen-tabs-handle]")).opacity)()`,
     );
     check(hovered > 0.9, "and comes back to full under the pointer", `${hovered}`);
 
-    // …and it still opens the panel, which is the way out of the mode
+    /* …and it still leads to Settings, which is the way out of the mode.
+       Rested on for the dwell, the pull has already brought the column out
+       — and stepped aside under it — so the next press is the tab's. */
+    await page.waitForSelector("[data-screen-tabs-shown='true']", { timeout: 3000 });
     await page.click('[aria-label="Open settings"]');
     await page.waitForTimeout(600);
-    const opened = await page.evaluate(
-      `(() => Boolean([...document.querySelectorAll("button")]
-        .find((e) => e.textContent.trim() === "Preferences")))()`,
-    );
-    check(opened, "a quiet gear still opens settings");
+    const opened = await page.evaluate(`Boolean(document.querySelector("[data-tab='preferences']"))`);
+    check(opened, "a quiet pull still leads to Settings");
     await ctx.close();
+
+    /* And without the setting they rest in plain sight. */
+    const loud = await newCtx(browser);
+    const plain = await loud.page.evaluate(pulls);
+    check(plain.length === 2 && plain.every((o) => o > 0.7),
+      "with it off, the pulls rest in plain sight", JSON.stringify(plain));
+    await loud.ctx.close();
   }
 
   // ── 6. the rings that explain the hard settings ───────────────────────
@@ -327,13 +334,15 @@ const HEADINGS = `[...document.querySelectorAll("h4")].map((h) => ({
   {
     const { ctx, page, errors } = await newCtx(browser);
     await openPrefs(page);
-    await page.evaluate(`(() => { document.querySelectorAll("h4").forEach((h) => {
-      if (h.getAttribute("aria-expanded") === "false") h.click(); }); })()`);
-    await page.waitForTimeout(500);
-
-    const rings = await page.evaluate(`(() => [...document.querySelectorAll("button")]
-      .filter((b) => /^About /.test(b.getAttribute("aria-label") || ""))
-      .map((b) => b.getAttribute("aria-label").replace("About ", "")))()`);
+    /* One section at a time, so the rings are gathered section by section. */
+    const rings = [];
+    for (const key of ["basics", "chart", "underPrice", "tabTickers", "updating", "features", "data"]) {
+      await openSection(page, key);
+      rings.push(...(await page.evaluate(`(() => [...document.querySelectorAll("button")]
+        .filter((b) => /^About /.test(b.getAttribute("aria-label") || ""))
+        .map((b) => b.getAttribute("aria-label").replace("About ", "")))()`)));
+    }
+    await openSection(page, "basics");
     check(rings.length >= 8, "the settings with something to explain carry a ring",
       `${rings.length}: ${rings.slice(0, 4).join(", ")}…`);
     /* The ones that must have one: a cost, an interaction with another setting,
@@ -350,7 +359,17 @@ const HEADINGS = `[...document.querySelectorAll("h4")].map((h) => ({
         .find((d) => d.children.length === 0 && d.textContent.includes(${JSON.stringify("PHRASE")}));
       if (!el) return "absent";
       let n = el, h = el.getBoundingClientRect().height;
-      while (n && n !== document.body) { h = Math.min(h, n.getBoundingClientRect().height); n = n.parentElement; }
+      while (n && n !== document.body) {
+        /* Skip a display:contents ancestor. Such an element has no box at all,
+           so its height is 0 by definition and says nothing about whether the
+           content inside it is clipped — the settings row dissolves its
+           wrappers that way so the controls become grid items. Counting it
+           reported an open note as clipped. */
+        if (getComputedStyle(n).display !== "contents") {
+          h = Math.min(h, n.getBoundingClientRect().height);
+        }
+        n = n.parentElement;
+      }
       return (h > 4 ? "open" : "clipped") + (el.closest("[aria-hidden='true']") ? "+hidden" : "");
     })()`.replace("PHRASE", phrase));
 
@@ -377,12 +396,21 @@ const HEADINGS = `[...document.querySelectorAll("h4")].map((h) => ({
       "…and it says what switching currency does to your targets",
     );
 
-    // One at a time: two open notes push the switch you were reading off screen
+    /* One at a time: two open notes push the switch you were reading off
+       screen. Two rings in one section, since a section is what is on
+       screen. */
+    await openSection(page, "chart");
     await press("About Candlesticks");
     await page.waitForTimeout(420);
-    check((await noteState(CURRENCY)) === "clipped+hidden",
+    await press("About Chart Grid");
+    await page.waitForTimeout(420);
+    check((await noteState("BTC goes to 2013")) === "clipped+hidden",
       "opening another closes the first",
-      await noteState(CURRENCY));
+      await noteState("BTC goes to 2013"));
+    await press("About Chart Grid");
+    await page.waitForTimeout(420);
+    await press("About Candlesticks");
+    await page.waitForTimeout(420);
     await press("About Candlesticks");
     await page.waitForTimeout(420);
     check((await noteState("BTC goes to 2013")) === "clipped+hidden",

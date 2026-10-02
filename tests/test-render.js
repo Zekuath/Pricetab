@@ -118,6 +118,65 @@ const fail = (msg) => {
   }
 
   // --- 2. the price readout renders --------------------------------------
+  /* --- your own cost, on the coin's own chart ---------------------------
+   *
+   * The honest form of a "buy point": the average actually paid, drawn where
+   * the price can be read against it. Checked in a second page with a holding
+   * seeded, because the default profile has none — and asserted to be *absent*
+   * there, since a break-even line with nothing behind it is a level about
+   * nobody. */
+  {
+    const withHolding = await context.newPage();
+    await withHolding.addInitScript(`(() => {
+      localStorage.setItem("crypto_chart_onboarding_seen", "1");
+      localStorage.setItem("crypto_chart_portfolio", ${JSON.stringify(
+        JSON.stringify([
+          {
+            coin: "BTC",
+            amount: 0.5,
+            // Inside the fixture's drawn range, so it has to appear.
+            lots: [{ amount: 0.5, paid: 21000, currency: "USD", time: 0 }],
+            sales: [],
+            watches: [],
+          },
+        ]),
+      )});
+    })()`);
+    await withHolding.goto(INDEX, { waitUntil: "load" });
+    await withHolding.waitForSelector("svg path", { timeout: 15000 });
+    await withHolding.waitForTimeout(2000);
+
+    const shown = await withHolding.evaluate(
+      `/YOUR COST/i.test(document.body.innerText)`,
+    );
+    if (shown) console.log("✔ your average cost is drawn on the coin chart");
+    else fail("your average cost is drawn on the coin chart");
+
+    /* And it is a real level, not a label parked at the top. `priceToChartY`
+     * returns null outside the drawn range, and the line is hidden rather than
+     * pinned to an edge — so a visible one must sit inside the plot. */
+    const placed = await withHolding.evaluate(`(() => {
+      const t = [...document.querySelectorAll("svg text")].find((n) =>
+        /YOUR COST/i.test(n.textContent || ""));
+      if (!t) return null;
+      const y = parseFloat(t.getAttribute("y"));
+      const svg = t.ownerSVGElement;
+      const h = svg ? svg.getBoundingClientRect().height : 0;
+      return { y, h, opacity: t.getAttribute("opacity") };
+    })()`);
+    if (placed && isFinite(placed.y) && placed.y > 0 && placed.y < placed.h) {
+      console.log(`✔ the cost level sits inside the plot (y=${placed.y.toFixed(0)})`);
+    } else {
+      fail(`the cost level sits inside the plot — got ${JSON.stringify(placed)}`);
+    }
+    await withHolding.close();
+
+    // A profile with no holdings must not draw a break-even about nobody.
+    const noHolding = await page.evaluate(`/YOUR COST/i.test(document.body.innerText)`);
+    if (!noHolding) console.log("✔ no cost line when nothing is held");
+    else fail("a cost line was drawn with no holding behind it");
+  }
+
   const bodyText = await page.textContent("body");
   if (/\d/.test(bodyText || "")) {
     console.log("✔ price readout rendered");

@@ -4,6 +4,11 @@
 //
 // The pixels themselves are checked in tests/test-portfolio-chart-render.js,
 // which loads the real page in Chromium; this file is the arithmetic.
+/* The chart takes a `mode` — "total", "bycoin" or "pnl" — where it used to
+ * take a `stacked` boolean. Updated deliberately when the P/L view was added
+ * on 26 Aug 2026: these assertions were right about the old contract and the
+ * contract changed, which is a different thing from a test being wrong.
+ */
 const fs = require("fs");
 const path = require("path");
 const vm = require("vm");
@@ -37,6 +42,12 @@ const sandbox = {
    * interpolated into a styled block by every file has to be stubbed
    * here too, or the file throws before a single assertion runs. */
   themedScrollbar: "",
+  touchTarget: "",
+  motionMs: (ms) => ms,
+  reducedMotion: () => false,
+  touchBox: "",
+  besideScreenSpine: "",
+  refusedField: "",
   withTheme: (c) => c,
   React: { createElement: (...args) => ({ args }), Fragment: Symbol("Fragment") },
   Component: class { constructor(p) { this.props = p; } setState() {} },
@@ -72,6 +83,14 @@ vm.runInContext(
 for (const name of ["scaleLinear", "scaleTime", "extent", "select", "line"]) {
   sandbox[name] = sandbox.d3[name];
 }
+
+/* `i18n.js` first: the chart calls `msg()` while it renders, and this
+ * sandbox is not a page, so nothing else would define it. */
+vm.runInContext(
+  fs.readFileSync(path.join(__dirname, "..", "src", "i18n.js"), "utf8"),
+  sandbox,
+  { filename: "i18n.js" },
+);
 
 const src = path.join(__dirname, "..", "src", "portfolio-chart.js");
 vm.runInContext(fs.readFileSync(src, "utf8"), sandbox, { filename: "portfolio-chart.js" });
@@ -200,7 +219,7 @@ const series = (n, from, to) =>
 
 {
   // A line is read for its shape, so it gets the range it moved in…
-  const line = make({ series: series(10, 1000, 2000), stacked: false });
+  const line = make({ series: series(10, 1000, 2000), mode: "total" });
   const geo = line.geometry();
   assert.ok(geo, "a line has geometry");
   assert.ok(geo.y.domain()[0] > 0, "the line's scale does not start at zero");
@@ -209,7 +228,7 @@ const series = (n, from, to) =>
   assert.strictEqual(geo.points.length, 10, "one point per sample");
 
   // …and a stack is read for its proportions, which are only true from zero
-  const stack = make({ series: series(10, 1000, 2000), stacked: true });
+  const stack = make({ series: series(10, 1000, 2000), mode: "bycoin" });
   assert.strictEqual(stack.geometry().y.domain()[0], 0, "a stack starts at zero");
 }
 
@@ -254,7 +273,7 @@ const series = (n, from, to) =>
   const s = series(4, 100, 100);
   const c = make({
     series: s,
-    stacked: true,
+    mode: "bycoin",
     parts: [
       { coin: "BTC", values: [60, 60, 60, 60] },
       { coin: "ETH", values: [40, 40, 40, 40] },

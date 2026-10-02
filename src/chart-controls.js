@@ -97,6 +97,12 @@ const PeriodText = styled.span`
   z-index: 1;
 `;
 
+/* The chart-settings opener lived here for a few hours on 23 Sep 2026, as a
+ * chip at the end of these six. It was wrong twice over and the owner said so
+ * at once: beside ALL it reads as a seventh range, and a control that opens a
+ * panel belongs with the other controls that open panels — where it also
+ * inherits the quiet-chrome rule, which it was breaking (it rested at full
+ * opacity while its neighbours sat at 0.14). It is a corner control now. */
 class PeriodItem extends PureComponent {
   constructor(...args) {
     super(...args);
@@ -114,7 +120,8 @@ class PeriodItem extends PureComponent {
 
     return React.createElement(
       PeriodButton,
-      { active: active, onClick: this.handleClick, title: title },
+      // The range on screen says so to a screen reader, not only in ink
+      { active: active, onClick: this.handleClick, title: title, "aria-pressed": active ? "true" : "false", "data-period-button": "1" },
       React.createElement(PeriodText, { active: active }, children),
     );
   }
@@ -408,8 +415,8 @@ class Overview extends PureComponent {
         OverviewItem,
         {
           onClick: this.props.cycleCoinIndex,
-          label: `${coin} Price`,
-          title: "Next coin",
+          label: msg("chart_coin_price", "$1 Price", coin),
+          title: msg("chart_next_coin", "Next coin"),
           dataTour: "price",
           flash: this.state.flash,
         },
@@ -426,8 +433,12 @@ class Overview extends PureComponent {
         OverviewItem,
         {
           onClick: this.togglePercentage,
-          label: `${calcPercentage ? "Percent" : "Price"} Change`,
-          title: calcPercentage ? "Switch to price change" : "Switch to percent change",
+          label: calcPercentage
+            ? msg("chart_percent_change", "Percent Change")
+            : msg("chart_price_change", "Price Change"),
+          title: calcPercentage
+            ? msg("chart_switch_to_price", "Switch to price change")
+            : msg("chart_switch_to_percent", "Switch to percent change"),
           dataTour: "change",
         },
         delta,

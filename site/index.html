@@ -3,10 +3,12 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>PriceTab — Live Crypto Charts on Every New Tab</title>
+    <meta name="theme-color" content="#000000" />
+    <meta name="color-scheme" content="dark light" />
+    <title data-i18n="meta.title">PriceTab — Live Crypto Charts on Every New Tab</title>
     <meta
       name="description"
-      content="Every new browser tab opens a live cryptocurrency chart. Call where the price goes next, track what you hold, and get told when a price is hit. No account, zero permissions."
+      content="Every new browser tab opens a live cryptocurrency chart. Track what you hold, read your country's crypto tax rules from official sources, practise derivatives with no real money, and get told when a price is hit. No account, no permissions at install."
     />
     <link rel="icon" href="../assets/icons/icon48.png" />
     <link rel="canonical" href="https://zekuath.github.io/Pricetab/site/" />
@@ -14,7 +16,7 @@
     <meta property="og:title" content="PriceTab — Live Crypto Charts on Every New Tab" />
     <meta
       property="og:description"
-      content="Turn every new tab into a live crypto dashboard. Private, zero permissions, no account."
+      content="Turn every new tab into a live crypto dashboard. Private, no permissions at install, no account."
     />
     <meta property="og:image" content="https://zekuath.github.io/Pricetab/assets/promotional/Marquee.png" />
     <meta property="og:url" content="https://zekuath.github.io/Pricetab/site/" />
@@ -22,23 +24,85 @@
     <meta name="twitter:title" content="PriceTab — Live Crypto Charts on Every New Tab" />
     <meta
       name="twitter:description"
-      content="Turn every new tab into a live crypto dashboard. Private, zero permissions, no account."
+      content="Turn every new tab into a live crypto dashboard. Private, no permissions at install, no account."
     />
     <meta name="twitter:image" content="https://zekuath.github.io/Pricetab/assets/promotional/Marquee.png" />
+    <!-- The theme a visitor chose, applied before the first paint so the page
+         never flashes the other one. Remembered in localStorage — this site
+         sets no cookie. -->
+    <script>
+      try {
+        var pt = localStorage.getItem("pricetab_site_theme");
+        if (pt === "light" || pt === "dark") document.documentElement.setAttribute("data-theme", pt);
+      } catch (e) {}
+    </script>
     <link rel="stylesheet" href="../vendor/roboto-mono.css" />
     <style>
       /* Design tokens mirrored from the extension's dark palette */
+      /* Two themes since 1 Oct 2026, chosen in the corner and remembered
+         (localStorage, never a cookie). Colours are channels so every
+         translucent white on the page follows: --ink is what is drawn,
+         --ground what it is drawn on, --accent the one green. "auto" is
+         simply no attribute: the media query decides. */
       :root {
+        --ink: 255, 255, 255;
+        --ground: 0, 0, 0;
+        --accent: 52, 211, 153;
+        --down-rgb: 239, 83, 80;
         --bg: #000000;
         --bg-soft: #1a1a1a;
         --text: #ffffff;
         --text-dim: #a0a0a0;
-        --border: rgba(255, 255, 255, 0.12);
-        --border-hover: rgba(255, 255, 255, 0.25);
+        --border: rgba(var(--ink), 0.12);
+        --border-hover: rgba(var(--ink), 0.25);
         --green: #34d399;
         --up: #26a69a;
         --down: #ef5350;
         --shadow: rgba(0, 0, 0, 0.5);
+        --cta-a: #ffffff;
+        --cta-b: #e9edea;
+        --cta-ink: #05070a;
+        color-scheme: dark;
+      }
+      /* The extension's light palette: the same direction ink (≥4.5:1 on
+         white), a near-black for text, a quiet grey for the secondary. */
+      :root[data-theme="light"] {
+        --ink: 15, 23, 32;
+        --ground: 255, 255, 255;
+        --accent: 10, 125, 79;
+        --down-rgb: 200, 30, 30;
+        --bg: #ffffff;
+        --bg-soft: #f2f4f3;
+        --text: #0b1014;
+        --text-dim: #525a61;
+        --green: #0a7d4f;
+        --up: #0a7d4f;
+        --down: #c81e1e;
+        --shadow: rgba(15, 23, 32, 0.12);
+        --cta-a: #10161c;
+        --cta-b: #0b1014;
+        --cta-ink: #ffffff;
+        color-scheme: light;
+      }
+      @media (prefers-color-scheme: light) {
+        :root:not([data-theme]) {
+          --ink: 15, 23, 32;
+          --ground: 255, 255, 255;
+          --accent: 10, 125, 79;
+          --down-rgb: 200, 30, 30;
+          --bg: #ffffff;
+          --bg-soft: #f2f4f3;
+          --text: #0b1014;
+          --text-dim: #525a61;
+          --green: #0a7d4f;
+          --up: #0a7d4f;
+          --down: #c81e1e;
+          --shadow: rgba(15, 23, 32, 0.12);
+          --cta-a: #10161c;
+          --cta-b: #0b1014;
+          --cta-ink: #ffffff;
+          color-scheme: light;
+        }
       }
       * {
         box-sizing: border-box;
@@ -80,12 +144,12 @@
         pointer-events: none;
         background-image: linear-gradient(
             to right,
-            rgba(255, 255, 255, 0.05) 1px,
+            rgba(var(--ink), 0.05) 1px,
             transparent 1px
           ),
           linear-gradient(
             to bottom,
-            rgba(255, 255, 255, 0.05) 1px,
+            rgba(var(--ink), 0.05) 1px,
             transparent 1px
           );
         background-size: 64px 64px;
@@ -270,10 +334,10 @@
       }
       .cta {
         padding: 0 1.9rem;
-        background: linear-gradient(#ffffff, #e9edea);
-        color: #05070a;
+        background: linear-gradient(var(--cta-a), var(--cta-b));
+        color: var(--cta-ink);
         font-weight: 700;
-        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9),
+        box-shadow: inset 0 1px 0 rgba(var(--ink), 0.9),
           0 1px 2px rgba(0, 0, 0, 0.55),
           0 12px 26px -12px rgba(0, 0, 0, 0.95);
       }
@@ -283,32 +347,32 @@
       }
       .cta:hover {
         transform: translateY(-2px);
-        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9),
+        box-shadow: inset 0 1px 0 rgba(var(--ink), 0.9),
           0 1px 2px rgba(0, 0, 0, 0.55),
           0 18px 34px -14px rgba(0, 0, 0, 0.95),
-          0 0 34px -8px rgba(52, 211, 153, 0.5);
+          0 0 34px -8px rgba(var(--accent), 0.5);
       }
       .cta:hover .arw { transform: translateX(3px); }
       .cta:active {
         transform: translateY(0);
-        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75),
+        box-shadow: inset 0 1px 0 rgba(var(--ink), 0.75),
           0 1px 1px rgba(0, 0, 0, 0.5),
           0 3px 8px -6px rgba(0, 0, 0, 0.9);
       }
       .cta-secondary {
         padding: 0 1.55rem;
         border: 1px solid var(--border);
-        background: rgba(255, 255, 255, 0.02);
+        background: rgba(var(--ink), 0.02);
         color: var(--text);
       }
       .cta-secondary:hover {
         transform: translateY(-2px);
-        border-color: rgba(255, 255, 255, 0.34);
-        background: rgba(255, 255, 255, 0.06);
+        border-color: rgba(var(--ink), 0.34);
+        background: rgba(var(--ink), 0.06);
       }
       .cta-secondary:active {
         transform: translateY(0);
-        background: rgba(255, 255, 255, 0.03);
+        background: rgba(var(--ink), 0.03);
       }
       /* Keyboard only — a mouse press must not leave a ring behind */
       .cta:focus-visible,
@@ -356,12 +420,12 @@
         pointer-events: none;
         background-image: linear-gradient(
             to right,
-            rgba(255, 255, 255, 0.06) 1px,
+            rgba(var(--ink), 0.06) 1px,
             transparent 1px
           ),
           linear-gradient(
             to bottom,
-            rgba(255, 255, 255, 0.06) 1px,
+            rgba(var(--ink), 0.06) 1px,
             transparent 1px
           );
         background-size: 64px 64px;
@@ -404,8 +468,8 @@
         pointer-events: none;
         background: radial-gradient(
           85% 100% at 50% 108%,
-          rgba(52, 211, 153, 0.13),
-          rgba(52, 211, 153, 0.04) 46%,
+          rgba(var(--accent), 0.13),
+          rgba(var(--accent), 0.04) 46%,
           transparent 74%
         );
         opacity: 0;
@@ -492,8 +556,8 @@
         margin: -5px 0 0 -5px;
         border-radius: 50%;
         background: var(--green);
-        box-shadow: 0 0 0 4px rgba(52, 211, 153, 0.22),
-          0 0 22px 6px rgba(52, 211, 153, 0.45);
+        box-shadow: 0 0 0 4px rgba(var(--accent), 0.22),
+          0 0 22px 6px rgba(var(--accent), 0.45);
         opacity: 0;
         pointer-events: none;
         transition: opacity 0.5s ease;
@@ -512,8 +576,8 @@
         background: linear-gradient(
           to bottom,
           var(--green),
-          rgba(52, 211, 153, 0.35) 45%,
-          rgba(52, 211, 153, 0)
+          rgba(var(--accent), 0.35) 45%,
+          rgba(var(--accent), 0)
         );
         opacity: 0;
         transition: opacity 0.6s ease;
@@ -523,8 +587,8 @@
         animation: dotPulse 2.6s ease-in-out infinite;
       }
       @keyframes dotPulse {
-        0%, 100% { box-shadow: 0 0 0 4px rgba(52,211,153,0.22), 0 0 22px 6px rgba(52,211,153,0.45); }
-        50%      { box-shadow: 0 0 0 7px rgba(52,211,153,0.10), 0 0 30px 9px rgba(52,211,153,0.30); }
+        0%, 100% { box-shadow: 0 0 0 4px rgba(var(--accent), 0.22), 0 0 22px 6px rgba(var(--accent), 0.45); }
+        50%      { box-shadow: 0 0 0 7px rgba(var(--accent), 0.10), 0 0 30px 9px rgba(var(--accent), 0.30); }
       }
 
       /* The peak, named beside where it happened.
@@ -554,8 +618,8 @@
         font-size: 0.68rem;
         letter-spacing: 0.04em;
         font-variant-numeric: tabular-nums;
-        color: rgba(255, 255, 255, 0.88);
-        text-shadow: 0 0 18px rgba(0, 0, 0, 0.9);
+        color: rgba(var(--ink), 0.88);
+        text-shadow: 0 0 18px rgba(var(--ground), 0.9);
       }
       .hero-peak .peak-val b {
         font-weight: 400;
@@ -571,15 +635,15 @@
         flex: none;
         background: linear-gradient(
           to right,
-          rgba(52, 211, 153, 0.75),
-          rgba(255, 255, 255, 0.3)
+          rgba(var(--accent), 0.75),
+          rgba(var(--ink), 0.3)
         );
       }
       .hero-peak.left .peak-stem {
         background: linear-gradient(
           to left,
-          rgba(52, 211, 153, 0.75),
-          rgba(255, 255, 255, 0.3)
+          rgba(var(--accent), 0.75),
+          rgba(var(--ink), 0.3)
         );
       }
       /* The point being named */
@@ -593,7 +657,7 @@
         height: 5px;
         border-radius: 50%;
         background: var(--green);
-        box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.18);
+        box-shadow: 0 0 0 3px rgba(var(--accent), 0.18);
       }
       .hero-peak.left::after { left: auto; right: -2.5px; }
 
@@ -781,7 +845,7 @@
         transform: scaleX(0);
         transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1);
       }
-      .tab-ranges button:hover { background: rgba(255, 255, 255, 0.08); }
+      .tab-ranges button:hover { background: rgba(var(--ink), 0.08); }
       .tab-ranges button.on {
         color: var(--text);
         font-weight: 500;
@@ -795,6 +859,17 @@
       @media (max-width: 700px) {
         .tab-corner { display: none; }
         .tab-ui { padding-top: 1.6rem; }
+      }
+      /* Six buttons at 3.5rem each and their gaps are 25.5rem: past the
+         glass at 360px. On a phone they share the row instead. */
+      @media (max-width: 440px) {
+        .tab-ranges { gap: 0.25rem; padding: 1rem 0.75rem 2rem; }
+        .tab-ranges button {
+          flex: 1 1 0;
+          min-width: 0;
+          padding: 0;
+          letter-spacing: 0.06em;
+        }
       }
 
       /* A soft ground under the words.
@@ -811,8 +886,8 @@
         pointer-events: none;
         background: radial-gradient(
           58% 52% at 50% 46%,
-          rgba(0, 0, 0, 0.82),
-          rgba(0, 0, 0, 0.5) 55%,
+          rgba(var(--ground), 0.82),
+          rgba(var(--ground), 0.5) 55%,
           transparent 78%
         );
         opacity: 1;
@@ -824,7 +899,9 @@
         position: relative;
         z-index: 2;
         text-align: center;
-        padding: 0 0 10vh;
+        /* The sides are .wrap's gutter: written as one shorthand here, they
+           were zero, and on a phone the tagline ran to the glass. */
+        padding: 0 1.25rem 10vh;
         /* Leaves first, on its own stage, and is gone before the chart starts
            changing. A headline still dissolving underneath a section head
            reads as an overlap rather than a handover. */
@@ -868,7 +945,7 @@
         line-height: 1;
         letter-spacing: 0.01em;
         font-variant-numeric: tabular-nums;
-        text-shadow: 0 0 34px rgba(0, 0, 0, 0.85);
+        text-shadow: 0 0 34px rgba(var(--ground), 0.85);
       }
       .hero-meta {
         display: inline-flex;
@@ -1009,7 +1086,7 @@
         pointer-events: none;
         background: radial-gradient(
           120% 62% at 50% 124%,
-          rgba(52, 211, 153, 0.04),
+          rgba(var(--accent), 0.04),
           transparent 72%
         );
       }
@@ -1103,6 +1180,19 @@
         opacity: 0.7;
         flex: none;
       }
+      /* On a phone the longest title and the index do not fit one line, and
+         the index is the part that is decoration. */
+      @media (max-width: 560px) {
+        .sec-index { display: none; }
+        /* …and a title that does not fit wraps instead of pushing the page
+           sideways (360px, and every language longer than English). The
+           typing reads a measured one-line width, so it stands down here. */
+        h2 { flex: 1 1 auto; min-width: 0; font-size: 1rem; letter-spacing: 0.08em; }
+        .sec-title,
+        .sec-title.typing,
+        .reveal.in .sec-title.typing { white-space: normal; width: auto; animation: none; }
+        .reveal.in .sec-cursor { animation: none; opacity: 0.85; }
+      }
 
       /* Feature cards — settings-panel language, decorative toggles ON */
       .grid {
@@ -1118,8 +1208,8 @@
         padding: 1.4rem;
         background: linear-gradient(
           160deg,
-          rgba(255, 255, 255, 0.035),
-          rgba(255, 255, 255, 0.012)
+          rgba(var(--ink), 0.035),
+          rgba(var(--ink), 0.012)
         );
         text-align: left;
         transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1),
@@ -1136,8 +1226,8 @@
         height: 1px;
         background: linear-gradient(
           to right,
-          rgba(52, 211, 153, 0.5),
-          rgba(255, 255, 255, 0.08) 42%,
+          rgba(var(--accent), 0.5),
+          rgba(var(--ink), 0.08) 42%,
           transparent
         );
       }
@@ -1187,9 +1277,17 @@
 
          They start at rest and move once, when the section arrives — nothing
          loops, because six looping animations in one grid is a screensaver. */
+      /* The visual sits on the card's foot, so a row of cards whose text runs
+         to different lengths still draws its pictures on one line. */
+      .card {
+        display: flex;
+        flex-direction: column;
+      }
       .viz {
-        margin-top: 1.1rem;
-        height: 46px;
+        margin-top: auto;
+        padding-top: 1.1rem;
+        height: calc(46px + 1.1rem);
+        box-sizing: border-box;
       }
       .viz svg {
         display: block;
@@ -1210,7 +1308,7 @@
       .v-line.b { stroke: #5b8def; }
       .v-area { fill: url(#vFill); opacity: 0; }
       .v-zero {
-        stroke: rgba(255, 255, 255, 0.22);
+        stroke: rgba(var(--ink), 0.22);
         stroke-width: 1;
         stroke-dasharray: 3 3;
         vector-effect: non-scaling-stroke;
@@ -1230,7 +1328,7 @@
         position: relative;
         height: 6px;
         border-radius: 3px;
-        background: rgba(255, 255, 255, 0.08);
+        background: rgba(var(--ink), 0.08);
         margin-top: 1.5rem;
       }
       .v-meter i {
@@ -1238,7 +1336,7 @@
         inset: 0 auto 0 0;
         width: 44%;
         border-radius: 3px;
-        background: linear-gradient(90deg, rgba(52, 211, 153, 0.35), var(--green));
+        background: linear-gradient(90deg, rgba(var(--accent), 0.35), var(--green));
         transform: scaleX(0);
         transform-origin: left;
         transition: transform 1.2s cubic-bezier(0.22, 1, 0.36, 1) 0.25s;
@@ -1273,13 +1371,13 @@
       .v-bars i {
         flex: 1;
         border-radius: 2px 2px 0 0;
-        background: linear-gradient(rgba(52, 211, 153, 0.75), rgba(52, 211, 153, 0.15));
+        background: linear-gradient(rgba(var(--accent), 0.75), rgba(var(--accent), 0.15));
         transform: scaleY(0);
         transform-origin: bottom;
         transition: transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
       }
       .v-bars i.red {
-        background: linear-gradient(rgba(239, 83, 80, 0.75), rgba(239, 83, 80, 0.15));
+        background: linear-gradient(rgba(var(--down-rgb), 0.75), rgba(var(--down-rgb), 0.15));
       }
       .reveal.in .v-bars i { transform: scaleY(1); }
       .reveal.in .v-bars i:nth-child(1) { transition-delay: 0.25s; }
@@ -1317,7 +1415,7 @@
         border: 1px solid var(--border);
         border-bottom-width: 2px;
         border-radius: 5px;
-        background: rgba(255, 255, 255, 0.04);
+        background: rgba(var(--ink), 0.04);
         font: inherit;
         font-size: 0.6rem;
         color: var(--text-dim);
@@ -1336,6 +1434,95 @@
       .reveal.in .v-keys kbd:nth-child(6) { transition-delay: 0.55s; }
 
       /* Screenshots */
+      /* Country cells — the tax guide: a third confirmed from an official
+         source, the rest left open rather than guessed. */
+      .v-cells rect.on {
+        fill: rgba(var(--accent), 0.7);
+        opacity: 0;
+      }
+      .v-cells rect.off {
+        fill: none;
+        stroke: rgba(var(--ink), 0.16);
+        stroke-width: 1;
+        stroke-dasharray: 2 2;
+        vector-effect: non-scaling-stroke;
+      }
+      .reveal.in .v-cells rect.on { animation: vFade 0.8s ease 0.3s forwards; }
+
+      /* Candles — the practice terminal. Filled, no outline, like the app's. */
+      .v-candles rect { opacity: 0; }
+      .v-candles rect.up { fill: var(--up); }
+      .v-candles rect.dn { fill: var(--down); }
+      .v-candles .wick {
+        stroke-width: 1;
+        vector-effect: non-scaling-stroke;
+        opacity: 0;
+      }
+      .v-candles .wick.up { stroke: var(--up); }
+      .v-candles .wick.dn { stroke: var(--down); }
+      .reveal.in .v-candles rect,
+      .reveal.in .v-candles .wick { animation: vFade 0.7s ease 0.25s forwards; }
+
+      /* Headlines — three rows, each with its wording mark. */
+      .v-news {
+        display: grid;
+        gap: 9px;
+        padding-top: 6px;
+      }
+      .v-news i {
+        position: relative;
+        display: block;
+        height: 5px;
+        margin-left: 12px;
+        border-radius: 3px;
+        background: rgba(var(--ink), 0.14);
+        transform: scaleX(0);
+        transform-origin: left;
+        transition: transform 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.25s;
+      }
+      .v-news i::before {
+        content: "";
+        position: absolute;
+        left: -12px;
+        top: -0.5px;
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: rgba(var(--ink), 0.3);
+      }
+      .v-news i.up::before { background: var(--up); }
+      .v-news i.dn::before { background: var(--down); }
+      .reveal.in .v-news i { transform: scaleX(1); }
+      .reveal.in .v-news i:nth-child(2) { transition-delay: 0.35s; }
+      .reveal.in .v-news i:nth-child(3) { transition-delay: 0.45s; }
+
+      /* A state against every day — the base-rate panel's comparison. */
+      .v-rate {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        align-items: center;
+        column-gap: 0.7rem;
+        row-gap: 8px;
+        padding-top: 4px;
+      }
+      .v-rate span {
+        font-size: 0.52rem;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--text-dim);
+      }
+      .v-rate i {
+        display: block;
+        height: 6px;
+        border-radius: 3px;
+        background: linear-gradient(90deg, rgba(var(--accent), 0.35), var(--green));
+        transform: scaleX(0);
+        transform-origin: left;
+        transition: transform 1.1s cubic-bezier(0.22, 1, 0.36, 1) 0.25s;
+      }
+      .v-rate i.base { background: rgba(var(--ink), 0.22); }
+      .reveal.in .v-rate i { transform: scaleX(1); }
+
       .shots {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
@@ -1402,7 +1589,7 @@
         letter-spacing: 0.01em;
         font-variant-numeric: tabular-nums;
         color: var(--text);
-        text-shadow: 0 0 40px rgba(52, 211, 153, 0.22);
+        text-shadow: 0 0 40px rgba(var(--accent), 0.22);
       }
       .zero span {
         display: block;
@@ -1437,13 +1624,13 @@
           linear-gradient(
               to right,
               transparent,
-              rgba(255, 255, 255, 0.07) 22%,
-              rgba(255, 255, 255, 0.07) 78%,
+              rgba(var(--ink), 0.07) 22%,
+              rgba(var(--ink), 0.07) 78%,
               transparent
             ) top / 100% 1px no-repeat,
           radial-gradient(
             100% 78% at 50% 50%,
-            rgba(52, 211, 153, 0.075),
+            rgba(var(--accent), 0.075),
             transparent 74%
           );
       }
@@ -1505,8 +1692,8 @@
         width: 1px;
         background: linear-gradient(
           to bottom,
-          rgba(255, 255, 255, 0.18),
-          rgba(255, 255, 255, 0.06)
+          rgba(var(--ink), 0.18),
+          rgba(var(--ink), 0.06)
         );
         transform: scaleY(0);
         transform-origin: top;
@@ -1554,8 +1741,8 @@
         background: linear-gradient(
             to right,
             transparent,
-            rgba(255, 255, 255, 0.07) 22%,
-            rgba(255, 255, 255, 0.07) 78%,
+            rgba(var(--ink), 0.07) 22%,
+            rgba(var(--ink), 0.07) 78%,
             transparent
           ) top / 100% 1px no-repeat;
         padding: 3rem 0 3.5rem;
@@ -1578,6 +1765,21 @@
         margin-right: 1.5rem;
         text-decoration: none;
       }
+      /* A finger needs more than a 14px line: on a touch screen each link
+         is a 44px row of its own width, wrapped as it fits. */
+      @media (pointer: coarse) {
+        footer .links { display: flex; flex-wrap: wrap; column-gap: 1.5rem; }
+        footer .links a {
+          display: inline-flex;
+          align-items: center;
+          min-height: 2.75rem;
+          min-width: 2.75rem;
+          margin-right: 0;
+        }
+      }
+      /* Two disclaimers now (what this page remembers, then the advice
+         one), so they need air between them. */
+      .disclaimer + .disclaimer { margin-top: 0.75rem; }
       .disclaimer {
         max-width: 44rem;
         margin: 0;
@@ -1611,8 +1813,8 @@
         overflow: hidden;
         background: linear-gradient(
           160deg,
-          rgba(255, 255, 255, 0.04),
-          rgba(255, 255, 255, 0.012)
+          rgba(var(--ink), 0.04),
+          rgba(var(--ink), 0.012)
         );
       }
       .code-bar {
@@ -1641,9 +1843,9 @@
         overflow-x: auto;
         color: var(--text-dim);
       }
-      .code .k { color: #e6ebe8; }
+      .code .k { color: var(--text); }
       .code .s { color: var(--green); }
-      .code .c { color: #6f7873; }
+      .code .c { color: rgba(var(--ink), 0.45); }
 
       .claims {
         list-style: none;
@@ -1708,7 +1910,7 @@
       }
       .hosts td {
         padding: 0.65rem 0.8rem 0.65rem 0;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        border-bottom: 1px solid rgba(var(--ink), 0.05);
         color: var(--text-dim);
         vertical-align: top;
         line-height: 1.5;
@@ -1716,6 +1918,25 @@
       .hosts tr:hover td { color: var(--text); }
       .hosts td:first-child { color: var(--green); white-space: nowrap; }
       .hosts-wrap { overflow-x: auto; }
+      /* A phone reads the table as one card per host: the host, then each
+         column under its own label — three columns at 360px were a third of
+         a sentence each, and the last one was off the screen. */
+      @media (max-width: 560px) {
+        .hosts thead { display: none; }
+        .hosts, .hosts tbody, .hosts tr, .hosts td { display: block; width: 100%; }
+        .hosts tr { padding: 0.75rem 0; border-bottom: 1px solid var(--border); }
+        .hosts td { padding: 0.15rem 0; border: 0; }
+        .hosts td:first-child { white-space: normal; overflow-wrap: anywhere; font-weight: 600; }
+        .hosts td[data-label]::before {
+          content: attr(data-label);
+          display: block;
+          margin-top: 0.35rem;
+          font-size: 0.58rem;
+          letter-spacing: 0.14em;
+          text-transform: uppercase;
+          color: var(--text-dim);
+        }
+      }
 
       .checks {
         display: grid;
@@ -1777,8 +1998,8 @@
         overflow: hidden;
         background: linear-gradient(
           160deg,
-          rgba(255, 255, 255, 0.045),
-          rgba(255, 255, 255, 0.015)
+          rgba(var(--ink), 0.045),
+          rgba(var(--ink), 0.015)
         );
         box-shadow: 0 40px 120px -20px rgba(0, 0, 0, 0.9);
       }
@@ -1826,7 +2047,7 @@
         padding: 0;
         border: 1px solid var(--border);
         border-radius: 7px;
-        background: rgba(255, 255, 255, 0.03);
+        background: rgba(var(--ink), 0.03);
         color: var(--text-dim);
         font-family: inherit;
         font-size: 0.95rem;
@@ -1839,16 +2060,16 @@
       .lb-close:hover,
       .lb-nav button:hover {
         border-color: var(--border-hover);
-        background: rgba(255, 255, 255, 0.08);
+        background: rgba(var(--ink), 0.08);
         color: var(--text);
       }
       .lb-close:active,
-      .lb-nav button:active { background: rgba(255, 255, 255, 0.04); }
+      .lb-nav button:active { background: rgba(var(--ink), 0.04); }
       .lb-close:focus-visible,
       .lb-nav button:focus-visible {
         outline: none;
         border-color: var(--green);
-        box-shadow: 0 0 0 2px rgba(52, 211, 153, 0.35);
+        box-shadow: 0 0 0 2px rgba(var(--accent), 0.35);
       }
 
       @media (max-width: 700px) {
@@ -1925,9 +2146,161 @@
         .sec-title, .sec-title.typing { width: auto; animation: none; }
         .hero-peak { transition: none; }
       }
+
+      /* ── The visitor's own choices (1 Oct 2026) ──
+         Theme and language in the top-right corner, under the ticker, and
+         remembered on this device. One row, small, and out of the hero's
+         way; on a phone the same row, a touch target each. */
+      .site-prefs {
+        /* On the page, not over it: set once, it scrolls away with the top
+           rather than floating over the copy on a phone. */
+        position: absolute;
+        top: calc(1.7rem + 0.55rem);
+        right: max(0.75rem, env(safe-area-inset-right));
+        z-index: 60;
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.25rem;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        background: rgba(var(--ground), 0.72);
+        -webkit-backdrop-filter: blur(8px);
+        backdrop-filter: blur(8px);
+        font-size: 0.68rem;
+      }
+      .site-prefs button,
+      .site-prefs select {
+        min-height: 2rem;
+        border: 0;
+        border-radius: 999px;
+        background: transparent;
+        color: var(--text-dim);
+        font: inherit;
+        letter-spacing: 0.04em;
+        cursor: pointer;
+      }
+      .site-prefs button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 2rem;
+        padding: 0 0.55rem;
+      }
+      .site-prefs button[aria-pressed="true"] {
+        background: rgba(var(--ink), 0.1);
+        color: var(--text);
+      }
+      .site-prefs button:hover,
+      .site-prefs select:hover { color: var(--text); }
+      .site-prefs select {
+        padding: 0 0.5rem;
+        -webkit-appearance: none;
+        appearance: none;
+        max-width: 8.5rem;
+      }
+      .site-prefs select option { background: var(--bg); color: var(--text); }
+      .site-prefs .sep { width: 1px; height: 1.1rem; background: var(--border); }
+      .site-prefs :focus-visible { outline: 2px solid var(--green); outline-offset: 1px; }
+
+      /* What's new — on a returning visit, once per edition */
+      .whats-new {
+        position: fixed;
+        right: max(1rem, env(safe-area-inset-right));
+        bottom: max(1rem, env(safe-area-inset-bottom));
+        z-index: 70;
+        width: min(23rem, calc(100vw - 2rem));
+        padding: 1rem 1.1rem 0.9rem;
+        border: 1px solid var(--border-hover);
+        border-radius: 14px;
+        background: var(--bg-soft);
+        color: var(--text);
+        box-shadow: 0 18px 50px -12px rgba(0, 0, 0, 0.45);
+        font-size: 0.78rem;
+        line-height: 1.55;
+        animation: wnIn 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+      }
+      .whats-new[hidden] { display: none; }
+      @keyframes wnIn {
+        from { opacity: 0; transform: translateY(14px); }
+        to { opacity: 1; transform: none; }
+      }
+      .whats-new h2 {
+        margin: 0 2rem 0.5rem 0;
+        font-size: 0.72rem;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--green);
+      }
+      .whats-new ul { margin: 0; padding: 0 0 0 1rem; }
+      .whats-new li { margin: 0.25rem 0; }
+      .whats-new .wn-row { display: flex; justify-content: flex-end; margin-top: 0.7rem; }
+      .whats-new .wn-ok {
+        min-height: 2.25rem;
+        padding: 0 1rem;
+        border: 1px solid var(--border-hover);
+        border-radius: 999px;
+        background: transparent;
+        color: var(--text);
+        font: inherit;
+        cursor: pointer;
+      }
+      .whats-new .wn-x {
+        position: absolute;
+        top: 0.45rem;
+        right: 0.45rem;
+        width: 2.25rem;
+        height: 2.25rem;
+        border: 0;
+        background: transparent;
+        color: var(--text-dim);
+        font-size: 1.1rem;
+        cursor: pointer;
+      }
+      @media (max-width: 560px) {
+        .whats-new { left: 0.75rem; right: 0.75rem; width: auto; bottom: max(0.75rem, env(safe-area-inset-bottom)); padding: 0.85rem 0.95rem 0.75rem; font-size: 0.72rem; line-height: 1.45; }
+        .whats-new li { margin: 0.15rem 0; }
+        .site-prefs { font-size: 0.66rem; }
+        .site-prefs select { max-width: 6.5rem; }
+      }
     </style>
   </head>
   <body>
+    <div class="site-prefs" role="group" aria-label="Theme and language" data-i18n-aria="prefs.label">
+      <button type="button" data-theme-pick="auto" aria-pressed="true" title="Follow the system" data-i18n-title="prefs.auto" aria-label="Follow the system" data-i18n-aria="prefs.auto"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M8 2a6 6 0 0 1 0 12z" fill="currentColor"/></svg></button>
+      <button type="button" data-theme-pick="light" aria-pressed="false" title="Light" data-i18n-title="prefs.light" aria-label="Light" data-i18n-aria="prefs.light"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><circle cx="8" cy="8" r="3" fill="currentColor"/><g stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3 3l1.4 1.4M11.6 11.6 13 13M3 13l1.4-1.4M11.6 4.4 13 3"/></g></svg></button>
+      <button type="button" data-theme-pick="dark" aria-pressed="false" title="Dark" data-i18n-title="prefs.dark" aria-label="Dark" data-i18n-aria="prefs.dark"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M13.5 10.2A6 6 0 0 1 5.8 2.5a6 6 0 1 0 7.7 7.7z" fill="currentColor"/></svg></button>
+      <span class="sep" aria-hidden="true"></span>
+      <select id="langPick" aria-label="Language" data-i18n-aria="prefs.lang">
+        <option value="en">English</option>
+        <option value="de">Deutsch</option>
+        <option value="es">Español</option>
+        <option value="fr">Français</option>
+        <option value="id">Bahasa Indonesia</option>
+        <option value="it">Italiano</option>
+        <option value="ja">日本語</option>
+        <option value="ko">한국어</option>
+        <option value="pt_BR">Português (Brasil)</option>
+        <option value="ru">Русский</option>
+        <option value="tr">Türkçe</option>
+        <option value="uk">Українська</option>
+        <option value="zh_CN">简体中文</option>
+      </select>
+    </div>
+
+    <aside class="whats-new" id="whatsNew" hidden aria-labelledby="wnTitle">
+      <button type="button" class="wn-x" aria-label="Close" data-i18n-aria="new.close">&times;</button>
+      <h2 id="wnTitle" data-i18n="new.title">What's new since your last visit</h2>
+      <ul data-i18n="new.list">
+        <li>Drag the chart any way — through time and through prices — without zooming first.</li>
+        <li>The chart companion names sixteen patterns and twenty-one readings, each with how it did when tested.</li>
+        <li>"Has this happened before?" opens on what came after everything true right now.</li>
+        <li>Widgets arranged like a phone's, pinned to the home screen as outlines.</li>
+        <li>Compare with the S&amp;P 500, the Nasdaq 100 or gold, and read a story beside the news list.</li>
+      </ul>
+      <div class="wn-row"><button type="button" class="wn-ok" data-i18n="new.ok">Got it</button></div>
+    </aside>
+
     <!-- Decorative ticker bar, just like the extension's price ticker -->
     <!-- Hidden until real prices arrive: the markup below is only a shape
          to build from, and its numbers must never be shown. -->
@@ -1967,8 +2340,8 @@
         <svg viewBox="0 0 1200 460" preserveAspectRatio="none">
           <defs>
             <linearGradient id="heroFill" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stop-color="#34d399" stop-opacity="0.30" />
-              <stop offset="100%" stop-color="#34d399" stop-opacity="0" />
+              <stop offset="0%" style="stop-color:var(--green)" stop-opacity="0.30" />
+              <stop offset="100%" style="stop-color:var(--green)" stop-opacity="0" />
             </linearGradient>
           </defs>
           <path id="heroArea" class="area" fill="url(#heroFill)" />
@@ -2015,7 +2388,7 @@
             <b id="tabPrice">&nbsp;</b><span id="tabPriceLabel">BTC PRICE</span>
           </div>
           <div class="tab-stat">
-            <b id="tabChange">&nbsp;</b><span>PRICE CHANGE</span>
+            <b id="tabChange">&nbsp;</b><span data-i18n="tab.change">PRICE CHANGE</span>
           </div>
         </div>
         <div class="tab-meta" id="tabMeta"></div>
@@ -2025,33 +2398,36 @@
       <header class="hero wrap">
         <img class="logo rise" src="../assets/icons/icon128.png" alt="PriceTab logo" width="84" height="84" />
         <div class="rise d1">
-          <span class="live-badge"><span class="live-dot"></span>Live on the Chrome Web Store</span>
+          <span class="live-badge"><span class="live-dot"></span><span data-i18n="hero.badge">Live on the Chrome Web Store</span></span>
         </div>
-        <h1 class="rise d2">PriceTab</h1>
-        <p class="tagline rise d3">
-          Every new browser tab opens a live cryptocurrency chart. Compare two
-          coins, track what you hold, and get told when a price you care about
-          is hit — without giving up a single browser permission.
+        <!-- lang="en": the name is uppercased in CSS, and under a Turkish page
+             that rule makes the i an İ — "PRİCETAB". A name is not translated. -->
+        <h1 class="rise d2" lang="en">PriceTab</h1>
+        <p class="tagline rise d3" data-i18n="s1.p1">
+          Every new browser tab opens a live cryptocurrency chart. Track what
+          you hold, read your country's crypto tax rules, practise with no real
+          money, and get told when a price you care about is hit — with no
+          permission asked at install.
         </p>
         <div class="cta-row rise d4">
           <a
             class="cta"
             href="https://chromewebstore.google.com/detail/pricetab/dobkidjmhpnniiipliollbaefpppalaf"
-            >Add to Chrome<span class="arw" aria-hidden="true">&rarr;</span></a
+            ><span data-i18n="hero.add">Add to Chrome</span><span class="arw" aria-hidden="true">&rarr;</span></a
           >
-          <a class="cta-secondary" href="https://github.com/Zekuath/Pricetab">Read the source</a>
+          <a class="cta-secondary" href="https://github.com/Zekuath/Pricetab" data-i18n="hero.source">Read the source</a>
         </div>
 
         <div class="hero-readout rise d5" id="heroReadout">
           <span class="hero-price" id="heroPrice">&nbsp;</span>
           <span class="hero-meta" id="heroMeta">
             <span class="hero-coin" id="heroCoin">Bitcoin</span>
-            <span class="live-pill" id="heroLive" hidden><i></i>Live</span>
+            <span class="live-pill" id="heroLive" hidden><i></i><span data-i18n="hero.live">Live</span></span>
           </span>
         </div>
       </header>
 
-      <div class="scroll-cue" aria-hidden="true"><span>Scroll</span><i></i></div>
+      <div class="scroll-cue" aria-hidden="true"><span data-i18n="hero.scroll">Scroll</span><i></i></div>
     </div>
     </div>
 
@@ -2059,37 +2435,48 @@
       <div class="wrap">
         <div class="sec-head">
           <span class="sec-caret" aria-hidden="true">&#10095;</span>
-          <h2><span class="sec-title">What you get</span></h2>
+          <h2><span class="sec-title" data-i18n="s2.span2">What you get</span></h2>
           <span class="sec-cursor" aria-hidden="true"></span>
           <span class="sec-index">01 / 05</span>
         </div>
         <div class="grid">
           <div class="card">
-            <div class="card-head"><h3>Live charts</h3><span class="card-num">01</span></div>
-            <p>Line or candlesticks, six ranges from the last hour to all time. Hover for that point's open, high, low, close and volume.</p>
+            <div class="card-head"><h3 data-i18n="s2.h33">Live charts</h3><span class="card-num">01</span></div>
+            <p data-i18n="s2.p4">Line or candlesticks over six ranges, with a price scale and a time axis. Drag it any way — sideways through time, up and down through prices — scroll or pinch to zoom where you point, and finer candles load as you go in. A log axis, an average that says what it covers, US inflation releases marked where they fall, and every point readable from the keyboard.</p>
             <div class="viz"><svg viewBox="0 0 200 46" preserveAspectRatio="none" aria-hidden="true">
               <defs><linearGradient id="vFill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stop-color="#34d399" stop-opacity="0.3"/>
-                <stop offset="100%" stop-color="#34d399" stop-opacity="0"/>
+                <stop offset="0%" style="stop-color:var(--green)" stop-opacity="0.3"/>
+                <stop offset="100%" style="stop-color:var(--green)" stop-opacity="0"/>
               </linearGradient></defs>
               <path class="v-area" d="M0,34 L14,30 L30,36 L46,22 L62,27 L78,14 L94,20 L112,9 L128,17 L146,7 L164,13 L182,5 L200,10 L200,46 L0,46 Z"/>
               <path class="v-line" d="M0,34 L14,30 L30,36 L46,22 L62,27 L78,14 L94,20 L112,9 L128,17 L146,7 L164,13 L182,5 L200,10"/>
             </svg></div>
           </div>
           <div class="card">
-            <div class="card-head"><h3>Call the next move</h3><span class="card-num">02</span></div>
-            <p>The right of the chart becomes a board of empty squares — real price bands at real moments ahead. Point at one, click twice, and it settles itself the next time you open a tab: called it, or missed. The score is local, worth nothing, and never leaves.</p>
+            <div class="card-head"><h3 data-i18n="s2.h35">Draw and measure</h3><span class="card-num">02</span></div>
+            <p data-i18n="s2.p6">Lines, trend lines, rays, boxes and notes that stay with the coin at their price and time. A ruler that says the change, the time and how often a move that far happened in that long. A line can become a price target.</p>
             <div class="viz"><svg viewBox="0 0 200 46" preserveAspectRatio="none" aria-hidden="true">
-              <path class="v-line" d="M0,36 L22,32 L44,37 L66,26 L88,30 L110,20 L124,24"/>
-              <line class="v-zero" x1="124" y1="0" x2="124" y2="46" stroke-dasharray="2 3"/>
-              <rect x="132" y="8" width="26" height="15" fill="rgba(52,211,153,0.16)" stroke="#34d399" stroke-width="1"/>
-              <rect x="132" y="8" width="2.5" height="15" fill="#34d399"/>
-              <rect x="166" y="24" width="26" height="15" fill="none" stroke="rgba(52,211,153,0.55)" stroke-width="1" stroke-dasharray="3 2"/>
+              <path class="v-line" d="M0,34 L20,30 L40,36 L60,24 L80,28 L100,16 L120,22 L140,12 L160,18 L180,8 L200,12"/>
+              <line class="v-zero" x1="0" y1="14" x2="200" y2="14"/>
+              <line x1="10" y1="40" x2="190" y2="10" style="stroke:var(--text)" stroke-width="1" stroke-opacity="0.7"/>
+              <circle cx="10" cy="40" r="2.5" fill="none" style="stroke:var(--text)" stroke-width="1"/>
+              <circle cx="190" cy="10" r="2.5" fill="none" style="stroke:var(--text)" stroke-width="1"/>
             </svg></div>
           </div>
           <div class="card">
-            <div class="card-head"><h3>Compare two coins</h3><span class="card-num">03</span></div>
-            <p>Both drawn as percent change from the start of the range, on one shared axis — so where the lines cross is where the market put them, not where a second scale was placed.</p>
+            <div class="card-head"><h3 data-i18n="s2.h37">Counted studies</h3><span class="card-num">03</span></div>
+            <p data-i18n="s2.p8">Volume by price, where the price sits in each range, the usual range ahead as a cone, regimes and the levels where it has turned. Each was tested on years of history first, and each says what it counts — never what comes next.</p>
+            <div class="viz"><svg viewBox="0 0 200 46" preserveAspectRatio="none" aria-hidden="true">
+              <path class="v-line" d="M0,30 L25,26 L50,32 L75,20 L100,24 L120,18"/>
+              <path d="M120,18 L200,2 L200,40 Z" stroke-width="1" stroke-dasharray="2 2" style="fill:rgba(var(--ink), 0.08);stroke:rgba(var(--ink), 0.3)"/>
+              <rect x="0" y="10" width="46" height="4" style="fill:rgba(var(--ink), 0.14)"/>
+              <rect x="0" y="16" width="70" height="4" style="fill:rgba(var(--ink), 0.22)"/>
+              <rect x="0" y="22" width="34" height="4" style="fill:rgba(var(--ink), 0.14)"/>
+            </svg></div>
+          </div>
+          <div class="card">
+            <div class="card-head"><h3 data-i18n="s2.h39">Compare with anything</h3><span class="card-num">04</span></div>
+            <p data-i18n="s2.p10">Another coin, the S&amp;P 500, the Nasdaq 100 or gold, from a drawer beside the chart. Both drawn as percent change from the same moment on one shared axis, with the gap, how often they stepped the same way and how closely they moved — so where the lines cross is where the market put them.</p>
             <div class="viz"><svg viewBox="0 0 200 46" preserveAspectRatio="none" aria-hidden="true">
               <line class="v-zero" x1="0" y1="23" x2="200" y2="23"/>
               <path class="v-line" d="M0,23 L26,19 L52,25 L78,15 L104,18 L130,10 L156,13 L200,6"/>
@@ -2097,29 +2484,126 @@
             </svg></div>
           </div>
           <div class="card">
-            <div class="card-head"><h3>Price targets</h3><span class="card-num">04</span></div>
-            <p>"BTC rises above 80,000", or "BTC falls 5% in 24h". Reported next time you open a tab — including a move that happened and reverted while you were asleep.</p>
-            <div class="viz"><div class="v-meter"><i></i><b></b><span>TARGET</span></div></div>
-          </div>
-          <div class="card">
-            <div class="card-head"><h3>Portfolio</h3><span class="card-num">05</span></div>
-            <p>Track holdings by amount, or paste a public address and let it read the balance. Purchase lots, recorded sales, realized and unrealized P/L — all on your device.</p>
-            <div class="viz"><div class="v-bars"><i style="height:78%"></i><i style="height:54%"></i><i class="red" style="height:31%"></i><i style="height:66%"></i><i style="height:42%"></i><i style="height:88%"></i></div></div>
-          </div>
-          <div class="card">
-            <div class="card-head"><h3>11 market widgets</h3><span class="card-num">06</span></div>
-            <p>Fear &amp; Greed, market overview, halving countdown, RSI, funding, open interest, liquidations, alt season, watchlist, top movers. Every one optional, and off until you want it.</p>
-            <div class="viz"><svg viewBox="0 0 200 46" aria-hidden="true">
-              <path d="M60,40 A40,40 0 0,1 140,40" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="5" stroke-linecap="round"/>
-              <path d="M60,40 A40,40 0 0,1 96,16" fill="none" stroke="#34d399" stroke-width="5" stroke-linecap="round"/>
-              <g class="v-needle"><line x1="100" y1="40" x2="100" y2="12" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round"/></g>
-              <circle cx="100" cy="40" r="2.5" fill="#ffffff"/>
+            <div class="card-head"><h3 data-i18n="s2.h311">Chart companion</h3><span class="card-num">05</span></div>
+            <p data-i18n="s2.p12">Sixteen chart patterns — head and shoulders, triangles, wedges, ranges, flags — twelve strategy setups and twenty-one readings such as divergences, the Ichimoku cloud and Fibonacci retracements, named where they appear. Each sits beside what followed it on this coin and how it did when tested on four coins. Counted, never scored.</p>
+            <div class="viz"><svg viewBox="0 0 200 46" preserveAspectRatio="none" aria-hidden="true">
+              <line class="v-zero" x1="52" y1="30" x2="186" y2="30"/>
+              <path class="v-line" d="M0,38 L20,28 L40,18 L65,30 L95,4 L122,30 L150,18 L174,30 L188,38 L200,43"/>
             </svg></div>
           </div>
           <div class="card">
-            <div class="card-head"><h3>Yours to arrange</h3><span class="card-num">07</span></div>
-            <p>66 coins, 37 display currencies, dark / light / auto, four widget sizes, and a keyboard shortcut for everything. Press <kbd>?</kbd> to see them.</p>
-            <div class="viz"><div class="v-keys"><kbd>/</kbd><kbd>C</kbd><kbd>K</kbd><kbd>A</kbd><kbd>P</kbd><kbd>?</kbd></div></div>
+            <div class="card-head"><h3 data-i18n="s2.h313">Call the next move</h3><span class="card-num">06</span></div>
+            <p data-i18n="s2.p14">The right of the chart becomes a board of squares — real price bands at real moments ahead, each with its chance, worked out from the coin's own history and checked against years of past squares before it was allowed on. Drag the board to look further, click a square twice, and it settles itself: called it, or missed. The score is local, worth nothing, and never leaves.</p>
+            <div class="viz"><svg viewBox="0 0 200 46" preserveAspectRatio="none" aria-hidden="true">
+              <path class="v-line" d="M0,36 L22,32 L44,37 L66,26 L88,30 L110,20 L124,24"/>
+              <line class="v-zero" x1="124" y1="0" x2="124" y2="46" stroke-dasharray="2 3"/>
+              <rect x="132" y="8" width="26" height="15" stroke-width="1" style="fill:rgba(var(--accent), 0.16);stroke:var(--green)"/>
+              <rect x="132" y="8" width="2.5" height="15" style="fill:var(--green)"/>
+              <rect x="166" y="24" width="26" height="15" fill="none" style="stroke:rgba(var(--accent), 0.55)" stroke-width="1" stroke-dasharray="3 2"/>
+            </svg></div>
+          </div>
+          <div class="card">
+            <div class="card-head"><h3 data-i18n="s2.h315">Price targets</h3><span class="card-num">07</span></div>
+            <p data-i18n="s2.p16">"BTC rises above 80,000", or "BTC falls 5% in 1h, 4h or 24h". Reported next time you open a tab — even a move that happened and reverted overnight — and, only if you switch it on, as a Chrome notification.</p>
+            <div class="viz"><div class="v-meter"><i></i><b></b><span>TARGET</span></div></div>
+          </div>
+          <div class="card">
+            <div class="card-head"><h3 data-i18n="s2.h317">Portfolio</h3><span class="card-num">08</span></div>
+            <p data-i18n="s2.p18">Holdings by amount, or a public address read for its balance. Dated purchases, sales and income; cost basis by FIFO, LIFO or HIFO; the return month by month. Press <kbd>H</kbd> and the amounts are masked.</p>
+            <div class="viz"><div class="v-bars"><i style="height:78%"></i><i style="height:54%"></i><i class="red" style="height:31%"></i><i style="height:66%"></i><i style="height:42%"></i><i style="height:88%"></i></div></div>
+          </div>
+          <div class="card">
+            <div class="card-head"><h3 data-i18n="s2.h319">Crypto tax guide</h3><span class="card-num">09</span></div>
+            <p data-i18n="s2.p20">The crypto tax rules of 244 countries and territories — what is taxed and what is not, the rates, the tax year — each read from the country's own tax authority or law, linked and dated. Where none was confirmed, it says so. Not tax advice.</p>
+            <div class="viz"><svg class="v-cells" viewBox="0 0 200 46" preserveAspectRatio="none" aria-hidden="true">
+              <rect class="on" x="0.0" y="0.0" width="13.4" height="11.5" rx="1.5"/>
+              <rect class="off" x="16.8" y="0.0" width="13.4" height="11.5" rx="1.5"/>
+              <rect class="off" x="33.6" y="0.0" width="13.4" height="11.5" rx="1.5"/>
+              <rect class="on" x="50.4" y="0.0" width="13.4" height="11.5" rx="1.5"/>
+              <rect class="off" x="67.2" y="0.0" width="13.4" height="11.5" rx="1.5"/>
+              <rect class="on" x="84.0" y="0.0" width="13.4" height="11.5" rx="1.5"/>
+              <rect class="off" x="100.8" y="0.0" width="13.4" height="11.5" rx="1.5"/>
+              <rect class="off" x="117.6" y="0.0" width="13.4" height="11.5" rx="1.5"/>
+              <rect class="off" x="134.4" y="0.0" width="13.4" height="11.5" rx="1.5"/>
+              <rect class="on" x="151.2" y="0.0" width="13.4" height="11.5" rx="1.5"/>
+              <rect class="off" x="168.0" y="0.0" width="13.4" height="11.5" rx="1.5"/>
+              <rect class="off" x="184.8" y="0.0" width="13.4" height="11.5" rx="1.5"/>
+              <rect class="off" x="0.0" y="15.5" width="13.4" height="11.5" rx="1.5"/>
+              <rect class="on" x="16.8" y="15.5" width="13.4" height="11.5" rx="1.5"/>
+              <rect class="on" x="33.6" y="15.5" width="13.4" height="11.5" rx="1.5"/>
+              <rect class="off" x="50.4" y="15.5" width="13.4" height="11.5" rx="1.5"/>
+              <rect class="off" x="67.2" y="15.5" width="13.4" height="11.5" rx="1.5"/>
+              <rect class="off" x="84.0" y="15.5" width="13.4" height="11.5" rx="1.5"/>
+              <rect class="on" x="100.8" y="15.5" width="13.4" height="11.5" rx="1.5"/>
+              <rect class="off" x="117.6" y="15.5" width="13.4" height="11.5" rx="1.5"/>
+              <rect class="off" x="134.4" y="15.5" width="13.4" height="11.5" rx="1.5"/>
+              <rect class="off" x="151.2" y="15.5" width="13.4" height="11.5" rx="1.5"/>
+              <rect class="on" x="168.0" y="15.5" width="13.4" height="11.5" rx="1.5"/>
+              <rect class="off" x="184.8" y="15.5" width="13.4" height="11.5" rx="1.5"/>
+              <rect class="off" x="0.0" y="31.0" width="13.4" height="11.5" rx="1.5"/>
+              <rect class="on" x="16.8" y="31.0" width="13.4" height="11.5" rx="1.5"/>
+              <rect class="off" x="33.6" y="31.0" width="13.4" height="11.5" rx="1.5"/>
+              <rect class="off" x="50.4" y="31.0" width="13.4" height="11.5" rx="1.5"/>
+              <rect class="off" x="67.2" y="31.0" width="13.4" height="11.5" rx="1.5"/>
+              <rect class="on" x="84.0" y="31.0" width="13.4" height="11.5" rx="1.5"/>
+              <rect class="off" x="100.8" y="31.0" width="13.4" height="11.5" rx="1.5"/>
+              <rect class="on" x="117.6" y="31.0" width="13.4" height="11.5" rx="1.5"/>
+              <rect class="off" x="134.4" y="31.0" width="13.4" height="11.5" rx="1.5"/>
+              <rect class="off" x="151.2" y="31.0" width="13.4" height="11.5" rx="1.5"/>
+              <rect class="on" x="168.0" y="31.0" width="13.4" height="11.5" rx="1.5"/>
+              <rect class="off" x="184.8" y="31.0" width="13.4" height="11.5" rx="1.5"/>
+            </svg></div>
+          </div>
+          <div class="card">
+            <div class="card-head"><h3 data-i18n="s2.h321">Practice derivatives</h3><span class="card-num">10</span></div>
+            <p data-i18n="s2.p22">A perpetual-contract terminal priced from a real venue's public quotes: long or short up to 200x, stops, limit orders, funding and liquidation. Settled in Practice Units that cannot be bought or cashed out — no real money, ever.</p>
+            <div class="viz"><svg class="v-candles" viewBox="0 0 200 46" preserveAspectRatio="none" aria-hidden="true">
+              <line class="v-zero" x1="0" y1="37" x2="200" y2="37"/>
+              <line class="wick up" x1="10" y1="26" x2="10" y2="44"/><rect class="up" x="6" y="30" width="8" height="10"/>
+              <line class="wick dn" x1="30" y1="20" x2="30" y2="40"/><rect class="dn" x="26" y="24" width="8" height="12"/>
+              <line class="wick up" x1="50" y1="22" x2="50" y2="38"/><rect class="up" x="46" y="26" width="8" height="8"/>
+              <line class="wick up" x1="70" y1="14" x2="70" y2="34"/><rect class="up" x="66" y="18" width="8" height="12"/>
+              <line class="wick dn" x1="90" y1="16" x2="90" y2="31"/><rect class="dn" x="86" y="20" width="8" height="8"/>
+              <line class="wick up" x1="110" y1="8" x2="110" y2="27"/><rect class="up" x="106" y="12" width="8" height="12"/>
+              <line class="wick dn" x1="130" y1="10" x2="130" y2="25"/><rect class="dn" x="126" y="14" width="8" height="8"/>
+              <line class="wick up" x1="150" y1="5" x2="150" y2="21"/><rect class="up" x="146" y="8" width="8" height="10"/>
+              <line class="wick dn" x1="170" y1="6" x2="170" y2="19"/><rect class="dn" x="166" y="10" width="8" height="6"/>
+              <line class="wick up" x1="190" y1="1" x2="190" y2="15"/><rect class="up" x="186" y="3" width="8" height="9"/>
+            </svg></div>
+          </div>
+          <div class="card">
+            <div class="card-head"><h3 data-i18n="s2.h323">News, dated and read</h3><span class="card-num">11</span></div>
+            <p data-i18n="s2.p24">Fourteen sources, filtered to your coins or your holdings, with advertising kept out and one story written up four times shown once. Click a headline and the story opens beside the list without its pictures, with a reading of it: what kind of story its words make it, the coins and figures it names, and what the chart did since. Counted, never judged.</p>
+            <div class="viz"><div class="v-news"><i style="width:88%"></i><i class="up" style="width:66%"></i><i class="dn" style="width:76%"></i></div></div>
+          </div>
+          <div class="card">
+            <div class="card-head"><h3 data-i18n="s2.h325">Has this happened before?</h3><span class="card-num">12</span></div>
+            <p data-i18n="s2.p26">What followed every past time this coin entered the state it is in now — with the count behind every figure, and no comparison at all below twelve episodes. It opens on what came after everything true right now, and lists the twenty past stretches most like the last month with what followed each. What got built instead of buy and sell signals.</p>
+            <div class="viz"><div class="v-rate"><span>This state</span><i style="width:58%"></i><span>Any day</span><i class="base" style="width:44%"></i></div></div>
+          </div>
+          <div class="card">
+            <div class="card-head"><h3 data-i18n="s2.h327">19 widgets, arranged like a phone's</h3><span class="card-num">13</span></div>
+            <p data-i18n="s2.p28">Fear &amp; Greed, market overview, halving, difficulty, fees, gas, RSI, funding, open interest, liquidations, long/short, alt season, regimes, watchlist, top movers and more. Add them from a gallery at small, medium or large — a bigger card shows more — hold one for its size, and pin up to four to the home screen, where they rest as outlines.</p>
+            <div class="viz"><svg viewBox="0 0 200 46" aria-hidden="true">
+              <path d="M60,40 A40,40 0 0,1 140,40" fill="none" style="stroke:rgba(var(--ink), 0.12)" stroke-width="5" stroke-linecap="round"/>
+              <path d="M60,40 A40,40 0 0,1 96,16" fill="none" style="stroke:var(--green)" stroke-width="5" stroke-linecap="round"/>
+              <g class="v-needle"><line x1="100" y1="40" x2="100" y2="12" style="stroke:var(--text)" stroke-width="1.5" stroke-linecap="round"/></g>
+              <circle cx="100" cy="40" r="2.5" style="fill:var(--text)"/>
+            </svg></div>
+          </div>
+          <div class="card">
+            <div class="card-head"><h3 data-i18n="s2.h329">Yours to arrange</h3><span class="card-num">14</span></div>
+            <p data-i18n="s2.p30">81 coins, 37 currencies, 13 languages, dark / light / auto, blue and orange for colour-blind eyes, four modes, and a keyboard shortcut for everything — its letter on every tab, or hidden if you prefer. Press <kbd>?</kbd> to see them.</p>
+            <div class="viz"><div class="v-keys"><kbd>/</kbd><kbd>C</kbd><kbd>K</kbd><kbd>P</kbd><kbd>F</kbd><kbd>?</kbd></div></div>
+          </div>
+          <div class="card">
+            <div class="card-head"><h3 data-i18n="s2.h331">The next hour, by a model</h3><span class="card-num">15</span></div>
+            <p data-i18n="s2.p32">A widget that gives Bitcoin's next hourly close as a band and a median, and a price target's chance of closing above it — from a volatility model fitted on years of hourly closes and tested on the twenty-one months it never saw, where 77.8% of hours closed inside its 80% band. It says that, and keeps its own score on your device.</p>
+            <div class="viz"><svg viewBox="0 0 200 46" preserveAspectRatio="none" aria-hidden="true">
+              <path class="v-line" d="M0,30 L30,26 L60,31 L90,22 L120,25"/>
+              <path d="M120,25 L200,8 L200,42 Z" stroke-width="1" stroke-dasharray="2 2" style="fill:rgba(var(--ink), 0.08);stroke:rgba(var(--ink), 0.3)"/>
+              <line x1="120" y1="25" x2="200" y2="25" style="stroke:var(--text)" stroke-width="1" stroke-opacity="0.6"/>
+            </svg></div>
           </div>
         </div>
       </div>
@@ -2129,34 +2613,66 @@
       <div class="wrap">
         <div class="sec-head">
           <span class="sec-caret" aria-hidden="true">&#10095;</span>
-          <h2><span class="sec-title">See it in action</span></h2>
+          <h2><span class="sec-title" data-i18n="s3.span33">See it in action</span></h2>
           <span class="sec-cursor" aria-hidden="true"></span>
           <span class="sec-index">02 / 05</span>
         </div>
         <div class="shots">
           <figure>
-            <img class="gallery-img" src="../assets/mockups/raw/compare-dark.png" alt="Bitcoin and Ethereum drawn together as percent change over one month" loading="lazy" width="1280" height="800" />
-            <figcaption>Two coins over a month, one axis. Each line is named at its own end, so nothing rests on colour.</figcaption>
+            <img class="gallery-img" src="shots/calls.png" alt="The board, one day ahead: two squares called, each waiting for the price at its own moment" loading="lazy" width="1280" height="800"  data-i18n-alt="s3.alt34"/>
+            <figcaption data-i18n="s3.figcaption35">The board: squares of real price and real time ahead, each with its chance. Click one twice to call it; it settles itself against the price at that moment.</figcaption>
           </figure>
           <figure>
-            <img class="gallery-img" src="../assets/mockups/raw/portfolio-dark.png" alt="Portfolio view with holdings, sparklines and profit and loss" loading="lazy" width="1280" height="800" />
-            <figcaption>Holdings with what you paid, what they're worth, and what you've already taken off the table.</figcaption>
+            <img class="gallery-img" src="shots/tools.png" alt="A day of Bitcoin zoomed in, with a drawn level, a trend line and a note, the price scale and the navigator" loading="lazy" width="1280" height="800"  data-i18n-alt="s3.alt36"/>
+            <figcaption data-i18n="s3.figcaption37">Zoomed into a day: a level, a trend line and a note drawn on it, and the whole range drawn small to show where you are.</figcaption>
           </figure>
           <figure>
-            <img class="gallery-img" src="../assets/mockups/raw/targets-light.png" alt="Price targets panel showing armed targets and one already hit" loading="lazy" width="1280" height="800" />
-            <figcaption>Targets with how far each one has to go — and no permission asked for.</figcaption>
+            <img class="gallery-img" src="shots/studies.png" alt="A month of Bitcoin candles with volume by price, the usual range as a cone, regimes and turn levels" loading="lazy" width="1280" height="800"  data-i18n-alt="s3.alt38"/>
+            <figcaption data-i18n="s3.figcaption39">Counted studies: where the volume traded, the range the price usually covers from here, and the levels it has turned at — each with its count.</figcaption>
           </figure>
           <figure>
-            <img class="gallery-img" src="../assets/mockups/raw/widget-row-dark.png" alt="Market widgets beside the chart" loading="lazy" width="1280" height="800" />
-            <figcaption>Market widgets, if you want them. Nothing is switched on until you switch it on.</figcaption>
+            <img class="gallery-img" src="shots/compare.png" alt="Bitcoin against the S&amp;P 500 as percent change over one month, with the gap, the steps that went the same way and their correlation" loading="lazy" width="1280" height="800"  data-i18n-alt="s3.alt40"/>
+            <figcaption data-i18n="s3.figcaption41">Bitcoin against the S&amp;P 500 over a month on one axis, measured from the same moment — with the gap, how often they stepped the same way and how closely.</figcaption>
           </figure>
           <figure>
-            <img class="gallery-img" src="../assets/mockups/raw/candles-dark.png" alt="Candlestick chart with volume bars" loading="lazy" width="1280" height="800" />
-            <figcaption>Candlesticks with a volume band, drawn from the same data — so the mode costs nothing extra.</figcaption>
+            <img class="gallery-img" src="shots/widgets.png" alt="The widgets drawer with cards at three sizes: a watchlist, Fear and Greed, market cap, Bitcoin fees, alt season, the model's next hour and the regimes" loading="lazy" width="1280" height="800"  data-i18n-alt="s3.alt42"/>
+            <figcaption data-i18n="s3.figcaption43">Widgets at three sizes on one grid, added from a gallery and sized from the menu a long press opens.</figcaption>
           </figure>
           <figure>
-            <img class="gallery-img" src="../assets/mockups/raw/hero-light.png" alt="The same chart in light mode" loading="lazy" width="1280" height="800" />
-            <figcaption>Light, dark, or whatever your system is set to.</figcaption>
+            <img class="gallery-img" src="shots/pinned.png" alt="Three widgets pinned to the chart's lower-left corner as outlines, the one under the pointer filled in" loading="lazy" width="1280" height="800"  data-i18n-alt="s3.alt44"/>
+            <figcaption data-i18n="s3.figcaption45">Pinned to the home screen: outlines over the chart until you point at one.</figcaption>
+          </figure>
+          <figure>
+            <img class="gallery-img" src="shots/companion.png" alt="A year of Bitcoin with named patterns, their measured moves and a numbered list of recent setups" loading="lazy" width="1280" height="800"  data-i18n-alt="s3.alt46"/>
+            <figcaption data-i18n="s3.figcaption47">The chart companion names what it finds, where it found it — and how often it played out on this coin before.</figcaption>
+          </figure>
+          <figure>
+            <img class="gallery-img" src="shots/portfolio.png" alt="Portfolio view with holdings, cost basis, allocation and a month of value" loading="lazy" width="1280" height="800"  data-i18n-alt="s3.alt48"/>
+            <figcaption data-i18n="s3.figcaption49">Holdings with what you paid, what they are worth, and what you have already taken off the table.</figcaption>
+          </figure>
+          <figure>
+            <img class="gallery-img" src="shots/tax.png" alt="The crypto tax guide showing the United States card: what is taxed and what is not" loading="lazy" width="1280" height="800"  data-i18n-alt="s3.alt50"/>
+            <figcaption data-i18n="s3.figcaption51">The tax guide: every country, what is taxed and what is not, each rule read from an official source.</figcaption>
+          </figure>
+          <figure>
+            <img class="gallery-img" src="shots/practice.png" alt="The practice derivatives terminal with the perpetual's candles, the order book and an order ticket" loading="lazy" width="1280" height="800"  data-i18n-alt="s3.alt52"/>
+            <figcaption data-i18n="s3.figcaption53">The practice terminal: the perpetual's own candles, its live book and a ticket — in units that have no value.</figcaption>
+          </figure>
+          <figure>
+            <img class="gallery-img" src="shots/news.png" alt="The news reading room with dated headlines, the wording tally and every source's age" loading="lazy" width="1280" height="800"  data-i18n-alt="s3.alt54"/>
+            <figcaption data-i18n="s3.figcaption55">The news, dated and narrowed to your coins, with how each headline is worded and every source's age.</figcaption>
+          </figure>
+          <figure>
+            <img class="gallery-img" src="shots/newspreview.png" alt="A story opened beside the news list, without pictures, under a counted reading: its kind, the coins and figures it names, its wording and the sentences that carry it" loading="lazy" width="1280" height="800"  data-i18n-alt="s3.alt56"/>
+            <figcaption data-i18n="s3.figcaption57">A story read beside the list, without its pictures, under a reading of it — counted from its own words.</figcaption>
+          </figure>
+          <figure>
+            <img class="gallery-img" src="shots/baserates.png" alt="The base-rate screen opening on what came after everything true now for Bitcoin, each with its own count, beside the candlestick patterns" loading="lazy" width="1280" height="800"  data-i18n-alt="The base-rate screen opening on what came after everything true now for Bitcoin, each with its own count, beside the candlestick patterns"/>
+            <figcaption data-i18n="s3.figcaption59">&ldquo;Has this happened before?&rdquo; It opens on what came after everything true right now — each figure with the count behind it, against an ordinary stretch.</figcaption>
+          </figure>
+          <figure>
+            <img class="gallery-img" src="shots/targets.png" alt="Price targets panel with three armed targets and one already hit" loading="lazy" width="1280" height="800"  data-i18n-alt="s3.alt60"/>
+            <figcaption data-i18n="s3.figcaption61">Targets with how far each one has to go, and the level drawn on the chart.</figcaption>
           </figure>
         </div>
       </div>
@@ -2166,41 +2682,46 @@
       <div class="wrap">
         <div class="sec-head">
           <span class="sec-caret" aria-hidden="true">&#10095;</span>
-          <h2><span class="sec-title">Private by design</span></h2>
+          <h2><span class="sec-title" data-i18n="s4.span62">Private by design</span></h2>
           <span class="sec-cursor" aria-hidden="true"></span>
           <span class="sec-index">03 / 05</span>
         </div>
         <div class="zeros">
-          <div class="zero"><b>0</b><span>Permissions</span></div>
-          <div class="zero"><b>0</b><span>Accounts</span></div>
-          <div class="zero"><b>0</b><span>Trackers</span></div>
+          <div class="zero"><b>0</b><span data-i18n="s4.span63">Permissions at install</span></div>
+          <div class="zero"><b>0</b><span data-i18n="s4.span64">Accounts</span></div>
+          <div class="zero"><b>0</b><span data-i18n="s4.span65">Trackers</span></div>
         </div>
-        <p>
-          PriceTab requests <strong>no browser permissions at all</strong>. No
-          account, no analytics, no telemetry. Your coins, settings, portfolio
-          and targets live in your browser's local storage and never leave the
-          device — which is also why they don't follow you to another computer.
+        <p data-i18n="s4.p66">
+          PriceTab asks for <strong>no browser permission at install</strong>. No
+          account, no analytics, no telemetry. Your coins, settings, portfolio,
+          targets and practice account live in your browser's local storage and
+          never leave the device — which is also why they don't follow you to
+          another computer, unless you carry a backup file there yourself.
         </p>
-        <p>
+        <p data-i18n="s4.p67">
           Prices come from public, keyless market APIs. The one thing that
-          leaves the browser beyond a price request is a wallet address, and
-          only if you paste one in to watch its balance — then it goes to that
-          chain's balance provider and nowhere else.
+          leaves the browser beyond a request for market data is a wallet
+          address, and only if you paste one in to watch its balance — then it
+          goes to that chain's balance provider and nowhere else. Checking it
+          against the sanctions list happens on your device, from a list that
+          ships with the extension. Two things are optional and off until you
+          press a button inside the app: a Chrome notification for a hit
+          target, and eight newsroom feeds.
         </p>
-        <p class="privacy-note">
+        <p class="privacy-note" data-i18n="s4.p68">
           It also means a target can only be checked while a PriceTab tab is
           open. Nothing runs in the background when your browser is closed:
-          that would need a permission, and this doesn't have one.
+          there is no background worker to run it.
         </p>
         <!-- The first three chips used to be "Zero permissions / No account /
              No tracking", which is what the three figures above now say in
              much larger type. Repeating a claim under itself weakens it, so
              these carry only what the zeros don't. -->
         <div class="badges">
-          <span class="chip selected">No remote code</span>
-          <span class="chip">Open source</span>
-          <span class="chip">Local storage only</span>
-          <span class="chip">No background page</span>
+          <span class="chip selected" data-i18n="s4.span69">No remote code</span>
+          <span class="chip" data-i18n="s4.span70">Open source</span>
+          <span class="chip" data-i18n="s4.span71">Local storage only</span>
+          <span class="chip" data-i18n="s4.span72">No background page</span>
         </div>
       </div>
     </section>
@@ -2212,11 +2733,11 @@
       <div class="wrap">
         <div class="sec-head">
           <span class="sec-caret" aria-hidden="true">&#10095;</span>
-          <h2><span class="sec-title">Verify it yourself</span></h2>
+          <h2><span class="sec-title" data-i18n="s5.span73">Verify it yourself</span></h2>
           <span class="sec-cursor" aria-hidden="true"></span>
           <span class="sec-index">04 / 05</span>
         </div>
-        <p class="lede">
+        <p class="lede" data-i18n="s5.p74">
           A browser extension can read every page you open, so being
           suspicious of one is the correct instinct — including of this page,
           which is marketing. Below is the part that isn't: the manifest
@@ -2231,47 +2752,56 @@
                  section arguing that we don't overstate things is the last
                  place to overstate one. Every *key* is here, which is the
                  claim being made. -->
-            <div class="code-bar"><i></i>manifest.json &mdash; every key, long values shortened at &hellip;</div>
+            <div class="code-bar" data-i18n="s5.div75"><i></i>manifest.json &mdash; every key, long values shortened at &hellip;</div>
 <pre><span class="k">{</span>
   <span class="s">"manifest_version"</span>: 3,
   <span class="s">"name"</span>: <span class="s">"PriceTab - Crypto Charts on Every New Tab"</span>,
-  <span class="s">"version"</span>: <span class="s">"1.4.0"</span>,
+  <span class="s">"version"</span>: <span class="s">"1.5.0"</span>,
+  <span class="s">"default_locale"</span>: <span class="s">"en"</span>,
   <span class="s">"description"</span>: <span class="s">"Every new tab opens a live crypto chart&hellip;"</span>,
   <span class="s">"chrome_url_overrides"</span>: { <span class="s">"newtab"</span>: <span class="s">"index.html"</span> },
-  <span class="s">"action"</span>: { <span class="s">"default_popup"</span>: <span class="s">"rate.html"</span> },
+  <span class="s">"permissions"</span>: [],
+  <span class="s">"optional_permissions"</span>: [<span class="s">"notifications"</span>],
+  <span class="s">"optional_host_permissions"</span>: [<span class="s">"https://cointelegraph.com/*"</span>, &hellip; eight newsroom feeds],
+  <span class="s">"action"</span>: { <span class="s">"default_popup"</span>: <span class="s">"popup.html"</span> },
   <span class="s">"icons"</span>: { <span class="s">"16"</span>: &hellip;, <span class="s">"48"</span>: &hellip;, <span class="s">"128"</span>: &hellip; }
 <span class="k">}</span>
 
-<span class="c">// Seven keys. None of them is "permissions",</span>
-<span class="c">// "host_permissions", "background" or "content_scripts".</span></pre>
+<span class="c">// Eleven keys. "permissions" is empty, and the two optional lists</span>
+<span class="c">// are granted only when you press a button inside the app. There is no</span>
+<span class="c">// "host_permissions", no "background" and no "content_scripts".</span></pre>
           </div>
 
           <ul class="claims">
-            <li>
-              <b>Nothing to grant</b>
-              There is no permissions block, so Chrome has nothing to ask you
-              about at install. That isn't a policy we promise to keep — it is
-              the manifest, and the browser enforces it.
+            <li data-i18n="s5.li76">
+              <b>Nothing to grant at install</b>
+              The permissions list is empty, so Chrome has nothing to ask you
+              about when you add it. The two optional entries are asked for
+              only when you press their button inside the app. That isn't a
+              policy we promise to keep — it is the manifest, and the browser
+              enforces it.
             </li>
-            <li>
+            <li data-i18n="s5.li77">
               <b>No content scripts</b>
               It cannot read, change or even see the pages you visit. The
               extension exists on its own new tab and nowhere else.
             </li>
-            <li>
+            <li data-i18n="s5.li78">
               <b>Nothing runs in the background</b>
               There is no service worker to run. Close the tab and the
               extension is not executing — which is also why a price target
               can only be checked when you open a tab.
             </li>
-            <li>
-              <b>Every network call is in two files</b>
+            <li data-i18n="s5.li79">
+              <b>Every network request is in two files</b>
               <code>src/api.js</code> and <code>src/widgets-data.js</code>.
-              The source contains no <code>XMLHttpRequest</code>, no
+              (A third, <code>src/i18n.js</code>, reads a language file from
+              inside the extension itself.) The source contains no
+              <code>XMLHttpRequest</code>, no
               <code>sendBeacon</code>, no <code>eval</code>, no
               <code>document.cookie</code>, and no analytics SDK of any kind.
             </li>
-            <li>
+            <li data-i18n="s5.li80">
               <b>Requests go out, nothing about you goes with them</b>
               There is no account, no device id and no telemetry endpoint. A
               price request contains a coin symbol and a currency code.
@@ -2279,47 +2809,52 @@
           </ul>
         </div>
 
-        <h3 class="sub">Every host the code can reach</h3>
+        <h3 class="sub" data-i18n="s5.h381">Every host the code can reach</h3>
         <div class="hosts-wrap">
           <table class="hosts">
             <thead>
-              <tr><th>Host</th><th>What for</th><th>What is sent</th></tr>
+              <tr><th data-i18n="s5.th82">Host</th><th data-i18n="s5.th83">What for</th><th data-i18n="s5.th84">What is sent</th></tr>
             </thead>
             <tbody>
-              <tr><td>www.coinbase.com</td><td>Prices and chart history; exchange rates for non-USD</td><td>Coin symbol, currency code</td></tr>
-              <tr><td>api.exchange.coinbase.com</td><td>Candles for the crosshair and candlestick chart</td><td>Trading pair, granularity</td></tr>
-              <tr><td>api.kraken.com</td><td>Coins Coinbase doesn't list, and long-range candles</td><td>Trading pair, interval</td></tr>
-              <tr><td>api.coinlore.com</td><td>One bulk snapshot feeding the ticker, watchlist and top movers</td><td>Nothing &mdash; a fixed top-100 request</td></tr>
-              <tr><td>api.alternative.me</td><td>Fear &amp; Greed index</td><td>Nothing</td></tr>
-              <tr><td>www.okx.com</td><td>Funding rate, open interest, liquidations</td><td>Coin symbol</td></tr>
-              <tr><td>api.bybit.com</td><td>Long/short ratio</td><td>Coin symbol</td></tr>
-              <tr><td>mempool.space</td><td>Halving block height; Bitcoin address balance</td><td>Only an address you paste in yourself</td></tr>
-              <tr><td>api.blockchair.com</td><td>News headlines; ETH/LTC/DOGE/BCH/ZEC address balance</td><td>Only an address you paste in yourself</td></tr>
-              <tr><td>ethereum-rpc.publicnode.com</td><td>ERC-20 token balances</td><td>Only an address you paste in yourself</td></tr>
-              <tr><td>hn.algolia.com</td><td>Crypto stories for the optional news row</td><td>A fixed search term</td></tr>
+              <tr><td>www.coinbase.com</td><td data-i18n="s5.td85" data-label="What for" data-i18n-label="s5.th83">Prices and chart history; exchange rates for non-USD</td><td data-i18n="s5.td86" data-label="What is sent" data-i18n-label="s5.th84">Coin symbol, currency code</td></tr>
+              <tr><td>api.exchange.coinbase.com</td><td data-i18n="s5.td87" data-label="What for" data-i18n-label="s5.th83">Candles for the crosshair and candlestick chart, and the daily history the base rates and the chart companion count</td><td data-i18n="s5.td88" data-label="What is sent" data-i18n-label="s5.th84">Trading pair, granularity, a time range</td></tr>
+              <tr><td>api.kraken.com</td><td data-i18n="s5.td89" data-label="What for" data-i18n-label="s5.th83">Coins Coinbase doesn't list (Monero among them), long-range candles, a fallback while Coinbase is not answering, and the S&amp;P 500 and Nasdaq 100 for a comparison, as Kraken's tokenized ETFs</td><td data-i18n="s5.td90" data-label="What is sent" data-i18n-label="s5.th84">Trading pair, interval</td></tr>
+              <tr><td>api.coinlore.com</td><td data-i18n="s5.td91" data-label="What for" data-i18n-label="s5.th83">One bulk snapshot feeding the ticker, watchlist, top movers and price-only coins; the market overview</td><td data-i18n="s5.td92" data-label="What is sent" data-i18n-label="s5.th84">Nothing &mdash; a fixed top-100 request</td></tr>
+              <tr><td>api.alternative.me</td><td data-i18n="s5.td93" data-label="What for" data-i18n-label="s5.th83">Fear &amp; Greed index</td><td data-i18n="s5.td94" data-label="What is sent" data-i18n-label="s5.th84">Nothing</td></tr>
+              <tr><td>www.okx.com</td><td data-i18n="s5.td95" data-label="What for" data-i18n-label="s5.th83">Funding rate, open interest, liquidations; the perpetual's price, candles and order book while the practice page is open</td><td data-i18n="s5.td96" data-label="What is sent" data-i18n-label="s5.th84">Coin symbol</td></tr>
+              <tr><td>api.bybit.com</td><td data-i18n="s5.td97" data-label="What for" data-i18n-label="s5.th83">Long/short ratio; the practice page's market readings; delisting and network-upgrade notices if you switch them on</td><td data-i18n="s5.td98" data-label="What is sent" data-i18n-label="s5.th84">Coin symbol</td></tr>
+              <tr><td>mempool.space</td><td data-i18n="s5.td99" data-label="What for" data-i18n-label="s5.th83">Halving, fee, mempool and difficulty cards; Bitcoin address balance</td><td data-i18n="s5.td100" data-label="What is sent" data-i18n-label="s5.th84">Only an address you paste in yourself</td></tr>
+              <tr><td>api.blockchair.com</td><td data-i18n="s5.td101" data-label="What for" data-i18n-label="s5.th83">The &ldquo;what happened here?&rdquo; news archive; ETH/LTC/DOGE/BCH/ZEC address balance; the four Bitcoin network cards when mempool.space cannot be reached</td><td data-i18n="s5.td102" data-label="What is sent" data-i18n-label="s5.th84">A date range; only an address you paste in yourself</td></tr>
+              <tr><td>ethereum-rpc.publicnode.com</td><td data-i18n="s5.td103" data-label="What for" data-i18n-label="s5.th83">ETH gas; ERC-20 token balances</td><td data-i18n="s5.td104" data-label="What is sent" data-i18n-label="s5.th84">Nothing for gas; only an address you paste in yourself</td></tr>
+              <tr><td>hn.algolia.com</td><td data-i18n="s5.td105" data-label="What for" data-i18n-label="s5.th83">Hacker News stories for the news panel</td><td data-i18n="s5.td106" data-label="What is sent" data-i18n-label="s5.th84">A fixed search term, or a date range</td></tr>
+              <tr><td>search.cnbc.com<br />feeds.content.dowjones.io<br />news.bitcoin.com<br />cryptopotato.com</td><td data-i18n="s5.td107" data-label="What for" data-i18n-label="s5.th83">The news feeds that need no permission; a CryptoPotato story's text when you open it in the preview</td><td data-i18n="s5.td108" data-label="What is sent" data-i18n-label="s5.th84">Nothing &mdash; a request for a public feed or for the story you opened</td></tr>
+              <tr><td>www.coindesk.com<br />www.theblock.co<br />cointelegraph.com<br />decrypt.co<br />cryptoslate.com<br />bitcoinmagazine.com<br />coinjournal.net<br />feeds.bbci.co.uk</td><td data-i18n="s5.td109" data-label="What for" data-i18n-label="s5.th83">Eight optional newsrooms &mdash; never contacted until you grant them from the news panel; once granted, a story's text when you open it in the preview</td><td data-i18n="s5.td110" data-label="What is sent" data-i18n-label="s5.th84">Nothing &mdash; a request for a public feed</td></tr>
             </tbody>
           </table>
         </div>
 
         <div class="checks">
-          <div class="check">
+          <div class="check" data-i18n="s5.div111">
             <b>Check the permissions</b>
             Open <code>chrome://extensions</code>, find PriceTab, click
             Details. The permissions list is empty, and there is no "service
             worker" link because there is no background page.
           </div>
-          <div class="check">
+          <div class="check" data-i18n="s5.div112">
             <b>Watch the traffic</b>
             Open a new tab, press <kbd>F12</kbd>, choose Network and reload.
             Every row will be one of the hosts above. With the widgets off,
-            a tab asks for two things: the price history and the current
-            price &mdash; and often neither, because both are cached.
+            a first tab asks Coinbase for the price and the history of all
+            six ranges &mdash; seven requests, so switching ranges is instant
+            &mdash; and the next tab usually asks for nothing, because
+            everything it needs is cached.
           </div>
-          <div class="check">
+          <div class="check" data-i18n="s5.div113">
             <b>Read the code</b>
             It ships unminified and unbundled, so what you install is what is
-            on GitHub. <code>grep -rn "fetch(" src/</code> returns two files,
-            and you can read both.
+            on GitHub. <code>grep -rln "fetch(" src/</code> returns three
+            files: the two above, and the language loader, which only reads
+            from the extension's own folder.
           </div>
         </div>
       </div>
@@ -2328,22 +2863,22 @@
       <div class="wrap">
         <div class="sec-head">
           <span class="sec-caret" aria-hidden="true">&#10095;</span>
-          <h2><span class="sec-title">Up and running in seconds</span></h2>
+          <h2><span class="sec-title" data-i18n="s6.span114">Up and running in seconds</span></h2>
           <span class="sec-cursor" aria-hidden="true"></span>
           <span class="sec-index">05 / 05</span>
         </div>
         <div class="steps">
           <div class="step">
             <span class="num">1</span>
-            <p>Click "Add to Chrome" — no sign-up, nothing to configure.</p>
+            <p data-i18n="s6.p115">Click "Add to Chrome" — no sign-up, nothing to configure.</p>
           </div>
           <div class="step">
             <span class="num">2</span>
-            <p>Open a new tab. Your live chart is already there.</p>
+            <p data-i18n="s6.p116">Open a new tab. Your live chart is already there.</p>
           </div>
           <div class="step">
             <span class="num">3</span>
-            <p>Click the price to switch coins, or open settings to make it yours.</p>
+            <p data-i18n="s6.p117">Click the price to switch coins, or open settings to make it yours.</p>
           </div>
         </div>
       </div>
@@ -2352,15 +2887,17 @@
     <footer>
       <div class="wrap">
         <div class="links">
-          <a href="https://chromewebstore.google.com/detail/pricetab/dobkidjmhpnniiipliollbaefpppalaf">Chrome Web Store</a>
-          <a href="https://github.com/Zekuath/Pricetab">GitHub</a>
-          <a href="https://github.com/Zekuath/Pricetab/issues">Support</a>
-          <a href="../privacy.html">Privacy Policy</a>
+          <a href="https://chromewebstore.google.com/detail/pricetab/dobkidjmhpnniiipliollbaefpppalaf" data-i18n="s7.a118">Chrome Web Store</a>
+          <a href="https://github.com/Zekuath/Pricetab" data-i18n="s7.a119">GitHub</a>
+          <a href="https://github.com/Zekuath/Pricetab/issues" data-i18n="s7.a120">Support</a>
+          <a href="../privacy.html" data-i18n="s7.a121">Privacy Policy</a>
         </div>
-        <p class="disclaimer">
-          PriceTab is for information only and is not financial advice.
-          Cryptocurrency prices are volatile and risky. Always do your own
-          research.
+        <p class="disclaimer" data-i18n="foot.memory">This page remembers your theme, your language and whether you have seen what is new — in your browser's storage, on this device. It sets no cookie and sends none of it anywhere.</p>
+        <p class="disclaimer" data-i18n="s7.p122">
+          PriceTab is for information only and is not financial or tax
+          advice. The derivatives account is a simulation in units with no
+          value. Cryptocurrency prices are volatile and risky. Always do your
+          own research.
         </p>
       </div>
     </footer>
@@ -2382,6 +2919,137 @@
       </div>
     </dialog>
 
+    <script>
+      /* ══ The visitor's choices ══════════════════════════════════════════
+       *
+       * Theme, language and "what's new", remembered in localStorage on this
+       * device. No cookie is set, nothing is sent anywhere, and every read
+       * and write is guarded: a private window or blocked storage simply
+       * forgets, and the page works the same.
+       *
+       * Languages are the extension's thirteen. English is the page itself
+       * (so it reads without JavaScript and to a search engine); any other
+       * language replaces each element marked data-i18n from
+       * i18n/<code>.json, and data-i18n-alt / -aria / -title its attribute.
+       */
+      var SITE_LANGS = ["en", "de", "es", "fr", "id", "it", "ja", "ko", "pt_BR", "ru", "tr", "uk", "zh_CN"];
+      var SITE_EDITION = "2026-10";           // bump with a release worth a "what's new"
+      var SITE_DICT = {};
+      function SITE_T(key, fallback) { return SITE_DICT[key] || fallback; }
+      (function () {
+        var store = {
+          get: function (k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+          set: function (k, v) { try { localStorage.setItem(k, v); } catch (e) {} },
+        };
+        var root = document.documentElement;
+
+        /* ── theme ── */
+        var themeMeta = document.querySelector('meta[name="theme-color"]');
+        function paintTheme(choice) {
+          if (choice === "light" || choice === "dark") root.setAttribute("data-theme", choice);
+          else root.removeAttribute("data-theme");
+          var light = choice === "light" ||
+            (choice !== "dark" && matchMedia("(prefers-color-scheme: light)").matches);
+          if (themeMeta) themeMeta.setAttribute("content", light ? "#ffffff" : "#000000");
+          document.querySelectorAll("[data-theme-pick]").forEach(function (b) {
+            b.setAttribute("aria-pressed", b.getAttribute("data-theme-pick") === choice ? "true" : "false");
+          });
+        }
+        var theme = store.get("pricetab_site_theme") || "auto";
+        paintTheme(theme);
+        document.querySelectorAll("[data-theme-pick]").forEach(function (b) {
+          b.addEventListener("click", function () {
+            theme = b.getAttribute("data-theme-pick");
+            store.set("pricetab_site_theme", theme);
+            paintTheme(theme);
+          });
+        });
+        matchMedia("(prefers-color-scheme: light)").addEventListener("change", function () {
+          if (theme === "auto") paintTheme(theme);
+        });
+
+        /* ── language ── */
+        var pick = document.getElementById("langPick");
+        var english = null;   // the page's own English, kept to switch back to
+        function snapshot() {
+          if (english) return;
+          english = { html: {}, attr: [] };
+          document.querySelectorAll("[data-i18n]").forEach(function (el) {
+            english.html[el.getAttribute("data-i18n")] = el.innerHTML;
+          });
+          ["alt", "aria", "title", "label"].forEach(function (kind) {
+            document.querySelectorAll("[data-i18n-" + kind + "]").forEach(function (el) {
+              var name = kind === "aria" ? "aria-label" : kind === "label" ? "data-label" : kind;
+              english.attr.push([el, kind, el.getAttribute(name)]);
+            });
+          });
+        }
+        function apply(dict) {
+          document.querySelectorAll("[data-i18n]").forEach(function (el) {
+            var k = el.getAttribute("data-i18n");
+            var v = dict[k] != null ? dict[k] : english.html[k];
+            if (v != null && el.innerHTML !== v) el.innerHTML = v;
+          });
+          english.attr.forEach(function (row) {
+            var el = row[0], kind = row[1];
+            var name = kind === "aria" ? "aria-label" : kind === "label" ? "data-label" : kind;
+            var k = el.getAttribute("data-i18n-" + kind);
+            el.setAttribute(name, dict[k] != null ? dict[k] : row[2]);
+          });
+        }
+        function setLanguage(code, remember) {
+          if (SITE_LANGS.indexOf(code) === -1) code = "en";
+          if (remember) store.set("pricetab_site_lang", code);
+          if (pick) pick.value = code;
+          snapshot();
+          var done = function (dict) {
+            SITE_DICT = dict;
+            apply(dict);
+            root.setAttribute("lang", code.replace("_", "-"));
+            document.dispatchEvent(new CustomEvent("site:lang", { detail: code }));
+          };
+          if (code === "en") return done({});
+          fetch("i18n/" + code + ".json")
+            .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
+            .then(done)
+            .catch(function () { done({}); });     // English beats a half-translated page
+        }
+        // A stored choice first, then the browser's own languages, then English
+        var chosen = store.get("pricetab_site_lang");
+        if (!chosen) {
+          var langs = navigator.languages || [navigator.language || "en"];
+          for (var i = 0; i < langs.length && !chosen; i++) {
+            var l = String(langs[i]).replace("-", "_");
+            if (SITE_LANGS.indexOf(l) !== -1) chosen = l;
+            else if (SITE_LANGS.indexOf(l.slice(0, 2)) !== -1) chosen = l.slice(0, 2);
+            else if (l.slice(0, 2) === "pt") chosen = "pt_BR";
+            else if (l.slice(0, 2) === "zh") chosen = "zh_CN";
+          }
+        }
+        if (pick) pick.addEventListener("change", function () { setLanguage(pick.value, true); });
+        setLanguage(chosen || "en", false);
+
+        /* ── what's new, on a returning visit, once per edition ──
+         * The first visit only counts itself. From the second on, an edition
+         * not yet seen gets one card; either button ends it for that edition,
+         * and the next SITE_EDITION brings it back once. */
+        var visits = (parseInt(store.get("pricetab_site_visits"), 10) || 0) + 1;
+        store.set("pricetab_site_visits", String(visits));
+        var card = document.getElementById("whatsNew");
+        if (card && visits >= 2 && store.get("pricetab_site_news") !== SITE_EDITION) {
+          setTimeout(function () { card.hidden = false; }, 1600);
+          var close = function () {
+            store.set("pricetab_site_news", SITE_EDITION);
+            card.hidden = true;
+          };
+          card.querySelector(".wn-x").addEventListener("click", close);
+          card.querySelector(".wn-ok").addEventListener("click", close);
+          document.addEventListener("keydown", function (e) {
+            if (e.key === "Escape" && !card.hidden) close();
+          });
+        }
+      })();
+    </script>
     <script>
       /* One request, two consumers. The ticker wants the top-100 for its
        * prices and the hero wants the same payload for its market-cap
@@ -2717,11 +3385,11 @@
           var label = RANGES.filter(function (r) { return r[0] === period; })[0][1];
 
           tabPrice.textContent = usd(last);
-          tabPriceLabel.textContent = sym + " PRICE";
+          tabPriceLabel.textContent = sym + " " + SITE_T("tab.price", "PRICE");
           tabChange.textContent = (diff >= 0 ? "+" : "\u2212") + usd(Math.abs(diff));
           tabChange.style.color = diff >= 0 ? "var(--green)" : "var(--down)";
           tabMeta.innerHTML = "";
-          [[label + " HIGH", hi], [label + " LOW", lo]].forEach(function (pair) {
+          [[label + " " + SITE_T("tab.high", "HIGH"), hi], [label + " " + SITE_T("tab.low", "LOW"), lo]].forEach(function (pair) {
             var el = document.createElement("span");
             el.textContent = pair[0];
             var v = document.createElement("b");
@@ -3027,6 +3695,17 @@
             });
           });
         }
+
+        document.addEventListener("site:lang", function () {
+          titles.forEach(function (t) {
+            var w = naturalWidth(t);
+            if (w > 0) {
+              t.style.setProperty("--chars", t.textContent.length);
+              t.style.setProperty("--w", Math.ceil(w) + "px");
+            }
+          });
+          if (lastDraw) setPeak(lastDraw.pts, lastDraw.m);
+        });
 
         if (io && !reduced) {
           document.querySelectorAll("section > .wrap").forEach(function (el) {

@@ -11,8 +11,8 @@ const QUICK_SWITCH_MAX_RESULTS = 8;
  * (switching is the common case, adding is the exception).
  *
  * `exclude` drops what must not be offered: a single symbol for the compare
- * picker — a coin against itself is a flat line at zero — or a whole list for
- * the portfolio, which must not offer a coin already held.
+ * drawer (compare-drawer.js) — a coin against itself is a flat line at zero —
+ * or a whole list for the portfolio, which must not offer a coin already held.
  *
  * `pool` is what may be offered at all, defaulting to the coins this app can
  * chart. The portfolio widens it: `sanitizePortfolio` accepts anything
@@ -46,11 +46,24 @@ const quickSwitchMatches = (query, coinOptions, exclude, pool) => {
     if (dropped && dropped.has(sym)) continue;
     const s = score(sym);
     if (s < 0) continue;
-    results.push({ coin: sym, owned: owned.has(sym), score: s });
+    results.push({
+      coin: sym,
+      owned: owned.has(sym),
+      score: s,
+      chartable: SUGGESTED_COINS.includes(sym),
+    });
   }
   results.sort((a, b) => {
     if (a.owned !== b.owned) return a.owned ? -1 : 1;
     if (a.score !== b.score) return a.score - b.score;
+    /* **A coin with a chart before one without**, when nothing else separates
+     * them. The wide pool is the portfolio's — `HOLDABLE_COINS`, which carries
+     * the tokens and the price-only tier this app can price and cannot draw —
+     * and the tiebreak below it is alphabetical, so the day Ethereum Classic
+     * became holdable, typing "ET" started offering it above Ethereum. Nothing
+     * is hidden: the narrower one simply goes first, and the row that cannot
+     * be drawn says so. */
+    if (a.chartable !== b.chartable) return a.chartable ? -1 : 1;
     return a.coin.localeCompare(b.coin);
   });
   return results.slice(0, QUICK_SWITCH_MAX_RESULTS);
@@ -186,7 +199,7 @@ class QuickSwitch extends PureComponent {
     return quickSwitchMatches(
       this.state.query,
       this.props.coinOptions,
-      this.props.compare ? this.props.exclude : null,
+      null,
     );
   }
 
@@ -235,17 +248,17 @@ class QuickSwitch extends PureComponent {
           innerRef: this.inputRef,
           type: "text",
           value: this.state.query,
-          placeholder: this.props.compare
-            ? `Compare ${this.props.exclude || ""} with…`.replace("  ", " ")
-            : "Jump to a coin…",
-          "aria-label": this.props.compare
-            ? "Compare with a coin"
-            : "Jump to a coin",
+          placeholder: msg("qs_jump_placeholder", "Jump to a coin…"),
+          "aria-label": msg("qs_jump_label", "Jump to a coin"),
           onChange: this.handleChange,
           onKeyDown: this.handleKeyDown,
         }),
         results.length === 0
-          ? React.createElement(QuickEmpty, null, "No coin matches that.")
+          ? React.createElement(
+              QuickEmpty,
+              null,
+              msg("qs_no_match", "No coin matches that."),
+            )
           : React.createElement(
               QuickList,
               null,
@@ -264,12 +277,7 @@ class QuickSwitch extends PureComponent {
                     null,
                     COIN_NAMES[r.coin] || r.coin,
                   ),
-                  // Comparing doesn't add anything to your list — the overlay
-                  // lasts as long as you look at it, so there is nothing to
-                  // warn about
-                  !r.owned &&
-                    !this.props.compare &&
-                    React.createElement(QuickTag, null, "add"),
+                  !r.owned && React.createElement(QuickTag, null, "add"),
                 ),
               ),
             ),
@@ -287,6 +295,4 @@ class QuickSwitch extends PureComponent {
 
 QuickSwitch.defaultProps = {
   coinOptions: [],
-  compare: false,
-  exclude: null,
 };

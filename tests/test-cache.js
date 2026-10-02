@@ -107,7 +107,61 @@ const makeSandbox = (store) => {
     "persisted entry survived the round trip",
   );
 
-  console.log("ALL CACHE TESTS PASSED");
+  /* ── the logarithmic price axis ──────────────────────────────────────────
+ *
+ * It exists because of a measurement: on Coinbase's own BTC `period=all`
+ * series the first half of the history occupies **15.8% of a linear y-range**
+ * — 63 px of a 400 px chart — against 72.2% on a log one. What is asserted
+ * here is the property that makes that true, and the two ways it is allowed to
+ * refuse.
+ */
+{
+  const box = makeRealSandbox({});
+  const geo = (log) =>
+    vm.runInContext(`
+      scalePricesCore([{ price: 1, time: new Date(0) },
+                       { price: 10, time: new Date(1000) },
+                       { price: 100, time: new Date(2000) }],
+        400, 800, 0, 0, 0, 0, null, null, ${log})
+        .map((p) => Math.round(p.price));
+    `, box);
+
+  /* Ten is the geometric middle of one and a hundred, so on a log axis it
+   * lands halfway up the plot — and on a linear one it sits near the floor,
+   * which is the whole complaint about long ranges in one line. */
+  const lin = geo(false);
+  const log = geo(true);
+  assert.strictEqual(log[1], 200, "the geometric middle is the middle of a log plot");
+  assert.ok(lin[1] > 350, `…and near the floor on a linear one (${lin[1]})`);
+  assert.strictEqual(log[0], 400, "the ends are the ends either way");
+  assert.strictEqual(log[2], 0, "…top and bottom");
+
+  /* **A log axis needs every price above zero.** A series that touches zero
+   * falls back to linear rather than drawing nothing: a chart that cannot be
+   * drawn logarithmically is still a chart. */
+  const zeroed = vm.runInContext(`
+    scalePricesCore([{ price: 0, time: new Date(0) }, { price: 100, time: new Date(1000) }],
+      400, 800, 0, 0, 0, 0, null, null, true)
+      .map((p) => Math.round(p.price));
+  `, box);
+  // Stringified: an array built inside the vm is not `deepStrictEqual` to one
+  // built out here, whatever it holds.
+  assert.strictEqual(
+    JSON.stringify(zeroed), "[400,0]",
+    "a range that reaches zero falls back to linear",
+  );
+
+  // A reference line has to sit on the axis the series was drawn on, or it
+  // marks a level the price never reached
+  const ref = vm.runInContext(`
+    const pair = [{ price: 1, time: new Date(0) }, { price: 100, time: new Date(1000) }];
+    [priceToChartY(pair, 10, 400, 0, 0, false), priceToChartY(pair, 10, 400, 0, 0, true)];
+  `, box);
+  assert.ok(Math.abs(ref[1] - 200) < 0.5, "a level is placed on the log axis too");
+  assert.ok(ref[0] > 350, `…and on the linear one where it belongs (${Math.round(ref[0])})`);
+}
+
+console.log("ALL CACHE TESTS PASSED");
 })().catch((e) => { console.error(e.message); process.exit(1); });
 
 // ── Regression: Date fields must survive the persist→hydrate round trip ──
@@ -128,8 +182,11 @@ const makeRealSandbox = (store) => {
   vm.createContext(sb);
   const base2 = ROOT;
   vm.runInContext(fs.readFileSync(`${base2}/vendor/d3-custom.min.js`, "utf8"), sb, { filename: "d3-custom" });
-  vm.runInContext("const { easeCubicOut, extent, line, scaleLinear, scaleTime, select } = d3;", sb);
-  for (const f of ["config.js", "api.js", "storage.js", "widgets-data.js", "utils.js"]) {
+  // Same list `src/theme.js` destructures, including the log scale the long
+  // ranges use — a sandbox missing one of them fails as "not defined" inside
+  // a helper rather than where the omission is
+  vm.runInContext("const { easeCubicOut, extent, line, scaleLinear, scaleLog, scaleTime, select } = d3;", sb);
+  for (const f of ["storage.js", "i18n.js", "config.js", "api.js", "widgets-data.js", "utils.js"]) {
     vm.runInContext(fs.readFileSync(`${base2}/src/${f}`, "utf8"), sb, { filename: f });
   }
   return sb;

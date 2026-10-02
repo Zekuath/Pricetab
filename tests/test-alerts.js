@@ -35,6 +35,28 @@ const sandbox = {
    * interpolated into a styled block by every file has to be stubbed
    * here too, or the file throws before a single assertion runs. */
   themedScrollbar: "",
+  touchTarget: "",
+  touchBox: "",
+  besideScreenSpine: "",
+  refusedField: "",
+  /* The drawer the targets and calls panel is docked in shares its surface
+     with the chart's own drawer; both fragments live in theme.js. */
+  chartDrawerSurface: "",
+  chartDrawerPhone: "",
+  /* styles-practice.js (loaded for posType since 21 Sep 2026) extends two
+     portfolio components and reads two constants at load; stubbed the same
+     way the theme's are. */
+  PORTFOLIO_WIDE: 1280,
+  PortfolioColumns: styledStub.div,
+  PortfolioShell: styledStub.section,
+  PortfolioInner: styledStub.div,
+  PortfolioEyebrow: styledStub.div,
+  /* The terminal's head and its settings sheet (27 Sep 2026) extend the
+     portfolio's header and reuse its entrance. */
+  PortfolioHeader: styledStub.div,
+  portfolioFadeIn: "",
+  StatItem: styledStub.div,
+  PRACTICE_DEPOSIT_MS: 4000,
   React: { Component: class {}, createElement: () => null, Fragment: Symbol("F") },
   PureComponent: class {},
   createRef: () => ({ current: null }),
@@ -44,7 +66,22 @@ vm.createContext(sandbox);
 const base = path.join(__dirname, "..", "src");
 // styles-alerts.js comes with it now: the info card is rendered by these tests,
 // and its styled-components live there (in load order, before alerts.js)
-for (const f of ["config.js", "storage.js", "styles-alerts.js", "alerts.js"]) {
+// alerts-futures.js is the derivatives market, cut out of alerts.js on
+// 13 Sep 2026; the panel's constructor calls its factory, so the class cannot
+// be built without it
+for (const f of [
+  "storage.js",
+  "i18n.js",
+  "config.js",
+  /* The alerts styles read the type ladder (posType) from the practice
+     styles since 21 Sep 2026, in load order, so the practice styles come
+     first here as they do in index.html. */
+  "styles-practice.js",
+  "styles-alerts.js",
+  "alerts-futures.js",
+  "practice-page.js",
+  "alerts.js",
+]) {
   vm.runInContext(fs.readFileSync(`${base}/${f}`, "utf8"), sandbox, { filename: f });
 }
 const run = (code) => vm.runInContext(code, sandbox);
@@ -69,15 +106,46 @@ assert.deepStrictEqual(
   "an alert saved before kind/startPrice/hitPrice still loads, with defaults",
 );
 
-// A percent target round-trips as itself
+/* A percent target round-trips as itself — **including the window it was set
+ * with**, which is stamped on the target rather than read from a setting: a
+ * target is a record of what somebody asked for, and re-reading an old one
+ * through a later preference answers a question they never asked. */
 const percent = {
   id: "a2", coin: "ETH", kind: "percent", direction: "below", target: 5,
   currency: "USD", created: 1700000000000, startPrice: null,
-  triggeredAt: null, hitPrice: null,
+  triggeredAt: null, hitPrice: null, window: 14400000,
 };
 sandbox.__pct = percent;
 run("saveAlerts([__pct])");
 assert.deepStrictEqual(json("loadAlerts()"), [percent], "percent target round-trips");
+
+/* A target written before windows existed is a 24h target, because that is
+ * what it was measured against when it was made. */
+sandbox.__old = { ...percent, id: "a2b", window: undefined };
+run("saveAlerts([__old])");
+assert.strictEqual(
+  json("loadAlerts()")[0].window,
+  86400000,
+  "a target from before windows existed defaults to a day",
+);
+// …and a window nobody offers is the default too, rather than dropping a
+// target we can still answer
+sandbox.__weird = { ...percent, id: "a2c", window: 999 };
+run("saveAlerts([__weird])");
+assert.strictEqual(
+  json("loadAlerts()")[0].window,
+  86400000,
+  "an unrecognised window becomes the default rather than losing the target",
+);
+/* Only the percent kind carries one: a price target with a window would be a
+ * field nothing reads, on a record that is kept for years. */
+sandbox.__price = { ...legacy, id: "a2d", window: 3600000 };
+run("saveAlerts([__price])");
+assert.strictEqual(
+  "window" in json("loadAlerts()")[0],
+  false,
+  "a price target has no window at all",
+);
 
 // A move nothing makes in a day can never fire, so it is rejected outright
 sandbox.__wild = { ...percent, id: "a3", target: 500 };
@@ -388,7 +456,7 @@ assert.deepStrictEqual(json("alertCoinsToWatch([], 'USD')"), [], "no alerts → 
 /* ── a target on the whole portfolio ────────────────────────────────────────
  *
  * The third kind. It exists because the algorithm research
- * (`docs/product/TODAY.md` §9) says buy and sell signals cannot be built
+ * (the working notes §9) says buy and sell signals cannot be built
  * honestly — 0 of 70 permutation tests survive, and on live daily closes
  * "overbought" beat the coin's ordinary month on four of six coins. What a
  * person actually wants when they ask for a sell signal is to be told about
@@ -497,6 +565,142 @@ assert.deepStrictEqual(json("alertCoinsToWatch([], 'USD')"), [], "no alerts → 
   assert.strictEqual(loaded[0].kind, "portfolio", "…as a portfolio target");
   assert.strictEqual(loaded[0].coin, "", "…with no coin, which is the point of it");
   delete store.crypto_chart_alerts;
+}
+
+/* ── the window a percent target measures over ───────────────────────────
+ *
+ * It was twenty-four hours and nothing else. "5% in an hour" and "5% in a day"
+ * are different events and only one of them was expressible.
+ *
+ * Detection compares each candle with the one `window / step` earlier, so what
+ * has to be true is that the *same* series fires a one-hour target and not a
+ * one-day one when the move happened inside an hour — and the other way round
+ * for a drift that only adds up over a day.
+ */
+{
+  const HOUR = 3600000;
+  const t0 = 1700000000000;
+  // 48 hourly candles that climb 0.5% an hour: +12.7% over a day, never more
+  // than 0.5% in any one hour
+  const drift = [];
+  for (let i = 0; i < 48; i++) {
+    drift.push({ time: t0 + i * HOUR, close: 100 * Math.pow(1.005, i) });
+  }
+  sandbox.__drift = drift;
+  sandbox.__day = { direction: "above", target: 5, created: 0, window: 86400000 };
+  sandbox.__hour = { direction: "above", target: 5, created: 0, window: HOUR };
+
+  assert.ok(
+    run("percentHitInCandles(__day, __drift)") > 0,
+    "a slow climb reaches 5% over a day",
+  );
+  assert.strictEqual(
+    run("percentHitInCandles(__hour, __drift)"),
+    null,
+    "…and never moves 5% in any single hour, so the hourly target does not fire",
+  );
+
+  // …and a spike: flat, then one candle up 8%, then flat
+  const spike = [];
+  for (let i = 0; i < 48; i++) {
+    spike.push({ time: t0 + i * HOUR, close: i < 24 ? 100 : 108 });
+  }
+  sandbox.__spike = spike;
+  assert.strictEqual(
+    run("percentHitInCandles(__hour, __spike)"),
+    t0 + 24 * HOUR,
+    "a jump inside one hour fires the hourly target, at the candle it happened on",
+  );
+
+  /* **A window the series cannot cover answers null rather than guessing.**
+   * Four hours of candles cannot say what a day did, and a target that
+   * reported on it would be reporting on data it does not have. */
+  sandbox.__short = drift.slice(0, 4);
+  assert.strictEqual(
+    run("percentHitInCandles(__day, __short)"),
+    null,
+    "a day's window over four candles is refused",
+  );
+
+  // The label the row is written from, and the default for anything without one
+  assert.strictEqual(run("percentWindowOf({ window: 3600000 })"), 3600000, "the window is read off the target");
+  assert.strictEqual(run("percentWindowOf({})"), 86400000, "…and defaults to a day");
+  assert.strictEqual(run("percentWindowOf({ window: 999 })"), 86400000, "…as does one nobody offers");
+  assert.strictEqual(run("percentWindowLabel(14400000)"), "4h", "the row can name it");
+}
+
+/* ── a note, a span, a repeat (21 Sep 2026) ─────────────────────────────
+ * Three optional stamps on a target, absent unless set — the window's rule —
+ * so a target written before them loads exactly as it did (asserted above). */
+{
+  const DAY = 86400000;
+  sandbox.__stamped = {
+    id: "s1", coin: "BTC", kind: "price", direction: "above", target: 50000,
+    currency: "USD", created: 1700000000000, triggeredAt: null, hitPrice: null,
+    note: "  breakout retest  ", keepFor: 7 * DAY, repeat: true, repeated: 2,
+  };
+  const s1 = json("sanitizeAlerts([__stamped])")[0];
+  assert.strictEqual(s1.note, "breakout retest", "the note is kept, trimmed");
+  assert.strictEqual(s1.keepFor, 7 * DAY, "the span is kept");
+  assert.strictEqual(s1.repeat, true, "…and the repeat flag");
+  assert.strictEqual(s1.repeated, 2, "…and how many times it has spoken");
+  assert.ok(!("expiredAt" in s1), "nothing expired carries no expiredAt");
+
+  sandbox.__junk = { ...sandbox.__stamped, id: "s2", note: "x".repeat(200), keepFor: 12345, repeat: "yes" };
+  const s2 = json("sanitizeAlerts([__junk])")[0];
+  assert.strictEqual(s2.note.length, run("ALERT_NOTE_MAX"), "a note is cut to one line");
+  assert.ok(!("keepFor" in s2), "a span nobody offers is dropped, not the target");
+  assert.ok(!("repeat" in s2), "repeat is a boolean or nothing");
+
+  sandbox.__pctRepeat = { ...sandbox.__stamped, id: "s3", kind: "percent", target: 5, repeat: true };
+  assert.ok(!("repeat" in json("sanitizeAlerts([__pctRepeat])")[0]),
+    "a move target cannot repeat — its window passing re-arms it");
+
+  sandbox.__lapsed = { ...sandbox.__stamped, id: "s4", expiredAt: 1700000000000 + 8 * DAY };
+  assert.strictEqual(json("sanitizeAlerts([__lapsed])")[0].expiredAt, 1700000000000 + 8 * DAY,
+    "an expired target keeps the moment it expired");
+  sandbox.__hitAndLapsed = { ...sandbox.__lapsed, id: "s5", triggeredAt: 1700000000000 + DAY };
+  assert.ok(!("expiredAt" in json("sanitizeAlerts([__hitAndLapsed])")[0]),
+    "a hit target cannot also be expired");
+
+  /* expireAlerts: pure, and returns the same array when nothing changed */
+  const T0 = 1700000000000;
+  sandbox.__list = [
+    { id: "a", coin: "BTC", kind: "price", direction: "above", target: 1, currency: "USD", created: T0, keepFor: DAY },
+    { id: "b", coin: "BTC", kind: "price", direction: "above", target: 1, currency: "USD", created: T0 },
+    { id: "c", coin: "BTC", kind: "price", direction: "above", target: 1, currency: "USD", created: T0, keepFor: DAY, triggeredAt: T0 + 1 },
+  ];
+  assert.strictEqual(run("expireAlerts(__list, " + (T0 + DAY - 1) + ") === __list"), true,
+    "a span not yet run out changes nothing — same array back");
+  const ex = json("expireAlerts(__list, " + (T0 + DAY) + ")");
+  assert.strictEqual(ex[0].expiredAt, T0 + DAY, "a span run out marks the target");
+  assert.ok(!ex[1].expiredAt, "a target with no span never expires");
+  assert.ok(!ex[2].expiredAt, "a hit target is not expired on top");
+
+  /* rearmRepeatingAlerts: only once the price is back on the other side */
+  sandbox.__rep = [
+    { id: "r", coin: "BTC", kind: "price", direction: "above", target: 50000, currency: "USD",
+      created: T0, triggeredAt: T0 + 1, hitPrice: 50100, repeat: true, startPrice: 49000 },
+  ];
+  assert.strictEqual(run("rearmRepeatingAlerts(__rep, { BTC: 50200 }, " + (T0 + 2) + ") === __rep"), true,
+    "still past the line: not re-armed, or one crossing would be reported forever");
+  const back = json("rearmRepeatingAlerts(__rep, { BTC: 49800 }, " + (T0 + 3) + ")")[0];
+  assert.strictEqual(back.triggeredAt, null, "back across the line: re-armed");
+  assert.strictEqual(back.startPrice, 49800, "…from where the price is now");
+  assert.strictEqual(back.created, T0 + 3, "…and from now, so the lookback cannot re-report the last crossing");
+  assert.strictEqual(back.repeated, 1, "…and counted");
+  sandbox.__once = [{ ...sandbox.__rep[0], repeat: false }];
+  assert.strictEqual(run("rearmRepeatingAlerts(__once, { BTC: 49800 }, " + (T0 + 3) + ") === __once"), true,
+    "a once-only target stays hit");
+
+  /* an expired target neither fires nor costs a price */
+  sandbox.__exp = [{ id: "e", coin: "BTC", kind: "price", direction: "above", target: 1, currency: "USD",
+    created: T0, keepFor: DAY, expiredAt: T0 + DAY }];
+  assert.deepStrictEqual(json("findTriggeredAlerts(__exp, { BTC: 99999 }, 'USD', {}, {}, null)"), [],
+    "an expired target does not fire");
+  assert.deepStrictEqual(json("alertCoinsToWatch(__exp, 'USD', [])"), [], "…and is not watched");
+  assert.deepStrictEqual(json("alertCoinsToWatch(__rep, 'USD', [])"), ["BTC"],
+    "a hit repeating target is still watched — it is waiting to re-arm");
 }
 
 console.log("ALERT TESTS OK");

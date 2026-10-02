@@ -69,10 +69,24 @@ sandbox.window = Object.assign(Object.create(null), sandbox, {
 sandbox.globalThis = sandbox;
 vm.createContext(sandbox);
 
-const order = fs
-  .readFileSync(path.join(ROOT, "index.html"), "utf8")
-  .match(/src\/[a-z-]+\.js/g)
-  .filter((s, i, a) => a.indexOf(s) === i && !s.includes("theme-init"));
+/* `[a-z0-9-]`, not `[a-z-]`: `i18n.js` has a digit in it, and the old class
+ * silently skipped the file rather than failing — the same shape of bug as the
+ * ERC20 sweep's key regex, which could not match "1INCH" and reported success
+ * on 55 of 56 tokens. So the count is asserted against the page as well: a
+ * filename this cannot read now fails loudly instead of being left out of the
+ * load order it exists to check. */
+const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+const order = (html.match(/src\/[a-z0-9-]+\.js/g) || []).filter(
+  (s, i, a) => a.indexOf(s) === i && !s.includes("theme-init"),
+);
+const declared = (html.match(/<script src="\.\/src\/[^"]+"/g) || []).length;
+if (order.length + 1 !== declared) {
+  console.error(
+    `✘ index.html declares ${declared} src scripts but the load order parsed ` +
+      `${order.length + 1} — a file name this regex cannot read would be skipped`,
+  );
+  process.exit(1);
+}
 console.log("load order:", order.join(" → "));
 
 for (const f of order) {

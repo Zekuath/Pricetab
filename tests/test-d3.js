@@ -17,7 +17,7 @@ vm.runInContext(fs.readFileSync(path.join(ROOT, "vendor", "d3-interpolate-path.m
 const d3 = vm.runInContext("d3", sandbox);
 
 // Every name destructured in src/theme.js must exist
-for (const name of ["easeCubicOut", "extent", "interpolatePath", "line", "scaleLinear", "scaleTime", "select"]) {
+for (const name of ["easeCubicOut", "extent", "interpolatePath", "line", "scaleLinear", "scaleLog", "scaleTime", "select"]) {
   assert.strictEqual(typeof d3[name], "function", `d3.${name} exists`);
 }
 
@@ -28,6 +28,12 @@ assert.strictEqual(gen([[0, 0], [10, 5], [20, 3]]), "M0,0L10,5L20,3", "line path
 // scales (utils.js scalePricesCore)
 const sl = d3.scaleLinear().domain([0, 100]).range([0, 1]);
 assert.strictEqual(sl(50), 0.5, "scaleLinear maps");
+/* The log axis the chart offers on long ranges. The bundle carries it — the
+ * module list in `vendor/d3-custom.min.js`'s header includes d3-scale whole —
+ * but nothing used it until 12 Sep 2026, so this is the check that it is
+ * actually in the build rather than only in the import list. */
+const lg = d3.scaleLog().domain([1, 100]).range([0, 1]);
+assert.strictEqual(lg(10), 0.5, "scaleLog maps the geometric middle to the middle");
 const st = d3.scaleTime().domain([new Date(0), new Date(1000)]).range([0, 1]);
 assert.strictEqual(st(new Date(500)), 0.5, "scaleTime maps");
 

@@ -30,6 +30,10 @@ const sandbox = {
    * interpolated into a styled block by every file has to be stubbed
    * here too, or the file throws before a single assertion runs. */
   themedScrollbar: "",
+  touchTarget: "",
+  touchBox: "",
+  besideScreenSpine: "",
+  refusedField: "",
   React: { Component: class {}, createElement: () => null, Fragment: Symbol("F") },
   PureComponent: class {},
   createRef: () => ({ current: null }),
@@ -37,7 +41,7 @@ const sandbox = {
 };
 vm.createContext(sandbox);
 const base = path.join(__dirname, "..", "src");
-for (const f of ["config.js", "quickswitch.js"]) {
+for (const f of ["i18n.js", "config.js", "quickswitch.js"]) {
   vm.runInContext(fs.readFileSync(`${base}/${f}`, "utf8"), sandbox, { filename: f });
 }
 const run = (code) => vm.runInContext(code, sandbox);
@@ -165,6 +169,36 @@ assert.deepStrictEqual(
   //    a substring test that ranked nothing
   const ranked = json('quickSwitchMatches("ET", [], null, HOLDABLE_COINS)').map((m) => m.coin);
   assert.strictEqual(ranked[0], "ETH", `an exact-prefix symbol leads (${ranked.join(",")})`);
+
+  /* 4. …and where two symbols score the same, the one with a chart leads.
+   *
+   * The tiebreak under the score is alphabetical, so the day Ethereum Classic
+   * joined the price-only tier — priced by the sweep, drawn by nothing —
+   * typing "ET" started offering ETC above ETH. Nothing is hidden by the fix:
+   * the drawable one goes first and the other is still in the list. */
+  assert.ok(
+    ranked.includes("ETC"),
+    `a price-only coin is still offered (${ranked.join(",")})`,
+  );
+  assert.ok(
+    ranked.indexOf("ETH") < ranked.indexOf("ETC"),
+    `…below the one that can be charted (${ranked.join(",")})`,
+  );
+
+  /* 5. The price-only tier is reachable by name, which is the point of naming
+   * it in `COIN_NAMES`: a coin with no entry there can only be found by typing
+   * its ticker exactly, and nobody knows that TRON's ticker is TRX. */
+  assert.ok(
+    json('quickSwitchMatches("tron", [], null, HOLDABLE_COINS)').some(
+      (m) => m.coin === "TRX",
+    ),
+    "a price-only coin is found by its full name",
+  );
+  assert.strictEqual(
+    json('quickSwitchMatches("tron", [])').length,
+    0,
+    "…and is still not offered where a chart is what you are picking",
+  );
 }
 
 console.log("QUICK SWITCH TESTS OK");

@@ -60,6 +60,10 @@ const sandbox = {
    * interpolated into a styled block by every file has to be stubbed
    * here too, or the file throws before a single assertion runs. */
   themedScrollbar: "",
+  touchTarget: "",
+  touchBox: "",
+  besideScreenSpine: "",
+  refusedField: "",
   React: { Component: ComponentStub, createElement: () => null, Fragment: Symbol("Fragment") },
   window: {
     innerWidth: 1280,
@@ -71,7 +75,7 @@ const sandbox = {
 };
 vm.createContext(sandbox);
 
-for (const f of ["config.js", "onboarding.js"]) {
+for (const f of ["i18n.js", "config.js", "onboarding.js"]) {
   vm.runInContext(fs.readFileSync(`${base}/${f}`, "utf8"), sandbox, { filename: f });
 }
 const run = (code) => vm.runInContext(code, sandbox);
@@ -90,7 +94,8 @@ for (const [i, s] of steps.entries()) {
 }
 
 // every data-tour selector must anchor to a real element in the app source
-// (rendered as "data-tour": "x" literals or via Overview's dataTour prop)
+// (rendered as "data-tour": "x" literals, via Overview's dataTour prop, or
+// via the drawers' tab list in app.js, whose rows carry tour: "x")
 const srcBlob = fs
   .readdirSync(base)
   .filter((f) => f.endsWith(".js") && f !== "onboarding.js")
@@ -100,7 +105,9 @@ for (const s of steps) {
   if (!s.selector) continue;
   const name = s.selector.match(/"([a-z-]+)"/)[1];
   assert.ok(
-    srcBlob.includes(`"data-tour": "${name}"`) || srcBlob.includes(`dataTour: "${name}"`),
+    srcBlob.includes(`"data-tour": "${name}"`) ||
+      srcBlob.includes(`dataTour: "${name}"`) ||
+      srcBlob.includes(`tour: "${name}" }`),
     `tour anchor "${name}" exists in the app markup`,
   );
 }
@@ -180,5 +187,38 @@ assert.deepStrictEqual(
   { top: 10, left: 20, width: 30, height: 40 },
   "present target is measured",
 );
+
+/* ── what's new, once per edition (1 Oct 2026) ─────────────────────────── */
+
+const DAY = 86400000;
+const newsSteps = run("WHATS_NEW_STEPS.length");
+const reset = () => {
+  for (const k of Object.keys(store)) delete store[k];
+  timers.length = 0;
+};
+// taken the tour, installed a week ago, this edition not shown → the news steps
+reset();
+store["crypto_chart_onboarding_seen"] = "1";
+store["crypto_chart_first_use"] = String(Date.now() - 7 * DAY);
+tour = mount();
+assert.strictEqual(timers.length, 1, "an updated install is shown what's new");
+timers.pop().fn();
+assert.strictEqual(tour.steps().length, newsSteps, "…the what's-new steps, not the whole tour");
+tour.handleKeyDown(keyEvent("Escape"));
+assert.strictEqual(store["crypto_chart_whats_new_seen"], run("WHATS_NEW_ID"), "…and skipping it marks the edition shown");
+tour = mount();
+assert.strictEqual(timers.length, 0, "…so it never comes back for this edition");
+// a profile that only just took the first tour is not shown it
+reset();
+store["crypto_chart_onboarding_seen"] = "1";
+store["crypto_chart_first_use"] = String(Date.now() - 1000);
+tour = mount();
+assert.strictEqual(timers.length, 0, "a fresh install is not shown what's new on top of the tour");
+// and finishing the first tour marks the edition shown too
+reset();
+tour = mount();
+timers.pop().fn();
+tour.handleKeyDown(keyEvent("Escape"));
+assert.strictEqual(store["crypto_chart_whats_new_seen"], run("WHATS_NEW_ID"), "the first tour, ended, counts as this edition's news");
 
 console.log("ONBOARDING TESTS OK");

@@ -3,8 +3,39 @@ const path = require("path");
 const vm = require("vm");
 const assert = require("assert");
 
+/* Pull the news regexes straight out of the source. Each is a single-line or
+ * two-line `const NAME = /…/flags;` — anything that stops matching that shape
+ * fails loudly here rather than silently reverting to a copy. */
+const newsPatterns = () => {
+  const src = fs.readFileSync(
+    path.join(__dirname, "..", "src", "config.js"),
+    "utf8",
+  );
+  const out = {};
+  for (const name of [
+    "NEWS_SPAM_RE",
+    "NEWS_PROMO_PATH_RE",
+    "NEWS_WIRE_RE",
+    "NEWS_PROMO_CATEGORY_RE",
+    "NEWS_PROMO_LEAD_RE",
+  ]) {
+    const m = src.match(
+      new RegExp(`const ${name} =\\s*(/[\\s\\S]*?/[a-z]*);`),
+    );
+    if (!m) throw new Error(`${name} not found in config.js`);
+    out[name] = eval(m[1]);
+  }
+  return out;
+};
+
 let fetchCalls = [];
+// Whether each request could be abandoned — see NEWS_SOURCE_TIMEOUT_MS
+let fetchSignals = [];
 let chainFail = false; // simulates the balance providers going down
+// A 200 with a body that is not the shape we asked for — the failure these
+// two cards have to answer with null rather than with zeros
+let mempoolBroken = false;
+let mempoolUnreachable = false; // the TLS reset measured 1 Oct 2026
 let coinbaseDown = false; // an edge error: a rejected fetch, as the browser sees it
 let krakenError = false; // Kraken reports failures in a 200 response body
 const sandbox = {
@@ -12,6 +43,7 @@ const sandbox = {
   parseInt, parseFloat, isFinite, isNaN, setTimeout, clearTimeout, Error, AbortController,
   fetch: async (url, options) => {
     fetchCalls.push(url);
+    fetchSignals.push(Boolean(options && options.signal));
     /* What a blocked or throttled edge looks like from inside the page: the
      * response carries no `Access-Control-Allow-Origin`, so the browser never
      * hands it over — `fetch` rejects with a TypeError and the console prints
@@ -42,10 +74,69 @@ const sandbox = {
         gasUsedRatio: [0.5, 0.5, 0.5, 0.5, 0.5],
       } }) };
     }
+    /* The order book, and the instrument spec it cannot be read without.
+       Sizes come off OKX in *contracts* — one BTC contract is 0.01 BTC — so
+       the spec is what turns a wire figure into a number this panel can put
+       beside a position. Both are answered here so the conversion is tested
+       rather than assumed. */
+    if (url.includes("public/instruments")) {
+      return { ok: true, status: 200, json: async () => ({ code: "0", data: [
+        { instId: "BTC-USDT-SWAP", ctVal: "0.01", ctValCcy: "BTC", tickSz: "0.1", lotSz: "0.01" },
+      ] }) };
+    }
+    /* The perpetual the derivatives account trades at: a ticker, and candles
+       that page back through history — the year range asks for more than one
+       page holds. Candle times count down from a fixed hour so the order can
+       be checked. */
+    if (url.includes("okx.com") && url.includes("market/ticker")) {
+      return { ok: true, status: 200, json: async () => ({ code: "0", data: [
+        { instId: "BTC-USDT-SWAP", last: "50000", open24h: "40000", high24h: "51000", low24h: "39000" },
+      ] }) };
+    }
+    if (url.includes("okx.com") && url.includes("candles")) {
+      const lim = Number((url.match(/limit=(\d+)/) || [])[1]);
+      const after = Number((url.match(/after=(\d+)/) || [])[1]) || 1e12 + 86400000;
+      const data = Array.from({ length: lim }, (_, i) => {
+        const t = after - (i + 1) * 86400000;
+        return [String(t), "1", "1", "1", String(100 + i), "1", "1", "1", "1"];
+      });
+      return { ok: true, status: 200, json: async () => ({ code: "0", data }) };
+    }
+    if (url.includes("market/books")) {
+      return { ok: true, status: 200, json: async () => ({ code: "0", data: [{
+        /* asks ascending, bids descending, as the venue sends them */
+        asks: [["100.5", "10", "0", "3"], ["100.6", "20", "0", "4"], ["0", "5", "0", "1"]],
+        bids: [["100.4", "40", "0", "2"], ["100.3", "5", "0", "1"]],
+      }] }) };
+    }
+    if (mempoolUnreachable && url.includes("mempool.space")) throw new TypeError("Failed to fetch");
+    if (mempoolUnreachable && url.includes("blockchair.com/bitcoin/stats")) {
+      return { ok: true, status: 200, json: async () => ({ data: {
+        best_block_height: 969460, difficulty: 132757073449487.5, next_difficulty_estimate: 127642743570342,
+        next_retarget_time_estimate: "2099-01-01 00:00:00", suggested_transaction_fee_per_byte_sat: 2,
+        mempool_transactions: 4977, mempool_size: 5392404,
+      } }) };
+    }
     if (url.includes("fees/recommended")) {
       return { ok: true, status: 200, json: async () => (
         { fastestFee: 7, halfHourFee: 3, hourFee: 1, economyFee: 1, minimumFee: 1 }
       ) };
+    }
+    if (url.endsWith("/api/mempool")) {
+      if (mempoolBroken) return { ok: true, status: 200, json: async () => ({}) };
+      return { ok: true, status: 200, json: async () => (
+        { count: 82268, vsize: 3100000, total_fee: 7404202 }
+      ) };
+    }
+    if (url.includes("difficulty-adjustment")) {
+      if (mempoolBroken) return { ok: true, status: 200, json: async () => ({}) };
+      return { ok: true, status: 200, json: async () => ({
+        progressPercent: 51.8,
+        difficultyChange: 4.5078,
+        remainingBlocks: 971,
+        remainingTime: 558002628,
+        previousRetarget: 1.3065,
+      }) };
     }
     if (url.includes("ethereum-rpc")) {
       /* Answers the batch it was actually given, by method — the ether now
@@ -149,10 +240,35 @@ const sandbox = {
       ] }) };
     }
     if (url.includes("okx.com/api/v5/public/funding-rate")) {
-      return { ok: true, status: 200, json: async () => ({ data: [{ fundingRate: "0.0001" }] }) };
+      /* A 4-hour instrument, with the premium the venue sends. The interval
+         has to come from the two stamps, not from "three a day". */
+      return { ok: true, status: 200, json: async () => ({ data: [{ fundingRate: "0.0001", fundingTime: "1790121600000", nextFundingTime: "1790136000000", premium: "-0.00052" }] }) };
     }
     if (url.includes("okx.com/api/v5/public/open-interest")) {
       return { ok: true, status: 200, json: async () => ({ data: [{ oiUsd: "1000000" }] }) };
+    }
+    /* Bybit's daily series for the structure readings. Funding: 200 a page,
+       three settlements a day, walked back with endTime — the first page is
+       full so the fetcher must ask again, the second is short so it stops.
+       Open interest: 200 a page with a cursor, the second page without one. */
+    if (url.includes("bybit.com/v5/market/funding/history")) {
+      const m = url.match(/endTime=(\d+)/);
+      const end = m ? Number(m[1]) : Date.now();
+      const count = m ? 40 : 200;
+      const list = Array.from({ length: count }, (_, i) => ({
+        symbol: "BTCUSDT",
+        fundingRate: String(0.0001 * (1 + (i % 3))),
+        fundingRateTimestamp: String(end - (i + 1) * 8 * 3600e3),
+      }));
+      return { ok: true, status: 200, json: async () => ({ retCode: 0, result: { list } }) };
+    }
+    if (url.includes("bybit.com/v5/market/open-interest")) {
+      const paged = url.includes("cursor=");
+      const list = Array.from({ length: paged ? 50 : 200 }, (_, i) => ({
+        openInterest: String(50000 + i),
+        timestamp: String(Date.now() - ((paged ? 200 : 0) + i + 1) * 86400e3),
+      }));
+      return { ok: true, status: 200, json: async () => ({ retCode: 0, result: { list, nextPageCursor: paged ? "" : "page2" } }) };
     }
     return { ok: false, status: 404, json: async () => ({}) };
   },
@@ -163,12 +279,13 @@ const sandbox = {
   HN_NEWS_MAX_ITEMS: 8,
   MAX_NEWS_ITEMS: 50,
   COIN_NAMES: { BTC: "Bitcoin", ETH: "Ethereum", SOL: "Solana", OP: "Optimism", BAT: "Basic Attention Token", TON: "Toncoin" },
-  NEWS_SPAM_RE:
-    /price (prediction|analysis)|presale|pre-sale|best (coins?|cryptos?) to buy|casino|airdrop|giveaway|sponsored/i,
-  NEWS_PROMO_PATH_RE:
-    /\/(press-releases?|sponsored|sponsored-content|partner-content|advertorial|paid-content|paid-post)\//i,
-  NEWS_WIRE_RE:
-    /(chainwire|globenewswire|businesswire|accesswire|prnewswire|pressrelease|sponsored)/i,
+  /* The promo patterns are **read out of `config.js`** rather than copied.
+   * Three of them used to be typed out here, and a pattern tightened in the
+   * source while the copy stayed put is a test that passes against a rule the
+   * app no longer has — the failure mode is silence. `isPromoNews` is the one
+   * predicate every path to the screen goes through, so it is the last place
+   * that should be tested against a stale copy. */
+  ...newsPatterns(),
   encodeURIComponent,
   WATCH_CHAINS: {
     BTC: { provider: "mempool", decimals: 8 },
@@ -201,12 +318,33 @@ const sandbox = {
     all: { interval: 21600, points: 720 },
   },
 };
+/* A real (in-memory) localStorage, because the news archive is a persisted
+ * store and "does it survive a new tab" is most of what there is to test about
+ * it. Defined before the context is created so `api.js` hydrates through it at
+ * load, exactly as it does in a browser. */
+const lsStore = {};
+sandbox.localStorage = {
+  getItem: (k) => (k in lsStore ? lsStore[k] : null),
+  setItem: (k, v) => { lsStore[k] = String(v); },
+  removeItem: (k) => { delete lsStore[k]; },
+};
 vm.createContext(sandbox);
-for (const f of ["api.js", "widgets-data.js"]) {
+// `cleanFeedSummary` decodes entities the same way the titles do, and that
+// lives in utils.js — loaded with the same chainable `line()` stub
+// tests/test-storage.js uses, since utils.js touches d3 at load time
+sandbox.line = () => {
+  const o = {};
+  o.x = () => o;
+  o.y = () => o;
+  o.curve = () => o;
+  return o;
+};
+sandbox.String = String;
+for (const f of ["i18n.js", "utils.js", "api.js", "widgets-data.js"]) {
   vm.runInContext(fs.readFileSync(path.join(__dirname, "..", "src", f), "utf8"), sandbox, { filename: f });
 }
 const run = (c) => vm.runInContext(c, sandbox);
-// vm-created objects need stringify comparison (see tests/README)
+// Objects created inside a vm have different prototypes; compare their JSON.
 const json = (c) => JSON.parse(JSON.stringify(run(c)));
 
 (async () => {
@@ -264,6 +402,101 @@ const json = (c) => JSON.parse(JSON.stringify(run(c)));
     "the wording rule still earns its place on the obvious ones",
   );
 
+  /* Bitcoin.com's word for it, from the live feed of 28 Aug 2026 — the poll
+   * that qualified it as the fourth always-on source. One item of ten was a
+   * paid post, and the outlet filed it three ways at once: a `Branded
+   * Spotlight` category, a `/branded-spotlight/` path, and `Media` as the
+   * byline. It slipped through **all** of the existing signals, because none
+   * of them knew that word, which is the check the house rule asks for before
+   * a source is added. Asserted from the path and the category separately, so
+   * removing either one fails here rather than on somebody's screen. */
+  assert.strictEqual(
+    promo({
+      title: "CoinRabbit Hits Six Years of Incident-Free Custody",
+      url: "https://news.bitcoin.com/branded-spotlight/coinrabbit-hits-six-years/",
+      author: "Media",
+    }),
+    true,
+    "a branded-spotlight path is the outlet filing its own advertising",
+  );
+  assert.strictEqual(
+    promo({
+      title: "CoinRabbit Hits Six Years of Incident-Free Custody",
+      url: "https://news.bitcoin.com/2026/08/coinrabbit-six-years/",
+      categories: ["Branded Spotlight"],
+    }),
+    true,
+    "…and so is the category, on its own",
+  );
+  assert.strictEqual(
+    promo({
+      title: "Circle Brings USDC Into UK Premier League With Chelsea Shirt Deal",
+      url: "https://news.bitcoin.com/crypto-news/circle-usdc-chelsea/",
+      author: "Emmanuel Musa",
+      categories: ["Crypto News", "Circle", "USDC"],
+    }),
+    false,
+    "a sponsorship deal reported as news is a story about branding, not a branded story",
+  );
+
+  /* Two signals that did not exist until the summary was read onto the row,
+   * both taken from a live CryptoSlate item on 23 Aug 2026: an unremarkable
+   * title, a human byline, and the outlet's own `Guest Post` category with a
+   * summary that opens by disclosing it. Under the old three rules this
+   * reached the panel. */
+  assert.strictEqual(
+    promo({
+      title: "The next phase of tokenization is utility",
+      url: "https://cryptoslate.com/the-next-phase-of-tokenization-is-utility/",
+      author: "Vincent Maliepaard",
+      categories: ["Guest Post"],
+    }),
+    true,
+    "the outlet's own category says it is a guest post",
+  );
+  assert.strictEqual(
+    promo({
+      title: "The next phase of tokenization is utility",
+      url: "https://cryptoslate.com/the-next-phase-of-tokenization-is-utility/",
+      summary:
+        "The following is a guest post and opinion from Vincent Maliepaard, VP of Marketing at Sentora.",
+    }),
+    true,
+    "…and so does the disclosure it opens with, on its own",
+  );
+  assert.strictEqual(
+    promo({
+      title: "Crypto media is drowning in press releases",
+      url: "https://decrypt.co/1/crypto-media-press-releases",
+      categories: ["Markets", "Opinion"],
+      summary:
+        "A new study counts how many press releases ran as news last quarter.",
+    }),
+    false,
+    "a story *about* press releases is not one — both rules are anchored",
+  );
+
+  /* The summary itself: tags stripped without touching innerHTML, entities
+   * decoded like the titles, whitespace collapsed, and cut on a word. */
+  {
+    const clean = (v) => run(`cleanFeedSummary(${JSON.stringify(v)})`);
+    assert.strictEqual(
+      clean("<p>Spot bitcoin funds took in <b>$1.2bn</b> &amp; more.</p>"),
+      "Spot bitcoin funds took in $1.2bn & more.",
+      "tags out, entities decoded, spacing collapsed",
+    );
+    assert.strictEqual(
+      clean("<script>alert(1)</script>Real text"),
+      "Real text",
+      "a script body is removed rather than flattened into the sentence",
+    );
+    assert.strictEqual(clean(null), "", "a missing summary is an empty string");
+    const long = clean("word ".repeat(120));
+    assert.ok(long.length <= 221, `clamped, got ${long.length}`);
+    assert.ok(long.endsWith("…"), "…and says it was clamped");
+    assert.ok(!/ …$/.test(long), "…without leaving a dangling space");
+  }
+
   // Hacker News: one request per term, story-id dedupe across terms,
   // empty titles dropped, text posts link to the HN discussion
   fetchCalls = [];
@@ -272,12 +505,38 @@ const json = (c) => JSON.parse(JSON.stringify(run(c)));
   assert.strictEqual(hn.length, 2, "empty title dropped, ids deduped");
   assert.strictEqual(hn[0].title, "Bitcoin hits a milestone", "sorted by points");
   assert.strictEqual(hn[0].source, "Hacker News", "source label");
-  assert.strictEqual(hn[0].points, undefined, "internal points field stripped");
+  // Kept since 29 Sep 2026: the row prints it in place of a summary
+  assert.strictEqual(hn[0].points, 120, "the story's points ride along for its row");
   assert.strictEqual(
     hn[1].url,
     "https://news.ycombinator.com/item?id=2",
     "text post links to the HN discussion",
   );
+
+  /* **A source may not hold the feed open** (30 Sep 2026). With no limit, one
+   * host that accepted the connection and never answered kept the whole
+   * feed's fetch — and the latch behind it — open for the life of the tab.
+   * Every request a source makes can now be abandoned. */
+  fetchSignals = [];
+  await run('fetchNewsSource({ id: "hn", name: "Hacker News", kind: "hn" })');
+  assert.ok(fetchSignals.length === 2 && fetchSignals.every(Boolean),
+    `every news request carries a signal it can be abandoned by — ${JSON.stringify(fetchSignals)}`);
+
+  /* balanceNewsItems: the feed kept for the panel is the newest overall up to
+   * its cap, and never at the cost of a whole source. It was the newest fifty
+   * across every source, and a desk that publishes a few stories a day fell
+   * off the end and was then called silent. */
+  sandbox.__feed = [
+    ...Array.from({ length: 30 }, (_, i) => ({ source: "Busy", title: `b${i}`, time: 1000 - i })),
+    ...Array.from({ length: 3 }, (_, i) => ({ source: "Slow", title: `s${i}`, time: 500 - i })),
+  ];
+  const bal = json("balanceNewsItems(__feed, 10, 2)");
+  assert.strictEqual(bal.length, 10, "the feed is capped");
+  assert.deepStrictEqual(bal.filter((i) => i.source === "Slow").map((i) => i.title), ["s0", "s1"],
+    "…a slow source keeps its newest two however old");
+  assert.deepStrictEqual(bal.slice(0, 8).map((i) => i.title), ["b0", "b1", "b2", "b3", "b4", "b5", "b6", "b7"],
+    "…the rest are the newest overall, still newest first");
+  assert.strictEqual(json("balanceNewsItems(__feed.slice(0, 5), 10, 2)").length, 5, "under the cap nothing is dropped");
 
   /* Headlines for a coin: a general crypto feed beside a falling chart
    * would mostly show other coins' news, and proximity alone reads as
@@ -406,6 +665,108 @@ const json = (c) => JSON.parse(JSON.stringify(run(c)));
   assert.strictEqual(merged[0].url, "https://a", "first source wins the duplicate");
   assert.strictEqual(merged[1].title, "Fresh story", "second source appended");
 
+  /* clusterNewsItems: one event is one row, two events are two.
+   *
+   * The test is written from both sides on purpose. Asserting only that four
+   * write-ups of the ETF story fold would pass with a threshold of zero, which
+   * would fold the entire panel into one row; asserting only that the two Fed
+   * stories stay apart would pass with a threshold of one, which folds
+   * nothing. The pair is what pins the threshold down, and the second half is
+   * the one that must never be relaxed to make a stubborn duplicate merge —
+   * merging two different stories hides one of them, while failing to merge
+   * two versions of one leaves what is on screen today. */
+  const nowMs = Date.now();
+  sandbox.__feed = [
+    { source: "Decrypt", time: nowMs, title: "Bitcoin ETF Sees Record $1.2B Inflow as Price Nears $100K", url: "https://d" },
+    { source: "CoinJournal", time: nowMs - 6e5, title: "Record inflows push Bitcoin ETFs past $1.2 billion", url: "https://cj" },
+    { source: "Cointelegraph", time: nowMs - 9e5, title: "Bitcoin ETFs notch record $1.2B daily inflow", url: "https://ct" },
+    { source: "CryptoSlate", time: nowMs - 12e5, title: "Bitcoin ETF inflows hit record high of $1.2B", url: "https://cs" },
+    { source: "Bitcoin Magazine", time: nowMs - 2e6, title: "Ethereum upgrade goes live on mainnet", url: "https://bm" },
+    { source: "CNBC", time: nowMs - 3e6, title: "Fed holds rates steady", url: "https://cnbc" },
+    { source: "MarketWatch", time: nowMs - 4e6, title: "Fed signals rate cut in December", url: "https://mw" },
+  ];
+  const clustered = run("clusterNewsItems(__feed)");
+  assert.strictEqual(clustered.length, 4, "four write-ups of one story become one row");
+  assert.strictEqual(clustered[0].source, "Decrypt", "the newest leads, so the list stays sorted");
+  assert.strictEqual(
+    clustered[0].also.map((a) => a.source).join(","),
+    "CoinJournal,Cointelegraph,CryptoSlate",
+    "the rest ride along by name",
+  );
+  assert.ok(
+    clustered[0].also.every((a) => a.url && a.title),
+    "…with their own link and their own headline, so nothing is discarded",
+  );
+  /* The half that guards the threshold from above. Both name the Fed, both are
+   * about rates, and they are not the same story. */
+  assert.strictEqual(
+    clustered.slice(2).map((i) => i.source).join(","),
+    "CNBC,MarketWatch",
+    "two different rate stories stay two rows",
+  );
+  assert.ok(
+    clustered.slice(1).every((i) => !i.also),
+    "a row with nothing folded into it carries no `also` at all",
+  );
+
+  // The same words months apart are a different event.
+  sandbox.__old = [
+    { source: "a", time: nowMs, title: "Bitcoin ETF inflows hit record high of $1.2B" },
+    { source: "b", time: nowMs - 40 * 24 * 3600 * 1000, title: "Bitcoin ETF inflows hit record high of $1.2B" },
+  ];
+  assert.strictEqual(
+    run("clusterNewsItems(__old)").length,
+    2,
+    "the same headline outside the window is a different story",
+  );
+  /* The same two headlines must get the same answer in a feed of six and a
+   * feed of sixty. This is a regression test for a bug that failed **silently
+   * in one direction**: the weights are `log(1 + n/df)`, so their scale moves
+   * with the size of the feed, and a first version guarded the denominator
+   * with an absolute number tuned on 116 live headlines. In a seven-item feed
+   * every weight sits below that number, the guard swallowed every pair, and
+   * clustering simply stopped happening — with nothing on screen to say so,
+   * because "no duplicates found" and "the feature is off" look identical.
+   * The floor is a fraction of the feed's own median now. */
+  const SUBJECTS = ("regulator custodian brokerage exchange miner auditor insurer " +
+    "clearinghouse depositary registrar underwriter arbitrator liquidator " +
+    "ombudsman notary actuary assessor bailiff chancellor comptroller " +
+    "curator dean escrow factor guarantor herald inspector juror keeper " +
+    "lender").split(" ");
+  const VERBS = ("expands withdraws reorganises publishes appeals defers " +
+    "consolidates diversifies liquidates renegotiates").split(" ");
+  const pair = [
+    { source: "A", title: "Bitcoin ETF inflows hit record high of $1.2B", url: "https://a" },
+    { source: "B", title: "Record inflows push Bitcoin ETFs past $1.2 billion", url: "https://b" },
+  ];
+  sandbox.__small = pair.map((i) => ({ ...i, time: nowMs }));
+  sandbox.__big = [
+    ...pair.map((i) => ({ ...i, time: nowMs })),
+    /* Filler that is genuinely fifty-eight different stories. An earlier
+     * version varied only a number, which `clusterNewsItems` correctly folded
+     * into one row — the test then measured the filler rather than the pair it
+     * was padding. Two rotating vocabularies, so no two share enough to pair
+     * off. */
+    ...Array.from({ length: 58 }, (_, k) => ({
+      source: "C",
+      title: `${SUBJECTS[k % SUBJECTS.length]} ${VERBS[k % VERBS.length]} ${k}`,
+      time: nowMs - k * 60000,
+    })),
+  ];
+  assert.strictEqual(
+    run("clusterNewsItems(__small).length"),
+    1,
+    "two write-ups of one story fold in a small feed",
+  );
+  assert.strictEqual(
+    run("clusterNewsItems(__big).length"),
+    59,
+    "…and in a feed ten times the size, where the weights are on a different scale",
+  );
+
+  assert.strictEqual(run("clusterNewsItems([]).length"), 0, "no items → nothing");
+  assert.strictEqual(run("clusterNewsItems(null).length"), 0, "…and a non-list is a non-list");
+
   // fetchAddressBalance: provider parsing, unit conversion, caching, guards
   const btcAddr = "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa";
   const ethAddr = "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045";
@@ -529,7 +890,7 @@ const json = (c) => JSON.parse(JSON.stringify(run(c)));
 
   // Unknown tokens and junk addresses never reach the network
   fetchCalls = [];
-  // Objects made inside the vm need stringify comparison (see tests/README)
+  // Objects created inside a vm have different prototypes; compare their JSON.
   assert.strictEqual(
     JSON.stringify(await run(`fetchErc20Balances("${ethAddr}", ["NOTATOKEN"])`)),
     "{}",
@@ -698,6 +1059,10 @@ const json = (c) => JSON.parse(JSON.stringify(run(c)));
   fetchCalls = [];
   const funding = await run('fetchFundingRate("BTC")');
   assert.strictEqual(funding.percent, "0.0100", "funding rate is read from the response");
+  assert.strictEqual(funding.intervalHours, 4, "the settlement interval is measured from the two stamps");
+  assert.strictEqual(funding.annualized, (0.0001 * 6 * 365 * 100).toFixed(2), "…and the yearly figure counts six settlements a day for it, not three");
+  assert.strictEqual(funding.premium, -0.00052, "the venue's premium over index rides along");
+  assert.strictEqual(funding.at, 1790121600000, "and the settlement time is the venue's");
   assert.strictEqual(fetchCalls.length, 1, "the first visit fetches");
 
   await run('fetchOpenInterest("ETH")');
@@ -707,6 +1072,22 @@ const json = (c) => JSON.parse(JSON.stringify(run(c)));
     1,
     "returning to a coin serves funding from cache",
   );
+
+  /* The two daily series behind the structure readings: folded to days,
+     oldest first, paged as far as the window and no further, and cached.
+     `fetchCalls` is not reset here: the funding-rate count below carries on. */
+  const fh = await run('fetchFundingHistory("BTC")');
+  assert.ok(Array.isArray(fh) && fh.length >= 60, "funding history is a daily series");
+  assert.strictEqual(fetchCalls.filter((u) => u.includes("funding/history")).length, 2, "a full page asks for the next; a short page stops");
+  assert.ok(fh.every((r, i) => i === 0 || r.t > fh[i - 1].t), "…oldest first");
+  assert.ok(fh.every((r) => r.t % 86400000 === 0), "…each row at a UTC day's start");
+  assert.ok(fh.some((r) => Math.abs(r.value - 0.0002) < 1e-12), "…and a day's value is the mean of its settlements");
+  await run('fetchFundingHistory("BTC")');
+  assert.strictEqual(fetchCalls.filter((u) => u.includes("funding/history")).length, 2, "…served from cache the second time");
+  const oh = await run('fetchOpenInterestHistory("BTC")');
+  assert.ok(Array.isArray(oh) && oh.length >= 200, "open-interest history follows the cursor onto the second page");
+  assert.strictEqual(fetchCalls.filter((u) => u.includes("open-interest?category=linear")).length, 2, "…and stops where the cursor ends");
+  assert.ok(oh.every((r, i) => i === 0 || r.t > oh[i - 1].t), "…oldest first as well");
 
   // Different coins are cached apart — one coin's data must never stand in
   // for another's
@@ -816,6 +1197,563 @@ const json = (c) => JSON.parse(JSON.stringify(run(c)));
     await run("fetchEthGas()");
     await run("fetchBtcFees()");
     assert.strictEqual(fetchCalls.length, 0, "a fresh widget cache skips the network for both");
+  }
+
+  /* ── the rolling headline archive ─────────────────────────────────────
+   *
+   * It exists because of a measurement: Blockchair's news archive lags three
+   * to four weeks (0 items for windows 15 and 21 days old, 20 for 30 and
+   * older, 12 Sep 2026) while the live feed holds about a week — so a mark on
+   * a 1W or 1M chart fell between the two. Nothing new is fetched to close
+   * that; the app simply stops throwing away what it has already been shown.
+   */
+  {
+    const DAY = 86400000;
+    const now = Date.now();
+    const item = (n, ageDays, extra) =>
+      Object.assign(
+        {
+          source: "bitcoincom",
+          title: `Story number ${n}`,
+          url: `https://news.bitcoin.com/${n}`,
+          time: now - ageDays * DAY,
+          tags: "",
+          summary: "A summary that has no business being kept in the archive.",
+        },
+        extra || {},
+      );
+
+    run("newsArchive = []");
+    sandbox.__batch = [item(1, 0.1), item(2, 14), item(3, 40), { ...item(4, 1), time: null }];
+    run("archiveNewsItems(__batch)");
+
+    const kept = json("newsArchive");
+    assert.deepStrictEqual(
+      kept.map((i) => i.title),
+      ["Story number 1", "Story number 2"],
+      "only dated items inside the month are kept — a story with no time cannot be placed in any window, and one older than the archive's age is what the network archive is for",
+    );
+    assert.ok(
+      kept.every((i) => i.summary === undefined),
+      "…and the summary is dropped: the card prints titles, and a headline with its summary measured 528 bytes against about 180 without",
+    );
+
+    // Windowed, because that is the only question this store is asked
+    sandbox.__from = now - 20 * DAY;
+    sandbox.__to = now - 10 * DAY;
+    assert.deepStrictEqual(
+      json("newsArchiveAround(__from, __to).map((i) => i.title)"),
+      ["Story number 2"],
+      "a window returns what fell inside it and nothing else",
+    );
+    assert.deepStrictEqual(
+      json("newsArchiveAround(0, 1).map((i) => i.title)"),
+      [],
+      "…and a window it holds nothing for is empty rather than everything",
+    );
+
+    /* The same story arriving again — from a second newsroom, or on the next
+     * ten-minute refresh — is one row, by the same title key the feed uses. */
+    sandbox.__again = [item(1, 0.1, { source: "cointelegraph" }), item(5, 2)];
+    run("archiveNewsItems(__again)");
+    assert.strictEqual(
+      json("newsArchive").filter((i) => i.title === "Story number 1").length,
+      1,
+      "a story that arrives twice is stored once",
+    );
+    assert.strictEqual(json("newsArchive").length, 3, "…and the new one is added");
+    assert.deepStrictEqual(
+      json("newsArchive.map((i) => i.title)"),
+      ["Story number 1", "Story number 5", "Story number 2"],
+      "the store stays newest-first, whatever order the fetches arrived in",
+    );
+
+    /* **Junk must not evict the archive.** `mergeNewsItems` fills to its cap
+     * and returns, so items that would be dropped a line later still take
+     * slots on the way through — a feed of five hundred undated rows would
+     * push out everything already kept if they were not filtered first. */
+    sandbox.__junk = Array.from({ length: 500 }, (_, i) => ({
+      ...item(9000 + i, 0.5),
+      time: null,
+    }));
+    run("archiveNewsItems(__junk)");
+    assert.strictEqual(
+      json("newsArchive").length,
+      3,
+      "a fetch of nothing usable leaves the archive exactly as it was",
+    );
+
+    // The cap is a cap on a page that is opened a hundred times a day
+    sandbox.__many = Array.from({ length: 500 }, (_, i) => item(1000 + i, 0.5));
+    run("archiveNewsItems(__many)");
+    assert.strictEqual(
+      json("newsArchive").length,
+      run("NEWS_ARCHIVE_MAX"),
+      "the archive is capped by count",
+    );
+
+    /* **It survives the tab.** Every new tab is a fresh JS context, so an
+     * in-memory-only archive would be an archive that never holds anything —
+     * the same reason every other cache here is persisted. */
+    await new Promise((r) => setTimeout(r, 1100)); // the debounced write
+    assert.ok(lsStore.crypto_chart_news_archive, "the archive is written to storage");
+    run("newsArchive = []");
+    run("hydrateNewsArchive()");
+    assert.strictEqual(
+      json("newsArchive").length,
+      run("NEWS_ARCHIVE_MAX"),
+      "…and comes back on the next tab",
+    );
+
+    /* Storage is untrusted input: it survives version upgrades and anyone can
+     * edit it from DevTools, and every `url` here becomes an `href`. */
+    lsStore.crypto_chart_news_archive = JSON.stringify([
+      { title: "Fine", url: "https://example.test/a", time: now - DAY, source: "x" },
+      { title: "Not a link", url: "javascript:alert(1)", time: now - DAY, source: "x" },
+      { title: "Too old", url: "https://example.test/b", time: now - 400 * DAY, source: "x" },
+      { title: "", url: "https://example.test/c", time: now, source: "x" },
+      null,
+    ]);
+    run("hydrateNewsArchive()");
+    const back = json("newsArchive");
+    assert.deepStrictEqual(
+      back.map((i) => i.title),
+      ["Fine", "Not a link"],
+      "a hand-edited archive keeps what is well-formed and recent",
+    );
+    assert.strictEqual(
+      back.find((i) => i.title === "Not a link").url,
+      null,
+      "…and a url that is not https is dropped rather than rendered",
+    );
+  }
+
+  /* ── the two mempool.space cards added 12 Sep 2026 ────────────────────
+   *
+   * Both endpoints were probed with a `chrome-extension://` Origin before any
+   * of this was written: 200 with `access-control-allow-origin: *`, on a host
+   * `ALLOWED_HOSTS` already carries. What is asserted here is the arithmetic
+   * on top of them, because that is the part that can be wrong quietly.
+   */
+  {
+    const m = await run("fetchMempool()");
+    assert.strictEqual(m.count, 82268, "the queue's length comes back");
+    /* **Blocks, not transactions, is the headline.** A block holds about a
+     * million vbytes, so 3.1 Mvb is a three-block wait — a number somebody can
+     * act on, where 82,268 is a number. */
+    assert.ok(Math.abs(m.blocks - 3.1) < 1e-9, "…converted into blocks deep");
+    assert.ok(
+      Math.abs(m.feesBtc - 0.07404202) < 1e-9,
+      "…and the fees waiting are satoshis turned into BTC",
+    );
+    assert.strictEqual(run("WIDGET_CACHE_TTL.mempool"), 60000,
+      "cached for the same minute as the fee card it explains");
+
+    const d = await run("fetchDifficulty()");
+    assert.ok(Math.abs(d.change - 4.5078) < 1e-9, "the estimated change comes back");
+    assert.strictEqual(d.remaining, 971, "…with the blocks left in the epoch");
+    assert.strictEqual(d.remainingMs, 558002628, "…and their estimated time");
+    assert.strictEqual(run("WIDGET_CACHE_TTL.difficulty"), 3600000,
+      "cached for an hour: a retarget moves once a fortnight");
+
+    /* **A count is a tally, not a measurement.** `formatCompactAmount` is
+     * built for money and prints two decimals below its first unit, so the
+     * card read "971.00 blocks" — which is what `formatCount` exists to stop,
+     * handing over to the compact form only once the number is long enough to
+     * need it. */
+    assert.strictEqual(run("formatCount(971)"), "971", "a small count is whole");
+    assert.strictEqual(run("formatCount(82268)"), "82.27K", "…and a big one is short");
+    assert.strictEqual(run("formatCount(0)"), "0", "…and none is none");
+
+    // Both are served from cache on the next call, like every other card here
+    fetchCalls = [];
+    await run("fetchMempool()");
+    await run("fetchDifficulty()");
+    assert.strictEqual(fetchCalls.length, 0, "a fresh widget cache skips the network");
+
+    /* **A response that is not one is `null`, never a card of zeros.** A
+     * difficulty card reading "+0.0% est." is a claim, and an empty mempool is
+     * a real answer that must not look like a failed request. */
+    run('widgetCache.delete("mempool")');
+    run('widgetCache.delete("difficulty")');
+    mempoolBroken = true;
+    assert.strictEqual(await run("fetchMempool()"), null,
+      "a mempool response with nothing usable in it is null");
+    assert.strictEqual(await run("fetchDifficulty()"), null,
+      "…and so is a difficulty response");
+    mempoolBroken = false;
+
+    /* **A second source when mempool.space cannot be reached** (1 Oct 2026:
+     * a network that resets every TLS connection to it left four cards
+     * dead). Blockchair's one stats answer feeds all four, once. */
+    for (const k of ["mempool", "difficulty", "btcFees", "halvingCountdown", "btcChainStats"]) run(`widgetCache.delete("${k}")`);
+    mempoolUnreachable = true;
+    fetchCalls = [];
+    const [fm, fd, ff, fh] = await Promise.all([run("fetchMempool()"), run("fetchDifficulty()"), run("fetchBtcFees()"), run("fetchHalvingData()")]);
+    assert.ok(fm && fm.count === 4977 && Math.abs(fm.blocks - 5.392404) < 1e-9 && fm.source === "blockchair", "the queue from Blockchair, marked as such");
+    assert.ok(fd && Math.abs(fd.change - (127642743570342 / 132757073449487.5 - 1) * 100) < 1e-9 && fd.remaining === 969696 - 969460 && fd.source === "blockchair",
+      `the retarget from Blockchair's estimate, its blocks to go counted to the next multiple of 2016 — got ${JSON.stringify(fd)}`);
+    assert.ok(ff && ff.rate === 2 && ff.source === "blockchair", "the fee from Blockchair's suggestion");
+    assert.ok(fh && fh.blocksLeft === 1050000 - 969460, `the halving from Blockchair's height — got ${JSON.stringify(fh && fh.blocksLeft)}`);
+    assert.strictEqual(fetchCalls.filter((u) => u.includes("blockchair")).length, 1, "…all four from one Blockchair request");
+    mempoolUnreachable = false;
+  }
+
+  /* THE ORDER BOOK ---------------------------------------------------------
+   *
+   * A real book from a venue this extension already declares (`www.okx.com`,
+   * the funding and open-interest provider) — no new host, verified 17 Sep
+   * 2026 by reading `Access-Control-Allow-Origin: *` back from an extension
+   * Origin. What is asserted here is everything the network cannot: the unit,
+   * the running depth, the spread, and that a junk row is dropped rather than
+   * drawn. */
+  {
+    fetchCalls = [];
+    /* `run` returns the promise; `json` is for values already settled — the
+       vm cannot parse a top-level await. */
+    const book = JSON.parse(JSON.stringify(await run('fetchOrderBook("BTC")')));
+    /* **Contracts on the wire, coins on the screen.** 10 contracts of 0.01 BTC
+       is 0.1 BTC — printing the venue's 10 beside a 0.008 BTC position would
+       be two units on one screen with nothing saying so. */
+    assert.strictEqual(book.asks[0].size, 0.1, "a size is converted by the contract value");
+    assert.strictEqual(book.asks[0].price, 100.5, "…and the price is left alone");
+    assert.strictEqual(book.asks.length, 2, "a row with an impossible price is dropped");
+    /* Depth is the *running* total, which is the only reason the fill behind a
+       row means anything. */
+    /* Compared with a tolerance, not for equality: these are sums of floats
+       (0.1 + 0.2 is 0.30000000000000004) and the model's integer discipline
+       stops at the model — a book is read, never settled against. */
+    assert.ok(Math.abs(book.asks[1].depth - 0.3) < 1e-9, "depth accumulates down the side");
+    assert.ok(Math.abs(book.bids[1].depth - 0.45) < 1e-9, "…on both sides");
+    assert.ok(Math.abs(book.spread - 0.1) < 1e-9, "the spread is best ask less best bid");
+    assert.ok(Math.abs(book.spreadBps - 9.95) < 0.1,
+      `…and in basis points off the mid (${book.spreadBps})`);
+    assert.ok(Math.abs(book.deepest - 0.45) < 1e-9, "both ladders are drawn against one scale");
+    assert.strictEqual(book.tick, 0.1, "the venue's own price step comes with it");
+
+    /* Two requests, then none: the book caches for five seconds because a book
+       measured in minutes is a lie with a timestamp on it, and the spec caches
+       for the widget cache's own life because a contract size is a fact about
+       the venue rather than about the market. */
+    const first = fetchCalls.length;
+    assert.strictEqual(first, 2, "one book request and one spec request");
+    await run('fetchOrderBook("BTC")');
+    assert.strictEqual(fetchCalls.length, first, "a second read inside the TTL asks nothing");
+  }
+
+  /* **The perpetual's own price and history** — what the derivatives page
+   * trades and draws at, in USDT. */
+  {
+    fetchCalls = [];
+    const t = JSON.parse(JSON.stringify(await run('fetchPerpTicker("BTC")')));
+    assert.strictEqual(t.last, 50000, "the ticker's last trade is the price");
+    assert.strictEqual(t.change24h, 25, "…the day's move is measured from its open");
+    assert.strictEqual(run('perpLastFor("BTC")'), 50000, "…and is read back synchronously for an order");
+    assert.strictEqual(run('perpLastFor("ETH")'), null, "a market never asked about has no price, not a stale one");
+    await run('fetchPerpTicker("BTC")');
+    assert.strictEqual(fetchCalls.filter((u) => u.includes("market/ticker")).length, 1,
+      "a second read inside five seconds asks nothing");
+
+    const year = JSON.parse(JSON.stringify(await run('fetchPerpSeries("BTC", "year")')));
+    const asked = fetchCalls.filter((u) => u.includes("candles"));
+    assert.strictEqual(year.length, 365, "a year of daily bars, though one request holds 300");
+    assert.ok(asked.length === 2 && asked[1].includes("history-candles") && asked[1].includes("after="),
+      "…the rest is paged from history, after the oldest bar already read");
+    assert.ok(year.every((p, i) => i === 0 || p.time > year[i - 1].time), "…oldest first, as the chart draws it");
+    assert.strictEqual(await run('fetchPerpSeries("BTC", "decade")'), null, "a range the page does not have is no series");
+  }
+
+  /* **The ladder as drawn** (`bookLadder`): grouped, one side, small levels
+   * hidden — and never a different book. */
+  {
+    sandbox.__book = {
+      asks: [
+        { price: 100.1, size: 1 }, { price: 100.4, size: 50 }, { price: 101.2, size: 2 },
+      ],
+      bids: [
+        { price: 99.9, size: 3 }, { price: 99.6, size: 40 }, { price: 98.7, size: 1 },
+      ],
+    };
+    const plain = JSON.parse(JSON.stringify(run("bookLadder(__book, {})")));
+    assert.deepStrictEqual(plain.asks.map((r) => r.price), [100.1, 100.4, 101.2], "ungrouped, the book as it came");
+    assert.deepStrictEqual(plain.asks.map((r) => r.depth), [1, 51, 53], "…with its running depth");
+
+    const g = JSON.parse(JSON.stringify(run("bookLadder(__book, { step: 1 })")));
+    assert.deepStrictEqual(g.asks.map((r) => [r.price, r.size]), [[101, 51], [102, 2]],
+      "an ask is grouped into the bucket above it");
+    assert.deepStrictEqual(g.bids.map((r) => [r.price, r.size]), [[99, 43], [98, 1]],
+      "…a bid into the one below, so a grouped bid never sits above a grouped ask");
+
+    const big = JSON.parse(JSON.stringify(run("bookLadder(__book, { min: 1000 })")));
+    assert.deepStrictEqual(big.asks.map((r) => r.price), [100.4], "a level under the minimum size (in money) is not drawn");
+    assert.strictEqual(big.asks[0].depth, 51, "…but its liquidity still counts in the depth beside the next row");
+    assert.strictEqual(big.deepest, 51, "…and the fills are scaled to what is drawn");
+
+    const bids = JSON.parse(JSON.stringify(run('bookLadder(__book, { view: "bids", rows: 2 })')));
+    assert.ok(bids.asks.length === 0 && bids.bids.length === 2, "one side alone, to the rows asked for");
+    assert.ok(Math.abs(plain.reach - 1.2) < 1e-9, "the reach is how far from the best price the fetched book went");
+
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(run("bookSteps(0.1)"))), [0.1, 1, 10], "steps are the tick, ten and a hundred of it");
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(run("bookSteps(0, __book)"))), [0.3, 3, 30],
+      "…and without a tick, the finest gap on the book");
+  }
+
+  /* **The book as a depth curve** (`bookDepthCurve` / `bookDepthAt`): the
+   * notional displayed within a distance of the mid, per side — and nothing
+   * past where the book was read. The same book: mid 100, asks 10 / 40 / 120
+   * bp out, bids 10 / 40 / 130. */
+  {
+    const c = JSON.parse(JSON.stringify(run("bookDepthCurve(__book)")));
+    const r2 = (v) => Math.round(v * 100) / 100;
+    assert.strictEqual(c.mid, 100, "the mid is halfway between the best bid and ask");
+    assert.deepStrictEqual(c.asks.map((p) => r2(p.bp)), [10, 40, 120], "distance is 10^4·|p/M − 1|, in basis points");
+    assert.deepStrictEqual(c.asks.map((p) => r2(p.notional)), [100.1, 5120.1, 5322.5],
+      "…and notional is price × size summed outwards, in money");
+    assert.deepStrictEqual(c.bids.map((p) => r2(p.notional)), [299.7, 4283.7, 4382.4], "…on each side separately");
+    assert.deepStrictEqual({ bid: r2(c.reach.bid), ask: r2(c.reach.ask) }, { bid: 130, ask: 120 },
+      "the reach is the farthest level each side returned");
+    const at = (side, bp) => run(`bookDepthAt(bookDepthCurve(__book).${side}, ${bp})`);
+    assert.strictEqual(at("asks", 5), 0, "inside the first level there is nothing displayed — read, and zero");
+    assert.strictEqual(r2(at("asks", 40)), 5120.1, "a level exactly at the distance counts");
+    assert.strictEqual(at("asks", 121), null, "past the reach is not zero, it is not read — null");
+    assert.strictEqual(r2(at("bids", 125)), 4283.7, "…while the deeper side still answers at the same distance");
+    assert.strictEqual(run("bookDepthCurve({ asks: [], bids: [{ price: 1, size: 1 }] })"), null,
+      "a book missing a side has no curve");
+  }
+
+  /* ── the tone of a headline: words counted, never an event judged ──────
+   * A lexicon with the three-word negation rule; the row says "worded up"
+   * or "worded down" and lists the words, so the reader argues with a count.
+   * Every case here has its answer known before the function runs. */
+  {
+    const tone = (title, summary) => JSON.parse(JSON.stringify(run(`newsTone(${JSON.stringify({ title, summary })})`)));
+    assert.strictEqual(tone("Bitcoin surges past $44,000 as ETF inflows hit record").tone, "up",
+      "surges and inflows are worded up");
+    assert.strictEqual(tone("Ethereum exploit drains $40 million from DeFi lending protocol").tone, "down",
+      "an exploit that drains is worded down");
+    const neg = tone("Regulator says it will not ban stablecoins");
+    assert.strictEqual(neg.tone, "up", "a negator within three words flips the word after it");
+    assert.deepStrictEqual(neg.up, ["not ban"], "…and the row can show the flipped word");
+    assert.strictEqual(tone("Bitcoin hits record low against gold").tone, "down",
+      "a two-word phrase wins over its second word — record low is down");
+    assert.strictEqual(tone("Solana reaches all-time high").tone, "up", "all-time high is up");
+    assert.strictEqual(tone("Rally halts as exchange freezes withdrawals").tone, "down",
+      "one up word against two down words is worded down");
+    assert.strictEqual(tone("Rally halts").tone, "mixed", "level on both sides is mixed, not nothing");
+    assert.strictEqual(tone("Exchange lists a new stablecoin pair", "").tone, "up", "a listing is up");
+    assert.strictEqual(tone("The weekly market wrap").tone, null, "a headline with none of the words has no tone");
+    const both = tone("Miners' revenue falls as difficulty adjusts upward", "Hashprice dropped 6% after the retarget.");
+    assert.strictEqual(both.tone, "down", "the summary is counted too");
+    assert.deepStrictEqual(both.down, ["falls", "dropped"], "…and the words are the ones on the row");
+  }
+
+  /* ── politeness to a host that said no ────────────────────────────────
+   * Per host, in memory: 15 min on the first 429/403, doubling to 2 h,
+   * cleared by an answer. Any other status is not a refusal. */
+  {
+    const T0 = 1700000000000;
+    assert.strictEqual(run(`hostCooling("https://cryptopotato.com/wp-json/x", ${T0})`), 0, "nothing is cooling at first");
+    assert.strictEqual(run(`noteHostRefused("https://cryptopotato.com/wp-json/x", 500, ${T0})`), 0, "a 500 is not a refusal");
+    assert.strictEqual(run(`noteHostRefused("https://cryptopotato.com/wp-json/x", 429, ${T0})`), 900000, "a 429 buys fifteen minutes");
+    assert.strictEqual(run(`hostCooling("https://cryptopotato.com/feed/", ${T0 + 60000})`), 840000, "…for the whole host, whichever path");
+    assert.strictEqual(run(`hostCooling("https://news.bitcoin.com/feed/", ${T0 + 60000})`), 0, "…and no other host");
+    assert.strictEqual(run(`noteHostRefused("https://cryptopotato.com/wp-json/x", 403, ${T0 + 1000000})`), 1800000, "a second refusal doubles it");
+    let wait = 0;
+    for (let i = 0; i < 6; i += 1) wait = run(`noteHostRefused("https://cryptopotato.com/wp-json/x", 429, ${T0 + 2000000})`);
+    assert.strictEqual(wait, 7200000, "…and it never exceeds two hours");
+    run(`noteHostAnswered("https://cryptopotato.com/feed/")`);
+    assert.strictEqual(run(`hostCooling("https://cryptopotato.com/wp-json/x", ${T0 + 2000001})`), 0, "an answer clears it");
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(run(`hostCooldownsNow(${T0})`))), {}, "…and the readout is empty again");
+  }
+
+  /* ── politeFetch: the one door a card's request goes through ──────────
+   * A cooling host is not asked at all; a 429 starts the wait; an answer
+   * clears it. The sandbox's fetch is swapped for a counter. */
+  {
+    sandbox.__calls = [];
+    sandbox.__status = 200;
+    const realFetch = sandbox.fetch;
+    sandbox.fetch = (url) => { sandbox.__calls.push(url); return Promise.resolve({ ok: sandbox.__status < 400, status: sandbox.__status, json: () => Promise.resolve({}) }); };
+    const url = "https://api.alternative.me/fng/?limit=1";
+    await run(`politeFetch(${JSON.stringify(url)})`);
+    assert.strictEqual(sandbox.__calls.length, 1, "an ordinary request goes out");
+    sandbox.__status = 429;
+    await run(`politeFetch(${JSON.stringify(url)})`);
+    assert.ok(run(`hostCooling(${JSON.stringify(url)})`) > 0, "a 429 starts the host's wait");
+    sandbox.__status = 200;
+    let refused = null;
+    try { await run(`politeFetch(${JSON.stringify(url)})`); } catch (e) { refused = e; }
+    assert.ok(refused && refused.cooling > 0, "while it waits, the host is not asked at all — the call rejects with the wait on it");
+    assert.strictEqual(sandbox.__calls.length, 2, "…and no request went out");
+    run(`noteHostAnswered(${JSON.stringify(url)})`);
+    await run(`politeFetch(${JSON.stringify(url)})`);
+    assert.strictEqual(sandbox.__calls.length, 3, "an answer clears it and the next request goes out");
+    sandbox.fetch = realFetch;
+  }
+
+  /* ── US CPI releases: the calendar that ships, and what followed ────────
+   *
+   * The calendar is read straight out of config.js: every release must be
+   * 08:30 in New York, in order, with no duplicate — the one fact the
+   * markers and the count stand on. Then the measurement, on candles whose
+   * answer is known: each half hour before the release moves exactly 0.1%
+   * in log terms and the half hour after exactly 1%. */
+  {
+    const cfg = fs.readFileSync(path.join(__dirname, "..", "src", "config.js"), "utf8");
+    const lit = cfg.match(/const CPI_RELEASES_UTC = (\[[\s\S]*?\]);/);
+    assert.ok(lit, "config.js carries CPI_RELEASES_UTC as a literal");
+    const cal = vm.runInNewContext(lit[1]);
+    const ny = new Intl.DateTimeFormat("en-US", {
+      timeZone: "America/New_York", hour: "2-digit", minute: "2-digit", hourCycle: "h23",
+    });
+    assert.ok(cal.length >= 140, `the calendar reaches back to 2015 (${cal.length} releases)`);
+    assert.ok(cal.every((iso) => ny.format(new Date(iso)) === "08:30"),
+      `every release is 08:30 in New York: ${cal.filter((iso) => ny.format(new Date(iso)) !== "08:30").join(", ")}`);
+    assert.ok(cal.every((iso, i) => i === 0 || Date.parse(iso) > Date.parse(cal[i - 1])),
+      "…in order, with no release twice");
+    assert.ok(cal.includes("2025-10-24T12:30Z") && !cal.some((iso) => iso.startsWith("2025-11")),
+      "the 2025 lapse is as published: September's CPI on 24 October, no release in November");
+
+    /* A small calendar of our own for the rest, set before the first read
+       (the instants are memoised). */
+    const T = [Date.parse("2026-01-13T13:30Z"), Date.parse("2026-02-13T13:30Z"), Date.parse("2026-03-11T12:30Z")];
+    sandbox.CPI_RELEASES_UTC = T.map((t) => new Date(t).toISOString());
+    assert.strictEqual(run(`nextCpiRelease(${T[0]})`), T[1], "the next release is the first strictly after now");
+    assert.strictEqual(run(`lastCpiRelease(${T[1]})`), T[1], "…and the last one includes this minute");
+    assert.strictEqual(run(`cpiReleasesBetween(${T[0] - 1}, ${T[1]})`).length, 2, "between is inclusive at both ends");
+    assert.strictEqual(run(`nextCpiRelease(${T[2]})`), null, "past the calendar's end there is no next release — nothing is guessed");
+
+    const logc = (m) => (m <= -1 ? 0.001 * (m + 1) / 30 : 0.01 * Math.min(1, (m + 1) / 30));
+    const rowsFor = (startMs, endMs, at, gap) => {
+      const out = [];
+      for (let t = startMs / 1000; t < endMs / 1000; t += 60) {
+        const m = (t * 1000 - at) / 60000;
+        if (gap && m === 29) continue;
+        const c = 100 * Math.exp(logc(m));
+        out.push([t, c, c, c, c, 1]);
+      }
+      return out.reverse(); // newest first, as the endpoint sends them
+    };
+    sandbox.__rows = rowsFor(T[0] - 211 * 60000, T[0] + 30 * 60000, T[0], false);
+    const one = json(`cpiMoveFromCandles(__rows, ${T[0]})`);
+    assert.ok(Math.abs(one.after - 0.01) < 1e-12, `the half hour after is |ln(close T+29 / close T−1)|: ${one.after}`);
+    assert.ok(one.before.length === 7 && one.before.every((b) => Math.abs(b - 0.001) < 1e-12),
+      `…and the control is the seven half hours before it, back to back: ${one.before}`);
+    sandbox.__gappy = rowsFor(T[0] - 211 * 60000, T[0] + 30 * 60000, T[0], true);
+    assert.strictEqual(run(`cpiMoveFromCandles(__gappy, ${T[0]})`), null, "a missing minute is not a flat one — no answer");
+
+    const sum = json(`cpiMovesSummary([
+      { after: 0.01, before: [0.001, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001] },
+      { after: 0.0005, before: [0.001, 0.002, 0.001, 0.001, 0.001, 0.001, 0.001] },
+    ])`);
+    assert.deepStrictEqual({ n: sum.n, top: sum.top, expect: sum.expect }, { n: 2, top: 1, expect: 0.25 },
+      "the count: how many releases topped all seven half hours before them, against n/8");
+    assert.strictEqual(sum.largest, 0.01, "…with the largest move after");
+
+    /* The fetch: one request per finished release, none on the second read,
+       and the answer kept for good; a gap is kept as "incomplete" rather than
+       asked for again; a coin Coinbase does not list is not asked at all. */
+    const realFetch = sandbox.fetch;
+    const minute = [];
+    sandbox.fetch = async (url) => {
+      if (!url.includes("granularity=60")) return realFetch(url);
+      minute.push(url);
+      const start = Date.parse(decodeURIComponent(url.match(/start=([^&]+)/)[1]));
+      const end = Date.parse(decodeURIComponent(url.match(/end=([^&]+)/)[1]));
+      const at = start + 211 * 60000;
+      return { ok: true, status: 200, json: async () => rowsFor(start, end, at, url.includes("/ETH-USD/")) };
+    };
+    const now = T[1] + 29 * 60000; // the second release's half hour is not over yet
+    const ajson = async (c) => JSON.parse(JSON.stringify(await run(c)));
+    const first = await ajson(`fetchCpiMoves("BTC", ${now})`);
+    assert.ok(first.moves.length === 1 && minute.length === 1,
+      `only a release whose half hour has finished is read (${minute.length} asked)`);
+    const again = await ajson(`fetchCpiMoves("BTC", ${now})`);
+    assert.ok(again.moves.length === 1 && minute.length === 1, "a second read asks nothing — a past window never changes");
+    await new Promise((r) => setTimeout(r, 0));
+    const stored = JSON.parse(lsStore.crypto_chart_cpi_moves || "[]");
+    assert.ok(stored.some(([k]) => k === `BTC:${T[0]}`), "…and it is kept across tabs");
+    const eth = await ajson(`fetchCpiMoves("ETH", ${now})`);
+    assert.ok(eth.moves.length === 1 && eth.moves[0].incomplete === true, "a window with a gap is kept as incomplete");
+    await ajson(`fetchCpiMoves("ETH", ${now})`);
+    assert.strictEqual(minute.length, 2, "…and not asked for again");
+    const xmr = await ajson(`fetchCpiMoves("XMR", ${now})`);
+    assert.ok(xmr.unavailable === true && minute.length === 2, "a coin Coinbase does not list is not asked at all");
+
+    lsStore.crypto_chart_cpi_moves = JSON.stringify([
+      ["SOL:1", { at: 1, after: NaN, before: [0, 0, 0, 0, 0, 0, 0] }],
+      ["SOL:2", { at: 2, after: 0.1, before: [0.1, 0.1] }],
+      ["SOL:3", { at: 3, after: 0.1, before: [0, 0, 0, 0, 0, 0, 0] }],
+    ]);
+    run("cpiMovesCache.clear(); hydrateCpiMoves()");
+    assert.deepStrictEqual(json("Array.from(cpiMovesCache.keys())"), ["SOL:3"],
+      "a stored entry with a NaN or the wrong number of half hours is dropped on the way in");
+    sandbox.fetch = realFetch;
+  }
+
+  /* The chart's window asks for finer candles (`fetchViewCandles`): pages
+     of 300 bars aligned to the granularity, so the same window reached from
+     two directions is the same request; a page in the past asked once and
+     kept, on disk too; the page holding "now" asked again after a bar; rows
+     it cannot use dropped; and nothing asked where Coinbase Exchange does not
+     quote the pair. */
+  {
+    const realFetch = sandbox.fetch;
+    const asked = [];
+    sandbox.fetch = async (url) => {
+      if (!url.includes("/candles?granularity=") || !url.includes("start=")) return realFetch(url);
+      asked.push(url);
+      const g = Number(url.match(/granularity=(\d+)/)[1]) * 1000;
+      const start = Date.parse(decodeURIComponent(url.match(/start=([^&]+)/)[1]));
+      const end = Date.parse(decodeURIComponent(url.match(/end=([^&]+)/)[1]));
+      const rows = [];
+      for (let t = start; t <= Math.min(end, Date.now()); t += g) rows.push([t / 1000, 99, 101, 100, 100.5, 2]);
+      rows.push(["junk", 1, 2, 3, 4, 5], [start / 1000 + 1, -1, 2, 3, 0, 5]);
+      return { ok: true, status: 200, json: async () => rows.reverse() };
+    };
+    const ajson = async (c) => JSON.parse(JSON.stringify(await run(c)));
+    const g = 300;
+    const size = 300 * g * 1000;
+    const k = Math.floor(Date.now() / size) - 5; // a page well in the past
+    const from = k * size + 10 * g * 1000;
+    const to = from + 400 * g * 1000;
+    const got = await ajson(`fetchViewCandles("BTC", "USD", ${g}, ${from}, ${to})`);
+    assert.strictEqual(asked.length, 2, "410 bars from bar 10 of a page is two pages");
+    assert.ok(asked[0].includes(`start=${new Date(k * size).toISOString()}`), "…aligned to 300 bars of the granularity");
+    assert.ok(got.length === 402 && got[0].time === from - g * 1000 && got[got.length - 1].time === to,
+      `every bar in the window, and the one still open at its start (${got.length})`);
+    assert.ok(got.every((c, i) => c.close > 0 && c.low > 0 && (i === 0 || c.time > got[i - 1].time)),
+      "no row it cannot use, oldest first, each bar once");
+    assert.ok(got.every((c) => c.time >= from - g * 1000 && c.time <= to), "nothing outside the window");
+    await ajson(`fetchViewCandles("BTC", "USD", ${g}, ${from + 20 * g * 1000}, ${to - 20 * g * 1000})`);
+    assert.strictEqual(asked.length, 2, "a page in the past is asked once — a pan inside it asks nothing");
+    await new Promise((r) => setTimeout(r, 1200));
+    const stored = JSON.parse(lsStore.crypto_chart_view_candles || "[]");
+    assert.strictEqual(stored.length, 2, "…and kept for the next tab");
+
+    const now = Date.now();
+    await ajson(`fetchViewCandles("BTC", "USD", 60, ${now - 50 * 60000}, ${now})`);
+    const live = asked.length;
+    await ajson(`fetchViewCandles("BTC", "USD", 60, ${now - 50 * 60000}, ${now})`);
+    assert.strictEqual(asked.length, live, "the page holding now is not asked again within a bar");
+    run("viewCandleCache.forEach((v) => { if (!v.complete) v.at -= 61000; })");
+    await ajson(`fetchViewCandles("BTC", "USD", 60, ${now - 50 * 60000}, ${now})`);
+    assert.strictEqual(asked.length, live + 1, "…and is asked again once a bar has passed");
+
+    const before = asked.length;
+    assert.strictEqual(await run(`fetchViewCandles("BTC", "TRY", 60, ${now - 3600000}, ${now})`), null, "a currency Coinbase Exchange does not quote: null");
+    assert.strictEqual(await run(`fetchViewCandles("XMR", "USD", 60, ${now - 3600000}, ${now})`), null, "a coin it does not list: null");
+    assert.strictEqual(asked.length, before, "…and neither asks anything");
+
+    lsStore.crypto_chart_view_candles = JSON.stringify([
+      ["BTC-USD-60-1", { at: Date.now() - 1000, rows: [[1, 2, 3, 4, 5, 6], [2, 0, 3, 4, 5, 6], [3, 2, 3, 4, NaN, 6]] }],
+      ["BTC-USD-60-2", { at: Date.now() - 30 * 86400000, rows: [[1, 2, 3, 4, 5, 6]] }],
+    ]);
+    run("viewCandleCache.clear(); hydrateViewCandles()");
+    assert.deepStrictEqual(json("Array.from(viewCandleCache.keys())"), ["BTC-USD-60-1"], "a stored page older than a week is dropped on the way in");
+    assert.strictEqual(json('viewCandleCache.get("BTC-USD-60-1").rows').length, 1, "…and a row with a zero or a NaN in it");
+    sandbox.fetch = realFetch;
+    console.log("  ✔ the chart's window: pages, a cache, the page holding now, and no asks where there are no candles");
   }
 
   console.log("ALL API TESTS PASSED");

@@ -55,6 +55,23 @@ const CHART = `[...document.querySelectorAll("svg")]
   .map((e) => ({ e, r: e.getBoundingClientRect() }))
   .sort((a, b) => b.r.width * b.r.height - a.r.width * a.r.height)[0].e`;
 
+/* The plot inside the chart: the SVG less the price scale on the right and
+ * the time axis along the foot (29 Sep 2026). The axes draw the plot's two
+ * edges as hairlines, so its size is read off them — the board ends where
+ * the plot does, not where the SVG does. */
+const PLOT = `((c) => {
+  const r = c.getBoundingClientRect();
+  const lines = [...c.querySelectorAll("[data-axis-layer='lines'] line")].filter(${VIS});
+  const v = lines.find((l) => l.getAttribute("x1") === l.getAttribute("x2") && +l.getAttribute("y1") === 0);
+  const h = lines.find((l) => l.getAttribute("y1") === l.getAttribute("y2") && +l.getAttribute("x1") === 0);
+  return { w: v ? +v.getAttribute("x1") - 0.5 : r.width, h: h ? +h.getAttribute("y1") - 0.5 : r.height };
+})`;
+// The axes' own lines are not the board's
+const NOT_AXIS = `((e) => !e.closest("[data-axes]"))`;
+// The board's price labels, which the price scale prints since 29 Sep 2026
+const PRICE_LABELS = `((c) => [...c.querySelectorAll("[data-axis-tick]")].filter(${VIS})
+  .map((t) => t.textContent))`;
+
 // `series` decides what the next historic request answers with, so a test can
 // make the price band move the way a real refresh does.
 const newCtx = async (
@@ -400,12 +417,14 @@ const T = Date.now();
       const now = [...chart.querySelectorAll("line")].filter(${VIS})
         .find((l) => l.getAttribute("stroke-dasharray") === "2 3");
       const nowX = now ? +now.getAttribute("x1") : null;
-      const future = [...chart.querySelectorAll("line")].filter(${VIS})
+      // The lattice's columns: not the axes' ticks, not the now handle's grip
+      const future = [...chart.querySelectorAll("line")].filter(${VIS}).filter(${NOT_AXIS})
+        .filter((l) => !l.closest(".pt-now-grip"))
         .filter((l) => Math.abs(+l.getAttribute("x1") - +l.getAttribute("x2")) < 0.01)
         .map((l) => +l.getAttribute("x1"))
         .filter((x) => x > nowX + 0.5)
         .sort((a, b) => a - b);
-      return { x: r.x, y: r.y, w: r.width, h: r.height, nowX,
+      return { x: r.x, y: r.y, w: r.width, h: r.height, nowX, plotW: ${PLOT}(chart).w,
                last: future.length ? future[future.length - 1] : null,
                pitch: future.length > 1 ? future[1] - future[0] : null };
     })()`);
@@ -417,7 +436,13 @@ const T = Date.now();
         } catch { return -1; }
       });
 
-    const py = g.y + g.h * 0.45;
+    /* A third of the way down, not the middle: the board's right arrow sits
+       at mid-height against the plot's right edge, and whenever the last
+       column ended within its reach the click walked the board instead of
+       drafting — measured, the "now" line stepped a square left on each of
+       the two clicks and nothing was called. It failed about one run in
+       three, depending on the time of day the lattice was anchored to. */
+    const py = g.y + g.h * 0.3;
     // The centre of the last column the chart drew whole
     const px = g.x + g.last - g.pitch / 2;
     await page.mouse.click(px, py);
@@ -427,11 +452,12 @@ const T = Date.now();
     check(
       (await stored()) === 1,
       `the furthest square on offer is stored when locked (${share * 100}% board)`,
+      JSON.stringify({ nowX: g.nowX, last: g.last, pitch: g.pitch, plotW: g.plotW, px }),
     );
 
     // And the strip's leftover tail is chart, not board: a square the chart
     // cannot draw whole must not take a call either.
-    const tail = g.w - g.last;
+    const tail = g.plotW - g.last;
     if (tail > 12) {
       await page.mouse.click(g.x + g.last + tail / 2, py);
       await page.waitForTimeout(220);
@@ -965,8 +991,8 @@ const T = Date.now();
     const { ctx, page } = await newCtx(browser, 0.3, null, 2200, flat, true);
     const M = `(() => {
       const c = ${CHART};
-      const W = c.getBoundingClientRect().width;
-      const horiz = [...new Set([...c.querySelectorAll("line")].filter(${VIS})
+      const W = ${PLOT}(c).w;
+      const horiz = [...new Set([...c.querySelectorAll("line")].filter(${VIS}).filter(${NOT_AXIS})
         .filter((l) => Math.abs(+l.getAttribute("y1") - +l.getAttribute("y2")) < 0.01
                        && Math.abs(+l.getAttribute("x1")) < 1
                        && Math.abs(+l.getAttribute("x2") - W) < 1)
@@ -1071,21 +1097,10 @@ const T = Date.now();
     const spans = [];
     for (const share of [0.16, 0.8]) {
       const { ctx, page } = await newCtx(browser, share, null, 2200, () => TWO_HALVES);
-      /* The price gutter, and only the price gutter. Filtering on x alone
-       * also caught the time axis whenever a column boundary happened to land
-       * in the left few pixels — and "Aug 14, 05:33 PM" parses as 140533
-       * followed by the M of PM, which is to say $140 billion. The boundaries
-       * sit on round clock instants now, so whether one lands there depends
-       * on the time of day the suite is run at. The two rows are unambiguous
-       * by height: the dates are on the axis at the foot of the chart. */
-      const labels = await page.evaluate(`(() => {
-        const c = ${CHART}, r = c.getBoundingClientRect();
-        return [...c.querySelectorAll("text")].filter(${VIS})
-          .filter((t) => +t.getAttribute("x") < 30
-                         && +t.getAttribute("y") < r.height - 12
-                         && /\\d/.test(t.textContent))
-          .map((t) => t.textContent);
-      })()`);
+      /* The price scale's labels, by their own mark. Picked out by position
+       * inside the plot they once caught a date ("Aug 14, 05:33 PM" parses
+       * as $140 billion); the dates have their own axis now. */
+      const labels = await page.evaluate(`${PRICE_LABELS}(${CHART})`);
       const prices = labels.map(priceOf).filter((v) => v && isFinite(v));
       spans.push({ share, span: Math.max(...prices) - Math.min(...prices) });
       await ctx.close();
@@ -1549,17 +1564,9 @@ const T = Date.now();
     const { ctx, page } = await newCtx(browser, 0.3);
     const board = () => page.evaluate(`(() => {
       const c = ${CHART};
-      /* The price gutter only. Filtering on x alone also catches the time axis
-       * whenever a column boundary lands in the left few pixels — and
-       * "Aug 17, 11:05 PM" parses as a number in the billions. The boundaries
-       * sit on round clock instants, so whether one lands there depends on the
-       * time of day the suite runs at: it passed alone and failed in the full
-       * run. The two rows are unambiguous by height. */
+      /* The price scale's labels, by their own mark (see §16). */
       const h = c.getBoundingClientRect().height;
-      const labels = [...c.querySelectorAll("text")].filter(${VIS})
-        .filter((t) => +t.getAttribute("x") < 30 && +t.getAttribute("y") < h - 12
-                       && /\\d/.test(t.textContent))
-        .map((t) => t.textContent);
+      const labels = ${PRICE_LABELS}(c);
       const num = (s) => {
         const m = /([\\d.,]+)\\s*([KMB]?)/.exec(s.replace(/[^\\d.,KMB]/g, ""));
         return m ? parseFloat(m[1].replace(/,/g, "")) * ({ K: 1e3, M: 1e6, B: 1e9 }[m[2]] || 1) : null;
@@ -1685,7 +1692,9 @@ const T = Date.now();
     const state = await page.evaluate(`(() => {
       const c = ${CHART};
       const box = c.getBoundingClientRect();
-      const mesh = c.querySelector("g[mask]");
+      // By name, not by being the first masked group — see the note on
+      // pt-mesh in chart-board.js
+      const mesh = c.querySelector("g.pt-mesh");
       const grip = c.querySelector(".pt-now-grip");
       const zoom = c.querySelector(".pt-zoom");
       const ramp = [...c.querySelectorAll("stop")]
@@ -1758,11 +1767,12 @@ const T = Date.now();
       const vis = ${VIS};
       // Full-width only, for the reason given in the readout block: the
       // zoom pill's underline is a horizontal line too, and is not a gridline
-      const rows = [...new Set([...c.querySelectorAll("line")].filter(vis)
+      const plot = ${PLOT}(c);
+      const rows = [...new Set([...c.querySelectorAll("line")].filter(vis).filter(${NOT_AXIS})
         .filter((l) => Math.abs(+l.getAttribute("y1") - +l.getAttribute("y2")) < 0.5)
-        .filter((l) => Math.abs(+l.getAttribute("x2") - +l.getAttribute("x1")) > r.width * 0.9)
+        .filter((l) => Math.abs(+l.getAttribute("x2") - +l.getAttribute("x1")) > plot.w * 0.9)
         .map((l) => +l.getAttribute("y1")))].sort((a, b) => a - b);
-      return { top: r.y, h: r.height, rows };
+      return { top: r.y, h: plot.h, rows };
     })()`);
     const last = geo.rows[geo.rows.length - 1];
     check(Math.abs(last - geo.h) < 1.5,

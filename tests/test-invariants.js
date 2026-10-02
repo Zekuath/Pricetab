@@ -1,14 +1,14 @@
-// Enforces the architectural invariants CLAUDE.md states in prose.
+// Enforces the architectural invariants the codebase guide states in prose.
 //
 // Why this file exists: this repo has no compiler, no type system and no
 // module graph, so the rules that protect the product's core claims — zero
 // permissions, zero external requests, no eval, a known set of API hosts —
-// are enforced today by an agent (or a human) remembering to read the right
+// are enforced today by whoever remembers to read the right
 // paragraph. This turns each of them into a failing test instead.
 //
 // Deliberately zero-dependency: it runs on plain Node through the existing
 // tests/run-all.js, so it works in CI as-is and adds no supply chain.
-// Every rule below quotes the CLAUDE.md line it enforces.
+// Every rule below quotes the codebase guide line it enforces.
 const fs = require("fs");
 const path = require("path");
 
@@ -52,7 +52,7 @@ const scanSrc = (re, why) => {
 };
 
 // --- 1. Nothing is granted at install ------------------------------------
-// CLAUDE.md: "Zero permissions required" / "Zero permissions = faster review".
+// The codebase guide: "Zero permissions required" / "Zero permissions = faster review".
 // This is the product's central privacy claim and the store listing rests on it.
 //
 // The rule used to be "no manifest key matching /permission/i", which is the
@@ -68,10 +68,20 @@ const scanSrc = (re, why) => {
 // check now enforces the two things that keep it true, which is more than the
 // old one did:
 //
-//   1. `permissions`, `host_permissions` and `optional_permissions` are empty —
-//      nothing is granted without a person asking for it;
-//   2. every entry in `optional_host_permissions` is on the list below, so a
-//      new origin cannot appear without editing this file and saying why.
+//   1. `permissions` and `host_permissions` are empty — nothing at all is
+//      granted without a person asking for it;
+//   2. every entry in `optional_host_permissions` and in `optional_permissions`
+//      is on a list below, so neither a new origin nor a new capability can
+//      appear without editing this file and saying why.
+//
+// `optional_permissions` was opened on 7 Sep 2026 for exactly one entry.
+// **notifications** — a price target that is hit, and a contract that is
+// stopped out or liquidated, are the two things here worth being told about
+// while you are looking at something else, and the tab title (the only
+// announcement there was) says nothing to somebody not looking at that tab.
+// Asked for from a button inside the Targets and Futures panels, never at
+// install; Chrome raises no install-time warning for an optional permission
+// and does not slow review, so the listing's claim still holds.
 const OPTIONAL_ORIGINS = new Set([
   "https://cointelegraph.com/*",
   "https://decrypt.co/*",
@@ -79,14 +89,27 @@ const OPTIONAL_ORIGINS = new Set([
   "https://bitcoinmagazine.com/*",
   "https://coinjournal.net/*",
   "https://feeds.bbci.co.uk/*",
+  // 29 Sep 2026: the two largest crypto newsrooms, no CORS header, staff
+  // bylines only in their feeds; paid posts on paths the promo filter refuses
+  "https://www.coindesk.com/*",
+  "https://www.theblock.co/*",
 ]);
+const OPTIONAL_PERMISSIONS = new Set(["notifications"]);
 check("nothing is granted at install", () => {
   const m = JSON.parse(read("manifest.json"));
   const out = [];
-  for (const key of ["permissions", "host_permissions", "optional_permissions"]) {
+  for (const key of ["permissions", "host_permissions"]) {
     if (m[key] && m[key].length) {
       out.push(
         `manifest declares "${key}": ${JSON.stringify(m[key])} — that is granted at install`,
+      );
+    }
+  }
+  for (const name of m.optional_permissions || []) {
+    if (!OPTIONAL_PERMISSIONS.has(name)) {
+      out.push(
+        `"${name}" is in optional_permissions but not in this test's list — ` +
+          "add it here and to the codebase guide in the same change, with a reason",
       );
     }
   }
@@ -105,7 +128,7 @@ check("nothing is granted at install", () => {
     if (!OPTIONAL_ORIGINS.has(origin)) {
       out.push(
         `${origin} is in optional_host_permissions but not in this test's list — ` +
-          "add it here and to CLAUDE.md's provider list in the same change, with a reason",
+          "add it here and to the codebase guide's provider list in the same change, with a reason",
       );
     }
   }
@@ -113,7 +136,7 @@ check("nothing is granted at install", () => {
 });
 
 // --- 2. The new tab page stays the new tab page -------------------------
-// CLAUDE.md: 'index.html — extension entry point (new tab page) — NEVER repurpose'
+// The codebase guide: 'index.html — extension entry point (new tab page) — NEVER repurpose'
 check("manifest newtab override still points at index.html", () => {
   const m = JSON.parse(read("manifest.json"));
   const nt = (m.chrome_url_overrides || {}).newtab;
@@ -121,12 +144,12 @@ check("manifest newtab override still points at index.html", () => {
 });
 
 // --- 3. No external resources ------------------------------------------
-// CLAUDE.md: "External resources: None" — Normalize.css and Roboto Mono are
+// The codebase guide: "External resources: None" — Normalize.css and Roboto Mono are
 // bundled locally precisely so the extension makes zero external font/CSS
 // requests. A CDN <script> would also break the MV3 CSP.
 check("no remote <script>/<link> in shipped HTML", () => {
   const out = [];
-  for (const f of ["index.html", "privacy.html", "rate.html"]) {
+  for (const f of ["index.html", "privacy.html", "popup.html"]) {
     const html = read(f);
     const re = /<(script|link)\b[^>]*\b(?:src|href)\s*=\s*["']https?:\/\/[^"']+["']/gi;
     let m;
@@ -136,13 +159,13 @@ check("no remote <script>/<link> in shipped HTML", () => {
 });
 
 // --- 4. MV3 CSP ---------------------------------------------------------
-// CLAUDE.md: "No eval() or inline scripts".
+// The codebase guide: "No eval() or inline scripts".
 check("no eval() or new Function() in src/", () =>
   scanSrc(/\beval\s*\(|\bnew\s+Function\s*\(/, "MV3 CSP forbids dynamic code"),
 );
 
 // --- 5. XSS -------------------------------------------------------------
-// CLAUDE.md security checklist: "No innerHTML with user data (XSS risk)".
+// The codebase guide security checklist: "No innerHTML with user data (XSS risk)".
 // Blanket ban: this codebase builds every node through React, so an
 // innerHTML assignment anywhere is a new pattern that deserves a look.
 check("no innerHTML / outerHTML assignment in src/", () =>
@@ -150,16 +173,16 @@ check("no innerHTML / outerHTML assignment in src/", () =>
 );
 
 // --- 6. Production cleanliness -----------------------------------------
-// CLAUDE.md code-quality checklist: "No console.log in production (removed)".
+// The codebase guide code-quality checklist: "No console.log in production (removed)".
 check("no console.log in src/", () =>
   scanSrc(/\bconsole\.log\s*\(/, "left-over debug output"),
 );
 
 // --- 7. Every module is actually loaded ---------------------------------
-// CLAUDE.md: "Add a new src file: Add a <script> tag to index.html — order
+// The codebase guide: "Add a new src file: Add a <script> tag to index.html — order
 // matters". A file that exists but is never loaded is dead weight; a file
 // referenced but missing is a blank new tab.
-check("src/*.js and index.html agree (rate.js is loaded by rate.html)", () => {
+check("src/*.js and index.html agree (popup.js is loaded by popup.html)", () => {
   const html = read("index.html");
   const listed = new Set(
     [...html.matchAll(/src="\.\/src\/([^"]+)"/g)].map((m) => m[1]),
@@ -167,17 +190,17 @@ check("src/*.js and index.html agree (rate.js is loaded by rate.html)", () => {
   const actual = new Set(srcFiles);
   const out = [];
   for (const f of actual) {
-    if (f !== "rate.js" && !listed.has(f)) out.push(`src/${f} exists but has no <script> tag`);
+    if (f !== "popup.js" && !listed.has(f)) out.push(`src/${f} exists but has no <script> tag`);
   }
   for (const f of listed) {
     if (!actual.has(f)) out.push(`index.html loads src/${f} which does not exist`);
   }
-  if (!read("rate.html").includes("src/rate.js")) out.push("rate.html no longer loads src/rate.js");
+  if (!read("popup.html").includes("src/popup.js")) out.push("popup.html no longer loads src/popup.js");
   return out;
 });
 
 // --- 8. The tab-title gate ---------------------------------------------
-// CLAUDE.md, updateTabTitle(): "Never call it directly from app.js — go
+// The codebase guide, updateTabTitle(): "Never call it directly from app.js — go
 // through this.setTabTitle(), which stands down while a hit target owns the
 // title". The single legitimate call site is inside setTabTitle itself, so
 // exactly one occurrence is expected.
@@ -192,14 +215,51 @@ check("updateTabTitle() is called from app.js only inside setTabTitle", () => {
 });
 
 // --- 9. Widget cards scale from one font-size ---------------------------
-// CLAUDE.md: "Style anything inside a widget card: Use em, never rem."
-// The rule is scoped to the card interior. These three components are the
-// panel chrome that sits OUTSIDE the card, where rem is correct.
+// The codebase guide: "Style anything inside a widget card: Use em, never rem."
+// The rule is scoped to the card interior. These components are the panel
+// chrome that sits OUTSIDE the card, where rem is correct — since 25 Sep 2026
+// that includes the drawer the cards live in, its empty state and its one
+// button, which are sized with the other drawers, not with the cards. Since
+// 27 Sep 2026 also the drawer head's tools, its card-size letters and its
+// resize edge — the head of the drawer, never inside a card. Since 1 Oct
+// 2026 the iOS arrangement's chrome (app-widgets.js): the long-press menu, a
+// fixed layer over the drawer, and the gallery that replaces the cards while
+// a widget is added — its search, rows, page, carousel, slides, dots and the
+// Add Widget pill. A preview card inside a slide is still a WidgetCard and
+// still em.
 const REM_ALLOWED_OUTSIDE_CARD = new Set([
   "WidgetRestoreButton",
-  "CompareToggleButton",
   "WidgetPanel",
-  "WidgetHideButton",
+  "WidgetMenu",
+  "WidgetMenuSizes",
+  "WidgetMenuSize",
+  "WidgetMenuShape",
+  "WidgetMenuItem",
+  "WidgetGallery",
+  "WidgetGallerySearch",
+  "WidgetGalleryGroup",
+  "WidgetGalleryHead",
+  "WidgetGalleryRow",
+  "WidgetGalleryName",
+  "WidgetGalleryDesc",
+  "WidgetGalleryTag",
+  "WidgetDetail",
+  "WidgetDetailTitle",
+  "WidgetDetailDesc",
+  "WidgetCarousel",
+  "WidgetSlide",
+  "WidgetSlideName",
+  "WidgetDots",
+  "WidgetDot",
+  "WidgetAddButton",
+  // The pinned stack's frame, fixed to the page's corner (its cards are em)
+  "PinnedStack",
+  "WidgetsDrawer",
+  "WidgetsDrawerEmpty",
+  "WidgetsDrawerAction",
+  "WidgetsDrawerTools",
+  "WidgetsSizeButton",
+  "WidgetsResize",
 ]);
 check("no rem units inside widget-card components", () => {
   const lines = read("src/styles-widgets.js").split("\n");
@@ -221,10 +281,74 @@ check("no rem units inside widget-card components", () => {
 });
 
 // --- 10. The set of remote hosts is a deliberate list -------------------
-// CLAUDE.md documents every provider and records which ones were rejected
+// The codebase guide documents every provider and records which ones were rejected
 // (CORS, API keys, geo-blocking). A new host appearing quietly is both a
 // privacy-claim change and a Chrome Web Store single-purpose question, so
 // adding one should be a conscious edit to this list.
+/* ── no backtick inside a styled-components template ─────────────────────
+ *
+ * A backtick in a comment inside a tagged template literal **ends the
+ * literal**. Everything after it is parsed as JavaScript, so the failure is a
+ * syntax error pointing at a word in the middle of an English sentence —
+ * `Unexpected identifier 'OfflineMessage'` — which reads as anything but what
+ * it is. It costs one edit to make and several minutes to recognise, and it
+ * was made three times in one afternoon writing these comments, by someone who
+ * already had a note warning about it.
+ *
+ * The rule is narrow on purpose: backticks in comments *between* components
+ * are fine and this file is full of them. Only the ones inside the template
+ * matter, so the scan finds each tagged template, walks to its real end
+ * (skipping over `${...}` interpolations, which may themselves contain
+ * backticks legitimately), and checks the comments in between.
+ */
+const templateCommentBackticks = () => {
+  const offenders = [];
+  for (const file of fs.readdirSync(path.join(ROOT, "src")).filter((f) => f.endsWith(".js"))) {
+    const text = fs.readFileSync(path.join(ROOT, "src", file), "utf8");
+    const tag = /styled(?:\.\w+|\([^)]*\))(?:\.attrs\([^)]*\))?`|css`|keyframes`|injectGlobal`/g;
+    /* The match itself is not needed — only where it ends, which `lastIndex`
+     * carries — but the assignment is the loop's condition. */
+    while (tag.exec(text)) {
+      /* Walk the template **tracking whether we are inside a comment**, and
+       * stop at the first backtick that is not.
+       *
+       * The first version of this walked to the first backtick and then looked
+       * for comments in what it had passed — which cannot work, because the
+       * backtick it stops at is the offending one: the comment containing it
+       * is left unterminated and matches nothing. It reported every file clean
+       * with a fault deliberately injected, which is the only reason it was
+       * caught. A rule has to be shown failing on a known-bad input before it
+       * is worth anything. */
+      let i = tag.lastIndex;
+      let depth = 0;
+      let inComment = false;
+      while (i < text.length) {
+        const ch = text[i];
+        if (!inComment && ch === "\\") { i += 2; continue; }
+        if (!inComment && ch === "/" && text[i + 1] === "*") { inComment = true; i += 2; continue; }
+        if (inComment && ch === "*" && text[i + 1] === "/") { inComment = false; i += 2; continue; }
+        if (inComment) {
+          if (ch === "`") {
+            offenders.push(`${file}:${text.slice(0, i).split("\n").length}`);
+            /* One report per template is enough; the fix is the same edit. */
+            inComment = false;
+            while (i < text.length && !(text[i] === "*" && text[i + 1] === "/")) i++;
+            continue;
+          }
+          i++;
+          continue;
+        }
+        if (ch === "$" && text[i + 1] === "{") { depth++; i += 2; continue; }
+        if (ch === "}" && depth) { depth--; i++; continue; }
+        if (ch === "`" && !depth) break;
+        i++;
+      }
+      tag.lastIndex = i + 1;
+    }
+  }
+  return offenders;
+};
+
 const ALLOWED_HOSTS = new Set([
   /* The six opt-in newsrooms. These are only ever fetched once the user has
    * pressed "Turn on full sources" and Chrome has granted the matching
@@ -238,14 +362,23 @@ const ALLOWED_HOSTS = new Set([
   "cryptoslate.com",
   "decrypt.co",
   "feeds.bbci.co.uk",
+  /* CoinDesk and The Block (29 Sep 2026): the seventh and eighth. */
+  "www.coindesk.com",
+  "www.theblock.co",
 
-  /* Three financial newsrooms that need **no permission at all**: each answers
-   * `Access-Control-Allow-Origin: *`, verified 21 Aug 2026 by sending a
-   * `chrome-extension://` Origin and reading the header back. That is what
-   * separates them from the six above, and it is why they are `optional:
-   * false` in `NEWS_SOURCES` while Cointelegraph and the rest are not. */
+  /* Four newsrooms that need **no permission at all**: each answers
+   * `Access-Control-Allow-Origin: *`, verified by sending a
+   * `chrome-extension://` Origin and reading the header back — the first three
+   * on 21 Aug 2026, Bitcoin.com on 28 Aug. That is what separates them from
+   * the six above, and it is why they are `optional: false` in `NEWS_SOURCES`
+   * while Cointelegraph and the rest are not. Three of them are finance desks;
+   * Bitcoin.com is the only one on the crypto beat, which is what a fresh
+   * install had none of. */
   "feeds.content.dowjones.io",
-  "finance.yahoo.com",
+  "news.bitcoin.com",
+  /* The fifth always-on news source (21 Sep 2026): its wp-json sends
+     Access-Control-Allow-Origin: * to an extension Origin. See ref/news.md. */
+  "cryptopotato.com",
   "search.cnbc.com",
 
   "api.alternative.me",
@@ -265,15 +398,33 @@ const ALLOWED_HOSTS = new Set([
   // createElementNS in chart.js. Nothing is ever fetched from it.
   "www.w3.org",
 ]);
+/* **Link-only data** (28 Sep 2026): the tax guide's sources — about eighty
+ * pages on tax authorities, law firms and guides, one or more per country,
+ * each printed as an <a target="_blank"> a person presses to check a rule.
+ * Listing each host here would bury the list above, whose job is to name
+ * every host the extension *talks to*. So these files are held to a
+ * stricter rule instead: they may name any page, and they may not contain
+ * anything that makes a request (checked below). */
+const LINK_ONLY_FILES = ["tax-world.js"];
+check("link-only data files cannot make a request", () => {
+  const out = [];
+  for (const f of LINK_ONLY_FILES) {
+    const body = stripComments(read(`src/${f}`));
+    for (const p of [/\bfetch\s*\(/, /XMLHttpRequest/, /\bimport\s*\(/, /new\s+(Image|WebSocket|EventSource)\b/, /sendBeacon/, /createElement\s*\(\s*["'](script|img|iframe|link)/]) {
+      if (p.test(body)) out.push(`src/${f} contains ${p} — a link-only file must not request anything`);
+    }
+  }
+  return out;
+});
 check("no undeclared remote hosts in src/", () => {
   const out = [];
-  for (const f of srcFiles) {
+  for (const f of srcFiles.filter((x) => !LINK_ONLY_FILES.includes(x))) {
     const body = stripComments(read(`src/${f}`));
     for (const m of body.matchAll(/https?:\/\/([a-zA-Z0-9.-]+)/g)) {
       if (!ALLOWED_HOSTS.has(m[1])) {
         out.push(
           `src/${f} references ${m[1]} — add it to ALLOWED_HOSTS here and to ` +
-            `CLAUDE.md's provider list if it is intended`,
+            `the codebase guide's provider list if it is intended`,
         );
       }
     }
@@ -282,7 +433,7 @@ check("no undeclared remote hosts in src/", () => {
 });
 
 // --- 11. No credentials in the extension --------------------------------
-// CLAUDE.md: "No hardcoded secrets or API keys" / "localStorage for
+// The codebase guide: "No hardcoded secrets or API keys" / "localStorage for
 // preferences only (no secrets)". Every provider used here is keyless by
 // design; a key appearing at all means a provider was swapped for one that
 // is not, which changes the privacy story.
@@ -293,60 +444,7 @@ check("no hardcoded API keys or tokens in src/", () =>
   ),
 );
 
-// --- 12. The agent rulebook is wired to every entry point ----------------
-/* `docs/internal/AGENT_RULES.md` is what binds Claude, Codex and Gemini to the same way
- * of working, and each of them arrives by a different door: Claude and Codex
- * through `CLAUDE.md` (`AGENTS.md` is a symlink to it), Gemini through
- * `GEMINI.md`. A rename that leaves one door pointing at nothing is silent —
- * the agent simply never reads the rules and nobody finds out until it behaves
- * like an agent with no rules.
- *
- * Conditional on purpose: all of these files are git-ignored local notes, so a
- * clean CI checkout has none of them. Where the file is absent there is nothing
- * to keep honest; where it is present, it has to point somewhere real. */
-check("the agent rulebook is reachable from every entry point", () => {
-  const out = [];
-  const rules = path.join(ROOT, "docs", "internal", "AGENT_RULES.md");
-  const doors = [
-    ["CLAUDE.md", "Claude, and Codex through the AGENTS.md symlink"],
-    ["GEMINI.md", "Gemini"],
-  ];
-  const present = doors.filter(([f]) => fs.existsSync(path.join(ROOT, f)));
-  if (!present.length && !fs.existsSync(rules)) return out; // clean checkout
-  if (!fs.existsSync(rules)) {
-    out.push("docs/internal/AGENT_RULES.md is missing but an entry point exists");
-    return out;
-  }
-  for (const [file, who] of present) {
-    const text = fs.readFileSync(path.join(ROOT, file), "utf8");
-    if (!text.includes("docs/internal/AGENT_RULES.md")) {
-      out.push(`${file} does not point at docs/internal/AGENT_RULES.md (the door for ${who})`);
-    }
-  }
-  // The one command has to be spelled the same everywhere it is promised
-  const text = fs.readFileSync(rules, "utf8");
-  if (!text.includes("npm --prefix tests run check")) {
-    out.push("docs/internal/AGENT_RULES.md never names the command that must be green");
-  }
-  if (!text.includes("docs/internal/agents/")) {
-    out.push("docs/internal/AGENT_RULES.md never says where the journals live");
-  }
-  return out;
-});
 
-// --- 13. Local-only files are not tracked by git -------------------------
-/* `.gitignore` does nothing for a file that is already tracked — add one once,
- * with `git add -f` or before the ignore rule existed, and it is in the history
- * forever, on every clone and on the public remote. That has already happened
- * here: an early `CLAUDE.md` and `docs/internal/AI_GUIDELINES.md` live in commits
- * `dfdd536`…`4b00b34` on `origin/main`, removed from the tree but not from the
- * history.
- *
- * So the ignore list is not the guard — this is. It fails the moment one of
- * these appears in the index, which is before it can reach a commit.
- *
- * Skipped where there is no git (a tarball, a packaged build): there is nothing
- * to be tracked by. */
 /* The store summary is written in three places, and drift between them is not
  * a tidiness problem here — it is this listing's specific failure mode.
  *
@@ -356,8 +454,8 @@ check("the agent rulebook is reachable from every entry point", () => {
  * that came out of it — one canonical source — is only enforceable if
  * something checks the copies still agree.
  *
- * Conditional like the rest: the store docs are tracked, but this stays quiet
- * if a checkout does not have them. */
+ * The working store copy is deliberately local-only. These checks still run
+ * when that copy is present, while the manifest limit applies in every clone. */
 check("the store summary says the same thing everywhere", () => {
   const out = [];
   const manifestPath = path.join(ROOT, "manifest.json");
@@ -377,8 +475,8 @@ check("the store summary says the same thing everywhere", () => {
     out.push(`manifest description is ${summary.length} chars — the store cuts at 132`);
   }
   for (const doc of [
-    "docs/store/STORE_DESCRIPTION.md",
-    "docs/store/STORE_ASSETS.md",
+    "docs/internal/store/STORE_DESCRIPTION.md",
+    "docs/internal/store/STORE_ASSETS.md",
   ]) {
     const full = path.join(ROOT, doc);
     if (!fs.existsSync(full)) continue;
@@ -392,7 +490,7 @@ check("the store summary says the same thing everywhere", () => {
   /* And the thing that got it rejected in the first place: a run of tickers.
    * Checked on the detailed description, which is the block that is pasted
    * into the dashboard. */
-  const descPath = path.join(ROOT, "docs/store/STORE_DESCRIPTION.md");
+  const descPath = path.join(ROOT, "docs/internal/store/STORE_DESCRIPTION.md");
   if (fs.existsSync(descPath)) {
     const text = fs.readFileSync(descPath, "utf8");
     const at = text.indexOf("## Detailed Description");
@@ -409,42 +507,50 @@ check("the store summary says the same thing everywhere", () => {
   return out;
 });
 
-check("no local-only agent file is tracked by git", () => {
-  const { execFileSync } = require("child_process");
-  if (!fs.existsSync(path.join(ROOT, ".git"))) return [];
-  const LOCAL_ONLY = [
-    "CLAUDE.md",
-    "AGENTS.md",
-    "GEMINI.md",
-    /* The whole directory, not a file per line. Every piece of working
-     * material lives under it now, so a new note dropped in beside the others
-     * is covered the day it is written — the old list named four paths and a
-     * fifth file would have walked straight past this check onto a public
-     * remote. */
-    "docs/internal",
-    "MONETIZATION.md",
-    "BUSINESS_IDEAS.md",
-    ".claude",
-  ];
-  let listed;
-  try {
-    listed = execFileSync("git", ["ls-files", "--", ...LOCAL_ONLY], {
-      cwd: ROOT,
-      encoding: "utf8",
-      stdio: ["ignore", "pipe", "ignore"],
-    });
-  } catch {
-    return []; // no git binary, or not a work tree
+
+/* --- the palette has one blue, and it belongs to one thing --------------
+ *
+ * `chartLine` is a blue, and the only hue in this interface that is not green,
+ * red or ink. It exists for the **second line in comparison mode**, where two
+ * series have to be told apart and up/down are already spoken for.
+ *
+ * It kept leaking out of there into accents: hovering a coin in the portfolio
+ * turned its symbol Tailwind-blue, an active widget control used the same
+ * token, and the allocation strip's Other bar fell back to it. On a word, at
+ * that saturation, it reads as a hyperlink; on a bar it reads as a seventh
+ * identity rather than the absence of one. Interaction has its own token now
+ * (`accent`, green-family and deliberately not the up-green), so this fails
+ * the moment the blue is borrowed for something that is not a plotted line.
+ *
+ * The one legitimate reader outside the chart is the strip under the price
+ * that names the two compared lines (`CompareStrip`, `styles-app.js`): it
+ * asks `chart.js` for the ink through `compareInk()` rather than naming the
+ * token, so the legend can only ever be the colour the line actually is.
+ */
+check("no backtick inside a styled-components template", () =>
+  templateCommentBackticks().map(
+    (at) => `${at} — a backtick in a comment inside a tagged template ends the literal`,
+  ),
+);
+
+check("the palette's blue is only ever a plotted line", () => {
+  const out = [];
+  /* `chart.js` is the comparison overlay, which is what the colour is for.
+   * Everything else has to justify itself here rather than in review. */
+  const allowed = new Set(["chart.js"]);
+  for (const file of srcFiles) {
+    if (allowed.has(file)) continue;
+    read(`src/${file}`)
+      .split("\n")
+      .forEach((line, i) => {
+        if (!/color\.chartLine\b/.test(line)) return;
+        out.push(
+          `src/${file}:${i + 1} uses the palette's blue outside the ` +
+            `comparison chart — interaction and "on" states use color.accent`,
+        );
+      });
   }
-  return listed
-    .split("\n")
-    .filter(Boolean)
-    .map(
-      (f) =>
-        `${f} is tracked — it is working material, not part of the published ` +
-        `extension. Untrack it with \`git rm --cached\` before committing; ` +
-        `once it is in a commit that has been sent to the remote, it is public.`,
-    );
+  return out;
 });
 
 if (failures) {
