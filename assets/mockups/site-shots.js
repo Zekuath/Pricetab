@@ -3,6 +3,9 @@
  *
  *   node assets/mockups/site-shots.js            # every scene → site/shots/
  *   node assets/mockups/site-shots.js tax news   # just these
+ *   node assets/mockups/site-shots.js --lang=tr --out=<dir> hero widgets
+ *       # the app in one of its 13 languages, into another folder — the
+ *       # store's localized images (11 Oct 2026); site/shots stays English
  *
  * Why a script of its own rather than more scenes in `scenes.html`: that
  * pipeline fires its clicks on fixed timers and its seeds were written against
@@ -476,14 +479,18 @@ const SCENES = {
 };
 
 (async () => {
-  const only = process.argv.slice(2);
+  const args = process.argv.slice(2);
+  const flag = (name) => (args.find((a) => a.startsWith(`--${name}=`)) || "").split("=")[1] || "";
+  const LANG = flag("lang");
+  const outDir = flag("out") ? path.resolve(flag("out")) : OUT;
+  const only = args.filter((a) => !a.startsWith("--"));
   const names = only.length ? only : Object.keys(SCENES);
   for (const n of names) if (!SCENES[n]) throw new Error(`unknown scene "${n}" — ${Object.keys(SCENES).join(", ")}`);
 
   const px = {};
   for (const c of ["BTC", "ETH", "SOL", "LINK", "DOGE"]) px[c] = await spot(c);
   const extra = { candles: names.includes("replay") ? await candles15() : [] };
-  fs.mkdirSync(OUT, { recursive: true });
+  fs.mkdirSync(outDir, { recursive: true });
   const server = await serve();
   const url = `http://127.0.0.1:${server.address().port}/index.html`;
   const browser = await chromium.launch();
@@ -493,7 +500,7 @@ const SCENES = {
       const scene = SCENES[name];
       const [vw, vh] = scene.size || [W, H];
       const ctx = await browser.newContext({ viewport: { width: vw, height: vh }, deviceScaleFactor: 1, colorScheme: "dark", ...(scene.context || {}) });
-      const store = { ...BASE, ...scene.store(px, extra) };
+      const store = { ...BASE, ...scene.store(px, extra), ...(LANG ? { crypto_chart_language: LANG } : {}) };
       await ctx.addInitScript((s) => {
         if (sessionStorage.getItem("__seeded")) return;
         localStorage.clear();
@@ -506,10 +513,18 @@ const SCENES = {
       try {
         await page.goto(url, { waitUntil: "load" });
         await page.waitForSelector("svg path", { timeout: 20000 });
+        /* Another language: its catalogue is fetched on the first load and
+           kept, and labels built at load read the kept copy — so one more
+           load, and every string is in that language. */
+        if (LANG) {
+          await page.waitForTimeout(1500);
+          await page.reload({ waitUntil: "load" });
+          await page.waitForSelector("svg path", { timeout: 20000 });
+        }
         await page.waitForTimeout(2500);
         // A scene may lay out its own frame (the phone's three screens) and hand it back
         const own = await scene.run(page, browser);
-        const file = path.join(OUT, `${name}.png`);
+        const file = path.join(outDir, `${name}.png`);
         if (Buffer.isBuffer(own)) fs.writeFileSync(file, own);
         else await page.screenshot({ path: file });
         const bytes = fs.statSync(file).size;

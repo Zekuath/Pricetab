@@ -288,12 +288,25 @@ sandbox.__agg = mkCandles([
 ]);
 assert.strictEqual(run("aggregateCandles(__agg, 10).length"), 4, "under the cap: untouched");
 const agg = json("aggregateCandles(__agg, 2)");
-assert.strictEqual(agg.length, 2, "reduced to the cap");
+/* Merged on the clock since 12 Oct 2026: two-step bars start at even times,
+   so [1] [2,3] [4] — one over the cap at most, the edges' partial bars. */
+assert.ok(agg.length <= 3 && agg.length < 4, "reduced to about the cap");
 assert.deepStrictEqual(
-  agg[0],
-  { time: 1, open: 10, close: 18, high: 20, low: 8, volume: 300 },
+  agg[1],
+  { time: 2, open: 12, close: 7, high: 20, low: 5, volume: 500 },
   "bucket keeps first open, last close, extremes and summed volume",
 );
+/* **A merged bar does not depend on where the window starts**: the same
+   candles, the window one candle later, and every bar they share is the
+   same bar. Chunked from the first candle on screen, a sideways drag
+   reshaped every bar on the chart (12 Oct 2026). */
+sandbox.__walk = mkCandles(Array.from({ length: 60 }, (_, i) => [i + 100, 50 + Math.sin(i) * 5, 60 + i % 7, 40 - i % 5, 50 + Math.cos(i) * 5, 10 + i]));
+const fromA = json("aggregateCandles(__walk.slice(0, 50), 12)");
+const fromB = json("aggregateCandles(__walk.slice(1, 51), 12)");
+const shared = fromA.filter((a) => fromB.some((b) => b.time === a.time));
+const inner = shared.slice(1, -1);
+assert.ok(inner.length >= 6 && inner.every((a) => JSON.stringify(a) === JSON.stringify(fromB.find((b) => b.time === a.time))),
+  "a window one candle later merges the shared candles into the same bars");
 assert.deepStrictEqual(json("aggregateCandles([], 5)"), [], "no candles → none");
 assert.deepStrictEqual(json("aggregateCandles(null, 5)"), [], "missing candles → none");
 

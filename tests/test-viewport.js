@@ -147,6 +147,38 @@ const DAY = 86400000;
   eq(run(`lttb(__noisy.slice(0, 50), 300)`).length, 50, "a short series is left alone");
 }
 
+/* ── M4: thinned on the clock (12 Oct 2026) ──
+   What the window draws when it holds more points than pixels. Two things
+   held: every pixel column keeps its extremes (a line from them is the line
+   from all of them), and a window moved sideways keeps every column it
+   shares exactly as it was — LTTB's buckets began at the window's first
+   point, so a drag re-chose the line's points at every step. */
+{
+  const n = 4000;
+  sandbox.__dense = Array.from({ length: n }, (_, i) => ({
+    price: 100 + Math.sin(i / 37) * 5 + Math.sin(i * 1.7) * 2 + (i === 1777 ? 60 : 0),
+    time: new Date(i * 1000),
+  }));
+  const span = 3000 * 1000;
+  const cut = (t0) => `__dense.filter((p) => +p.time >= ${t0} && +p.time <= ${t0 + span})`;
+  const a = run(`m4(${cut(200000)}, 200000, ${200000 + span}, 500)`);
+  const b = run(`m4(${cut(260000)}, 260000, ${260000 + span}, 500)`);
+  ok(a.length <= 4 * 501 && a.length < 3001, "thinned to at most four points a column", a.length);
+  ok(a.some((p) => p.price > 150), "the spike survives");
+  const ms = (p) => Date.parse(p.time);
+  const key = (p) => Math.floor(ms(p) / (span / 500));
+  const cols = (pts) => { const m = new Map(); for (const p of pts) { const k = key(p); m.set(k, (m.get(k) || []).concat([ms(p)])); } return m; };
+  const ca = cols(a), cb = cols(b);
+  const shared = [...ca.keys()].filter((k) => cb.has(k)).sort((x, y) => x - y).slice(1, -1);
+  ok(shared.length > 300 && shared.every((k) => ca.get(k).join() === cb.get(k).join()),
+    "a window moved sideways keeps every column it shares, point for point", shared.length);
+  // And LTTB, for the record, does not
+  const la = run(`lttb(${cut(200000)}, 2000)`).map(ms);
+  const lb = new Set(run(`lttb(${cut(260000)}, 2000)`).map(ms));
+  const overlap = la.filter((t) => t >= 260000 && t <= 200000 + span);
+  ok(overlap.some((t) => !lb.has(t)), "(LTTB re-chose points over the same stretch — why it was replaced)");
+}
+
 /* ── The move marks, pointed again by time ── */
 {
   sandbox.__cut = run(`sliceSeries(__line, 2500, 6500)`).map((p) => Object.assign(p, { time: new Date(p.time) }));

@@ -771,6 +771,8 @@ const saveCompanion = (enabled) => saveSetting(COMPANION_KEY, enabled);
 // A logarithmic price axis — see LOG_SCALE_KEY
 const loadLogScale = () => loadBoolSetting(LOG_SCALE_KEY, DEFAULT_LOG_SCALE);
 const saveLogScale = (enabled) => saveSetting(LOG_SCALE_KEY, enabled);
+const loadRoomAhead = () => loadBoolSetting(ROOM_AHEAD_KEY, DEFAULT_ROOM_AHEAD);
+const saveRoomAhead = (enabled) => saveSetting(ROOM_AHEAD_KEY, enabled);
 
 const loadMoveNews = () => loadBoolSetting(MOVE_NEWS_KEY, DEFAULT_MOVE_NEWS);
 

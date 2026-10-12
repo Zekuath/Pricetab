@@ -1347,12 +1347,6 @@
   "br_above_200d": {
     "message": "200日平均を上回る"
   },
-  "br_across_episodes": {
-    "message": "（$1 回）"
-  },
-  "br_across_one_episode": {
-    "message": "（1 回）"
-  },
   "br_ah_move": {
     "message": "その後 $1 日間は $3 回中 $2 回で普段より大きく動きました。意味がなければ半分です。"
   },
@@ -1374,8 +1368,42 @@
   "br_ah_up": {
     "message": "$1 日後に上昇したのは $3 回中 $2%、任意の $1 日間では $4%。"
   },
+  "br_bar_base": {
+    "message": "任意の日"
+  },
+  "br_bar_this": {
+    "message": "この後"
+  },
+  "br_bar_up": {
+    "message": "上昇 $1% · $2回",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "br_bar_value": {
+    "message": "上昇 $1% · 典型的に $2 · $3回",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      }
+    }
+  },
   "br_close": {
     "message": "ベースレートを閉じる"
+  },
+  "br_coins_aria": {
+    "message": "別の銘柄を見る"
   },
   "br_cpi_count": {
     "message": "$2 回中 $1 回"
@@ -1478,6 +1506,9 @@
   "br_n_times": {
     "message": "$1 回"
   },
+  "br_nav_aria": {
+    "message": "この画面のセクション"
+  },
   "br_next_30": {
     "message": "次の30日"
   },
@@ -1519,9 +1550,6 @@
   },
   "br_one_time": {
     "message": "1 回"
-  },
-  "br_ordinary_days": {
-    "message": "通常の $1 日間: $2、うち $3% が上昇（$4 件）。 "
   },
   "br_pce_title": {
     "message": "米国PCE · 個人消費支出物価"
@@ -1576,9 +1604,6 @@
   },
   "br_try_again": {
     "message": "再試行"
-  },
-  "br_typically": {
-    "message": "通常 $1、$2% の確率で上昇"
   },
   "br_wd_note": {
     "message": "翌日が上昇で引けた割合を、終値の曜日（UTC）ごとに $1 日分で集計。全体では $2%。4つのコインで検証した結果、このコインの曜日差は偶然を超えていました — 1日の方向のわずかな差で、大きさではなく、今週について何かを言うものでもありません。"
@@ -7851,6 +7876,24 @@
   "pref_replay_tour": {
     "message": "ツアーを再表示"
   },
+  "pref_room_ahead_aria": {
+    "message": "価格の先の余白を切り替え"
+  },
+  "pref_room_ahead_desc": {
+    "message": "TradingView のように最新価格の右に空白の時間を残します — 価格は目盛りの手前で止まり、これから先が見えます"
+  },
+  "pref_room_ahead_heading": {
+    "message": "先の余白"
+  },
+  "pref_room_ahead_keywords": {
+    "message": "先 余白 未来 空白 右マージン tradingview オフセット 現在 端"
+  },
+  "pref_room_ahead_note": {
+    "message": "範囲の幅はそのままで、その15%を未来側へずらします。最も古い部分は左に少しはみ出し、ドラッグで戻せます。オンでもオフでも、ドラッグやホイールでいつでも最新価格の先へ動かせます。これは静止位置だけを決めます。コールボードには独自の未来があり、比較には未来がないため、どちらにも表示されません。"
+  },
+  "pref_room_ahead_title": {
+    "message": "先の余白"
+  },
   "pref_rotate_every": {
     "message": "切り替え間隔"
   },
@@ -8721,9 +8764,6 @@
   },
   "ss_st_up_what": {
     "message": "スーパートレンド（10, 3）が下向きから上向きに転換"
-  },
-  "ss_up_detail": {
-    "message": "10日後：$2 回のうち $1% で上昇。このコインの普段の10日：$3% で上昇。"
   },
   "stats_high": {
     "message": "高値"
@@ -10679,6 +10719,9 @@
   "mon_col_beta_title": {
     "message": "同じ30日間で、ビットコインが1%動くごとにどれだけ動いたか。ビットコインの動きに対するこのコインの動きの傾きです。この30日間の説明であり、今後を示すものではありません"
   },
+  "mon_col_changes_title": {
+    "message": "直近1日・1週間・1か月の価格の動き"
+  },
   "mon_col_spark": {
     "message": "30日"
   },
@@ -10691,11 +10734,17 @@
   "mon_fact_mover": {
     "message": "30日で最も動いた"
   },
+  "mon_fact_sort": {
+    "message": "この項目で表を並べ替え"
+  },
   "mon_fact_up": {
     "message": "直近24時間で上昇"
   },
   "mon_fact_widest": {
     "message": "最も大きい典型的な1日"
+  },
+  "mon_legend": {
+    "message": "各列の意味"
   },
   "mon_market_down": {
     "message": "24時間で最も下落"

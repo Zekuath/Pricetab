@@ -1331,12 +1331,6 @@
   "br_above_200d": {
     "message": "Sopra la sua media a 200 giorni"
   },
-  "br_across_episodes": {
-    "message": " su $1 episodi. "
-  },
-  "br_across_one_episode": {
-    "message": " su 1 episodio. "
-  },
   "br_ah_move": {
     "message": "i $1 giorni successivi si sono mossi più del solito $2 volte su $3; la metà lo farebbe."
   },
@@ -1358,8 +1352,42 @@
   "br_ah_up": {
     "message": "$1 giorni dopo in rialzo il $2% di $3 volte; $1 giorni qualsiasi: in rialzo il $4%."
   },
+  "br_bar_base": {
+    "message": "Un giorno qualsiasi"
+  },
+  "br_bar_this": {
+    "message": "Dopo questo"
+  },
+  "br_bar_up": {
+    "message": "in rialzo $1% · $2×",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "br_bar_value": {
+    "message": "in rialzo $1% · tipicamente $2 · $3×",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      }
+    }
+  },
   "br_close": {
     "message": "Chiudi tassi base"
+  },
+  "br_coins_aria": {
+    "message": "Leggi un'altra moneta"
   },
   "br_cpi_count": {
     "message": "$1 su $2"
@@ -1462,6 +1490,9 @@
   "br_n_times": {
     "message": "$1 volte"
   },
+  "br_nav_aria": {
+    "message": "Sezioni di questa schermata"
+  },
   "br_next_30": {
     "message": "prossimi 30 giorni"
   },
@@ -1503,9 +1534,6 @@
   },
   "br_one_time": {
     "message": "1 volta"
-  },
-  "br_ordinary_days": {
-    "message": "$1 giorni ordinari: $2, in rialzo il $3% ($4 di essi). "
   },
   "br_pce_title": {
     "message": "PCE USA · prezzi dei consumi personali"
@@ -1560,9 +1588,6 @@
   },
   "br_try_again": {
     "message": "Riprova"
-  },
-  "br_typically": {
-    "message": "tipicamente $1, in rialzo il $2% delle volte"
   },
   "br_wd_note": {
     "message": "Quanto spesso il giorno successivo ha chiuso più in alto, per giorno della settimana della chiusura (UTC), su $1 giorni; un giorno qualsiasi: $2%. Testati su quattro monete, i giorni della settimana di questa moneta sono differiti tra loro più del caso — una piccola differenza nella direzione di un giorno, non nell'ampiezza, e nulla su questa settimana."
@@ -7835,6 +7860,24 @@
   "pref_replay_tour": {
     "message": "Ripeti il tour"
   },
+  "pref_room_ahead_aria": {
+    "message": "Attiva spazio davanti al prezzo"
+  },
+  "pref_room_ahead_desc": {
+    "message": "Lascia tempo vuoto a destra dell'ultimo prezzo, come TradingView: il prezzo si ferma prima della scala e il grafico mostra ciò che arriva"
+  },
+  "pref_room_ahead_heading": {
+    "message": "Spazio davanti"
+  },
+  "pref_room_ahead_keywords": {
+    "message": "spazio davanti futuro vuoto margine destro tradingview scostamento ora bordo"
+  },
+  "pref_room_ahead_note": {
+    "message": "L'intervallo mantiene la sua larghezza e ne sposta il 15% nel futuro, così la parte più vecchia resta appena fuori a sinistra: trascinando torna. Trascinare o la rotella possono sempre portare il grafico oltre l'ultimo prezzo, attivo o no; questo decide solo dove si ferma. La tavola delle previsioni ha il suo futuro e un confronto non ne ha, quindi nessuno dei due lo mostra."
+  },
+  "pref_room_ahead_title": {
+    "message": "Spazio davanti"
+  },
   "pref_rotate_every": {
     "message": "Cambia ogni"
   },
@@ -8705,9 +8748,6 @@
   },
   "ss_st_up_what": {
     "message": "il Supertrend (10, 3) è passato da ribassista a rialzista"
-  },
-  "ss_up_detail": {
-    "message": "10 giorni dopo: su il $1% delle volte in $2 episodi. 10 giorni qualunque di questa moneta: su il $3%."
   },
   "stats_high": {
     "message": "Max"
@@ -10663,6 +10703,9 @@
   "mon_col_beta_title": {
     "message": "Quanto si è mossa per ogni 1% di movimento di Bitcoin, negli stessi 30 giorni — la pendenza dei suoi movimenti su quelli di Bitcoin. Descrive questi 30 giorni, mai ciò che verrà"
   },
+  "mon_col_changes_title": {
+    "message": "Di quanto si è mosso il prezzo nell'ultimo giorno, settimana e mese"
+  },
   "mon_col_spark": {
     "message": "30 giorni"
   },
@@ -10675,11 +10718,17 @@
   "mon_fact_mover": {
     "message": "Più mossa in 30 giorni"
   },
+  "mon_fact_sort": {
+    "message": "Ordina la tabella per questo"
+  },
   "mon_fact_up": {
     "message": "In rialzo nelle ultime 24 ore"
   },
   "mon_fact_widest": {
     "message": "Giorno tipico più ampio"
+  },
+  "mon_legend": {
+    "message": "Cosa significano le colonne"
   },
   "mon_market_down": {
     "message": "Più in calo in 24 ore"

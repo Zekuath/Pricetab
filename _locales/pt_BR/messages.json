@@ -1331,12 +1331,6 @@
   "br_above_200d": {
     "message": "Acima da média de 200 dias"
   },
-  "br_across_episodes": {
-    "message": " em $1 episódios. "
-  },
-  "br_across_one_episode": {
-    "message": " em 1 episódio. "
-  },
   "br_ah_move": {
     "message": "os $1 dias seguintes se moveram mais que o normal $2 de $3 vezes; metade se moveria."
   },
@@ -1358,8 +1352,42 @@
   "br_ah_up": {
     "message": "$1 dias depois, em alta $2% de $3 vezes; $1 dias quaisquer: em alta $4%."
   },
+  "br_bar_base": {
+    "message": "Um dia qualquer"
+  },
+  "br_bar_this": {
+    "message": "Depois disto"
+  },
+  "br_bar_up": {
+    "message": "em alta $1% · $2×",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "br_bar_value": {
+    "message": "em alta $1% · tipicamente $2 · $3×",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      }
+    }
+  },
   "br_close": {
     "message": "Fechar taxas base"
+  },
+  "br_coins_aria": {
+    "message": "Ver outra moeda"
   },
   "br_cpi_count": {
     "message": "$1 de $2"
@@ -1462,6 +1490,9 @@
   "br_n_times": {
     "message": "$1 vezes"
   },
+  "br_nav_aria": {
+    "message": "Seções desta tela"
+  },
   "br_next_30": {
     "message": "próximos 30 dias"
   },
@@ -1503,9 +1534,6 @@
   },
   "br_one_time": {
     "message": "1 vez"
-  },
-  "br_ordinary_days": {
-    "message": "Uns $1 dias comuns: $2, subiu $3% ($4 deles). "
   },
   "br_pce_title": {
     "message": "PCE dos EUA · preços do consumo pessoal"
@@ -1560,9 +1588,6 @@
   },
   "br_try_again": {
     "message": "Tentar de novo"
-  },
-  "br_typically": {
-    "message": "$1 normalmente, subiu $2% das vezes"
   },
   "br_wd_note": {
     "message": "Com que frequência o dia seguinte fechou mais alto, pelo dia da semana do fechamento (UTC), em $1 dias; qualquer dia: $2%. Testados em quatro moedas, os dias da semana desta moeda diferiram entre si mais do que o acaso — uma pequena diferença na direção de um dia, não no tamanho, e nada sobre esta semana."
@@ -7835,6 +7860,24 @@
   "pref_replay_tour": {
     "message": "Repetir o tour"
   },
+  "pref_room_ahead_aria": {
+    "message": "Alternar espaço à frente do preço"
+  },
+  "pref_room_ahead_desc": {
+    "message": "Deixa tempo em branco à direita do último preço, como no TradingView — o preço para antes da escala e o gráfico mostra o que vem"
+  },
+  "pref_room_ahead_heading": {
+    "message": "Espaço à frente"
+  },
+  "pref_room_ahead_keywords": {
+    "message": "espaço frente futuro branco margem direita tradingview deslocamento agora borda"
+  },
+  "pref_room_ahead_note": {
+    "message": "O intervalo mantém a largura e desloca 15% dela para o futuro, então a parte mais antiga fica logo fora à esquerda — arrastar a traz de volta. Arrastar ou a roda sempre podem levar o gráfico além do último preço, ligado ou não; isto só decide onde ele descansa. O tabuleiro de palpites tem seu próprio futuro e uma comparação não tem nenhum, então nenhum dos dois o mostra."
+  },
+  "pref_room_ahead_title": {
+    "message": "Espaço à frente"
+  },
   "pref_rotate_every": {
     "message": "Trocar a cada"
   },
@@ -8705,9 +8748,6 @@
   },
   "ss_st_up_what": {
     "message": "o Supertrend (10, 3) passou de baixa para alta"
-  },
-  "ss_up_detail": {
-    "message": "10 dias depois: em alta $1% das vezes em $2 episódios. 10 dias comuns desta moeda: em alta $3%."
   },
   "stats_high": {
     "message": "Máx"
@@ -10663,6 +10703,9 @@
   "mon_col_beta_title": {
     "message": "Quanto se moveu para cada 1% que o Bitcoin se moveu, nos mesmos 30 dias — a inclinação de seus movimentos sobre os do Bitcoin. Descreve estes 30 dias, nunca o que vem a seguir"
   },
+  "mon_col_changes_title": {
+    "message": "Quanto o preço se moveu no último dia, semana e mês"
+  },
   "mon_col_spark": {
     "message": "30 dias"
   },
@@ -10675,11 +10718,17 @@
   "mon_fact_mover": {
     "message": "Mais se moveu em 30 dias"
   },
+  "mon_fact_sort": {
+    "message": "Ordenar a tabela por isto"
+  },
   "mon_fact_up": {
     "message": "Em alta nas últimas 24 horas"
   },
   "mon_fact_widest": {
     "message": "Dia típico mais largo"
+  },
+  "mon_legend": {
+    "message": "O que as colunas significam"
   },
   "mon_market_down": {
     "message": "Maior queda em 24 horas"

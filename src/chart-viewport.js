@@ -109,6 +109,11 @@ const VIEW_DOUBLE_TAP_PX = 30;
    window that ends there keeps that room as new prices arrive. Pans only: a
    zoom still fits the range. */
 const VIEW_FUTURE_ROOM = 0.4;
+/* The resting chart's room past the price when Settings → "Room ahead" is on
+   (ROOM_AHEAD_KEY): the range's own width, moved this share into the future.
+   TradingView's default right margin is a few bars; a share of the range is
+   the same idea at every range. */
+const VIEW_REST_ROOM = 0.15;
 const VIEW_WHEEL_SETTLE_MS = 240; // quiet this long and a wheel gesture has ended
 /* **A mouse wheel's notch glides** (11 Oct 2026, the owner: *"smooth değil
    bu zoom in ve zoom out"*). Measured frame by frame: a trackpad's stream of
@@ -258,6 +263,45 @@ const sliceCandles = (candles, t0, t1) => {
  * kept before it and the average of the bucket after — which is the spike, not
  * the mean. Steinarsson (2013). Returns the input when it is already short
  * enough, so a caller can apply it unconditionally. */
+/* **M4: thinned on the clock** (12 Oct 2026). Jugel et al., "M4: A
+   Visualization-Oriented Time Series Data Aggregation" (VLDB 2014): keep each
+   pixel column's first, lowest, highest and last point and a line drawn from
+   them is the line drawn from all of them, pixel for pixel. The columns are
+   cut on absolute time (`floor(t / bucket)`), so a sideways drag — whose
+   span, and so whose bucket, does not change — keeps every column it keeps
+   on screen exactly as it was. LTTB's buckets started at the window's first
+   point and re-chose its points at every step of a drag. */
+const m4 = (points, t0, t1, columns) => {
+  if (!Array.isArray(points) || points.length < 3 || !(columns > 0) || !(t1 > t0)) return points;
+  const bucket = (t1 - t0) / columns;
+  const out = [];
+  let key = null;
+  let first = null;
+  let lo = null;
+  let hi = null;
+  let last = null;
+  const flush = () => {
+    if (!first) return;
+    const keep = [first, lo, hi, last].filter((p, i, a) => a.indexOf(p) === i);
+    keep.sort((a, b) => viewMs(a.time) - viewMs(b.time));
+    for (const p of keep) out.push(p);
+  };
+  for (const p of points) {
+    const k = Math.floor(viewMs(p.time) / bucket);
+    if (k !== key) {
+      flush();
+      key = k;
+      first = lo = hi = last = p;
+      continue;
+    }
+    if (Number(p.price) < Number(lo.price)) lo = p;
+    if (Number(p.price) > Number(hi.price)) hi = p;
+    last = p;
+  }
+  flush();
+  return out;
+};
+
 const lttb = (points, threshold) => {
   const n = Array.isArray(points) ? points.length : 0;
   if (!(threshold >= 3) || n <= threshold) return points;
@@ -750,7 +794,7 @@ class ChartView extends Component {
       /* Out, and already the whole range: the wheel keeps count, and past
          VIEW_PAST_WHEEL the chart moves to the next range, framed on this
          one's span so the zoom goes on from where it was. */
-      if (Math.abs(dy) > Math.abs(dx) && dy > 0 && viewIsFull(v, b.lo, b.hi) && this.props.onZoomPast) {
+      if (Math.abs(dy) > Math.abs(dx) && dy > 0 && (viewIsFull(v, b.lo, b.hi) || this.atRest()) && this.props.onZoomPast) {
         clearTimeout(this._pastTimer);
         this._pastTimer = setTimeout(() => {
           this._past = 0;
@@ -792,6 +836,14 @@ class ChartView extends Component {
       const v = this.current();
       const span = v.t1 - v.t0;
       const r = this.reach();
+      /* **Out, the blank ahead does not grow** (12 Oct 2026). About a pointer
+         left of the edge, a window ending at now widened into the future as
+         much as into the past: twelve notches out from 1D left the chart
+         ending 33 hours past the latest price, 28–40% of it empty. Zooming
+         out keeps the share of blank time it had (or the resting room's);
+         in, the window may still take the room any window may. */
+      const ahead = Math.max(0, (v.t1 - b.hi) / span);
+      const room = log > 0 ? Math.min(VIEW_FUTURE_ROOM, Math.max(ahead, this.props.restRoom || 0)) : VIEW_FUTURE_ROOM;
       const next = zoomView(
         v,
         Math.exp(log),
@@ -799,7 +851,7 @@ class ChartView extends Component {
         v.t0 < b.lo ? r.lo : b.lo,
         b.hi,
         this.minSpan(b),
-        VIEW_FUTURE_ROOM,
+        room,
       );
       if (!next) return false;
       const y = this.zoomedPrice(box.y, (next.t1 - next.t0) / span, b, next);
@@ -921,8 +973,9 @@ class ChartView extends Component {
         h: box.h,
         moved: false,
         /* Up and down slide the price window, on a touch screen too (the page
-           does not scroll) — but not while a lattice owns the price scale. */
-        vertical: !chart.priceToY && !chart.compareScaled,
+           does not scroll) — but not while the board owns the price scale.
+           The plain grid follows the held window since 12 Oct 2026. */
+        vertical: !(chart.priceToY && chart.props.predict) && !chart.compareScaled,
         // The window the slide starts from, in prices; null until it engages
         domain0: null,
         yAt: null,
@@ -1026,7 +1079,7 @@ class ChartView extends Component {
          down with the hand from there — the rule written above VIEW_Y_ZOOM. */
       if (d.vertical && d.yAt == null) {
         d.yAt = dy;
-        d.domain0 = this.chart ? this.chart.drawnDomain() : null;
+        d.domain0 = this.heldStart();
       }
       let y = null;
       if (d.yAt != null && d.domain0 && d.h > 0) {
@@ -1347,7 +1400,24 @@ class ChartView extends Component {
     const r = this.reach();
     const v = resolveView(this._pending || this.state.live || this.props.view, r.lo, r.hi, this.minSpan(b));
     // The whole range is the range's own points, not the older bars behind it
-    return v || { t0: b.lo, t1: b.hi, atNow: true };
+    return v || this.restView(b) || { t0: b.lo, t1: b.hi, atNow: true };
+  }
+
+  /* **The chart at rest, with room ahead** (Settings → "Room ahead",
+     VIEW_REST_ROOM). The range's own width, moved that share past the
+     latest price: the series is cut there like any window reaching into
+     the future, so everything placed from its ends follows, and a wheel or
+     a drag starts from exactly what is drawn. Null when it is off. */
+  restView(b) {
+    const room = this.props.restRoom;
+    if (!(room > 0) || !b || !this.props.viewEnabled) return null;
+    const full = b.hi - b.lo;
+    return { t0: b.lo + room * full, t1: b.hi + room * full, atNow: true, ahead: room };
+  }
+
+  // Nothing in hand and no window set: the chart as it rests
+  atRest() {
+    return !this._pending && !this.state.live && !this.props.view;
   }
 
   /* Where the price scale is, if (x, y) is on it: the gutter right of the
@@ -1428,10 +1498,23 @@ class ChartView extends Component {
 
   /* A sideways swipe of the wheel holds the price as a drag does: the window
      drawn now, unless one is already held or on its way. */
+  /* The grid's lattice holds too (12 Oct 2026): it is drawn from the held
+     window (gridGeometryFor). The board does not — a drag there walks it. */
   holdPrice() {
     const chart = this.chart;
-    if (!chart || chart.priceToY || chart.compareScaled || this.state.yPan || this._pendingY) return null;
-    return chart.drawnDomain();
+    if (!chart || (chart.priceToY && chart.props.predict) || chart.compareScaled || this.state.yPan || this._pendingY) return null;
+    return this.heldStart();
+  }
+
+  // The price window a hold starts from: the grid's own while it is drawn
+  heldStart() {
+    const chart = this.chart;
+    if (!chart) return null;
+    if (chart.priceToY && !chart.props.predict && chart.priceToY.domain) {
+      const [lo, hi] = chart.priceToY.domain();
+      return hi > lo ? { lo, hi } : null;
+    }
+    return chart.drawnDomain ? chart.drawnDomain() : null;
   }
 
   // The price scale back to the data (the "Auto", Whole range, a double-click)
@@ -1448,7 +1531,7 @@ class ChartView extends Component {
   renderAutoScale() {
     const chart = this.chart;
     if (!this.state.yPan || !this.enabled() || !chart || !(chart.axisW > 0) || !(chart.height > 0)) return null;
-    if (chart.priceToY || chart.compareScaled) return null;
+    if ((chart.priceToY && chart.props.predict) || chart.compareScaled) return null;
     const title = msg("view_auto_title", "Fit the price scale to the line again (or double-click the price scale)");
     return React.createElement(
       ScaleAuto,
@@ -1516,7 +1599,7 @@ class ChartView extends Component {
     const b = this.bounds();
     const v = this.current();
     // − on the whole range: the next range, framed on this one's span
-    if (factor > 1 && viewIsFull(v, b.lo, b.hi) && this.props.onZoomPast) {
+    if (factor > 1 && (viewIsFull(v, b.lo, b.hi) || this.atRest()) && this.props.onZoomPast) {
       this.zoomPast(b.hi - b.lo, 1, b);
       return true;
     }
@@ -1623,7 +1706,7 @@ class ChartView extends Component {
     const p = this.props;
     const b = this.bounds();
     const r = this.reach();
-    const v = b && p.viewEnabled ? resolveView(this.state.live || p.view, r.lo, r.hi, this.minSpan(b)) : null;
+    const v = b && p.viewEnabled ? resolveView(this.state.live || p.view, r.lo, r.hi, this.minSpan(b)) || this.restView(b) : null;
     const width = this.chart ? this.chart.width : 0;
     const m = this._memo;
     if (
@@ -1674,7 +1757,7 @@ class ChartView extends Component {
           if (viewMs(last.time) > viewMs(source[source.length - 1].time)) source = source.concat([last]);
         }
         line = sliceSeries(source, v.t0, t1);
-        if (width > 0 && line.length > width * VIEW_LTTB_OVER) line = lttb(line, Math.round(width));
+        if (width > 0 && line.length > width * VIEW_LTTB_OVER) line = m4(line, v.t0, v.t1, Math.round(width));
       }
       out = {
         prices: line,
@@ -1706,7 +1789,7 @@ class ChartView extends Component {
   render() {
     // Everything but the window's own props goes on to the chart
     const rest = Object.assign({}, this.props);
-    for (const k of ["view", "onViewChange", "viewEnabled", "detail", "detailSupported", "onZoomPast", "finerSpan", "history", "onNeedHistory"]) delete rest[k];
+    for (const k of ["view", "onViewChange", "viewEnabled", "detail", "detailSupported", "onZoomPast", "finerSpan", "history", "onNeedHistory", "restRoom"]) delete rest[k];
     const enabled = Boolean(this.props.viewEnabled);
     const shaped = this.shape();
     const gesture = this.state.gesture;

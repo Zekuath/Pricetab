@@ -139,17 +139,68 @@ class BaseRatesPanel extends PureComponent {
       failed: false,
       coin: null,
       cpi: null,
+      sections: [],
     };
     this.load = this.load.bind(this);
+    this.bodyRef = null;
   }
 
   componentDidMount() {
     this.load();
+    this.findSections();
   }
 
   componentDidUpdate(prev) {
     // The panel follows the chart: switch coin underneath it and it re-reads
     if (prev.coin !== this.props.coin) this.load();
+    this.findSections();
+  }
+
+  /* **The index reads the sections the panel drew** (11 Oct 2026): every
+     section label carries `data-base-section`, so the index is the screen's
+     own headings in its own language, in its own order — nothing to keep in
+     step by hand. Written only when the list changes, so it cannot loop. */
+  findSections() {
+    const body = this.bodyRef;
+    if (!body || !body.querySelectorAll) return;
+    const found = [...body.querySelectorAll("[data-base-section]")]
+      .map((n) => (n.textContent || "").split(" · ")[0].trim())
+      .filter(Boolean);
+    if (found.join("|") !== this.state.sections.join("|")) this.setState({ sections: found });
+  }
+
+  // Scrolled to just under the index, whose height depends on how it wraps
+  goToSection(i) {
+    const body = this.bodyRef;
+    const node = body && body.querySelectorAll("[data-base-section]")[i];
+    if (!node) return;
+    const nav = body.querySelector("[data-base-nav]");
+    const navH = nav ? nav.getBoundingClientRect().height : 0;
+    const top = node.getBoundingClientRect().top - body.getBoundingClientRect().top - navH - 12;
+    const still = typeof reducedMotion === "function" && reducedMotion();
+    body.scrollBy({ top, behavior: still ? "auto" : "smooth" });
+  }
+
+  /* Two counts as two bars: after this state, and after any day of the same
+     coin — the share that ended up, with the typical move and how many
+     times beside it. */
+  renderBars(self, base) {
+    const row = ([label, up, median, n], isBase) => [
+      React.createElement(BaseBarLabel, { key: `${label}-l`, base: isBase }, label),
+      React.createElement(
+        BaseBarTrack,
+        { key: `${label}-t`, base: isBase, "aria-hidden": "true" },
+        React.createElement("i", { style: { width: `${Math.max(0, Math.min(100, up))}%` } }),
+      ),
+      React.createElement(
+        BaseBarLabel,
+        { key: `${label}-v`, base: isBase },
+        median == null
+          ? msg("br_bar_up", "up $1% · $2×", up.toFixed(0), String(n))
+          : msg("br_bar_value", "up $1% · $2 typically · $3×", up.toFixed(0), formatSigned(median), String(n)),
+      ),
+    ];
+    return React.createElement(BaseBars, { "data-base-bars": "1" }, ...row(self, false), ...row(base, true));
   }
 
   componentWillUnmount() {
@@ -787,12 +838,15 @@ class BaseRatesPanel extends PureComponent {
       const r = baseRateFor(readings.closes, states, (v) => v, def.horizon || SETUP_HORIZON);
       if (!r || !r.n)
         return msg("ss_none", "Not once in this coin's daily history.");
-      return msg(
-        "ss_up_detail",
-        "10 days later: up $1% of the time across $2 episodes. An ordinary 10 days of this coin: up $3%.",
-        r.up.toFixed(0),
-        String(r.n),
-        r.baseUp.toFixed(0),
+      // The two counts and no verdict: tested, none of these differed (see the note)
+      return React.createElement(
+        BaseHorizon,
+        { "data-base-horizon": String(def.horizon || SETUP_HORIZON) },
+        React.createElement(BaseHorizonLabel, null, msg("cp_next_days", "next $1 days", String(def.horizon || SETUP_HORIZON))),
+        this.renderBars(
+          [msg("br_bar_this", "After this"), r.up, null, r.n],
+          [msg("br_bar_base", "Any day"), r.baseUp, null, r.baseN],
+        ),
       );
     })();
     return React.createElement(
@@ -918,37 +972,24 @@ class BaseRatesPanel extends PureComponent {
         const enough = r.edge != null;
         const edge = describeEdge(r.edge);
         return React.createElement(
-          BaseDetail,
-          { key: h.days },
-          `${h.label}: `,
-          React.createElement(
-            BaseCompare,
-            null,
-            msg(
-              "br_typically",
-              "$1 typically, up $2% of the time",
-              formatSigned(r.median),
-              r.up.toFixed(0),
-            ),
+          BaseHorizon,
+          { key: h.days, "data-base-horizon": String(h.days) },
+          React.createElement(BaseHorizonLabel, null, h.label),
+          this.renderBars(
+            [msg("br_bar_this", "After this"), r.up, r.median, r.n],
+            [msg("br_bar_base", "Any day"), r.baseUp, r.baseMedian, r.baseN],
           ),
-          (r.n === 1
-            ? msg("br_across_one_episode", " across 1 episode. ")
-            : msg("br_across_episodes", " across $1 episodes. ", r.n)) +
-            msg(
-              "br_ordinary_days",
-              "An ordinary $1 days: $2, up $3% ($4 of them). ",
-              h.days,
-              formatSigned(r.baseMedian),
-              r.baseUp.toFixed(0),
-              r.baseN,
-            ) +
-            (enough
+          React.createElement(
+            BaseVerdict,
+            { weak: !enough },
+            enough
               ? msg("br_that_is", "That is $1.", edge)
               : msg(
                   "br_too_few",
                   "$1 episodes is too few to compare — the difference is not printed.",
                   r.n,
-                )),
+                ),
+          ),
         );
       })
       .filter(Boolean);
@@ -1023,10 +1064,35 @@ class BaseRatesPanel extends PureComponent {
                 ? msg("br_reading", "Reading the daily closes…")
                 : "",
           ),
+          /* The coins to read, here: it used to take closing the screen,
+             switching the chart and opening it again. A pick switches the
+             chart's coin too — this screen always reads the chart's. */
+          Array.isArray(this.props.coins) && this.props.coins.length > 1 && this.props.onPickCoin
+            ? React.createElement(
+                BaseCoins,
+                { role: "group", "aria-label": msg("br_coins_aria", "Read another coin"), "data-base-coins": "1" },
+                ...this.props.coins.map((c) =>
+                  React.createElement(
+                    BaseChip,
+                    { key: c, active: c === coin, "aria-pressed": c === coin ? "true" : "false", onClick: () => c !== coin && this.props.onPickCoin(c) },
+                    c,
+                  ),
+                ),
+              )
+            : null,
         ),
         React.createElement(
           BaseBody,
-          null,
+          { innerRef: (n) => (this.bodyRef = n) },
+          this.state.sections.length > 2
+            ? React.createElement(
+                BaseNav,
+                { "aria-label": msg("br_nav_aria", "Sections of this screen"), "data-base-nav": String(this.state.sections.length) },
+                ...this.state.sections.map((t, i) =>
+                  React.createElement(BaseChip, { key: `${i}-${t}`, onClick: () => this.goToSection(i) }, t),
+                ),
+              )
+            : null,
           readings &&
             React.createElement(
               BaseNow,

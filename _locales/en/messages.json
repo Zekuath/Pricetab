@@ -2228,17 +2228,6 @@
   "br_above_200d": {
     "message": "Above its 200-day average"
   },
-  "br_across_episodes": {
-    "message": " across $1 episodes. ",
-    "placeholders": {
-      "arg1": {
-        "content": "$1"
-      }
-    }
-  },
-  "br_across_one_episode": {
-    "message": " across 1 episode. "
-  },
   "br_ah_move": {
     "message": "the next $1 days moved more than usual $2 of $3 times; half would.",
     "placeholders": {
@@ -2296,8 +2285,42 @@
       }
     }
   },
+  "br_bar_base": {
+    "message": "Any day"
+  },
+  "br_bar_this": {
+    "message": "After this"
+  },
+  "br_bar_up": {
+    "message": "up $1% · $2×",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "br_bar_value": {
+    "message": "up $1% · $2 typically · $3×",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      }
+    }
+  },
   "br_close": {
     "message": "Close base rates"
+  },
+  "br_coins_aria": {
+    "message": "Read another coin"
   },
   "br_cpi_count": {
     "message": "$1 of $2",
@@ -2470,6 +2493,9 @@
       }
     }
   },
+  "br_nav_aria": {
+    "message": "Sections of this screen"
+  },
   "br_next_30": {
     "message": "next 30 days"
   },
@@ -2516,23 +2542,6 @@
   },
   "br_one_time": {
     "message": "1 time"
-  },
-  "br_ordinary_days": {
-    "message": "An ordinary $1 days: $2, up $3% ($4 of them). ",
-    "placeholders": {
-      "arg1": {
-        "content": "$1"
-      },
-      "arg2": {
-        "content": "$2"
-      },
-      "arg3": {
-        "content": "$3"
-      },
-      "arg4": {
-        "content": "$4"
-      }
-    }
   },
   "br_pce_title": {
     "message": "US PCE · personal consumption prices"
@@ -2630,17 +2639,6 @@
   },
   "br_try_again": {
     "message": "Try again"
-  },
-  "br_typically": {
-    "message": "$1 typically, up $2% of the time",
-    "placeholders": {
-      "arg1": {
-        "content": "$1"
-      },
-      "arg2": {
-        "content": "$2"
-      }
-    }
   },
   "br_wd_note": {
     "message": "How often the next day closed higher, by the weekday of the close (UTC), over $1 days; any day: $2%. Tested on four coins, this coin's weekdays differed from one another by more than chance — a small difference in a day's direction, not a size, and nothing about this week.",
@@ -4566,6 +4564,9 @@
   "mon_col_beta_title": {
     "message": "How far it moved for each 1% Bitcoin moved, over the same 30 days — the slope of its moves on Bitcoin's. It describes these 30 days, never what comes next"
   },
+  "mon_col_changes_title": {
+    "message": "How far the price moved over the last day, week and month"
+  },
   "mon_col_coin": {
     "message": "Coin"
   },
@@ -4635,11 +4636,17 @@
   "mon_fact_mover": {
     "message": "Moved most in 30 days"
   },
+  "mon_fact_sort": {
+    "message": "Sort the table by this"
+  },
   "mon_fact_up": {
     "message": "Up in the last 24 hours"
   },
   "mon_fact_widest": {
     "message": "Widest typical day"
+  },
+  "mon_legend": {
+    "message": "What the columns mean"
   },
   "mon_loading": {
     "message": "Reading 30 days of prices…"
@@ -12011,6 +12018,24 @@
   "pref_replay_tour": {
     "message": "Replay tour"
   },
+  "pref_room_ahead_aria": {
+    "message": "Toggle room ahead of the price"
+  },
+  "pref_room_ahead_desc": {
+    "message": "Keep blank time to the right of the latest price, as TradingView does — the price stops short of the scale and the chart shows what is coming"
+  },
+  "pref_room_ahead_heading": {
+    "message": "Room Ahead"
+  },
+  "pref_room_ahead_keywords": {
+    "message": "room ahead future blank space right margin tradingview offset now edge see ahead"
+  },
+  "pref_room_ahead_note": {
+    "message": "The range keeps its width and moves 15% of it into the future, so the oldest part sits just off the left — a drag brings it back. A drag or the wheel can always take the chart past the latest price, on or off; this only decides where it rests. The calls board keeps its own future and a comparison has none, so neither shows it."
+  },
+  "pref_room_ahead_title": {
+    "message": "Room Ahead"
+  },
   "pref_rotate_every": {
     "message": "Switch Every"
   },
@@ -13012,20 +13037,6 @@
   },
   "ss_st_up_what": {
     "message": "Supertrend (10, 3) turned from down to up"
-  },
-  "ss_up_detail": {
-    "message": "10 days later: up $1% of the time across $2 episodes. An ordinary 10 days of this coin: up $3%.",
-    "placeholders": {
-      "arg1": {
-        "content": "$1"
-      },
-      "arg2": {
-        "content": "$2"
-      },
-      "arg3": {
-        "content": "$3"
-      }
-    }
   },
   "stats_high": {
     "message": "High"

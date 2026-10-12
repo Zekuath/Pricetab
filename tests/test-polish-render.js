@@ -4938,8 +4938,12 @@ const perpFromCoinbase = (handler) => async (r) => {
         return r.fulfill(json({ data: { amount: "112480.00", currency: "USD" } }));
       return r.fulfill(json({}));
     });
+    /* The release line under the price is drawn from 48 hours before a US
+       release, which moves the chart down a row on those days — a geometry
+       check must not depend on the calendar (12 Oct 2026: two days before
+       CPI this section failed on every version of the code). §54 holds the line. */
     await ctx.addInitScript(
-      'localStorage.setItem("crypto_chart_onboarding_seen", "1");' +
+      'localStorage.setItem("crypto_chart_onboarding_seen", "1"); localStorage.setItem("crypto_chart_macro_events", "false");' +
         'localStorage.setItem("crypto_chart_predict", "true");',
     );
     const page = await ctx.newPage();
@@ -10627,11 +10631,15 @@ await page.evaluate(`(() => { const m = document.querySelector("[data-practice-r
     check(read.rows.length >= 6, "the shapes this history has shown each get a row", read.rows.length);
     check(/shapes this panel looks for|What followed the last times/.test(read.intro),
       "…and the sentence above them does not promise rows that are not there", read.intro.slice(0, 200));
-    /* The rule the whole panel rests on: no rate without its denominator. */
-    const withRate = read.rows.filter((t) => /% of the time/.test(t));
-    check(withRate.length >= 5 && withRate.every((t) => /\d+ episodes|1 episode/.test(t)),
+    /* The rule the whole panel rests on: no rate without its denominator.
+       Since 11 Oct 2026 each count is a bar whose line reads "up 46% · …
+       · 378×", so the rule is held line by line: every line that prints a
+       share up carries the count it is a share of. */
+    const withRate = read.rows.filter((t) => /up \d+%/.test(t));
+    const bare = withRate.flatMap((t) => t.split("\n").filter((l) => /up \d+%/.test(l) && !/\d[\d,]*×/.test(l)));
+    check(withRate.length >= 5 && bare.length === 0,
       "no row prints a rate without the count behind it",
-      JSON.stringify(withRate.filter((t) => !/episodes|episode/.test(t)).slice(0, 2)));
+      JSON.stringify({ rows: withRate.length, bare: bare.slice(0, 2) }));
     /* And a thin row refuses the comparison instead of dressing it up. */
     check(/too few to compare/.test(read.bodyText),
       "a shape with too little history says so rather than printing a difference");
@@ -15482,7 +15490,11 @@ await page.evaluate(`(() => { const m = document.querySelector("[data-practice-r
       if (u.includes("spot")) return r.fulfill(json({ data: { amount: "43300.00", currency: "USD" } }));
       return r.fulfill(json(u.includes("candles") ? [] : { data: {} }));
     });
-    await ctx.addInitScript(`localStorage.setItem("crypto_chart_onboarding_seen", "1"); localStorage.setItem("crypto_chart_page_ticker_enabled", "false");`);
+    /* The release line under the price is drawn from 48 hours before a US
+       release, which moves the chart down a row on those days — a geometry
+       check must not depend on the calendar (12 Oct 2026: two days before
+       CPI this section failed on every version of the code). §54 holds the line. */
+    await ctx.addInitScript(`localStorage.setItem("crypto_chart_onboarding_seen", "1"); localStorage.setItem("crypto_chart_macro_events", "false"); localStorage.setItem("crypto_chart_page_ticker_enabled", "false");`);
     const page = await ctx.newPage();
     const errors = [];
     page.on("pageerror", (e) => errors.push(e.message));
@@ -16987,7 +16999,7 @@ await page.evaluate(`(() => { const m = document.querySelector("[data-practice-r
    * half of one opened the chip below. Real touches through CDP. */
   {
     const seen = () => {
-      localStorage.setItem("crypto_chart_onboarding_seen", "1");
+      localStorage.setItem("crypto_chart_onboarding_seen", "1"); localStorage.setItem("crypto_chart_macro_events", "false");
       localStorage.setItem("crypto_chart_touch_hint_seen", "true");
     };
     // Up from 90,000 to 134,859.54: eleven figures in both the price and the change
@@ -18848,6 +18860,200 @@ await page.evaluate(`(() => { const m = document.querySelector("[data-practice-r
     const total = spans[0] / spans[spans.length - 1];
     check(step < 0.07 && total > 1.5, "§121 a mouse notch glides over frames rather than jumping in one", JSON.stringify({ largestFrame: +(step * 100).toFixed(1) + "%", total: +total.toFixed(2) }));
     check(errors.length === 0, "§121 nothing threw", errors.join(" | "));
+    await ctx.close();
+  }
+
+  /* §122 — "Has this happened before?" and the monitor, easier to use (11 Oct
+   * 2026, the owner: *"base rate ve monitor kısmını biraz daha kullanıcı dostu
+   * hale getirelim"*). B ran 7,881px, every count a paragraph, and another
+   * coin meant closing it; M explained its columns only in tooltips and
+   * nothing said a row opens its coin. Held here: B's index lists its
+   * sections and a press puts that section just under it; the coins in its
+   * head read another coin in place; every share up is a bar whose line
+   * carries its count. M's cards sort the table by what they measure, and
+   * the columns' meanings are one press away. */
+  {
+    const ctx = await browser.newContext({ viewport: { width: 1280, height: 950 } });
+    const DAY = 86400;
+    const TODAY = Math.floor(Date.now() / 1000 / DAY) * DAY;
+    const DEEP = (() => {
+      const out = [];
+      let p = 30000;
+      for (let i = 900; i >= 0; i--) {
+        const open = p;
+        const close = p * (1 + Math.sin(i / 9) * 0.02);
+        out.push([TODAY - i * DAY, Math.min(open, close) * 0.99, Math.max(open, close) * 1.01, open, close, 100]);
+        p = close;
+      }
+      return out.reverse();
+    })();
+    await ctx.route("**/*", (r) => {
+      const u = r.request().url();
+      if (u.startsWith("file://")) return r.continue();
+      if (u.includes("granularity=86400")) {
+        const m = u.match(/start=([^&]+)&end=([^&]+)/);
+        const from = m ? Date.parse(decodeURIComponent(m[1])) / 1000 : 0;
+        const to = m ? Date.parse(decodeURIComponent(m[2])) / 1000 : TODAY;
+        return r.fulfill(json(DEEP.filter((c) => c[0] > from && c[0] <= to).slice(0, 300)));
+      }
+      if (u.includes("historic"))
+        return r.fulfill(json({ data: { prices: DEEP.slice(0, 120).reverse().map((c) => ({ price: String(c[4]), time: c[0] })) } }));
+      if (u.includes("spot")) return r.fulfill(json({ data: { amount: String(DEEP[0][4]), currency: "USD" } }));
+      return r.fulfill(json({ data: {} }));
+    });
+    await ctx.addInitScript(`localStorage.setItem("crypto_chart_onboarding_seen", "1"); localStorage.removeItem("crypto_chart_daily_closes");`);
+    const page = await ctx.newPage();
+    const errors = [];
+    page.on("pageerror", (e) => errors.push(e.message));
+    await page.goto(INDEX, { waitUntil: "load" });
+    await page.waitForSelector("svg path", { timeout: 20000 });
+    await page.waitForTimeout(1200);
+    await page.keyboard.press("b");
+    await page.waitForSelector("[data-base-nav]", { timeout: 20000 }).catch(() => {});
+    await page.waitForTimeout(800);
+    const nav = await page.evaluate(`[...document.querySelectorAll("[data-base-nav] button")].map((b) => b.innerText)`);
+    const labels = await page.evaluate(`document.querySelectorAll("[data-base-section]").length`);
+    check(nav.length >= 5 && nav.length === labels, "§122 B's index lists every section the screen drew", JSON.stringify({ nav: nav.length, labels }));
+    await page.click("[data-base-nav] button:nth-child(4)");
+    await page.waitForTimeout(1200);
+    const landed = await page.evaluate(`(() => { const navR = document.querySelector("[data-base-nav]").getBoundingClientRect(); const l = document.querySelectorAll("[data-base-section]")[3].getBoundingClientRect(); return { gap: Math.round(l.top - navR.bottom) }; })()`);
+    check(landed.gap >= 0 && landed.gap <= 40, "§122 …and a press puts that section just under the index, not behind it", JSON.stringify(landed));
+    const bars = await page.evaluate(`(() => { const lines = [...document.querySelectorAll("[data-base-bars]")].flatMap((b) => b.innerText.split("\\n")).filter((l) => /up \\d+%/.test(l)); return { lines: lines.length, bare: lines.filter((l) => !/\\d[\\d,]*×/.test(l)).length }; })()`);
+    check(bars.lines >= 4 && bars.bare === 0, "§122 every share up is a bar whose line carries its count", JSON.stringify(bars));
+    const coins = await page.evaluate(`[...document.querySelectorAll("[data-base-coins] button")].map((b) => b.innerText)`);
+    const other = coins.find((c) => c !== "BTC");
+    await page.click(`[data-base-coins] button:has-text("${other}")`);
+    await page.waitForTimeout(1500);
+    const after = await page.evaluate(`({ title: document.querySelector("[data-base-coins]").parentNode.innerText.split("\\n")[0], pressed: (document.querySelector("[data-base-coins] [aria-pressed='true']") || {}).innerText, open: Boolean(document.querySelector("[data-base-coins]")) })`);
+    check(coins.length > 1 && after.open && after.title.startsWith(other) && after.pressed === other, "§122 a coin in B's head reads that coin in place", JSON.stringify({ coins, other, after }));
+    await page.keyboard.press("Escape");
+    await page.waitForTimeout(600);
+
+    // The monitor
+    await page.keyboard.press("m");
+    await page.waitForSelector("[data-monitor-fact='widest']", { timeout: 15000 });
+    await page.waitForTimeout(1500);
+    await page.click("[data-monitor-fact='widest']");
+    await page.waitForTimeout(300);
+    const sorted = await page.evaluate(`[...document.querySelectorAll("[aria-sort]")].map((n) => n.innerText.replace(/[↑↓]/g, "").trim() + ":" + n.getAttribute("aria-sort"))`);
+    check(sorted.length === 1 && /descending/.test(sorted[0]) && /typical/i.test(sorted[0]), "§122 M's card sorts the table by what it measures", JSON.stringify(sorted));
+    await page.click("[data-monitor-legend] summary");
+    await page.waitForTimeout(200);
+    const legend = await page.evaluate(`(() => { const d = document.querySelector("[data-monitor-legend]"); return { open: d.open, terms: d.querySelectorAll("dt").length, text: d.innerText.length }; })()`);
+    check(legend.open && legend.terms === 5 && legend.text > 200, "§122 …and what each column means is one press away", JSON.stringify(legend));
+    check(errors.length === 0, "§122 nothing threw", errors.join(" | "));
+    await ctx.close();
+  }
+
+  /* §123 — TradingView's room ahead, and a chart that holds under the hand
+   * (12 Oct 2026, the owner: *"trading view gibi ileriyi görmemiz gerekiyor
+   * ve sağa sola oynatırken grafik sabit kalmalı … mod şeklinde ayarlardan"*).
+   * Measured first: the plain grid re-fitted the price in 356 of 368 frames
+   * of a drag; merged candles were chunked from the first one on screen, so
+   * a drag reshaped them (test-chart holds that); twelve notches out from 1D
+   * left the window ending 33 hours past the latest price. Held here: with
+   * Settings → Room ahead on, the chart rests with ~15% blank past the price
+   * and a double-click returns there, and a wheel out from rest still opens
+   * the next range; zooming out never widens the blank ahead; the grid's
+   * price scale stays put through a drag. */
+  {
+    const DAY_MS = 86400000;
+    const NOW_MS = Date.now();
+    const priceAt = (t) => 43000 + Math.sin(t / 3.6e6) * 700 + Math.sin(t / 4e5) * 90;
+    const series = (span, n) => Array.from({ length: n }, (_, i) => {
+      const t = NOW_MS - span + (span * i) / (n - 1);
+      return { price: priceAt(t).toFixed(2), time: Math.floor(t / 1000) };
+    });
+    const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+    await ctx.route("**/*", (r) => {
+      const u = r.request().url();
+      if (u.startsWith("file://")) return r.continue();
+      if (u.includes("historic")) return r.fulfill(json({ data: { prices: /period=week/.test(u) ? series(7 * DAY_MS, 300) : series(DAY_MS, 300) } }));
+      if (u.includes("/spot")) return r.fulfill(json({ data: { amount: priceAt(NOW_MS).toFixed(2), currency: "USD" } }));
+      return r.fulfill(json({ data: {} }));
+    });
+    await ctx.addInitScript(`localStorage.setItem("crypto_chart_onboarding_seen", "1"); localStorage.setItem("crypto_chart_macro_events", "false"); localStorage.setItem("crypto_chart_page_ticker_enabled", "false"); localStorage.setItem("crypto_chart_chances", "[]"); localStorage.setItem("crypto_chart_room_ahead", "true");`);
+    const page = await ctx.newPage();
+    const errors = [];
+    page.on("pageerror", (e) => errors.push(e.message));
+    await page.goto(INDEX, { waitUntil: "load" });
+    await page.waitForFunction(`[...document.querySelectorAll("svg path")].some((n) => n.getBoundingClientRect().width > 300)`, null, { timeout: 20000 });
+    await page.keyboard.press("2");
+    await page.waitForTimeout(1500);
+    const read = () => page.evaluate(`(() => {
+      const svg = document.querySelector("[data-axes]").ownerSVGElement;
+      let n = svg, key; while (n && !(key = Object.keys(n).find((k) => k.startsWith("__reactInternalInstance")))) n = n.parentNode;
+      let f = n[key]; let c = null; while (f && !(f.stateNode && f.stateNode.plotScale)) f = f.return; c = f.stateNode;
+      const ps = c.props.prices; const s = c.plotScale(); const r = svg.getBoundingClientRect();
+      return { blank: 1 - s.toX(+new Date(ps[ps.length - 1].time)) / c.width, range: (document.querySelector("[data-period-button][aria-pressed='true']") || {}).textContent || "", l: r.left, t: r.top, w: c.width, h: c.height };
+    })()`);
+    const rest = await read();
+    check(rest.blank > 0.12 && rest.blank < 0.18, "§123 Room ahead: at rest about 15% of the plot is blank time past the latest price", rest.blank.toFixed(3));
+    const cx = rest.l + rest.w * 0.5, cy = rest.t + rest.h * 0.5;
+    await page.mouse.move(cx, cy);
+    await page.mouse.down();
+    for (let i = 1; i <= 15; i++) await page.mouse.move(cx + i * 10, cy);
+    await page.mouse.up();
+    await page.waitForTimeout(600);
+    await page.mouse.dblclick(cx, cy);
+    await page.waitForTimeout(900);
+    const back = await read();
+    check(Math.abs(back.blank - rest.blank) < 0.01, "§123 …a double-click puts the chart back where it rests, room and all", back.blank.toFixed(3));
+    // Zoom in about a point left of the edge, then out: the blank never widens past what it had
+    await page.mouse.move(rest.l + rest.w * 0.4, cy);
+    for (let i = 0; i < 4; i++) { await page.mouse.wheel(0, -100); await page.waitForTimeout(80); }
+    await page.waitForTimeout(700);
+    const zin = await read();
+    for (let i = 0; i < 3; i++) { await page.mouse.wheel(0, 100); await page.waitForTimeout(80); }
+    await page.waitForTimeout(700);
+    const zout = await read();
+    check(zout.blank <= Math.max(zin.blank, 0.15) + 0.02, "§123 zooming out never widens the blank time ahead", JSON.stringify({ in: +zin.blank.toFixed(3), out: +zout.blank.toFixed(3) }));
+    await page.mouse.dblclick(cx, cy);
+    await page.waitForTimeout(900);
+    await page.mouse.move(cx, cy);
+    for (let i = 0; i < 14; i++) { await page.mouse.wheel(0, 120); await page.waitForTimeout(110); }
+    await page.waitForTimeout(1500);
+    const next = await read();
+    check(next.range === "1W", "§123 …and a wheel out from rest still opens the next range", next.range);
+    check(next.blank <= 0.17, "§123 …where going on out never widens the blank time ahead past the rest's", next.blank.toFixed(3));
+
+    // The grid: the price scale holds through a drag
+    await page.keyboard.press("2");
+    await page.waitForTimeout(1200);
+    await page.mouse.dblclick(cx, cy);
+    await page.waitForTimeout(800);
+    await page.keyboard.press("g");
+    await page.waitForTimeout(900);
+    /* Read off the chart's own scale, not the axis' figures: a figure next to
+       the latest price's tag is hidden while they would touch, so the set of
+       printed figures changes as the line slides even when the scale does not. */
+    const scale = () => page.evaluate(`(() => {
+      const svg = document.querySelector("[data-axes]").ownerSVGElement;
+      let n = svg, key; while (n && !(key = Object.keys(n).find((k) => k.startsWith("__reactInternalInstance")))) n = n.parentNode;
+      let f = n[key]; while (f && !(f.stateNode && f.stateNode.plotScale)) f = f.return;
+      const c = f.stateNode; const s = c.plotScale();
+      return c.priceToY && s ? [s.toV(c.height * 0.2), s.toV(c.height * 0.8)].map((v) => v.toFixed(2)).join(" ") : "";
+    })()`);
+    // Zoomed in, so the drag has somewhere to go, and settled before reading
+    for (let i = 0; i < 4; i++) { await page.mouse.wheel(0, -100); await page.waitForTimeout(80); }
+    await page.waitForTimeout(800);
+    const win = () => page.evaluate(`document.querySelector("[data-chart-viewport]").getAttribute("data-chart-window")`);
+    const w0 = await win();
+    const before = await scale();
+    const seen = new Set();
+    await page.mouse.move(cx, cy);
+    await page.mouse.down();
+    for (let i = 1; i <= 30; i++) {
+      await page.mouse.move(cx + i * 12, cy);
+      if (i % 5 === 0) seen.add(await scale());
+    }
+    await page.mouse.up();
+    await page.waitForTimeout(600);
+    seen.add(await scale());
+    const w1 = await win();
+    check(w0 && w1 && w0 !== w1, "§123 …the drag moved the window (or the next check proves nothing)", JSON.stringify([w0, w1]));
+    check(before !== "" && seen.size === 1 && [...seen][0] === before, "§123 with the grid on, the price scale stays put through a drag", JSON.stringify({ before, during: [...seen].slice(0, 3) }));
+    check(errors.length === 0, "§123 nothing threw", errors.join(" | "));
     await ctx.close();
   }
   await browser.close();

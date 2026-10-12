@@ -1347,12 +1347,6 @@
   "br_above_200d": {
     "message": "高于其 200 日均线"
   },
-  "br_across_episodes": {
-    "message": "（共 $1 次）"
-  },
-  "br_across_one_episode": {
-    "message": "（共 1 次）"
-  },
   "br_ah_move": {
     "message": "之后 $1 天在 $3 次中有 $2 次波动大于平常；若毫无意义则是一半。"
   },
@@ -1374,8 +1368,42 @@
   "br_ah_up": {
     "message": "$1 天后在 $3 次中有 $2% 上涨；任意 $1 天：$4% 上涨。"
   },
+  "br_bar_base": {
+    "message": "任意一天"
+  },
+  "br_bar_this": {
+    "message": "此后"
+  },
+  "br_bar_up": {
+    "message": "上涨 $1% · $2 次",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "br_bar_value": {
+    "message": "上涨 $1% · 通常 $2 · $3 次",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      }
+    }
+  },
   "br_close": {
     "message": "关闭基准频率"
+  },
+  "br_coins_aria": {
+    "message": "查看其他币种"
   },
   "br_cpi_count": {
     "message": "$2 次中 $1 次"
@@ -1478,6 +1506,9 @@
   "br_n_times": {
     "message": "$1 次"
   },
+  "br_nav_aria": {
+    "message": "本屏幕的各个部分"
+  },
   "br_next_30": {
     "message": "之后 30 天"
   },
@@ -1519,9 +1550,6 @@
   },
   "br_one_time": {
     "message": "1 次"
-  },
-  "br_ordinary_days": {
-    "message": "普通的 $1 天：$2，其中 $3% 上涨（共 $4 次）。 "
   },
   "br_pce_title": {
     "message": "美国PCE · 个人消费支出价格"
@@ -1576,9 +1604,6 @@
   },
   "br_try_again": {
     "message": "重试"
-  },
-  "br_typically": {
-    "message": "通常 $1，其中 $2% 上涨"
   },
   "br_wd_note": {
     "message": "按收盘所在星期几（UTC）统计次日收盘更高的频率，共 $1 天；任意一天：$2%。在四个币上检验，该币的星期差异超出了偶然——只是一天方向上的小差别，不是幅度，也不说明本周任何事。"
@@ -7851,6 +7876,24 @@
   "pref_replay_tour": {
     "message": "重看导览"
   },
+  "pref_room_ahead_aria": {
+    "message": "切换价格前方留白"
+  },
+  "pref_room_ahead_desc": {
+    "message": "像 TradingView 一样在最新价格右侧留出空白时间——价格不贴着刻度，图表显示即将到来的部分"
+  },
+  "pref_room_ahead_heading": {
+    "message": "前方留白"
+  },
+  "pref_room_ahead_keywords": {
+    "message": "前方 留白 未来 空白 右边距 tradingview 偏移 现在 边缘"
+  },
+  "pref_room_ahead_note": {
+    "message": "区间宽度不变，把其中 15% 移到未来一侧，最早的部分略微移出左边——拖动即可拉回。无论开关，拖动或滚轮都能随时把图表移到最新价格之后；此项只决定图表停在哪里。预测棋盘有自己的未来，对比没有未来，因此两者都不显示。"
+  },
+  "pref_room_ahead_title": {
+    "message": "前方留白"
+  },
   "pref_rotate_every": {
     "message": "每隔"
   },
@@ -8721,9 +8764,6 @@
   },
   "ss_st_up_what": {
     "message": "超级趋势（10, 3）由空转多"
-  },
-  "ss_up_detail": {
-    "message": "10天后：$2 次中 $1% 上涨。此币普通的10天：$3% 上涨。"
   },
   "stats_high": {
     "message": "最高"
@@ -10679,6 +10719,9 @@
   "mon_col_beta_title": {
     "message": "在同样的30天里，比特币每波动1%，它波动了多少 — 它的波动对比特币波动的斜率。它描述的是这30天，不是接下来会怎样"
   },
+  "mon_col_changes_title": {
+    "message": "最近一天、一周和一个月价格的变动幅度"
+  },
   "mon_col_spark": {
     "message": "30天"
   },
@@ -10691,11 +10734,17 @@
   "mon_fact_mover": {
     "message": "30天内波动最大"
   },
+  "mon_fact_sort": {
+    "message": "按此排序表格"
+  },
   "mon_fact_up": {
     "message": "最近24小时上涨"
   },
   "mon_fact_widest": {
     "message": "最宽的典型一天"
+  },
+  "mon_legend": {
+    "message": "各列的含义"
   },
   "mon_market_down": {
     "message": "24小时内跌幅最大"

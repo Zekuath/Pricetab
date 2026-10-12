@@ -156,7 +156,8 @@ const BaseNowLabel = styled.div`
   color: ${({ theme }) => theme.color.textSecondary};
 `;
 
-const BaseSectionLabel = styled.div`
+/* Marked so the panel's index can find every section it drew (11 Oct 2026). */
+const BaseSectionLabel = styled.div.attrs({ "data-base-section": "1" })`
   margin: 1.1rem 0 0.5rem;
   font-size: 0.66rem;
   letter-spacing: 0.12em;
@@ -318,4 +319,109 @@ const BaseLoad = styled.button.attrs({ type: "button" })`
     opacity: 0.5;
     cursor: default;
   }
+`;
+
+/* ── Easier to read and to move around (11 Oct 2026, the owner: *"base rate
+   … kısmını biraz daha kullanıcı dostu hale getirelim"*) ─────────────────
+   The screen ran 7,881px with every row a paragraph. Now: the coins to read
+   in its head, an index of its sections that stays at the top while it
+   scrolls, and each count drawn as two bars — after this state, and after
+   any day — in the text's own ink, never the direction colours: neither bar
+   is a direction. */
+const BaseCoins = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-left: auto;
+  margin-right: 2.5rem;
+`;
+
+const BaseChip = styled.button.attrs({ type: "button" })`
+  font-family: inherit;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  padding: 0.3rem 0.65rem;
+  border-radius: 999px;
+  cursor: pointer;
+  color: ${({ theme, active }) => (active ? theme.color.bg : theme.color.text)};
+  background: ${({ theme, active }) => (active ? theme.color.text : "transparent")};
+  border: 1px solid ${({ theme, active }) => (active ? theme.color.text : theme.color.border)};
+
+  &:hover,
+  &:focus-visible {
+    border-color: ${({ theme }) => theme.color.text};
+  }
+  ${touchRow};
+`;
+
+const BaseNav = styled.nav`
+  position: sticky;
+  top: -1.6rem;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: -1.6rem -2.5rem 0.6rem;
+  padding: 0.75rem 2.5rem 0.65rem;
+  max-width: none !important;
+  background: ${({ theme }) => theme.color.bg};
+  border-bottom: 1px solid ${({ theme }) => theme.color.border};
+
+  @media (max-width: 600px) {
+    margin: -1rem -1rem 0.6rem;
+    padding: 0.6rem 1rem;
+    top: -1rem;
+  }
+`;
+
+const BaseHorizon = styled.div`
+  grid-column: 1 / -1;
+  margin-top: 0.35rem;
+`;
+
+const BaseHorizonLabel = styled.div`
+  font-size: 0.66rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: ${({ theme }) => theme.color.textSecondary};
+  margin-bottom: 0.25rem;
+`;
+
+const BaseBars = styled.div`
+  display: grid;
+  grid-template-columns: max-content minmax(4rem, 1fr) max-content;
+  align-items: center;
+  gap: 0.25rem 0.6rem;
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+  color: ${({ theme }) => theme.color.text};
+`;
+
+const BaseBarLabel = styled.span`
+  color: ${({ theme, base }) => (base ? theme.color.textSecondary : theme.color.text)};
+`;
+
+const BaseBarTrack = styled.span`
+  position: relative;
+  display: block;
+  height: 0.45rem;
+  border-radius: 999px;
+  background: ${({ theme }) => theme.color.border};
+  overflow: hidden;
+
+  > i {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    border-radius: 999px;
+    background: ${({ theme, base }) => (base ? theme.color.textSecondary : theme.color.text)};
+    opacity: ${({ base }) => (base ? 0.55 : 1)};
+  }
+`;
+
+const BaseVerdict = styled.div`
+  margin-top: 0.3rem;
+  font-size: 0.72rem;
+  color: ${({ theme, weak }) => (weak ? theme.color.textSecondary : theme.color.text)};
 `;

@@ -1523,6 +1523,15 @@ const SETUP_MOVE_HORIZON = 30;
 
 const LOG_SCALE_KEY = "crypto_chart_log_scale";
 const DEFAULT_LOG_SCALE = false;
+/* **Room ahead of the price, at rest** (12 Oct 2026, the owner: *"trading
+   view gibi ileriyi görmemiz gerekiyor"*). TradingView keeps blank time to
+   the right of the last bar; the chart here ended at the right edge until a
+   pan took it past. On, the resting chart is the range's width moved this
+   share into the future — the oldest of it off the left, a drag away — so
+   "now" sits short of the price scale with time ahead of it. Off by default:
+   it changes what a range shows at first sight. */
+const ROOM_AHEAD_KEY = "crypto_chart_room_ahead";
+const DEFAULT_ROOM_AHEAD = false;
 const DEFAULT_CHART_GRID = false;
 
 /* How far the board reaches in price, as a multiple of the fair square.

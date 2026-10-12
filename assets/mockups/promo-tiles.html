@@ -15,7 +15,7 @@
   }
   body {
     background: #161616; padding: 40px;
-    font-family: "Roboto Mono", ui-monospace, monospace;
+    font-family: "Roboto Mono", "SF Mono", Menlo, ui-monospace, monospace;
     display: flex; flex-direction: column; gap: 44px; align-items: flex-start;
   }
   .hint { color: #888; font-size: 12px; margin-bottom: 8px; letter-spacing: .4px; }
@@ -172,6 +172,7 @@
     });
   });
 </script>
+<script src="store-i18n.js"></script>
 </head>
 <body>
 
@@ -181,7 +182,7 @@
     <div class="tile" id="small">
       <img class="logo" src="../icons/icon128.png" alt="" />
       <span class="wm">price<b>tab</b></span>
-      <span class="tag">Live crypto charts on every new tab</span>
+      <span class="tag" data-t="tile.tag">Live crypto charts on every new tab</span>
     </div>
   </div>
 
@@ -193,7 +194,7 @@
         <img src="../icons/icon128.png" alt="" />
         <span class="wm">price<b>tab</b></span>
       </div>
-      <div class="tag">Live crypto charts on every new tab.</div>
+      <div class="tag" data-t="hero.tag">Live crypto charts on every new tab.</div>
       <div class="browser">
         <div class="bar">
           <span class="dots"><i></i><i></i><i></i></span>
@@ -215,12 +216,12 @@
           <img src="../icons/icon128.png" alt="" />
           <span class="wm">price<b>tab</b></span>
         </div>
-        <div class="tag">Your new tab is now a <b>live crypto dashboard</b>.</div>
+        <div class="tag" data-t="marquee.tag">Your new tab is now a <b>live crypto dashboard</b>.</div>
         <div class="pills">
-          <span class="pill"><b>81</b> coins</span>
-          <span class="pill"><b>26</b> widgets</span>
-          <span class="pill"><b>Zero</b> permissions</span>
-          <span class="pill"><b>13</b> languages</span>
+          <span class="pill" data-t="pill.coins"><b>81</b> coins</span>
+          <span class="pill" data-t="pill.widgets"><b>26</b> widgets</span>
+          <span class="pill" data-t="pill.zero"><b>Zero</b> permissions</span>
+          <span class="pill" data-t="pill.langs"><b>13</b> languages</span>
         </div>
       </div>
       <div class="browser">
@@ -244,13 +245,13 @@
           <img src="../icons/icon128.png" alt="" />
           <span class="wm">price<b>tab</b></span>
         </div>
-        <div class="tag">Your new tab is now a <b>live crypto dashboard</b>.</div>
+        <div class="tag" data-t="marquee.tag">Your new tab is now a <b>live crypto dashboard</b>.</div>
         <div class="pills">
-          <span class="pill"><b>81</b> coins</span>
-          <span class="pill"><b>26</b> widgets</span>
-          <span class="pill"><b>Zero</b> permissions</span>
-          <span class="pill"><b>13</b> languages</span>
-          <span class="pill"><b>Open</b> source</span>
+          <span class="pill" data-t="pill.coins"><b>81</b> coins</span>
+          <span class="pill" data-t="pill.widgets"><b>26</b> widgets</span>
+          <span class="pill" data-t="pill.zero"><b>Zero</b> permissions</span>
+          <span class="pill" data-t="pill.langs"><b>13</b> languages</span>
+          <span class="pill" data-t="pill.open"><b>Open</b> source</span>
         </div>
       </div>
       <div class="browser">

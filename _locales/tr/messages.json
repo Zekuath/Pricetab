@@ -1331,12 +1331,6 @@
   "br_above_200d": {
     "message": "200 günlük ortalamasının üzerinde"
   },
-  "br_across_episodes": {
-    "message": " $1 kez yaşandı. "
-  },
-  "br_across_one_episode": {
-    "message": " 1 kez yaşandı. "
-  },
   "br_ah_move": {
     "message": "sonraki $1 günde $3 seferin $2'inde olağandan fazla hareket etti; yarısı ederdi."
   },
@@ -1358,8 +1352,42 @@
   "br_ah_up": {
     "message": "$1 gün sonra $3 seferin %$2'sinde yukarıda; herhangi $1 gün: %$4 yukarıda."
   },
+  "br_bar_base": {
+    "message": "Herhangi bir gün"
+  },
+  "br_bar_this": {
+    "message": "Bundan sonra"
+  },
+  "br_bar_up": {
+    "message": "yükseliş %$1 · $2×",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "br_bar_value": {
+    "message": "yükseliş %$1 · tipik $2 · $3×",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      }
+    }
+  },
   "br_close": {
     "message": "Baz oranları kapat"
+  },
+  "br_coins_aria": {
+    "message": "Başka bir coine bak"
   },
   "br_cpi_count": {
     "message": "$2'de $1"
@@ -1462,6 +1490,9 @@
   "br_n_times": {
     "message": "$1 kez"
   },
+  "br_nav_aria": {
+    "message": "Bu ekranın bölümleri"
+  },
   "br_next_30": {
     "message": "sonraki 30 gün"
   },
@@ -1503,9 +1534,6 @@
   },
   "br_one_time": {
     "message": "1 kez"
-  },
-  "br_ordinary_days": {
-    "message": "Sıradan $1 gün: $2, %$3'ünde yükseldi ($4 tanesi). "
   },
   "br_pce_title": {
     "message": "ABD PCE · kişisel tüketim fiyatları"
@@ -1560,9 +1588,6 @@
   },
   "br_try_again": {
     "message": "Tekrar dene"
-  },
-  "br_typically": {
-    "message": "tipik olarak $1, zamanın %$2'sinde yükseldi"
   },
   "br_wd_note": {
     "message": "Ertesi günün ne sıklıkla daha yukarıda kapandığı, kapanışın haftanın gününe göre (UTC), $1 gün üzerinden; herhangi bir gün: %$2. Dört coinde test edildi; bu coinin hafta günleri birbirinden şanstan fazla ayrıştı — bir günün yönünde küçük bir fark, büyüklük değil, ve bu hafta hakkında hiçbir şey değil."
@@ -7812,6 +7837,24 @@
   "pref_replay_tour": {
     "message": "Turu tekrarla"
   },
+  "pref_room_ahead_aria": {
+    "message": "Fiyatın önündeki boşluğu aç/kapat"
+  },
+  "pref_room_ahead_desc": {
+    "message": "TradingView'daki gibi son fiyatın sağında boş zaman bırak — fiyat ölçeğe dayanmaz, grafik gelecek olana yer açar"
+  },
+  "pref_room_ahead_heading": {
+    "message": "Önde boşluk"
+  },
+  "pref_room_ahead_keywords": {
+    "message": "önde boşluk gelecek boş alan sağ kenar tradingview kaydırma şimdi kenar ileri"
+  },
+  "pref_room_ahead_note": {
+    "message": "Aralık genişliğini korur ve %15'ini geleceğe kaydırır; en eski kısım solda biraz dışarıda kalır — sürükleyince geri gelir. Açık da olsa kapalı da, sürükleme ya da tekerlek grafiği her zaman son fiyatın ötesine götürebilir; bu yalnızca grafiğin nerede durduğunu belirler. Tahmin tahtasının kendi geleceği var, karşılaştırmanın hiç yok; ikisi de bunu göstermez."
+  },
+  "pref_room_ahead_title": {
+    "message": "Önde boşluk"
+  },
   "pref_rotate_every": {
     "message": "Şu sıklıkta değiştir"
   },
@@ -8682,9 +8725,6 @@
   },
   "ss_st_up_what": {
     "message": "Supertrend (10, 3) aşağıdan yukarıya döndü"
-  },
-  "ss_up_detail": {
-    "message": "10 gün sonra: $2 bölümün %$1'inde yukarıda. Bu coinin sıradan 10 günü: %$3 yukarıda."
   },
   "stats_high": {
     "message": "Yüksek"
@@ -10640,6 +10680,9 @@
   "mon_col_beta_title": {
     "message": "Aynı 30 günde Bitcoin her %1 hareket ettiğinde ne kadar hareket etti — hareketlerinin Bitcoin'inkilere eğimi. Bu 30 günü anlatır, sonrasını asla"
   },
+  "mon_col_changes_title": {
+    "message": "Fiyatın son bir günde, haftada ve ayda ne kadar hareket ettiği"
+  },
   "mon_col_spark": {
     "message": "30 gün"
   },
@@ -10652,11 +10695,17 @@
   "mon_fact_mover": {
     "message": "30 günde en çok hareket eden"
   },
+  "mon_fact_sort": {
+    "message": "Tabloyu buna göre sırala"
+  },
   "mon_fact_up": {
     "message": "Son 24 saatte yükselen"
   },
   "mon_fact_widest": {
     "message": "En geniş tipik gün"
+  },
+  "mon_legend": {
+    "message": "Sütunlar ne anlama geliyor"
   },
   "mon_market_down": {
     "message": "24 saatte en çok düşen"

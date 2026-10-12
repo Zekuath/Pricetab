@@ -316,12 +316,36 @@ const MonitorRowButton = styled.button.attrs({ type: "button" })`
   text-align: right;
   cursor: pointer;
 
+  position: relative;
+
   &:hover {
     background: ${({ theme }) => theme.color.bgSecondary};
   }
   &:focus-visible {
     outline: 2px solid ${({ theme }) => theme.color.accent};
     outline-offset: -2px;
+  }
+  /* What a press does, said where the hand is (11 Oct 2026): the row opens
+     its coin on the chart, and nothing on it said so but a sentence under
+     the table. */
+  &::after {
+    content: "→";
+    position: absolute;
+    right: -1.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: ${({ theme }) => theme.color.textSecondary};
+    opacity: 0;
+    transition: opacity 0.12s ease;
+  }
+  &:hover::after,
+  &:focus-visible::after {
+    opacity: 1;
+  }
+  @media (max-width: 600px) {
+    &::after {
+      display: none;
+    }
   }
 `;
 
@@ -373,7 +397,11 @@ const MonitorFacts = styled.div`
   }
 `;
 
-const MonitorFact = styled.div`
+/* A press sorts the table by what the card measures (11 Oct 2026). */
+const MonitorFact = styled.button.attrs({ type: "button" })`
+  text-align: left;
+  font-family: inherit;
+  cursor: pointer;
   padding: 0.7rem 0.85rem;
   border: 1px solid ${({ theme }) => theme.color.border};
   border-radius: 10px;
@@ -501,6 +529,37 @@ const MarketMoves = styled.div`
   @media (max-width: 600px) {
     gap: 0.8rem;
     font-size: 0.72rem;
+  }
+`;
+
+const MonitorLegend = styled.details`
+  max-width: 52rem;
+  margin: 1rem 0 0;
+  font-size: 0.74rem;
+  color: ${({ theme }) => theme.color.text};
+
+  summary {
+    cursor: pointer;
+    color: ${({ theme }) => theme.color.textSecondary};
+    letter-spacing: 0.04em;
+  }
+  summary:hover,
+  summary:focus-visible {
+    color: ${({ theme }) => theme.color.text};
+  }
+  dl {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 0.35rem 1rem;
+    margin: 0.6rem 0 0;
+  }
+  dt {
+    font-weight: ${({ theme }) => theme.fontWeight.semibold};
+  }
+  dd {
+    margin: 0;
+    color: ${({ theme }) => theme.color.textSecondary};
+    line-height: 1.5;
   }
 `;
 
@@ -680,10 +739,17 @@ class MonitorPanel extends PureComponent {
 
   renderFacts(rows) {
     const f = monitorSummary(rows);
+    const sortFor = { up: "change24h", median: "change30d", widest: "dailyMove", mover: "change30d" };
     const fact = (key, value, label, tone) =>
       React.createElement(
         MonitorFact,
-        { key, tone, "data-monitor-fact": key },
+        {
+          key,
+          tone,
+          "data-monitor-fact": key,
+          title: msg("mon_fact_sort", "Sort the table by this"),
+          onClick: () => this.setState({ sort: { key: sortFor[key], dir: -1 } }),
+        },
         React.createElement("strong", null, value),
         React.createElement("span", null, label),
       );
@@ -783,6 +849,25 @@ class MonitorPanel extends PureComponent {
       null,
       this.renderFacts(rows),
       React.createElement(MonitorTable, { "data-monitor-table": "true", onKeyDown: (e) => this.rowKey(e) }, ...head, ...body),
+      /* **What the columns mean, where it can be found** (11 Oct 2026): each
+         heading carried its definition as a tooltip, which nobody finds. The
+         same words, one press away. */
+      React.createElement(
+        MonitorLegend,
+        { "data-monitor-legend": "true" },
+        React.createElement("summary", null, msg("mon_legend", "What the columns mean")),
+        React.createElement(
+          "dl",
+          null,
+          ...[
+            ["24h · 7d · 30d", msg("mon_col_changes_title", "How far the price moved over the last day, week and month")],
+            [msg("mon_col_spark", "30 days"), msg("mon_col_spark_title", "The last 30 days, low to high — sorted by where the price sits between them")],
+            [msg("mon_col_from_high", "From high"), msg("mon_col_from_high_title", "How far the price is under the 30-day high")],
+            [msg("mon_col_move", "Typical day"), msg("mon_col_move_title", "How far a day's move usually goes, either way: the standard deviation of the last 30 days, scaled to a day")],
+            [msg("mon_col_beta", "β BTC"), msg("mon_col_beta_title", "How far it moved for each 1% Bitcoin moved, over the same 30 days — the slope of its moves on Bitcoin's. It describes these 30 days, never what comes next")],
+          ].flatMap(([t, d]) => [React.createElement("dt", { key: `t-${t}` }, t), React.createElement("dd", { key: `d-${t}` }, d)]),
+        ),
+      ),
       React.createElement(
         MonitorNote,
         null,

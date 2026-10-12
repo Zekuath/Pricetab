@@ -1347,12 +1347,6 @@
   "br_above_200d": {
     "message": "200일 평균 위"
   },
-  "br_across_episodes": {
-    "message": "$1회 기준. "
-  },
-  "br_across_one_episode": {
-    "message": "1회 기준. "
-  },
   "br_ah_move": {
     "message": "이후 $1일은 $3번 중 $2번 평소보다 크게 움직였습니다. 의미가 없다면 절반입니다."
   },
@@ -1374,8 +1368,42 @@
   "br_ah_up": {
     "message": "$1일 뒤 $3번 중 $2% 상승. 아무 $1일: $4% 상승."
   },
+  "br_bar_base": {
+    "message": "아무 날"
+  },
+  "br_bar_this": {
+    "message": "이후"
+  },
+  "br_bar_up": {
+    "message": "상승 $1% · $2회",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "br_bar_value": {
+    "message": "상승 $1% · 보통 $2 · $3회",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      }
+    }
+  },
   "br_close": {
     "message": "기저율 닫기"
+  },
+  "br_coins_aria": {
+    "message": "다른 코인 보기"
   },
   "br_cpi_count": {
     "message": "$2회 중 $1회"
@@ -1478,6 +1506,9 @@
   "br_n_times": {
     "message": "$1회"
   },
+  "br_nav_aria": {
+    "message": "이 화면의 섹션"
+  },
   "br_next_30": {
     "message": "이후 30일"
   },
@@ -1519,9 +1550,6 @@
   },
   "br_one_time": {
     "message": "1회"
-  },
-  "br_ordinary_days": {
-    "message": "보통의 $1일: $2, 그중 $3%가 상승 ($4건). "
   },
   "br_pce_title": {
     "message": "미국 PCE · 개인소비지출 물가"
@@ -1576,9 +1604,6 @@
   },
   "br_try_again": {
     "message": "다시 시도"
-  },
-  "br_typically": {
-    "message": "보통 $1, $2%의 경우 상승"
   },
   "br_wd_note": {
     "message": "다음 날이 더 높게 마감한 빈도를 마감 요일(UTC)별로 $1일에 걸쳐 집계. 전체: $2%. 네 개의 코인에서 검증한 결과 이 코인의 요일별 차이는 우연 이상이었습니다 — 하루 방향의 작은 차이일 뿐 크기가 아니며, 이번 주에 대해서는 아무것도 말하지 않습니다."
@@ -7851,6 +7876,24 @@
   "pref_replay_tour": {
     "message": "투어 다시 보기"
   },
+  "pref_room_ahead_aria": {
+    "message": "가격 앞 여백 전환"
+  },
+  "pref_room_ahead_desc": {
+    "message": "TradingView처럼 최신 가격 오른쪽에 빈 시간을 둡니다 — 가격이 눈금 앞에서 멈추고 차트가 앞으로 올 공간을 보여줍니다"
+  },
+  "pref_room_ahead_heading": {
+    "message": "앞쪽 여백"
+  },
+  "pref_room_ahead_keywords": {
+    "message": "앞 여백 미래 빈 공간 오른쪽 여백 tradingview 오프셋 현재 가장자리"
+  },
+  "pref_room_ahead_note": {
+    "message": "범위의 폭은 그대로 두고 그중 15%를 미래 쪽으로 옮깁니다. 가장 오래된 부분은 왼쪽 밖으로 살짝 밀려나며, 드래그하면 돌아옵니다. 켜든 끄든 드래그나 휠로 언제든 최신 가격 너머로 갈 수 있으며, 이 설정은 차트가 멈추는 위치만 정합니다. 콜 보드는 자체 미래가 있고 비교에는 미래가 없어 둘 다 표시하지 않습니다."
+  },
+  "pref_room_ahead_title": {
+    "message": "앞쪽 여백"
+  },
   "pref_rotate_every": {
     "message": "전환 주기"
   },
@@ -8721,9 +8764,6 @@
   },
   "ss_st_up_what": {
     "message": "슈퍼트렌드(10, 3)가 하락에서 상승으로 전환"
-  },
-  "ss_up_detail": {
-    "message": "10일 뒤: $2회 중 $1%에서 상승. 이 코인의 평범한 10일: $3% 상승."
   },
   "stats_high": {
     "message": "고가"
@@ -10679,6 +10719,9 @@
   "mon_col_beta_title": {
     "message": "같은 30일 동안 비트코인이 1% 움직일 때마다 얼마나 움직였는지 — 비트코인의 움직임에 대한 이 코인의 움직임의 기울기입니다. 이 30일을 설명할 뿐, 앞으로를 말하지 않습니다"
   },
+  "mon_col_changes_title": {
+    "message": "최근 하루, 일주일, 한 달 동안 가격이 움직인 폭"
+  },
   "mon_col_spark": {
     "message": "30일"
   },
@@ -10691,11 +10734,17 @@
   "mon_fact_mover": {
     "message": "30일간 가장 많이 움직임"
   },
+  "mon_fact_sort": {
+    "message": "이 기준으로 표 정렬"
+  },
   "mon_fact_up": {
     "message": "최근 24시간 상승"
   },
   "mon_fact_widest": {
     "message": "가장 큰 보통의 하루"
+  },
+  "mon_legend": {
+    "message": "각 열의 의미"
   },
   "mon_market_down": {
     "message": "24시간 가장 많이 하락"

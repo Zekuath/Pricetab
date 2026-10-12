@@ -149,13 +149,42 @@ const candleDensityCap = (candles, minBars = 12) => {
 // high/low, summed volume — the standard reduction, so a bucket is still a
 // truthful candle rather than a sample. Drawing 700 slivers on a 1400px
 // chart costs the same as drawing 200 and reads worse.
+/* **Merged on the clock, not on the window** (12 Oct 2026, the owner: *"sağa
+ * sola oynatırken grafik sabit kalmalı"*). Chunks used to start at the first
+ * candle on screen, so every step of a sideways drag moved every boundary and
+ * redrew every merged bar — the candles reshaped under the hand, which
+ * TradingView never does. A merged bar is now `size` candle-steps of absolute
+ * time, the same bar whatever the window starts on. */
+const candleMs = (t) => (t instanceof Date ? t.getTime() : typeof t === "number" ? t : Date.parse(t));
 const aggregateCandles = (candles, maxBars) => {
   if (!Array.isArray(candles) || !candles.length) return [];
   if (!(maxBars > 0) || candles.length <= maxBars) return candles;
   const size = Math.ceil(candles.length / maxBars);
+  // The candles' own step: the median gap, so one missing candle cannot set it
+  const gaps = [];
+  for (let i = 1; i < Math.min(candles.length, 64); i++) {
+    const g = candleMs(candles[i].time) - candleMs(candles[i - 1].time);
+    if (g > 0) gaps.push(g);
+  }
+  gaps.sort((a, b) => a - b);
+  const step = gaps.length ? gaps[gaps.length >> 1] : 0;
+  const chunks = [];
+  if (step > 0) {
+    const span = step * size;
+    let key = null;
+    for (const c of candles) {
+      const k = Math.floor(candleMs(c.time) / span);
+      if (k !== key) {
+        chunks.push([]);
+        key = k;
+      }
+      chunks[chunks.length - 1].push(c);
+    }
+  } else {
+    for (let i = 0; i < candles.length; i += size) chunks.push(candles.slice(i, i + size));
+  }
   const out = [];
-  for (let i = 0; i < candles.length; i += size) {
-    const chunk = candles.slice(i, i + size);
+  for (const chunk of chunks) {
     let high = -Infinity;
     let low = Infinity;
     let volume = 0;

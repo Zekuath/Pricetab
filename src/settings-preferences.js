@@ -222,6 +222,7 @@ const CHART_SETTING_KEYS = [
   "volumeBars",
   "chartGrid",
   "logScale",
+  "roomAhead",
   "chartAverage",
   "indicatorOverlay",
   "companion",
@@ -293,6 +294,7 @@ const settingSections = (panel) => {
   marketStats, onMarketStatsChange,
   chartGrid, onChartGridChange,
   logScale, onLogScaleChange,
+  roomAhead, onRoomAheadChange,
   chartAverage, onChartAverageChange,
   macroEvents, onMacroEventsChange,
   companion, onCompanionChange,
@@ -1280,6 +1282,45 @@ const settingSections = (panel) => {
                 "aria-pressed": (logScale === true) ? "true" : "false",
                 onClick: () => onLogScaleChange && onLogScaleChange(logScale !== true),
                 "aria-label": msg("pref_log_scale_aria", "Toggle logarithmic price axis"),
+              }),
+            ),
+          ),
+        ),
+    /* Room ahead of the price at rest, TradingView's right margin (12 Oct 2026). */
+    roomAhead: () =>
+        panel.section(
+          msg("pref_room_ahead_title", "Room Ahead"),
+          msg("pref_room_ahead_keywords", "room ahead future blank space right margin tradingview offset now edge see ahead"),
+          React.createElement(
+            ToggleSection,
+            null,
+            settingTitle(panel, "roomAhead", msg("pref_room_ahead_heading", "Room Ahead")),
+            React.createElement(
+              ToggleSectionDesc,
+              null,
+              msg("pref_room_ahead_desc", "Keep blank time to the right of the latest price, as TradingView does — the price stops short of the scale and the chart shows what is coming"),
+            ),
+            settingNote(
+              panel,
+              "roomAhead",
+              msg(
+                "pref_room_ahead_note",
+                "The range keeps its width and moves 15% of it into the future, so the oldest part sits just off the left — a drag brings it back. A drag or the wheel can always take the chart past the latest price, on or off; this only decides where it rests. The calls board keeps its own future and a comparison has none, so neither shows it.",
+              ),
+            ),
+            React.createElement(
+              ToggleRow,
+              null,
+              React.createElement(
+                ToggleLabel,
+                null,
+                roomAhead === true ? msg("toggle_on", "On") : msg("toggle_off", "Off"),
+              ),
+              React.createElement(ToggleSwitch, {
+                active: roomAhead === true,
+                "aria-pressed": roomAhead === true ? "true" : "false",
+                onClick: () => onRoomAheadChange && onRoomAheadChange(roomAhead !== true),
+                "aria-label": msg("pref_room_ahead_aria", "Toggle room ahead of the price"),
               }),
             ),
           ),

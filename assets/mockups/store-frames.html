@@ -16,7 +16,7 @@
   }
   body {
     background: #161616; padding: 40px;
-    font-family: "Roboto Mono", ui-monospace, monospace;
+    font-family: "Roboto Mono", "SF Mono", Menlo, ui-monospace, monospace;
     display: flex; flex-direction: column; gap: 44px; align-items: flex-start;
   }
   .hint { color: #888; font-size: 12px; margin-bottom: 8px; letter-spacing: .4px; }
@@ -174,6 +174,7 @@
     });
   });
 </script>
+<script src="store-i18n.js"></script>
 </head>
 <body>
 
@@ -185,11 +186,11 @@
         <img src="../icons/icon128.png" alt="" />
         <span class="wm">price<b>tab</b></span>
       </div>
-      <div class="tag">Live crypto charts on every new tab.</div>
+      <div class="tag" data-t="hero.tag">Live crypto charts on every new tab.</div>
       <div class="bullets">
-        <span class="pill"><b>Zero</b> permissions at install</span>
-        <span class="pill">No account</span>
-        <span class="pill">Your data <b>stays on your device</b></span>
+        <span class="pill" data-t="hero.p1"><b>Zero</b> permissions at install</span>
+        <span class="pill" data-t="hero.p2">No account</span>
+        <span class="pill" data-t="hero.p3">Your data <b>stays on your device</b></span>
       </div>
       <div class="browser">
         <div class="bar">
@@ -208,8 +209,8 @@
     <div class="hint">02-widgets &mdash; ?only=f02</div>
     <div class="frame feat" id="f02">
       <div class="cap">
-        <div class="row"><img src="../icons/icon128.png" alt="" /><span class="kicker">Widgets</span></div>
-        <div class="title">Arranged like a phone&rsquo;s &mdash; <b>sized and pinned by you</b></div>
+        <div class="row"><img src="../icons/icon128.png" alt="" /><span class="kicker" data-t="f02.k">Widgets</span></div>
+        <div class="title" data-t="f02.t">Arranged like a phone&rsquo;s &mdash; <b>sized and pinned by you</b></div>
       </div>
       <div class="browser">
         <div class="bar">
@@ -228,8 +229,8 @@
     <div class="hint">03-news &mdash; ?only=f03</div>
     <div class="frame feat" id="f03">
       <div class="cap">
-        <div class="row"><img src="../icons/icon128.png" alt="" /><span class="kicker">News</span></div>
-        <div class="title">Read the story &mdash; <b>and a counted reading of it</b></div>
+        <div class="row"><img src="../icons/icon128.png" alt="" /><span class="kicker" data-t="f03.k">News</span></div>
+        <div class="title" data-t="f03.t">Read the story &mdash; <b>and a counted reading of it</b></div>
       </div>
       <div class="browser">
         <div class="bar">
@@ -248,8 +249,8 @@
     <div class="hint">04-calls &mdash; ?only=f04</div>
     <div class="frame feat" id="f04">
       <div class="cap">
-        <div class="row"><img src="../icons/icon128.png" alt="" /><span class="kicker">Calls</span></div>
-        <div class="title">Say where the price goes &mdash; <b>and keep the score</b></div>
+        <div class="row"><img src="../icons/icon128.png" alt="" /><span class="kicker" data-t="f04.k">Calls</span></div>
+        <div class="title" data-t="f04.t">Say where the price goes &mdash; <b>and keep the score</b></div>
       </div>
       <div class="browser">
         <div class="bar">
@@ -268,8 +269,8 @@
     <div class="hint">05-portfolio &mdash; ?only=f05</div>
     <div class="frame feat" id="f05">
       <div class="cap">
-        <div class="row"><img src="../icons/icon128.png" alt="" /><span class="kicker">Portfolio</span></div>
-        <div class="title">What you hold, <b>what it cost</b>, what it&rsquo;s worth</div>
+        <div class="row"><img src="../icons/icon128.png" alt="" /><span class="kicker" data-t="f05.k">Portfolio</span></div>
+        <div class="title" data-t="f05.t">What you hold, <b>what it cost</b>, what it&rsquo;s worth</div>
       </div>
       <div class="browser">
         <div class="bar">

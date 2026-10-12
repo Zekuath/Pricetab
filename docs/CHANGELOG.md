@@ -16,6 +16,8 @@ submitted, so their changes reach the store here.
   the app is open, and which screen it opens on.
 - The derivatives page on a phone has Trade, Chart, Book and Open tabs, with
   the order ticket first.
+- Settings → the chart → Room Ahead: the chart rests with some blank time to
+  the right of the latest price, as TradingView does. Off by default.
 - The practice account takes deposits up to 10,000,000.
 - The line under the price gives the next 24 hours: the range the price
   ended in on 80% and on 50% of past days like this, from the calls board's
@@ -98,12 +100,26 @@ submitted, so their changes reach the store here.
 
 ### Changed
 
+- "Has this happened before?" (B) is easier to read: an index of its
+  sections stays at the top and jumps to each, your coins sit in its head to
+  read another without leaving, and every count is drawn as two bars — after
+  this state and after any day — with the count beside each.
+- The monitor (M): its summary cards sort the table by what they measure, a
+  row shows that it opens the coin on the chart, and what each column means
+  is one press away under the table.
+- Russian and Ukrainian text uses the system's monospace typeface instead of
+  falling back to a typewriter face.
+
 - The mouse wheel zooms into the exact point under the pointer — the price
   as well as the time — wherever the pointer is. Off the price line the
   zoom used to drift towards the line, and near the right edge the point
   slid away a little more with every notch. A mouse wheel's notch now glides
   over a few frames instead of jumping, as a trackpad's zoom always did.
 - Every new tab shows PriceTab's icon in the tab strip.
+- Dragging the chart sideways no longer changes its shape: merged candles
+  keep the same minutes wherever the window stands, a long line keeps the
+  same points, and with the grid on the price scale stays put. Zooming out
+  no longer leaves a growing blank stretch past the latest price.
 
 - The derivatives page stays smooth with several contracts open. With eight
   open it froze for up to half a second every few seconds while doing

@@ -279,6 +279,7 @@ class CryptoChart extends PureComponent {
       // A logarithmic price axis. Stands down while the board is up, which is
       // the chart's own rule — see `logAxis` in chart-board.js
       logScale: loadLogScale(),
+      roomAhead: loadRoomAhead(),
       // A moving average over the drawn range — see CHART_AVERAGE_KEY
       chartAverage: loadChartAverage(),
       // US CPI releases on the chart and the line under the price — see MACRO_EVENTS_KEY
@@ -4091,7 +4092,7 @@ class CryptoChart extends PureComponent {
         title: `${coin} · ${price} · ${span}`,
         note: `PriceTab · ${now.toLocaleString(this.state.language === "auto" ? undefined : this.state.language)} · ${this.state.currency}`,
         colors: theme,
-        font: `'Roboto Mono', monospace`,
+        font: font.primary,
         fileName: chartImageName(
           coin,
           period ? period.label : this.state.period,
@@ -4129,6 +4130,11 @@ class CryptoChart extends PureComponent {
     _defineProperty(this, "handleLogScaleChange", (enabled) => {
       saveLogScale(enabled);
       this.setState({ logScale: enabled });
+    });
+
+    _defineProperty(this, "handleRoomAheadChange", (enabled) => {
+      saveRoomAhead(enabled);
+      this.setState({ roomAhead: enabled });
     });
 
     _defineProperty(this, "handleQuietChromeChange", (enabled) => {
@@ -5701,6 +5707,9 @@ class CryptoChart extends PureComponent {
         this.state.showBaseRates &&
           React.createElement(BaseRatesPanel, {
             coin: activeCoin,
+            coins: coinOptions,
+            // The screen stays; the chart's coin, which it reads, changes under it
+            onPickCoin: (coin) => this.handleQuickSwitchPick(coin, true),
             onClose: this.toggleBaseRates,
           }),
 
@@ -6727,6 +6736,8 @@ class CryptoChart extends PureComponent {
                     onZoomPast: this.handleChartZoomPast,
                     finerSpan: this.chartFinerSpan(),
                     viewEnabled: this.chartViewEnabled(),
+                    // The resting chart's room past the price (ROOM_AHEAD_KEY)
+                    restRoom: this.state.roomAhead === true ? VIEW_REST_ROOM : 0,
                     detailSupported: this.chartDetailSupported(),
                     detail: this.state.chartDetail,
                     // Older bars a pan into the past fetched (app-view.js)
@@ -8824,6 +8835,8 @@ class CryptoChart extends PureComponent {
           onChartGridChange: this.handleChartGridChange,
           logScale: this.state.logScale,
           onLogScaleChange: this.handleLogScaleChange,
+          roomAhead: this.state.roomAhead,
+          onRoomAheadChange: this.handleRoomAheadChange,
           chartAverage: this.state.chartAverage,
           onChartAverageChange: this.handleChartAverageChange,
           macroEvents: this.state.macroEvents,
@@ -8938,6 +8951,8 @@ class CryptoChart extends PureComponent {
             onChartGridChange: this.handleChartGridChange,
             logScale: this.state.logScale,
             onLogScaleChange: this.handleLogScaleChange,
+            roomAhead: this.state.roomAhead,
+            onRoomAheadChange: this.handleRoomAheadChange,
             chartAverage: this.state.chartAverage,
             onChartAverageChange: this.handleChartAverageChange,
             macroEvents: this.state.macroEvents,
@@ -9571,7 +9586,7 @@ injectGlobal`
     justify-content: flex-start;
     background-color: ${theme.color.bg};
     color: ${theme.color.text};
-    font-family: 'Roboto Mono', monospace;
+    font-family: ${font.primary};
     font-weight: 400;
     font-size: 14px;
     -moz-osx-font-smoothing: grayscale;
@@ -9751,7 +9766,7 @@ const rootErrorFallback = React.createElement(
       justifyContent: "center",
       gap: "16px",
       height: "100vh",
-      fontFamily: "'Roboto Mono', monospace",
+      fontFamily: font.primary,
     },
   },
   React.createElement("div", null, msg("app_error", "Something went wrong.")),

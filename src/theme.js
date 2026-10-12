@@ -195,7 +195,12 @@ const PHONE_LANDSCAPE_MEDIA = "(max-height: 500px) and (orientation: landscape) 
 const color = darkColors; // Default to dark (will be overridden by theme context)
 
 const font = {
-  primary: `'Roboto Mono', monospace`,
+  /* Roboto Mono is bundled for Latin only. Past it — Cyrillic, Greek —
+     the bare generic "monospace" is Courier in Chrome on a Mac, a slab
+     serif: the ru and uk pages read like a typewriter (found 11 Oct 2026 in
+     the store's localized captures). The system's own monospace first, as
+     the popup already had it. */
+  primary: `'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace`,
 };
 
 const fontWeight = {

@@ -493,7 +493,14 @@ const chartBoardGeometry = (chart) => ({
     gridGeometryFor: () => {
       const data = safePrices(chart.props.prices);
       if (data.length < 2 || !chart.height) return null;
-      const [lo, hi] = extent(data, (d) => d.price);
+      /* **A held price window holds the mesh** (12 Oct 2026). The plain grid
+         was cut from the prices on screen, so a sideways drag re-fitted it —
+         and the line drawn into it — at every step, the one view where the
+         chart still changed shape under the hand. A held window (a pan, a
+         vertical slide) is the mesh's window now; the board keeps its own. */
+      const yPan = chart.props.yPan;
+      const held = !chart.props.predict && yPan && typeof yPan === "object" && yPan.hi > yPan.lo ? yPan : null;
+      const [lo, hi] = held ? [held.lo, held.hi] : extent(data, (d) => d.price);
       if (!isFinite(lo) || !isFinite(hi) || lo === hi) return null;
 
       const top = PADDING;
@@ -572,6 +579,8 @@ const chartBoardGeometry = (chart) => ({
         step: Math.abs(levels[1] - levels[0]),
         top,
         bottom,
+        // The line is drawn into the same window (chart.js reads `domain`)
+        ...(held ? { domain: [lo, hi] } : {}),
       };
     },
 

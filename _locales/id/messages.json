@@ -1331,12 +1331,6 @@
   "br_above_200d": {
     "message": "Di atas rata-rata 200 harinya"
   },
-  "br_across_episodes": {
-    "message": " dalam $1 episode. "
-  },
-  "br_across_one_episode": {
-    "message": " dalam 1 episode. "
-  },
   "br_ah_move": {
     "message": "$1 hari berikutnya bergerak lebih dari biasanya $2 dari $3 kali; separuhnya akan begitu."
   },
@@ -1358,8 +1352,42 @@
   "br_ah_up": {
     "message": "$1 hari kemudian naik $2% dari $3 kali; $1 hari mana pun: naik $4%."
   },
+  "br_bar_base": {
+    "message": "Hari mana pun"
+  },
+  "br_bar_this": {
+    "message": "Setelah ini"
+  },
+  "br_bar_up": {
+    "message": "naik $1% · $2×",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "br_bar_value": {
+    "message": "naik $1% · biasanya $2 · $3×",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      }
+    }
+  },
   "br_close": {
     "message": "Tutup base rate"
+  },
+  "br_coins_aria": {
+    "message": "Lihat koin lain"
   },
   "br_cpi_count": {
     "message": "$1 dari $2"
@@ -1462,6 +1490,9 @@
   "br_n_times": {
     "message": "$1 kali"
   },
+  "br_nav_aria": {
+    "message": "Bagian layar ini"
+  },
   "br_next_30": {
     "message": "30 hari berikutnya"
   },
@@ -1503,9 +1534,6 @@
   },
   "br_one_time": {
     "message": "1 kali"
-  },
-  "br_ordinary_days": {
-    "message": "$1 hari biasa: $2, naik $3% ($4 di antaranya). "
   },
   "br_pce_title": {
     "message": "PCE AS · harga konsumsi pribadi"
@@ -1560,9 +1588,6 @@
   },
   "br_try_again": {
     "message": "Coba lagi"
-  },
-  "br_typically": {
-    "message": "biasanya $1, naik $2% dari waktu"
   },
   "br_wd_note": {
     "message": "Seberapa sering hari berikutnya ditutup lebih tinggi, menurut hari dalam pekan penutupan (UTC), selama $1 hari; hari mana pun: $2%. Diuji pada empat koin, hari-hari dalam pekan koin ini berbeda satu sama lain lebih dari kebetulan — selisih kecil pada arah satu hari, bukan besarnya, dan tidak ada apa-apa tentang pekan ini."
@@ -7835,6 +7860,24 @@
   "pref_replay_tour": {
     "message": "Ulangi tur"
   },
+  "pref_room_ahead_aria": {
+    "message": "Aktifkan ruang di depan harga"
+  },
+  "pref_room_ahead_desc": {
+    "message": "Sisakan waktu kosong di kanan harga terakhir, seperti TradingView — harga berhenti sebelum skala dan grafik menampilkan yang akan datang"
+  },
+  "pref_room_ahead_heading": {
+    "message": "Ruang di depan"
+  },
+  "pref_room_ahead_keywords": {
+    "message": "ruang depan masa depan kosong margin kanan tradingview geser sekarang tepi"
+  },
+  "pref_room_ahead_note": {
+    "message": "Rentang tetap selebar semula dan menggeser 15% ke masa depan, sehingga bagian tertua sedikit keluar di kiri — seret untuk mengembalikannya. Seret atau roda selalu bisa membawa grafik melewati harga terakhir, aktif atau tidak; ini hanya menentukan di mana grafik berhenti. Papan tebakan punya masa depannya sendiri dan perbandingan tidak punya, jadi keduanya tidak menampilkannya."
+  },
+  "pref_room_ahead_title": {
+    "message": "Ruang di depan"
+  },
   "pref_rotate_every": {
     "message": "Ganti setiap"
   },
@@ -8705,9 +8748,6 @@
   },
   "ss_st_up_what": {
     "message": "Supertrend (10, 3) berubah dari turun ke naik"
-  },
-  "ss_up_detail": {
-    "message": "10 hari kemudian: naik $1% dari waktu di $2 episode. 10 hari biasa koin ini: naik $3%."
   },
   "stats_high": {
     "message": "Tertinggi"
@@ -10663,6 +10703,9 @@
   "mon_col_beta_title": {
     "message": "Seberapa jauh koin bergerak untuk setiap 1% gerak Bitcoin, selama 30 hari yang sama — kemiringan geraknya terhadap gerak Bitcoin. Ini menggambarkan 30 hari tersebut, bukan apa yang akan terjadi"
   },
+  "mon_col_changes_title": {
+    "message": "Seberapa jauh harga bergerak dalam sehari, seminggu, dan sebulan terakhir"
+  },
   "mon_col_spark": {
     "message": "30 hari"
   },
@@ -10675,11 +10718,17 @@
   "mon_fact_mover": {
     "message": "Paling bergerak dalam 30 hari"
   },
+  "mon_fact_sort": {
+    "message": "Urutkan tabel menurut ini"
+  },
   "mon_fact_up": {
     "message": "Naik dalam 24 jam terakhir"
   },
   "mon_fact_widest": {
     "message": "Hari biasa terlebar"
+  },
+  "mon_legend": {
+    "message": "Arti kolom-kolomnya"
   },
   "mon_market_down": {
     "message": "Turun terbanyak dalam 24 jam"
