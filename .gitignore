@@ -1,0 +1,62 @@
+# What this file covers never reaches the published repository, and the
+# hooks in .githooks/ hold it to that: the pre-commit hook refuses any path
+# matched here (even one forced in with `git add -f`) and the pre-push hook
+# checks every outgoing commit again. Turn them on once per clone:
+#
+#   git config core.hooksPath .githooks
+
+# Local working notes, ignored as one directory so a note written there
+# tomorrow is covered the day it is written. Ignored means "not published",
+# not "disposable": scripts/checkpoint.sh still snapshots all of it.
+docs/internal/
+# The old home of the working list and some research, moved into
+# docs/internal/ on 8 Oct 2026; nothing public is kept here any more.
+docs/product/
+
+# Suites that check the local working notes rather than the extension. They
+# name files that are themselves ignored, so they stay out of the history too;
+# `run-all.js` picks up anything matching this pattern when it is present.
+tests/local-*.js
+
+# macOS
+.DS_Store
+._*
+
+# Windows
+Thumbs.db
+desktop.ini
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Logs
+*.log
+npm-debug.log*
+
+# Temporary files, and probe screenshots dropped at the root
+*.tmp
+*.temp
+/*.png
+
+# Packaged store build artifacts
+assets/upload/
+*.zip
+
+# Test dependencies (dev-only)
+tests/node_modules/
+# package-lock.json is deliberately TRACKED: it pins every transitive dev
+# dependency to an exact resolved version + integrity hash, which is the only
+# real defence against a dependency being hijacked between installs.
+
+# The iPhone app: generated artefacts only — the project comes from
+# ios/project.yml, the page from ios/scripts/build-webapp.sh
+ios/WebApp/
+ios/PriceTab.xcodeproj/
+ios/PriceTab/Assets.xcassets/
+ios/PriceTabWidget/Assets.xcassets/
+ios/build/
+ios/DerivedData/
+xcuserdata/

@@ -1,0 +1,100 @@
+#!/bin/sh
+# PriceTab pre-commit guard. Turned on once per clone:
+#
+#   git config core.hooksPath .githooks
+#
+# Every check here reads the index, so it judges exactly what is about to be
+# committed — not the working tree, and not a second list of paths that could
+# drift from `.gitignore`.
+#
+#   1. Nothing `.gitignore` covers is committed. The ignore file is the one
+#      list of what stays local (working notes, generated builds, packages);
+#      `git add -f`, or a file that was tracked before its rule existed, walks
+#      straight past an ignore rule, so the index is checked against the rule
+#      itself. Not hypothetical: one commit added 3,504 files, an Xcode build
+#      folder and the local notes among them.
+#   1b. No added line or staged path carries a word from
+#      docs/internal/publish-deny.txt — a local-only list, so this file names
+#      none of them.
+#   2. No staged file over 5 MB. Source here tops out under 1 MB; anything
+#      larger is a build product, a recording or an archive.
+#   3. No more than 400 files added in one commit, unless asked for with
+#      PRICETAB_LARGE_COMMIT=1 (a first commit of the whole tree, say).
+#   4. gitleaks on the staged diff when it is installed, then
+#      tests/test-invariants.js — no permission, no remote code, no new host.
+#
+# Bypass, deliberately and knowing why: git commit --no-verify
+set -e
+
+ROOT="$(git rev-parse --show-toplevel)"
+cd "$ROOT"
+fail() { printf '\n✘ pre-commit: %s\n' "$1"; }
+
+ignored="$(git ls-files --cached --ignored --exclude-standard)"
+if [ -n "$ignored" ]; then
+  fail "these paths are covered by .gitignore and must not be committed:"
+  printf '%s\n' "$ignored" | head -20 | sed 's/^/    /'
+  count="$(printf '%s\n' "$ignored" | wc -l | tr -d ' ')"
+  if [ "$count" -gt 20 ]; then echo "    … and $((count - 20)) more"; fi
+  echo "  Take them out of the index (the files stay on disk):"
+  echo "    git rm -r --cached -- <path>"
+  exit 1
+fi
+
+# Words the owner never publishes, listed in a local-only file so this
+# published hook names none of them. Every added line and every staged path
+# is read against it; a clone without the file skips the check.
+deny="$ROOT/docs/internal/publish-deny.txt"
+if [ -f "$deny" ]; then
+  tmp="${TMPDIR:-/tmp}/pricetab-deny.$$"
+  grep -v -e '^#' -e '^=' -e '^[[:space:]]*$' "$deny" > "$tmp.ci" || true
+  sed -n 's/^=//p' "$deny" > "$tmp.cs"
+  { git diff --cached --name-only; git diff --cached -U0 --no-color | grep '^+' | grep -v '^+++'; } > "$tmp.added" || true
+  hits=""
+  if [ -s "$tmp.ci" ]; then hits="$(grep -n -i -E -f "$tmp.ci" "$tmp.added" || true)"; fi
+  if [ -s "$tmp.cs" ]; then hits="$hits$(grep -n -w -E -f "$tmp.cs" "$tmp.added" || true)"; fi
+  rm -f "$tmp.ci" "$tmp.cs" "$tmp.added"
+  if [ -n "$hits" ]; then
+    fail "the staged changes carry words listed in docs/internal/publish-deny.txt:"
+    printf '%s\n' "$hits" | head -10 | cut -c1-160 | sed 's/^/    /'
+    exit 1
+  fi
+fi
+
+MAX_BYTES=5000000
+big="$(git diff --cached --name-only --diff-filter=AM | while IFS= read -r f; do
+  size="$(git cat-file -s ":$f" 2>/dev/null || echo 0)"
+  if [ "$size" -gt "$MAX_BYTES" ]; then echo "$size bytes  $f"; fi
+done)"
+if [ -n "$big" ]; then
+  fail "staged files over 5 MB — build products or archives, not source:"
+  printf '%s\n' "$big" | sed 's/^/    /'
+  exit 1
+fi
+
+added="$(git diff --cached --name-only --diff-filter=A | wc -l | tr -d ' ')"
+if [ "$added" -gt 400 ] && [ "${PRICETAB_LARGE_COMMIT:-0}" != "1" ]; then
+  fail "$added files are being added in one commit."
+  echo "  Check 'git status --short' for a build folder or a copy of the tree."
+  echo "  If this is meant (a first commit, say): PRICETAB_LARGE_COMMIT=1 git commit …"
+  exit 1
+fi
+
+if command -v gitleaks >/dev/null 2>&1; then
+  if ! gitleaks protect --staged --no-banner --redact --log-level error; then
+    fail "gitleaks found a secret in the staged changes."
+    echo "  Unstage it and rotate the credential before committing."
+    exit 1
+  fi
+else
+  echo "• pre-commit: gitleaks not installed, secret scan skipped (brew install gitleaks)"
+fi
+
+log="${TMPDIR:-/tmp}/pricetab-invariants.log"
+if ! node "$ROOT/tests/test-invariants.js" >"$log" 2>&1; then
+  fail "an architectural invariant is violated."
+  cat "$log"
+  exit 1
+fi
+
+exit 0

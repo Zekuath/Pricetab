@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>PriceTab</title>
+    <link rel="stylesheet" href="./vendor/roboto-mono.css" />
+    <style>
+      /* The popup paints before any script runs, the same way index.html does:
+         a white flash on a dark browser is the first thing a person would see
+         of this extension on every page they are on. */
+      :root {
+        color-scheme: dark;
+        --bg: #000000;
+        --fg: #ffffff;
+        --dim: #8a8a8a;
+        --line: rgba(255, 255, 255, 0.12);
+        --up: #26a17b;
+        --down: #e05260;
+      }
+
+      @media (prefers-color-scheme: light) {
+        :root {
+          color-scheme: light;
+          --bg: #ffffff;
+          --fg: #1a1a1a;
+          --dim: #666666;
+          --line: rgba(0, 0, 0, 0.12);
+          /* The new tab's light up/down ink: #26a17b and #e05260 are 3.1:1
+             and 3.9:1 on white, under what a figure this size needs. */
+          --up: #0a7d4f;
+          --down: #c81e1e;
+        }
+      }
+
+      /* An explicit choice in Settings wins over the system, exactly as
+         `theme-init.js` decides it for the new tab. The attribute is set by
+         popup.js before it draws anything. */
+      html[data-theme="dark"] {
+        color-scheme: dark;
+        --bg: #000000;
+        --fg: #ffffff;
+        --dim: #8a8a8a;
+        --line: rgba(255, 255, 255, 0.12);
+        --up: #26a17b;
+        --down: #e05260;
+      }
+
+      html[data-theme="light"] {
+        color-scheme: light;
+        --bg: #ffffff;
+        --fg: #1a1a1a;
+        --dim: #666666;
+        --line: rgba(0, 0, 0, 0.12);
+        --up: #0a7d4f;
+        --down: #c81e1e;
+      }
+
+      /* Blue and orange for up and down, the new tab's colour-blind palette
+         (DIRECTION_PALETTE_COLORS in src/theme.js): the dark pair by default,
+         the light pair under a light system or an explicit light theme. */
+      html[data-palette="cvd"] {
+        --up: #56b4e9;
+        --down: #e69f00;
+      }
+
+      @media (prefers-color-scheme: light) {
+        html[data-palette="cvd"] {
+          --up: #0068a8;
+          --down: #b04a00;
+        }
+      }
+
+      html[data-palette="cvd"][data-theme="dark"] {
+        --up: #56b4e9;
+        --down: #e69f00;
+      }
+
+      html[data-palette="cvd"][data-theme="light"] {
+        --up: #0068a8;
+        --down: #b04a00;
+      }
+
+      body {
+        margin: 0;
+        /* Chrome sizes a popup to its content, up to 800×600. This is the
+           width that fits a symbol, a price of eight figures and a change
+           without wrapping at the font below. */
+        width: 17rem;
+        padding: 0.85rem 0.9rem 0.7rem;
+        background: var(--bg);
+        color: var(--fg);
+        font-family: "Roboto Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 13px;
+      }
+
+      .head {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        margin-bottom: 0.6rem;
+      }
+
+      .title {
+        font-size: 0.66rem;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--dim);
+      }
+
+      .rows {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .row {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 0.5rem;
+        padding: 0.3rem 0;
+        border-top: 1px solid var(--line);
+      }
+
+      .row:first-child {
+        border-top: none;
+      }
+
+      .coin {
+        font-weight: 700;
+        letter-spacing: 0.04em;
+      }
+
+      .price {
+        margin-left: auto;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .change {
+        width: 4.6rem;
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .up {
+        color: var(--up);
+      }
+
+      .down {
+        color: var(--down);
+      }
+
+      .flat {
+        color: var(--dim);
+      }
+
+      .foot {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 0.5rem;
+        margin-top: 0.65rem;
+        padding-top: 0.5rem;
+        border-top: 1px solid var(--line);
+        font-size: 0.68rem;
+        color: var(--dim);
+      }
+
+      button {
+        font-family: inherit;
+        font-size: 0.68rem;
+        color: var(--fg);
+        background: transparent;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        padding: 0.2rem 0.45rem;
+        cursor: pointer;
+      }
+
+      button:hover {
+        border-color: var(--fg);
+      }
+
+      a {
+        color: var(--dim);
+      }
+
+      .note {
+        margin-top: 0.5rem;
+        font-size: 0.68rem;
+        line-height: 1.5;
+        color: var(--dim);
+      }
+    </style>
+  </head>
+  <body>
+    <!-- The four the popup needs and nothing else. No React, no
+         styled-components, no d3: this page prints numbers it already has. -->
+    <script src="./src/i18n.js"></script>
+    <script src="./src/config.js"></script>
+    <script src="./src/storage.js"></script>
+    <script src="./src/api.js"></script>
+    <script src="./src/popup.js"></script>
+  </body>
+</html>

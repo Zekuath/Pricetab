@@ -1,0 +1,31 @@
+#!/bin/sh
+# PriceTab commit-msg guard. Turned on with: git config core.hooksPath .githooks
+#
+# This repository has one author. A `Co-authored-by:` trailer, or the banner a
+# tool appends to its commits, puts a second name on the contributor list —
+# and a contributor list cannot be edited afterwards, only rewritten with the
+# whole history. So the message is refused rather than corrected: the person
+# committing sees exactly what was about to go in.
+#
+# Bypass, deliberately and knowing why: git commit --no-verify
+set -e
+
+msg_file="$1"
+body="$(grep -v '^#' "$msg_file" || true)"
+
+trailer="$(printf '%s\n' "$body" | grep -i -n -E '^[[:space:]]*co-authored-by:' || true)"
+banner="$(printf '%s\n' "$body" | grep -i -n -E '(^|[[:space:]])generated (with|by) \[' || true)"
+
+if [ -n "$trailer$banner" ]; then
+  printf '\n✘ commit-msg: this repository has one author; the message names another.\n'
+  printf '%s\n%s\n' "$trailer" "$banner" | sed '/^$/d; s/^/    line /'
+  echo "  Remove those lines and commit again."
+  exit 1
+fi
+
+if [ -z "$(printf '%s' "$body" | tr -d '[:space:]')" ]; then
+  printf '\n✘ commit-msg: the message is empty.\n'
+  exit 1
+fi
+
+exit 0

@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Privacy Policy — PriceTab</title>
+  <meta name="description" content="How PriceTab stores local data and contacts public data providers.">
+  <link rel="icon" href="assets/icons/icon48.png">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 2rem 1rem;
+      background: #0f0f0f;
+      color: #c8c8c8;
+      font: 16px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    main { max-width: 760px; margin: 0 auto; }
+    header { padding-bottom: 1.5rem; border-bottom: 1px solid #2a2a2a; }
+    h1, h2 { color: #fff; }
+    h1 { margin: 1rem 0 0.25rem; font-size: 1.8rem; }
+    h2 { margin: 2rem 0 0.5rem; font-size: 1.15rem; }
+    p, ul { margin: 0.5rem 0 1rem; }
+    li { margin: 0.3rem 0; }
+    a { color: #8fabff; }
+    code { color: #8affc1; }
+    .meta { color: #888; font-size: 0.9rem; }
+    footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid #2a2a2a; }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <a href="https://zekuath.github.io/Pricetab/site/">← Back to PriceTab</a>
+      <h1>Privacy Policy</h1>
+      <p class="meta">Last updated: October 10, 2026</p>
+    </header>
+
+    <p>PriceTab has no user account, advertising, analytics, or telemetry. The
+      developer does not operate a server that receives your portfolio,
+      settings, or activity.</p>
+
+    <h2>Data stored on your device</h2>
+    <p>PriceTab stores its settings and feature data in browser storage.
+      Depending on the features you use, this can include:</p>
+    <ul>
+      <li>selected coins, currencies, display settings, and cached public market data;</li>
+      <li>portfolio entries, transaction history, target allocations, and watched public blockchain addresses;</li>
+      <li>price targets, calls, chart drawings, and Practice Lab activity; and</li>
+      <li>news preferences and read status.</li>
+    </ul>
+    <p>This data remains on your device unless you export it. Exported backup,
+      CSV, image, or report files are saved where you choose and are outside
+      PriceTab's control. Local extension storage is not encrypted by PriceTab.</p>
+
+    <h2>Network requests</h2>
+    <p>PriceTab sends HTTPS requests directly from your browser to third-party
+      public data services when their related features are used. The providers are:</p>
+    <ul>
+      <li>Coinbase, Kraken, Coinlore, Alternative.me, OKX, Bybit, mempool.space, and Blockchair for market, exchange-rate, index-comparison, derivatives, sentiment, or Bitcoin network data;</li>
+      <li>TFTC for the US spot bitcoin ETFs' daily flows, when that widget is on;</li>
+      <li>mempool.space, Blockchair, and PublicNode for optional public-address watching; and</li>
+      <li>CNBC, MarketWatch/Dow Jones, Bitcoin.com, CryptoPotato, Algolia's Hacker News search, and Blockchair for news available without extra permission. Optional news sources are Cointelegraph, Decrypt, CryptoSlate, Bitcoin Magazine, CoinJournal, BBC, CoinDesk, and The Block.</li>
+    </ul>
+    <p>Those requests work as follows:</p>
+    <ul>
+      <li>market prices, charts, exchange rates, derivatives data, sentiment data, and transaction-fee estimates are requested from the providers used by the app;</li>
+      <li>a watched public blockchain address is sent to the selected blockchain data provider so its balance and activity can be retrieved; and</li>
+      <li>news feeds are requested from their publishers when you enable or open the relevant news source, and the text of a story is requested from its publisher when you open that story in the news preview.</li>
+    </ul>
+    <p>PriceTab does not add your portfolio, settings, or other local records to
+      these requests. As with an ordinary web request, the service operator can
+      receive network information such as your IP address, user agent, request
+      time, and the requested market, feed, or public address. Those services
+      are governed by their own privacy policies.</p>
+    <p>Tax reference data and the sanctions address list are bundled with the
+      extension and do not require a lookup request. External websites are
+      contacted only after you follow a link.</p>
+
+    <h2>Permissions</h2>
+    <p>PriceTab requests no required Chrome permissions at installation. It may
+      ask for these optional permissions only when you enable the related feature:</p>
+    <ul>
+      <li><code>notifications</code>, to show a price-target notification; and</li>
+      <li>access to individual news publisher origins, to load those feeds and the stories you open from them.</li>
+    </ul>
+    <p>Optional permissions can be revoked in Chrome's extension settings. A
+      local notification does not send its contents to the developer.</p>
+
+    <h2>Use and sharing</h2>
+    <p>Data handled by PriceTab is used only to provide the feature you
+      requested. The developer does not sell data, use it for advertising,
+      build user profiles, or share it with third parties except for the direct
+      provider requests described above.</p>
+    <p>PriceTab's use of information received from Google APIs complies with the
+      Chrome Web Store User Data Policy, including its Limited Use requirements.</p>
+
+    <h2>Retention and control</h2>
+    <p>Local feature data remains until you remove it in PriceTab, clear the
+      extension's storage, or uninstall the extension. Cached public data
+      expires or is replaced as the app refreshes it. You can export supported
+      records before removing them.</p>
+
+    <h2>The web version</h2>
+    <p>The same app also runs as a web page at zekuath.github.io/Pricetab,
+      which can be added to a phone's home screen. It works the way the
+      extension does: what you keep is stored in that page's local storage on
+      your device &mdash; separate from the extension's, and never sent
+      anywhere &mdash; and it requests public market data directly from your
+      browser. A web page has no Chrome extension permissions, so the optional
+      newsroom feeds and Chrome notifications are not offered there. If you
+      switch on &ldquo;keep the screen on&rdquo;, the page asks your browser to
+      hold the screen awake while it is open; nothing is sent for that.</p>
+
+    <h2>The website</h2>
+    <p>The project website (zekuath.github.io/Pricetab) remembers three things
+      in your browser's local storage, on that device: the theme you chose, the
+      language you chose, and whether you have seen its "what's new" note, with
+      a count of visits that decides when the note appears. It sets no cookie,
+      has no analytics, and sends none of this anywhere. To draw its live chart
+      and price bar it asks Coinbase and Coinlore for public prices directly
+      from your browser, the same kind of request the extension makes. Clearing
+      the site's data in your browser removes what it remembered.</p>
+
+    <h2>Changes and contact</h2>
+    <p>Material changes will be reflected here and in the extension's release
+      notes. Questions can be submitted through the
+      <a href="https://github.com/Zekuath/Pricetab/issues">repository's issue tracker</a>.</p>
+
+    <footer>PriceTab</footer>
+  </main>
+</body>
+</html>

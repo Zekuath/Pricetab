@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>PriceTab — Store Screenshot Frames (1280×800)</title>
+<link rel="stylesheet" href="../../vendor/roboto-mono.css" />
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --green: #34d399;
+    --green-dim: rgba(52, 211, 153, 0.55);
+    --red: #f87171;
+    --ink: #f4f6f5;
+    --muted: #aab3ae;
+    --base: #07090c;
+  }
+  body {
+    background: #161616; padding: 40px;
+    font-family: "Roboto Mono", ui-monospace, monospace;
+    display: flex; flex-direction: column; gap: 44px; align-items: flex-start;
+  }
+  .hint { color: #888; font-size: 12px; margin-bottom: 8px; letter-spacing: .4px; }
+  .frame { width: 1280px; height: 800px; position: relative; overflow: hidden; background: var(--base); }
+
+  /* ---------- SHARED BACKDROP ---------- */
+  .frame::before {
+    content: ""; position: absolute; inset: 0; z-index: 0;
+    background:
+      radial-gradient(900px 520px at 18% -10%, rgba(52, 211, 153, 0.14), transparent 64%),
+      radial-gradient(820px 560px at 105% 112%, rgba(248, 113, 113, 0.10), transparent 60%),
+      radial-gradient(1200px 800px at 50% 50%, rgba(20, 27, 34, 0.85), var(--base) 100%);
+  }
+  .frame::after { /* chart-paper grid */
+    content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none;
+    background:
+      repeating-linear-gradient(to right, rgba(255,255,255,0.025) 0 1px, transparent 1px 64px),
+      repeating-linear-gradient(to bottom, rgba(255,255,255,0.025) 0 1px, transparent 1px 64px);
+    mask-image: radial-gradient(85% 85% at 50% 40%, #000 30%, transparent 100%);
+  }
+  .frame > * { position: relative; z-index: 2; }
+
+  /* ---------- BROWSER WINDOW ---------- */
+  .browser {
+    border-radius: 14px; overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.10);
+    background: #0d1015;
+    box-shadow:
+      0 40px 90px -20px rgba(0, 0, 0, 0.85),
+      0 0 80px -24px rgba(52, 211, 153, 0.28);
+  }
+  .browser .bar {
+    height: 44px; display: flex; align-items: center; gap: 14px; padding: 0 18px;
+    background: linear-gradient(#181c22, #14171d);
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+  }
+  .browser .dots { display: flex; gap: 8px; }
+  .browser .dots i { width: 12px; height: 12px; border-radius: 50%; display: block; }
+  .browser .dots i:nth-child(1) { background: #ff5f57; }
+  .browser .dots i:nth-child(2) { background: #febc2e; }
+  .browser .dots i:nth-child(3) { background: #28c840; }
+  .browser .tab {
+    display: flex; align-items: center; gap: 9px;
+    background: rgba(255,255,255,0.07); border-radius: 8px;
+    padding: 7px 16px; font-size: 13px; color: #cfd5d1; letter-spacing: .3px;
+  }
+  .browser .tab img { width: 15px; height: 15px; border-radius: 4px; }
+  .browser .shot { display: block; width: 100%; }
+  .browser .spacer { flex: 1; }
+  .browser .winctl { display: none; align-items: center; gap: 20px; padding-right: 6px; }
+  .browser .winctl i { position: relative; width: 12px; height: 12px; display: block; }
+
+  /* ---------- OS VARIANTS (?os=mac|win|cros — default mac) ---------- */
+  /* Windows: caption glyphs right (─ ▢ ✕), Win11 corner radius */
+  body[data-os="win"] .browser { border-radius: 8px; }
+  body[data-os="win"] .browser .dots { display: none; }
+  body[data-os="win"] .browser .winctl { display: flex; }
+  body[data-os="win"] .winctl .mi::before {
+    content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 1.5px; background: #aeb4bd;
+  }
+  body[data-os="win"] .winctl .mx::before {
+    content: ""; position: absolute; inset: 1px; border: 1.5px solid #aeb4bd; border-radius: 2px;
+  }
+  body[data-os="win"] .winctl .cl::before,
+  body[data-os="win"] .winctl .cl::after {
+    content: ""; position: absolute; left: -1px; right: -1px; top: 50%; height: 1.5px; background: #c2c8d0;
+  }
+  body[data-os="win"] .winctl .cl::before { transform: rotate(45deg); }
+  body[data-os="win"] .winctl .cl::after { transform: rotate(-45deg); }
+
+  /* ChromeOS: same right-side glyphs, rounder window + pill tab */
+  body[data-os="cros"] .browser { border-radius: 18px; }
+  body[data-os="cros"] .browser .bar { background: linear-gradient(#1b2026, #171b21); }
+  body[data-os="cros"] .browser .tab { border-radius: 999px; }
+  body[data-os="cros"] .browser .dots { display: none; }
+  body[data-os="cros"] .browser .winctl { display: flex; gap: 16px; }
+  body[data-os="cros"] .winctl .mi::before {
+    content: ""; position: absolute; left: 1px; right: 1px; top: 50%; height: 1.5px; background: #aeb4bd;
+  }
+  body[data-os="cros"] .winctl .mx::before {
+    content: ""; position: absolute; inset: 1px; border: 1.5px solid #aeb4bd; border-radius: 50%;
+  }
+  body[data-os="cros"] .winctl .cl::before,
+  body[data-os="cros"] .winctl .cl::after {
+    content: ""; position: absolute; left: -1px; right: -1px; top: 50%; height: 1.5px; background: #c2c8d0;
+  }
+  body[data-os="cros"] .winctl .cl::before { transform: rotate(45deg); }
+  body[data-os="cros"] .winctl .cl::after { transform: rotate(-45deg); }
+
+  /* ---------- HERO (01) ---------- */
+  .hero { display: flex; flex-direction: column; align-items: center; }
+  .hero .brand { display: flex; align-items: center; gap: 24px; margin-top: 86px; }
+  .hero .brand img {
+    width: 84px; height: 84px; border-radius: 20px;
+    box-shadow: 0 14px 40px -8px rgba(0,0,0,.8), 0 0 44px -10px var(--green-dim);
+  }
+  .hero .wm { font-size: 72px; font-weight: 500; color: var(--ink); letter-spacing: -2px; }
+  .hero .wm b { color: var(--green); font-weight: 500; }
+  .hero .tag { color: var(--muted); font-size: 24px; margin-top: 20px; font-weight: 300; letter-spacing: .2px; }
+  /* Three claims, not a feature list. A row of comma-separated features on
+   * an image is the same keyword-spam signal as one in the description, and
+   * Yellow Argon is this listing's likeliest rejection. */
+  .hero .bullets { display: flex; gap: 11px; justify-content: center; margin-top: 32px; }
+  .hero .pill {
+    border: 1px solid rgba(52, 211, 153, 0.28); border-radius: 999px;
+    padding: 10px 19px; font-size: 15.5px; color: #e9eeec;
+    background: linear-gradient(rgba(52,211,153,0.08), rgba(52,211,153,0.03));
+  }
+  .hero .pill b { color: var(--green); font-weight: 500; }
+  .hero .browser { width: 1020px; margin-top: 46px; flex: none; }
+
+  /* ---------- FEATURE FRAMES (02-05) ---------- */
+  .feat { display: flex; flex-direction: column; }
+  .cap { flex: 0 0 178px; padding: 0 64px; display: flex; flex-direction: column; justify-content: center; }
+  .cap .row { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+  .cap .row img { width: 26px; height: 26px; border-radius: 7px; }
+  .cap .kicker { color: var(--green); font-size: 14px; letter-spacing: 3px; text-transform: uppercase; }
+  .cap .kicker::after {
+    content: ""; display: inline-block; vertical-align: middle;
+    width: 64px; height: 1px; margin-left: 16px;
+    background: linear-gradient(to right, var(--green-dim), transparent);
+  }
+  .cap .title { color: var(--ink); font-size: 40px; font-weight: 500; letter-spacing: -0.8px; line-height: 1.12; }
+  .cap .title b { color: var(--green); font-weight: 500; }
+  /* Width is set from the crop, not from taste. A caption band means the
+   * 1280x800 capture can never be shown whole, so `cover` eats the bottom —
+   * and how much depends only on how far the box ratio sits from the shot's
+   * 1.6. Full-bleed (1152 wide) crops 152px, which cut the compare frame's
+   * lower end-label off and left one labelled line explaining a two-line
+   * idea. At 1040 the crop is ~78px: captions, panels and end-labels all
+   * survive, and the frame reads as a product shot rather than a bleed. */
+  .feat .browser { width: 1040px; margin: 6px auto 0; flex: 1; }
+  .feat .browser .shot { object-fit: cover; object-position: top center; width: 100%; height: calc(100% - 44px); }
+
+  /* The tab-strip announcement, shown in the one place it actually lives.
+   * The text must name the target the capture underneath really shows —
+   * a tab claiming a hit the panel doesn't list is a fabricated screenshot. */
+  .browser .tab.hit { color: var(--green); background: rgba(52, 211, 153, 0.12); }
+  .browser .tab.hit .dot { color: var(--green); font-size: 15px; line-height: 1; }
+</style>
+<script>
+  // ?only=f01 → show a single frame at 0,0 for exact headless capture
+  // ?os=mac|win|cros → browser-window chrome style (default mac/Safari-like)
+  addEventListener("DOMContentLoaded", () => {
+    const os = new URLSearchParams(location.search).get("os");
+    if (os) document.body.dataset.os = os;
+    const only = new URLSearchParams(location.search).get("only");
+    if (!only) return;
+    document.body.style.cssText = "padding:0;margin:0;background:#000;overflow:hidden;";
+    document.querySelectorAll("body > div").forEach((wrap) => {
+      const frame = wrap.querySelector(".frame");
+      if (!frame || frame.id !== only) { wrap.style.display = "none"; return; }
+      wrap.querySelector(".hint").style.display = "none";
+      frame.style.cssText += "position:fixed;top:0;left:0;";
+    });
+  });
+</script>
+</head>
+<body>
+
+  <!-- 01 HERO — near default: four coins, one chart, nothing switched on -->
+  <div>
+    <div class="hint">01-hero &mdash; headless: ?only=f01 (or right-click .frame &rarr; "Capture node screenshot")</div>
+    <div class="frame hero" id="f01">
+      <div class="brand">
+        <img src="../icons/icon128.png" alt="" />
+        <span class="wm">price<b>tab</b></span>
+      </div>
+      <div class="tag">Live crypto charts on every new tab.</div>
+      <div class="bullets">
+        <span class="pill"><b>Zero</b> permissions at install</span>
+        <span class="pill">No account</span>
+        <span class="pill">Your data <b>stays on your device</b></span>
+      </div>
+      <div class="browser">
+        <div class="bar">
+          <span class="dots"><i></i><i></i><i></i></span>
+          <span class="tab"><img src="../icons/icon128.png" alt="" />New Tab</span>
+          <span class="spacer"></span>
+          <span class="winctl" aria-hidden="true"><i class="mi"></i><i class="mx"></i><i class="cl"></i></span>
+        </div>
+        <img class="shot" src="../../site/shots/hero.png" alt="" />
+      </div>
+    </div>
+  </div>
+
+  <!-- 02-WIDGETS -->
+  <div>
+    <div class="hint">02-widgets &mdash; ?only=f02</div>
+    <div class="frame feat" id="f02">
+      <div class="cap">
+        <div class="row"><img src="../icons/icon128.png" alt="" /><span class="kicker">Widgets</span></div>
+        <div class="title">Arranged like a phone&rsquo;s &mdash; <b>sized and pinned by you</b></div>
+      </div>
+      <div class="browser">
+        <div class="bar">
+          <span class="dots"><i></i><i></i><i></i></span>
+          <span class="tab"><img src="../icons/icon128.png" alt="" />New Tab</span>
+          <span class="spacer"></span>
+          <span class="winctl" aria-hidden="true"><i class="mi"></i><i class="mx"></i><i class="cl"></i></span>
+        </div>
+        <img class="shot" src="../../site/shots/widgets.png" alt="" />
+      </div>
+    </div>
+  </div>
+
+  <!-- 03-NEWS -->
+  <div>
+    <div class="hint">03-news &mdash; ?only=f03</div>
+    <div class="frame feat" id="f03">
+      <div class="cap">
+        <div class="row"><img src="../icons/icon128.png" alt="" /><span class="kicker">News</span></div>
+        <div class="title">Read the story &mdash; <b>and a counted reading of it</b></div>
+      </div>
+      <div class="browser">
+        <div class="bar">
+          <span class="dots"><i></i><i></i><i></i></span>
+          <span class="tab"><img src="../icons/icon128.png" alt="" />New Tab</span>
+          <span class="spacer"></span>
+          <span class="winctl" aria-hidden="true"><i class="mi"></i><i class="mx"></i><i class="cl"></i></span>
+        </div>
+        <img class="shot" src="../../site/shots/newspreview.png" alt="" />
+      </div>
+    </div>
+  </div>
+
+  <!-- 04-CALLS -->
+  <div>
+    <div class="hint">04-calls &mdash; ?only=f04</div>
+    <div class="frame feat" id="f04">
+      <div class="cap">
+        <div class="row"><img src="../icons/icon128.png" alt="" /><span class="kicker">Calls</span></div>
+        <div class="title">Say where the price goes &mdash; <b>and keep the score</b></div>
+      </div>
+      <div class="browser">
+        <div class="bar">
+          <span class="dots"><i></i><i></i><i></i></span>
+          <span class="tab"><img src="../icons/icon128.png" alt="" />New Tab</span>
+          <span class="spacer"></span>
+          <span class="winctl" aria-hidden="true"><i class="mi"></i><i class="mx"></i><i class="cl"></i></span>
+        </div>
+        <img class="shot" src="../../site/shots/calls.png" alt="" />
+      </div>
+    </div>
+  </div>
+
+  <!-- 05-PORTFOLIO -->
+  <div>
+    <div class="hint">05-portfolio &mdash; ?only=f05</div>
+    <div class="frame feat" id="f05">
+      <div class="cap">
+        <div class="row"><img src="../icons/icon128.png" alt="" /><span class="kicker">Portfolio</span></div>
+        <div class="title">What you hold, <b>what it cost</b>, what it&rsquo;s worth</div>
+      </div>
+      <div class="browser">
+        <div class="bar">
+          <span class="dots"><i></i><i></i><i></i></span>
+          <span class="tab"><img src="../icons/icon128.png" alt="" />New Tab</span>
+          <span class="spacer"></span>
+          <span class="winctl" aria-hidden="true"><i class="mi"></i><i class="mx"></i><i class="cl"></i></span>
+        </div>
+        <img class="shot" src="../../site/shots/portfolio.png" alt="" />
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

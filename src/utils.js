@@ -1,0 +1,2459 @@
+// Format price for ticker (compact or full)
+const formatTickerPrice = (
+  price,
+  currencySymbol,
+  format,
+  decimalPlaces,
+  separatorFormat,
+) => {
+  if (typeof price !== "number" || isNaN(price)) {
+    return "—";
+  }
+
+  if (format === "compact") {
+    // Compact format: 43.2K, 1.5M, etc.
+    const absPrice = Math.abs(price);
+    let formatted;
+    if (absPrice >= 1000000) {
+      formatted = (price / 1000000).toFixed(2) + "M";
+    } else if (absPrice >= 1000) {
+      formatted = (price / 1000).toFixed(1) + "K";
+    } else if (absPrice >= 1) {
+      formatted = price.toFixed(2);
+    } else {
+      formatted = price.toFixed(4);
+    }
+    return formatted;
+  } else {
+    // Full format with currency symbol
+    return formatNumberString(
+      price,
+      currencySymbol,
+      true,
+      false,
+      decimalPlaces,
+      separatorFormat,
+    );
+  }
+};
+
+/* TAB TITLE UPDATE */
+const updateTabTitle = (coinOptions, coinIndex, currentValue, valueHistory) => {
+  try {
+    if (!coinOptions || coinOptions.length === 0) {
+      document.title = msg("app_new_tab", "New Tab");
+      return;
+    }
+
+    const activeCoin = coinOptions[coinIndex] || coinOptions[0];
+
+    if (typeof currentValue === "number" && activeCoin) {
+      const formattedPrice = formatNumberString(currentValue, "$", true, false, priceDecimals(currentValue, DEFAULT_DECIMAL_PLACES));
+
+      // Calculate percentage change
+      const percentDelta = derivePercentDelta(currentValue, valueHistory);
+      let percentStr = "";
+
+      if (typeof percentDelta === "number") {
+        const sign = percentDelta >= 0 ? "+" : "";
+        percentStr = ` (${sign}${percentDelta.toFixed(2)}%)`;
+      }
+
+      document.title = `${activeCoin} ${formattedPrice}${percentStr}`;
+    } else {
+      document.title = activeCoin;
+    }
+  } catch (e) {
+    document.title = msg("app_new_tab", "New Tab");
+  }
+};
+
+/* MEMOIZATION HELPER */
+const memoize = (fn) => {
+  const cache = new Map();
+  return (...args) => {
+    const key = JSON.stringify(args);
+    if (cache.has(key)) {
+      return cache.get(key);
+    }
+    const result = fn(...args);
+    cache.set(key, result);
+    // Limit cache size to prevent memory leaks
+    if (cache.size > 100) {
+      const firstKey = cache.keys().next().value;
+      cache.delete(firstKey);
+    }
+    return result;
+  };
+};
+
+/* DEBOUNCE HELPER */
+const debounce = (fn, delay) => {
+  let timeoutId = null;
+  const debounced = function (...args) {
+    const context = this;
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => {
+      fn.apply(context, args);
+    }, delay);
+  };
+  debounced.cancel = () => {
+    clearTimeout(timeoutId);
+    timeoutId = null;
+  };
+  return debounced;
+};
+
+/* UTILITY FUNCTIONS */
+const formatValueHistory = (prices) =>
+  prices
+    .map((p) => ({
+      price: Number(p.price),
+      time: new Date(p.time * 1000),
+    }))
+    .sort((a, b) => a.time - b.time);
+
+/* CANDLESTICKS ─────────────────────────────────────────────────────────────
+ * Two pure steps so the drawing code stays dumb and both are testable:
+ * aggregate to a bar count the width can actually show, then scale to pixels.
+ */
+
+/* How many bars this data can actually fill.
+ *
+ * A thin market doesn't trade every interval: XMR's one-minute candles are
+ * two thirds empty, and an empty candle has open = high = low = close, which
+ * draws as a dash with no body or wick. Sixty of those read as a broken
+ * chart rather than a quiet hour. Merging them until most buckets contain a
+ * trade gives real bodies again, and since it is the same aggregation the
+ * width uses, the bars stay truthful — a merged candle is still first open,
+ * last close, extreme high/low.
+ *
+ * Returns Infinity when the data is dense enough to leave alone, or when no
+ * volume is reported at all (some ranges don't carry it, and guessing from
+ * flat candles would merge a genuinely calm market).
+ */
+const candleDensityCap = (candles, minBars = 12) => {
+  if (!Array.isArray(candles) || !candles.length) return Infinity;
+  let traded = 0;
+  for (const c of candles) if (Number(c.volume) > 0) traded++;
+  if (!traded) return Infinity;
+  if (traded >= candles.length * 0.66) return Infinity;
+  // Aim for about two trading intervals per bar. Measured on XMR's hour:
+  // one interval per bar still left 37% of bars flat because the quiet
+  // minutes cluster, two brought it to 7%, and merging further gained
+  // nothing while costing detail.
+  return Math.max(minBars, Math.round(traded / 2));
+};
+
+// Merge candles into `maxBars` buckets: first open, last close, extreme
+// high/low, summed volume — the standard reduction, so a bucket is still a
+// truthful candle rather than a sample. Drawing 700 slivers on a 1400px
+// chart costs the same as drawing 200 and reads worse.
+const aggregateCandles = (candles, maxBars) => {
+  if (!Array.isArray(candles) || !candles.length) return [];
+  if (!(maxBars > 0) || candles.length <= maxBars) return candles;
+  const size = Math.ceil(candles.length / maxBars);
+  const out = [];
+  for (let i = 0; i < candles.length; i += size) {
+    const chunk = candles.slice(i, i + size);
+    let high = -Infinity;
+    let low = Infinity;
+    let volume = 0;
+    for (const c of chunk) {
+      if (c.high > high) high = c.high;
+      if (c.low < low) low = c.low;
+      volume += Number(c.volume) || 0;
+    }
+    out.push({
+      time: chunk[0].time,
+      open: chunk[0].open,
+      close: chunk[chunk.length - 1].close,
+      high,
+      low,
+      volume,
+    });
+  }
+  return out;
+};
+
+// Pixel geometry for each bar. The y scale spans highs and lows (not just
+// closes) so wicks can't run off the top or bottom of the plot.
+/* `left`/`right` are the x bounds the bars are spread across — the history
+ * area, which with calls on stops short of the reserved board. Defaulted to
+ * the full width so every other caller is unchanged. */
+/* `bottom` is where the price plot **ends**, which is not the same as where
+ * the chart does once the volume band is on. The bars used to run the full
+ * height with the band drawn over their last fifth: measured at 1280×800 with
+ * the band at 18%, volume bars covered bodies and wicks for a third of the
+ * series, and at the foot of the window the two were the same ink. A venue
+ * gives volume its own pane and stops the price above it; so does this, by
+ * passing the band's top in. Defaulted to `height - padding`, so a caller
+ * that does not draw volume is unchanged. */
+const scaleCandles = (
+  candles,
+  height,
+  width,
+  padding = 0,
+  left = null,
+  right = null,
+  bottom = null,
+  shift = 0,
+) => {
+  if (!Array.isArray(candles) || candles.length < 1) return null;
+  let min = Infinity;
+  let max = -Infinity;
+  for (const c of candles) {
+    if (c.low < min) min = c.low;
+    if (c.high > max) max = c.high;
+  }
+  if (!isFinite(min) || !isFinite(max)) return null;
+  if (min === max) {
+    // A flat range would divide by zero; give it a nominal band
+    min -= 1;
+    max += 1;
+  }
+  // A vertical drag slides the bars' window as it slides the line's
+  if (shift) [min, max] = shiftDomain(min, max, shift);
+  const y1 = bottom == null ? height - padding : bottom;
+  const plotH = Math.max(1, y1 - padding);
+  const x0 = left == null ? padding : left;
+  const x1 = right == null ? width - padding : right;
+  const plotW = Math.max(1, x1 - x0);
+  const y = (v) => padding + (1 - (v - min) / (max - min)) * plotH;
+  const step = plotW / candles.length;
+  /* **The gap is a gap, not a share of the step.**
+   *
+   * It was `step * 0.7`, so at the ranges this chart actually draws the bars
+   * carried a six-pixel hole between them — measured on the 1M chart at
+   * 1280px: step 20.9, body 14.7, gap 6.3, which reads as a row of tally
+   * marks rather than a series. Every venue holds the gap at a pixel or two
+   * whatever the spacing is and gives the rest to the body. Below four
+   * pixels of step there is no room to give, so the gap shrinks with it and
+   * the bars stay separable. */
+  const gap =
+    step >= 4 ? Math.max(1, Math.min(3, Math.round(step * 0.15))) : step * 0.25;
+  const barW = Math.max(1, Math.min(step - gap, 20));
+  return {
+    barW,
+    // What the crosshair needs to turn an x back into a bar, without having to
+    // reconstruct the layout from constants it does not own
+    step,
+    x0,
+    /* And the price mapping, so a level, the axis and a click read the same
+       scale the bars were drawn on (`candleMap` in chart.js). */
+    min,
+    max,
+    top: padding,
+    bottom: y1,
+    bars: candles.map((c, i) => ({
+      x: x0 + step * (i + 0.5),
+      yOpen: y(c.open),
+      yClose: y(c.close),
+      yHigh: y(c.high),
+      yLow: y(c.low),
+      up: c.close >= c.open,
+    })),
+  };
+};
+
+/* Volume bars, drawn in a band along the bottom of the chart.
+ *
+ * The band has its own scale — volume and price share no units, and putting
+ * them on one axis is the classic misleading chart. It is also drawn from
+ * the same bars as the candles, so a bar always sits under the candle it
+ * belongs to.
+ *
+ * Scaled against the 95th percentile rather than the maximum: one spike is
+ * enough to flatten every other bar into the baseline, and the point of the
+ * band is comparing ordinary days to each other. Bars past that clip to full
+ * height, which reads as "off the scale" rather than pretending to be exact.
+ */
+const VOLUME_BAND_RATIO = 0.18; // share of the chart height the band occupies
+
+const volumeBarsData = (scaled, bars, height, up) => {
+  if (!scaled || !Array.isArray(bars) || bars.length !== scaled.bars.length) {
+    return "";
+  }
+  const volumes = bars
+    .map((b) => Number(b.volume) || 0)
+    .filter((v) => v > 0)
+    .sort((a, b) => a - b);
+  if (!volumes.length) return "";
+  // Nearest-rank on a 0-indexed list. Using length × 0.95 would land on the
+  // last element for small samples, making the outlier its own cutoff and
+  // flattening everything else — the exact thing the percentile is for.
+  const cutoff = volumes[Math.floor((volumes.length - 1) * 0.95)];
+  if (!(cutoff > 0)) return "";
+
+  const bandTop = height * (1 - VOLUME_BAND_RATIO);
+  const bandHeight = height - bandTop;
+  const half = scaled.barW / 2;
+  let d = "";
+  for (let i = 0; i < bars.length; i++) {
+    if (scaled.bars[i].up !== up) continue;
+    const volume = Number(bars[i].volume) || 0;
+    if (volume <= 0) continue;
+    const h = Math.max(1, Math.min(1, volume / cutoff) * bandHeight);
+    const x = scaled.bars[i].x - half;
+    d +=
+      `M${x.toFixed(2)} ${(height - h).toFixed(2)}` +
+      `h${scaled.barW.toFixed(2)}v${h.toFixed(2)}h${(-scaled.barW).toFixed(2)}Z`;
+  }
+  return d;
+};
+
+/* Morphing one candle set into another.
+ *
+ * Bar counts differ between ranges (60 one-minute bars become 120 six-hour
+ * ones), so there is no bar-to-bar pairing to tween. Instead each bar reads
+ * the other set at its own relative position along the chart, which stretches
+ * the old shape into the new one: bars slide and grow rather than the whole
+ * chart blinking out and back.
+ *
+ * `to` decides the bar count and the up/down split, so the result always ends
+ * exactly on the destination. Running it with the arguments swapped and
+ * `1 - t` gives the mirror image — the old set morphing toward the new one
+ * while keeping its own colours, which is what the outgoing layer draws.
+ */
+const lerp = (a, b, t) => a + (b - a) * t;
+
+// The bar `bars` would have at normalized position `pos` (0-1)
+const sampleBarAt = (bars, pos) => {
+  if (bars.length === 1) return bars[0];
+  const f = Math.min(Math.max(pos, 0), 1) * (bars.length - 1);
+  const i = Math.floor(f);
+  const j = Math.min(i + 1, bars.length - 1);
+  const u = f - i;
+  const a = bars[i];
+  const b = bars[j];
+  return {
+    x: lerp(a.x, b.x, u),
+    yOpen: lerp(a.yOpen, b.yOpen, u),
+    yClose: lerp(a.yClose, b.yClose, u),
+    yHigh: lerp(a.yHigh, b.yHigh, u),
+    yLow: lerp(a.yLow, b.yLow, u),
+    up: b.up,
+  };
+};
+
+const interpolateCandleScale = (from, to, t) => {
+  if (!to || !to.bars || !to.bars.length) return to;
+  if (!from || !from.bars || !from.bars.length || t >= 1) return to;
+  const n = to.bars.length;
+  return {
+    barW: lerp(from.barW, to.barW, t),
+    bars: to.bars.map((target, i) => {
+      const src = sampleBarAt(from.bars, n === 1 ? 0 : i / (n - 1));
+      return {
+        x: lerp(src.x, target.x, t),
+        yOpen: lerp(src.yOpen, target.yOpen, t),
+        yClose: lerp(src.yClose, target.yClose, t),
+        yHigh: lerp(src.yHigh, target.yHigh, t),
+        yLow: lerp(src.yLow, target.yLow, t),
+        up: target.up, // colour belongs to the set being drawn
+      };
+    }),
+  };
+};
+
+/* Path data for one direction's bars: a wick and a body per candle,
+ * concatenated. Two paths draw the whole chart no matter how many candles
+ * there are — 700 separate nodes would cost far more to build and to
+ * reconcile than the pixels are worth.
+ *
+ * **Both are rectangles, and both are snapped to the pixel grid.**
+ *
+ * The wick used to be a stroked line at the bar's own fractional centre, and
+ * the body a rectangle that was filled *and* stroked. Two faults came out of
+ * that, and they are why candles here never looked like a venue's:
+ *
+ * - A 1px stroke centred on x = 139.13 covers half of column 138 and half of
+ *   139, so the browser draws two columns at half strength. Every wick on the
+ *   chart was a two-pixel grey smear rather than a line — measured on the 1M
+ *   chart, not one of the 34 bars had its wick on a pixel.
+ * - The body's stroke straddles its edge, so a `barW` of 14.65 was drawn
+ *   15.65 wide and ate into the gap that was supposed to separate it from
+ *   the next bar.
+ *
+ * Integers and fills fix both: a rect from an integer left edge to an integer
+ * right edge lands exactly on pixels at any zoom, and with `stroke: none` the
+ * body is the width it says it is. The wick keeps its own width — one pixel
+ * until a bar is wide enough to carry more, which is what keeps a wick
+ * reading as a wick when the body is twenty pixels across.
+ *
+ * Snapping here rather than in `scaleCandles` on purpose: the geometry is
+ * also what the crosshair and the morph read, and those want the real
+ * numbers. Pixels are this function's business.
+ */
+const candlePathData = (scaled, up) => {
+  if (!scaled) return "";
+  const bodyW = Math.max(1, Math.round(scaled.barW));
+  const wickW = Math.max(1, Math.min(3, Math.floor(scaled.barW / 7)));
+  let d = "";
+  for (const b of scaled.bars) {
+    if (b.up !== up) continue;
+    const cx = Math.round(b.x);
+    const left = cx - Math.floor(bodyW / 2);
+    const top = Math.round(Math.min(b.yOpen, b.yClose));
+    const bottom = Math.round(Math.max(b.yOpen, b.yClose));
+    // A doji would be a zero-height rect and vanish — floor it to a line
+    const bodyH = Math.max(bottom - top, 1);
+    const wickLeft = cx - Math.floor(wickW / 2);
+    const high = Math.round(b.yHigh);
+    const wickH = Math.max(Math.round(b.yLow) - high, 1);
+    d += `M${wickLeft} ${high}h${wickW}v${wickH}h${-wickW}Z`;
+    d += `M${left} ${top}h${bodyW}v${bodyH}h${-bodyW}Z`;
+  }
+  return d;
+};
+
+/* `yLo`/`yHi` override the price domain. The chart normally fits whatever it
+ * is given, which is why the domain is read off the data — but a board of
+ * squares needs a scale that does *not* move every time a new high arrives,
+ * so calls mode decides the window itself and passes it in. */
+/* **A price axis that can be logarithmic, and why it is worth the option.**
+ *
+ * On the ALL range a linear axis spends almost all of its height on the most
+ * recent years. Measured on Coinbase's own BTC series (351 points, $171.51 to
+ * $126,279.62): the **first half of the history occupies 15.8% of the linear
+ * y-range — 63 px of a 400 px chart**, against 72.2% on a log axis. Six years
+ * of a coin's life pressed into a strip at the foot of the chart is not a
+ * scale choice, it is a chart that cannot be read.
+ *
+ * It is an option rather than the default because the two answer different
+ * questions: linear shows what the money did, log shows what the *rate* did,
+ * and on a day's range they are the same picture anyway.
+ *
+ * **A log axis needs every price above zero**, and falls back to linear when
+ * the range reaches zero or below rather than drawing nothing — a series that
+ * cannot be drawn logarithmically is still a series.
+ */
+const canScaleLog = (domain) =>
+  Array.isArray(domain) && domain[0] > 0 && domain[1] > 0;
+
+/* **The price window moved by a hand** (1 Oct 2026). A vertical drag on the
+ * chart slides what it shows up or down without changing its scale: `f` is a
+ * share of the window's own height, positive to look higher. On a log axis the
+ * share is of the log span, so a drag moves the same distance on screen either
+ * way. A linear window is never slid below zero — there are no prices there for
+ * the axis to name. */
+/* A price window scaled by `g` about the point `share` of the way up it, so
+ * that point stays where it is on screen — the wheel's zoom in price
+ * (chart-viewport.js, VIEW_Y_ZOOM). On a log axis the distances are log
+ * distances. A linear window is not taken below zero. */
+const zoomDomain = (lo, hi, share, g, log = false) => {
+  if (!(hi > lo) || !(g > 0) || !isFinite(share)) return [lo, hi];
+  if (log && lo > 0) {
+    const a = Math.log(lo);
+    const b = Math.log(hi);
+    const m = a + share * (b - a);
+    return [Math.exp(m - (m - a) * g), Math.exp(m + (b - m) * g)];
+  }
+  const m = lo + share * (hi - lo);
+  return [Math.max(0, m - (m - lo) * g), m + (hi - m) * g];
+};
+
+const shiftDomain = (lo, hi, f, log = false) => {
+  /* **A held price window** (2 Oct 2026, TradingView's scale once it has
+     been moved by hand): `{ lo, hi }` is the window itself, whatever the
+     data under it does — so a sideways pan no longer re-fits the price. */
+  if (f && typeof f === "object") return f.hi > f.lo && isFinite(f.lo) && isFinite(f.hi) ? [f.lo, f.hi] : [lo, hi];
+  if (!(hi > lo) || !isFinite(f) || f === 0) return [lo, hi];
+  if (log && lo > 0) {
+    const a = Math.log(lo);
+    const b = Math.log(hi);
+    const d = (b - a) * f;
+    return [Math.exp(a + d), Math.exp(b + d)];
+  }
+  const span = hi - lo;
+  const d = Math.max(span * f, -lo);
+  return [lo + d, hi + d];
+};
+
+const scalePricesCore = (
+  data,
+  height,
+  width,
+  paddingTop = 0,
+  paddingBottom = 0,
+  paddingLeft = 0,
+  paddingRight = 0,
+  yLo = null,
+  yHi = null,
+  logScale = false,
+) => {
+  const domain =
+    yLo != null && yHi != null && yHi > yLo
+      ? [yLo, yHi]
+      : extent(data, (d) => d.price);
+  const priceToY = (
+    logScale && canScaleLog(domain) ? scaleLog() : scaleLinear()
+  )
+    .range([height - paddingBottom, paddingTop])
+    .domain(domain);
+
+  const timeToX = scaleTime()
+    .range([paddingLeft, width - paddingRight])
+    .domain(extent(data, (d) => d.time));
+
+  return data.map(({ price, time }) => ({
+    price: priceToY(price),
+    time: timeToX(time),
+  }));
+};
+
+// Memoized version for performance
+/* Cached on the *identity* of the series, not on its contents.
+ *
+ * This went through `memoize`, which keys on `JSON.stringify(args)` — and the
+ * first argument is the whole price series, so every call built a string of
+ * three hundred points to look up an answer. Worse under a drag: each frame
+ * passes a different padding, so each frame minted a new key and a new entry,
+ * filling a hundred-entry cache with a hundred scaled copies of the series
+ * nobody would ask for again.
+ *
+ * The series arrives as the same array on every redraw until new prices come
+ * in, so `===` answers the question the string was being built to answer. Four
+ * entries because two charts can be on screen (the portfolio draws its own)
+ * and each wants a live entry and the one it had before the last change. */
+const SCALE_CACHE = [];
+const scalePrices = (data, height, width, pt, pb, pl, pr, yLo, yHi, log) => {
+  // `log` is in the key: the same series at the same size is a different
+  // drawing on a different axis, and a cache that forgot that would hand back
+  // the linear one for the rest of the session
+  const key = `${height}|${width}|${pt}|${pb}|${pl}|${pr}|${yLo}|${yHi}|${log}`;
+  for (const entry of SCALE_CACHE) {
+    if (entry.data === data && entry.key === key) return entry.out;
+  }
+  const out = scalePricesCore(
+    data,
+    height,
+    width,
+    pt,
+    pb,
+    pl,
+    pr,
+    yLo,
+    yHi,
+    log,
+  );
+  SCALE_CACHE.unshift({ data, key, out });
+  if (SCALE_CACHE.length > 4) SCALE_CACHE.pop();
+  return out;
+};
+
+/* The y `scalePrices` would give an arbitrary price — for drawing a
+ * horizontal reference across the chart at a level that isn't a data point.
+ *
+ * Null when the level falls outside the range the chart actually covers.
+ * Clamping it to an edge would draw a line claiming the price came down to
+ * meet it when it never entered the window at all, and a reference line that
+ * can lie is worse than no reference line.
+ */
+const priceToChartY = (
+  data,
+  value,
+  height,
+  paddingTop = 0,
+  paddingBottom = 0,
+  logScale = false,
+  shift = 0,
+) => {
+  if (!Array.isArray(data) || data.length < 2) return null;
+  if (!isFinite(value)) return null;
+  const [dataMin, dataMax] = extent(data, (d) => d.price);
+  if (!isFinite(dataMin) || !isFinite(dataMax) || dataMin === dataMax) return null;
+  // The window a vertical drag slid, or the data's own (`shiftDomain`)
+  const [min, max] = shiftDomain(dataMin, dataMax, shift, logScale && canScaleLog([dataMin, dataMax]));
+  if (value < min || value > max) return null;
+  // Same axis the series was drawn on, or a reference line lands somewhere the
+  // price never was — see `scalePricesCore`
+  const scale =
+    logScale && canScaleLog([min, max]) ? scaleLog() : scaleLinear();
+  return scale.range([height - paddingBottom, paddingTop]).domain([min, max])(
+    value,
+  );
+};
+
+/* The inverse: what price a y on this chart stands for.
+ *
+ * Added 23 Sep 2026 so a click on the chart can fill a price target. It is
+ * the mirror of `priceToChartY` down to the guards — same domain, same
+ * range, same choice of axis — and it has to be, or the level you picked and
+ * the line drawn back for it would sit a few pixels apart.
+ *
+ * Null outside the drawn band rather than the nearest edge: a click in the
+ * margin above the top of the range is not a request for the highest price in
+ * the window, it is a click that missed.
+ */
+const chartYToPrice = (
+  data,
+  y,
+  height,
+  paddingTop = 0,
+  paddingBottom = 0,
+  logScale = false,
+  shift = 0,
+) => {
+  if (!Array.isArray(data) || data.length < 2) return null;
+  if (!isFinite(y)) return null;
+  const [dataMin, dataMax] = extent(data, (d) => d.price);
+  if (!isFinite(dataMin) || !isFinite(dataMax) || dataMin === dataMax) return null;
+  const [min, max] = shiftDomain(dataMin, dataMax, shift, logScale && canScaleLog([dataMin, dataMax]));
+  const top = paddingTop;
+  const bottom = height - paddingBottom;
+  if (!(bottom > top)) return null;
+  if (y < top || y > bottom) return null;
+  const scale =
+    logScale && canScaleLog([min, max]) ? scaleLog() : scaleLinear();
+  const value = scale.range([bottom, top]).domain([min, max]).invert(y);
+  return isFinite(value) && value > 0 ? value : null;
+};
+
+const lineFromPrices = line()
+  .x((d) => d.time)
+  .y((d) => d.price);
+
+/* COMPARISON MODE ─────────────────────────────────────────────────────────
+ * Two coins never share a price axis. BTC near 60,000 next to XRP near 0.50
+ * presses one of them flat against the floor, and the usual escape — giving
+ * each line its own y-axis — is the textbook misleading chart: where the two
+ * lines cross is then decided by where the scales were put, not by anything
+ * that happened in the market.
+ *
+ * So both series are converted to percent change from the start of the range.
+ * That is a quantity the two coins genuinely share, one axis is therefore
+ * honest for both, and it is the question the mode exists to answer: which of
+ * these has done better over the range I am looking at?
+ */
+const toPercentChange = (history) => {
+  const out = [];
+  let base = null;
+  for (const point of history || []) {
+    const price = Number(point.price);
+    const time = Number(new Date(point.time));
+    if (!isFinite(price) || price <= 0 || !isFinite(time)) continue;
+    if (base === null) base = price;
+    out.push({ percent: ((price - base) / base) * 100, time });
+  }
+  return out.length >= 2 ? out : [];
+};
+
+/* **Two series, one window** (28 Sep 2026). The coin on screen and the one
+ * compared come from different requests — with candlesticks on, the chart's
+ * series is the candles' closes and the compared coin's is its price history —
+ * and they need not cover the same stretch of time. Measured with the candles
+ * on 1H: the chart's series ran hours further back than the compared one, so
+ * the shared time axis put the second coin in a sliver at the right edge, and
+ * each "% since the start" was from a different start, which made the gap
+ * between them a number about nothing. Both are cut to the time they share:
+ * from the last point at or before the later start (each series' own base for
+ * that moment) to the first at or after the earlier end. Oldest first in, the
+ * same out. */
+const alignComparison = (historyA, historyB) => {
+  const t = (p) => Number(new Date(p.time));
+  const usable = (list) => (list || []).filter((p) => Number(p.price) > 0 && isFinite(t(p)));
+  const a = usable(historyA);
+  const b = usable(historyB);
+  if (a.length < 2 || b.length < 2) return [a, b];
+  const start = Math.max(t(a[0]), t(b[0]));
+  const end = Math.min(t(a[a.length - 1]), t(b[b.length - 1]));
+  if (!(end > start)) return [[], []];
+  const clip = (list) => {
+    let first = 0;
+    while (first + 1 < list.length && t(list[first + 1]) <= start) first += 1;
+    let last = list.length - 1;
+    while (last - 1 > first && t(list[last - 1]) >= end) last -= 1;
+    return list.slice(first, last + 1);
+  };
+  return [clip(a), clip(b)];
+};
+
+/* **How often the two moved the same way** (28 Sep 2026; it gives the
+ * comparison an informative measure of agreement). Over the window they
+ * share, step by step along the chart's own series: each step's direction
+ * for this coin, and the compared coin's over the same two moments (its
+ * nearest points — the two series are sampled differently). A step where
+ * either stood still is not counted either way. A count and its
+ * denominator — never a correlation coefficient dressed as a prediction.
+ * Null when fewer than two steps can be read. */
+/* The two series' steps side by side: each of the chart coin's steps with
+ * the compared coin's over the same stretch of time, read off the same cut
+ * the chart draws (alignComparison). Null under three points. */
+const compareSteps = (historyA, historyB) => {
+  const [a, b] = alignComparison(historyA, historyB);
+  if (a.length < 3 || b.length < 2) return null;
+  const t = (p) => Number(new Date(p.time));
+  const bt = b.map(t);
+  const priceB = (ms) => {
+    let lo = 0;
+    let hi = bt.length - 1;
+    while (hi - lo > 1) {
+      const mid = (lo + hi) >> 1;
+      if (bt[mid] <= ms) lo = mid;
+      else hi = mid;
+    }
+    return Number(b[Math.abs(bt[hi] - ms) < Math.abs(bt[lo] - ms) ? hi : lo].price);
+  };
+  const steps = [];
+  for (let i = 1; i < a.length; i += 1) {
+    const a0 = Number(a[i - 1].price);
+    const a1 = Number(a[i].price);
+    const b0 = priceB(t(a[i - 1]));
+    const b1 = priceB(t(a[i]));
+    steps.push([a0, a1, b0, b1]);
+  }
+  return steps;
+};
+
+const compareSameDirection = (historyA, historyB) => {
+  const steps = compareSteps(historyA, historyB);
+  if (!steps) return null;
+  let same = 0;
+  let n = 0;
+  for (const [a0, a1, b0, b1] of steps) {
+    const da = a1 - a0;
+    const db = b1 - b0;
+    if (!da || !db) continue;
+    n += 1;
+    if ((da > 0) === (db > 0)) same += 1;
+  }
+  return n >= 2 ? { same, n } : null;
+};
+
+/* How closely the two coins' steps moved together — the Pearson correlation
+ * of their log returns over the steps both moved, with that count. A
+ * description of the window on screen, never of the next one: null under
+ * COMPARE_CORR_MIN steps, where one jolt decides it. */
+const COMPARE_CORR_MIN = 20;
+const compareCorrelation = (historyA, historyB) => {
+  const steps = compareSteps(historyA, historyB);
+  if (!steps) return null;
+  const ra = [];
+  const rb = [];
+  for (const [a0, a1, b0, b1] of steps) {
+    if (!(a0 > 0 && a1 > 0 && b0 > 0 && b1 > 0) || a1 === a0 || b1 === b0) continue;
+    ra.push(Math.log(a1 / a0));
+    rb.push(Math.log(b1 / b0));
+  }
+  const n = ra.length;
+  if (n < COMPARE_CORR_MIN) return null;
+  const ma = ra.reduce((x, y) => x + y, 0) / n;
+  const mb = rb.reduce((x, y) => x + y, 0) / n;
+  let sab = 0;
+  let saa = 0;
+  let sbb = 0;
+  for (let i = 0; i < n; i += 1) {
+    sab += (ra[i] - ma) * (rb[i] - mb);
+    saa += (ra[i] - ma) ** 2;
+    sbb += (rb[i] - mb) ** 2;
+  }
+  if (!(saa > 0 && sbb > 0)) return null;
+  /* `beta`: how far A's steps went for each step of B's — the slope of A's
+     moves on B's over the same window (the monitor's "β BTC"). A description
+     of the window, like `r`, never what comes next. */
+  return { r: sab / Math.sqrt(saa * sbb), n, beta: sab / sbb };
+};
+
+/* Two coins that both sat still would otherwise be stretched to fill the
+ * chart, turning a tenth of a percent of drift into a dramatic crossing. The
+ * domain never closes tighter than this, so flat reads as flat. */
+const COMPARE_MIN_SPAN = 1; // percentage points
+
+const scaleComparison = (historyA, historyB, height, width, padding = 0) => {
+  const [alignedA, alignedB] = alignComparison(historyA, historyB);
+  const a = toPercentChange(alignedA);
+  const b = toPercentChange(alignedB);
+  if (!a.length || !b.length) return null;
+
+  // One domain for both series, in both directions — that sharing is the mode
+  let low = Infinity;
+  let high = -Infinity;
+  let start = Infinity;
+  let end = -Infinity;
+  for (const list of [a, b]) {
+    for (const point of list) {
+      if (point.percent < low) low = point.percent;
+      if (point.percent > high) high = point.percent;
+      if (point.time < start) start = point.time;
+      if (point.time > end) end = point.time;
+    }
+  }
+  if (!(end > start)) return null;
+  if (high - low < COMPARE_MIN_SPAN) {
+    const mid = (high + low) / 2;
+    low = mid - COMPARE_MIN_SPAN / 2;
+    high = mid + COMPARE_MIN_SPAN / 2;
+  }
+
+  const percentToY = scaleLinear()
+    .range([height - padding, padding])
+    .domain([low, high]);
+  const timeToX = scaleLinear()
+    .range([padding, width - padding])
+    .domain([start, end]);
+
+  // Named price/time so the existing line generator draws these unchanged
+  const project = (list) =>
+    list.map((point) => ({
+      price: percentToY(point.percent),
+      time: timeToX(point.time),
+      percent: point.percent,
+      at: point.time,
+    }));
+
+  return {
+    a: project(a),
+    b: project(b),
+    low,
+    high,
+    /* The 0% line is what the whole chart is read against, and it is always
+     * on screen: both series start at 0% by construction, so the domain can
+     * never sit entirely above or below it. */
+    zeroY: percentToY(0),
+    lastA: a[a.length - 1].percent,
+    lastB: b[b.length - 1].percent,
+  };
+};
+
+/* **A sign is never a rounding artefact** (27 Sep 2026). A figure that
+ * prints as zero prints without one: "-0.0%" claims a direction a number
+ * that rounds to nothing no longer has, and "+0.0%" claims the other. The
+ * base-rate screen's `formatSigned` and the portfolio's benchmark gap had
+ * each been fixed for this on their own; the design audit found it in
+ * thirteen more places, all the same line of code. This is that line once. */
+const signedFixed = (value, digits = 1, minus = "−") => {
+  const v = Number(value);
+  if (!isFinite(v)) return "";
+  const shown = Math.abs(v).toFixed(digits);
+  if (Number(shown) === 0) return shown;
+  return `${v > 0 ? "+" : minus}${shown}`;
+};
+
+const formatSignedPercent = (value) => {
+  const text = signedFixed(value, 2, "-");
+  return text ? `${text}%` : "";
+};
+
+/* High and low of whatever range the chart is showing. Read off the series
+ * already on screen, so it stays true to the chart rather than to a fixed
+ * window the user can't see. */
+const deriveRangeStats = (valueHistory) => {
+  if (!Array.isArray(valueHistory) || valueHistory.length < 2) return null;
+  let high = -Infinity;
+  let low = Infinity;
+  for (const point of valueHistory) {
+    const price = Number(point.price);
+    if (!isFinite(price)) continue;
+    if (price > high) high = price;
+    if (price < low) low = price;
+  }
+  if (!isFinite(high) || !isFinite(low)) return null;
+  return { high, low };
+};
+
+/* Big numbers for the stats row: market caps run to twelve digits, which
+ * would swamp the line they sit on. */
+const formatCompactAmount = (value, symbol) => {
+  const v = Number(value);
+  if (!isFinite(v) || v <= 0) return null;
+  const units = [
+    { at: 1e12, suffix: "T" },
+    { at: 1e9, suffix: "B" },
+    { at: 1e6, suffix: "M" },
+    { at: 1e3, suffix: "K" },
+  ];
+  for (const { at, suffix } of units) {
+    if (v >= at) return `${symbol}${(v / at).toFixed(2)}${suffix}`;
+  }
+  return `${symbol}${v.toFixed(2)}`;
+};
+
+/* A count, shortened only once it is long enough to need it.
+ *
+ * `formatCompactAmount` is built for money and prints two decimals below its
+ * first unit, so 971 blocks came out as "971.00" — a block is a whole thing
+ * and a count with a fractional part reads as a measurement rather than a
+ * tally. Above a thousand the compact form is the right one and this hands
+ * over to it. */
+const formatCount = (value) => {
+  const v = Number(value);
+  if (!isFinite(v) || v < 0) return "";
+  if (v < 1000) return String(Math.round(v));
+  return formatCompactAmount(v, "") || String(Math.round(v));
+};
+
+/* Axis labels for the chart grid.
+ *
+ * The decimals come from the *step between levels*, not from the magnitude
+ * of the number. That is the only rule that works across this coin list: at
+ * a $500 step "64500" needs none, and at a $0.002 step Dogecoin needs three —
+ * formatting by magnitude gave two adjacent gridlines the same label ($0.07
+ * and $0.07), which makes the grid useless for reading a level off.
+ */
+const formatAxisPrice = (value, step, symbol = "") => {
+  const v = Number(value);
+  const s = Number(step);
+  if (!isFinite(v)) return "";
+  const places = (x) =>
+    isFinite(x) && x > 0
+      ? Math.max(0, Math.min(8, Math.ceil(-Math.log10(x))))
+      : 2;
+  if (Math.abs(v) >= 1e3) {
+    const units = [
+      { at: 1e12, suffix: "T" },
+      { at: 1e9, suffix: "B" },
+      { at: 1e6, suffix: "M" },
+      { at: 1e3, suffix: "K" },
+    ];
+    for (const { at, suffix } of units) {
+      if (Math.abs(v) >= at) {
+        return `${symbol}${(v / at).toFixed(places(s / at))}${suffix}`;
+      }
+    }
+  }
+  return `${symbol}${v.toFixed(places(s))}`;
+};
+
+/* ── Calls: settling one ──
+ *
+ * A call names a box: this price band, at this time. Settling it needs the
+ * price *at that time*, not the price now — someone who opens a tab three
+ * hours after the target must not be judged on three hours of drift they
+ * were never asked about. So the series is searched for the point nearest
+ * the target, and it only counts when that point is genuinely near: within
+ * half the call's own cell width. Anything looser and the answer is about a
+ * different moment than the one that was called.
+ *
+ * Four outcomes, and "expired" is a real one. If the tab stays shut long
+ * enough for the target to fall off the start of the range, the evidence is
+ * gone. Guessing from whatever is left would let the record drift away from
+ * what actually happened, and this record's only job is to be true.
+ */
+
+/* MONEY-WEIGHTED RETURN — the rate your own timing actually earned.
+ *
+ * This is the figure a bank statement and a fund factsheet report and a crypto
+ * tracker almost never does. The percentage everything else shows is
+ * `(value - cost) / cost`: it treats money put in this morning exactly like
+ * money put in two years ago, so buying more near a low — the thing a person
+ * did on purpose — is invisible in it. The internal rate of return is the one
+ * number that answers "what rate, compounded, would have turned my payments
+ * into what I have", and it is annualised by construction, which is what makes
+ * two positions of different ages comparable at all.
+ *
+ * Flows are `{ when, amount }` with `when` in unix seconds: **money leaving
+ * you is negative** (a purchase), money coming back is positive (a sale, and
+ * the position's value now, which is treated as a final notional sale).
+ *
+ * Solved by bisection rather than Newton's method. Newton is faster and is
+ * the usual choice, and it diverges on exactly the shapes this app will hand
+ * it — a flow set with several sign changes, or a rate near -100% where the
+ * derivative collapses. Bisection cannot diverge: the NPV is monotonic in the
+ * discount factor over each interval here, so bracketing and halving 200
+ * times is both exact enough and impossible to get wrong. This runs once per
+ * render of a panel, not per frame.
+ *
+ * Returns null rather than a number whenever the answer would be a fiction:
+ * fewer than two flows, no money actually paid in, no sign change to bracket,
+ * or a span too short to annualise (see `MIN_XIRR_DAYS`).
+ */
+const MIN_XIRR_DAYS = 14;
+const XIRR_MAX_RATE = 1e6; // beyond this the answer is a rounding artefact
+
+const xirrNpv = (flows, rate, t0) => {
+  let npv = 0;
+  for (const f of flows) {
+    const years = (f.when - t0) / 31557600; // 365.25 days
+    npv += f.amount / Math.pow(1 + rate, years);
+  }
+  return npv;
+};
+
+const xirr = (flows) => {
+  if (!Array.isArray(flows) || flows.length < 2) return null;
+  const clean = flows
+    .filter(
+      (f) => f && isFinite(f.when) && isFinite(f.amount) && f.amount !== 0,
+    )
+    .sort((a, b) => a.when - b.when);
+  if (clean.length < 2) return null;
+
+  const paidIn = clean.reduce((t, f) => t + (f.amount < 0 ? -f.amount : 0), 0);
+  if (!(paidIn > 0)) return null;
+  // Both signs have to be present or there is nothing to solve for
+  if (!clean.some((f) => f.amount > 0)) return null;
+
+  const t0 = clean[0].when;
+  const spanDays = (clean[clean.length - 1].when - t0) / 86400;
+  /* **Under a fortnight, no annual rate is printed**, and that is the whole
+   * discipline of this figure rather than a detail. Annualising compounds:
+   * three days at +2% is +1,036% a year, which is arithmetic rather than
+   * information, and printing it beside a real one-year figure invites the
+   * comparison it cannot survive. The panel says the position is too new. */
+  if (!(spanDays >= MIN_XIRR_DAYS)) return null;
+
+  let lo = -0.9999;
+  let hi = 1;
+  let fLo = xirrNpv(clean, lo, t0);
+  let fHi = xirrNpv(clean, hi, t0);
+  // Widen upward until the sign flips — a position that multiplied needs room
+  let guard = 0;
+  while (fLo * fHi > 0 && hi < XIRR_MAX_RATE && guard++ < 80) {
+    hi *= 4;
+    fHi = xirrNpv(clean, hi, t0);
+  }
+  if (fLo * fHi > 0) return null;
+
+  for (let i = 0; i < 200; i++) {
+    const mid = (lo + hi) / 2;
+    const fMid = xirrNpv(clean, mid, t0);
+    if (fLo * fMid <= 0) {
+      hi = mid;
+    } else {
+      lo = mid;
+      fLo = fMid;
+    }
+  }
+  const rate = (lo + hi) / 2;
+  return isFinite(rate) ? rate : null;
+};
+
+const settleCall = (call, prices, now) => {
+  const out = (status, price) => ({
+    status,
+    price: price == null ? null : price,
+  });
+  if (!call || !isFinite(call.target) || !isFinite(call.span))
+    return out("expired");
+  if (!(now >= call.target)) return out("pending");
+
+  const data = Array.isArray(prices) ? prices : [];
+  if (data.length < 2) return out("pending");
+
+  const at = (d) =>
+    d.time instanceof Date ? d.time.getTime() : Number(d.time);
+  const first = at(data[0]);
+  const last = at(data[data.length - 1]);
+  if (!isFinite(first) || !isFinite(last)) return out("pending");
+
+  // The target predates everything on screen: the moment is unrecoverable
+  if (call.target < first) return out("expired");
+  // The series has not caught up yet — ask again next time
+  if (call.target > last + call.span) return out("pending");
+
+  let best = null;
+  let bestGap = Infinity;
+  for (const d of data) {
+    const gap = Math.abs(at(d) - call.target);
+    if (gap < bestGap) {
+      bestGap = gap;
+      best = d;
+    }
+  }
+  if (!best || bestGap > call.span / 2) return out("pending");
+
+  const price = Number(best.price);
+  if (!isFinite(price)) return out("pending");
+  return out(price >= call.lo && price <= call.hi ? "hit" : "miss", price);
+};
+
+/* Who claimed each column, and whether anyone contested it.
+ *
+ * Several calls can share a column — same minutes, different price bands —
+ * and they are not equal: the earliest one placed there is the claim, the
+ * rest are hedges around it. That is what the chart's `CALLED · 1ST` tag
+ * means, and it is also what decides whether a win is worth a firework, so
+ * the test lives here rather than in either caller. It was inline in the
+ * chart's draw loop; the second reader would have been a copy, and a copy of
+ * a rule this small is the one that drifts.
+ *
+ * The caller filters to one coin, currency and range first — a column is a
+ * stretch of time on one chart, and two coins at the same minute are not
+ * competing for anything.
+ */
+const callColumns = (calls) => {
+  const columns = new Map();
+  for (const c of calls || []) {
+    const placed = isFinite(c.placed) ? c.placed : Infinity;
+    const at = columns.get(c.target);
+    if (!at) columns.set(c.target, { first: placed, count: 1 });
+    else {
+      at.count += 1;
+      if (placed < at.first) at.first = placed;
+    }
+  }
+  return columns;
+};
+
+/* First into a column somebody else also called. Both halves matter: a mark
+ * every lone call carries says nothing about being first, so a column of one
+ * is never leading. */
+const isLeadingCall = (call, columns) => {
+  if (!call || !columns) return false;
+  const column = columns.get(call.target);
+  if (!column || column.count < 2) return false;
+  return (isFinite(call.placed) ? call.placed : Infinity) === column.first;
+};
+
+/* Applies a settled outcome to the tally. Separate from `settleCall` so the
+ * arithmetic can be checked on its own, and so a miss and a hit go through
+ * exactly the same path. */
+const applyCallResult = (record, status) => {
+  const r = {
+    hits: record && isFinite(record.hits) ? record.hits : 0,
+    total: record && isFinite(record.total) ? record.total : 0,
+    streak: record && isFinite(record.streak) ? record.streak : 0,
+    best: record && isFinite(record.best) ? record.best : 0,
+  };
+  if (status !== "hit" && status !== "miss") return r; // expired never counts
+  r.total += 1;
+  if (status === "hit") {
+    r.hits += 1;
+    r.streak += 1;
+    if (r.streak > r.best) r.best = r.streak;
+  } else {
+    r.streak = 0;
+  }
+  return r;
+};
+
+/* Prices for the widget list rows. The panel is narrow, so the decimals
+ * adapt to the magnitude instead of using the display setting: a $65,014.68
+ * would crowd out the change column, while a $0.0000 would say nothing.
+ * The separator format is still respected. */
+/* **The decimals a price is printed with: the setting, and never fewer than
+ * four significant digits** (9 Oct 2026). The setting is a count of decimals
+ * and its default is two, which is right for a coin worth dollars and empty
+ * for one worth cents: measured on the live page, DOGE at $0.0849 headed the
+ * chart as "$0.08", its day's move as "+$0.00" and its range as "$0.09" to
+ * "$0.08" — while the axis beside it read $0.08510. Below one unit the count
+ * is raised until four significant digits show; the setting stays the floor,
+ * so a person who chose six still gets six. Pass the price whose magnitude
+ * decides, not a difference: a move of a cent on a coin worth cents is
+ * printed to the same places as the coin. */
+const PRICE_SIGNIFICANT_DIGITS = 4;
+const PRICE_DECIMALS_MAX = 8;
+const priceDecimals = (price, setting) => {
+  const abs = Math.abs(Number(price));
+  if (!(abs > 0) || abs >= 1) return setting;
+  const needed = PRICE_SIGNIFICANT_DIGITS - 1 - Math.floor(Math.log10(abs));
+  return Math.max(setting, Math.min(PRICE_DECIMALS_MAX, needed));
+};
+
+const formatWidgetPrice = (value, symbol, separatorFormat) => {
+  const v = Number(value);
+  if (!isFinite(v)) return "—";
+  const abs = Math.abs(v);
+  const decimals = abs >= 1000 ? 0 : abs >= 1 ? 2 : abs >= 0.01 ? 4 : 6;
+  return formatNumberString(v, symbol, true, false, decimals, separatorFormat);
+};
+
+// Coarse "how long ago" for the since-last-visit line. Deliberately vague —
+// the point is orientation ("this morning"), not a stopwatch.
+const describeElapsed = (ms) => {
+  const mins = Math.round(ms / 60000);
+  if (mins < 60) return `${mins} min ago`;
+  const hours = Math.round(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.round(hours / 24);
+  if (days === 1) return "yesterday";
+  if (days < 30) return `${days} days ago`;
+  return "a month ago";
+};
+
+/* When the prices a cache answer carries were fetched: the spot's own age
+ * (the headline figure), else the series'. Null when neither was cached. */
+const cachedPricesAt = (spot, history) => {
+  const entry = spot && spot.data && isFinite(spot.age) ? spot : history && history.data && isFinite(history.age) ? history : null;
+  return entry ? Date.now() - entry.age : null;
+};
+
+/* The chart's "prices from 12 min ago", rounded down and never dressed up —
+ * the popup's rule, since both lines exist to make the figure under them
+ * less certain, not more. */
+const PRICES_STALE_MIN_MS = 60000;
+const pricesAgeText = (ms) => {
+  const mins = Math.floor(ms / 60000);
+  if (mins < 60) return msg("chart_prices_age_min", "Prices from $1 min ago", String(mins));
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return msg("chart_prices_age_hour", "Prices from $1 h ago", String(hours));
+  return msg("chart_prices_age_day", "Prices from $1 d ago", String(Math.floor(hours / 24)));
+};
+
+/* The mirror of `describeElapsed`, for something that has not happened yet.
+ * Same thresholds, so "3h ago" and "in 3h" read as the same scale — and it
+ * degrades to "now" rather than "0 min" when the moment has arrived. */
+const describeAhead = (ms) => {
+  if (!isFinite(ms) || ms <= 0) return "now";
+  const mins = Math.round(ms / 60000);
+  if (mins < 1) return "now";
+  if (mins < 60) return `in ${mins} min`;
+  const hours = Math.round(mins / 60);
+  if (hours < 24) return `in ${hours}h`;
+  const days = Math.round(hours / 24);
+  if (days === 1) return "tomorrow";
+  if (days < 30) return `in ${days} days`;
+  return "in over a month";
+};
+
+/* ── US releases: CPI, the jobs report, the Fed, PCE ─────────────────────
+ * The bundled calendars (`CPI_RELEASES_UTC` and the three beside it) as
+ * instants, and what the price did around them. Pure: the clock is an
+ * argument. Read lazily, by `typeof`, so a test sandbox can hand in its own
+ * calendar before the first call. */
+const macroTimesMemo = {};
+const macroCalendarOf = (kind) =>
+  kind === "cpi"
+    ? typeof CPI_RELEASES_UTC !== "undefined" ? CPI_RELEASES_UTC : []
+    : kind === "nfp"
+      ? typeof NFP_RELEASES_UTC !== "undefined" ? NFP_RELEASES_UTC : []
+      : kind === "fomc"
+        ? typeof FOMC_RELEASES_UTC !== "undefined" ? FOMC_RELEASES_UTC : []
+        : kind === "pce"
+          ? typeof PCE_RELEASES_UTC !== "undefined" ? PCE_RELEASES_UTC : []
+          : [];
+const macroReleaseTimes = (kind) => {
+  if (!macroTimesMemo[kind]) {
+    macroTimesMemo[kind] = macroCalendarOf(kind)
+      .map((iso) => Date.parse(iso))
+      .filter((t) => Number.isFinite(t))
+      .sort((a, b) => a - b);
+  }
+  return macroTimesMemo[kind];
+};
+const macroKinds = () =>
+  typeof MACRO_KINDS !== "undefined" ? MACRO_KINDS : ["cpi"];
+/* Every release of every kind in [from, to], as `{ t, kind }` in time order. */
+const macroReleasesBetween = (from, to) =>
+  macroKinds()
+    .flatMap((kind) =>
+      macroReleaseTimes(kind)
+        .filter((t) => t >= from && t <= to)
+        .map((t) => ({ t, kind })),
+    )
+    .sort((a, b) => a.t - b.t);
+/* The first release of any kind strictly after `now`; null past the end. */
+const nextMacroRelease = (now) => {
+  let best = null;
+  for (const kind of macroKinds()) {
+    const t = macroReleaseTimes(kind).find((x) => x > now);
+    if (t && (!best || t < best.t)) best = { t, kind };
+  }
+  return best;
+};
+/* **Which releases a window draws**: whole kinds, strongest first, while the
+ * total stays within `cap`; the first kind that would cross it is left out,
+ * and every kind after it. A year holds CPI and the jobs report (about 24),
+ * a month all four, ALL none — a fence of dashes is a texture, not a
+ * reading. */
+const macroMarksWithin = (releases, cap) => {
+  const list = Array.isArray(releases) ? releases : [];
+  const out = [];
+  for (const kind of macroKinds()) {
+    const these = list.filter((r) => r && r.kind === kind);
+    if (out.length + these.length > cap) break;
+    out.push(...these);
+  }
+  return out.sort((a, b) => a.t - b.t);
+};
+/* The line under the price for a release of `kind`: before it ("US CPI in
+ * 2h · Tue 14:30") or just after ("US CPI came out 20 min ago · …"), and the
+ * tooltip saying what the release is. One literal key per sentence, so the
+ * extractor and each language see whole sentences. */
+const macroLineText = (kind, ahead, span, when) => {
+  if (kind === "nfp") {
+    return {
+      line: ahead
+        ? msg("nfp_line_soon", "US jobs report $1 · $2", span, when)
+        : msg("nfp_line_just", "US jobs report came out $1 · $2", span, when),
+      hint: msg(
+        "nfp_line_hint",
+        "The Bureau of Labor Statistics' Employment Situation (nonfarm payrolls), published 08:30 New York time. What past releases did to this coin is counted on the base-rate screen (B).",
+      ),
+    };
+  }
+  if (kind === "fomc") {
+    return {
+      line: ahead
+        ? msg("fomc_line_soon", "Fed rate decision $1 · $2", span, when)
+        : msg("fomc_line_just", "Fed rate decision came out $1 · $2", span, when),
+      hint: msg(
+        "fomc_line_hint",
+        "The Federal Open Market Committee's statement, published 14:00 New York time. What past statements did to this coin is counted on the base-rate screen (B).",
+      ),
+    };
+  }
+  if (kind === "pce") {
+    return {
+      line: ahead
+        ? msg("pce_line_soon", "US PCE inflation $1 · $2", span, when)
+        : msg("pce_line_just", "US PCE inflation came out $1 · $2", span, when),
+      hint: msg(
+        "pce_line_hint",
+        "The Bureau of Economic Analysis' Personal Income and Outlays, with the PCE price index, usually published 08:30 New York time. What past releases did to this coin is counted on the base-rate screen (B).",
+      ),
+    };
+  }
+  return {
+    line: ahead
+      ? msg("cpi_line_soon", "US CPI $1 · $2", span, when)
+      : msg("cpi_line_just", "US CPI came out $1 · $2", span, when),
+    hint: msg(
+      "cpi_line_hint",
+      "The US Consumer Price Index, published 08:30 New York time. What past releases did to this coin is counted on the base-rate screen (B).",
+    ),
+  };
+};
+const cpiReleaseTimes = () => macroReleaseTimes("cpi");
+const cpiReleasesBetween = (from, to) =>
+  cpiReleaseTimes().filter((t) => t >= from && t <= to);
+const nextCpiRelease = (now) => cpiReleaseTimes().find((t) => t > now) || null;
+const lastCpiRelease = (now) => {
+  const past = cpiReleaseTimes().filter((t) => t <= now);
+  return past.length ? past[past.length - 1] : null;
+};
+
+/* **One release, read off 1-minute candles.** `rows` are Coinbase's
+ * `[time, low, high, open, close]` in seconds, `at` the release in ms. The
+ * move after is |ln(close of minute T+29 / close of minute T−1)| — the half
+ * hour from the last price before the release, the convention of eq. (24) in
+ * the user's paper. The control is the same day's seven half-hours before
+ * it, back to back, measured the same way. Null when any of the sixteen
+ * closes it needs is missing: a gap is not a flat half-hour. */
+const cpiMoveFromCandles = (rows, at) => {
+  if (!Array.isArray(rows) || !Number.isFinite(at)) return null;
+  const closes = new Map();
+  for (const r of rows) {
+    const t = Number(r && r[0]);
+    const c = Number(r && r[4]);
+    if (Number.isFinite(t) && c > 0) closes.set(t, c);
+  }
+  const T = Math.round(at / 1000);
+  const move = (a, b) => {
+    const x = closes.get(a);
+    const y = closes.get(b);
+    return x > 0 && y > 0 ? Math.abs(Math.log(y / x)) : null;
+  };
+  const after = move(T - 60, T + 29 * 60);
+  const before = [];
+  for (let k = 1; k <= 7; k += 1) {
+    before.push(move(T - (30 * k + 1) * 60, T - (30 * (k - 1) + 1) * 60));
+  }
+  if (after == null || before.some((b) => b == null)) return null;
+  return { at, after, before };
+};
+
+/* **The count the screen prints.** `top` is how many releases moved more in
+ * the half hour after than in any of the seven before; if the release half
+ * hour were just another half hour, each of the eight would be the largest
+ * one time in eight, so `expect` is n/8. Medians, not means: one release is
+ * allowed to be enormous without speaking for the rest. */
+const cpiMovesSummary = (moves) => {
+  const ok = (Array.isArray(moves) ? moves : []).filter(
+    (m) => m && Number.isFinite(m.after),
+  );
+  if (!ok.length) return null;
+  const median = (xs) => {
+    const s = xs.slice().sort((a, b) => a - b);
+    const m = Math.floor(s.length / 2);
+    return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+  };
+  return {
+    n: ok.length,
+    top: ok.filter((m) => m.after > Math.max(...m.before)).length,
+    expect: ok.length / 8,
+    medAfter: median(ok.map((m) => m.after)),
+    medBefore: median(ok.flatMap((m) => m.before)),
+    largest: Math.max(...ok.map((m) => m.after)),
+  };
+};
+
+/* A duration written the way someone would say it: "2 days", "6h", "45 min".
+ * Not `describeAhead` — that answers "when", this answers "how long", and a
+ * square's size is a length, not a moment. */
+const describeSpan = (ms) => {
+  if (!isFinite(ms) || ms <= 0) return "";
+  const mins = Math.round(ms / 60000);
+  if (mins < 60) return `${mins} min`;
+  const hours = ms / 3600e3;
+  if (hours < 24)
+    return `${hours < 10 ? hours.toFixed(1).replace(/\.0$/, "") : Math.round(hours)}h`;
+  const days = ms / 86400e3;
+  if (days < 14)
+    return `${days < 10 ? days.toFixed(1).replace(/\.0$/, "") : Math.round(days)} days`;
+  const weeks = ms / 604800e3;
+  if (weeks < 9) return `${weeks.toFixed(1).replace(/\.0$/, "")} weeks`;
+  return `${Math.round(ms / 2629800e3)} months`;
+};
+
+/* The moments in a series where the price did something out of the ordinary
+ * *for that series*.
+ *
+ * Entirely local — no request decides where a mark goes, which is what makes
+ * the feature affordable: a chart nobody points at costs nothing. What the
+ * headlines cost is paid on the hover, one window at a time.
+ *
+ * Measured in standard deviations of the series' own step-to-step returns, not
+ * in a fixed percentage. A fixed threshold is wrong at both ends: 3% is an
+ * ordinary hour for DOGE and a violent year for USDC, so one number would mark
+ * everything on one coin and nothing on another. The step is whatever the
+ * range's resolution happens to be — 30 seconds on 1H, 91 days on ALL — and
+ * that is the right unit, because the question is "what stands out on the
+ * chart I am looking at".
+ *
+ * Log returns, so a fall of 20% and a rise of 25% are the same size — on a
+ * plain percentage the up moves dominate the tail and the marks drift onto one
+ * side of the chart.
+ *
+ * The first return is skipped rather than measured: `prices[0]` has nothing
+ * before it, and treating the opening level as a move from zero puts a mark on
+ * the left edge of every chart.
+ */
+const findUnusualMoves = (prices, options = {}) => {
+  const sigma = isFinite(options.sigma) ? options.sigma : 2.5;
+  const max = isFinite(options.max) ? options.max : 6;
+  if (!Array.isArray(prices) || prices.length < 12 || max < 1) return [];
+
+  const steps = [];
+  for (let i = 1; i < prices.length; i++) {
+    const a = Number(prices[i - 1].price);
+    const b = Number(prices[i].price);
+    if (!(a > 0) || !(b > 0)) {
+      steps.push(null);
+      continue;
+    }
+    steps.push(Math.log(b / a));
+  }
+  const real = steps.filter((s) => s !== null && isFinite(s));
+  if (real.length < 10) return [];
+  const mean = real.reduce((t, s) => t + s, 0) / real.length;
+  const sd = Math.sqrt(
+    real.reduce((t, s) => t + (s - mean) ** 2, 0) / real.length,
+  );
+  /* A flat or near-flat series has no unusual moment in it, and dividing by a
+   * standard deviation of zero would call every rounding error a spike. */
+  if (!(sd > 0)) return [];
+
+  const found = [];
+  for (let i = 0; i < steps.length; i++) {
+    if (steps[i] === null) continue;
+    const z = (steps[i] - mean) / sd;
+    if (Math.abs(z) < sigma) continue;
+    const at = prices[i + 1];
+    const before = prices[i];
+    const from = Number(before.price);
+    const to = Number(at.price);
+    found.push({
+      index: i + 1,
+      z,
+      // Both ends of the move, because the window the headlines come from is
+      // the span between them, not a single instant
+      startTime: +new Date(before.time),
+      time: +new Date(at.time),
+      from,
+      to,
+      pct: ((to - from) / from) * 100,
+    });
+  }
+
+  /* The biggest few, then back into time order. Sorting only by size would
+   * hand the caller a list that draws right-to-left at random, and the cap has
+   * to be applied to the *biggest*, not to the first few in the series. */
+  return found
+    .sort((a, b) => Math.abs(b.z) - Math.abs(a.z))
+    .slice(0, max)
+    .sort((a, b) => a.time - b.time);
+};
+
+/* **Where "what happened here?" puts its marks: events, not steps** (8 Oct
+ * 2026).
+ *
+ * The marks used to be `findUnusualMoves` — single steps past 2.5 SD. On a
+ * 1D chart a step is five minutes, and measured that day on BTC: of six
+ * marks, three were 0.3% blips with nothing written about them, and the
+ * other three were one fall split into its 15:25, 15:35 and 15:40 steps —
+ * while the move the newsrooms wrote about ran 15:00–15:35 and no single
+ * step of it was the story.
+ *
+ * So a mark is now a **stretch**: at each length in `MOVE_EVENT_LENGTHS`
+ * (one step up to an eighth of the series, so every length still has eight
+ * stretches to measure its spread against), the change over that many steps
+ * in SDs of every change of that length on this chart — "unusual for a
+ * stretch that long", the same self-relative rule as before, never a fixed
+ * percentage. Then, biggest first by |z| × size, each stretch is tightened
+ * to the extremes inside it (from the last high before a fall to its low)
+ * and kept unless it overlaps one already kept. Ranked by z alone the 1H
+ * chart's fall came back as six slices of itself; by size alone a month's
+ * slow drift swallowed the day that moved; the product kept both apart in
+ * every chart tried (BTC and ETH, 1H to 1M, 8 Oct 2026).
+ *
+ * Two floors, both read off this chart: a move must be at least
+ * `MOVE_EVENT_MIN_SHARE` of the range on screen — a 0.3% step on a day that
+ * spans 3.4% is not something the eye finds — and at least
+ * `MOVE_EVENT_REL_FLOOR` of the biggest event kept, so the slices of a fall
+ * do not get marks of their own beside it.
+ *
+ * Same fields as `findUnusualMoves` (`index` is the end), plus `startIndex`
+ * and `steps`, so the chart and the card read it unchanged.
+ */
+const MOVE_EVENT_LENGTHS = [1, 2, 3, 4, 6, 8, 12, 16, 24, 32];
+const MOVE_EVENT_MIN_SHARE = 0.15;
+const MOVE_EVENT_REL_FLOOR = 0.4;
+
+const findMoveEvents = (prices, options = {}) => {
+  const sigma = Number.isFinite(options.sigma) ? options.sigma : 2.5;
+  const max = Number.isFinite(options.max) ? options.max : 6;
+  if (!Array.isArray(prices) || prices.length < 12 || max < 1) return [];
+  const logp = prices.map((p) => {
+    const v = Number(p && p.price);
+    return v > 0 ? Math.log(v) : null;
+  });
+  if (logp.some((v) => v === null)) return [];
+  const n = logp.length;
+  const range = Math.max(...logp) - Math.min(...logp);
+  if (!(range > 0)) return [];
+
+  const found = [];
+  for (const len of MOVE_EVENT_LENGTHS) {
+    if (len > Math.floor((n - 1) / 8)) break;
+    const changes = [];
+    for (let t = len; t < n; t += 1) changes.push(logp[t] - logp[t - len]);
+    const mean = changes.reduce((a, b) => a + b, 0) / changes.length;
+    const sd = Math.sqrt(changes.reduce((a, b) => a + (b - mean) ** 2, 0) / changes.length);
+    if (!(sd > 0)) continue;
+    for (let t = len; t < n; t += 1) {
+      const size = logp[t] - logp[t - len];
+      const z = (size - mean) / sd;
+      if (Math.abs(z) < sigma || Math.abs(size) < MOVE_EVENT_MIN_SHARE * range) continue;
+      found.push({ a: t - len, b: t, z, size });
+    }
+  }
+  found.sort((x, y) => Math.abs(y.z * y.size) - Math.abs(x.z * x.size));
+
+  const kept = [];
+  for (const c of found) {
+    if (kept.length >= max) break;
+    const down = c.z < 0;
+    let a = c.a;
+    for (let i = c.a; i <= c.b; i += 1) if (down ? logp[i] > logp[a] : logp[i] < logp[a]) a = i;
+    let b = a;
+    for (let i = a; i <= c.b; i += 1) if (down ? logp[i] < logp[b] : logp[i] > logp[b]) b = i;
+    if (b <= a) continue;
+    if (kept.some((k) => a < k.b && b > k.a)) continue;
+    const size = Math.abs(logp[b] - logp[a]);
+    if (kept.length && size < MOVE_EVENT_REL_FLOOR * Math.max(...kept.map((k) => k.size))) continue;
+    kept.push({ a, b, z: c.z, size });
+  }
+  return kept
+    .map(({ a, b, z }) => {
+      const from = Number(prices[a].price);
+      const to = Number(prices[b].price);
+      return {
+        index: b,
+        startIndex: a,
+        steps: b - a,
+        z,
+        startTime: +new Date(prices[a].time),
+        time: +new Date(prices[b].time),
+        from,
+        to,
+        pct: ((to - from) / from) * 100,
+      };
+    })
+    .sort((x, y) => x.time - y.time);
+};
+
+/* **A length of time in the house's own short form** — "now", "14m", "3h",
+ * "2d", "6w".
+ *
+ * Lifted out of `news.js`'s `newsAge`, which is now this applied to "how long
+ * ago". The move card needs the same words for a forward-looking span ("what
+ * it did over the next 6h"), and the alternative was a second formatter that
+ * would round differently the first time either was touched. One vocabulary,
+ * two questions.
+ */
+const spanText = (ms) => {
+  const secs = Math.max(0, Number(ms) / 1000);
+  if (!isFinite(secs)) return "";
+  if (secs < 90) return "now";
+  const mins = secs / 60;
+  if (mins < 60) return `${Math.round(mins)}m`;
+  const hours = mins / 60;
+  if (hours < 24) return `${Math.round(hours)}h`;
+  const days = hours / 24;
+  if (days < 14) return `${Math.round(days)}d`;
+  return `${Math.round(days / 7)}w`;
+};
+
+/* **How rare was that step, in this series' own terms?**
+ *
+ * `findUnusualMoves` already knows a move is past the threshold; what it does
+ * not say is *how far* past — and "2.9 standard deviations" is a sentence
+ * nobody reads off a card. This counts: of every step in the drawn range, how
+ * many moved at least this much, either way. Empirical, not a normal-curve
+ * estimate — a price series is not normal, its tails are exactly where this
+ * feature lives, and a distribution assumed here would be a claim the data
+ * does not support.
+ *
+ * Absolute value on both sides, deliberately: the question is "how big a step
+ * is this for this coin", and a 6% fall belongs in the same tail as a 6% rise.
+ *
+ * Returns the share as a fraction (0..1), or null when the series is too short
+ * to say anything — the same refusal `baseRateFor` makes below its minimum.
+ */
+const moveRarity = (prices, move) => {
+  if (!Array.isArray(prices) || prices.length < 12 || !move) return null;
+  /* An event (`findMoveEvents`) spans `steps` points, and a stretch is
+     measured against every stretch of the same length — a 35-minute fall
+     against single 5-minute steps is bigger than all of them by construction. */
+  const len = Number.isInteger(move.steps) && move.steps > 1 ? move.steps : 1;
+  const steps = [];
+  for (let i = len; i < prices.length; i += 1) {
+    const a = Number(prices[i - len].price);
+    const b = Number(prices[i].price);
+    if (!(a > 0) || !(b > 0)) continue;
+    steps.push(Math.abs(Math.log(b / a)));
+  }
+  if (steps.length < 10) return null;
+  const from = Number(move.from);
+  const to = Number(move.to);
+  if (!(from > 0) || !(to > 0)) return null;
+  const size = Math.abs(Math.log(to / from));
+  if (!isFinite(size)) return null;
+  const atLeast = steps.filter((s) => s >= size - 1e-12).length;
+  return atLeast / steps.length;
+};
+
+/* **How ordinary is a move of this size, for this coin, in a day?**
+ *
+ * A price target says "tell me at 95,000" and the panel can already say how
+ * far away that is. What a percentage on its own cannot say is whether that
+ * distance is a Tuesday or an event — and the difference decides whether the
+ * target is worth setting at all.
+ *
+ * So: a count and its denominator, over this coin's own daily closes. How
+ * many days closed at least this far from the day before, out of how many
+ * days there are. No arrow, no probability, no claim about *this* target —
+ * the same rule `baserates.js` is built on, applied to one number.
+ *
+ * Log returns, so a rise and a fall of "the same size" are the same size:
+ * +10% then -10% is not a round trip, and counting raw percentages would
+ * make every downward target look rarer than its mirror.
+ *
+ * Null below `DAILY_MOVE_MIN_DAYS`, because a count out of thirty days is a
+ * number people read as a rate and it is not one. The panel prints nothing
+ * rather than a figure it would have to apologise for.
+ */
+const DAILY_MOVE_MIN_DAYS = 120;
+
+const dailyMoveCount = (closes, share) => {
+  if (!Array.isArray(closes) || closes.length < DAILY_MOVE_MIN_DAYS)
+    return null;
+  const size = Math.abs(Math.log(1 + Math.abs(Number(share)) / 100));
+  if (!isFinite(size) || size <= 0) return null;
+  let n = 0;
+  let of = 0;
+  for (let i = 1; i < closes.length; i += 1) {
+    const a = Number(closes[i - 1]);
+    const b = Number(closes[i]);
+    if (!(a > 0) || !(b > 0)) continue;
+    of += 1;
+    if (Math.abs(Math.log(b / a)) >= size - 1e-12) n += 1;
+  }
+  return of >= DAILY_MOVE_MIN_DAYS ? { n, of } : null;
+};
+
+/* **And then what?**
+ *
+ * A card that says "XRP fell 7%" and stops is half the story: the thing you
+ * actually want to know, looking at a spike a week later, is whether it stuck.
+ * The answer is already on screen — it is the part of the series to the right
+ * of the mark — so this costs no request and no cache entry.
+ *
+ * The horizon is **six times the move's own duration**, because a fixed number
+ * of points means six minutes on a 1H chart and six months on an ALL one, and
+ * a fixed duration is wrong at the other end. Whatever the window turns out to
+ * hold, the elapsed time reported is the *real* one, measured off the last
+ * point inside it rather than off the horizon that was asked for.
+ *
+ * Null rather than a number in three cases, all of them "there is nothing to
+ * say yet": no points after the move at all (it is the newest thing on the
+ * chart), only one, or a horizon that lands on the move itself. A blank line
+ * under a heading is worse than no heading.
+ */
+const AFTERMATH_REACH = 6;
+
+const moveAftermath = (prices, move) => {
+  if (!Array.isArray(prices) || !move || !isFinite(move.index)) return null;
+  const start = Math.floor(move.index);
+  if (start < 0 || start >= prices.length - 1) return null;
+  const at = prices[start];
+  const base = Number(at && at.price);
+  const endTime = +new Date(at && at.time);
+  const span = Math.max(0, endTime - Number(move.startTime));
+  const until = endTime + Math.max(span, 1) * AFTERMATH_REACH;
+  let last = null;
+  for (let i = start + 1; i < prices.length; i += 1) {
+    const t = +new Date(prices[i].time);
+    if (isFinite(until) && t > until) break;
+    last = prices[i];
+  }
+  if (!last) return null;
+  const after = Number(last.price);
+  if (!(base > 0) || !(after > 0)) return null;
+  const ms = +new Date(last.time) - endTime;
+  if (!(ms > 0)) return null;
+  return {
+    pct: ((after - base) / base) * 100,
+    ms,
+    /* Did it hand the move back? Compared against the move itself, so the
+       word is about *this* event rather than about a fixed percentage: a 1%
+       retrace of a 12% spike is not "gave it back". */
+    gaveBack:
+      Number(move.pct) !== 0 &&
+      Math.sign(after - base) !== Math.sign(Number(move.pct)) &&
+      Math.abs(((after - base) / base) * 100) >= Math.abs(Number(move.pct)) / 2,
+  };
+};
+
+/* HTML entities out of a plain string, without touching the DOM.
+ *
+ * WordPress hands back `title.rendered`, which is HTML: `&#8217;` for an
+ * apostrophe, `&amp;` for an ampersand, `&#8220;` for a quote. The usual trick
+ * is to set it as `innerHTML` and read `textContent` back, and that is exactly
+ * the pattern this repository forbids — `tests/test-invariants.js` fails on
+ * any `innerHTML` assignment, because the string came off the network.
+ *
+ * A table plus the numeric forms covers everything a headline contains. The
+ * numeric branch is clamped: `String.fromCodePoint` throws on anything above
+ * 0x10FFFF, and a malformed feed should give back a slightly wrong headline,
+ * never an exception on the way to the screen.
+ */
+const HTML_ENTITIES = {
+  amp: "&",
+  lt: "<",
+  gt: ">",
+  quot: '"',
+  apos: "'",
+  nbsp: " ",
+  hellip: "…",
+  mdash: "—",
+  ndash: "–",
+  lsquo: "‘",
+  rsquo: "’",
+  ldquo: "“",
+  rdquo: "”",
+  eacute: "é",
+  pound: "£",
+  euro: "€",
+  deg: "°",
+};
+
+const decodeEntities = (text) => {
+  if (typeof text !== "string" || text.indexOf("&") === -1) return text || "";
+  return text.replace(/&(#x?[0-9a-fA-F]+|[a-zA-Z]+);/g, (whole, body) => {
+    if (body[0] === "#") {
+      const code =
+        body[1] === "x" || body[1] === "X"
+          ? parseInt(body.slice(2), 16)
+          : parseInt(body.slice(1), 10);
+      if (!isFinite(code) || code < 0 || code > 0x10ffff) return whole;
+      try {
+        return String.fromCodePoint(code);
+      } catch (error) {
+        return whole;
+      }
+    }
+    const known = HTML_ENTITIES[body.toLowerCase()];
+    return known === undefined ? whole : known;
+  });
+};
+
+const NUMBER_REG = /\B(?=(\d{3})+(?!\d))/g;
+
+const getSign = (price, hidePlus) => {
+  if (!hidePlus && price > 0) return "+";
+  if (price < 0) return "-";
+  return "";
+};
+
+const formatNumberStringCore = (
+  price,
+  symbol = "",
+  hidePlus = false,
+  symbolAfter = false,
+  decimalPlaces = DEFAULT_DECIMAL_PLACES,
+  separatorFormat = DEFAULT_SEPARATOR_FORMAT,
+) => {
+  if (typeof price === "number") {
+    const sign = getSign(price, hidePlus);
+    const string = Math.abs(price).toFixed(decimalPlaces);
+    const parts = string.split(".");
+
+    /* `auto` is resolved here rather than at the forty call sites: the three
+     * branches below are an exhaustive list, and a value that matches none of
+     * them falls through and returns **null**, which on this page is a price
+     * that silently does not print. */
+    if (separatorFormat === "auto") {
+      separatorFormat =
+        typeof localeSeparatorFormat === "function"
+          ? localeSeparatorFormat()
+          : "us";
+    }
+
+    // Apply separator format
+    if (separatorFormat === "us") {
+      // US: 1,234.56
+      parts[0] = parts[0].replace(NUMBER_REG, ",");
+      return `${sign}${symbolAfter ? "" : symbol}${parts.join(".")}${
+        symbolAfter ? symbol : ""
+      }`;
+    } else if (separatorFormat === "eu") {
+      // EU: 1.234,56
+      parts[0] = parts[0].replace(NUMBER_REG, ".");
+      return `${sign}${symbolAfter ? "" : symbol}${parts.join(",")}${
+        symbolAfter ? symbol : ""
+      }`;
+    } else if (separatorFormat === "space") {
+      // Space: 1 234.56
+      parts[0] = parts[0].replace(NUMBER_REG, " ");
+      return `${sign}${symbolAfter ? "" : symbol}${parts.join(".")}${
+        symbolAfter ? symbol : ""
+      }`;
+    }
+  }
+  return null;
+};
+
+// Memoized version for performance
+const formatNumberString = memoize(formatNumberStringCore);
+
+const deriveValueDelta = (currentValue, valueHistory) => {
+  if (
+    typeof currentValue === "number" &&
+    Array.isArray(valueHistory) &&
+    valueHistory.length > 0 &&
+    valueHistory[0].price
+  ) {
+    return currentValue - valueHistory[0].price;
+  }
+  return null;
+};
+
+const derivePercentDelta = (currentValue, valueHistory) => {
+  if (
+    Array.isArray(valueHistory) &&
+    valueHistory.length > 0 &&
+    valueHistory[0].price
+  ) {
+    return (
+      ((currentValue - valueHistory[0].price) /
+        Math.abs(valueHistory[0].price)) *
+        100 || 0
+    );
+  }
+  return null;
+};
+
+const calculateRSI = (valueHistory, period = 14) => {
+  if (!Array.isArray(valueHistory) || valueHistory.length < period + 1)
+    return null;
+
+  // Sample to ~50 points to avoid noise on short-interval periods (e.g. 1H)
+  const maxPoints = 50;
+  const step =
+    valueHistory.length > maxPoints
+      ? Math.floor(valueHistory.length / maxPoints)
+      : 1;
+  const sampled = valueHistory.filter((_, i) => i % step === 0);
+
+  if (sampled.length < period + 1) return null;
+
+  const prices = sampled.map((d) => d.price);
+  const changes = [];
+  for (let i = 1; i < prices.length; i++) {
+    changes.push(prices[i] - prices[i - 1]);
+  }
+
+  let avgGain = 0;
+  let avgLoss = 0;
+  for (let i = 0; i < period; i++) {
+    if (changes[i] > 0) avgGain += changes[i];
+    else avgLoss += Math.abs(changes[i]);
+  }
+  avgGain /= period;
+  avgLoss /= period;
+
+  // Wilder's smoothing
+  for (let i = period; i < changes.length; i++) {
+    const gain = changes[i] > 0 ? changes[i] : 0;
+    const loss = changes[i] < 0 ? Math.abs(changes[i]) : 0;
+    avgGain = (avgGain * (period - 1) + gain) / period;
+    avgLoss = (avgLoss * (period - 1) + loss) / period;
+  }
+
+  if (avgLoss === 0) return 100;
+  const rs = avgGain / avgLoss;
+  return Math.round((100 - 100 / (1 + rs)) * 10) / 10;
+};
+
+/* API FETCHING WITH CACHE & STALE-WHILE-REVALIDATE */
+/* Volume-weighted average price over a set of candles.
+ *
+ * This is here because of what the sector scan found rather than what the
+ * textbooks say: roughly 78% of institutional traders use technical analysis,
+ * and what they primarily read is **volume-based** — VWAP, volume profile,
+ * order flow — with the 200-day average as a regime line rather than an entry.
+ * VWAP earns its place where RSI thresholds did not, and the reason is simple:
+ * **it makes no claim about the future.** It is the average price actually
+ * paid across the window, weighted by how much changed hands at each level. A
+ * price that happened.
+ *
+ * The typical price `(high + low + close) / 3` is the conventional input, and
+ * using the close alone would quietly weight the end of each bar.
+ *
+ * Null when there is no volume to weight by — an unweighted average of prices
+ * is a different number with the same name, and printing it under this label
+ * would be the sort of thing this codebase removes.
+ */
+const vwapOf = (candles) => {
+  if (!Array.isArray(candles) || !candles.length) return null;
+  let weighted = 0;
+  let volume = 0;
+  for (const c of candles) {
+    const v = Number(c.volume);
+    const high = Number(c.high);
+    const low = Number(c.low);
+    const close = Number(c.close);
+    if (!isFinite(v) || v <= 0) continue;
+    if (!isFinite(high) || !isFinite(low) || !isFinite(close)) continue;
+    weighted += ((high + low + close) / 3) * v;
+    volume += v;
+  }
+  return volume > 0 ? weighted / volume : null;
+};
+
+/* ── BASE RATES ─────────────────────────────────────────────────────────────
+ * "This has happened before. Here is how often, and what followed."
+ *
+ * This exists in place of buy and sell signals, and the reason is measured
+ * rather than tasteful (the working notes §9). Nine textbook rules over
+ * 21,669 daily closes on eight coins: **0 of 70 permutation tests survive
+ * Holm–Bonferroni**, in/out-of-sample rank correlation +0.42, and Donchian's
+ * median return runs +259% to +1175% across neighbouring lookbacks nobody can
+ * justify in advance. The published literature lands in the same place once
+ * data-snooping controls are applied: a 2017–2023 study of BTC and ETH under
+ * White's reality check found that *"previously profitable technical
+ * approaches… generally failed to generate profits during the subsequent
+ * out-of-sample period"*.
+ *
+ * Worse for the textbook, measured live on 22 Aug 2026: after RSI 14 crosses
+ * **70** — the "sell" signal — the next thirty days beat the coin's own
+ * ordinary month on four of six coins, BTC by 7.5 percentage points over 92
+ * episodes. The sign flips by coin, which is the finding: a rule whose
+ * direction depends on which coin you ran it on is not a rule.
+ *
+ * So nothing here says buy or sell. It counts, and it prints the count. The
+ * design rule that follows is the important one: **never a rate without its
+ * denominator.** In two years of candles these conditions fire three to nine
+ * times, so "100% of the time" is a sample of one with a percentage sign on
+ * it, and the commonest honest answer — *not enough to say anything* — has to
+ * read as the feature working rather than as it failing.
+ */
+
+// Under this many episodes, a percentage is theatre. The panel says so
+// instead of printing one.
+const BASE_RATE_MIN_EPISODES = 12;
+
+/* RSI 14 on daily closes, Wilder's smoothing — the one every published figure
+ * means by "RSI".
+ *
+ * Deliberately **not** `calculateRSI`, which samples whatever range is on
+ * screen down to ~50 points: that makes its period sixteen minutes on 1H and
+ * three and a half years on ALL, and the two must never be confused again.
+ * Returns an array the same length as `closes`, null where there is not yet
+ * enough history to have a value.
+ */
+const dailyRsi = (closes, period = 14) => {
+  const out = new Array(Array.isArray(closes) ? closes.length : 0).fill(null);
+  if (!Array.isArray(closes) || closes.length <= period) return out;
+  let gain = 0;
+  let loss = 0;
+  for (let i = 1; i <= period; i++) {
+    const d = closes[i] - closes[i - 1];
+    if (d > 0) gain += d;
+    else loss -= d;
+  }
+  gain /= period;
+  loss /= period;
+  const value = () => (loss === 0 ? 100 : 100 - 100 / (1 + gain / loss));
+  out[period] = value();
+  for (let i = period + 1; i < closes.length; i++) {
+    const d = closes[i] - closes[i - 1];
+    gain = (gain * (period - 1) + (d > 0 ? d : 0)) / period;
+    loss = (loss * (period - 1) + (d < 0 ? -d : 0)) / period;
+    out[i] = value();
+  }
+  return out;
+};
+
+// Percentage move from i to i+horizon, or null past the end of the series
+const forwardReturn = (closes, i, horizon) => {
+  const j = i + horizon;
+  if (j >= closes.length) return null;
+  const from = closes[i];
+  return from > 0 ? ((closes[j] - from) / from) * 100 : null;
+};
+
+const medianOf = (list) => {
+  if (!list.length) return null;
+  const sorted = [...list].sort((a, b) => a - b);
+  const mid = sorted.length >> 1;
+  return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+};
+
+/* One quantile of an already-sorted list, interpolated between neighbours.
+ * `p` is 0–1. Interpolated rather than nearest-rank because these are read off
+ * a few dozen samples, where nearest-rank makes the answer jump as the window
+ * grows by one point. */
+const quantileOf = (sorted, p) => {
+  if (!sorted.length) return null;
+  if (sorted.length === 1) return sorted[0];
+  const at = Math.min(Math.max(p, 0), 1) * (sorted.length - 1);
+  const lo = Math.floor(at);
+  const hi = Math.ceil(at);
+  return lo === hi
+    ? sorted[lo]
+    : sorted[lo] + (sorted[hi] - sorted[lo]) * (at - lo);
+};
+
+/* HOW FAR THIS SERIES HAS TRAVELLED over a given number of its own steps —
+ * and deliberately **not which way**.
+ *
+ * This is the honest half of "where might the price go", and the dishonest
+ * half is left out on purpose. the working notes §9 is the working: nine
+ * textbook rules over 21,669 daily closes produced 0 of 70 results surviving
+ * Holm–Bonferroni, and on live data the textbook labels pointed the wrong way.
+ * So nothing here forecasts. What it reports is the *dispersion* of what
+ * already happened, which is a description of the coin and makes no claim
+ * about the future at all. It is the same object professionals call a
+ * volatility cone, and it is on this panel for the same reason `vwapOf` is on
+ * the stats row: it states a fact rather than an intention.
+ *
+ * **The median is subtracted and thrown away, and that is the whole design.**
+ * The raw distribution of h-step returns carries the window's drift — in a
+ * rising month every horizon leans up — and drawing that would be a direction,
+ * which is exactly the claim this refuses to make. What is left after removing
+ * it is "how far from wherever it started", applied to the price now.
+ *
+ * Log returns, so a −20% and a +25% are the same distance and the band comes
+ * back as multiplicative factors: an honest band around a price is not
+ * symmetric in dollars. Overlapping windows are used — with a few hundred
+ * points on screen, non-overlapping ones would leave three or four samples at
+ * the longer horizons — and the count comes back with the answer so the caller
+ * can refuse to draw, the way the base-rate panel refuses to compare.
+ */
+const MIN_TRAVEL_SAMPLES = 12; // the same floor as BASE_RATE_MIN_EPISODES
+
+const travelBand = (prices, steps, lo, hi) => {
+  if (!Array.isArray(prices) || !(steps >= 1)) return null;
+  const span = Math.round(steps);
+  const rs = [];
+  for (let i = span; i < prices.length; i++) {
+    const a = Number(prices[i - span].price);
+    const b = Number(prices[i].price);
+    if (a > 0 && b > 0) {
+      const r = Math.log(b / a);
+      if (isFinite(r)) rs.push(r);
+    }
+  }
+  if (rs.length < MIN_TRAVEL_SAMPLES) return null;
+  const drift = medianOf(rs);
+  const dev = rs.map((r) => r - drift).sort((a, b) => a - b);
+  const qLo = quantileOf(dev, lo);
+  const qHi = quantileOf(dev, hi);
+  if (qLo == null || qHi == null) return null;
+  return { lo: Math.exp(qLo), hi: Math.exp(qHi), n: rs.length };
+};
+
+/* **How often this series has landed in that band, over that horizon.**
+ *
+ * `travelBand` answers "given a probability, how far does it travel"; a called
+ * square asks the inverse — "given this band, how often does it land here".
+ * Same array, same drift removal, same refusal, read the other way round.
+ *
+ * It exists because a call carries no notion of difficulty. `settleCall`
+ * returns hit or miss, and the record folds them into one tally, so naming the
+ * square the price is already sitting in scores exactly as well as naming one
+ * four squares out — and the record cannot then tell care from luck, which is
+ * the only reason to keep a record.
+ *
+ * **The distance is not the difficulty**, which is the whole point. The
+ * crosshair already says `needs +0.4%`; this file already argues against
+ * reading that as hard or easy, in `findUnusualMoves` — 3% is an ordinary hour
+ * for DOGE and a violent year for USDC. The answer has to come from what this
+ * series does, and it does.
+ *
+ * The median drift is subtracted and thrown away, exactly as in `travelBand`
+ * and for exactly the same reason: a window that rose all week must not make
+ * every upward square look likely. What is left is dispersion.
+ *
+ * Overlapping windows, so a few hundred points still give a usable count; `n`
+ * comes back so the caller can say how thin the evidence is, and below
+ * `MIN_TRAVEL_SAMPLES` the answer is **null rather than a number**. A square
+ * that cannot be scored says nothing, the way the base-rate panel prints its
+ * counts and refuses the comparison.
+ *
+ * It is a count of what happened, never a recommendation: it says a square is
+ * unlikely, and never which square to name.
+ */
+/* **How often chance alone does at least this well** (3 Oct 2026). Each
+ * settled call came true with its own chance p_i, so the number of hits
+ * chance would give is Poisson-binomial — a sum of unequal coin flips, not a
+ * binomial. P(X >= k) by the exact recursion over the calls: the
+ * distribution of hits after i calls, one call at a time (O(n²), n is a
+ * record's length). Null without calls or with a chance that is not one. */
+const poissonBinomialTail = (ps, k) => {
+  if (!Array.isArray(ps) || !ps.length || !Number.isFinite(k)) return null;
+  if (ps.some((p) => !(p >= 0 && p <= 1))) return null;
+  if (k <= 0) return 1;
+  if (k > ps.length) return 0;
+  let dist = new Float64Array(ps.length + 1);
+  dist[0] = 1;
+  ps.forEach((p, i) => {
+    const next = new Float64Array(ps.length + 1);
+    for (let j = 0; j <= i; j++) {
+      next[j] += dist[j] * (1 - p);
+      next[j + 1] += dist[j] * p;
+    }
+    dist = next;
+  });
+  let tail = 0;
+  for (let j = Math.ceil(k); j <= ps.length; j++) tail += dist[j];
+  return Math.min(1, Math.max(0, tail));
+};
+
+const callOdds = (prices, steps, loPrice, hiPrice, nowPrice) => {
+  if (!Array.isArray(prices) || !(steps >= 1)) return null;
+  if (!(nowPrice > 0) || !(loPrice > 0) || !(hiPrice > 0)) return null;
+  if (!(hiPrice > loPrice)) return null;
+  const span = Math.round(steps);
+  const rs = [];
+  for (let i = span; i < prices.length; i++) {
+    const a = Number(prices[i - span].price);
+    const b = Number(prices[i].price);
+    if (a > 0 && b > 0) {
+      const r = Math.log(b / a);
+      if (isFinite(r)) rs.push(r);
+    }
+  }
+  if (rs.length < MIN_TRAVEL_SAMPLES) return null;
+  const drift = medianOf(rs);
+  if (drift == null) return null;
+  /* **The band is not de-drifted, and that is the whole of the drift removal.**
+     Subtracting the drift from the bounds as well as from the samples cancels
+     it out — the test reduces to the raw return — and the lean comes straight
+     back. Measured on a series drifting +0.4% a step: with the drift taken off
+     both sides an upward band scored 1.000 and the matching downward band
+     0.000, which is a trend wearing a probability. With it taken off only the
+     samples, both score 0.000 and the band around the price now scores 1.000,
+     which is what "this series moved this far, whichever way it was heading"
+     means. */
+  const lo = Math.log(loPrice / nowPrice);
+  const hi = Math.log(hiPrice / nowPrice);
+  if (!isFinite(lo) || !isFinite(hi)) return null;
+  let inside = 0;
+  for (const r of rs) {
+    const d = r - drift;
+    if (d >= lo && d <= hi) inside += 1;
+  }
+  return { p: inside / rs.length, n: rs.length };
+};
+
+/* **What a call would have paid, if it had been played at fair odds.**
+ *
+ * A called square is a binary option: a price band and a time, paying out if
+ * the price lands inside it and nothing if it does not. A binary option has a
+ * fair price, and it is the probability of landing in the band — which
+ * `callOdds` measures from the coin's own history. So the fair return on a
+ * winning call is **stake / p**, and on a losing one it is nothing.
+ *
+ * That is why this is worth having and a hit rate is not. Twelve of twenty
+ * says nothing about whether those were hard squares; naming the square the
+ * price is already sitting in scores the same as naming one four squares out.
+ * Priced at fair odds the two are not remotely the same bet, and the total
+ * says so without anybody having to grade the calls by hand.
+ *
+ * **No house edge.** A real book pays less than fair, and the difference is
+ * the counterparty's margin — there is no counterparty here, so taking a cut
+ * would be inventing one. The question is what a *fair* game would have paid.
+ *
+ * **The cap is a statement about the sample, not a rule of the game.**
+ * `callOdds` counts overlapping windows in a few hundred points, so a square
+ * seen once or not at all could as easily be one in forty as one in four
+ * hundred; there is nothing in the data that separates them. Past
+ * `CALL_MAX_ODDS` the answer is the cap, and it is the same discipline as
+ * `BASE_RATE_MIN_EPISODES`: report what the sample can support and stop
+ * there. Without it, p = 0 — a square the series never reached — pays
+ * infinity.
+ */
+const CALL_MAX_ODDS = 25;
+
+const callPayout = (call, stake) => {
+  if (!call || !call.odds || !isFinite(call.odds.p) || !(stake > 0))
+    return null;
+  const p = call.odds.p;
+  if (!(p >= 0) || p > 1) return null;
+  const odds = p <= 0 ? CALL_MAX_ODDS : Math.min(CALL_MAX_ODDS, 1 / p);
+  return {
+    /* What was risked, and what came back. Kept apart rather than netted,
+       because the amount staked is the part a run of near-certain calls hides:
+       twenty calls at 1.05x returns almost exactly what it risked, and only
+       the two numbers side by side say so. */
+    staked: stake,
+    returned: call.result === "hit" ? stake * odds : 0,
+    odds,
+  };
+};
+
+/* What followed every time a series entered a state, against what follows an
+ * ordinary day in the same series.
+ *
+ * **Episodes, not days.** A run of eleven days above 70 is one thing that
+ * happened, not eleven — counting each day inside it would inflate n elevenfold
+ * and correlate every observation with its neighbour, which is how a sample of
+ * four is dressed up as a sample of forty.
+ *
+ * The baseline is the coin's *own* ordinary horizon, because "up 60% of the
+ * time" means nothing until you know the coin was up 57% of the time anyway.
+ * That difference is the only number on this panel worth reading, and it is
+ * still not a signal — see the note above.
+ */
+const baseRateUp = (list) =>
+  list.length ? (list.filter((x) => x > 0).length / list.length) * 100 : null;
+
+/* The baseline is the same for every state read off one series at one
+ * horizon, and it is the expensive half — every close's forward return, then
+ * a sort for the median. Measured 10 Oct 2026: opening the base-rate screen
+ * asked for it about a hundred times per render over ~4,000 daily closes,
+ * and the screen renders once per release kind as those arrive — a 120 ms
+ * and a 103 ms long task. So it is kept per series and horizon — by the
+ * array's identity, re-checked against its length and last close, which is
+ * what changes when a series grows or its live bar moves. Every caller builds
+ * its closes fresh (`map`), so nothing edits one in the middle. */
+const baseRateBaselines = new WeakMap();
+const baseRateBaseline = (closes, horizon) => {
+  const len = closes.length;
+  const last = closes[len - 1];
+  let kept = baseRateBaselines.get(closes);
+  if (!kept || kept.len !== len || kept.last !== last) {
+    kept = { len, last, byHorizon: new Map() };
+    baseRateBaselines.set(closes, kept);
+  }
+  let base = kept.byHorizon.get(horizon);
+  if (!base) {
+    const baseline = [];
+    for (let i = 0; i < len; i++) {
+      const f = forwardReturn(closes, i, horizon);
+      if (f !== null) baseline.push(f);
+    }
+    base = { n: baseline.length, median: medianOf(baseline), up: baseRateUp(baseline) };
+    kept.byHorizon.set(horizon, base);
+  }
+  return base;
+};
+
+const baseRateFor = (closes, values, test, horizon) => {
+  if (!Array.isArray(closes) || closes.length <= horizon + 1) return null;
+  const episodes = [];
+  let inside = false;
+  for (let i = 0; i < values.length; i++) {
+    const now = test(values[i]);
+    if (now && !inside) {
+      const f = forwardReturn(closes, i, horizon);
+      if (f !== null) episodes.push(f);
+    }
+    inside = now;
+  }
+  const base = baseRateBaseline(closes, horizon);
+  if (!base.n) return null;
+  const median = medianOf(episodes);
+  return {
+    n: episodes.length,
+    median,
+    up: baseRateUp(episodes),
+    baseN: base.n,
+    baseMedian: base.median,
+    baseUp: base.up,
+    // The one number worth reading, and only when there is enough behind it
+    edge:
+      episodes.length >= BASE_RATE_MIN_EPISODES
+        ? median - base.median
+        : null,
+  };
+};
+
+const fetchValueHistory = async (
+  coin,
+  period,
+  currency = "USD",
+  signal = null,
+  useCache = true,
+  allowedCoins = [],
+) => {
+  // Check cache first
+  if (useCache) {
+    const cached = getCachedData(coin, period, currency, "history");
+    if (cached && !cached.isStale) {
+      // Fresh cache, return immediately
+      return cached.data;
+    }
+  }
+
+  // Coins Coinbase doesn't list — or has stopped answering for — come from
+  // their own provider, in the same shape, and go through the same cache
+  const fromKraken = async () => {
+    const data = await fetchKrakenHistory(coin, period, currency, signal);
+    setCachedData(coin, period, currency, "history", data, allowedCoins);
+    return data;
+  };
+  if (effectiveProvider(coin) === "kraken") return fromKraken();
+
+  // Fetch fresh data
+  const options = signal ? { signal } : {};
+  try {
+    const d = await fetchWithRetry(
+      `${API_BASE}${coin}-${currency}/${API_HISTORY}${period}`,
+      options,
+    ).then((r) => r.json());
+    const prices = d && d.data && d.data.prices;
+
+    if (Array.isArray(prices) && prices.length > 0) {
+      const formattedData = formatValueHistory(prices);
+      // Cache the result (only if coin is in first 10)
+      setCachedData(
+        coin,
+        period,
+        currency,
+        "history",
+        formattedData,
+        allowedCoins,
+      );
+      return formattedData;
+    }
+
+    throw new Error("invalid price data returned");
+  } catch (error) {
+    /* A blank chart is the worst possible answer to "the other exchange is
+     * having a moment". The same series exists at Kraken for all but four of
+     * the coins offered here, so it is fetched from there instead and the coin
+     * stays there for the rest of the tab. */
+    if (!noteProviderFailure(coin, error)) throw error;
+    return fromKraken();
+  }
+};
+
+const fetchCurrentValue = async (
+  coin,
+  currency = "USD",
+  signal = null,
+  useCache = true,
+  allowedCoins = [],
+) => {
+  // Check cache first (using "current" as period since spot price doesn't have periods)
+  if (useCache) {
+    const cached = getCachedData(coin, "current", currency, "spot");
+    if (cached && !cached.isStale) {
+      // Fresh cache, return immediately
+      return cached.data;
+    }
+  }
+
+  const fromKraken = async () => {
+    const value = await fetchKrakenSpot(coin, currency, signal);
+    setCachedData(coin, "current", currency, "spot", value, allowedCoins);
+    return value;
+  };
+  if (effectiveProvider(coin) === "kraken") return fromKraken();
+
+  // Fetch fresh data
+  const options = signal ? { signal } : {};
+  try {
+    const d = await fetchWithRetry(
+      `${API_BASE}${coin}-${currency}/${API_SPOT}`,
+      options,
+    ).then((r) => r.json());
+    const spot = d && d.data && d.data.amount;
+
+    if (typeof spot === "string") {
+      const value = Number(spot);
+      // Cache the result (only if coin is in first 10)
+      setCachedData(coin, "current", currency, "spot", value, allowedCoins);
+      return value;
+    }
+
+    throw new Error("invalid spot data returned");
+  } catch (error) {
+    // Same fallback as the history: one failing exchange is not a reason to
+    // show nothing, and the price it quotes is the same price
+    if (!noteProviderFailure(coin, error)) throw error;
+    return fromKraken();
+  }
+};
+
+/* **A box that wants a number must not take letters, and must say so.**
+ *
+ * Every typed field in this app was one of two shapes and both let the
+ * problem through. `type="number"` refuses most letters but not `e`, `E`, `+`
+ * or `-` — they are exponent notation to the parser — and when the browser
+ * does refuse, it refuses by handing the page an **empty** `value`, so the
+ * field reads as blank and nothing anywhere says why. `type="text"` with
+ * `inputMode="decimal"` — which is what the portfolio's amounts, the target
+ * price and the lot fields all use, because a spinner is wrong on a money
+ * field — takes anything at all: `12ab` sits in the box looking accepted, and
+ * the only sign that it was not is a button that quietly does nothing.
+ *
+ * So the character is refused as it is typed, and the caller is told that
+ * something *was* refused — the half that turns a silent field into one that
+ * can explain itself.
+ *
+ * **A comma is refused too, and that is the considered answer rather than the
+ * lazy one.** It is the decimal separator in nine of the thirteen languages
+ * this ships in, so accepting it looks like the obvious kindness — but which
+ * separator it is cannot be read off the string. `1,234` is 1234 to an
+ * English keyboard and 1.234 to a German one, and `10.000,50` and `10,000.50`
+ * are the same amount written by two people. Every rule tried here got one of
+ * those wrong **silently**, which is worse than the refusal this whole helper
+ * exists to fix: a field that quietly enters a different number is a bug you
+ * find in your own totals. Refused, the warning says what the field wants and
+ * the next keystroke is right. (The app's own `separatorFormat` setting could
+ * decide it, and that is the honest way to accept commas later — it is a
+ * setting this helper is not given, deliberately, since it is also used where
+ * no setting is in scope.)
+ *
+ * A second decimal point is refused rather than allowed to split the number,
+ * and a minus only where the caller says a negative means something — no
+ * price, amount or balance in this app does.
+ */
+const numericDraft = (raw, opts) => {
+  const o = opts || {};
+  const text = String(raw == null ? "" : raw);
+  let out = "";
+  let dot = false;
+  let refused = false;
+  for (let i = 0; i < text.length; i += 1) {
+    const ch = text[i];
+    if (ch >= "0" && ch <= "9") {
+      out += ch;
+    } else if (ch === "." && !dot && o.decimals !== false) {
+      dot = true;
+      out += ch;
+    } else if (ch === "-" && o.negative === true && out === "") {
+      out += ch;
+    } else {
+      refused = true;
+    }
+  }
+  return { value: out, refused };
+};

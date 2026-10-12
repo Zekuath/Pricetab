@@ -1,0 +1,1651 @@
+/* PORTFOLIO CHART — the value chart you can read, as opposed to the one you
+ * can look at.
+ *
+ * The portfolio has always had a chart: full-bleed, 45% opacity, behind a
+ * scrolling column, `pointer-events: none`, `aria-hidden`. That is wallpaper,
+ * and wallpaper was the right call for what it was — an ambient sense of the
+ * shape of the last week. But the questions a portfolio is opened for are
+ * *when* questions ("when did I go ahead", "what was it worth when I bought",
+ * "which of these is carrying the position"), and none of them can be asked of
+ * a picture you cannot point at.
+ *
+ * So this is the same series, given the things that make a chart an
+ * instrument: a scale you can read, a crosshair that answers at a moment, the
+ * purchases and sales you actually made drawn where they happened, and — the
+ * part a single total line can never show — what the total was *made of* at
+ * each point.
+ *
+ * ── Why its own file and its own component ─────────────────────────────────
+ * `LineBase` already draws lines, candles and a comparison overlay and picks
+ * between them inside one `componentDidUpdate`. the working notes (Piece 4) says
+ * plainly what a fourth axis of state on that component would do to it, and a
+ * stacked composition is a fourth. This one shares what is genuinely shared —
+ * the theme, `formatAxisPrice`, `crosshairDate`, the d3 scales — and owns its
+ * own drawing.
+ *
+ * ── Why it is React-declarative where `LineBase` is imperative ─────────────
+ * `LineBase` writes attributes by hand because it morphs a path thirty times a
+ * second and repaints on every price refresh. This one is opened deliberately
+ * and redraws when the range, the holdings or the window change — so the marks
+ * are plain React elements, which is far less code to be wrong. The one thing
+ * that does move at pointer speed is the crosshair, and that is written
+ * imperatively through refs for exactly the reason `LineBase` gives: a
+ * `setState` per mousemove would re-render the grid, the bands and every
+ * marker to move one dashed line.
+ */
+
+/* The band palette.
+ *
+ * Six hues in a fixed order plus a neutral "Other" — never cycled, and a
+ * seventh coin folds into Other rather than borrowing hue one back. Both
+ * columns are selected for their own surface (#ffffff and #000000) rather than
+ * being an automatic flip of each other, and the set is machine-checked rather
+ * than eyeballed: lightness band, chroma floor, protan/deutan separation on
+ * adjacent pairs (worst ΔE 9.1 light / 8.4 dark against a target of 8),
+ * normal-vision separation (19.6 / 19.3 against a floor of 15), contrast
+ * against the surface.
+ *
+ * Three of the light steps sit under 3:1 on white. That is allowed only with
+ * relief, and the relief is real here: every band is directly labelled with
+ * its coin wherever it is tall enough, the legend under the chart names all of
+ * them, and the holdings table is one key away.
+ */
+/* THE BAND PALETTE — one ramp, ordered, biggest first.
+ *
+ * It was six saturated hues, then a sequential green ramp; both were measured
+ * and both are in ref/portfolio.md. **It is grey since 27 Sep 2026**: green and
+ * its tones did not fit the design language, so the coins' charts and their
+ * underlines use a white-to-grey family instead. The interface is monospaced
+ * ink on a plain ground with green and red kept for *direction*; a green ramp
+ * was the one object on the screen that used the direction colour for something
+ * that is not a direction, and every step had to be held ΔE 20 from the
+ * up-green so a large holding would not read as a gain. Grey has neither
+ * problem.
+ *
+ * **A ramp in lightness alone**, which is also the one axis no colour-vision
+ * deficiency touches: the separation below is the same for everybody, by
+ * construction rather than by measurement. The deepest ink is the largest
+ * holding in both themes, fading toward the ground as the holdings get
+ * smaller — the direction the green ramp settled on, kept.
+ *
+ *   light  #242424 → #d6d6d6   L* 14.2 → 85.6   adjacent ΔL 10.8–12.5
+ *   dark   #575757 → #f2f2f2   L* 37.0 → 95.5   adjacent ΔL  9.5–10.1
+ *
+ * Every light step clears 1.45:1 against white and every dark one 2.91:1
+ * against black — large filled areas, each labelled inside when it is wide
+ * enough and named in the list beside it. **"Other" is the faintest step**,
+ * as it was: the smallest, last, and already named in the list and legend.
+ *
+ * `PORTFOLIO_BAND_INK` is the label colour **per step**, because a ramp
+ * crosses the point where white stops being legible and black starts. Every
+ * entry clears 4.8:1 against its own band (the lowest: 4.89 light, 5.02 dark).
+ */
+const PORTFOLIO_BAND_COLORS = {
+  light: ["#242424", "#3f3f3f", "#5c5c5c", "#7a7a7a", "#999999", "#b8b8b8", "#d6d6d6"],
+  dark: ["#575757", "#6f6f6f", "#878787", "#a0a0a0", "#bababa", "#d6d6d6", "#f2f2f2"],
+};
+const PORTFOLIO_BAND_INK = {
+  light: ["#ffffff", "#ffffff", "#ffffff", "#000000", "#000000", "#000000", "#000000"],
+  dark: ["#ffffff", "#ffffff", "#000000", "#000000", "#000000", "#000000", "#000000"],
+};
+// The ramp's faintest step, which is what msg("po_other", "Other") is drawn in
+const bandPalette = (theme) =>
+  isLightTheme(theme)
+    ? PORTFOLIO_BAND_COLORS.light
+    : PORTFOLIO_BAND_COLORS.dark;
+const bandOtherIndex = (theme) => bandPalette(theme).length - 1;
+
+const PORTFOLIO_MAX_BANDS = 6;
+
+/* The left padding is the **axis gutter**, and it was 8px.
+ *
+ * The price labels were drawn at `geo.left + 2` — two pixels *inside* the
+ * plot — so a five-character label like $4.0K ran off the left edge of the
+ * SVG and was clipped, and what survived sat on top of the data. On the
+ * stacked mode that meant grey type on a saturated green band, which is why
+ * the code below had grown a special case to paint it in full ink instead.
+ * Both problems are the same problem: the labels had nowhere of their own to
+ * be. 46px holds the longest label this axis produces ($999.9K) at 9px with
+ * room to breathe, and the plot simply starts after it. */
+const PC_PAD = { top: 22, right: 14, bottom: 30, left: 46 };
+
+/* Long enough to read as movement, short enough that a range switch still
+ * feels immediate. The price chart's own morph sits in the same range. */
+const PC_MORPH_MS = 420;
+// Events closer together than this share one marker — see `clusterEvents`
+const PC_MARKER_GAP = 16;
+// How near the pointer has to be to a marker to be reading it. Generous on
+// purpose: the triangle is 10px and nobody lands on a 10px target.
+const PC_EVENT_REACH = 26;
+// A band has to be at least this tall before its own name will fit inside it
+const PC_LABEL_MIN = 16;
+
+const isLightTheme = (theme) => theme.color.bg === lightColors.bg;
+
+/* What a label written *on* a band should be. `tone == null` is the neutral
+ * Other, whose grey takes the theme's own background as ink the way the bands
+ * used to. Anything else reads its step's entry — a ramp crosses the point
+ * where white stops being legible and black starts, and one fixed ink for the
+ * whole palette is illegible at one end of it whichever end you choose. */
+const bandLabelInk = (theme, tone) => {
+  const ink = isLightTheme(theme)
+    ? PORTFOLIO_BAND_INK.light
+    : PORTFOLIO_BAND_INK.dark;
+  // `tone == null` is Other, which is the ramp's last step — so its label
+  // follows that step like every other band's does
+  return ink[tone == null ? ink.length - 1 : tone];
+};
+
+const PcWrap = styled.div`
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+`;
+
+const PcFrame = styled.div`
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+`;
+
+/* The readout floats over the plot and is never a target itself — the pointer
+ * is reading the chart, and a box that swallowed the pointer would stop the
+ * chart answering the moment you moved onto it. */
+const PcReadout = styled.div`
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+  /* The glance's readout is three lines in a 15rem frame, so it is the
+     narrow, quiet one; the stage's carries the composition and gets room. */
+  min-width: ${({ compact }) => (compact ? "0" : "11rem")};
+  max-width: ${({ compact }) => (compact ? "14rem" : "17rem")};
+  padding: ${({ compact }) => (compact ? "0.4rem 0.55rem" : "0.55rem 0.7rem")};
+  border-radius: 0.5rem;
+  border: 1px solid ${({ theme }) => theme.color.border};
+  background: ${({ theme }) => theme.color.bg};
+  box-shadow: 0 6px 24px ${({ theme }) => theme.color.shadow};
+  font-family: ${({ theme }) => theme.font.primary};
+  z-index: 2;
+`;
+
+const PcReadoutDate = styled.div`
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: ${({ theme }) => theme.color.textSecondary};
+`;
+
+const PcReadoutTotal = styled.div`
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin-top: 0.15rem;
+  color: ${({ theme }) => theme.color.text};
+`;
+
+const PcReadoutLine = styled.div`
+  font-size: 0.7rem;
+  margin-top: 0.15rem;
+  color: ${({ theme }) => theme.color.textSecondary};
+`;
+
+const PcReadoutRows = styled.div`
+  margin-top: 0.45rem;
+  padding-top: 0.4rem;
+  border-top: 1px solid ${({ theme }) => theme.color.border};
+`;
+
+const PcReadoutRow = styled.div`
+  display: grid;
+  grid-template-columns: 0.55rem 1fr auto auto;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.7rem;
+  line-height: 1.5;
+`;
+
+const PcSwatch = styled.span`
+  width: 0.55rem;
+  height: 0.55rem;
+  min-width: 0.55rem;
+  border-radius: 2px;
+  display: inline-block;
+`;
+
+const PcReadoutName = styled.span`
+  color: ${({ theme }) => theme.color.text};
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+`;
+
+// Values line up under each other, so they get the equal-width digits
+const PcReadoutValue = styled.span`
+  color: ${({ theme }) => theme.color.text};
+  font-variant-numeric: tabular-nums;
+`;
+
+const PcReadoutShare = styled.span`
+  color: ${({ theme }) => theme.color.textSecondary};
+  font-variant-numeric: tabular-nums;
+  min-width: 2.1rem;
+  text-align: right;
+`;
+
+const PcReadoutEvent = styled.div`
+  margin-top: 0.45rem;
+  padding-top: 0.4rem;
+  border-top: 1px solid ${({ theme }) => theme.color.border};
+  font-size: 0.7rem;
+  white-space: pre-line;
+`;
+
+/* Identity is never colour alone: the legend names every band it paints, and
+ * carries what each is worth now so it is a reading rather than a key. */
+const PcLegend = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.9rem;
+  padding: 0.6rem 0.2rem 0;
+  font-size: 0.7rem;
+  color: ${({ theme }) => theme.color.textSecondary};
+`;
+
+const PcLegendItem = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+`;
+
+const PcLegendName = styled.span`
+  color: ${({ theme }) => theme.color.text};
+`;
+
+/* Where the value was at an arbitrary moment.
+ *
+ * The nearest sample, not an interpolation: the series is what was fetched,
+ * and inventing a point between two of them would put a number on screen that
+ * no request ever returned. */
+const seriesIndexAt = (series, ms) => {
+  if (!Array.isArray(series) || !series.length) return -1;
+  let lo = 0;
+  let hi = series.length - 1;
+  while (hi - lo > 1) {
+    const mid = (lo + hi) >> 1;
+    if (+series[mid].time <= ms) lo = mid;
+    else hi = mid;
+  }
+  return ms - +series[lo].time <= +series[hi].time - ms ? lo : hi;
+};
+
+/* One marker per patch of chart, not per event.
+ *
+ * Four purchases in the same week on a year range are four triangles inside
+ * eight pixels — a smudge that hides how many it is. Grouping by pixel
+ * distance keeps every event (nothing is dropped, which would be a chart
+ * quietly editing your history) and says how many are in the pile. */
+const clusterEvents = (events, x, gap) => {
+  const out = [];
+  for (const e of events) {
+    const px = x(new Date(e.time));
+    if (!isFinite(px)) continue;
+    const last = out[out.length - 1];
+    if (last && px - last.x <= gap) {
+      last.items.push(e);
+      last.x = px; // the cluster sits at its latest event, never behind one
+      if (e.kind !== last.kind) last.kind = "both";
+      continue;
+    }
+    out.push({ x: px, kind: e.kind, items: [e] });
+  }
+  return out;
+};
+
+class PortfolioChartBase extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { w: 0, h: 0 };
+
+    // Unique ids so two charts' clip paths can never collide in the DOM
+    const uid = Math.random().toString(36).slice(2, 9);
+    this.clipUpId = "pcUp_" + uid;
+    this.clipDownId = "pcDown_" + uid;
+    this.clipPaidUpId = "pcPaidUp_" + uid;
+    this.clipPaidDownId = "pcPaidDown_" + uid;
+    this.hintId = "pcHint_" + uid;
+
+    this.frameRef = createRef();
+    /* The total line, so an update can morph it from the shape on screen to
+     * the one React just rendered. See `morphLine`. */
+    this.lineRef = createRef();
+    this.hoverRef = createRef();
+    this.hoverLineRef = createRef();
+    this.hoverDotRef = createRef();
+    this.readoutRef = createRef();
+    this.roDateRef = createRef();
+    this.roTotalRef = createRef();
+    this.roDeltaRef = createRef();
+    this.roCostRef = createRef();
+    this.roRowsRef = createRef();
+    this.roEventRef = createRef();
+    /* One row per band plus Other, made once and written to on hover. A pool
+     * rather than a list rendered from state, for the same reason the
+     * crosshair is: this is a pointer-speed path. */
+    this.roRows = [];
+    for (let i = 0; i <= PORTFOLIO_MAX_BANDS; i++) {
+      this.roRows.push({
+        row: createRef(),
+        dot: createRef(),
+        name: createRef(),
+        value: createRef(),
+        share: createRef(),
+      });
+    }
+
+    this.hoverRaf = 0;
+    this.hoverX = -1;
+    this.hoverY = 0;
+    /* The sample the keyboard is sitting on, or -1 for "the pointer decides".
+     *
+     * The crosshair was driven by a pixel alone, which is why it was reachable
+     * only by a pointer: there was nowhere for a key press to put an answer.
+     * Holding an **index** instead lets both inputs feed the same drawing —
+     * the pointer converts a pixel to an index, the arrows move the index
+     * directly — so the readout is identical either way rather than a second
+     * implementation that can drift from it. */
+    this.keyIndex = -1;
+    /* The shape currently on screen, so an update can morph *from* it. React
+     * has already written the new `d` onto the node by the time
+     * `componentDidUpdate` runs, so the outgoing one has to be kept here or
+     * there is nothing left to interpolate from. */
+    this._drawnD = null;
+    this._geo = null;
+    this._bands = [];
+    this._clusters = [];
+
+    this.measure = this.measure.bind(this);
+    this.handleResize = debounce(this.measure, 150);
+    this.handlePointerMove = this.handlePointerMove.bind(this);
+    this.handlePointerLeave = this.handlePointerLeave.bind(this);
+    this.handleKeyDown = this.handleKeyDown.bind(this);
+    this.release = this.release.bind(this);
+    this.handleBlur = this.handleBlur.bind(this);
+    this.drawHover = this.drawHover.bind(this);
+  }
+
+  componentDidMount() {
+    /* Seeded here, or the first range switch would have nothing to morph from
+     * and would snap while every later one animated. */
+    const first = this.lineRef.current;
+    if (first) this._drawnD = first.getAttribute("d");
+
+    this.measure();
+    window.addEventListener("resize", this.handleResize);
+  }
+
+  componentWillUnmount() {
+    // Never leave the stage thinking the chart still owns Escape.
+    this.reportHolding(false);
+    window.removeEventListener("resize", this.handleResize);
+    this.handleResize.cancel();
+    if (this.hoverRaf) cancelAnimationFrame(this.hoverRaf);
+  }
+
+  /* THE LINE MOVES TO ITS NEW SHAPE INSTEAD OF BEING REPLACED BY IT.
+   *
+   * Two kinds of change reach this chart and they want opposite treatments:
+   *
+   *   - **Same drawing, new data** — a range switch, a price refresh. There is
+   *     a shape to travel to, so the line morphs and you can see the old
+   *     reading become the new one. `interpolatePath` is already vendored for
+   *     exactly this; the price chart has morphed on every coin and range
+   *     switch since long before this.
+   *   - **A different drawing** — Total to By coin, or to the ranked bars.
+   *     There is nothing to morph *between*: a line and a stack of bands are
+   *     not two states of one shape, and interpolating them produces a
+   *     writhing mess rather than a transition. Those cross-fade instead, and
+   *     the morph deliberately stands down.
+   *
+   * It is one-shot on an explicit action, never a loop: `document.getAnimations()`
+   * is empty again once it lands, which is the rule this project holds itself
+   * to on a page that opens in every new tab.
+   */
+  morphLine() {
+    const node = this.lineRef.current;
+    const next = node && node.getAttribute("d");
+    const from = this._drawnD;
+    this._drawnD = next;
+    if (!node || !next || !from || from === next) return;
+    if (typeof interpolatePath !== "function" || typeof select !== "function")
+      return;
+    /* Somebody who asked not to be moved is not shown a morph — they get the
+     * new shape, which is the thing they came for. */
+    if (prefersReducedMotion()) return;
+    select(node)
+      .interrupt()
+      .attr("d", from)
+      .transition()
+      .duration(motionMs(PC_MORPH_MS))
+      .attrTween("d", () => interpolatePath(from, next))
+      /* Land on the exact string React rendered rather than on the tween's
+       * last frame, so the DOM and the virtual DOM agree once it is over. */
+      .on("end", () => node.setAttribute("d", next));
+  }
+
+  componentDidUpdate(prevProps) {
+    /* Measured again after every update, not only on a window resize.
+     *
+     * The plot is a flex child above a legend, and the legend is not there on
+     * the first pass — with no width there is nothing to draw and nothing to
+     * name. So the first measurement was of a box 22px taller than the box the
+     * chart ended up in, and the whole drawing was scaled to it: the x-axis
+     * band landed under the legend and the dates were invisible, which is the
+     * classic version of this mistake. `measure` ignores a change under a
+     * pixel, so this settles in one extra pass and cannot loop. */
+    this.measure();
+
+    /* Morph only when the drawing is the same one. A mode change is a
+     * different chart and cross-fades instead — see `morphLine`. Recording
+     * the shape either way, so the *next* change has something to travel
+     * from rather than snapping once after every mode switch. */
+    if (prevProps.mode !== this.props.mode) {
+      const node = this.lineRef.current;
+      this._drawnD = node ? node.getAttribute("d") : null;
+    } else {
+      this.morphLine();
+    }
+
+    /* New data moves every scale under the readout, so what it is saying is
+     * about a chart that is no longer there. Cheaper and more honest to put it
+     * away than to try to keep it true. */
+    if (
+      prevProps.series !== this.props.series ||
+      prevProps.parts !== this.props.parts ||
+      prevProps.mode !== this.props.mode
+    ) {
+      this.handlePointerLeave();
+    }
+  }
+
+  measure() {
+    const box = this.frameRef.current;
+    if (!box) return;
+    const { width, height } = box.getBoundingClientRect();
+    if (
+      Math.abs(width - this.state.w) < 1 &&
+      Math.abs(height - this.state.h) < 1
+    ) {
+      return;
+    }
+    this.setState({ w: width, h: height });
+  }
+
+  /* The bands, in the order they are stacked.
+   *
+   * Biggest at the bottom: it is the one whose shape is read against the axis,
+   * and a base that changed rank would repaint the whole chart every time two
+   * holdings swapped places. Everything past the sixth is one neutral "Other"
+   * — a seventh hue would be a colour nobody can tell from the third.
+   */
+  bands() {
+    const { parts, theme } = this.props;
+    if (!Array.isArray(parts) || !parts.length) return [];
+    const palette = isLightTheme(theme)
+      ? PORTFOLIO_BAND_COLORS.light
+      : PORTFOLIO_BAND_COLORS.dark;
+    const named = parts.slice(0, PORTFOLIO_MAX_BANDS).map((p, i) => ({
+      coin: p.coin,
+      values: p.values,
+      color: palette[i],
+    }));
+    const rest = parts.slice(PORTFOLIO_MAX_BANDS);
+    if (rest.length === 1) {
+      named.push({
+        coin: rest[0].coin,
+        values: rest[0].values,
+        // The ramp's faintest step, not a separate grey — see the palette note
+        color: bandPalette(theme)[bandOtherIndex(theme)],
+      });
+    } else if (rest.length > 1) {
+      const values = rest[0].values.map((_, i) =>
+        rest.reduce((sum, p) => sum + (p.values[i] || 0), 0),
+      );
+      named.push({
+        coin: msg("po_other", "Other"),
+        values,
+        color: bandPalette(theme)[bandOtherIndex(theme)],
+        other: true,
+        count: rest.length,
+      });
+    }
+    return named;
+  }
+
+  /* Everything the drawing needs, worked out once per render.
+   *
+   * The y domain is the one place the two modes genuinely disagree, and the
+   * disagreement is not cosmetic. A line is read for its shape, so it gets the
+   * range it moved in. A stack is read for its *proportions*, and proportions
+   * are only true from zero — on a zoomed axis a stacked band can be drawn
+   * twice the height of one worth ten times as much. So composition costs you
+   * the zoom, deliberately, and the toggle says so.
+   */
+  geometry() {
+    const { series, costBasis, theme } = this.props;
+    // "mix" is the same stack in shares — see mixParts in portfolio.js
+    const stacked = this.props.mode === "bycoin" || this.props.mode === "mix";
+    const { w, h } = this.state;
+    if (!Array.isArray(series) || series.length < 2) return null;
+    if (!(w > 40) || !(h > 60)) return null;
+
+    const t0 = +series[0].time;
+    const t1 = +series[series.length - 1].time;
+    if (!(t1 > t0)) return null;
+
+    const x = scaleTime()
+      .range([PC_PAD.left, w - PC_PAD.right])
+      .domain([new Date(t0), new Date(t1)]);
+
+    let [dataLo, dataHi] = extent(series, (d) => d.price);
+    if (!isFinite(dataLo) || !isFinite(dataHi)) return null;
+
+    /* A benchmark shares this scale or it says nothing.
+     *
+     * The whole point of the comparison is that both lines are read against
+     * one axis — a second y-axis is the trick that makes any two series look
+     * related, and this chart refuses it the same way the coin comparison
+     * does. So the benchmark's range is folded into the domain before it is
+     * fixed, and both lines fit by construction rather than one being clipped
+     * at the top. */
+    const compare = Array.isArray(this.props.compare)
+      ? this.props.compare
+      : null;
+    if (compare && compare.length > 1) {
+      const [cLo, cHi] = extent(compare, (d) => d.price);
+      if (isFinite(cLo) && isFinite(cHi)) {
+        dataLo = Math.min(dataLo, cLo);
+        dataHi = Math.max(dataHi, cHi);
+      }
+    }
+    /* **What had been paid in, on the same scale** (the "as held" view): a
+       step line the value is read against, so it joins the domain like the
+       benchmark does rather than being clipped. Only when it is the same
+       length as the series — it is sampled on the same times or it means
+       nothing. */
+    const paid =
+      Array.isArray(this.props.paid) && this.props.paid.length === series.length
+        ? this.props.paid
+        : null;
+    if (paid) {
+      const [pLo, pHi] = extent(paid, (d) => d.price);
+      if (isFinite(pLo) && isFinite(pHi)) {
+        dataLo = Math.min(dataLo, pLo);
+        dataHi = Math.max(dataHi, pHi);
+      }
+    }
+    const span = dataHi - dataLo || Math.abs(dataHi) * 0.02 || 1;
+
+    let lo = stacked ? 0 : dataLo - span * 0.1;
+    let hi = dataHi + span * (stacked ? 0.06 : 0.1);
+
+    /* The cost level joins the scale rather than being clipped by it — where
+     * you crossed into profit is the whole reason it is drawn.
+     *
+     * But not at any price. The test is what including it would *cost the
+     * chart*: a basis far below a quiet range would squash the whole window
+     * into a band a few pixels tall to make room for a line at the bottom, and
+     * a flat line at the bottom is not worth a year of history. So the drawn
+     * range may grow to about two and a half times the range the data actually
+     * moved in — with a floor, since a portfolio that has barely moved has a
+     * tiny span and would otherwise never be allowed to show its cost at all.
+     * Out of reach, the level is not drawn and nothing is implied about a
+     * crossing the window doesn't contain. */
+    /* In the P/L view the level is zero — break-even — and it is never out of
+     * reach, because the domain above was widened to hold it. Everything below
+     * (the dashed line, the green-above / red-below wash, the readout) then
+     * works unchanged: this mode is the value chart with the cost subtracted,
+     * so the cost level is 0 by construction. */
+    const pnl = this.props.mode === "pnl";
+    const cost = pnl
+      ? 0
+      : isFinite(costBasis) && costBasis > 0
+        ? costBasis
+        : null;
+    const room = Math.max(span * 2.5, Math.abs(dataHi) * 0.25);
+    const reachable =
+      cost != null &&
+      (pnl || Math.max(dataHi, cost) - Math.min(dataLo, cost) <= room);
+    if (reachable) {
+      lo = Math.min(lo, cost - span * 0.06);
+      hi = Math.max(hi, cost + span * 0.06);
+    }
+    if (stacked) lo = 0;
+
+    /* **Zero is always on the P/L scale, and it has to be.**
+     *
+     * The value chart zooms on the data, which is right when the question is
+     * "what is it worth" and fatal when the question is "am I up": a holding
+     * bought for $9,000 and now worth $100 has a P/L that varies by $25 across
+     * the window, so a scale fitted to the data lands between −$8,950 and
+     * −$8,925 and the break-even line is nowhere near it. Every point on that
+     * chart is a loss and nothing on screen says so.
+     *
+     * So this mode trades the zoom for the one line that matters, exactly as
+     * the stacked mode trades it for honest proportions, and the note under
+     * the chart says so. */
+    if (this.props.mode === "pnl") {
+      lo = Math.min(lo, 0 - span * 0.08);
+      hi = Math.max(hi, 0 + span * 0.08);
+    }
+    if (!(hi > lo)) return null;
+
+    const y = scaleLinear()
+      .range([h - PC_PAD.bottom, PC_PAD.top])
+      .domain([lo, hi]);
+
+    const plotH = h - PC_PAD.top - PC_PAD.bottom;
+    const plotW = w - PC_PAD.left - PC_PAD.right;
+    // Spaced so the labels have room, rather than however many d3 would fit
+    const levels = y.ticks(Math.max(2, Math.min(6, Math.floor(plotH / 46))));
+    const step = levels.length > 1 ? Math.abs(levels[1] - levels[0]) : 0;
+    const columns = x.ticks(Math.max(2, Math.floor(plotW / 130)));
+
+    const points = series.map((d) => ({
+      x: x(new Date(+d.time)),
+      y: y(d.price),
+    }));
+
+    return {
+      x,
+      y,
+      levels,
+      step,
+      columns,
+      points,
+      /* The benchmark's own points, on the very same x and y — computed here
+       * so nothing downstream can accidentally place it on a scale of its
+       * own. Null when there is nothing to compare against. */
+      comparePoints:
+        compare && compare.length > 1
+          ? compare.map((d) => ({ x: x(new Date(+d.time)), y: y(d.price) }))
+          : null,
+      paidPoints: paid ? paid.map((d) => ({ x: x(new Date(+d.time)), y: y(d.price) })) : null,
+      cost: reachable ? cost : null,
+      costY: reachable ? y(cost) : null,
+      top: PC_PAD.top,
+      bottom: h - PC_PAD.bottom,
+      left: PC_PAD.left,
+      right: w - PC_PAD.right,
+      tint:
+        series[series.length - 1].price >= series[0].price
+          ? theme.color.chartLineGreen
+          : theme.color.chartLineRed,
+    };
+  }
+
+  /* A polyline through the points. Straight segments, not a smoothed curve: a
+   * curve invents values between samples, and this chart is read for "what was
+   * it worth on the 12th". */
+  linePath(points) {
+    return points.map((p, i) => `${i ? "L" : "M"}${p.x},${p.y}`).join("");
+  }
+
+  /* A step, not a slope: money paid in changes on the day of a purchase and
+     holds until the next — a line drawn between two purchase days would
+     claim money went in on every day between them. */
+  stepPath(points) {
+    return points
+      .map((p, i) => (i ? `L${p.x},${points[i - 1].y}L${p.x},${p.y}` : `M${p.x},${p.y}`))
+      .join("");
+  }
+
+  /* The same step walked backwards — the other half of the band between the
+     value and what was paid for it. */
+  stepPathBack(points) {
+    let out = "";
+    for (let i = points.length - 1; i >= 1; i--) {
+      out += `L${points[i].x},${points[i].y}L${points[i].x},${points[i - 1].y}`;
+    }
+    return `${out}L${points[0].x},${points[0].y}`;
+  }
+
+  /* One stacked band as a closed polygon: along its own top, back along the
+   * top of the band below it. Written out rather than fed through `d3.area`
+   * because the cumulative sums are the part worth reading. */
+  bandPath(geo, tops, floors) {
+    const up = tops.map((v, i) => `${i ? "L" : "M"}${geo.points[i].x},${v}`);
+    const down = [];
+    for (let i = floors.length - 1; i >= 0; i--) {
+      down.push(`L${geo.points[i].x},${floors[i]}`);
+    }
+    return `${up.join("")}${down.join("")}Z`;
+  }
+
+  handlePointerMove(e) {
+    /* **The glance reads too.** It used to refuse the pointer — the cursor was
+     * over it to click through to the stage — but a chart you cannot ask "what
+     * was it worth on Tuesday" without opening another screen is a picture.
+     * Changed on 19 Sep 2026 so that hovering the unexpanded chart gives the
+     * date and price. The glance's readout is the short one (date, value, the
+     * move since the range began); the composition and the marked purchases
+     * stay on the stage, where there is room for them. */
+    const box = this.frameRef.current;
+    if (!box) return;
+    // Moving the pointer hands control back to it; two inputs fighting over
+    // one crosshair is worse than either alone.
+    this.keyIndex = -1;
+    const rect = box.getBoundingClientRect();
+    this.hoverX = e.clientX - rect.left;
+    this.hoverY = e.clientY - rect.top;
+    if (this.hoverRaf) return;
+    this.hoverRaf = requestAnimationFrame(this.drawHover);
+  }
+
+  handlePointerLeave() {
+    /* A keyboard reader's crosshair must survive the pointer wandering off —
+     * the mouse leaving the box is not them letting go of it. */
+    if (this.keyIndex >= 0) return;
+    this.hoverX = -1;
+    this.clearHover();
+  }
+
+  /* Arrow keys walk the samples, Home/End jump to the ends, Escape lets go.
+   *
+   * The samples, not pixels: `series[i]` is what the readout describes, so a
+   * key press lands on exactly the point a pointer would have found, and no
+   * amount of arrowing can stop between two real values.
+   *
+   * Escape clears the readout and stops there — it does not close the chart.
+   * The stage's own Escape is still behind it, so the order is: let go of the
+   * point, then leave. Getting out of the thing you are in before the thing
+   * around it is the same order the panels already use. */
+  handleKeyDown(e) {
+    const series = Array.isArray(this.props.series) ? this.props.series : [];
+    if (!series.length) return;
+    const last = series.length - 1;
+    const at = this.keyIndex >= 0 ? this.keyIndex : last;
+    let next;
+
+    if (e.key === "ArrowRight") next = Math.min(last, at + 1);
+    else if (e.key === "ArrowLeft") next = Math.max(0, at - 1);
+    else if (e.key === "Home") next = 0;
+    else if (e.key === "End") next = last;
+    else if (e.key === "Escape") {
+      if (this.keyIndex < 0) return; // nothing held: let the stage have it
+      e.stopPropagation();
+      e.preventDefault();
+      this.release();
+      return;
+    } else return;
+
+    e.preventDefault();
+    this.keyIndex = next;
+    this.drawHoverAt(next);
+    this.reportHolding(true);
+  }
+
+  /* Focus alone shows nothing: arriving on the chart with Tab should not fire
+   * a readout nobody asked for. Leaving, though, puts it away — a crosshair
+   * left behind on a control nobody is on is a stale reading. */
+  handleBlur() {
+    if (this.keyIndex < 0) return;
+    this.release();
+  }
+
+  /* Let go of the point, and say so.
+   *
+   * The saying-so is the part that matters: the stage closes on Escape from a
+   * **capture-phase** document listener, which runs before this component ever
+   * sees the key. `stopPropagation` here is therefore too late by design, and
+   * the fix is the one the tour already uses — the thing that owns the key
+   * reports it, and the outer handler stands down while that is true. So the
+   * first Escape lets go of the point and the second closes the chart. */
+  release() {
+    this.keyIndex = -1;
+    this.hoverX = -1;
+    this.clearHover();
+    this.reportHolding(false);
+  }
+
+  reportHolding(held) {
+    if (this._held === held) return;
+    this._held = held;
+    if (typeof this.props.onHoldingChange === "function") {
+      /* The release goes up with the flag. Escape is decided by the stage's
+       * capture-phase listener — the only handler that runs before everything
+       * else — so it needs a way to let go of the crosshair itself rather
+       * than hoping a `stopPropagation` from here lands first. */
+      this.props.onHoldingChange(held, this.release);
+    }
+  }
+
+  clearHover() {
+    if (this.hoverRaf) {
+      cancelAnimationFrame(this.hoverRaf);
+      this.hoverRaf = 0;
+    }
+    const hover = this.hoverRef.current;
+    const readout = this.readoutRef.current;
+    if (hover) hover.setAttribute("visibility", "hidden");
+    if (readout) readout.style.opacity = "0";
+  }
+
+  /* Put the crosshair on a known sample. `drawHover` derives its index from
+   * `hoverX`, so the keyboard sets the pixel that index sits at and lets the
+   * one drawing path do the rest — rather than a parallel copy of it. */
+  drawHoverAt(i) {
+    const geo = this._geo;
+    if (!geo || !geo.points || !geo.points[i]) return;
+    this.hoverX = geo.points[i].x;
+    if (this.hoverRaf) cancelAnimationFrame(this.hoverRaf);
+    this.hoverRaf = requestAnimationFrame(this.drawHover);
+  }
+
+  write(ref, text) {
+    const node = ref.current;
+    // Assigning textContent replaces the text node even when the string is the
+    // same one, which on a pointer-speed path is churn for nothing
+    if (node && node.textContent !== text) node.textContent = text;
+  }
+
+  /* The crosshair and the readout, written by hand.
+   *
+   * Everything here is `setAttribute`, `textContent` and `style` on nodes that
+   * already exist. Routing it through React would re-render the grid, every
+   * band and every marker to move a dashed line four pixels.
+   */
+  drawHover() {
+    this.hoverRaf = 0;
+    const geo = this._geo;
+    const hover = this.hoverRef.current;
+    const readout = this.readoutRef.current;
+    if (!geo || !hover || !readout || this.hoverX < 0) return;
+    const { series, formatMoney, formatAmount, period, theme } = this.props;
+
+    const px = Math.max(geo.left, Math.min(geo.right, this.hoverX));
+    const i = seriesIndexAt(series, +geo.x.invert(px));
+    if (i < 0 || !geo.points[i]) return;
+    const point = geo.points[i];
+
+    hover.setAttribute("visibility", "inherit");
+    if (this.hoverLineRef.current) {
+      this.hoverLineRef.current.setAttribute("x1", point.x);
+      this.hoverLineRef.current.setAttribute("x2", point.x);
+    }
+    if (this.hoverDotRef.current) {
+      this.hoverDotRef.current.setAttribute("cx", point.x);
+      this.hoverDotRef.current.setAttribute("cy", point.y);
+    }
+
+    const total = series[i].price;
+    const first = series[0].price;
+    const delta = total - first;
+    const pct = first > 0 ? (delta / first) * 100 : null;
+
+    this.write(this.roDateRef, crosshairDate(series[i].time, period));
+    this.write(this.roTotalRef, formatMoney(total, false));
+    /* In the shares view the roof is 100% at every point, so a change
+       "since" it began is always nothing; the readout keeps to the shares. */
+    this.write(
+      this.roDeltaRef,
+      this.props.mode === "mix"
+        ? ""
+        : `${formatMoney(delta, true)}${
+            pct != null ? ` (${pct >= 0 ? "+" : ""}${pct.toFixed(2)}%)` : ""
+          } since ${crosshairDate(series[0].time, period)}`,
+    );
+    if (this.roDeltaRef.current) {
+      this.roDeltaRef.current.style.color =
+        delta === 0
+          ? theme.color.textSecondary
+          : delta > 0
+            ? theme.color.chartLineGreen
+            : theme.color.chartLineRed;
+    }
+
+    /* Against cost, which is the question the line alone cannot answer: a
+     * portfolio that is up over the window can still be under water since you
+     * bought, and those are different facts. */
+    const paidHere =
+      Array.isArray(this.props.paid) && this.props.paid[i] ? this.props.paid[i].price : null;
+    const cost = paidHere != null ? paidHere : this.props.costBasis;
+    const costNode = this.roCostRef.current;
+    if (costNode) {
+      if (isFinite(cost) && cost > 0) {
+        const over = total - cost;
+        /* In the "as held" view the level is what had been paid in by that
+           day, and the words say so. */
+        costNode.textContent =
+          paidHere != null
+            ? `${formatMoney(Math.abs(over), false)} ${over >= 0 ? "above" : "below"} ${msg("pc_paid_in_short", "paid in")} (${formatMoney(cost, false)})`
+            : `${formatMoney(Math.abs(over), false)} ${over >= 0 ? "above" : "below"} cost`;
+        costNode.style.color =
+          over >= 0 ? theme.color.chartLineGreen : theme.color.chartLineRed;
+        costNode.style.display = "";
+      } else {
+        costNode.style.display = "none";
+      }
+    }
+
+    /* What the total was made of at that moment.
+     *
+     * Shown in both modes, not only when the bands are painted: composition is
+     * asked for just as often of the plain line, and the numbers exist either
+     * way. `stacked` decides what is drawn, never what can be read. */
+    const bands = this.props.compact ? [] : this._bands;
+    let shown = 0;
+    for (let b = 0; b < this.roRows.length; b++) {
+      const row = this.roRows[b];
+      const node = row.row.current;
+      if (!node) continue;
+      const band = bands[b];
+      const value = band && isFinite(band.values[i]) ? band.values[i] : 0;
+      if (!band || !(value > 0)) {
+        node.style.display = "none";
+        continue;
+      }
+      node.style.display = "";
+      shown++;
+      if (row.dot.current) row.dot.current.style.background = band.color;
+      this.write(
+        row.name,
+        band.other
+          ? msg("po_other_count", "Other ($1)", band.count)
+          : band.coin,
+      );
+      /* Money, whatever the axis is quoting: a band is a holding's value,
+         and in the percent modes `formatMoney` is a percent formatter. */
+      this.write(row.value, this.money(value, false));
+      this.write(
+        row.share,
+        total > 0 ? `${((value / total) * 100).toFixed(0)}%` : "",
+      );
+    }
+
+    /* The container goes with its rows. It carries the rule that separates the
+     * headline from the breakdown, and a rule under nothing is a line the
+     * readout never meant to draw. */
+    if (this.roRowsRef.current) {
+      this.roRowsRef.current.style.display = shown ? "" : "none";
+    }
+
+    /* An event under the pointer, in words. The triangle says something
+     * happened; only this says what. */
+    const eventNode = this.roEventRef.current;
+    if (eventNode) {
+      const near = this.props.compact
+        ? null
+        : this._clusters.find((c) => Math.abs(c.x - px) <= PC_EVENT_REACH);
+      if (near) {
+        const lines = near.items.slice(0, 3).map((ev) => {
+          const what = `${ev.kind === "buy" ? msg("pc_bought", "▲ Bought") : msg("pc_sold", "▼ Sold")} ${formatAmount(
+            ev.amount,
+          )} ${ev.coin}`;
+          return ev.cash > 0 ? `${what} · ${this.money(ev.cash, false)}` : what;
+        });
+        if (near.items.length > 3)
+          lines.push(msg("pc_more", "+$1 more", near.items.length - 3));
+        eventNode.textContent = lines.join("\n");
+        eventNode.style.display = "";
+      } else {
+        eventNode.style.display = "none";
+      }
+    }
+
+    /* Placed beside the pointer, and flipped before it would run off the
+     * right-hand edge — a readout that leaves the chart to say something is
+     * saying it to nobody. */
+    readout.style.opacity = "1";
+    const box = readout.getBoundingClientRect();
+    const flip = point.x + 18 + box.width > this.state.w;
+    const rx = flip ? point.x - 18 - box.width : point.x + 18;
+    const ry = Math.max(
+      4,
+      Math.min(this.state.h - box.height - 4, this.hoverY - box.height / 2),
+    );
+    readout.style.transform = `translate(${Math.max(4, rx)}px, ${Math.max(0, ry)}px)`;
+  }
+
+  /* Solid hairlines, a shade off the surface. Dashes on a grid read as a
+   * threshold or a projection, and the only dashed line on this chart is an
+   * actual threshold. */
+  /* An axis label, carried in a thin halo of the surface.
+   *
+   * The price labels sit inside the plot, and in composition mode the plot is
+   * full of saturated bands — grey 9px type straight onto a blue field is not
+   * a reading, it is a rumour. Drawing the surface colour underneath as a 3px
+   * stroke (paint-order puts it behind the glyph) keeps the same label legible
+   * on the surface, on a band, and on the line, without a box around it. */
+  /* **What a holding is worth, in money.** The two percent modes hand the
+   * chart a percent formatter as `formatMoney` — right for the axis and the
+   * headline, wrong for a band's value, which is money in every mode. The
+   * screen passes `formatValue` for those; without one this is the same
+   * formatter as before. */
+  money(value, sign) {
+    const fn = this.props.formatValue || this.props.formatMoney;
+    return fn(value, sign);
+  }
+
+  axisLabel(props, text) {
+    const { theme } = this.props;
+    return React.createElement(
+      "text",
+      Object.assign(
+        {
+          fill: theme.color.textSecondary,
+          fontSize: 9,
+          fontFamily: theme.font.primary,
+          letterSpacing: "0.08em",
+          stroke: theme.color.bg,
+          strokeWidth: 3,
+          strokeLinejoin: "round",
+          paintOrder: "stroke",
+        },
+        props,
+      ),
+      text,
+    );
+  }
+
+  renderGrid(geo) {
+    const { currency, period, theme, hidden, unit, formatMoney } = this.props;
+    const symbol = getCurrencySymbol(currency);
+    const out = [];
+    geo.levels.forEach((v, k) => {
+      const ly = geo.y(v);
+      if (ly < geo.top - 1 || ly > geo.bottom + 1) return;
+      out.push(
+        React.createElement("line", {
+          key: `gl${k}`,
+          x1: 0,
+          x2: this.state.w,
+          y1: ly,
+          y2: ly,
+          stroke: theme.color.border,
+          strokeWidth: 1,
+        }),
+      );
+      /* In the gutter, right-aligned against the plot, on the gridline it
+       * belongs to. It used to be painted in full ink over the stacked
+       * bands because grey at 9px on saturated green is unreadable — that
+       * special case is gone with the reason for it: nothing is drawn over
+       * the data any more, so the axis can be as quiet here as anywhere.
+       *
+       * **The gridlines survive a hidden portfolio and the labels do not.**
+       * These numbers are the value of the thing the header has just masked,
+       * and a masked total above a labelled axis is not hidden, it is
+       * annotated. The lines themselves say nothing but where the steps are,
+       * which is the shape, and the shape was never the secret. */
+      if (!hidden) {
+        out.push(
+          this.axisLabel(
+            {
+              key: `gt${k}`,
+              x: geo.left - 8,
+              y: ly + 3,
+              textAnchor: "end",
+            },
+            /* **A percent scale has no currency sign.** Peak and vs BTC draw
+               a percentage, and the axis was still formatting it as money:
+               "$-7" for "7% below its own peak". `unit` says which. */
+            unit === "percent"
+              ? formatMoney(v, false)
+              : formatAxisPrice(v, geo.step, symbol),
+          ),
+        );
+      }
+    });
+    geo.columns.forEach((t, k) => {
+      const cx = geo.x(t);
+      if (cx < geo.left - 1 || cx > geo.right + 1) return;
+      out.push(
+        React.createElement("line", {
+          key: `cl${k}`,
+          x1: cx,
+          x2: cx,
+          y1: geo.top - 10,
+          y2: geo.bottom,
+          stroke: theme.color.border,
+          strokeWidth: 1,
+        }),
+        this.axisLabel(
+          { key: `ct${k}`, x: cx + 3, y: this.state.h - 9 },
+          crosshairDate(t, period),
+        ),
+      );
+    });
+    return out;
+  }
+
+  /* The stack, bottom up. Each band's top is the running total and its floor
+   * is the band below's top, which is what makes the areas add up to the line
+   * drawn over them. */
+  renderBands(geo, bands, surface) {
+    const { theme } = this.props;
+    const out = [];
+    const running = geo.points.map(() => geo.bottom);
+    const cumulative = geo.points.map(() => 0);
+    const last = geo.points.length - 1;
+
+    bands.forEach((band, b) => {
+      const tops = [];
+      const floors = [];
+      for (let i = 0; i < geo.points.length; i++) {
+        floors.push(running[i]);
+        cumulative[i] += isFinite(band.values[i]) ? band.values[i] : 0;
+        const ty = geo.y(cumulative[i]);
+        tops.push(ty);
+        running[i] = ty;
+      }
+      out.push(
+        React.createElement("path", {
+          key: `band${b}`,
+          d: this.bandPath(geo, tops, floors),
+          fill: band.color,
+          fillOpacity: 0.85,
+        }),
+        /* The 2px gap between fills, drawn as the surface itself rather than
+         * as a border around each band: a stroke would ring the sides too and
+         * turn a stack into a stack of boxes. */
+        React.createElement("path", {
+          key: `gap${b}`,
+          d: this.linePath(tops.map((v, i) => ({ x: geo.points[i].x, y: v }))),
+          fill: "none",
+          stroke: surface,
+          strokeWidth: 2,
+        }),
+      );
+      /* Direct label, and only where it fits with room to spare. A coin symbol
+       * clipped by the band it sits inside is worse than no label — and these
+       * labels are what earns the palette its faintest steps.
+       *
+       * The ink is **per band**, not the surface colour. It used to be
+       * `theme.color.bg` for every band, which worked while the palette was
+       * six hues of similar lightness; a ramp crosses the point where white
+       * stops being legible and black starts, so one fixed ink is unreadable
+       * at one end of it whichever end you pick. */
+      const height = floors[last] - tops[last];
+      if (height >= PC_LABEL_MIN) {
+        out.push(
+          React.createElement(
+            "text",
+            {
+              key: `bl${b}`,
+              x: geo.right - 6,
+              y: tops[last] + height / 2 + 3,
+              textAnchor: "end",
+              fill: bandLabelInk(theme, band.other ? null : b),
+              fontSize: 9,
+              fontWeight: 700,
+              fontFamily: theme.font.primary,
+              letterSpacing: "0.08em",
+            },
+            band.other ? msg("pc_other_upper", "OTHER") : band.coin,
+          ),
+        );
+      }
+    });
+    return out;
+  }
+
+  /* Above cost and below it, as two clipped copies of one shape.
+   *
+   * The region between the curve and the cost level *is* the profit, so it is
+   * drawn as that region rather than as an area under the line: close the path
+   * to the cost level instead of to the floor, then let one clip keep the part
+   * above and another the part below. Two fills, one path, and nowhere for the
+   * two to disagree about where they meet.
+   *
+   * Composition mode leaves it out — the bands are already carrying colour
+   * with meaning, and a green wash over them would be a second meaning in the
+   * same pixels.
+   */
+  renderZones(geo, d) {
+    const { theme } = this.props;
+    const last = geo.points[geo.points.length - 1].x;
+    const firstX = geo.points[0].x;
+    /* **Against what it had cost by then**: the band between the value and
+       the paid-in step, green where the value was above it and red where it
+       was below — the constant cost's wash, with a cost that moves when a
+       purchase or a sale does. */
+    if (geo.paidPoints) {
+      const band = `${d}${this.stepPathBack(geo.paidPoints)}Z`;
+      return [
+        React.createElement("path", {
+          key: "paid-up",
+          d: band,
+          fill: theme.color.chartLineGreen,
+          fillOpacity: 0.16,
+          clipPath: `url(#${this.clipPaidUpId})`,
+          "data-pc-paid-band": "up",
+        }),
+        React.createElement("path", {
+          key: "paid-down",
+          d: band,
+          fill: theme.color.chartLineRed,
+          fillOpacity: 0.16,
+          clipPath: `url(#${this.clipPaidDownId})`,
+          "data-pc-paid-band": "down",
+        }),
+      ];
+    }
+    if (geo.costY == null) {
+      return React.createElement("path", {
+        d: `${d}L${last},${geo.bottom}L${firstX},${geo.bottom}Z`,
+        fill: geo.tint,
+        fillOpacity: 0.1,
+      });
+    }
+    const closed = `${d}L${last},${geo.costY}L${firstX},${geo.costY}Z`;
+    return [
+      React.createElement("path", {
+        key: "up",
+        d: closed,
+        fill: theme.color.chartLineGreen,
+        fillOpacity: 0.16,
+        clipPath: `url(#${this.clipUpId})`,
+      }),
+      React.createElement("path", {
+        key: "down",
+        d: closed,
+        fill: theme.color.chartLineRed,
+        fillOpacity: 0.16,
+        clipPath: `url(#${this.clipDownId})`,
+      }),
+    ];
+  }
+
+  // What you did, where you did it. Neutral ink rather than green/red: on this
+  // chart those two already mean "above cost" and "below it", and a third
+  // meaning in the same two colours is one meaning too many.
+  renderEvents(geo, clusters, surface) {
+    const { theme, series } = this.props;
+    return clusters.map((c, k) => {
+      const i = seriesIndexAt(series, +geo.x.invert(c.x));
+      const py = geo.points[i] ? geo.points[i].y : geo.bottom;
+      const up = c.kind === "buy";
+      const s = 5;
+      const shape =
+        c.kind === "both"
+          ? `M${c.x},${py - s} L${c.x + s},${py} L${c.x},${py + s} L${c.x - s},${py} Z`
+          : up
+            ? `M${c.x},${py - s - 1} L${c.x + s},${py + s - 1} L${c.x - s},${py + s - 1} Z`
+            : `M${c.x},${py + s + 1} L${c.x + s},${py - s + 1} L${c.x - s},${py - s + 1} Z`;
+      return React.createElement(
+        Fragment,
+        { key: `ev${k}` },
+        /* A 2px ring of the surface, so a marker sitting on the line reads as
+         * being on top of it rather than as a kink in it. */
+        React.createElement("path", {
+          d: shape,
+          fill: theme.color.text,
+          stroke: surface,
+          strokeWidth: 2,
+          strokeLinejoin: "round",
+          paintOrder: "stroke",
+        }),
+        c.items.length > 1 &&
+          React.createElement(
+            "text",
+            {
+              x: c.x + s + 3,
+              y: up ? py + s - 1 : py - s + 9,
+              fill: theme.color.textSecondary,
+              fontSize: 9,
+              fontFamily: theme.font.primary,
+            },
+            `×${c.items.length}`,
+          ),
+      );
+    });
+  }
+
+  renderReadout() {
+    return React.createElement(
+      PcReadout,
+      {
+        innerRef: this.readoutRef,
+        "aria-hidden": true,
+        compact: this.props.compact,
+      },
+      React.createElement(PcReadoutDate, { innerRef: this.roDateRef }),
+      React.createElement(PcReadoutTotal, { innerRef: this.roTotalRef }),
+      React.createElement(PcReadoutLine, { innerRef: this.roDeltaRef }),
+      React.createElement(PcReadoutLine, { innerRef: this.roCostRef }),
+      React.createElement(
+        PcReadoutRows,
+        { innerRef: this.roRowsRef },
+        ...this.roRows.map((row, i) =>
+          React.createElement(
+            PcReadoutRow,
+            { key: i, innerRef: row.row },
+            React.createElement(PcSwatch, { innerRef: row.dot }),
+            React.createElement(PcReadoutName, { innerRef: row.name }),
+            React.createElement(PcReadoutValue, { innerRef: row.value }),
+            React.createElement(PcReadoutShare, { innerRef: row.share }),
+          ),
+        ),
+      ),
+      React.createElement(PcReadoutEvent, { innerRef: this.roEventRef }),
+    );
+  }
+
+  renderLegend(bands) {
+    if (bands.length < 2) return null;
+    /* Not on the glance.
+     *
+     * Inline, the chart sits directly under the allocation strip, and the two
+     * would print different breakdowns of the same basket a few pixels apart
+     * — the strip is today's spot values, the legend is the value at the end
+     * of the drawn series, and on live data those are close but never equal.
+     * Measured on a five-holding fixture: the strip read BTC 36% / ETH 27% /
+     * SOL 18% while the legend read BTC 42% / SOL 27% / ETH 26%. Two answers
+     * to one question is worse than one answer, and the compact chart draws
+     * only the total line anyway, so the legend is naming bands nobody can
+     * see. In the stage, where the bands are drawn, it stays. */
+    if (this.props.compact) return null;
+    const last = (band) => {
+      const v = band.values[band.values.length - 1];
+      return isFinite(v) ? v : 0;
+    };
+    const total = bands.reduce((sum, b) => sum + last(b), 0);
+    return React.createElement(
+      PcLegend,
+      { "data-portfolio-legend": String(bands.length) },
+      ...bands.map((band, i) =>
+        React.createElement(
+          PcLegendItem,
+          { key: i },
+          React.createElement(PcSwatch, { style: { background: band.color } }),
+          React.createElement(
+            PcLegendName,
+            null,
+            band.other
+              ? msg("po_other_count", "Other ($1)", band.count)
+              : band.coin,
+          ),
+          total > 0 ? `${((last(band) / total) * 100).toFixed(0)}%` : "",
+          // In the shares view the band's value *is* its share: said once
+          this.props.mode === "mix" ? null : React.createElement("span", null, this.money(last(band), false)),
+        ),
+      ),
+    );
+  }
+
+  render() {
+    const { theme } = this.props;
+    // "mix" is the same stack in shares — see mixParts in portfolio.js
+    const stacked = this.props.mode === "bycoin" || this.props.mode === "mix";
+    const geo = this.geometry();
+    const bands = this.bands();
+    this._geo = geo;
+    this._bands = bands;
+    const surface = theme.color.bg;
+
+    if (!geo) {
+      this._clusters = [];
+      return React.createElement(
+        PcWrap,
+        null,
+        React.createElement(PcFrame, { innerRef: this.frameRef }),
+      );
+    }
+
+    const events = Array.isArray(this.props.events) ? this.props.events : [];
+    const clusters = clusterEvents(events, geo.x, PC_MARKER_GAP);
+    this._clusters = clusters;
+    const d = this.linePath(geo.points);
+    const showBands = stacked && bands.length > 0;
+
+    return React.createElement(
+      PcWrap,
+      null,
+      /* What the arrows do, for a screen reader — not on screen, because the
+       * chart is not a place to print instructions nobody needs. It is what
+       * `aria-describedby` on the plot points at. */
+      React.createElement(
+        "span",
+        {
+          id: this.hintId,
+          style: {
+            position: "absolute",
+            width: "1px",
+            height: "1px",
+            overflow: "hidden",
+            clip: "rect(0 0 0 0)",
+            whiteSpace: "nowrap",
+          },
+        },
+        msg(
+          "pc_plot_hint",
+          "Use the left and right arrow keys to move through the chart, Home and End for the first and last point, and Escape to let go.",
+        ),
+      ),
+      React.createElement(
+        PcFrame,
+        {
+          innerRef: this.frameRef,
+          onMouseMove: this.handlePointerMove,
+          onMouseLeave: this.handlePointerLeave,
+          /* The plot is a control, so it is one focus stop with a name and a
+           * described operation — not a decorative box the mouse happens to
+           * work on. Everything the crosshair says was pointer-only until
+           * this existed. `group`, not `application`: the arrows are the only
+           * keys it claims, and swallowing the rest would trap the reader. */
+          onKeyDown: this.props.compact ? undefined : this.handleKeyDown,
+          onBlur: this.props.compact ? undefined : this.handleBlur,
+          /* One focus stop, not two: on the glance the frame around this is
+           * itself the button that opens the stage, and a plot inside it that
+           * also takes focus would be a tab stop that does nothing. */
+          tabIndex: this.props.compact ? undefined : 0,
+          role: this.props.compact ? "img" : "group",
+          /* The attribute means "the plot you can drive", so the glance does
+           * not carry it — it has no crosshair, no keys and no focus. There
+           * are two of these on screen now (the inline chart and the stage),
+           * and anything selecting on `[data-pc-plot]` was finding the wrong
+           * one: the browser suite focused the glance, got no keyboard, and
+           * reported the stage as broken. */
+          ...(this.props.compact
+            ? { "data-pc-glance": "1" }
+            : { "data-pc-plot": "1" }),
+          "aria-label": msg("pc_plot_label", "Portfolio value chart"),
+          "aria-describedby": this.hintId,
+        },
+        React.createElement(
+          "svg",
+          {
+            width: "100%",
+            height: "100%",
+            role: "img",
+            "aria-label": msg("pc_title", "Portfolio value over time"),
+          },
+          geo.paidPoints &&
+            (() => {
+              const step = this.stepPath(geo.paidPoints);
+              const first = geo.paidPoints[0].x;
+              const lastX = geo.paidPoints[geo.paidPoints.length - 1].x;
+              return React.createElement(
+                "defs",
+                null,
+                React.createElement(
+                  "clipPath",
+                  { id: this.clipPaidUpId },
+                  React.createElement("path", { d: `${step}L${lastX},-10L${first},-10Z` }),
+                ),
+                React.createElement(
+                  "clipPath",
+                  { id: this.clipPaidDownId },
+                  React.createElement("path", { d: `${step}L${lastX},${this.state.h + 10}L${first},${this.state.h + 10}Z` }),
+                ),
+              );
+            })(),
+          geo.costY != null &&
+            React.createElement(
+              "defs",
+              null,
+              React.createElement(
+                "clipPath",
+                { id: this.clipUpId },
+                React.createElement("rect", {
+                  x: 0,
+                  y: 0,
+                  width: Math.max(0, this.state.w),
+                  height: Math.max(0, geo.costY),
+                }),
+              ),
+              React.createElement(
+                "clipPath",
+                { id: this.clipDownId },
+                React.createElement("rect", {
+                  x: 0,
+                  y: Math.max(0, geo.costY),
+                  width: Math.max(0, this.state.w),
+                  height: Math.max(0, this.state.h - geo.costY),
+                }),
+              ),
+            ),
+          this.renderGrid(geo),
+          showBands
+            ? this.renderBands(geo, bands, surface)
+            : this.renderZones(geo, d),
+          // The total, always drawn — in composition mode it is the roof the
+          // bands add up to, which is the one thing that proves they do
+          React.createElement("path", {
+            ref: this.lineRef,
+            d,
+            fill: "none",
+            stroke: showBands ? theme.color.text : geo.tint,
+            strokeWidth: 2,
+            strokeLinejoin: "round",
+            strokeLinecap: "round",
+            opacity: showBands ? 0.9 : 1,
+          }),
+          /* The benchmark, under the basket and told apart by its **dash**
+           * rather than by its colour — a comparison whose only difference is
+           * a hue is unreadable to a red-green reader and in a screenshot.
+           * Drawn first in document order so the basket sits on top: the
+           * question is how yours did, and the other line is the ground it is
+           * read against. */
+          geo.comparePoints &&
+            React.createElement("path", {
+              d: this.linePath(geo.comparePoints),
+              fill: "none",
+              stroke: theme.color.textSecondary,
+              strokeWidth: 1.5,
+              strokeDasharray: "5 4",
+              strokeLinejoin: "round",
+              strokeLinecap: "round",
+              opacity: 0.85,
+              "aria-hidden": true,
+            }),
+          geo.paidPoints &&
+            React.createElement(
+              Fragment,
+              null,
+              React.createElement("path", {
+                d: this.stepPath(geo.paidPoints),
+                fill: "none",
+                stroke: theme.color.textSecondary,
+                strokeWidth: 1.25,
+                strokeDasharray: "4 3",
+                opacity: 0.95,
+                "data-pc-paid": "1",
+              }),
+              this.axisLabel(
+                {
+                  x: geo.right - 4,
+                  y: geo.paidPoints[geo.paidPoints.length - 1].y - 5,
+                  textAnchor: "end",
+                },
+                msg(
+                  "pc_paid_in",
+                  "PAID IN $1",
+                  this.props.formatMoney(this.props.paid[this.props.paid.length - 1].price, false),
+                ),
+              ),
+            ),
+          geo.costY != null &&
+            React.createElement(
+              Fragment,
+              null,
+              React.createElement("line", {
+                /* From the plot's edge, not the frame's: drawn from 0 the
+                   dashes ran through the axis label in the left gutter
+                   ("$40K" struck through whenever the cost sat near a
+                   gridline). */
+                x1: geo.left,
+                x2: geo.right,
+                y1: geo.costY,
+                y2: geo.costY,
+                stroke: theme.color.textSecondary,
+                strokeWidth: 1,
+                strokeDasharray: "4 4",
+                opacity: 0.9,
+              }),
+              /* At the **right** end of the line, not the left.
+               *
+               * It sat at `geo.left + 6`, immediately beside the y-axis
+               * gutter — so whenever the cost level landed near a gridline the
+               * two labels ended up on the same baseline a few pixels apart
+               * and read as one run of text ("$40K COST $36,900.00"). Rendered
+               * with a cost close to a round level, that is most of the time.
+               * Anchored to the right end it cannot meet the axis labels at
+               * all, and it lands where the eye already is: the end of the
+               * line is where the price is now. */
+              this.axisLabel(
+                {
+                  x: geo.right - 4,
+                  y: geo.costY - 5,
+                  textAnchor: "end",
+                },
+                // The same line, named for the question each view is asking
+                this.props.mode === "pnl"
+                  ? msg("pc_break_even", "BREAK EVEN")
+                  : msg(
+                      "pc_cost",
+                      "COST $1",
+                      this.props.formatMoney(geo.cost, false),
+                    ),
+              ),
+            ),
+          this.renderEvents(geo, clusters, surface),
+          // Crosshair — moved imperatively, never re-rendered
+          React.createElement(
+            "g",
+            {
+              ref: this.hoverRef,
+              visibility: "hidden",
+              pointerEvents: "none",
+              "aria-hidden": "true",
+            },
+            React.createElement("line", {
+              ref: this.hoverLineRef,
+              y1: geo.top - 10,
+              y2: geo.bottom,
+              stroke: theme.color.textSecondary,
+              strokeWidth: 1,
+              strokeDasharray: "3 3",
+              opacity: 0.8,
+            }),
+            React.createElement("circle", {
+              ref: this.hoverDotRef,
+              r: 4,
+              fill: surface,
+              stroke: theme.color.text,
+              strokeWidth: 2,
+            }),
+          ),
+        ),
+        this.renderReadout(),
+      ),
+      this.renderLegend(bands),
+    );
+  }
+}
+
+const PortfolioChart = withTheme(PortfolioChartBase);

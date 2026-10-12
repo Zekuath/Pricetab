@@ -1,0 +1,1112 @@
+/* CHART BOARD GEOMETRY — cut out of `chart.js`
+ *
+ * Twenty-five members, 782 contiguous lines, moved on 22 Aug 2026 out of a
+ * 4,753-line class. The seam is not arbitrary and it is not a line count: it
+ * is the one this file already drew for itself. Everything here answers
+ * **how big is a square and where does the window sit** — the pitch, the
+ * price step, the zoom, the visible slice, the fade boundary, the node pool.
+ * `updateGrid`, which begins on the line after the last of these, answers
+ * **put it on screen**. The codebase guide states the split in its own words:
+ * "`gridGeometry()` is lifted out of `updateGrid` precisely because
+ * `updatePath` needs the pitch *first*."
+ *
+ * `chart.js` had no block of pure helpers to lift — measured before the cut,
+ * 95 members and **three** of them touch no `this`. What it had was this run,
+ * and the run is contiguous, which is what made moving it a move rather than
+ * a rearrangement. Nothing was renamed and nothing reordered.
+ *
+ * Same idiom as `app-portfolio.js` and `settings-preferences.js`: a plain
+ * function handed the component. `chart` is the `LineBase` instance and there
+ * is no `this` in this file, deliberately — the constructor does
+ * `Object.assign(this, boardGeometry(this))`, so every name lands back exactly
+ * where it was and every caller is unchanged.
+ *
+ * Loads before `chart.js` in `index.html`.
+ */
+const chartBoardGeometry = (chart) => ({
+    plotPadY: () => (chart.props.predict ? 0 : PADDING),
+
+    /* How many whole squares of board there are between the fade and the foot
+     * of the chart — the rows you can actually put a call in.
+     *
+     * Both the zoom pill's "±$4K" and the panel's Board strip print this ×
+     * the step, and they used to compute it separately from the inset plot
+     * (`(height − 2·PADDING) / pitch − 1`). That figure was wrong in both
+     * directions once the board took the full height: it subtracted an inset
+     * that is no longer there and a whole row for a fade that is now a
+     * fraction of one. Two readouts of the same number, derived twice, is how
+     * they end up disagreeing. */
+    callableRows: () => {
+      const pitch = chart.cellPitch || chart.boardPitch();
+      if (!(pitch > 0) || !chart.height) return 1;
+      return Math.max(1, Math.floor((chart.height - chart.fadeEnd()) / pitch));
+    },
+
+    /* The size a square would ideally be, in pixels: about a sixth of the plot,
+     * which is a comfortable reading grid. Nothing is drawn at this size — it
+     * is only what the ladder of round durations is measured against. */
+    targetPitch: () => {
+      const plot = chart.height - PADDING * 2;
+      if (!(plot > 0)) return 0;
+      return Math.max(46, Math.min(104, plot / 6));
+    },
+
+    /* Milliseconds per pixel, which is the one number that ties the clock to
+     * the chart. The series is mapped across the *whole* width — the board
+     * pushes the past off the left edge rather than squeezing it — so this is
+     * independent of how wide the board is, and `boardPitch` can therefore be
+     * worked out before `futureWidth` without any circularity. */
+    msPerPx: () => {
+      const data = safePrices(chart.props.prices);
+      const t0 = +data[0].time;
+      const t1 = +data[data.length - 1].time;
+      const per = (t1 - t0) / chart.width;
+      return isFinite(per) && per > 0 ? per : 0;
+    },
+
+    /* A square already called is the square to keep.
+     *
+     * A new tab is a fresh context with no memory of the lattice, and the range
+     * drifts, so the rung nearest "comfortable" today is not guaranteed to be
+     * the rung a call was made on a week ago. The calls themselves record what
+     * a square was worth, so they are the memory: if one of them still names a
+     * rung, and that rung is still a reasonable square, the board adopts it and
+     * the box lands exactly where it was drawn. Legacy calls carry the old
+     * accidental spans and are ignored here — `isCellSpan` is the filter. */
+    calledSpan: () => {
+      const calls = Array.isArray(chart.props.calls) ? chart.props.calls : [];
+      const mine = calls.find(
+        (c) =>
+          c.coin === chart.props.coin &&
+          c.currency === chart.props.currency &&
+          c.period === chart.props.period &&
+          isCellSpan(c.span),
+      );
+      return mine ? mine.span : 0;
+    },
+
+    /* How much clock one square covers: a rung of `CELL_SPANS`, held per range.
+     *
+     * Held, because the ideal square moves a hair on every refresh and a
+     * lattice that re-steps under a locked call is the whole problem this
+     * solves. Per range, because that is the unit someone is thinking in —
+     * switching to a year and back must bring the same squares back, which it
+     * cannot do if the memory was thrown away at the switch. */
+    cellSpan: () => {
+      const per = chart.msPerPx();
+      const want = chart.targetPitch() * per;
+      if (!(want > 0)) return 0;
+
+      const key = chart.props.period || "";
+      const held = chart._cellMs[key];
+      const comfortable = (ms) =>
+        ms / want >= CELL_KEEP_LO && ms / want <= CELL_KEEP_HI;
+      if (held && comfortable(held)) return held;
+
+      const seed = chart.calledSpan();
+      const chosen = comfortable(seed)
+        ? seed
+        : CELL_SPANS.reduce((a, b) =>
+            Math.abs(Math.log(b / want)) < Math.abs(Math.log(a / want)) ? b : a,
+          );
+      chart._cellMs[key] = chosen;
+      return chosen;
+    },
+
+    /* How wide a square is, in pixels — the rung, converted. Everything else
+     * bends to this: the price step is chosen so its pixel height matches, and
+     * the board's width is measured in whole squares of it. Where the clock
+     * cannot be read (no width, a single point) it falls back to the
+     * comfortable size, which is what the plain grid uses. */
+    boardPitch: () => {
+      const per = chart.msPerPx();
+      const ms = chart.cellSpan();
+      const px = per > 0 && ms > 0 ? ms / per : 0;
+      /* Bounded at both ends, because the clock cannot always be read. Before
+       * the first response the series is a two-point stand-in a millisecond
+       * wide, and a rung of the ladder measured against that comes out
+       * millions of pixels across. Where the answer is not a square anyone
+       * could point at, the comfortable size stands in. */
+      return px > 4 && px < chart.height ? px : chart.targetPitch();
+    },
+
+    /* The part of the series that is actually on screen.
+     *
+     * With the board taking width out of the left, most of the range can be
+     * off the edge — and a price scale sized for data nobody can see draws the
+     * visible part as a flat squiggle in the middle of an empty chart. The
+     * window the board is scaled to is the window you are looking at. */
+    visibleSlice: () => {
+      const data = safePrices(chart.props.prices);
+      if (data.length < 2) return null;
+      const t0 = +data[0].time;
+      const t1 = +data[data.length - 1].time;
+      const span = t1 - t0;
+      if (!(span > 0) || !chart.width) return data;
+      const cut = t0 + (span * chart.futureWidth()) / chart.width;
+      const from = data.filter((d) => +d.time >= cut);
+      // Never fewer than two points: a window that has outrun the data still
+      // has to have a scale
+      return from.length >= 2 ? from : data.slice(-2);
+    },
+
+    /* The zoom, and the fact that it travels rather than jumps.
+     *
+     * A scale that changes between two frames leaves you working out what just
+     * happened to the boxes; one that travels tells you which way it went and
+     * carries every locked call with it, so you can see your own claims get
+     * bigger or smaller rather than finding them somewhere new. 260ms of
+     * ease-out, redrawn per frame off the same rAF the drag uses.
+     */
+    effectiveZoom: () => {
+      const to = chart.props.boardZoom > 0 ? chart.props.boardZoom : 1;
+      const anim = chart.zoomAnim;
+      let shown = to;
+      chart._zoomTo = to;
+      chart._zoomEased = 1;
+      chart._zoomT = 1;
+      if (anim) {
+        const t = (Date.now() - anim.start) / BOARD_ZOOM_MS;
+        if (t >= 1) {
+          chart.zoomAnim = null;
+          /* **The travel lands on its rung, and the rung is what is held**
+           * (2 Oct 2026). The held step was the one from before the press,
+           * and a one-notch zoom stays inside its ×2 sticky band — so the
+           * board stood on the last eased frame (a step of 499.8 for 500,
+           * the pill reading "±$1000" for "±$1K") and the next redraw put
+           * the old step back, undoing the zoom. */
+          const ends = chart._zoomEnds;
+          if (ends && ends.start === anim.start && ends.toStep > 0) chart.board().step = ends.toStep;
+        } else {
+          /* Ease-in-out on the *ratio*, since zoom is multiplicative —
+           * interpolating 1→16 linearly spends most of the animation already
+           * zoomed out.
+           *
+           * In-out rather than out. A pure ease-out leaves at full speed from
+           * the first frame, and a scale that is already moving fast in the
+           * frame after the click reads as a jump followed by a settle rather
+           * than as one movement; the eye never sees it start. The in half is
+           * what makes it look like the board was pushed. */
+          const eased = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+          chart._zoomEased = eased;
+          /* The *raw* fraction is kept as well as the eased one. The label
+             fade is a bell over the travel's own clock, and an eased clock
+             rushes through its own middle — the dip never got deep enough to
+             hide the churning figures it exists to hide (measured: 0.43 at
+             its lowest against the 0.12 intended). */
+          chart._zoomT = t;
+          shown = anim.from * Math.pow(to / anim.from, eased);
+        }
+      }
+      // Remembered so a change arriving mid-travel starts from where the eye
+      // is, not from where the last one was aiming
+      chart._zoomShown = shown;
+      return shown;
+    },
+
+    runZoomAnim: () => {
+      chart.zoomRaf = 0;
+      /* Keeps going a few frames past the travel, while the labels come back.
+       * Their ink is no longer a bell over one travel's clock — see
+       * `labelInk` in `updateGrid` — so the frame that ends the travel is not
+       * the frame that ends the drawing. */
+      const settling = (chart._labelInk === undefined ? 1 : chart._labelInk) < 0.995;
+      if (!chart.zoomAnim && !settling) return;
+      chart.updatePath();
+      if (chart.zoomAnim || (chart._labelInk === undefined ? 1 : chart._labelInk) < 0.995) {
+        chart.zoomRaf = requestAnimationFrame(chart.runZoomAnim);
+      } else {
+        chart.updatePath(); // the last frame, on the exact value
+      }
+    },
+
+    /* One notch of zoom. Positive is out — each square worth more, the board
+     * reaching further, which is the direction someone reaches for when the
+     * call they want to make is off the screen. */
+    zoomBoard: (dir) => {
+      if (!chart.props.predict || typeof chart.props.onBoardZoomChange !== "function") {
+        return;
+      }
+      const now = chart.props.boardZoom > 0 ? chart.props.boardZoom : 1;
+      const i = BOARD_ZOOM_STEPS.indexOf(now);
+      const at = i === -1 ? BOARD_ZOOM_STEPS.indexOf(DEFAULT_BOARD_ZOOM) : i;
+      const next = BOARD_ZOOM_STEPS[Math.min(BOARD_ZOOM_STEPS.length - 1, Math.max(0, at + dir))];
+      if (next === now) return;
+      /* Only asks. The travel is started by the prop coming back changed —
+       * see `componentDidUpdate` — so the wheel, the keys and the panel's two
+       * buttons all animate, rather than only the one that happens to run
+       * through here. */
+      chart.props.onBoardZoomChange(next);
+    },
+
+    handleWheel: (e) => {
+      if (!chart.props.predict || typeof chart.props.onBoardZoomChange !== "function") {
+        return;
+      }
+      /* The page does not scroll, so the wheel is free — and over a board it
+       * means one thing everywhere else it is used. Ctrl/⌘ is the browser's
+       * own page zoom; leave it alone. */
+      if (e.ctrlKey || e.metaKey) return;
+      e.preventDefault();
+      const now = Date.now();
+      /* A trackpad fires a stream of small deltas; one notch per gesture beat.
+       *
+       * **The beat has to be at least one travel long, and it was not.** It
+       * was a flat 220ms against a `BOARD_ZOOM_MS` that had grown to 340, so
+       * a continuous scroll started a new travel every 220ms on top of one
+       * still running — each restart re-anchoring the step interpolation and
+       * restarting the label fade, which is what the shaking was. Measured on
+       * a two-second trackpad scroll: eight notches, eight animation
+       * restarts, and the price labels going bright-dim-bright eight times.
+       * Tied to the constant now, so the two cannot drift apart again. */
+      if (now - (chart._lastWheel || 0) < BOARD_ZOOM_MS) return;
+      chart._lastWheel = now;
+      chart.zoomBoard(e.deltaY > 0 ? 1 : -1);
+    },
+
+    /* **Two fingers on the board are the wheel** (2 Oct 2026, the mobile
+     * pass: zooming was awkward on a phone). On a phone the
+     * board's reach answered only its small ± pill. Fingers spread past
+     * BOARD_PINCH_STEP of where they started is one notch in, pinched by as
+     * much one notch out, and the distance is re-based after each, so a long
+     * spread walks several steps; the wheel's beat keeps two travels from
+     * overlapping. The second finger takes the gesture from a board drag the
+     * first one began, and the release that ends it is not a click. */
+    handleBoardTouch: (e) => {
+      if (!chart.props.predict) return;
+      const ts = e.touches;
+      if (e.type === "touchend" || e.type === "touchcancel") {
+        if (chart._pinch && ts.length < 2) {
+          chart._pinch = null;
+          chart.suppressClick = true;
+        }
+        return;
+      }
+      if (ts.length !== 2) return;
+      const d = Math.hypot(ts[0].clientX - ts[1].clientX, ts[0].clientY - ts[1].clientY);
+      if (!(d > 0)) return;
+      if (!chart._pinch) {
+        chart._pinch = { d };
+        if (chart.boardDrag) {
+          chart.boardDrag = null;
+          if (chart._panDrag != null) {
+            chart._panDrag = null;
+            chart.updatePath();
+          }
+        }
+        return;
+      }
+      const ratio = d / chart._pinch.d;
+      if (ratio < BOARD_PINCH_STEP && ratio > 1 / BOARD_PINCH_STEP) return;
+      const now = Date.now();
+      if (now - (chart._lastWheel || 0) < BOARD_ZOOM_MS) return;
+      chart._lastWheel = now;
+      chart._pinch.d = d;
+      chart.zoomBoard(ratio > 1 ? -1 : 1);
+    },
+
+    /* What the price actually does in one square's worth of time.
+     *
+     * The median absolute move over `cellSpan()`, taken from the series on
+     * screen. This is the number a square should be sized against, and it is
+     * not the same thing as the range: over a trending hour the range is the
+     * *drift*, which can be four times what the price wiggles cell to cell.
+     * Measured on live BTC — a square was $100 where five minutes typically
+     * moved $30, so the price essentially never left the square it was in and
+     * calling one was not a prediction.
+     *
+     * Median rather than mean: one spike in an hour should not decide how big
+     * every square is for the rest of it.
+     */
+    cellVolatility: () => {
+      const data = safePrices(chart.props.prices);
+      const cell = chart.cellSpan();
+      if (!(cell > 0) || data.length < 4) return 0;
+      const key = `${data.length}|${cell}|${+data[0].time}|${data[0].price}`;
+      if (chart._volKey === key) return chart._vol;
+      const spanMs = +data[data.length - 1].time - +data[0].time;
+      const stepMs = spanMs / (data.length - 1);
+      const k = Math.max(1, Math.round(cell / stepMs));
+      let vol = 0;
+      if (k < data.length - 1) {
+        const moves = [];
+        for (let i = 0; i + k < data.length; i++) {
+          const a = Number(data[i].price);
+          const b = Number(data[i + k].price);
+          if (isFinite(a) && isFinite(b)) moves.push(Math.abs(b - a));
+        }
+        if (moves.length) {
+          moves.sort((a, b) => a - b);
+          vol = moves[Math.floor(moves.length / 2)];
+        }
+      }
+      chart._volKey = key;
+      chart._vol = vol;
+      return vol;
+    },
+
+    /* The price a square is worth.
+     *
+     * Round, and *sticky*: it changes only when the window it has to hold no
+     * longer sits comfortably inside it. Recomputing it from the range on
+     * every refresh is what made the board unusable over a real move — the
+     * step would slide from 50 to 100 the moment a candle poked out, every
+     * locked call would come off the gridlines it was called on, and each
+     * square would quietly start meaning something else. With hysteresis it
+     * holds for hours and then re-steps once, deliberately, when the price has
+     * genuinely gone somewhere else.
+     *
+     * Held per coin, currency *and* range. It used to be one value thrown away
+     * whenever any of the three changed, which meant a trip to the year and
+     * back re-picked the step from the year's range on the way there and from
+     * whatever the hour's range had become on the way back — so the boxes came
+     * home to a lattice with different lines in it. What a square is worth on a
+     * range is a property of that range, and it is remembered as one.
+     *
+     * As with the clock, an existing call seeds it: its band is what a square
+     * was worth when it was made, so if that still fits the window it is the
+     * step, and the box lands back on its own lines. */
+    boardKey: () =>
+      `${chart.props.coin}|${chart.props.currency}|${chart.props.period}`,
+
+    board: () => {
+      const key = chart.boardKey();
+      if (!chart._boards[key]) chart._boards[key] = { step: 0, base: null, baseStep: 0 };
+      return chart._boards[key];
+    },
+
+    calledStep: () => {
+      const calls = Array.isArray(chart.props.calls) ? chart.props.calls : [];
+      const mine = calls.find(
+        (c) =>
+          c.coin === chart.props.coin &&
+          c.currency === chart.props.currency &&
+          c.period === chart.props.period &&
+          c.hi > c.lo,
+      );
+      return mine ? mine.hi - mine.lo : 0;
+    },
+
+    boardStep: (range, rows) => {
+      const held = chart.board();
+      const usable = Math.max(1, Math.floor(rows) - 2);
+      /* What the square should be worth, and the two things pulling on it.
+       *
+       * `fair` is what the price does in one square of time — the size that
+       * makes naming a square a real question. `fit` is the size that would
+       * put the whole visible slice on screen at once. They agree on a quiet
+       * range and disagree on a trending one, where `fit` is three or four
+       * times `fair` and every call becomes "the price is already here".
+       *
+       * Fair wins, but not without limit: the square may not be smaller than
+       * half of `fit`, so at most half the visible slice's range can run off
+       * the window. What is *always* on screen is the live price, which the
+       * window follows in whole squares — that is the part you are betting
+       * against. Nor may it be larger than `fit`: if the price is quieter than
+       * the window, showing the window is the better answer.
+       */
+      const fit = range / usable;
+      const fair = chart.cellVolatility();
+      /* …and then whatever the zoom asks for. Zoom is the answer to the
+       * question sizing cannot answer on its own: a square small enough to be
+       * a tight call puts the board's whole reach three squares either side of
+       * the price, so "it falls off a cliff" — the one call an hour chart most
+       * invites — has nothing to point at. One size cannot serve both, so the
+       * size is yours. */
+      const zoom = chart.effectiveZoom();
+      /* What one square is worth at a given zoom, before the ladder. Lifted
+       * out because the travel needs it at *both* ends of the animation, not
+       * only at the value the eye is currently on. */
+      const needAt = (z) => (fair > 0 ? Math.min(fit, Math.max(fair, fit / 2)) : fit) * z;
+      const need = needAt(zoom);
+      /* Sticky around the target rather than around the range. It used to hold
+       * while the range still fitted, which is a test the new sizing can fail
+       * by design — a band around what the square is *for* keeps the same
+       * property (a locked call does not come off its gridlines every
+       * refresh) without arguing with it. */
+      const fits = (step) => step > 0 && step >= need * 0.5 && step <= need * 2;
+      /* Nothing is remembered while the scale is travelling. Halfway through a
+       * zoom the target is halfway too, and the step computed there sits inside
+       * the sticky band of the value being travelled *to* — so the animation
+       * would quietly hold the board at its own midpoint and one press of the
+       * button would appear to do nothing. */
+      const travelling = Boolean(chart.zoomAnim);
+      if (!travelling && fits(held.step)) return held.step;
+      const seed = chart.calledStep();
+      if (!travelling && fits(seed)) {
+        held.step = seed;
+        return seed;
+      }
+      // 1 · 2 · 2.5 · 5 · 10, the ladder whose rungs are all still round
+      // numbers to print on an axis
+      const rung = (want) => {
+        const power = Math.pow(10, Math.floor(Math.log10(want)));
+        return (
+          [1, 2, 2.5, 5, 10].map((m) => m * power).find((v) => v >= want) || power * 10
+        );
+      };
+      /* **The ladder is where the travel lands, not what it walks along.**
+       *
+       * Snapping every frame was the whole of what made a zoom feel rough:
+       * the eased size glides, the ladder does not, so the lattice sat still
+       * and then jumped a rung — twice on a ×2 press, five or six times on a
+       * long one — and every gridline, label and locked box moved together at
+       * each jump. It read as stuttering because it *was* three or four
+       * discrete relayouts wearing an animation.
+       *
+       * So during the travel the step is interpolated between the two rungs
+       * the press actually goes from and to, geometrically for the reason the
+       * eased zoom is geometric. In between it is not a round number, which
+       * costs nothing — nobody reads an axis label mid-gesture — and it
+       * arrives exactly on the rung, which is what has to be true when the
+       * hand stops. */
+      if (travelling) {
+        /* From the step **on screen** when the travel began, not the rung its
+         * zoom would have chosen (30 Sep 2026): the two differ whenever the
+         * step was held by its stickiness, and the first frame then jumped to
+         * the other one. Worked out once per travel and kept with it, so the
+         * frames between are one geometric glide from what you saw to the
+         * rung it lands on. */
+        const t = chart._zoomEased || 0;
+        let ends = chart._zoomEnds;
+        if (!ends || ends.start !== chart.zoomAnim.start) {
+          const from = chart._shownStep > 0 ? chart._shownStep : rung(needAt(chart.zoomAnim.from));
+          ends = {
+            start: chart.zoomAnim.start,
+            fromStep: from,
+            toStep: rung(needAt(chart._zoomTo || zoom)),
+            fromCentre: chart._shownCentre,
+          };
+          chart._zoomEnds = ends;
+        }
+        if (ends.fromStep > 0 && ends.toStep > 0) return ends.fromStep * Math.pow(ends.toStep / ends.fromStep, t);
+      }
+      const step = rung(need);
+      if (!travelling) held.step = step;
+      return step;
+    },
+
+    /* The plain grid's lattice: the price scale, the levels and the pixel
+     * pitch, all fitted to the data the way the rest of the chart is. This is
+     * the no-board path — with calls on, `boardGeometry` takes over, because a
+     * board needs a square that does not change size when the price does. */
+    gridGeometryFor: () => {
+      const data = safePrices(chart.props.prices);
+      if (data.length < 2 || !chart.height) return null;
+      const [lo, hi] = extent(data, (d) => d.price);
+      if (!isFinite(lo) || !isFinite(hi) || lo === hi) return null;
+
+      const top = PADDING;
+      const bottom = chart.height - PADDING;
+      const plot = bottom - top;
+      if (!(plot > 0)) return null;
+
+      const priceToY = scaleLinear().range([bottom, top]).domain([lo, hi]);
+
+      /* What size a cell should be.
+       *
+       * Normally: about a sixth of the plot height, which is a comfortable
+       * reading grid. With calls on it is decided by the strip instead —
+       * asking for ten squares of future must not push six of them off the
+       * chart, so the squares get smaller rather than fewer. The future is
+       * allowed a fixed share of the width and the cell size is whatever
+       * divides it into the number asked for. */
+      const target = Math.max(46, Math.min(104, plot / 6));
+      /* The square size no longer answers to anything but the chart.
+       *
+       * It used to be chosen to fit a requested *count* of squares inside a
+       * budgeted strip, which is why this was the most intricate arithmetic in
+       * the file: the count was the control, so the squares had to shrink to
+       * honour it. The control is now the width of the board itself — you drag
+       * the line to where you want it — and the number of squares is simply
+       * however many fit. So the pitch is picked the way the plain grid has
+       * always picked it, nearest a comfortable size, and it no longer moves
+       * when the board does. A lattice that stops re-stepping every time the
+       * board is resized is also a lattice that stops rearranging itself under
+       * a call you have already locked. */
+
+      const candidates = [];
+      const seen = new Set();
+      const addTicks = (t) => {
+        if (!t || t.length < 2) return;
+        const p = Math.abs(priceToY(t[1]) - priceToY(t[0]));
+        if (!(p > 4)) return;
+        const key = Math.round(p * 2); // dedupe pitches within half a pixel
+        if (seen.has(key)) return;
+        seen.add(key);
+        candidates.push({ levels: t, pitch: p });
+      };
+      for (let n = 3; n <= 14; n++) {
+        const t = priceToY.ticks(n);
+        addTicks(t);
+        if (t.length >= 2) {
+          // Built by index rather than by accumulating a float, so the last
+          // level is exactly where it should be instead of a rounding away.
+          const half = (t[1] - t[0]) / 2;
+          const sub = [];
+          for (let i = 0; i <= (t.length - 1) * 2; i++) sub.push(t[0] + i * half);
+          addTicks(sub);
+        }
+      }
+      if (!candidates.length) return null;
+
+      /* Nearest a comfortable cell.
+       *
+       * "Largest that fits" was tried and is hypersensitive: as the price band
+       * widens through the day every pitch shrinks, and the moment a coarser
+       * step slips under some edge the whole lattice snaps to it — cells
+       * jumping from 50px to 66px between two refreshes while nothing but the
+       * range had changed. Aiming at the same comfortable size the plain grid
+       * uses makes the choice depend on the plot height, which does not
+       * drift. */
+      const chosen = candidates.reduce((a, b) =>
+        Math.abs(b.pitch - target) < Math.abs(a.pitch - target) ? b : a,
+      );
+      const levels = chosen.levels;
+      const pitch = chosen.pitch;
+
+      return {
+        priceToY,
+        levels,
+        pitch,
+        step: Math.abs(levels[1] - levels[0]),
+        top,
+        bottom,
+      };
+    },
+
+    /* The lattice, with the margin solved for.
+     *
+     * Two or three passes of arithmetic, and it runs several times per redraw
+     * (the path needs the reserved width, the mesh needs the levels, the panel
+     * needs the step) — so the answer is kept until something it depends on
+     * moves. A drag redraws every frame and this is the most expensive thing
+     * on that path. */
+    /* The board's lattice: a fixed grid of squares, and a window onto it.
+     *
+     * This is the vertical half of the same idea as the anchored time axis.
+     * The chart's ordinary behaviour is to fit whatever it is given, which
+     * means the price scale moves a little on every refresh — fine for reading
+     * a line, useless under a board, because "one square" would be worth
+     * something different every thirty seconds and the boxes already locked
+     * would drift off the gridlines they were called on.
+     *
+     * So the square is fixed: `boardPitch` px tall, `boardStep` in price, and
+     * neither depends on the data. What follows the price is the *window* —
+     * it stays centred on the visible range, so a fall of twenty squares pans
+     * the chart down twenty squares rather than rescaling it, and the calls
+     * left above it slide off the top still meaning exactly what they meant.
+     * The step only changes when the window genuinely cannot hold the range
+     * any more, and then it changes once.
+     *
+     * The room above and below the data is structural rather than a margin
+     * added afterwards: the range has to fit inside `rows − 2` squares, so
+     * there is always a whole square of empty at both ends to point at.
+     */
+    /* Where the walk has got to, in rows, eased.
+     *
+     * Held as an integer (`chart.boardPan`) and shown as whatever the travel
+     * is currently between, for the reason the zoom is: a window that jumps a
+     * square leaves you working out what moved, and the whole value of the
+     * board is that you can watch your own locked calls slide rather than
+     * find them somewhere new. Additive here, not multiplicative — a pan is a
+     * distance, and the eased lerp is between two counts of squares. */
+    boardPanRows: () => {
+      // While the hand holds the board it is wherever the hand put it
+      if (chart._panDrag != null) return chart._panDrag;
+      const to = chart.boardPan || 0;
+      const anim = chart.panAnim;
+      if (!anim) return to;
+      const t = (Date.now() - anim.start) / BOARD_PAN_MS;
+      if (t >= 1) {
+        chart.panAnim = null;
+        return to;
+      }
+      const eased = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+      chart._panShown = anim.from + (to - anim.from) * eased;
+      return chart._panShown;
+    },
+
+    /* One square of walk, or back to the price with `to`. Clamped, because a
+     * board panned a hundred squares from the price is a screen with nothing
+     * on it and no way to tell which way home is. */
+    panBoard: (rows, absolute) => {
+      if (!chart.props.predict) return;
+      const now = chart.boardPan || 0;
+      const want = absolute ? rows : now + rows;
+      const next = Math.max(-BOARD_PAN_MAX, Math.min(BOARD_PAN_MAX, Math.round(want)));
+      if (next === now) return;
+      chart._panShown = chart.boardPanRows();
+      chart.boardPan = next;
+      chart.panAnim = { from: chart._panShown, start: Date.now() };
+      /* A draft belongs to the square it was pointed at, and that square is
+       * about to be somewhere else. */
+      chart.draftAt = null;
+      chart.unlockId = null;
+      chart.clearHover();
+      if (!chart.panRaf) chart.panRaf = requestAnimationFrame(chart.runPanAnim);
+      chart.updatePath();
+    },
+
+    runPanAnim: () => {
+      chart.panRaf = 0;
+      if (!chart.panAnim) return;
+      chart.updatePath();
+      if (chart.panAnim) {
+        chart.panRaf = requestAnimationFrame(chart.runPanAnim);
+      } else {
+        chart.updatePath(); // the last frame, on the exact square
+      }
+    },
+
+    boardGeometry: () => {
+      const slice = chart.visibleSlice();
+      if (!slice || !chart.height) return null;
+      const [lo, hi] = extent(slice, (d) => d.price);
+      if (!isFinite(lo) || !isFinite(hi)) return null;
+
+      /* The board's plot is the whole chart. The inset belongs to the line —
+       * a shape should not touch the edges — and a lattice is not a shape.
+       *
+       * With the inset, `base` is a whole multiple of the step, so the lowest
+       * gridline landed on `height - PADDING` and the 24px below it was a
+       * strip with vertical lines running through it and no horizontal one to
+       * close them: measured at 1280×800, the mesh ended at y=471 on a 495px
+       * chart, so the bottom square of the board was never a square. The
+       * leftover fraction of a row has to go somewhere, and the top is where
+       * it can go, because the fade is already there to finish it. Now the
+       * lowest gridline is the chart's own bottom edge and every row above it
+       * is whole.
+       *
+       * `plotPadY` is the other half of this: the price line is drawn into
+       * the same window, so it has to be given the same inset or the mesh and
+       * the line describe different prices at the same y. */
+      const top = 0;
+      const bottom = chart.height;
+      const plot = bottom - top;
+      const pitch = chart.boardPitch();
+      if (!(plot > 0) || !(pitch > 0)) return null;
+      /* Fractional on purpose. The pitch is now the clock's — one rung of
+       * `CELL_SPANS` converted to pixels — so it no longer divides the plot a
+       * whole number of times. Rounding `rows` to fix that would round the
+       * pitch with it and the square would stop being square; carrying the
+       * fraction through instead leaves the price step exactly `pitch` pixels
+       * tall (`plot / rows`), which is the property that matters. What is left
+       * over is a part-row at the top, which the lattice already extends
+       * through. */
+      const rows = plot / pitch;
+
+      // A flat window still needs a height, or the scale divides by zero
+      const range = hi > lo ? hi - lo : Math.max(Math.abs(hi) * 1e-4, 1e-8);
+      const step = chart.boardStep(range, rows);
+      const span = rows * step;
+
+      /* Where the window sits, and why it stays there.
+       *
+       * Centring it on the visible range put it somewhere slightly different
+       * every thirty seconds: a new high a dollar above the old one moved the
+       * whole board a pixel, and everything on it with it. The board is a
+       * thing you point at — it has to hold still.
+       *
+       * So the window is placed in **whole squares** and then left alone until
+       * it genuinely cannot hold what it is showing. When it does have to
+       * move, it moves by whole steps, which is why the move is barely visible
+       * on the lattice itself: the levels are multiples of the step, so after
+       * a one-square pan the lines land exactly where the old ones were and
+       * only the labels and the price have moved.
+       *
+       * The placement is anchored on the **left edge of the window** — the
+       * price the visible history starts at. That is the number the rest of
+       * the move is read against ("three squares up since the left of the
+       * screen"), and on a fast rise or fall it is what the board re-places
+       * itself around. */
+      /* What the window has to hold.
+       *
+       * The whole visible slice when it fits — the old rule, and still the
+       * usual case. When it does not (the square is now sized by what the
+       * price *does*, not by the range, so a trending window can be taller
+       * than the board), the thing that must stay on screen is the **live
+       * price**: it is what every open call is measured against, and a board
+       * whose current price is off the top is a board you cannot read or bet
+       * on. The older part of the line runs off instead, which is what
+       * zooming in has always meant.
+       *
+       * Either way there is a square of margin at both ends — the room to call
+       * beyond what has happened, which is the whole point of the strip. */
+      const last = slice[slice.length - 1]
+        ? Number(slice[slice.length - 1].price)
+        : (lo + hi) / 2;
+      const roomy = hi - lo <= span - step * 2;
+      const keepLo = roomy ? lo : last;
+      const keepHi = roomy ? hi : last;
+      // (where the window is anchored lives in `placeFor`, per step)
+      const inside = (base) =>
+        keepLo >= base + step * 0.999 && keepHi <= base + span - step * 0.999;
+      const held = chart.board();
+      const guard = Math.ceil(rows) * 4;
+      /* The placement below, for any step — the travel needs it for the step
+         it lands on before that step is on screen. */
+      const placeFor = (st) => {
+        const sp = rows * st;
+        /* Whether the slice fits is a question about *this* step's window:
+           read off the frame's interpolated span, it flipped halfway through
+           a wheel zoom and moved the travel's target by a square and a half. */
+        const fits = hi - lo <= sp - st * 2;
+        const kLo = fits ? lo : last;
+        const kHi = fits ? hi : last;
+        const at = fits ? (slice[0] ? Number(slice[0].price) : (lo + hi) / 2) : last;
+        let b = Math.floor(at / st) * st - Math.floor((Math.floor(rows) - 1) / 2) * st;
+        for (let i = 0; i < guard && kLo < b + st * 0.999; i++) b -= st;
+        for (let i = 0; i < guard && kHi > b + sp - st * 0.999; i++) b += st;
+        return b;
+      };
+      let base = held.base;
+      const ends = chart.zoomAnim ? chart._zoomEnds : null;
+      if (ends && ends.start === chart.zoomAnim.start && ends.toStep > 0) {
+        /* **No snapping while the board zooms** (30 Sep 2026). Mid-travel the
+         * step is not a round number and changes every frame, and the window
+         * was re-placed on every frame as a whole multiple of it — so the base
+         * jumped by up to a square, back and forth: measured, the live price
+         * dot went 630 → 672 → 632 → 689 px over consecutive frames, 46
+         * reversals in four presses, the line and the whole lattice with it.
+         * Now the window's middle glides, on the same eased clock as the step,
+         * from where it was on screen to where the landing step will place it;
+         * the snap to whole squares happens once, at the landing, where the two
+         * agree. Nothing is remembered while travelling. */
+        // Where it lands, worked out once — the price ticking mid-travel must
+        // not move the target under the glide
+        if (!isFinite(ends.toCentre)) ends.toCentre = placeFor(ends.toStep) + (rows * ends.toStep) / 2;
+        const toCentre = ends.toCentre;
+        const fromCentre = isFinite(ends.fromCentre) ? ends.fromCentre : toCentre;
+        const t = chart._zoomEased || 0;
+        base = fromCentre + (toCentre - fromCentre) * t - span / 2;
+      } else if (!(held.baseStep === step && isFinite(base) && inside(base))) {
+        /* The anchor's own square, put near the middle of the window.
+         *
+         * `ceil` was tried here, to hand a fall the spare square on an uneven
+         * row count. Measured, it moves the whole window down by one step:
+         * with this chart the top price label went from $43.50K to $43.45K,
+         * the same either way across three runs. That is a square taken from
+         * above the price and given below it — and above is where a rising
+         * chart invites calls, so it is not obviously the better half to
+         * spend. The room for calling a fall is bought by the plot running the
+         * full height of the chart, which is a whole extra row and costs
+         * nothing at the other end; leaning the window as well was a guess
+         * with a real price and no evidence behind it. */
+        // …then slid, a square at a time, until the window holds what it must
+        // (`placeFor`, the one the zoom's landing is aimed at)
+        base = placeFor(step);
+        held.base = base;
+        held.baseStep = step;
+      }
+      /* **And then wherever you have walked to.**
+       *
+       * The window follows the price, which is right and is not enough: the
+       * board reaches about three squares either side of where the price is,
+       * so a band you actually want to name — the one a real fall would end
+       * at — has no square on the screen and no way to get one. The pan is
+       * that way. It is an offset in **whole squares** applied to the
+       * displayed window only; `base` above stays anchored to the price
+       * exactly as before, so the anchoring cannot fight the walk and a
+       * lattice line still lands where the last one was.
+       *
+       * Relative rather than absolute, deliberately: "four squares above the
+       * window" survives the price moving, where an absolute level would need
+       * the window to re-place itself around it and put you somewhere you did
+       * not ask to be. */
+      const shift = chart.boardPanRows() * step;
+      const domain = [base + shift, base + span + shift];
+      // What is on screen, for a travel that starts from here
+      chart._shownStep = step;
+      chart._shownCentre = base + span / 2;
+
+      const priceToY = scaleLinear().range([bottom, top]).domain(domain);
+      /* Levels are the whole multiples of the step, so they are anchored to
+       * absolute price the way the columns are anchored to absolute time —
+       * $43,000 is on a line whatever the window happens to be showing. */
+      let firstLevel = Math.ceil(domain[0] / step) * step;
+      /* **…except while the board zooms**, where whole multiples of a step
+       * that changes every frame put the lines somewhere new each frame: the
+       * lattice's phase went 0.40, 0.63, 0.32, 0.67 of a square on
+       * consecutive frames, a shimmer across every row. During the travel the
+       * lines hang from one reference level that glides, on the same clock,
+       * from a line of the old lattice to a line of the new one — on screen
+       * where they were when it starts and where they will be when it lands. */
+      const zEnds = chart.zoomAnim ? chart._zoomEnds : null;
+      if (zEnds && zEnds.start === chart.zoomAnim.start && zEnds.fromStep > 0 && zEnds.toStep > 0 && isFinite(zEnds.toCentre)) {
+        if (!isFinite(zEnds.fromRef)) {
+          /* A line actually on screen, not a multiple worked out again: a
+             press landing before the last travel finished found a lattice
+             hanging from that travel's reference, and a rounded multiple of
+             its not-quite-round step sat half a square away from it. */
+          const c = isFinite(zEnds.fromCentre) ? zEnds.fromCentre : zEnds.toCentre;
+          zEnds.fromRef = isFinite(chart._shownRef) ? chart._shownRef : Math.round(c / zEnds.fromStep) * zEnds.fromStep;
+        }
+        if (!isFinite(zEnds.toRef)) zEnds.toRef = Math.round(zEnds.toCentre / zEnds.toStep) * zEnds.toStep;
+        const tz = chart._zoomEased || 0;
+        const ref = zEnds.fromRef + (zEnds.toRef - zEnds.fromRef) * tz;
+        firstLevel = ref + Math.ceil((domain[0] - ref) / step) * step;
+      }
+      chart._shownRef = firstLevel;
+      const count = Math.floor((domain[1] - firstLevel) / step) + 1;
+      const levels = [];
+      // By index, not by accumulating a float: at 0.0001 steps the drift is
+      // visible by the twentieth line
+      for (let i = 0; i < count; i++) levels.push(firstLevel + i * step);
+      if (levels.length < 2) return null;
+
+      return {
+        priceToY,
+        levels,
+        pitch,
+        step,
+        top,
+        bottom,
+        domain,
+      };
+    },
+
+    /* **Is the price axis logarithmic right now?**
+     *
+     * One rule, asked in every place that scales a series — the redraw, the
+     * mount and the two reference levels — because copies of it drift, and the
+     * way they would drift is a chart drawn logarithmically on open and
+     * linearly on the first refresh.
+     *
+     * **A drawn lattice is the veto, not a computable one.** The first version
+     * of this asked whether `gridGeometry()` returned anything, and it almost
+     * always does: `gridGeometryFor` works out a mesh from the data whether or
+     * not one is on screen, so the option was dead on arrival and the test
+     * caught it reading 0.13 where it should have read 0.5. What actually
+     * conflicts is a lattice that is *drawn*: the mesh and the board are a
+     * **uniform step in price**, and evenly spaced in price is not evenly
+     * spaced in pixels on a log axis — the cells would be a dozen different
+     * heights and a call's box would change shape depending on where it sat.
+     * So the two switches that put one on screen are the two that stand this
+     * one down. */
+    logAxis: () =>
+      chart.props.logScale === true &&
+      chart.props.predict !== true &&
+      chart.props.grid !== true,
+
+    gridGeometry: () => {
+      const data = safePrices(chart.props.prices);
+      const first = data[0];
+      const last = data[data.length - 1];
+      const key = [
+        chart.width,
+        chart.height,
+        chart.props.predict,
+        // the visible window depends on how much of it the board is covering
+        chart.props.predict ? chart.props.futureShare : 0,
+        // …and on how far it reaches in price
+        chart.props.predict ? Math.round(chart.effectiveZoom() * 1000) : 0,
+        /* …and on whether that reach is still travelling: the last eased
+         * frame rounds to the same key as the landing, so the landing (the
+         * rung, exactly) was answered from the cache and never drawn. */
+        chart.props.predict && chart.zoomAnim ? 1 : 0,
+        /* …and on how far it has been walked from the price. **The cache is
+         * keyed on everything the window depends on, and the pan was the
+         * first thing added that was not** — the arrows moved `boardPan`, the
+         * board redrew, and this returned the geometry it had already worked
+         * out for the un-panned window, so the whole control did nothing at
+         * all while every other sign of it (the way-back chip appearing, the
+         * arrows dimming at the limit) said it was working. Rounded rather
+         * than truncated because the value is fractional through the travel:
+         * the key has to change on every frame of it or the walk arrives in
+         * one jump at the end. */
+        chart.props.predict ? Math.round(chart.boardPanRows() * 1000) : 0,
+        chart.props.grid,
+        // the step and the window are remembered per range, so the answer is
+        // a different one on a different range even for identical-looking data
+        chart.boardKey(),
+        data.length,
+        first ? `${+first.time}:${first.price}` : "",
+        last ? `${+last.time}:${last.price}` : "",
+      ].join("|");
+      if (chart._geoKey === key) return chart._geo;
+
+      const geo = chart.props.predict
+        ? chart.boardGeometry()
+        : chart.gridGeometryFor();
+      chart._geoKey = key;
+      chart._geo = geo;
+      return geo;
+    },
+
+    /* How much of the right-hand side is board rather than history.
+     *
+     * The share is what someone dragged the line to; the limits are what the
+     * chart insists on either side of that — `MIN_HISTORY_CELLS` and
+     * `MIN_BOARD_CALLABLE` (plus the part-column it sits behind), both one
+     * for the reason set out where they are declared. The board's limit is also what keeps the handle
+     * reachable: the line is only drawn while there is a board, so a drag that
+     * could take the board to nothing would take the handle with it. */
+    futureWidth: () => {
+      if (!chart.props.predict || !chart.width) return 0;
+      /* The square's size, not the whole geometry: the lattice is scaled to
+       * the *visible* window and the visible window is whatever this function
+       * leaves, so asking the geometry here would be asking it to know the
+       * answer before it can be worked out. `boardPitch` depends on the chart
+       * and the clock — never on the board's own width, because the series is
+       * mapped across the full width whatever the board takes — which is
+       * exactly why it can be asked first. */
+      const pitch = chart.boardPitch();
+      if (!(pitch > 0)) return 0;
+      const share = isFinite(chart.props.futureShare)
+        ? chart.props.futureShare
+        : DEFAULT_FUTURE_SHARE;
+      const least = (MIN_BOARD_CALLABLE + NOW_PART_COLUMN) * pitch;
+      const most = chart.width - MIN_HISTORY_CELLS * pitch;
+      // A window too narrow to hold both gives what it can to the board
+      if (!(most > least)) return Math.min(chart.width * 0.5, least);
+      return Math.min(most, Math.max(least, chart.width * share));
+    },
+
+    /* The blank time a window dragged past the latest price leaves on the
+     * right (chart-viewport.js, VIEW_FUTURE_ROOM): the line is fitted into
+     * the rest rather than slid, since the window already holds only what is
+     * on screen. Never with the board, which owns the right-hand side. */
+    viewFutureWidth: () => {
+      const share = Number(chart.props.viewFuture);
+      if (chart.props.predict || !(share > 0) || !(chart.width > 0)) return 0;
+      return Math.round(chart.width * Math.min(0.5, share));
+    },
+
+    /* ── The grid ──
+     *
+     * Square cells, and that is the constraint everything else bends to.
+     *
+     * The first version let d3 choose round ticks on both axes independently.
+     * That gives beautiful labels and cells 290px wide by 86px tall — which
+     * is not a grid, it is a set of stripes. Square matters here because the
+     * grid is for judging a move: when one cell across equals one cell up,
+     * the *angle* of the line means something, and you can read "two cells in
+     * a week" off the chart. Rectangles of an arbitrary ratio destroy that.
+     *
+     * So one pixel pitch drives both axes — and which axis chooses it depends
+     * on whether there is a board on it.
+     *
+     * The plain grid ("G") reads prices, so price picks: the step is one of
+     * d3's round numbers, chosen as the one whose pixel height lands nearest a
+     * comfortable cell, and the vertical lines are then placed at that same
+     * pitch from a fixed point on the clock. Columns therefore carry a uniform
+     * but arbitrary slice of time — about 2.4 days on a month range — which is
+     * the right way round for reading a line: a level you can name is worth
+     * more than a date that ends in :00.
+     *
+     * The board ("L") is pointed at, so time picks. A call is a rectangle of
+     * real time, and a rectangle of real time cannot be kept on a lattice whose
+     * columns are worth 2.4 days today and 2.6 days when the series has grown a
+     * point. So the column comes first and it is a round duration — a rung of
+     * `CELL_SPANS`, held for as long as you are on the range — its pixel width
+     * follows, and the price step is then sized to *that*, which keeps the
+     * cells square and the horizontal labels round. What is given up is that
+     * the rows no longer divide the plot a whole number of times; what is
+     * bought is that one square is fifteen minutes, today and next week.
+     *
+     * They are counted from **absolute time**, not back from the right edge.
+     *
+     * Counting back from "now" kept the lines still on screen and moved the
+     * time underneath them: every refresh, a column meant five minutes later
+     * than it had a moment ago. A locked call is a fixed rectangle of real
+     * time, so it slid out from under the lattice that produced it — after a
+     * few refreshes the box you called sat across two squares, and there was
+     * no square left on the chart that was the one you pointed at.
+     *
+     * Anchoring to the clock puts that right: a column covers the same minutes
+     * for as long as it keeps its size, and a call stays welded to the square
+     * it was made on. The cost is that "now" no longer falls on a boundary —
+     * it sits somewhere inside a column, which is why the dashed line is drawn
+     * separately and why `cellAt` refuses that column: half of it is already
+     * answered, and a band named over drawn history is not a prediction.
+     */
+    /* Take a node from the pool, or make one the first time.
+     *
+     * The mesh used to be emptied and rebuilt on every redraw — measured at
+     * 42 elements created and 42 destroyed *per frame* of a drag, and the same
+     * on every price refresh. Nothing about it needs to be new: the lines are
+     * always the same lines in different places, so they are kept and their
+     * attributes written over, and whatever is left over from a bigger mesh is
+     * hidden rather than removed. This is the SVG version of what every
+     * charting library does in canvas — the cost that matters is creating and
+     * destroying, not drawing. */
+    poolNode: (pool, tag, parent) => {
+      let el = pool.list[pool.at];
+      if (!el) {
+        el = document.createElementNS("http://www.w3.org/2000/svg", tag);
+        pool.list.push(el);
+        parent.appendChild(el);
+      }
+      pool.at++;
+      el.setAttribute("visibility", "inherit");
+      return el;
+    },
+
+    /* One of the two mesh layers, made on demand.
+     *
+     * Masked, both of them: a lattice solid over a faded one is the fade
+     * failing at exactly the moment two lattices are on screen. The first is
+     * born visible and the second at nothing, since the only thing that ever
+     * asks for a second layer is a cross-fade, and it has to come *from*
+     * nothing. */
+    meshSet: (i, g) => {
+      const set = chart._meshSets[i];
+      if (!set.layer) {
+        const layer = document.createElementNS(
+          "http://www.w3.org/2000/svg",
+          "g",
+        );
+        layer.setAttribute("mask", `url(#${chart.fadeId})`);
+        /* Named, the way the chart names every other node worth addressing
+           (`pt-live-dot`, `pt-moves`). It used to be identified as "the first
+           masked group in the chart", which was true until the travel band
+           gained a masked layer of its own underneath it — after which a test
+           for "the mesh is drawn through a fade" was measuring the band and
+           failing for a reason unrelated to the rule it protects. Position is
+           not an identity. */
+        layer.setAttribute("class", "pt-mesh");
+        layer.setAttribute("opacity", i === chart._meshAt ? "1" : "0");
+        set.layer = layer;
+        const other = chart._meshSets[1 - i].layer;
+        // First child, so everything created later draws over it — and the
+        // pair kept adjacent, so the two never end up either side of the
+        // controls that live in this group.
+        if (other) g.insertBefore(layer, other.nextSibling);
+        else g.insertBefore(layer, g.firstChild);
+      }
+      return set;
+    },
+
+    hideRest: (pool) => {
+      for (let i = pool.at; i < pool.list.length; i++) {
+        pool.list[i].setAttribute("visibility", "hidden");
+      }
+    },
+
+    /* Where the top fade finishes, in pixels from the top of the chart — and
+     * therefore where the callable part of the board begins, because the two
+     * have to be the same line: a square you can barely see is not a square
+     * anyone can point at, and one half-covered by the range switcher above it
+     * is worse than that.
+     *
+     * It was a whole pitch, which assumed the sliced part-row at the top was
+     * a whole row tall. It is not: the lattice is anchored to absolute price,
+     * so the leftover fraction lands wherever it lands — measured at 1280×800,
+     * 19.4px of sliced row, and then the fade ran on for another 45px and
+     * swallowed the first *complete* square. That square was drawn in full,
+     * sat in the middle of the board, and quietly refused to be called.
+     *
+     * So the boundary comes off the lattice instead: the first gridline far
+     * enough down to have something above it worth fading. `FADE_MIN` is what
+     * "far enough" means — under it the sliced row is a hairline, the ramp has
+     * no room to be a ramp, and the mesh would arrive as the hard edge the
+     * fade exists to prevent, so the first whole row goes to the fade as well.
+     * Capped at a third of the chart so a very tall square cannot eat the
+     * board on a short one. */
+    fadeEnd: () => {
+      if (!chart.height || !chart.gridY || !chart.gridY.length) return 0;
+      const at = chart.gridY.find((y) => y >= FADE_MIN);
+      return isFinite(at) ? Math.min(at, chart.height / 3) : 0;
+    },
+});

@@ -1,0 +1,91 @@
+#!/bin/sh
+# PriceTab pre-push guard. Turned on with: git config core.hooksPath .githooks
+#
+# A push is the one step that cannot be taken back: what reaches the remote is
+# public, and GitHub keeps a commit reachable by its hash after it is deleted.
+# So the last look happens here, over every commit being sent:
+#
+#   1. No deleting a remote branch (git push :main, git push --delete).
+#   2. No non-fast-forward push (--force, --force-with-lease): it throws away
+#      commits that exist only on the remote.
+#   3. No commit that touches a path `.gitignore` covers — the pre-commit hook
+#      stops that at the source, but a commit made with --no-verify, on
+#      another machine or before the hooks were turned on still gets here.
+#   4. No commit whose message carries a second author (`Co-authored-by:`) or
+#      a tool's banner — the same rule as the commit-msg hook.
+#   5. No commit whose message, paths or added lines carry a word from
+#      docs/internal/publish-deny.txt — a local-only list, so this file
+#      names none of them.
+#
+# Bypass, deliberately and knowing why: git push --no-verify
+set -e
+
+ZERO=$(git hash-object --stdin </dev/null | tr '[0-9a-f]' '0')
+fail() { printf '\n✘ pre-push: %s\n' "$1"; }
+
+# The words the owner never publishes (5), from the same local-only list the
+# pre-commit hook reads; a clone without it skips that check.
+ROOT="$(git rev-parse --show-toplevel)"
+deny="$ROOT/docs/internal/publish-deny.txt"
+tmp="${TMPDIR:-/tmp}/pricetab-push.$$"
+if [ -f "$deny" ]; then
+  grep -v -e '^#' -e '^=' -e '^[[:space:]]*$' "$deny" > "$tmp.ci" || true
+  sed -n 's/^=//p' "$deny" > "$tmp.cs"
+fi
+trap 'rm -f "$tmp.ci" "$tmp.cs" "$tmp.out"' EXIT
+
+while read -r local_ref local_sha remote_ref remote_sha; do
+  if [ "$local_sha" = "$ZERO" ]; then
+    fail "refusing to delete the remote branch $remote_ref."
+    echo "  If you mean it: git push --no-verify"
+    exit 1
+  fi
+
+  if [ "$remote_sha" = "$ZERO" ]; then
+    range="$local_sha"                    # a new branch: everything it carries
+  else
+    if ! git merge-base --is-ancestor "$remote_sha" "$local_sha" 2>/dev/null; then
+      fail "this is not a fast-forward — $remote_ref would lose commits."
+      echo "  Commits on the remote that are not in what you are pushing:"
+      git --no-pager log --oneline "$local_sha..$remote_sha" 2>/dev/null | sed 's/^/    /'
+      echo "  Merge or rebase them first. To overwrite on purpose:"
+      echo "    git push --no-verify --force-with-lease"
+      exit 1
+    fi
+    range="$remote_sha..$local_sha"
+  fi
+
+  for commit in $(git rev-list "$range"); do
+    paths="$(git diff-tree --no-commit-id --name-only -r --root --diff-filter=d "$commit" \
+      | git check-ignore --no-index --stdin || true)"
+    if [ -n "$paths" ]; then
+      fail "commit $(git rev-parse --short "$commit") touches paths .gitignore covers:"
+      printf '%s\n' "$paths" | head -10 | sed 's/^/    /'
+      echo "  Those are local-only. Rewrite that commit before pushing."
+      exit 1
+    fi
+    if git log -1 --format=%B "$commit" \
+      | grep -i -q -E '^[[:space:]]*co-authored-by:|(^|[[:space:]])generated (with|by) \['; then
+      fail "commit $(git rev-parse --short "$commit") names a second author in its message:"
+      git log -1 --format=%B "$commit" \
+        | grep -i -E '^[[:space:]]*co-authored-by:|(^|[[:space:]])generated (with|by) \[' | sed 's/^/    /'
+      echo "  This repository has one author. Reword that commit before pushing."
+      exit 1
+    fi
+    if [ -f "$tmp.ci" ]; then
+      { git log -1 --format=%B "$commit"; git diff-tree --no-commit-id --name-only -r --root "$commit";
+        git show --format= -U0 --no-color "$commit" | grep '^+' | grep -v '^+++'; } > "$tmp.out" || true
+      hits=""
+      if [ -s "$tmp.ci" ]; then hits="$(grep -n -i -E -f "$tmp.ci" "$tmp.out" || true)"; fi
+      if [ -s "$tmp.cs" ]; then hits="$hits$(grep -n -w -E -f "$tmp.cs" "$tmp.out" || true)"; fi
+      if [ -n "$hits" ]; then
+        fail "commit $(git rev-parse --short "$commit") carries words listed in docs/internal/publish-deny.txt:"
+        printf '%s\n' "$hits" | head -10 | cut -c1-160 | sed 's/^/    /'
+        echo "  Reword it before pushing."
+        exit 1
+      fi
+    fi
+  done
+done
+
+exit 0
