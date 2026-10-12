@@ -3034,6 +3034,9 @@
   "mon_tab_corr": {
     "message": "Correlazione"
   },
+  "mon_tab_base": {
+    "message": "Tassi base"
+  },
   "mon_title": {
     "message": "Monitor"
   },
@@ -7775,6 +7778,27 @@
   },
   "pref_page_ticker_title": {
     "message": "Barra dei prezzi"
+  },
+  "pref_phone_nav_aria": {
+    "message": "Come ci si muove sul telefono"
+  },
+  "pref_phone_nav_bar": {
+    "message": "Barra delle schede e scorrimento"
+  },
+  "pref_phone_nav_desc": {
+    "message": "La barra delle schede in basso, o solo lo scorrimento: senza la barra il grafico prende la sua altezza e ogni scheda arriva scorrendo dal bordo sinistro o destro."
+  },
+  "pref_phone_nav_heading": {
+    "message": "Navigazione"
+  },
+  "pref_phone_nav_keywords": {
+    "message": "barra schede menu in basso navigazione scorrere lati bordi colonne nascondi barra più spazio"
+  },
+  "pref_phone_nav_swipe": {
+    "message": "Solo scorrimento"
+  },
+  "pref_phone_nav_title": {
+    "message": "Navigazione"
   },
   "pref_position_bottom": {
     "message": "In basso"

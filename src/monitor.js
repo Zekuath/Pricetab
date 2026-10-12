@@ -623,6 +623,32 @@ const CorrCell = styled.span`
 const monitorSigned = (v, digits = 1) => (v == null || !isFinite(v) ? "—" : `${signedFixed(v, digits)}%`);
 const monitorTone = (v) => (v == null || !isFinite(v) || Math.abs(v) < 0.05 ? "quiet" : v > 0 ? "up" : "down");
 
+/* **The monitor and the base rates are one screen** (12 Oct 2026, the owner:
+   *"monitor ve base rates'i aynı menüye yedirelim … tek bir sayfada daha çok
+   işlem görülebilsin"*): one tab on the screens' column, and this strip at the
+   head of both bodies — Coins, Market, Correlation, Base rates. The two
+   components stay apart (they share nothing but the frame); the app swaps
+   which one is drawn (`monitorTab`), so the frame, the × and the column's tab
+   never move. M opens it where it was, B on Base rates. */
+const MONITOR_TABS = ["coins", "market", "corr", "base"];
+const monitorTabStrip = (active, onTab) =>
+  React.createElement(
+    MonitorTabs,
+    { role: "group", "aria-label": msg("mon_title", "Monitor"), "data-monitor-tabs": "true" },
+    ...[
+      ["coins", msg("mon_tab_coins", "Coins")],
+      ["market", msg("mon_tab_market", "Market")],
+      ["corr", msg("mon_tab_corr", "Correlation")],
+      ["base", msg("mon_tab_base", "Base rates")],
+    ].map(([id, label]) =>
+      React.createElement(
+        MonitorTab,
+        { key: id, active: active === id, "aria-pressed": active === id ? "true" : "false", "data-monitor-tab": id, onClick: () => onTab(id) },
+        label,
+      ),
+    ),
+  );
+
 class MonitorPanel extends PureComponent {
   constructor(props) {
     super(props);
@@ -632,6 +658,12 @@ class MonitorPanel extends PureComponent {
 
   componentDidMount() {
     this.load();
+    if (this.tab() === "market") this.refreshMarket();
+  }
+
+  // The app's tab when it holds one (the shared screen), else this panel's own
+  tab() {
+    return this.props.tab && this.props.tab !== "base" ? this.props.tab : this.state.tab;
   }
 
   componentDidUpdate(prev) {
@@ -910,7 +942,8 @@ class MonitorPanel extends PureComponent {
   setTab(tab) {
     if (tab === "market") this.refreshMarket();
     else clearInterval(this._mapTimer);
-    this.setState({ tab });
+    if (tab !== "base") this.setState({ tab });
+    if (this.props.onTab) this.props.onTab(tab);
   }
 
   renderMarket() {
@@ -1092,7 +1125,7 @@ class MonitorPanel extends PureComponent {
 
   render() {
     const { onClose, coins } = this.props;
-    const tab = this.state.tab;
+    const tab = this.tab();
     return React.createElement(
       BaseOverlay,
       {
@@ -1117,25 +1150,7 @@ class MonitorPanel extends PureComponent {
         React.createElement(
           BaseBody,
           null,
-          React.createElement(
-            MonitorTabs,
-            { role: "group", "aria-label": msg("mon_title", "Monitor") },
-            React.createElement(
-              MonitorTab,
-              { active: tab === "coins", "aria-pressed": tab === "coins" ? "true" : "false", "data-monitor-tab": "coins", onClick: () => this.setTab("coins") },
-              msg("mon_tab_coins", "Coins"),
-            ),
-            React.createElement(
-              MonitorTab,
-              { active: tab === "market", "aria-pressed": tab === "market" ? "true" : "false", "data-monitor-tab": "market", onClick: () => this.setTab("market") },
-              msg("mon_tab_market", "Market"),
-            ),
-            React.createElement(
-              MonitorTab,
-              { active: tab === "corr", "aria-pressed": tab === "corr" ? "true" : "false", "data-monitor-tab": "corr", onClick: () => this.setTab("corr") },
-              msg("mon_tab_corr", "Correlation"),
-            ),
-          ),
+          this.props.onTab ? monitorTabStrip(tab, (t) => this.setTab(t)) : null,
           tab === "corr" ? this.renderCorrelation() : tab === "market" ? this.renderMarket() : this.renderCoins(),
         ),
       ),

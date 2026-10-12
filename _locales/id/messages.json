@@ -3034,6 +3034,9 @@
   "mon_tab_corr": {
     "message": "Korelasi"
   },
+  "mon_tab_base": {
+    "message": "Tingkat dasar"
+  },
   "mon_title": {
     "message": "Monitor"
   },
@@ -7775,6 +7778,27 @@
   },
   "pref_page_ticker_title": {
     "message": "Bilah harga"
+  },
+  "pref_phone_nav_aria": {
+    "message": "Cara berpindah di ponsel"
+  },
+  "pref_phone_nav_bar": {
+    "message": "Bilah tab dan geser"
+  },
+  "pref_phone_nav_desc": {
+    "message": "Bilah tab di bawah, atau geser saja: tanpa bilah grafik mendapat tingginya, dan setiap tab muncul dengan geser dari tepi kiri atau kanan."
+  },
+  "pref_phone_nav_heading": {
+    "message": "Navigasi"
+  },
+  "pref_phone_nav_keywords": {
+    "message": "bilah tab menu bawah navigasi geser sisi tepi kolom sembunyikan bilah ruang lebih"
+  },
+  "pref_phone_nav_swipe": {
+    "message": "Hanya geser"
+  },
+  "pref_phone_nav_title": {
+    "message": "Navigasi"
   },
   "pref_position_bottom": {
     "message": "Bawah"

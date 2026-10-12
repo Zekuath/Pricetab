@@ -3034,6 +3034,9 @@
   "mon_tab_corr": {
     "message": "Кореляція"
   },
+  "mon_tab_base": {
+    "message": "Базові частоти"
+  },
   "mon_title": {
     "message": "Монітор"
   },
@@ -7775,6 +7778,27 @@
   },
   "pref_page_ticker_title": {
     "message": "Цінова стрічка"
+  },
+  "pref_phone_nav_aria": {
+    "message": "Як переміщатися на телефоні"
+  },
+  "pref_phone_nav_bar": {
+    "message": "Панель вкладок і свайпи"
+  },
+  "pref_phone_nav_desc": {
+    "message": "Панель вкладок унизу або лише свайпи: без панелі графік отримує її висоту, а кожна вкладка виїжджає свайпом від лівого чи правого краю."
+  },
+  "pref_phone_nav_heading": {
+    "message": "Навігація"
+  },
+  "pref_phone_nav_keywords": {
+    "message": "панель вкладок нижнє меню навігація свайп краї колонки сховати панель більше місця"
+  },
+  "pref_phone_nav_swipe": {
+    "message": "Лише свайпи"
+  },
+  "pref_phone_nav_title": {
+    "message": "Навігація"
   },
   "pref_position_bottom": {
     "message": "Внизу"

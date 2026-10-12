@@ -13,6 +13,13 @@
     document.documentElement.style.fontSize = sizes[savedSize] + 'px';
   }
 
+  /* How a phone gets around (PHONE_NAV_KEY, config.js): without the tab bar
+   * the page reaches the glass, and the rules that leave room for the bar
+   * read this attribute — set here so the first frame is not laid out twice. */
+  if (localStorage.getItem('crypto_chart_phone_nav') === 'swipe') {
+    document.documentElement.setAttribute('data-phone-nav', 'swipe');
+  }
+
   const savedTheme = localStorage.getItem('crypto_chart_theme') || 'auto';
   let activeTheme = savedTheme;
 

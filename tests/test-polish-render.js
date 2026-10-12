@@ -10899,9 +10899,11 @@ await page.evaluate(`(() => { const m = document.querySelector("[data-practice-r
       "…and the screen ends where the column begins", JSON.stringify({ frame: out.frame, column: out.left }));
     check(out.close && out.close.top <= 16 && out.close.right <= 8,
       "…with its × in the top-right corner", JSON.stringify(out.close));
-    check(out.tabs.length >= 5 && out.tabs.includes("baserates") &&
+    /* The base rates are the monitor's last tab since 12 Oct 2026: one tab
+       on the column holds both */
+    check(out.tabs.length >= 5 && out.tabs.includes("monitor") && !out.tabs.includes("baserates") &&
       !out.tabs.includes("targets") && !out.tabs.includes("calls"),
-      "…a tab for every screen, the base rates too, and none for the chart's drawers",
+      "…a tab for every screen (the monitor holding the base rates), and none for the chart's drawers",
       JSON.stringify(out.tabs));
     check(out.marked.join() === "portfolio",
       "…with the screen you are in marked, once", JSON.stringify(out.marked));
@@ -13067,8 +13069,10 @@ await page.evaluate(`(() => { const m = document.querySelector("[data-practice-r
     await page.keyboard.press("b");
     await page.waitForTimeout(900);
     const base = await where();
-    check(base.screen === "baserates" && base.chart === "shut",
-      "V then B: the base rates open and the chart's drawer goes", JSON.stringify(base));
+    // B is the monitor's Base rates tab since 12 Oct 2026
+    const baseTab = await page.evaluate(`(document.querySelector("[data-monitor-tab][aria-pressed='true']") || {}).getAttribute ? document.querySelector("[data-monitor-tab][aria-pressed='true']").getAttribute("data-monitor-tab") : null`);
+    check(base.screen === "monitor" && baseTab === "base" && base.chart === "shut",
+      "V then B: the base rates open (the monitor on its Base rates tab) and the chart's drawer goes", JSON.stringify(Object.assign({ tab: baseTab }, base)));
     check(errors.length === 0, "nothing threw", errors.join(" | "));
     await ctx.close();
   }
@@ -19055,6 +19059,195 @@ await page.evaluate(`(() => { const m = document.querySelector("[data-practice-r
     check(before !== "" && seen.size === 1 && [...seen][0] === before, "§123 with the grid on, the price scale stays put through a drag", JSON.stringify({ before, during: [...seen].slice(0, 3) }));
     check(errors.length === 0, "§123 nothing threw", errors.join(" | "));
     await ctx.close();
+  }
+
+  /* §124 — a phone gets around by the tab bar or by the swipes alone (12 Oct
+   * 2026, the owner: *"sağdan soldan swipe varsa alttaki menüye gerek yok
+   * belki … ya o ya bu … ayarlardan"*). Settings → This phone → Getting
+   * around: Swipes only takes the bar away, the page reaches the glass and the
+   * chart takes the height; the edges still bring both columns out; the choice
+   * outlives a reload laid out right from the first frame; and Tab bar puts it back. */
+  {
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+    await ctx.route("**/*", (r) => {
+      const u = r.request().url();
+      if (u.startsWith("file://")) return r.continue();
+      if (u.includes("historic")) return r.fulfill(json({ data: { prices: PRICES } }));
+      if (u.includes("spot")) return r.fulfill(json({ data: { amount: PRICES[PRICES.length - 1].price, currency: "USD" } }));
+      return r.fulfill(json({ data: {} }));
+    });
+    await ctx.addInitScript(`localStorage.setItem("crypto_chart_onboarding_seen", "1"); localStorage.setItem("crypto_chart_touch_hint_seen", "true"); localStorage.setItem("crypto_chart_macro_events", "false");`);
+    const page = await ctx.newPage();
+    const errs = [];
+    page.on("pageerror", (e) => errs.push(e.message));
+    await page.goto(INDEX, { waitUntil: "load" });
+    await page.waitForSelector("svg path", { timeout: 20000 });
+    await page.waitForTimeout(800);
+    const tap = async (sel) => { await page.tap(sel); await page.waitForTimeout(700); };
+    const layout = () => page.evaluate(`(() => {
+      const bar = document.querySelector("[data-phone-bar]");
+      const svg = [...document.querySelectorAll("svg")].sort((a, b) => b.getBoundingClientRect().width * b.getBoundingClientRect().height - a.getBoundingClientRect().width * a.getBoundingClientRect().height)[0].getBoundingClientRect();
+      return {
+        bar: Boolean(bar && bar.getClientRects().length && getComputedStyle(bar).display !== "none"),
+        lift: (() => { const d = document.createElement("div"); d.style.cssText = "position:absolute;height:var(--pt-dock-lift, 0px)"; document.body.appendChild(d); const h = d.getBoundingClientRect().height; d.remove(); return h; })(),
+        nav: document.documentElement.getAttribute("data-phone-nav"),
+        chartH: Math.round(svg.height),
+        chartBottom: Math.round(svg.bottom),
+      };
+    })()`);
+    const withBar = await layout();
+    check(withBar.bar && withBar.nav === null && withBar.lift >= 56, "§124 by default a phone has its tab bar, and the page ends above it", JSON.stringify(withBar));
+
+    await tap("[data-phone-tab='more']");
+    await tap("[data-phone-more='settings']");
+    await page.evaluate(`(() => { const b = [...document.querySelectorAll("button")].find((n) => /^This phone/.test(n.innerText.trim())); if (b) b.click(); })()`);
+    await page.waitForTimeout(700);
+    const chips = await page.evaluate(`[...document.querySelectorAll("[data-phone-nav-choice]")].map((n) => n.getAttribute("data-phone-nav-choice") + ":" + n.getAttribute("aria-pressed"))`);
+    check(chips.join(" ") === "bar:true swipe:false", "§124 This phone offers the tab bar or the swipes alone, the bar chosen", chips.join(" "));
+    await tap("[data-phone-nav-choice='swipe']");
+    check((await page.evaluate(`localStorage.getItem("crypto_chart_phone_nav")`)) === "swipe", "§124 …and the choice is kept");
+    await page.keyboard.press("Escape");
+    await page.waitForTimeout(700);
+
+    const swipeOnly = await layout();
+    check(!swipeOnly.bar && swipeOnly.nav === "swipe" && swipeOnly.lift === 0,
+      "§124 Swipes only: no bar, and nothing is held back for one", JSON.stringify(swipeOnly));
+    check(swipeOnly.chartH >= withBar.chartH + 40, "§124 …the chart takes the bar's height", JSON.stringify({ before: withBar.chartH, after: swipeOnly.chartH }));
+
+    const cdp = await ctx.newCDPSession(page);
+    const swipe = async (x0, x1, y = 450) => {
+      await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x: x0, y, id: 1 }] });
+      for (let i = 1; i <= 10; i++) {
+        await cdp.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ x: x0 + ((x1 - x0) * i) / 10, y: y + 2, id: 1 }] });
+        await page.waitForTimeout(16);
+      }
+      await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+      await page.waitForTimeout(500);
+    };
+    const shown = () => page.evaluate(`(() => { const v = (s) => { const n = document.querySelector(s); return Boolean(n && getComputedStyle(n).visibility === "visible"); }; return { chart: v("[data-drawer-tabs]"), screen: v("[data-screen-tabs]") }; })()`);
+    await swipe(6, 140);
+    check((await shown()).chart, "§124 …the left edge still brings the chart's column out");
+    await swipe(70, 2);
+    await swipe(384, 250);
+    const right = await shown();
+    check(right.screen, "§124 …and the right edge the screens'", JSON.stringify(right));
+    const settingsTab = await page.evaluate(`Boolean([...document.querySelectorAll("[data-screen-tabs] button")].find((n) => /settings/i.test(n.getAttribute("aria-label") || n.innerText)))`);
+    check(settingsTab, "§124 …where Settings is, so the bar can always be had back");
+    await swipe(320, 388);
+
+    await page.reload({ waitUntil: "load" });
+    await page.waitForSelector("svg path", { timeout: 20000 });
+    await page.waitForTimeout(800);
+    const again = await layout();
+    check(!again.bar && again.nav === "swipe" && Math.abs(again.chartH - swipeOnly.chartH) <= 2, "§124 it outlives a reload", JSON.stringify(again));
+
+    // Back to the bar, from Settings reached through the right edge
+    await page.keyboard.press("s");
+    await page.waitForTimeout(700);
+    await page.evaluate(`(() => { const b = [...document.querySelectorAll("button")].find((n) => /^This phone/.test(n.innerText.trim())); if (b) b.click(); })()`);
+    await page.waitForTimeout(700);
+    await tap("[data-phone-nav-choice='bar']");
+    await page.keyboard.press("Escape");
+    await page.waitForTimeout(700);
+    const back = await layout();
+    check(back.bar && back.nav === null && Math.abs(back.chartH - withBar.chartH) <= 2, "§124 Tab bar puts it back as it was", JSON.stringify(back));
+    check(errs.length === 0, "§124 nothing threw", errs.join(" | "));
+    await ctx.close();
+  }
+
+  /* §125 — one screen for the monitor and the base rates, and a phone's two
+   * columns face to face (12 Oct 2026, the owner: *"monitor ve base rates'i
+   * aynı menüye yedirelim … sol ve sağdan çıkan çentiklerin yerleşimleri eşit
+   * görünmüyor … toolbar şekil olarak bozuk"*). Measured before: the right
+   * column began at 134px and the left at 258px, tabs 78–121px tall; the
+   * screens' column carried Base rates and Monitor apart; the range row's +
+   * sat in a 40px ring round a 44px button. */
+  {
+    const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+    await ctx.route("**/*", (r) => {
+      const u = r.request().url();
+      if (u.startsWith("file://")) return r.continue();
+      if (u.includes("historic")) return r.fulfill(json({ data: { prices: PRICES } }));
+      if (u.includes("spot")) return r.fulfill(json({ data: { amount: PRICES[PRICES.length - 1].price, currency: "USD" } }));
+      return r.fulfill(json({ data: {} }));
+    });
+    await ctx.addInitScript(`localStorage.setItem("crypto_chart_onboarding_seen", "1"); localStorage.setItem("crypto_chart_touch_hint_seen", "true"); localStorage.setItem("crypto_chart_macro_events", "false");`);
+    const page = await ctx.newPage();
+    const errs = [];
+    page.on("pageerror", (e) => errs.push(e.message));
+    await page.goto(INDEX, { waitUntil: "load" });
+    await page.waitForSelector("svg path", { timeout: 20000 });
+    await page.waitForTimeout(800);
+    const st = () => page.evaluate(`(() => ({
+      tab: (document.querySelector("[data-monitor-tab][aria-pressed='true']") || { getAttribute: () => null }).getAttribute("data-monitor-tab"),
+      tabs: [...document.querySelectorAll("[data-monitor-tab]")].map((n) => n.getAttribute("data-monitor-tab")).join(" "),
+      base: /has this happened before/i.test(document.body.innerText),
+      column: [...document.querySelectorAll("[data-screen-tabs] button")].map((n) => n.getAttribute("aria-label") || "").join("|"),
+    }))()`);
+    const key = async (k) => { await page.keyboard.press(k); await page.waitForTimeout(900); };
+    const rest = await st();
+    check(!/base rates/i.test(rest.column) && /monitor/i.test(rest.column), "§125 the screens' column has one tab for the monitor and none of its own for the base rates", rest.column);
+    await key("m");
+    const m = await st();
+    check(m.tabs === "coins market corr base" && m.tab === "coins", "§125 M opens the monitor, its four tabs ending in Base rates", JSON.stringify(m));
+    await page.click("[data-monitor-tab='base']");
+    await page.waitForTimeout(900);
+    const viaTab = await st();
+    check(viaTab.tab === "base" && viaTab.base, "§125 …and its Base rates tab is the base-rate screen, under the same strip", JSON.stringify(viaTab));
+    await key("m");
+    check((await st()).tab === "coins", "§125 M on the Base rates tab goes back to the coins rather than closing");
+    await key("b");
+    const b = await st();
+    check(b.tab === "base" && b.base, "§125 B opens the same screen on Base rates", JSON.stringify(b));
+    await key("b");
+    check((await st()).tab === null, "§125 …and B again puts it away");
+    await key("b");
+    await key("Escape");
+    check((await st()).tab === null, "§125 Esc closes it from the Base rates tab");
+    check(errs.length === 0, "§125 nothing threw on the desktop", errs.join(" | "));
+    await ctx.close();
+
+    // The phone: two columns of five, face to face; the + as the row's seventh button
+    const pctx = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+    await pctx.route("**/*", (r) => {
+      const u = r.request().url();
+      if (u.startsWith("file://")) return r.continue();
+      if (u.includes("historic")) return r.fulfill(json({ data: { prices: PRICES } }));
+      if (u.includes("spot")) return r.fulfill(json({ data: { amount: PRICES[PRICES.length - 1].price, currency: "USD" } }));
+      return r.fulfill(json({ data: {} }));
+    });
+    await pctx.addInitScript(`localStorage.setItem("crypto_chart_onboarding_seen", "1"); localStorage.setItem("crypto_chart_touch_hint_seen", "true"); localStorage.setItem("crypto_chart_macro_events", "false");`);
+    const pp = await pctx.newPage();
+    const perrs = [];
+    pp.on("pageerror", (e) => perrs.push(e.message));
+    await pp.goto(INDEX, { waitUntil: "load" });
+    await pp.waitForSelector("svg path", { timeout: 20000 });
+    await pp.waitForTimeout(800);
+    const cdp = await pctx.newCDPSession(pp);
+    const swipe = async (x0, x1) => {
+      await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x: x0, y: 450, id: 1 }] });
+      for (let i = 1; i <= 10; i++) {
+        await cdp.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ x: x0 + ((x1 - x0) * i) / 10, y: 452, id: 1 }] });
+        await pp.waitForTimeout(16);
+      }
+      await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+      await pp.waitForTimeout(700);
+    };
+    const rows = (sel) => pp.evaluate(`[...document.querySelectorAll("${sel} button")].filter((n) => n.getBoundingClientRect().width > 0).map((n) => { const r = n.getBoundingClientRect(); return [Math.round(r.top), Math.round(r.height)]; })`);
+    await swipe(6, 150);
+    const left = await rows("[data-drawer-tabs]");
+    await swipe(70, 2);
+    await swipe(384, 240);
+    const right = await rows("[data-screen-tabs]");
+    await swipe(330, 388);
+    const heights = [...left, ...right].map((r) => r[1]);
+    check(left.length === 5 && right.length === 5 && Math.max(...heights) - Math.min(...heights) <= 1,
+      "§125 on a phone both columns hold five tabs of one height", JSON.stringify({ left, right }));
+    check(left.every((r, i) => Math.abs(r[0] - right[i][0]) <= 1), "§125 …and stand on the same line, tab for tab", JSON.stringify({ left: left.map((r) => r[0]), right: right.map((r) => r[0]) }));
+    const ring = await pp.evaluate(`(() => { const s = document.querySelector("[data-chart-tools] [role=toolbar]"); return getComputedStyle(s).borderTopColor; })()`);
+    check(/rgba\(0, 0, 0, 0\)|transparent/.test(ring), "§125 …and the range row's + carries no ring of its own while the tools are shut", ring);
+    check(perrs.length === 0, "§125 nothing threw on the phone", perrs.join(" | "));
+    await pctx.close();
   }
   await browser.close();
   if (failed) {

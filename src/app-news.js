@@ -298,9 +298,8 @@ const newsHandlers = (app) => ({
       app.setState((prev) => ({ showMonitor: !prev.showMonitor }));
     },
 
-    toggleBaseRates: () => {
-      app.setState((prev) => ({ showBaseRates: !prev.showBaseRates }));
-    },
+    // The base rates are the monitor's last tab since 12 Oct 2026 (monitor.js)
+    toggleBaseRates: () => app.openMonitorTab("base"),
 
     /* The headline row's own list. "My coins" is the list on the chart; "what
      * I hold" is the portfolio, which is a smaller and more personal set — a

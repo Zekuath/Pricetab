@@ -269,6 +269,7 @@ class CryptoChart extends PureComponent {
       lastSeenEnabled: loadLastSeenEnabled(), // settings toggle
       // The web app's settings (WEBAPP_EDGE_KEY): the swipe's edge, the screen kept on, the screen it opens on
       webAppEdge: loadWebAppEdge(),
+      phoneNav: loadPhoneNav(),
       webAppWake: loadWebAppWake(),
       webAppStart: loadWebAppStart(),
       ohlcEnabled: loadOhlcEnabled(), // crosshair OHLC + volume readout
@@ -456,7 +457,7 @@ class CryptoChart extends PureComponent {
       /* "Has this happened before?" — the base-rate panel ("B"). Its data is
        * years of daily closes and costs about seventeen requests, so nothing is
        * fetched until this is true. */
-      showBaseRates: false,
+      monitorTab: "coins", // the monitor's tab: coins | market | corr | base (the base rates, B)
       showMonitor: false, // "M" — your coins side by side and their correlations (monitor.js)
       // The phone (phone.js): the More sheet, a drafted call's sheet, the gestures said once
       phoneMore: false,
@@ -1576,9 +1577,6 @@ class CryptoChart extends PureComponent {
         if (this.state.showQuickSwitch) {
           e.preventDefault();
           this.setState({ showQuickSwitch: false });
-        } else if (this.state.showBaseRates) {
-          e.preventDefault();
-          this.toggleBaseRates();
         } else if (this.state.showMonitor) {
           e.preventDefault();
           this.toggleMonitor();
@@ -1728,7 +1726,7 @@ class CryptoChart extends PureComponent {
         !this.state.showQuickSwitch
       ) {
         e.preventDefault();
-        this.pressScreenTab("baserates");
+        this.openMonitorTab("base");
         return;
       }
 
@@ -1742,7 +1740,7 @@ class CryptoChart extends PureComponent {
         !this.state.showQuickSwitch
       ) {
         e.preventDefault();
-        this.pressScreenTab("monitor");
+        this.openMonitorTab(this.state.monitorTab === "base" ? "coins" : this.state.monitorTab || "coins");
         return;
       }
 
@@ -2580,11 +2578,6 @@ class CryptoChart extends PureComponent {
         { key: "calls", label: msg("chrome_calls", "Calls") },
         { key: "futures", label: msg("pt_tab_futures", "Futures") },
         { key: "news", label: msg("chrome_news", "News") },
-        {
-          key: "baserates",
-          label: msg("pt_tab_baserates", "Base rates"),
-          always: true,
-        },
         { key: "monitor", label: msg("mon_title", "Monitor"), always: true },
       ]
         .filter((t) => t.always || this.featureOn(t.key))
@@ -2967,7 +2960,6 @@ class CryptoChart extends PureComponent {
         this.state.showSettings ||
         this.state.showPortfolio ||
         this.state.showNews ||
-        this.state.showBaseRates ||
         this.state.showMonitor ||
         this.state.alertsView === "futures" ||
         this.modalUp()
@@ -3458,7 +3450,6 @@ class CryptoChart extends PureComponent {
         this.featureOn("news") && { key: "news", icon: "news", label: msg("chrome_news", "News") },
         this.featureOn("futures") && { key: "futures", icon: "futures", label: msg("pt_tab_futures", "Futures") },
         { key: "monitor", icon: "monitor", label: msg("mon_title", "Monitor") },
-        { key: "baserates", icon: "baserates", label: msg("pt_tab_baserates", "Base rates") },
         { key: "search", icon: "search", label: msg("ph_search", "Search") },
         { key: "settings", icon: "settings", label: msg("chrome_settings", "Settings") },
       ].filter(Boolean);
@@ -3579,7 +3570,6 @@ class CryptoChart extends PureComponent {
       if (this.state.showSettings) return "settings";
       if (this.state.showPortfolio) return "portfolio";
       if (this.state.showNews) return "news";
-      if (this.state.showBaseRates) return "baserates";
       if (this.state.showMonitor) return "monitor";
       if (this.state.alertsView) return this.state.alertsView;
       return null;
@@ -3589,9 +3579,25 @@ class CryptoChart extends PureComponent {
       if (key === "settings") return this.toggleSettings;
       if (key === "portfolio") return this.togglePortfolio;
       if (key === "news") return this.toggleNews;
-      if (key === "baserates") return this.toggleBaseRates;
+      if (key === "baserates") return this.toggleBaseRates; // B's key, now a tab of the monitor
       if (key === "monitor") return this.toggleMonitor;
       return () => this.toggleAlertsView(key);
+    });
+
+    /* The monitor on one of its tabs (B is its Base rates). Pressed while it
+       is up: the tab it is on closes it, another tab switches to it. */
+    _defineProperty(this, "handleMonitorTab", (tab) => {
+      if (MONITOR_TABS.includes(tab)) this.setState({ monitorTab: tab });
+    });
+    _defineProperty(this, "openMonitorTab", (tab) => {
+      if (!MONITOR_TABS.includes(tab)) return;
+      if (this.state.showMonitor) {
+        if (this.state.monitorTab === tab) this.toggleMonitor();
+        else this.setState({ monitorTab: tab });
+        return;
+      }
+      this.setState({ monitorTab: tab });
+      this.pressScreenTab("monitor");
     });
 
     _defineProperty(this, "showPanel", (key) => {
@@ -4312,6 +4318,20 @@ class CryptoChart extends PureComponent {
       saveWebAppEdge(v);
       this.setState({ webAppEdge: v });
     });
+    /* The tab bar or the swipes alone (PHONE_NAV_KEY). The root's attribute is
+       what the layout reads — the bar's own rules, --pt-dock-lift, and the
+       iPhone app's shim, which hides its native bar on it. */
+    _defineProperty(this, "handlePhoneNav", (v) => {
+      if (!PHONE_NAV_OPTIONS.includes(v)) return;
+      savePhoneNav(v);
+      try {
+        if (v === "swipe") document.documentElement.setAttribute("data-phone-nav", "swipe");
+        else document.documentElement.removeAttribute("data-phone-nav");
+      } catch (error) {
+        /* no document */
+      }
+      this.setState({ phoneNav: v, phoneMore: false });
+    });
     _defineProperty(this, "handleWebAppStart", (v) => {
       if (!WEBAPP_STARTS.includes(v)) return;
       saveWebAppStart(v);
@@ -4440,7 +4460,7 @@ class CryptoChart extends PureComponent {
       if (!rateAskDue()) return;
       const s = this.state;
       const busy =
-        document.hidden || s.showSettings || s.showPortfolio || s.showNews || s.showBaseRates || s.showMonitor ||
+        document.hidden || s.showSettings || s.showPortfolio || s.showNews || s.showMonitor ||
         s.showQuickSwitch || s.tourActive || s.widgetsEditing || Boolean(this.leftDrawer());
       if (busy) {
         this.rateTimer = setTimeout(this.tryRateAsk, RATE_PROMPT_SETTLE_MS);
@@ -5704,17 +5724,24 @@ class CryptoChart extends PureComponent {
             onClose: this.toggleNews,
           }),
 
-        this.state.showBaseRates &&
+        /* The monitor and the base rates, one screen (monitor.js): the strip
+           of tabs at the head of either body swaps which is drawn here. */
+        this.state.showMonitor &&
+          this.state.monitorTab === "base" &&
           React.createElement(BaseRatesPanel, {
             coin: activeCoin,
             coins: coinOptions,
             // The screen stays; the chart's coin, which it reads, changes under it
             onPickCoin: (coin) => this.handleQuickSwitchPick(coin, true),
-            onClose: this.toggleBaseRates,
+            onClose: this.toggleMonitor,
+            tabs: monitorTabStrip("base", this.handleMonitorTab),
           }),
 
         this.state.showMonitor &&
+          this.state.monitorTab !== "base" &&
           React.createElement(MonitorPanel, {
+            tab: this.state.monitorTab,
+            onTab: this.handleMonitorTab,
             coins: coinOptions,
             currency,
             stats: this.coinStats(),
@@ -6413,7 +6440,6 @@ class CryptoChart extends PureComponent {
               this.state.practiceDock !== false &&
               !showSettings &&
               !showPortfolio &&
-              !this.state.showBaseRates &&
               !this.state.showMonitor &&
               !this.state.alertsView &&
               !this.state.showNews &&
@@ -7040,10 +7066,6 @@ class CryptoChart extends PureComponent {
                   msg("chrome_futures_close", "Close the derivatives market"),
                 ],
                 news: [this.toggleNews, msg("chrome_news_close", "Close news")],
-                baserates: [
-                  this.toggleBaseRates,
-                  msg("br_close", "Close base rates"),
-                ],
                 monitor: [this.toggleMonitor, msg("mon_close", "Close the monitor")],
               }[open];
               if (!close) return null;
@@ -8742,12 +8764,13 @@ class CryptoChart extends PureComponent {
           return React.createElement(
             Fragment,
             { key: "phone" },
-            React.createElement(PhoneTabBar, {
-              items: tabs.bar,
-              active: this.phoneActive(),
-              hidden: this.screenUp() || this.modalUp(),
-              onGo: this.phoneGo,
-            }),
+            this.state.phoneNav !== "swipe" &&
+              React.createElement(PhoneTabBar, {
+                items: tabs.bar,
+                active: this.phoneActive(),
+                hidden: this.screenUp() || this.modalUp(),
+                onGo: this.phoneGo,
+              }),
             this.state.phoneMore &&
               React.createElement(PhoneMoreSheet, {
                 items: tabs.more,
@@ -8925,6 +8948,8 @@ class CryptoChart extends PureComponent {
             onChartColorChange: this.handleChartColorChange,
             webAppEdge: this.state.webAppEdge,
             onWebAppEdge: this.handleWebAppEdge,
+            phoneNav: this.state.phoneNav,
+            onPhoneNav: this.handlePhoneNav,
             webAppWake: this.state.webAppWake,
             onWebAppWake: this.handleWebAppWake,
             webAppStart: this.state.webAppStart,
@@ -9681,13 +9706,13 @@ injectGlobal`
      (its shim sets the same variable). At 100dvh the chart's time axis and
      its last 72px were under the iPhone app's bar. */
   @media (max-width: 600px) {
-    :root:not([data-platform="ios"]) {
+    :root:not([data-platform="ios"]):not([data-phone-nav="swipe"]) {
       --pt-dock-lift: calc(${PHONE_BAR_H}px + env(safe-area-inset-bottom, 0px));
     }
   }
   /* On its side the bar is the compact one (phone.js), and the page ends above it too */
   @media ${PHONE_LANDSCAPE_MEDIA} {
-    :root:not([data-platform="ios"]) {
+    :root:not([data-platform="ios"]):not([data-phone-nav="swipe"]) {
       --pt-dock-lift: calc(${PHONE_BAR_H_SIDE}px + env(safe-area-inset-bottom, 0px));
     }
   }

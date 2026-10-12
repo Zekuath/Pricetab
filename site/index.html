@@ -713,22 +713,45 @@
         pointer-events: none;
       }
       .tab-ui.live { pointer-events: auto; }
-      .tab-corner {
+      /* The pulls, measured off the extension's (DrawerTabsHandle,
+         styles-app.js): 14px wide with 5px past the edge, 3rem tall, one
+         border with the edge's side left open, the ground of a secondary
+         surface, a 2px grip down the middle, resting at 0.85. */
+      .tab-pull {
         position: absolute;
-        top: 2.2rem;
-        display: flex;
-        gap: 1.1rem;
-        color: var(--text);
+        /* Below the site's theme and language pill, which sits on the
+           right edge where the extension has nothing */
+        top: 5.25rem;
+        width: 14px;
+        height: 3rem;
+        border: 1px solid var(--border);
+        background: var(--bg-soft);
         opacity: 0.85;
       }
-      .tab-left { left: 2.2rem; }
-      .tab-right { right: 2.2rem; }
-      .tab-corner svg {
-        width: 1.15rem;
-        height: 1.15rem;
-        flex: none;
-        display: block;
+      .tab-pull::before {
+        content: "";
+        position: absolute;
+        top: 50%;
+        width: 2px;
+        height: 1.1rem;
+        border-radius: 1px;
+        background: var(--text-dim);
+        transform: translate(-50%, -50%);
       }
+      .tab-pull-left {
+        left: 0;
+        border-left: none;
+        border-radius: 0 7px 7px 0;
+        transform: translateX(-5px);
+      }
+      .tab-pull-left::before { left: calc(50% + 2px); }
+      .tab-pull-right {
+        right: 0;
+        border-right: none;
+        border-radius: 7px 0 0 7px;
+        transform: translateX(5px);
+      }
+      .tab-pull-right::before { left: calc(50% - 2px); }
       /* ── Typography copied from the extension, not approximated ──
          Every number below was read out of the source rather than eyeballed,
          because "looks about right" is what made the replica read as a
@@ -864,7 +887,8 @@
         box-shadow: 0 0 0 1px var(--green);
       }
       @media (max-width: 700px) {
-        .tab-corner { display: none; }
+        /* A phone has no pulls: the columns come out on a swipe */
+        .tab-pull { display: none; }
         .tab-ui { padding-top: 1.6rem; }
       }
       /* Six buttons at 3.5rem each and their gaps are 25.5rem: past the
@@ -2376,26 +2400,16 @@
            leaves. Not a picture of the product: the numbers are the ones the
            chart is drawn from and the range buttons actually refetch. -->
       <div class="tab-ui" id="tabUi">
-        <div class="tab-corner tab-left" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
-               stroke-linecap="round" stroke-linejoin="round">
-            <path d="M4 8h13l-3-3M20 16H7l3 3" />
-          </svg>
-        </div>
-        <div class="tab-corner tab-right" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
-            <circle cx="12" cy="12" r="8" /><circle cx="12" cy="12" r="3" />
-          </svg>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
-               stroke-linejoin="round">
-            <rect x="3" y="7" width="18" height="13" rx="2" />
-            <path d="M9 7V5h6v2" />
-          </svg>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
-            <circle cx="12" cy="12" r="3.2" />
-            <path d="M12 3v2.2M12 18.8V21M21 12h-2.2M5.2 12H3M18.4 5.6l-1.6 1.6M7.2 16.8l-1.6 1.6M18.4 18.4l-1.6-1.6M7.2 7.2L5.6 5.6" />
-          </svg>
-        </div>
+        <!-- The two pulls the extension rests its tab columns behind (12 Oct
+             2026): the chart's own drawers on the left, the screens on the
+             right. The corner icons drawn here before — compare, targets,
+             portfolio, the gear — were the corner controls the columns
+             replaced on 26 Sep, so the replica showed a product that no
+             longer exists. Drawn, not pressable: there are no columns here
+             to pull out, and a control that does nothing would be the one
+             dishonest thing on this page. -->
+        <span class="tab-pull tab-pull-left" aria-hidden="true"></span>
+        <span class="tab-pull tab-pull-right" aria-hidden="true"></span>
 
         <div class="tab-head">
           <div class="tab-stat">

@@ -1698,6 +1698,18 @@ const WEBAPP_WAKE_KEY = "crypto_chart_webapp_wake";
 const WEBAPP_START_KEY = "crypto_chart_webapp_start";
 const WEBAPP_STARTS = ["chart", "portfolio", "futures", "monitor", "news"];
 const DEFAULT_WEBAPP_START = "chart";
+/* **How a phone gets around** (12 Oct 2026, the owner: *"sağdan soldan swipe
+ * varsa alttaki menüye gerek yok belki … ya o ya bu … ayarlardan"*): "bar" is
+ * the tab bar at the foot (the browser's own, or the iPhone app's), with the
+ * edge swipes beside it; "swipe" takes the bar away and the page reaches the
+ * glass — every tab is in the two side columns, a swipe from either edge.
+ * The swipes stay with the bar because the iPhone app's bar carries five
+ * screens and no More: News, the base rates, the monitor and the chart's
+ * drawers are only in the columns there. Read before React by theme-init.js,
+ * which sets `data-phone-nav` on the root so the first frame is laid out right. */
+const PHONE_NAV_KEY = "crypto_chart_phone_nav";
+const PHONE_NAV_OPTIONS = ["bar", "swipe"];
+const DEFAULT_PHONE_NAV = "bar";
 const IOS_SYSTEM_EDGE = 16;
 const SPINE_SWIPE_MIN = 32;
 
@@ -2048,7 +2060,6 @@ const DEFAULT_PANEL_ORDER = [
   "calls",
   "futures",
   "news",
-  "baserates",
   "monitor",
 ];
 

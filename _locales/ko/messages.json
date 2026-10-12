@@ -3050,6 +3050,9 @@
   "mon_tab_corr": {
     "message": "상관관계"
   },
+  "mon_tab_base": {
+    "message": "기준 비율"
+  },
   "mon_title": {
     "message": "모니터"
   },
@@ -7791,6 +7794,27 @@
   },
   "pref_page_ticker_title": {
     "message": "가격 티커 바"
+  },
+  "pref_phone_nav_aria": {
+    "message": "휴대폰에서 이동하는 방법"
+  },
+  "pref_phone_nav_bar": {
+    "message": "탭 막대와 스와이프"
+  },
+  "pref_phone_nav_desc": {
+    "message": "하단 탭 막대 또는 스와이프만: 막대가 없으면 차트가 그 높이를 차지하고, 모든 탭은 왼쪽이나 오른쪽 가장자리에서 스와이프하면 나옵니다."
+  },
+  "pref_phone_nav_heading": {
+    "message": "탐색"
+  },
+  "pref_phone_nav_keywords": {
+    "message": "탭 막대 하단 메뉴 탐색 스와이프 가장자리 열 막대 숨기기 더 넓게"
+  },
+  "pref_phone_nav_swipe": {
+    "message": "스와이프만"
+  },
+  "pref_phone_nav_title": {
+    "message": "탐색"
   },
   "pref_position_bottom": {
     "message": "아래"

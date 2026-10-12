@@ -16,11 +16,14 @@ struct ContentView: View {
       // than behind it.
       (theme.background ?? (scheme == .dark ? Color.black : Color.white)).ignoresSafeArea()
       WebView(handle: bridge)
-      GlassBar { key in
-        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-        bridge.press(key)
+      if theme.showBar {
+        GlassBar { key in
+          UIImpactFeedbackGenerator(style: .light).impactOccurred()
+          bridge.press(key)
+        }
+          .padding(.bottom, 6)
+          .transition(.move(edge: .bottom).combined(with: .opacity))
       }
-        .padding(.bottom, 6)
     }
   }
 }

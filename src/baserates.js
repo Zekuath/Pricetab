@@ -1084,6 +1084,8 @@ class BaseRatesPanel extends PureComponent {
         React.createElement(
           BaseBody,
           { innerRef: (n) => (this.bodyRef = n) },
+          // The monitor's tabs, when this is the monitor's Base rates tab
+          this.props.tabs || null,
           this.state.sections.length > 2
             ? React.createElement(
                 BaseNav,

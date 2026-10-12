@@ -1823,6 +1823,8 @@ const saveCompareMarkets = (ids) => saveJsonSetting(COMPARE_MARKETS_KEY, sanitiz
 // The web app's settings — see WEBAPP_EDGE_KEY
 const loadWebAppEdge = () => loadEnumSetting(WEBAPP_EDGE_KEY, Object.keys(WEBAPP_EDGES), DEFAULT_WEBAPP_EDGE);
 const saveWebAppEdge = (v) => saveSetting(WEBAPP_EDGE_KEY, v);
+const loadPhoneNav = () => loadEnumSetting(PHONE_NAV_KEY, PHONE_NAV_OPTIONS, DEFAULT_PHONE_NAV);
+const savePhoneNav = (v) => saveSetting(PHONE_NAV_KEY, v);
 const loadWebAppWake = () => loadBoolSetting(WEBAPP_WAKE_KEY, false);
 const saveWebAppWake = (v) => saveSetting(WEBAPP_WAKE_KEY, v);
 const loadWebAppStart = () => loadEnumSetting(WEBAPP_START_KEY, WEBAPP_STARTS, DEFAULT_WEBAPP_START);

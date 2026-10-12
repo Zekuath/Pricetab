@@ -3034,6 +3034,9 @@
   "mon_tab_corr": {
     "message": "Корреляция"
   },
+  "mon_tab_base": {
+    "message": "Базовые частоты"
+  },
   "mon_title": {
     "message": "Монитор"
   },
@@ -7775,6 +7778,27 @@
   },
   "pref_page_ticker_title": {
     "message": "Ценовая строка"
+  },
+  "pref_phone_nav_aria": {
+    "message": "Как перемещаться на телефоне"
+  },
+  "pref_phone_nav_bar": {
+    "message": "Панель вкладок и свайпы"
+  },
+  "pref_phone_nav_desc": {
+    "message": "Панель вкладок внизу или только свайпы: без панели график занимает её высоту, а каждая вкладка выезжает свайпом от левого или правого края."
+  },
+  "pref_phone_nav_heading": {
+    "message": "Навигация"
+  },
+  "pref_phone_nav_keywords": {
+    "message": "панель вкладок нижнее меню навигация свайп края колонки скрыть панель больше места"
+  },
+  "pref_phone_nav_swipe": {
+    "message": "Только свайпы"
+  },
+  "pref_phone_nav_title": {
+    "message": "Навигация"
   },
   "pref_position_bottom": {
     "message": "Внизу"

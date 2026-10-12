@@ -3034,6 +3034,9 @@
   "mon_tab_corr": {
     "message": "Corrélation"
   },
+  "mon_tab_base": {
+    "message": "Taux de base"
+  },
   "mon_title": {
     "message": "Moniteur"
   },
@@ -7775,6 +7778,27 @@
   },
   "pref_page_ticker_title": {
     "message": "Bandeau des prix"
+  },
+  "pref_phone_nav_aria": {
+    "message": "Comment naviguer sur le téléphone"
+  },
+  "pref_phone_nav_bar": {
+    "message": "Barre d'onglets et balayage"
+  },
+  "pref_phone_nav_desc": {
+    "message": "La barre d'onglets en bas, ou le balayage seul : sans la barre, le graphique prend sa hauteur et chaque onglet s'ouvre d'un balayage depuis le bord gauche ou droit."
+  },
+  "pref_phone_nav_heading": {
+    "message": "Navigation"
+  },
+  "pref_phone_nav_keywords": {
+    "message": "barre onglets menu bas navigation balayer côtés bords colonnes masquer barre plus de place"
+  },
+  "pref_phone_nav_swipe": {
+    "message": "Balayage seul"
+  },
+  "pref_phone_nav_title": {
+    "message": "Navigation"
   },
   "pref_position_bottom": {
     "message": "En bas"

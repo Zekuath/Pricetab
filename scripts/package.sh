@@ -35,6 +35,9 @@ FILES=(
   app.webmanifest
   index.html
   privacy.html
+  # The privacy page's theme and its typed headings (12 Oct 2026); a file
+  # because the extension runs no inline script
+  privacy.js
   popup.html
   LICENSE
 )

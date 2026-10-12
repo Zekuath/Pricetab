@@ -6,7 +6,9 @@
  *      localStorage and posted to the app every minute and on load, so the
  *      home-screen widget draws what the page already knows; and the page's
  *      ground colour, so the app paints the status-bar band to match;
- *   3. the app's bar pressing the page's own keyboard shortcuts;
+ *   3. the app's bar pressing the page's own keyboard shortcuts, and shown
+ *      or hidden by the page's own setting (Settings → This phone →
+ *      Getting around: `data-phone-nav="swipe"` on the root);
  *   4. a `chrome` the page can ask for notifications through — Chrome's API
  *      shape, answered by iOS's notification centre over the bridge — so the
  *      alarm's switch works here and the news permission (a Chrome host
@@ -19,8 +21,9 @@
   const style = document.createElement("style");
   style.textContent = [
     "html { -webkit-text-size-adjust: 100%; }",
-    ":root { --pt-dock-lift: 4.5rem; }",
+    ':root:not([data-phone-nav="swipe"]) { --pt-dock-lift: 4.5rem; }',
     "body { padding-bottom: calc(env(safe-area-inset-bottom) + 4.5rem); }",
+    ':root[data-phone-nav="swipe"] body { padding-bottom: env(safe-area-inset-bottom); }',
     "* { -webkit-tap-highlight-color: transparent; }",
   ].join("\n");
   document.head.appendChild(style);
@@ -127,6 +130,15 @@
     }
   };
 
+  /* Whether the app's own bar is wanted: the page's setting, read off the
+     root's attribute on load and whenever the root's attributes change. */
+  let lastBar = null;
+  const nav = () => {
+    const bar = document.documentElement.getAttribute("data-phone-nav") !== "swipe";
+    if (bar === lastBar) return;
+    if (send({ kind: "nav", bar })) lastBar = bar;
+  };
+
   /* ---- the alarm's sound: unlock a context on the first touch ---------- */
   const Ctx = window.AudioContext || window.webkitAudioContext;
   let unlocked = null;
@@ -225,9 +237,13 @@
 
   window.addEventListener("load", () => {
     theme();
+    nav();
     [500, 1500, 3000, 6000].forEach((ms) => setTimeout(theme, ms));
     try {
-      new MutationObserver(theme).observe(document.documentElement, { attributes: true, subtree: false });
+      new MutationObserver(() => {
+        theme();
+        nav();
+      }).observe(document.documentElement, { attributes: true, subtree: false });
       new MutationObserver(theme).observe(document.body, { attributes: true, subtree: false });
     } catch {
       /* no observer, the timers did their part */

@@ -6,6 +6,9 @@ const path = require("path");
 const ROOT = path.resolve(__dirname, "..", "..");
 const { webkit } = require(path.join(ROOT, "tests", "node_modules", "playwright"));
 const INDEX = "file://" + path.join(ROOT, "ios", "WebApp", "index.html");
+// The release the "what's new" steps belong to: a returning user has seen them,
+// or they stand over every screen this walk opens (onboarding.js)
+const WHATS_NEW_ID = (require("fs").readFileSync(path.join(ROOT, "src", "onboarding.js"), "utf8").match(/const WHATS_NEW_ID = "([^"]+)"/) || [])[1];
 const OUT = process.env.QA_OUT || path.join(ROOT, "ios", "build", "qa");
 require("fs").mkdirSync(OUT, { recursive: true });
 const json = (b) => ({ status: 200, contentType: "application/json", headers: { "access-control-allow-origin": "*" }, body: JSON.stringify(b) });
@@ -47,6 +50,7 @@ const check = (ok, label, detail) => {
     'localStorage.setItem("crypto_chart_onboarding_seen", "1");' +
       // The gestures' one-time sheet, as a returning user has seen it (phone.js)
       'localStorage.setItem("crypto_chart_touch_hint_seen", "true");' +
+      `localStorage.setItem("crypto_chart_whats_new_seen", "${WHATS_NEW_ID}");` +
       'localStorage.setItem("crypto_chart_theme", "light");' +
       'localStorage.setItem("crypto_chart_widgets", JSON.stringify({ watchlist: true, fearGreed: true, outlook: true }));' +
       'localStorage.setItem("crypto_chart_practice_enabled", "true");' +
@@ -139,7 +143,18 @@ const check = (ok, label, detail) => {
      each edge: a tab is reached the way a thumb reaches it, by pressing
      that side's pull first (the columns also come out on a swipe, which
      WebKit's touchscreen cannot drive). */
+  /* In the app, five of them are on the native bar (GlassBar.swift), which
+     presses the screen's key through the shim (PriceTabIOS.press); the page
+     draws no pulls there, so a tab in a column at rest was "found" off screen
+     and tapped on nothing. A tab the bar carries is reached the bar's way. */
+  const NATIVE_BAR = { "/^(Open settings|Settings)$/": "s", "/^Targets/": "a", "/^Calls/": "k", "/^(Open portfolio|Portfolio)$/": "p", "/^Derivatives market/": "f" };
   const tapTab = async (re, side) => {
+    const barKey = NATIVE_BAR[re];
+    if (barKey && (await page.evaluate("Boolean(window.PriceTabIOS && window.PriceTabIOS.press)"))) {
+      await page.evaluate(`window.PriceTabIOS.press(${JSON.stringify(barKey)})`);
+      await page.waitForTimeout(700);
+      return "bar:" + barKey;
+    }
     const sel = side === "screen" ? "[data-screen-tabs]" : "[data-drawer-tabs]";
     const shown = await page.evaluate(`(() => { const c = document.querySelector(${JSON.stringify(sel)}); return Boolean(c && getComputedStyle(c).visibility === "visible"); })()`);
     if (!shown) {
@@ -246,18 +261,25 @@ const check = (ok, label, detail) => {
     await audit(`desk ${t}`);
     await shot(`desk-${t.toLowerCase().replace(" ", "-")}`);
   }
+  /* Opening asks first (on by default since 9 Oct 2026): the press starts a
+     fill across the button and the contract opens when it ends, 2s later. */
   const opened = await tapLabel("/^Open long on/");
   check(Boolean(opened), "a contract opens from the ticket by touch");
-  await page.waitForTimeout(800);
+  await page.waitForTimeout(2800);
+  /* On a phone the page holds one part at a time (Trade · Chart · Book ·
+     Open · n); the readings sit under the last of them. */
+  if (ORIENT === "portrait") check(Boolean(await tapLabel("/^Open · 1$/")), "the phone strip names the open contract (Open · 1)");
+  else check(!(await page.evaluate(`Array.from(document.querySelectorAll("[role='tab']")).some((n) => /^Open · /.test(n.innerText.trim()) && n.getBoundingClientRect().width > 0)`)), "on its side the page is wide enough to show the parts together — no phone strip");
   await audit("derivatives with a contract");
-  for (const t of ["Assistant", "Outlook", "Market", "Crowd", "Headlines", "Closed", "Positions"]) {
+  for (const t of ["Closed", "More", "Assistant", "Outlook", "Market", "Crowd", "Headlines", "Positions"]) {
     const name = await tapLabel(`/^${t}/`);
     check(Boolean(name), `reading tab ${t}`);
     await audit(`reading ${t}`);
   }
   await shot("derivatives-positions");
-  check(Boolean(await tapLabel("/^Close all$/")) && Boolean(await tapLabel("/^Press again to close all/")), "Close all, pressed twice, closes the contract");
-  await page.waitForTimeout(700);
+  /* Close all is a confirming press too: one press, the action lands when its fill ends */
+  check(Boolean(await tapLabel("/^Close all$/")), "Close all is pressed once");
+  await page.waitForTimeout(2800);
   check((await page.evaluate(`document.querySelectorAll("[data-practice-close-all]").length`)) === 0, "…and the Close all control is gone with it");
   await page.waitForTimeout(700);
   await key("Escape");

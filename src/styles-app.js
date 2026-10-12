@@ -1018,7 +1018,17 @@ const ChartToolStrip = styled.div`
   transform: translateY(-50%);
   transition:
     width 280ms ${TOOL_EASE},
-    box-shadow 200ms ease;
+    box-shadow 200ms ease,
+    border-color 200ms ease;
+
+  /* **On a phone, shut, the + is the range row's seventh button** (12 Oct
+     2026, the owner: *"ana ekrandaki toolbar şekil olarak bozuk"*): the ring
+     around it was 40px round a 44px button, the one outlined shape in a row
+     of plain words. Its ring comes back with the tools it opens. */
+  @media (max-width: ${({ theme }) => theme.breakpoint.down.sm}px) {
+    border-color: ${({ shown, theme }) => (shown ? theme.color.border : "transparent")};
+    background: ${({ shown, theme }) => (shown ? theme.color.bg : "transparent")};
+  }
 
   @media (prefers-reduced-motion: reduce) {
     transition: none;
@@ -1588,14 +1598,25 @@ const DrawerTabs = styled.nav`
      at 360-420px — measured, the raised Widgets tab (36px) cut the dollar
      sign off a six-digit price. */
   @media (max-width: 600px) {
-    top: auto;
-    /* Over the phone app's own bar, which floats on the page's foot. */
-    bottom: calc(var(--pt-dock-lift, 0px) + ${({ theme }) => theme.spacing.medium}rem);
+    /* **Both columns on one line, every tab one height** (12 Oct 2026, the
+       owner: *"sol ve sağdan çıkan çentiklerin yerleşimleri … eşit
+       görünmüyor"*). Hung from the foot, each column started where its own
+       count and its own names put it — measured at 390x844 the left began at
+       258px and the right at 134px, its tabs 78 to 121px tall. Now each is
+       centred in the space above the bar (the same middle for both), its rows
+       are one height (grid, 1fr: the tallest name sets it) over a common
+       floor, so two columns of five sit face to face. */
+    top: calc((100dvh - var(--pt-dock-lift, 0px)) / 2);
+    bottom: auto;
+    display: grid;
+    grid-auto-rows: 1fr;
+    justify-items: ${({ side }) => (side === "right" ? "end" : "start")};
+    transform: translate(${(p) => (spineOut(p) ? "0" : spineAwayX(p))}, -50%);
     /* A phone's screen is the whole of a narrow window: the column stays
        in its drawer there and is pulled out by hand. */
     ${(p) =>
       p.pinned && !p.shown
-        ? `transform: translateX(${spineAwayX(p)}); visibility: hidden; opacity: 0;`
+        ? `transform: translate(${spineAwayX(p)}, -50%); visibility: hidden; opacity: 0;`
         : ""}
   }
 `;
@@ -1957,6 +1978,12 @@ const DrawerTab = styled.button.attrs({ type: "button" })`
   @media (min-width: 601px) and (max-height: 760px) {
     gap: 0.3rem;
     padding: 0.4rem 0 0.45rem;
+  }
+  /* A phone's tabs share a floor, so a short name is as tall as a long one
+     and the two columns match (DrawerTabs) */
+  @media (max-width: 600px) {
+    min-height: 7.25rem;
+    justify-content: center;
   }
 `;
 

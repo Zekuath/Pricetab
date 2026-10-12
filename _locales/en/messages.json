@@ -4725,6 +4725,9 @@
       }
     }
   },
+  "mon_tab_base": {
+    "message": "Base rates"
+  },
   "mon_tab_coins": {
     "message": "Coins"
   },
@@ -11912,6 +11915,27 @@
   },
   "pref_page_ticker_title": {
     "message": "Price Ticker Bar"
+  },
+  "pref_phone_nav_aria": {
+    "message": "How the phone gets around"
+  },
+  "pref_phone_nav_bar": {
+    "message": "Tab bar and swipes"
+  },
+  "pref_phone_nav_desc": {
+    "message": "The tab bar at the foot, or the swipes alone: without the bar the chart takes its height, and every tab comes out with a swipe from the left or the right edge."
+  },
+  "pref_phone_nav_heading": {
+    "message": "Getting around"
+  },
+  "pref_phone_nav_keywords": {
+    "message": "tab bar bottom menu navigation swipe sides edges columns hide bar more room"
+  },
+  "pref_phone_nav_swipe": {
+    "message": "Swipes only"
+  },
+  "pref_phone_nav_title": {
+    "message": "Getting around"
   },
   "pref_position_bottom": {
     "message": "Bottom"

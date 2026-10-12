@@ -3034,6 +3034,9 @@
   "mon_tab_corr": {
     "message": "Correlación"
   },
+  "mon_tab_base": {
+    "message": "Tasas base"
+  },
   "mon_title": {
     "message": "Monitor"
   },
@@ -7775,6 +7778,27 @@
   },
   "pref_page_ticker_title": {
     "message": "Barra de precios"
+  },
+  "pref_phone_nav_aria": {
+    "message": "Cómo se navega en el teléfono"
+  },
+  "pref_phone_nav_bar": {
+    "message": "Barra de pestañas y deslizar"
+  },
+  "pref_phone_nav_desc": {
+    "message": "La barra de pestañas abajo, o solo deslizar: sin la barra el gráfico gana su altura y cada pestaña aparece al deslizar desde el borde izquierdo o derecho."
+  },
+  "pref_phone_nav_heading": {
+    "message": "Navegación"
+  },
+  "pref_phone_nav_keywords": {
+    "message": "barra pestañas menú inferior navegación deslizar lados bordes columnas ocultar barra más espacio"
+  },
+  "pref_phone_nav_swipe": {
+    "message": "Solo deslizar"
+  },
+  "pref_phone_nav_title": {
+    "message": "Navegación"
   },
   "pref_position_bottom": {
     "message": "Abajo"

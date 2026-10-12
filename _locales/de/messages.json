@@ -3034,6 +3034,9 @@
   "mon_tab_corr": {
     "message": "Korrelation"
   },
+  "mon_tab_base": {
+    "message": "Basisraten"
+  },
   "mon_title": {
     "message": "Monitor"
   },
@@ -7775,6 +7778,27 @@
   },
   "pref_page_ticker_title": {
     "message": "Kursleiste"
+  },
+  "pref_phone_nav_aria": {
+    "message": "Wie das Telefon navigiert"
+  },
+  "pref_phone_nav_bar": {
+    "message": "Tab-Leiste und Wischen"
+  },
+  "pref_phone_nav_desc": {
+    "message": "Die Tab-Leiste unten oder nur Wischen: ohne Leiste bekommt der Chart ihre Höhe, und jeder Tab kommt mit einem Wischen vom linken oder rechten Rand."
+  },
+  "pref_phone_nav_heading": {
+    "message": "Navigation"
+  },
+  "pref_phone_nav_keywords": {
+    "message": "tab leiste unten menü navigation wischen seiten ränder spalten leiste ausblenden mehr platz"
+  },
+  "pref_phone_nav_swipe": {
+    "message": "Nur Wischen"
+  },
+  "pref_phone_nav_title": {
+    "message": "Navigation"
   },
   "pref_position_bottom": {
     "message": "Unten"

@@ -3034,6 +3034,9 @@
   "mon_tab_corr": {
     "message": "Correlação"
   },
+  "mon_tab_base": {
+    "message": "Taxas base"
+  },
   "mon_title": {
     "message": "Monitor"
   },
@@ -7775,6 +7778,27 @@
   },
   "pref_page_ticker_title": {
     "message": "Barra de preços"
+  },
+  "pref_phone_nav_aria": {
+    "message": "Como navegar no celular"
+  },
+  "pref_phone_nav_bar": {
+    "message": "Barra de abas e deslizar"
+  },
+  "pref_phone_nav_desc": {
+    "message": "A barra de abas embaixo, ou só deslizar: sem a barra o gráfico ganha a altura dela, e cada aba aparece ao deslizar da borda esquerda ou direita."
+  },
+  "pref_phone_nav_heading": {
+    "message": "Navegação"
+  },
+  "pref_phone_nav_keywords": {
+    "message": "barra abas menu inferior navegação deslizar lados bordas colunas esconder barra mais espaço"
+  },
+  "pref_phone_nav_swipe": {
+    "message": "Só deslizar"
+  },
+  "pref_phone_nav_title": {
+    "message": "Navegação"
   },
   "pref_position_bottom": {
     "message": "Embaixo"

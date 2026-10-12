@@ -37,7 +37,8 @@ const phoneBarUp = () => {
     return (
       typeof matchMedia === "function" &&
       matchMedia(PHONE_BAR_MEDIA).matches &&
-      document.documentElement.getAttribute("data-platform") !== "ios"
+      document.documentElement.getAttribute("data-platform") !== "ios" &&
+      document.documentElement.getAttribute("data-phone-nav") !== "swipe"
     );
   } catch (error) {
     return false;

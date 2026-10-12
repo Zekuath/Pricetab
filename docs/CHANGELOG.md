@@ -16,6 +16,16 @@ submitted, so their changes reach the store here.
   the app is open, and which screen it opens on.
 - The derivatives page on a phone has Trade, Chart, Book and Open tabs, with
   the order ticket first.
+- The monitor and the base rates are one screen: M opens it, B opens it on
+  its Base rates tab, and the four tabs (Coins, Market, Correlation, Base
+  rates) sit at its head. The screens' column has one tab for both.
+- On a phone the two side columns stand face to face, every tab the same
+  height, and the range row's + is drawn like the ranges beside it.
+- The privacy page reads like the site: its theme, its type, and each
+  heading typed out as its section arrives.
+- Settings → This phone → Getting around: keep the tab bar at the foot, or
+  use the swipes from the sides alone and give the chart the bar's height.
+  Works in the browser and in the iPhone app.
 - Settings → the chart → Room Ahead: the chart rests with some blank time to
   the right of the latest price, as TradingView does. Off by default.
 - The practice account takes deposits up to 10,000,000.

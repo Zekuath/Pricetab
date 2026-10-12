@@ -3050,6 +3050,9 @@
   "mon_tab_corr": {
     "message": "相関"
   },
+  "mon_tab_base": {
+    "message": "基準率"
+  },
   "mon_title": {
     "message": "モニター"
   },
@@ -7791,6 +7794,27 @@
   },
   "pref_page_ticker_title": {
     "message": "価格ティッカー"
+  },
+  "pref_phone_nav_aria": {
+    "message": "スマートフォンでの移動方法"
+  },
+  "pref_phone_nav_bar": {
+    "message": "タブバーとスワイプ"
+  },
+  "pref_phone_nav_desc": {
+    "message": "下部のタブバー、またはスワイプのみ。バーがないとチャートがその高さを使い、各タブは左右の端からのスワイプで表示されます。"
+  },
+  "pref_phone_nav_heading": {
+    "message": "ナビゲーション"
+  },
+  "pref_phone_nav_keywords": {
+    "message": "タブバー 下部 メニュー ナビゲーション スワイプ 端 列 バーを隠す 広く"
+  },
+  "pref_phone_nav_swipe": {
+    "message": "スワイプのみ"
+  },
+  "pref_phone_nav_title": {
+    "message": "ナビゲーション"
   },
   "pref_position_bottom": {
     "message": "下"

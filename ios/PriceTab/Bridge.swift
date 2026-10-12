@@ -15,6 +15,14 @@ import WidgetKit
 final class PageTheme: ObservableObject {
   static let shared = PageTheme()
   @Published var background: Color?
+  /// The app's own bar, unless the page's "Getting around" setting is the swipes alone.
+  @Published var showBar = true
+
+  func setBar(_ shown: Bool) {
+    DispatchQueue.main.async {
+      withAnimation(.easeInOut(duration: 0.2)) { self.showBar = shown }
+    }
+  }
 
   /// "rgb(0, 0, 0)" / "rgba(255, 255, 255, 1)" → Color; anything else is ignored.
   func apply(css: String) {
@@ -38,6 +46,9 @@ enum Bridge {
     switch kind {
     case "theme":
       if let bg = body["bg"] as? String { PageTheme.shared.apply(css: bg) }
+      return
+    case "nav":
+      PageTheme.shared.setBar(body["bar"] as? Bool ?? true)
       return
     case "notifyStatus":
       Notifier.shared.status { granted in WebBridgeHandle.shared.resolve(id, granted) }

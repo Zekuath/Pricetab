@@ -3050,6 +3050,9 @@
   "mon_tab_corr": {
     "message": "相关性"
   },
+  "mon_tab_base": {
+    "message": "基准频率"
+  },
   "mon_title": {
     "message": "监视器"
   },
@@ -7791,6 +7794,27 @@
   },
   "pref_page_ticker_title": {
     "message": "价格行情条"
+  },
+  "pref_phone_nav_aria": {
+    "message": "手机上的导航方式"
+  },
+  "pref_phone_nav_bar": {
+    "message": "标签栏和滑动"
+  },
+  "pref_phone_nav_desc": {
+    "message": "底部标签栏，或仅滑动：没有标签栏时图表占用它的高度，每个标签都可从左右边缘滑出。"
+  },
+  "pref_phone_nav_heading": {
+    "message": "导航"
+  },
+  "pref_phone_nav_keywords": {
+    "message": "标签栏 底部 菜单 导航 滑动 边缘 侧栏 隐藏 更多空间"
+  },
+  "pref_phone_nav_swipe": {
+    "message": "仅滑动"
+  },
+  "pref_phone_nav_title": {
+    "message": "导航"
   },
   "pref_position_bottom": {
     "message": "底部"

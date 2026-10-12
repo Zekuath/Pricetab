@@ -34,6 +34,18 @@ const check = (ok, label, detail) => { if (ok) console.log(`  ✔ ${label}`); el
   const kinds0 = await page.evaluate("window.__native.map((m) => m.kind)");
   check(kinds0.includes("theme"), "the page's ground was reported to the app", kinds0.join(","));
 
+  /* The app's bar follows the page's "Getting around" setting: the shim says
+     so on load, and again when the root's attribute changes. */
+  const navs = () => page.evaluate("window.__native.filter((m) => m.kind === 'nav').map((m) => m.bar)");
+  const lift = () => page.evaluate(`(() => { const d = document.createElement("div"); d.style.cssText = "position:absolute;height:var(--pt-dock-lift, 0px)"; document.body.appendChild(d); const h = d.getBoundingClientRect().height; d.remove(); return h; })()`);
+  check((await navs())[0] === true && (await lift()) > 0, "the app was told its bar is wanted, and the page ends above it", JSON.stringify(await navs()));
+  await page.evaluate(`document.documentElement.setAttribute("data-phone-nav", "swipe")`);
+  await page.waitForTimeout(200);
+  check((await navs()).slice(-1)[0] === false && (await lift()) === 0, "Swipes only: the app is told to put its bar away, and the page reaches the foot", JSON.stringify(await navs()));
+  await page.evaluate(`document.documentElement.removeAttribute("data-phone-nav")`);
+  await page.waitForTimeout(200);
+  check((await navs()).slice(-1)[0] === true && (await lift()) > 0, "…and the bar back", JSON.stringify(await navs()));
+
   await page.evaluate(`document.dispatchEvent(new KeyboardEvent("keydown", { key: "a", bubbles: true }))`);
   await page.waitForTimeout(700);
   const labels = await page.evaluate(`Array.from(document.querySelectorAll("[data-alerts-card] button")).map((n) => (n.getAttribute("aria-label") || n.innerText).trim()).filter((t) => /notif|sound/i.test(t))`);
@@ -44,7 +56,7 @@ const check = (ok, label, detail) => { if (ok) console.log(`  ✔ ${label}`); el
   check(asked >= 1, "opening the panel asked the app whether notifications are on", asked);
 
   const tap = async (re) => {
-    const pt = await page.evaluate(`(() => { const b = Array.from(document.querySelectorAll("[data-alerts-card] button")).find((n) => ${re}.test(n.getAttribute("aria-label") || n.innerText)); if (!b) return null; const r = b.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; })()`);
+    const pt = await page.evaluate(`(() => { const b = Array.from(document.querySelectorAll("[data-alerts-card] button")).find((n) => ${re}.test(n.getAttribute("aria-label") || n.innerText)); if (!b) return null; b.scrollIntoView({ block: "center" }); const r = b.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; })()`);
     if (!pt) return false;
     await page.touchscreen.tap(pt.x, pt.y);
     await page.waitForTimeout(700);

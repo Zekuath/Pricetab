@@ -302,7 +302,7 @@ const settingSections = (panel) => {
   indicatorOverlays, onIndicatorOverlayChange,
   chartStudies, onChartStudyToggle,
   chartChances, cellOdds, onChartChanceToggle,
-  webAppEdge, onWebAppEdge, webAppWake, onWebAppWake, webAppStart, onWebAppStart,
+  webAppEdge, onWebAppEdge, phoneNav, onPhoneNav, webAppWake, onWebAppWake, webAppStart, onWebAppStart,
   moveNews, onMoveNewsChange,
   quietChrome, onQuietChromeChange,
   tabKeys, onTabKeysChange,
@@ -1459,6 +1459,35 @@ const settingSections = (panel) => {
         ),
       );
     },
+    phoneNav: () =>
+      panel.section(
+        msg("pref_phone_nav_title", "Getting around"),
+        msg("pref_phone_nav_keywords", "tab bar bottom menu navigation swipe sides edges columns hide bar more room"),
+        React.createElement(
+          ToggleSection,
+          null,
+          React.createElement(ToggleSectionTitle, null, msg("pref_phone_nav_heading", "Getting around")),
+          React.createElement(
+            ToggleSectionDesc,
+            null,
+            msg("pref_phone_nav_desc", "The tab bar at the foot, or the swipes alone: without the bar the chart takes its height, and every tab comes out with a swipe from the left or the right edge."),
+          ),
+          React.createElement(
+            MetricChips,
+            { role: "group", "aria-label": msg("pref_phone_nav_aria", "How the phone gets around") },
+            ...[
+              ["bar", msg("pref_phone_nav_bar", "Tab bar and swipes")],
+              ["swipe", msg("pref_phone_nav_swipe", "Swipes only")],
+            ].map(([id, label]) =>
+              React.createElement(
+                MetricChip,
+                { key: id, active: phoneNav === id, "aria-pressed": phoneNav === id ? "true" : "false", "data-phone-nav-choice": id, onClick: () => onPhoneNav && onPhoneNav(id) },
+                label,
+              ),
+            ),
+          ),
+        ),
+      ),
     webAppEdge: () =>
       panel.section(
         msg("pref_webapp_edge_title", "Swipe edge"),
@@ -2664,7 +2693,7 @@ const preferenceGroups = (panel) => {
             key: "webApp",
             title: msg("pref_group_webapp", "This phone"),
             desc: msg("pref_group_webapp_desc", "The app on a phone: running from the home screen, the swipe from the sides, the screen kept on, and where it opens."),
-            nodes: build(["webAppStatus", "webAppEdge", "webAppWake", "webAppStart"]),
+            nodes: build(["webAppStatus", "phoneNav", "webAppEdge", "webAppWake", "webAppStart"]),
           },
         ]
       : []),

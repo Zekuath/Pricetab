@@ -3034,6 +3034,9 @@
   "mon_tab_corr": {
     "message": "Korelasyon"
   },
+  "mon_tab_base": {
+    "message": "Taban oranlar"
+  },
   "mon_title": {
     "message": "Monitör"
   },
@@ -7752,6 +7755,27 @@
   },
   "pref_page_ticker_title": {
     "message": "Fiyat şeridi"
+  },
+  "pref_phone_nav_aria": {
+    "message": "Telefonda nasıl gezinilir"
+  },
+  "pref_phone_nav_bar": {
+    "message": "Sekme çubuğu ve kaydırma"
+  },
+  "pref_phone_nav_desc": {
+    "message": "Alttaki sekme çubuğu ya da yalnızca kaydırma: çubuk olmadan grafik onun yüksekliğini alır ve her sekme sol ya da sağ kenardan kaydırınca gelir."
+  },
+  "pref_phone_nav_heading": {
+    "message": "Gezinme"
+  },
+  "pref_phone_nav_keywords": {
+    "message": "sekme çubuğu alt menü gezinme kaydırma kenar kolon çubuğu gizle daha fazla yer"
+  },
+  "pref_phone_nav_swipe": {
+    "message": "Yalnızca kaydırma"
+  },
+  "pref_phone_nav_title": {
+    "message": "Gezinme"
   },
   "pref_position_bottom": {
     "message": "Altta"
