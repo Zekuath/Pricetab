@@ -1022,7 +1022,7 @@ const ChartToolStrip = styled.div`
     border-color 200ms ease;
 
   /* **On a phone, shut, the + is the range row's seventh button** (12 Oct
-     2026, the owner: *"ana ekrandaki toolbar şekil olarak bozuk"*): the ring
+     2026): the ring
      around it was 40px round a 44px button, the one outlined shape in a row
      of plain words. Its ring comes back with the tools it opens. */
   @media (max-width: ${({ theme }) => theme.breakpoint.down.sm}px) {
@@ -1598,9 +1598,8 @@ const DrawerTabs = styled.nav`
      at 360-420px — measured, the raised Widgets tab (36px) cut the dollar
      sign off a six-digit price. */
   @media (max-width: 600px) {
-    /* **Both columns on one line, every tab one height** (12 Oct 2026, the
-       owner: *"sol ve sağdan çıkan çentiklerin yerleşimleri … eşit
-       görünmüyor"*). Hung from the foot, each column started where its own
+    /* **Both columns on one line, every tab one height** (12 Oct 2026).
+       Hung from the foot, each column started where its own
        count and its own names put it — measured at 390x844 the left began at
        258px and the right at 134px, its tabs 78 to 121px tall. Both still
        hang from the foot — centred, the left one lay over the price's
@@ -1799,9 +1798,12 @@ const ScreenClose = styled.button.attrs({ type: "button" })`
     box-shadow: 0 0 0 2px ${({ theme }) => theme.color.borderHover};
   }
 
+  /* Under the clock on a phone opened from the home screen, not on it: the
+     phone's corner dropped the safe area the rule above adds (12 Oct 2026,
+     measured at 8px down with a 62px status bar). */
   @media (max-width: 600px) {
-    top: ${({ theme }) => theme.spacing.small}rem;
-    right: ${({ theme }) => theme.spacing.small}rem;
+    top: calc(${({ theme }) => theme.spacing.small}rem + var(--pt-safe-top, 0px));
+    right: calc(${({ theme }) => theme.spacing.small}rem + var(--pt-safe-right, 0px));
   }
 
   ${touchBox};

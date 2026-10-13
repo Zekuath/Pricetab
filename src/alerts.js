@@ -3815,6 +3815,7 @@ class AlertsPanel extends PureComponent {
               React.createElement(AlertInput, {
                 type: "text",
                 inputMode: "decimal",
+                "data-target-field": "true",
                 innerRef: this.setInputRef,
                 value: this.state.target,
                 placeholder: isPercent

@@ -1430,8 +1430,7 @@ const AlertPosClose = styled.button.attrs({ type: "button" })`
   }
 `;
 
-/* **If you close it now** (9 Oct 2026, *"şu an kapatırsam ne kadar kârdayım
- * ne kadar zarardayım detaylandırması çok dandik"*). A statement, not three
+/* **If you close it now** (9 Oct 2026). A statement, not three
  * loose figures: the result of this close, large, with its share of the
  * margin and what lands; then the lines it is made of — the move to the
  * price a close fills at, the fee to get out, the total — and what this
@@ -3212,8 +3211,7 @@ const PracticeChartFlag = styled.button.attrs({ type: "button" })`
   ${touchTarget};
 `;
 
-/* **The guide, opened** (10 Oct 2026, the owner: *"guide kısmı … aşağıda
-   assistant yerine hover menüsü ile ya da tıklanınca açılan bir şey"*). The
+/* **The guide, opened** (10 Oct 2026). The
    row stays one line; its last chip opens every item under it, numbered as
    the chart numbers them, over the plot rather than in the panel below —
    pointing opens it, a press keeps it, Esc or a press elsewhere puts it
@@ -4280,8 +4278,7 @@ const PracticeColumns = styled(PortfolioColumns)`
         ${PRACTICE_SPLIT_PX}px
         var(--pp-bottom, minmax(16rem, 50%));
     }
-    /* **Enlarged** (10 Oct 2026, the owner: *"büyük ekran görme modu …
-       kısa süreli büyüme, sonra eski haline gelebilir"*): one area takes
+    /* **Enlarged** (10 Oct 2026): one area takes
        the grid until its own button or Esc puts it back; the others and the
        seams are not drawn meanwhile. Last, so it wins over every
        arrangement above. */
@@ -4316,9 +4313,7 @@ const PracticeCell = styled.div`
     ${({ dropping, theme }) =>
       dropping ? `outline: 2px dashed ${theme.color.text}; outline-offset: -3px; border-radius: 14px;` : ""}
 
-    /* **The tabs stay; the content moves** (10 Oct 2026, the owner: *"o
-       yukarıdaki başlıklar hep kalır … sabit, scroll bar context hareket
-       ettirmeli"*). Measured: on the Assistant tab the row scrolled 300px
+    /* **The tabs stay; the content moves** (10 Oct 2026). Measured: on the Assistant tab the row scrolled 300px
        up with what it heads. Held at the top of the cell that scrolls. */
     > section > [role="tablist"] {
       position: sticky;
@@ -4361,6 +4356,15 @@ const PracticeCell = styled.div`
               right: 1.1rem;
             }
             [data-practice-strip] {
+              padding-right: 4.4rem;
+            }
+            /* No figures yet (the venue has not answered): the range row is
+               the first line, and it keeps clear of the tools instead — the
+               legend's words ran under them, in German by two lines. */
+            [data-practice-strip]:empty {
+              display: none;
+            }
+            [data-practice-strip]:empty ~ [data-practice-market-head] {
               padding-right: 4.4rem;
             }
           `
@@ -5259,10 +5263,12 @@ const PracticePhoneTabs = styled.div`
 `;
 
 const PracticePhoneTab = styled.button.attrs({ type: "button" })`
-  flex: 1 1 0;
+  /* Each as wide as its word, the rest shared: four equal quarters cut a
+     longer language's word ("Активность") to an ellipsis (12 Oct 2026). */
+  flex: 1 1 auto;
   min-width: 0;
   min-height: 2.5rem;
-  padding: 0 0.25rem;
+  padding: 0 0.35rem;
   border: 1px solid ${({ theme, on }) => (on ? theme.color.text : "transparent")};
   border-radius: 999px;
   background: ${({ theme, on }) => (on ? theme.color.text : "transparent")};

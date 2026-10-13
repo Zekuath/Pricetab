@@ -1825,6 +1825,15 @@ const loadWebAppEdge = () => loadEnumSetting(WEBAPP_EDGE_KEY, Object.keys(WEBAPP
 const saveWebAppEdge = (v) => saveSetting(WEBAPP_EDGE_KEY, v);
 const loadPhoneNav = () => loadEnumSetting(PHONE_NAV_KEY, PHONE_NAV_OPTIONS, DEFAULT_PHONE_NAV);
 const savePhoneNav = (v) => saveSetting(PHONE_NAV_KEY, v);
+// The bar's places, in order (PHONE_TABS_KEY): known keys, once each, at most PHONE_TABS_MAX, at least one
+const sanitizePhoneTabs = (value) => {
+  if (!Array.isArray(value)) return null;
+  const out = [];
+  for (const key of value) if (PHONE_TAB_KEYS.includes(key) && !out.includes(key)) out.push(key);
+  return out.length ? out.slice(0, PHONE_TABS_MAX) : null;
+};
+const loadPhoneTabs = () => sanitizePhoneTabs(loadJsonSetting(PHONE_TABS_KEY)) || DEFAULT_PHONE_TABS.slice();
+const savePhoneTabs = (list) => saveJsonSetting(PHONE_TABS_KEY, list);
 const loadWebAppWake = () => loadBoolSetting(WEBAPP_WAKE_KEY, false);
 const saveWebAppWake = (v) => saveSetting(WEBAPP_WAKE_KEY, v);
 const loadWebAppStart = () => loadEnumSetting(WEBAPP_START_KEY, WEBAPP_STARTS, DEFAULT_WEBAPP_START);

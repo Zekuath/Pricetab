@@ -1,8 +1,7 @@
 /* THE MONITOR ("M")
  *
  * Bloomberg's MOST and CORR for the coins on your list (2 Oct 2026), and its
- * IMAP for the market (9 Oct 2026, *"terminal kısmı … monitör, ona biraz
- * daha yetenek ekleyelim, çok yavan kalmış"*): one screen, three tabs.
+ * IMAP for the market (9 Oct 2026): one screen, three tabs.
  *
  *   - **Coins** — every coin you track on one row: the price and the day from
  *     the ticker snapshot already on hand, and from 30 days of its own series
@@ -111,8 +110,7 @@ const correlationMatrix = (coins, seriesByCoin) => {
   return out;
 };
 
-/* **The correlation in words** (12 Oct 2026, the owner: *"korelasyondaki
-   metrik … son kullanıcının anlayabileceği bir metriğe dönüşsün"*). Five
+/* **The correlation in words** (12 Oct 2026). Five
    bands of r with a name each — the conventional cut points (0.2, 0.5, 0.8),
    said as what the two lines did, never as what they will do. Pure. */
 const CORR_BANDS = [
@@ -351,7 +349,13 @@ const MonitorHeadCell = styled.button.attrs({ type: "button" })`
   font-size: 0.66rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  white-space: nowrap;
+  /* A head wraps inside its column rather than run into the next one: in
+     French "Depuis le plus haut" ran 28px over "30 jours" (12 Oct 2026). */
+  min-width: 0;
+  padding-top: 0.3rem;
+  padding-bottom: 0.3rem;
+  line-height: 1.25;
+  text-align: ${({ left }) => (left ? "left" : "right")};
   cursor: pointer;
 
   &:focus-visible {
@@ -426,18 +430,17 @@ const MonitorCell = styled.span`
    where the line ends is where the price sits in its range — what the range
    bar said, with the shape that got it there. In the 30 days' direction ink;
    a stroke that does not scale with the stretched box. */
-/* **A tab's content arrives; the screen around it stays** (12 Oct 2026, the
-   owner: *"menü geçişleri arası animasyonlu olsun"*). Keyed by the tab, so a
+/* **A tab's content arrives; the screen around it stays** (12 Oct 2026).
+   Keyed by the tab, so a
    switch replays it and nothing else moves; none under reduced motion. */
 const MonitorPane = styled.div`
   ${screenPaneIn};
   /* The body holds its children to a reading measure; the market map and the
-     table want the window (12 Oct 2026, *"market kısmını büyütelim"*) */
+     table want the window (12 Oct 2026) */
   max-width: none !important;
 `;
 
-/* **A coin's card, over the monitor** (12 Oct 2026, the owner: *"koinlere
-   tıklayınca ana grafiğe gitmesin, ufak bir ekran açılsın … bilgi versin"*).
+/* **A coin's card, over the monitor** (12 Oct 2026).
    A row used to close the screen and switch the chart; now it opens this,
    and the chart is one press inside it. */
 const monitorCardIn = keyframes`
@@ -943,9 +946,7 @@ const CorrTag = styled.span`
 const monitorSigned = (v, digits = 1) => (v == null || !isFinite(v) ? "—" : `${signedFixed(v, digits)}%`);
 const monitorTone = (v) => (v == null || !isFinite(v) || Math.abs(v) < 0.05 ? "quiet" : v > 0 ? "up" : "down");
 
-/* **The monitor and the base rates are one screen** (12 Oct 2026, the owner:
-   *"monitor ve base rates'i aynı menüye yedirelim … tek bir sayfada daha çok
-   işlem görülebilsin"*): one tab on the screens' column, and this strip at the
+/* **The monitor and the base rates are one screen** (12 Oct 2026): one tab on the screens' column, and this strip at the
    head of both bodies — Coins, Market, Correlation, Base rates. The two
    components stay apart (they share nothing but the frame); the app swaps
    which one is drawn (`monitorTab`), so the frame, the × and the column's tab
@@ -1261,8 +1262,7 @@ class MonitorPanel extends PureComponent {
   /* The coin's card: opened by a row, closed by its ×, Esc (taken before the
      screen's own Esc, in the capture phase) or a press outside it; the focus
      goes back to the row it came from. */
-  /* **Where it was pressed** (12 Oct 2026, the owner: *"tıkladığımız yerde
-     bir pencere açsın"*): beside the press on a wide window — to its right,
+  /* **Where it was pressed** (12 Oct 2026): beside the press on a wide window — to its right,
      or its left where the right has no room, held inside the window — and
      the centred sheet it was on a phone. A press from the keyboard has no
      point; the element's middle stands in. */

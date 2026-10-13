@@ -6120,7 +6120,7 @@
     "message": "Розмір $1 відсотків"
   },
   "pos_size_type": {
-    "message": "введіть розмір"
+    "message": "розмір"
   },
   "pos_size_typed": {
     "message": "введено"
@@ -7710,9 +7710,6 @@
   "pref_group_webapp": {
     "message": "Цей телефон"
   },
-  "pref_group_webapp_desc": {
-    "message": "Застосунок на телефоні: запуск з екрана «Додому», свайп з країв, екран не гасне і з чого він відкривається."
-  },
   "pref_language_aria": {
     "message": "Мова"
   },
@@ -8753,7 +8750,7 @@
     "message": "Налаштування за запитом «$1»"
   },
   "set_search_placeholder": {
-    "message": "Пошук за назвою або символом"
+    "message": "Назва або символ"
   },
   "set_selected": {
     "message": "Вибрані"
@@ -10955,6 +10952,9 @@
   "mon_tab_market": {
     "message": "Ринок"
   },
+  "po_allocation": {
+    "message": "Розподіл"
+  },
   "pos_cn_all": {
     "message": "Від відкриття до закриття"
   },
@@ -11226,6 +11226,45 @@
   },
   "pp_layout_terminal_title": {
     "message": "Графік, книга ордерів і тікет поруч, відкрите — під графіком і книгою"
+  },
+  "pref_group_basics_desc_phone": {
+    "message": "Мова, валюта, запис чисел і тема — вони змінюють кожен екран."
+  },
+  "pref_group_webapp_desc_2": {
+    "message": "Застосунок на телефоні: розмір усього, запуск з екрана «Додому», свайп з країв, екран не гасне і з чого він відкривається."
+  },
+  "pref_phone_tabs_add_aria": {
+    "message": "Додати на панель"
+  },
+  "pref_phone_tabs_desc": {
+    "message": "До $1 місць на панелі, у вашому порядку. Усе інше — у «Ще»."
+  },
+  "pref_phone_tabs_desc_off": {
+    "message": "Панель вимкнено (Навігація): те, що задано тут, повернеться разом із нею."
+  },
+  "pref_phone_tabs_down": {
+    "message": "Посунути «$1» праворуч"
+  },
+  "pref_phone_tabs_full": {
+    "message": "На панелі вміщається $1 — спершу приберіть одне"
+  },
+  "pref_phone_tabs_heading": {
+    "message": "Панель вкладок"
+  },
+  "pref_phone_tabs_keywords": {
+    "message": "панель вкладки знизу значки порядок упорядкувати ще"
+  },
+  "pref_phone_tabs_remove": {
+    "message": "Прибрати «$1» з панелі"
+  },
+  "pref_phone_tabs_title": {
+    "message": "Панель вкладок"
+  },
+  "pref_phone_tabs_up": {
+    "message": "Посунути «$1» ліворуч"
+  },
+  "pref_text_size_xs": {
+    "message": "XS"
   },
   "wdesc_eth_btc": {
     "message": "Ефір у біткоїні та його зміна за 24 години"

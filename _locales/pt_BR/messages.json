@@ -6120,7 +6120,7 @@
     "message": "Tamanho $1 por cento"
   },
   "pos_size_type": {
-    "message": "digite um tamanho"
+    "message": "tamanho"
   },
   "pos_size_typed": {
     "message": "digitado"
@@ -7710,9 +7710,6 @@
   "pref_group_webapp": {
     "message": "Este telefone"
   },
-  "pref_group_webapp_desc": {
-    "message": "O app no telefone: pela tela de início, o deslizar pelas laterais, a tela acesa e onde ele abre."
-  },
   "pref_language_aria": {
     "message": "Idioma"
   },
@@ -8753,7 +8750,7 @@
     "message": "Configurações que correspondem a “$1”"
   },
   "set_search_placeholder": {
-    "message": "Busque por nome ou símbolo"
+    "message": "Nome ou símbolo"
   },
   "set_selected": {
     "message": "Selecionadas"
@@ -10955,6 +10952,9 @@
   "mon_tab_market": {
     "message": "Mercado"
   },
+  "po_allocation": {
+    "message": "Distribuição"
+  },
   "pos_cn_all": {
     "message": "Da abertura ao fechamento"
   },
@@ -11226,6 +11226,45 @@
   },
   "pp_layout_terminal_title": {
     "message": "O gráfico, o livro e o ticket lado a lado, o que está aberto sob o gráfico e o livro"
+  },
+  "pref_group_basics_desc_phone": {
+    "message": "Idioma, moeda, como os números são escritos e o tema — mudam todas as telas."
+  },
+  "pref_group_webapp_desc_2": {
+    "message": "O app no celular: o tamanho de tudo, abrir pela tela de início, deslizar pelas laterais, a tela ligada e onde ele abre."
+  },
+  "pref_phone_tabs_add_aria": {
+    "message": "Pôr na barra"
+  },
+  "pref_phone_tabs_desc": {
+    "message": "Até $1 lugares na barra, na sua ordem. Mais guarda todo o resto."
+  },
+  "pref_phone_tabs_desc_off": {
+    "message": "A barra está desligada (Navegação): o que for definido aqui volta com ela."
+  },
+  "pref_phone_tabs_down": {
+    "message": "Mover $1 para a direita"
+  },
+  "pref_phone_tabs_full": {
+    "message": "A barra comporta $1 — tire um primeiro"
+  },
+  "pref_phone_tabs_heading": {
+    "message": "Barra de abas"
+  },
+  "pref_phone_tabs_keywords": {
+    "message": "barra abas embaixo ícones ordem organizar mais"
+  },
+  "pref_phone_tabs_remove": {
+    "message": "Tirar $1 da barra"
+  },
+  "pref_phone_tabs_title": {
+    "message": "Barra de abas"
+  },
+  "pref_phone_tabs_up": {
+    "message": "Mover $1 para a esquerda"
+  },
+  "pref_text_size_xs": {
+    "message": "XS"
   },
   "wdesc_eth_btc": {
     "message": "Ether em bitcoin e como se moveu em 24 horas"

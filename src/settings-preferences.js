@@ -302,7 +302,7 @@ const settingSections = (panel) => {
   indicatorOverlays, onIndicatorOverlayChange,
   chartStudies, onChartStudyToggle,
   chartChances, cellOdds, onChartChanceToggle,
-  webAppEdge, onWebAppEdge, phoneNav, onPhoneNav, webAppWake, onWebAppWake, webAppStart, onWebAppStart,
+  webAppEdge, onWebAppEdge, phoneNav, onPhoneNav, phoneTabs, phoneTabCatalog, onPhoneTabs, webAppWake, onWebAppWake, webAppStart, onWebAppStart,
   moveNews, onMoveNewsChange,
   quietChrome, onQuietChromeChange,
   tabKeys, onTabKeysChange,
@@ -1488,6 +1488,75 @@ const settingSections = (panel) => {
           ),
         ),
       ),
+    phoneTabs: () => {
+      const all = Array.isArray(phoneTabCatalog) ? phoneTabCatalog : [];
+      const list = (Array.isArray(phoneTabs) ? phoneTabs : DEFAULT_PHONE_TABS).filter((k) => all.some((t) => t.key === k));
+      const name = (k) => (all.find((t) => t.key === k) || {}).label || k;
+      const set = (next) => onPhoneTabs && onPhoneTabs(next);
+      const move = (i, by) => {
+        const next = list.slice();
+        const [k] = next.splice(i, 1);
+        next.splice(i + by, 0, k);
+        set(next);
+      };
+      const rest = all.filter((t) => !list.includes(t.key));
+      const full = list.length >= PHONE_TABS_MAX;
+      return panel.section(
+        msg("pref_phone_tabs_title", "Tab bar"),
+        msg("pref_phone_tabs_keywords", "tab bar bottom icons order arrange reorder customise more places"),
+        React.createElement(
+          ToggleSection,
+          null,
+          React.createElement(ToggleSectionTitle, null, msg("pref_phone_tabs_heading", "Tab bar")),
+          React.createElement(
+            ToggleSectionDesc,
+            null,
+            phoneNav === "swipe"
+              ? msg("pref_phone_tabs_desc_off", "The bar is off (Getting around): what is set here comes back with it.")
+              : msg("pref_phone_tabs_desc", "Up to $1 places on the bar, in your order. More holds everything else.", String(PHONE_TABS_MAX)),
+          ),
+          React.createElement(
+            PhoneTabList,
+            { "data-phone-tab-list": "true", "aria-label": msg("pref_phone_tabs_heading", "Tab bar") },
+            ...list.map((k, i) =>
+              React.createElement(
+                PhoneTabRow,
+                { key: k, "data-phone-tab-row": k },
+                React.createElement(
+                  "span",
+                  null,
+                  React.createElement("b", { "aria-hidden": "true" }, String(i + 1)),
+                  icon((all.find((t) => t.key === k) || {}).icon || "more", 1),
+                  name(k),
+                ),
+                React.createElement(PhoneTabMove, { disabled: i === 0, "aria-label": msg("pref_phone_tabs_up", "Move $1 left", name(k)), "data-phone-tab-up": k, onClick: () => move(i, -1) }, "↑"),
+                React.createElement(PhoneTabMove, { disabled: i === list.length - 1, "aria-label": msg("pref_phone_tabs_down", "Move $1 right", name(k)), "data-phone-tab-down": k, onClick: () => move(i, 1) }, "↓"),
+                React.createElement(PhoneTabMove, { disabled: list.length <= 1, "aria-label": msg("pref_phone_tabs_remove", "Take $1 off the bar", name(k)), "data-phone-tab-remove": k, onClick: () => set(list.filter((x) => x !== k)) }, "×"),
+              ),
+            ),
+          ),
+          rest.length
+            ? React.createElement(
+                PhoneTabChips,
+                { role: "group", "aria-label": msg("pref_phone_tabs_add_aria", "Put on the bar") },
+                ...rest.map((t) =>
+                  React.createElement(
+                    MetricChip,
+                    {
+                      key: t.key,
+                      disabled: full,
+                      "data-phone-tab-add": t.key,
+                      title: full ? msg("pref_phone_tabs_full", "The bar holds $1 — take one off first", String(PHONE_TABS_MAX)) : undefined,
+                      onClick: () => !full && set([...list, t.key]),
+                    },
+                    `+ ${t.label}`,
+                  ),
+                ),
+              )
+            : null,
+        ),
+      );
+    },
     webAppEdge: () =>
       panel.section(
         msg("pref_webapp_edge_title", "Swipe edge"),
@@ -1668,7 +1737,7 @@ const settingSections = (panel) => {
             React.createElement(
               SettingTitleRow,
               null,
-              React.createElement(CurrencyLabel, { style: { margin: 0 } }, "Currency"),
+              React.createElement(CurrencyLabel, { style: { margin: 0 } }, msg("pref_currency_title", "Currency")),
               React.createElement(
                 SettingInfoBtn,
                 {
@@ -1775,7 +1844,9 @@ const settingSections = (panel) => {
                  * words already fill would wrap, and S/M/L/XL is the ladder
                  * the widget sizes already use. The full word is on the
                  * button's own label for anyone reading it aloud. */
-                option.value === "small"
+                option.value === "xsmall"
+                  ? msg("pref_text_size_xs", "XS")
+                  : option.value === "small"
                   ? msg("pref_text_size_s", "S")
                   : option.value === "default"
                     ? msg("pref_text_size_m", "M")
@@ -2652,12 +2723,18 @@ const preferenceGroups = (panel) => {
   const keyed = (keys) =>
     keys.map((name) => [name, sections[name]()]).filter(([, node]) => Boolean(node));
   const chartRows = keyed(CHART_SETTING_KEYS);
+  // A touch phone or the app opened from the home screen: "This phone" is shown
+  const phone = touchFirst() || isWebApp();
+  // The size of everything: under Basics, or heading This phone on a phone — one row, one place
+  const sizeRow = build(["textSize"]);
   return [
     {
       key: "basics",
       title: msg("pref_group_basics", "Basics"),
-      desc: msg("pref_group_basics_desc", "Language, currency, how numbers are written, the theme and the size of everything — they change every screen."),
-      nodes: build(["language", "currency", "numberFormat", "theme", "directionColors", "textSize"]),
+      desc: phone
+        ? msg("pref_group_basics_desc_phone", "Language, currency, how numbers are written and the theme — they change every screen.")
+        : msg("pref_group_basics_desc", "Language, currency, how numbers are written, the theme and the size of everything — they change every screen."),
+      nodes: [...build(["language", "currency", "numberFormat", "theme", "directionColors"]), ...(phone ? [] : sizeRow)],
     },
     {
       key: "chart",
@@ -2687,13 +2764,15 @@ const preferenceGroups = (panel) => {
     },
     /* The phone's own section: shown on a touch phone, or when opened as
        an app (8 Oct 2026). Absent on a desktop, where none of it applies. */
-    ...(touchFirst() || isWebApp()
+    /* The size of everything heads it there (12 Oct 2026): on a phone it is
+       the first thing looked for, and nobody found it under Basics. */
+    ...(phone
       ? [
           {
             key: "webApp",
             title: msg("pref_group_webapp", "This phone"),
-            desc: msg("pref_group_webapp_desc", "The app on a phone: running from the home screen, the swipe from the sides, the screen kept on, and where it opens."),
-            nodes: build(["webAppStatus", "phoneNav", "webAppEdge", "webAppWake", "webAppStart"]),
+            desc: msg("pref_group_webapp_desc_2", "The app on a phone: the size of everything, running from the home screen, the swipe from the sides, the screen kept on, and where it opens."),
+            nodes: [...sizeRow, ...build(["webAppStatus", "phoneNav", "phoneTabs", "webAppEdge", "webAppWake", "webAppStart"])],
           },
         ]
       : []),

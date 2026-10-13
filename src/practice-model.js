@@ -4084,8 +4084,7 @@ const sanitizePractice = (raw) => {
 /* ── The trade history ─────────────────────────────────────────────────────
  *
  * **Every contract this device has closed, kept apart from the ledger**
- * (10 Oct 2026, the owner: *"geçmişte yaptığımız trade'leri resetleyebilmeyi
- * veya geçmişimizi görmeliyiz"*). The ledger is what the balance is
+ * (10 Oct 2026). The ledger is what the balance is
  * recomputed from, and it keeps its last `PRACTICE_MAX_LEDGER` rows — a
  * place, an open, a funding charge and a close each take one — so after a
  * hundred-odd contracts the oldest closes were folded into the summary and

@@ -3541,7 +3541,7 @@ class Portfolio extends PureComponent {
       React.createElement(
         AllocHead,
         null,
-        React.createElement("span", null, "Allocation ·"),
+        React.createElement("span", null, `${msg("po_allocation", "Allocation")} ·`),
         /* The one thing a column of percentages does not give you at a glance,
          * and what the ring's hole used to carry. Unattributed on purpose: the
          * segment beside it already says which coin, and naming it twice is

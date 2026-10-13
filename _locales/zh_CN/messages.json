@@ -7726,9 +7726,6 @@
   "pref_group_webapp": {
     "message": "这部手机"
   },
-  "pref_group_webapp_desc": {
-    "message": "手机上的应用：从主屏幕运行、从两侧滑动、保持屏幕常亮，以及打开时的页面。"
-  },
   "pref_language_aria": {
     "message": "语言"
   },
@@ -10971,6 +10968,9 @@
   "mon_tab_market": {
     "message": "市场"
   },
+  "po_allocation": {
+    "message": "配置"
+  },
   "pos_cn_all": {
     "message": "从开仓到平仓"
   },
@@ -11242,6 +11242,45 @@
   },
   "pp_layout_terminal_title": {
     "message": "图表、订单簿与下单栏并排，持仓在图表与订单簿下方"
+  },
+  "pref_group_basics_desc_phone": {
+    "message": "语言、货币、数字写法和主题——它们会改变每个页面。"
+  },
+  "pref_group_webapp_desc_2": {
+    "message": "手机上的应用：整体大小、从主屏幕运行、从两侧滑动、保持屏幕常亮，以及打开时的页面。"
+  },
+  "pref_phone_tabs_add_aria": {
+    "message": "放到标签栏上"
+  },
+  "pref_phone_tabs_desc": {
+    "message": "栏上最多 $1 个位置，按你的顺序排列。其余都在“更多”里。"
+  },
+  "pref_phone_tabs_desc_off": {
+    "message": "标签栏已关闭（导航方式）：这里的设置会随它一起恢复。"
+  },
+  "pref_phone_tabs_down": {
+    "message": "将 $1 右移"
+  },
+  "pref_phone_tabs_full": {
+    "message": "标签栏最多 $1 个——请先移出一个"
+  },
+  "pref_phone_tabs_heading": {
+    "message": "标签栏"
+  },
+  "pref_phone_tabs_keywords": {
+    "message": "标签栏 底部 图标 顺序 排列 更多"
+  },
+  "pref_phone_tabs_remove": {
+    "message": "把 $1 移出标签栏"
+  },
+  "pref_phone_tabs_title": {
+    "message": "标签栏"
+  },
+  "pref_phone_tabs_up": {
+    "message": "将 $1 左移"
+  },
+  "pref_text_size_xs": {
+    "message": "XS"
   },
   "wdesc_eth_btc": {
     "message": "以比特币计价的以太币,以及它在24小时内的变化"

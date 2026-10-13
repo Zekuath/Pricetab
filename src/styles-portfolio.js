@@ -98,7 +98,9 @@ const PortfolioScreenHead = styled.div`
   }
 
   @media (max-width: 600px) {
-    padding: 1rem 1.25rem;
+    /* Clear of the screen's × in the corner: a longer band ("2 avoirs ·
+       suivi seulement") ran under it. */
+    padding: 1rem 3.25rem 1rem 1.25rem;
     margin-bottom: 1.25rem;
   }
 `;
@@ -515,8 +517,15 @@ const AllocBlock = styled.div`
 // like labels
 const AllocHead = styled.div`
   display: flex;
+  /* A longer language puts the note on a line of its own; the label and the
+     button never break inside ("Objec-tifs" in French on a phone). */
+  flex-wrap: wrap;
   align-items: baseline;
-  gap: 0.45rem;
+  gap: 0.2rem 0.45rem;
+
+  > span:first-child {
+    white-space: nowrap;
+  }
   margin-bottom: 0.4rem;
   font-size: 0.66rem;
   letter-spacing: 0.12em;
@@ -911,6 +920,8 @@ const PortfolioChartBtn = styled(PortfolioSortBtn)`
 const TargetsBtn = styled(PortfolioSortBtn)`
   margin-left: auto;
   align-self: center;
+  flex: none;
+  white-space: nowrap;
   letter-spacing: 0.04em;
   text-transform: none;
 `;

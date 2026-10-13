@@ -21,8 +21,10 @@ const panelLift = keyframes`
  * stays, at the head of the menu, and answers across every section. */
 const SettingsCard = styled.div`
   width: 100%;
-  height: 100vh;
-  height: 100dvh;
+  /* The overlay's height, not the window's: the overlay starts under the
+     phone's clock (--pt-safe-top), and a 100dvh card centred in it rose
+     half the status bar back under the clock (12 Oct 2026). */
+  height: 100%;
   display: flex;
   flex-direction: column;
   background: ${({ theme }) => theme.color.bg};
@@ -583,6 +585,13 @@ const TabContent = styled.div`
   scrollbar-gutter: stable;
   margin-right: -${({ theme }) => theme.spacing.large}rem;
   padding-right: ${({ theme }) => theme.spacing.large}rem;
+  /* A phone's frame is a 16px gutter and its scrollbar floats: the desktop's
+     32px lane left every row 48px short of the right edge against 16px on
+     the left (12 Oct 2026, measured at 440px). */
+  @media (max-width: 600px) {
+    margin-right: 0;
+    padding-right: 0;
+  }
   animation: ${tabFadeIn} 0.25s ease-out;
 
   ${themedScrollbar};
@@ -1513,10 +1522,13 @@ const ThemeButtonGroup = styled.div`
      with the switches, which is the edge every control in this column shares.
      Filling the lane made three small words into three wide slabs. */
   justify-content: flex-end;
+  /* A longer language wraps the segments onto a second line rather than
+     squeezing one below its word ("automatisch" ran 16px out of its pill). */
+  flex-wrap: wrap;
 
   > * {
     flex: 0 0 auto;
-    min-width: 0;
+    min-width: max-content;
   }
 `;
 
@@ -1539,7 +1551,7 @@ const ThemeButton = styled.button.attrs({ type: "button" })`
   text-transform: lowercase;
   cursor: pointer;
   transition: all 0.2s ease;
-  min-width: 0;
+  min-width: max-content;
 
   &:hover:not(:disabled) {
     border-color: ${({ theme }) => theme.color.borderHover};
@@ -1671,6 +1683,78 @@ const MetricChip = styled.button.attrs({ type: "button" })`
     outline: none;
     box-shadow: 0 0 0 2px ${({ theme }) => theme.color.borderHover};
   }
+`;
+
+/* The phone's bar, as a list to arrange (PHONE_TABS_KEY): each place with
+   its icon, moved up or down a step or taken off; what is not on the bar
+   waits under it as chips. Spans the row like a setting's description. */
+const PhoneTabList = styled.ol`
+  grid-column: 1 / -1;
+  list-style: none;
+  margin: 0.45rem 0 0.6rem;
+  padding: 0;
+  border: 1px solid ${({ theme }) => theme.color.border};
+  border-radius: 10px;
+  overflow: hidden;
+`;
+
+const PhoneTabRow = styled.li`
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 2.75rem;
+  padding: 0 0.35rem 0 0.75rem;
+  font-size: 0.78rem;
+
+  & + & {
+    border-top: 1px solid ${({ theme }) => theme.color.border};
+  }
+
+  > span {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+
+  > span > b {
+    font-size: 0.66rem;
+    font-weight: ${({ theme }) => theme.fontWeight.regular};
+    color: ${({ theme }) => theme.color.textSecondary};
+    font-variant-numeric: tabular-nums;
+  }
+`;
+
+const PhoneTabMove = styled.button.attrs({ type: "button" })`
+  flex: none;
+  width: 2.25rem;
+  height: 2.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: ${({ theme }) => theme.color.text};
+  font-family: ${({ theme }) => theme.font.primary};
+  font-size: 0.95rem;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.3;
+    cursor: default;
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px ${({ theme }) => theme.color.borderHover};
+  }
+`;
+
+const PhoneTabChips = styled(MetricChips)`
+  grid-column: 1 / -1;
 `;
 
 const ThemeDescription = styled.p`
@@ -2531,7 +2615,9 @@ const PrefRow = styled.div`
     font-size: 0.72rem;
     font-weight: ${({ theme }) => theme.fontWeight.regular};
     white-space: nowrap;
-    min-width: 0;
+    /* Never narrower than its word: at 0 a German "Automatisch" ran 16px
+       out of its pill. The groups wrap instead (ThemeButtonGroup). */
+    min-width: max-content;
   }
 
   /* A row of choices under a setting's description spans the row, the way

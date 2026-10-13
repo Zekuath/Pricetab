@@ -6120,7 +6120,7 @@
     "message": "Dimensione $1 percento"
   },
   "pos_size_type": {
-    "message": "scrivi una dimensione"
+    "message": "dimensione"
   },
   "pos_size_typed": {
     "message": "scritta"
@@ -7710,9 +7710,6 @@
   "pref_group_webapp": {
     "message": "Questo telefono"
   },
-  "pref_group_webapp_desc": {
-    "message": "L'app sul telefono: dalla schermata Home, lo scorrimento dai lati, lo schermo acceso e dove si apre."
-  },
   "pref_language_aria": {
     "message": "Lingua"
   },
@@ -8086,7 +8083,7 @@
     "message": "Cambia ogni"
   },
   "pref_search": {
-    "message": "Cerca nelle impostazioni…"
+    "message": "Cerca…"
   },
   "pref_search_label": {
     "message": "Cerca nelle impostazioni"
@@ -8753,7 +8750,7 @@
     "message": "Impostazioni che corrispondono a «$1»"
   },
   "set_search_placeholder": {
-    "message": "Cerca per nome o simbolo"
+    "message": "Nome o simbolo"
   },
   "set_selected": {
     "message": "Selezionate"
@@ -10955,6 +10952,9 @@
   "mon_tab_market": {
     "message": "Mercato"
   },
+  "po_allocation": {
+    "message": "Ripartizione"
+  },
   "pos_cn_all": {
     "message": "Dall'apertura alla chiusura"
   },
@@ -11226,6 +11226,45 @@
   },
   "pp_layout_terminal_title": {
     "message": "Il grafico, il book e il ticket affiancati, ciò che è aperto sotto grafico e book"
+  },
+  "pref_group_basics_desc_phone": {
+    "message": "Lingua, valuta, come si scrivono i numeri e il tema: cambiano ogni schermata."
+  },
+  "pref_group_webapp_desc_2": {
+    "message": "L'app sul telefono: la dimensione di tutto, l'avvio dalla schermata Home, lo scorrimento dai lati, lo schermo acceso e dove si apre."
+  },
+  "pref_phone_tabs_add_aria": {
+    "message": "Metti sulla barra"
+  },
+  "pref_phone_tabs_desc": {
+    "message": "Fino a $1 posti sulla barra, nel tuo ordine. Altro contiene tutto il resto."
+  },
+  "pref_phone_tabs_desc_off": {
+    "message": "La barra è spenta (Spostarsi): ciò che è impostato qui torna con lei."
+  },
+  "pref_phone_tabs_down": {
+    "message": "Sposta $1 a destra"
+  },
+  "pref_phone_tabs_full": {
+    "message": "La barra ne contiene $1: togline uno prima"
+  },
+  "pref_phone_tabs_heading": {
+    "message": "Barra delle schede"
+  },
+  "pref_phone_tabs_keywords": {
+    "message": "barra schede sotto icone ordine riordina altro"
+  },
+  "pref_phone_tabs_remove": {
+    "message": "Togli $1 dalla barra"
+  },
+  "pref_phone_tabs_title": {
+    "message": "Barra delle schede"
+  },
+  "pref_phone_tabs_up": {
+    "message": "Sposta $1 a sinistra"
+  },
+  "pref_text_size_xs": {
+    "message": "XS"
   },
   "wdesc_eth_btc": {
     "message": "Ether in bitcoin e come si è mosso in 24 ore"

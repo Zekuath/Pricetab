@@ -242,8 +242,7 @@ const WIDGET_GROUPS = [
         label: msg("wname_regimes", "Regimes"),
         desc: msg("wdesc_regimes", "Rising, flat or falling over 20 days — and what each was 20 days after it began, beside any day. Counted, not forecast"),
       },
-      /* The second round (10 Oct 2026, the owner: *"şu an piyasada ne ek
-         widget'lar var, millet ne kullanıyor, onları bizde ekleyelim"*):
+      /* The second round (10 Oct 2026):
          what the market dashboards traders keep open carry beside a price —
          the stablecoins' size, ETH against BTC, the release calendar — from
          data this app already reads, no new host. */

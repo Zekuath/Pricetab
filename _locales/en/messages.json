@@ -5986,6 +5986,9 @@
   "po_address_label": {
     "message": "Address to watch"
   },
+  "po_allocation": {
+    "message": "Allocation"
+  },
   "po_allocation_prefix": {
     "message": "Allocation: "
   },
@@ -11926,6 +11929,9 @@
   "pref_group_basics_desc": {
     "message": "Language, currency, how numbers are written, the theme and the size of everything — they change every screen."
   },
+  "pref_group_basics_desc_phone": {
+    "message": "Language, currency, how numbers are written and the theme — they change every screen."
+  },
   "pref_group_chart": {
     "message": "The chart"
   },
@@ -11968,8 +11974,8 @@
   "pref_group_webapp": {
     "message": "This phone"
   },
-  "pref_group_webapp_desc": {
-    "message": "The app on a phone: running from the home screen, the swipe from the sides, the screen kept on, and where it opens."
+  "pref_group_webapp_desc_2": {
+    "message": "The app on a phone: the size of everything, running from the home screen, the swipe from the sides, the screen kept on, and where it opens."
   },
   "pref_language_aria": {
     "message": "Language"
@@ -12243,6 +12249,61 @@
   "pref_phone_nav_title": {
     "message": "Getting around"
   },
+  "pref_phone_tabs_add_aria": {
+    "message": "Put on the bar"
+  },
+  "pref_phone_tabs_desc": {
+    "message": "Up to $1 places on the bar, in your order. More holds everything else.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "pref_phone_tabs_desc_off": {
+    "message": "The bar is off (Getting around): what is set here comes back with it."
+  },
+  "pref_phone_tabs_down": {
+    "message": "Move $1 right",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "pref_phone_tabs_full": {
+    "message": "The bar holds $1 — take one off first",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "pref_phone_tabs_heading": {
+    "message": "Tab bar"
+  },
+  "pref_phone_tabs_keywords": {
+    "message": "tab bar bottom icons order arrange reorder customise more places"
+  },
+  "pref_phone_tabs_remove": {
+    "message": "Take $1 off the bar",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "pref_phone_tabs_title": {
+    "message": "Tab bar"
+  },
+  "pref_phone_tabs_up": {
+    "message": "Move $1 left",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
   "pref_position_bottom": {
     "message": "Bottom"
   },
@@ -12476,6 +12537,9 @@
   },
   "pref_text_size_xl": {
     "message": "XL"
+  },
+  "pref_text_size_xs": {
+    "message": "XS"
   },
   "pref_theme_auto": {
     "message": "Auto"

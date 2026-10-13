@@ -6120,7 +6120,7 @@
     "message": "Größe $1 Prozent"
   },
   "pos_size_type": {
-    "message": "Größe eingeben"
+    "message": "Größe"
   },
   "pos_size_typed": {
     "message": "eingegeben"
@@ -7710,9 +7710,6 @@
   "pref_group_webapp": {
     "message": "Dieses Telefon"
   },
-  "pref_group_webapp_desc": {
-    "message": "Die App auf dem Telefon: vom Home-Bildschirm, das Wischen von den Seiten, der Bildschirm bleibt an, und wo sie startet."
-  },
   "pref_language_aria": {
     "message": "Sprache"
   },
@@ -8086,7 +8083,7 @@
     "message": "Wechseln alle"
   },
   "pref_search": {
-    "message": "Einstellungen durchsuchen…"
+    "message": "Suchen…"
   },
   "pref_search_label": {
     "message": "Einstellungen durchsuchen"
@@ -8753,7 +8750,7 @@
     "message": "Einstellungen zu „$1“"
   },
   "set_search_placeholder": {
-    "message": "Nach Name oder Symbol suchen"
+    "message": "Name oder Symbol"
   },
   "set_selected": {
     "message": "Ausgewählt"
@@ -10955,6 +10952,9 @@
   "mon_tab_market": {
     "message": "Markt"
   },
+  "po_allocation": {
+    "message": "Aufteilung"
+  },
   "pos_cn_all": {
     "message": "Von Eröffnung bis Schließung"
   },
@@ -11226,6 +11226,45 @@
   },
   "pp_layout_terminal_title": {
     "message": "Chart, Orderbuch und Ticket nebeneinander, das Offene unter Chart und Orderbuch"
+  },
+  "pref_group_basics_desc_phone": {
+    "message": "Sprache, Währung, wie Zahlen geschrieben werden, und das Design — sie ändern jeden Bildschirm."
+  },
+  "pref_group_webapp_desc_2": {
+    "message": "Die App auf dem Telefon: die Größe von allem, vom Home-Bildschirm, das Wischen von den Seiten, der Bildschirm bleibt an, und wo sie startet."
+  },
+  "pref_phone_tabs_add_aria": {
+    "message": "Auf die Leiste"
+  },
+  "pref_phone_tabs_desc": {
+    "message": "Bis zu $1 Plätze auf der Leiste, in deiner Reihenfolge. Mehr enthält alles andere."
+  },
+  "pref_phone_tabs_desc_off": {
+    "message": "Die Leiste ist aus (Navigation): Was hier eingestellt ist, kommt mit ihr zurück."
+  },
+  "pref_phone_tabs_down": {
+    "message": "$1 nach rechts"
+  },
+  "pref_phone_tabs_full": {
+    "message": "Die Leiste fasst $1 — nimm zuerst einen ab"
+  },
+  "pref_phone_tabs_heading": {
+    "message": "Tab-Leiste"
+  },
+  "pref_phone_tabs_keywords": {
+    "message": "tab leiste unten symbole reihenfolge anordnen mehr"
+  },
+  "pref_phone_tabs_remove": {
+    "message": "$1 von der Leiste nehmen"
+  },
+  "pref_phone_tabs_title": {
+    "message": "Tab-Leiste"
+  },
+  "pref_phone_tabs_up": {
+    "message": "$1 nach links"
+  },
+  "pref_text_size_xs": {
+    "message": "XS"
   },
   "wdesc_eth_btc": {
     "message": "Ether in Bitcoin gerechnet und wie er sich in 24 Stunden bewegt hat"

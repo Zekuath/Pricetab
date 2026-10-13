@@ -190,7 +190,9 @@ const NewsAsideNote = styled.div`
 /* Three figures over three labels — the scoreboard's shape, brought here. */
 const NewsFacts = styled.div`
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  /* minmax(0, …): the three thirds hold; a longer language's label wraps
+     inside its own (French "ni l'un ni l'autre" was cut at the card). */
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   border: 1px solid ${({ theme }) => theme.color.border};
   border-radius: 8px;
   overflow: hidden;
@@ -216,7 +218,7 @@ const NewsFactLabel = styled.div`
   font-size: 0.56rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  white-space: nowrap;
+  line-height: 1.3;
   color: ${({ theme }) => theme.color.textSecondary};
 `;
 

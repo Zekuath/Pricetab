@@ -149,8 +149,7 @@ const candleDensityCap = (candles, minBars = 12) => {
 // high/low, summed volume — the standard reduction, so a bucket is still a
 // truthful candle rather than a sample. Drawing 700 slivers on a 1400px
 // chart costs the same as drawing 200 and reads worse.
-/* **Merged on the clock, not on the window** (12 Oct 2026, the owner: *"sağa
- * sola oynatırken grafik sabit kalmalı"*). Chunks used to start at the first
+/* **Merged on the clock, not on the window** (12 Oct 2026). Chunks used to start at the first
  * candle on screen, so every step of a sideways drag moved every boundary and
  * redrew every merged bar — the candles reshaped under the hand, which
  * TradingView never does. A merged bar is now `size` candle-steps of absolute

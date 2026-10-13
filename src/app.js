@@ -286,6 +286,7 @@ class CryptoChart extends PureComponent {
       // The web app's settings (WEBAPP_EDGE_KEY): the swipe's edge, the screen kept on, the screen it opens on
       webAppEdge: loadWebAppEdge(),
       phoneNav: loadPhoneNav(),
+      phoneTabs: loadPhoneTabs(),
       webAppWake: loadWebAppWake(),
       webAppStart: loadWebAppStart(),
       ohlcEnabled: loadOhlcEnabled(), // crosshair OHLC + volume readout
@@ -3450,16 +3451,15 @@ class CryptoChart extends PureComponent {
 
     /* The bar's tabs and the More sheet's tiles, each only where its feature
        is on — the rule the columns' tabs keep. */
-    _defineProperty(this, "phoneTabs", () => {
+    /* Every place the phone's bar can hold, in PHONE_TAB_KEYS' order — a
+       feature switched off is no place at all. */
+    _defineProperty(this, "phoneTabCatalog", () => {
       const openCalls = this.state.calls && Array.isArray(this.state.calls.open) ? this.state.calls.open.length : 0;
-      const bar = [
+      return [
         { key: "home", icon: "chartline", label: msg("ph_home", "Chart") },
         this.featureOn("calls") && { key: "calls", icon: "calls", label: msg("chrome_calls", "Calls"), badge: openCalls || null },
         this.featureOn("targets") && { key: "targets", icon: "target", label: msg("pt_tab_targets", "Targets") },
         this.featureOn("portfolio") && { key: "portfolio", icon: "portfolio", label: msg("chrome_portfolio", "Portfolio") },
-        { key: "more", icon: "more", label: msg("ph_more", "More") },
-      ].filter(Boolean);
-      const more = [
         this.featureOn("widgets") && { key: "widgets", icon: "widgets", label: msg("set_tab_widgets", "Widgets") },
         { key: "chart", icon: "sliders", label: msg("cs_title", "The chart") },
         { key: "compare", icon: "compare", label: msg("drawer_tab_compare", "Compare") },
@@ -3469,6 +3469,14 @@ class CryptoChart extends PureComponent {
         { key: "search", icon: "search", label: msg("ph_search", "Search") },
         { key: "settings", icon: "settings", label: msg("chrome_settings", "Settings") },
       ].filter(Boolean);
+    });
+
+    // The bar as chosen (PHONE_TABS_KEY) and More; More holds the rest
+    _defineProperty(this, "phoneTabs", () => {
+      const all = this.phoneTabCatalog();
+      const chosen = (this.state.phoneTabs || DEFAULT_PHONE_TABS).map((k) => all.find((t) => t.key === k)).filter(Boolean);
+      const bar = [...chosen, { key: "more", icon: "more", label: msg("ph_more", "More") }];
+      const more = all.filter((t) => !chosen.includes(t));
       return { bar, more };
     });
 
@@ -3476,9 +3484,17 @@ class CryptoChart extends PureComponent {
     _defineProperty(this, "phoneActive", () => {
       if (this.state.phoneMore) return "more";
       const open = this.openPanelKey() || this.leftDrawer();
-      if (!open) return "home";
-      if (open === "calls" || open === "targets" || open === "portfolio") return open;
-      return "more";
+      const onBar = (k) => (this.state.phoneTabs || DEFAULT_PHONE_TABS).includes(k);
+      if (!open) return onBar("home") ? "home" : null;
+      return onBar(open) ? open : "more";
+    });
+
+    // The bar's places, from Settings → This phone
+    _defineProperty(this, "handlePhoneTabs", (list) => {
+      const clean = sanitizePhoneTabs(list);
+      if (!clean) return;
+      savePhoneTabs(clean);
+      this.setState({ phoneTabs: clean, phoneMore: false });
     });
 
     // The chart again: every screen, drawer and sheet put away
@@ -8994,6 +9010,9 @@ class CryptoChart extends PureComponent {
             onWebAppEdge: this.handleWebAppEdge,
             phoneNav: this.state.phoneNav,
             onPhoneNav: this.handlePhoneNav,
+            phoneTabs: this.state.phoneTabs,
+            phoneTabCatalog: this.phoneTabCatalog(),
+            onPhoneTabs: this.handlePhoneTabs,
             webAppWake: this.state.webAppWake,
             onWebAppWake: this.handleWebAppWake,
             webAppStart: this.state.webAppStart,
@@ -9790,9 +9809,7 @@ injectGlobal`
     }
   }
 
-  /* **Nothing is selected by accident** (10 Oct 2026, the owner: *"ekranda
-     seçilmemesi gereken yazılar oluyor … mavi highlight oluyor gereksiz
-     yere"*). A drag across the chart, a double-click on a figure or a press
+  /* **Nothing is selected by accident** (10 Oct 2026). A drag across the chart, a double-click on a figure or a press
      held on a tab painted labels, tabs and figures blue: this page is
      operated, not read like a document. It held on touch since 8 Oct; now
      everywhere. Fields stay selectable, or nothing could be corrected, and
@@ -9801,6 +9818,31 @@ injectGlobal`
   body {
     -webkit-user-select: none;
     user-select: none;
+  }
+  /* **A longer language never leaves its box** (12 Oct 2026). Measured across the
+     thirteen catalogues: German compounds ("Aktualisierungsintervall") ran
+     out of their column into the control beside them, and a placeholder or a
+     closed select was cut mid-letter. A word that cannot fit breaks — with a
+     hyphen where the language has the rules, which the page's lang supplies
+     (English keeps its line breaks as they were) — and a field that cannot
+     show all of its text ends in an ellipsis rather than a sliced glyph. */
+  body {
+    overflow-wrap: break-word;
+  }
+  html:not(:lang(en)) body {
+    -webkit-hyphens: auto;
+    hyphens: auto;
+  }
+  /* A control's label is a name, not prose: never hyphenated. */
+  button,
+  [role="tab"],
+  [role="button"] {
+    -webkit-hyphens: manual;
+    hyphens: manual;
+  }
+  input,
+  select {
+    text-overflow: ellipsis;
   }
   input,
   textarea,

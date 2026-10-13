@@ -6120,7 +6120,7 @@
     "message": "Размер $1 процентов"
   },
   "pos_size_type": {
-    "message": "введите размер"
+    "message": "размер"
   },
   "pos_size_typed": {
     "message": "введён"
@@ -7709,9 +7709,6 @@
   },
   "pref_group_webapp": {
     "message": "Этот телефон"
-  },
-  "pref_group_webapp_desc": {
-    "message": "Приложение на телефоне: запуск с экрана «Домой», свайп с краёв, экран не гаснет и с чего оно открывается."
   },
   "pref_language_aria": {
     "message": "Язык"
@@ -10955,6 +10952,9 @@
   "mon_tab_market": {
     "message": "Рынок"
   },
+  "po_allocation": {
+    "message": "Распределение"
+  },
   "pos_cn_all": {
     "message": "От открытия до закрытия"
   },
@@ -11226,6 +11226,45 @@
   },
   "pp_layout_terminal_title": {
     "message": "График, стакан и тикет рядом, открытое — под графиком и стаканом"
+  },
+  "pref_group_basics_desc_phone": {
+    "message": "Язык, валюта, запись чисел и тема — они меняют каждый экран."
+  },
+  "pref_group_webapp_desc_2": {
+    "message": "Приложение на телефоне: размер всего, запуск с экрана «Домой», свайп с краёв, экран не гаснет и с чего оно открывается."
+  },
+  "pref_phone_tabs_add_aria": {
+    "message": "Добавить на панель"
+  },
+  "pref_phone_tabs_desc": {
+    "message": "До $1 мест на панели, в вашем порядке. Всё остальное — в «Ещё»."
+  },
+  "pref_phone_tabs_desc_off": {
+    "message": "Панель выключена (Навигация): то, что задано здесь, вернётся вместе с ней."
+  },
+  "pref_phone_tabs_down": {
+    "message": "Сдвинуть «$1» вправо"
+  },
+  "pref_phone_tabs_full": {
+    "message": "На панели помещается $1 — сначала уберите одно"
+  },
+  "pref_phone_tabs_heading": {
+    "message": "Панель вкладок"
+  },
+  "pref_phone_tabs_keywords": {
+    "message": "панель вкладки снизу значки порядок упорядочить ещё"
+  },
+  "pref_phone_tabs_remove": {
+    "message": "Убрать «$1» с панели"
+  },
+  "pref_phone_tabs_title": {
+    "message": "Панель вкладок"
+  },
+  "pref_phone_tabs_up": {
+    "message": "Сдвинуть «$1» влево"
+  },
+  "pref_text_size_xs": {
+    "message": "XS"
   },
   "wdesc_eth_btc": {
     "message": "Эфир в биткоине и его изменение за 24 часа"

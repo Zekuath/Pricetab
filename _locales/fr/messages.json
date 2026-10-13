@@ -6120,7 +6120,7 @@
     "message": "Taille $1 pour cent"
   },
   "pos_size_type": {
-    "message": "saisir une taille"
+    "message": "taille"
   },
   "pos_size_typed": {
     "message": "saisie"
@@ -7710,9 +7710,6 @@
   "pref_group_webapp": {
     "message": "Ce téléphone"
   },
-  "pref_group_webapp_desc": {
-    "message": "L'app sur le téléphone : depuis l'écran d'accueil, le balayage depuis les côtés, l'écran allumé et où elle s'ouvre."
-  },
   "pref_language_aria": {
     "message": "Langue"
   },
@@ -8086,7 +8083,7 @@
     "message": "Changer toutes les"
   },
   "pref_search": {
-    "message": "Rechercher un paramètre…"
+    "message": "Rechercher…"
   },
   "pref_search_label": {
     "message": "Rechercher un paramètre"
@@ -10955,6 +10952,9 @@
   "mon_tab_market": {
     "message": "Marché"
   },
+  "po_allocation": {
+    "message": "Répartition"
+  },
   "pos_cn_all": {
     "message": "De l'ouverture à la clôture"
   },
@@ -11226,6 +11226,45 @@
   },
   "pp_layout_terminal_title": {
     "message": "Le graphique, le carnet et le ticket côte à côte, l'ouvert sous le graphique et le carnet"
+  },
+  "pref_group_basics_desc_phone": {
+    "message": "Langue, devise, écriture des nombres et thème — ils changent chaque écran."
+  },
+  "pref_group_webapp_desc_2": {
+    "message": "L'app sur un téléphone : la taille de tout, le lancement depuis l'écran d'accueil, le balayage depuis les bords, l'écran maintenu allumé et l'écran d'ouverture."
+  },
+  "pref_phone_tabs_add_aria": {
+    "message": "Mettre sur la barre"
+  },
+  "pref_phone_tabs_desc": {
+    "message": "Jusqu'à $1 emplacements sur la barre, dans votre ordre. Plus contient tout le reste."
+  },
+  "pref_phone_tabs_desc_off": {
+    "message": "La barre est désactivée (Se déplacer) : ce qui est réglé ici revient avec elle."
+  },
+  "pref_phone_tabs_down": {
+    "message": "Déplacer $1 à droite"
+  },
+  "pref_phone_tabs_full": {
+    "message": "La barre en contient $1 — retirez-en un d'abord"
+  },
+  "pref_phone_tabs_heading": {
+    "message": "Barre d'onglets"
+  },
+  "pref_phone_tabs_keywords": {
+    "message": "barre onglets bas icônes ordre ranger plus"
+  },
+  "pref_phone_tabs_remove": {
+    "message": "Retirer $1 de la barre"
+  },
+  "pref_phone_tabs_title": {
+    "message": "Barre d'onglets"
+  },
+  "pref_phone_tabs_up": {
+    "message": "Déplacer $1 à gauche"
+  },
+  "pref_text_size_xs": {
+    "message": "XS"
   },
   "wdesc_eth_btc": {
     "message": "L'ether en bitcoin, et son évolution sur 24 heures"

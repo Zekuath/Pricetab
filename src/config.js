@@ -950,8 +950,7 @@ const RATE_PROMPT_ASKS_KEY = "crypto_chart_rate_prompt_asks";
 const RATE_PROMPT_SNOOZE_DAYS = [3, 7, 30];
 const RATE_PROMPT_MAX_ASKS = 4;
 const RATE_PROMPT_SETTLE_MS = 20000;
-/* **Asked at a good moment** (12 Oct 2026, the owner: *"insanlardan review
- * almalıyız"*). A call that came true and a target that was reached are the
+/* **Asked at a good moment** (12 Oct 2026). A call that came true and a target that was reached are the
  * moments somebody is pleased with the thing, so a due ask waits for one and
  * comes `RATE_PROMPT_MOMENT_MS` after it — once the burst or the toast has
  * been seen. Without such a moment the ask still comes, on the same schedule,
@@ -1532,8 +1531,7 @@ const SETUP_MOVE_HORIZON = 30;
 
 const LOG_SCALE_KEY = "crypto_chart_log_scale";
 const DEFAULT_LOG_SCALE = false;
-/* **Room ahead of the price, at rest** (12 Oct 2026, the owner: *"trading
-   view gibi ileriyi görmemiz gerekiyor"*). TradingView keeps blank time to
+/* **Room ahead of the price, at rest** (12 Oct 2026). TradingView keeps blank time to
    the right of the last bar; the chart here ended at the right edge until a
    pan took it past. On, the resting chart is the range's width moved this
    share into the future — the oldest of it off the left, a drag away — so
@@ -1707,8 +1705,7 @@ const WEBAPP_WAKE_KEY = "crypto_chart_webapp_wake";
 const WEBAPP_START_KEY = "crypto_chart_webapp_start";
 const WEBAPP_STARTS = ["chart", "portfolio", "futures", "monitor", "news"];
 const DEFAULT_WEBAPP_START = "chart";
-/* **How a phone gets around** (12 Oct 2026, the owner: *"sağdan soldan swipe
- * varsa alttaki menüye gerek yok belki … ya o ya bu … ayarlardan"*): "bar" is
+/* **How a phone gets around** (12 Oct 2026): "bar" is
  * the tab bar at the foot (the browser's own, or the iPhone app's), with the
  * edge swipes beside it; "swipe" takes the bar away and the page reaches the
  * glass — every tab is in the two side columns, a swipe from either edge.
@@ -1719,6 +1716,15 @@ const DEFAULT_WEBAPP_START = "chart";
 const PHONE_NAV_KEY = "crypto_chart_phone_nav";
 const PHONE_NAV_OPTIONS = ["bar", "swipe"];
 const DEFAULT_PHONE_NAV = "bar";
+/* **The tab bar is the person's own** (13 Oct 2026): which places sit on the
+ * phone's bar and in what order — at most PHONE_TABS_MAX beside More, which
+ * holds everything else. Set in Settings → This phone, so only where there is
+ * a bar: a phone or the app opened from the home screen. Stored as the list;
+ * a key a later build does not know is dropped on the way in. */
+const PHONE_TABS_KEY = "crypto_chart_phone_tabs";
+const PHONE_TAB_KEYS = ["home", "calls", "targets", "portfolio", "widgets", "chart", "compare", "news", "futures", "monitor", "search", "settings"];
+const DEFAULT_PHONE_TABS = ["home", "calls", "targets", "portfolio"];
+const PHONE_TABS_MAX = 4;
 const IOS_SYSTEM_EDGE = 16;
 const SPINE_SWIPE_MIN = 32;
 
@@ -2042,7 +2048,11 @@ const NEWS_SEEN_KEY = "crypto_chart_news_seen";
  * Applied in `theme-init.js` before React for the same reason the theme is:
  * the alternative is a page that lays out at one size and jumps to another. */
 const TEXT_SIZE_KEY = "crypto_chart_text_size";
+/* XS (12 Oct 2026): a phone held at arm's length wants more on
+ * one screen, and 15 was the floor. 13 takes the widget subtext near 8px —
+ * a choice somebody makes for themselves, not a default. */
 const TEXT_SIZE_OPTIONS = [
+  { value: "xsmall", label: "Smallest", px: 13 },
   { value: "small", label: "Small", px: 15 },
   { value: "default", label: "Default", px: 16 },
   { value: "large", label: "Large", px: 18 },
@@ -2244,8 +2254,7 @@ const RECORD_MIN_FOR_CURVE = 4;
  * and a strip over it is a real thing to want gone.
  *
  * Asking before opening is **on by default since 9 Oct 2026**, at the
- * owner's word (*"open kontrat yaparken yine bu button animasyonunu
- * yapalim"*). It was off, because a second press on every order made the
+ * owner's word. It was off, because a second press on every order made the
  * cheap experiment expensive; the ask is now the page's one confirmation — a
  * two-second fill across the order button that a press stops
  * (`PRACTICE_CONFIRM_MS`, `pressConfirm`) — which costs no second press and
@@ -2286,8 +2295,7 @@ const PRACTICE_LAYOUT_LIMITS = {
   bottom: [96, 900],
   pin: [288, 720],
 };
-/* **Which arrangement the wide page takes** (10 Oct 2026, the owner: *"terminal
-   düzeni ayarlarda olsun"*): "simple" is layout D — the ticket on the left,
+/* **Which arrangement the wide page takes** (10 Oct 2026): "simple" is layout D — the ticket on the left,
    the chart, the book under More; "terminal" is the 27 Sep terminal — the
    chart, the book and the ticket side by side, the panel under the chart and
    the book. One page, two grids over the same cells; under 1280px both are
@@ -2295,8 +2303,7 @@ const PRACTICE_LAYOUT_LIMITS = {
 const PRACTICE_PAGE_LAYOUT_KEY = "crypto_chart_practice_page_layout";
 const PRACTICE_PAGE_LAYOUTS = ["simple", "terminal"];
 /* **The panel's tabs pinned as a panel of their own, and the areas swapped**
-   (10 Oct 2026, the owner: *"her bir alan tab'ına bir raptiye butonu
-   koyalım … yerleşim planı sürükle bırakla yer değiştirilebilmeli"*). A
+   (10 Oct 2026). A
    pinned tab leaves the panel under the chart for a column beside the chart;
    the areas — the ticket, the chart, the panel, the book, the pinned one —
    each stand in a place of the grid, and two trade places when one is
@@ -2700,8 +2707,7 @@ const PORTFOLIO_SORT_OPTIONS = [
 const PORTFOLIO_HIDDEN_KEY = "crypto_chart_portfolio_hidden";
 const DEFAULT_PORTFOLIO_HIDDEN = false;
 
-/* **What the toolbar popup shows** (12 Oct 2026, the owner: *"pop kısmının
- * ayarları da olsun … btc halving countdown"*): each part a switch, changed
+/* **What the toolbar popup shows** (12 Oct 2026): each part a switch, changed
  * from the popup's own gear. The three market figures are the widgets' own
  * fetchers (api.js) and their cache, so a part that is on costs at most one
  * request to a host already declared, and one that is off costs nothing. */

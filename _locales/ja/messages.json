@@ -7726,9 +7726,6 @@
   "pref_group_webapp": {
     "message": "この電話"
   },
-  "pref_group_webapp_desc": {
-    "message": "電話上のアプリ: ホーム画面からの起動、左右からのスワイプ、画面を点けたまま、開く画面。"
-  },
   "pref_language_aria": {
     "message": "言語"
   },
@@ -10971,6 +10968,9 @@
   "mon_tab_market": {
     "message": "市場"
   },
+  "po_allocation": {
+    "message": "構成"
+  },
   "pos_cn_all": {
     "message": "建玉から決済まで"
   },
@@ -11242,6 +11242,45 @@
   },
   "pp_layout_terminal_title": {
     "message": "チャート・板・注文票を横並びに、保有分はチャートと板の下に"
+  },
+  "pref_group_basics_desc_phone": {
+    "message": "言語、通貨、数値の書き方、テーマ。どれもすべての画面を変えます。"
+  },
+  "pref_group_webapp_desc_2": {
+    "message": "電話上のアプリ: 全体のサイズ、ホーム画面からの起動、左右からのスワイプ、画面を点けたまま、開く画面。"
+  },
+  "pref_phone_tabs_add_aria": {
+    "message": "バーに追加"
+  },
+  "pref_phone_tabs_desc": {
+    "message": "バーには最大 $1 か所、好きな順に。それ以外はすべて「その他」に入ります。"
+  },
+  "pref_phone_tabs_desc_off": {
+    "message": "バーはオフです（移動方法）。ここでの設定はバーと一緒に戻ります。"
+  },
+  "pref_phone_tabs_down": {
+    "message": "$1 を右へ"
+  },
+  "pref_phone_tabs_full": {
+    "message": "バーは $1 つまで。先に 1 つ外してください"
+  },
+  "pref_phone_tabs_heading": {
+    "message": "タブバー"
+  },
+  "pref_phone_tabs_keywords": {
+    "message": "タブ バー 下 アイコン 順序 並べ替え その他"
+  },
+  "pref_phone_tabs_remove": {
+    "message": "$1 をバーから外す"
+  },
+  "pref_phone_tabs_title": {
+    "message": "タブバー"
+  },
+  "pref_phone_tabs_up": {
+    "message": "$1 を左へ"
+  },
+  "pref_text_size_xs": {
+    "message": "XS"
   },
   "wdesc_eth_btc": {
     "message": "ビットコイン建てのイーサと、24時間の値動き"

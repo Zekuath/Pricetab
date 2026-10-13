@@ -390,8 +390,7 @@ const BaseLoad = styled.button.attrs({ type: "button" })`
   }
 `;
 
-/* ── Easier to read and to move around (11 Oct 2026, the owner: *"base rate
-   … kısmını biraz daha kullanıcı dostu hale getirelim"*) ─────────────────
+/* ── Easier to read and to move around (11 Oct 2026) ─────────────────
    The screen ran 7,881px with every row a paragraph. Now: the coins to read
    in its head, an index of its sections that stays at the top while it
    scrolls, and each count drawn as two bars — after this state, and after

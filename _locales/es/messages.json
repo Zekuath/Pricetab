@@ -6120,7 +6120,7 @@
     "message": "Tamaño $1 por ciento"
   },
   "pos_size_type": {
-    "message": "escribe un tamaño"
+    "message": "tamaño"
   },
   "pos_size_typed": {
     "message": "escrito"
@@ -7710,9 +7710,6 @@
   "pref_group_webapp": {
     "message": "Este teléfono"
   },
-  "pref_group_webapp_desc": {
-    "message": "La app en el teléfono: desde la pantalla de inicio, el deslizamiento desde los lados, la pantalla encendida y dónde abre."
-  },
   "pref_language_aria": {
     "message": "Idioma"
   },
@@ -8753,7 +8750,7 @@
     "message": "Ajustes que coinciden con «$1»"
   },
   "set_search_placeholder": {
-    "message": "Busca por nombre o símbolo"
+    "message": "Nombre o símbolo"
   },
   "set_selected": {
     "message": "Seleccionadas"
@@ -10955,6 +10952,9 @@
   "mon_tab_market": {
     "message": "Mercado"
   },
+  "po_allocation": {
+    "message": "Distribución"
+  },
   "pos_cn_all": {
     "message": "De la apertura al cierre"
   },
@@ -11226,6 +11226,45 @@
   },
   "pp_layout_terminal_title": {
     "message": "El gráfico, el libro y el ticket lado a lado, lo abierto bajo el gráfico y el libro"
+  },
+  "pref_group_basics_desc_phone": {
+    "message": "Idioma, moneda, cómo se escriben los números y el tema: cambian todas las pantallas."
+  },
+  "pref_group_webapp_desc_2": {
+    "message": "La app en el teléfono: el tamaño de todo, abrirla desde la pantalla de inicio, deslizar desde los lados, la pantalla encendida y dónde se abre."
+  },
+  "pref_phone_tabs_add_aria": {
+    "message": "Poner en la barra"
+  },
+  "pref_phone_tabs_desc": {
+    "message": "Hasta $1 lugares en la barra, en tu orden. Más contiene todo lo demás."
+  },
+  "pref_phone_tabs_desc_off": {
+    "message": "La barra está desactivada (Moverse): lo que se ajuste aquí vuelve con ella."
+  },
+  "pref_phone_tabs_down": {
+    "message": "Mover $1 a la derecha"
+  },
+  "pref_phone_tabs_full": {
+    "message": "La barra admite $1: quita uno primero"
+  },
+  "pref_phone_tabs_heading": {
+    "message": "Barra de pestañas"
+  },
+  "pref_phone_tabs_keywords": {
+    "message": "barra pestañas abajo iconos orden ordenar más"
+  },
+  "pref_phone_tabs_remove": {
+    "message": "Quitar $1 de la barra"
+  },
+  "pref_phone_tabs_title": {
+    "message": "Barra de pestañas"
+  },
+  "pref_phone_tabs_up": {
+    "message": "Mover $1 a la izquierda"
+  },
+  "pref_text_size_xs": {
+    "message": "XS"
   },
   "wdesc_eth_btc": {
     "message": "Ether en bitcoin y cómo se movió en 24 horas"

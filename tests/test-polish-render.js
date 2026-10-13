@@ -17624,8 +17624,7 @@ await page.evaluate(`(() => { const m = document.querySelector("[data-practice-r
   }
 
   /* §110 — one confirmation, and the moment a contract opens (9 Oct 2026).
-   * The owner: *"open kontrat yaparken yine bu button animasyonunu yapalim,
-   * confirmation gerektiren seylerde olmasi gerekiyor"*. The derivatives page
+   * The derivatives page
    * had three shapes — a second press, a second press and a bar, the bar
    * alone — and now has the deposit's everywhere: the press starts a fill
    * across the button, the button says what is happening and that a press
@@ -17742,10 +17741,7 @@ await page.evaluate(`(() => { const m = document.querySelector("[data-practice-r
   }
 
   /* §111 — the chart keeps its shape under the hand, and the wheel zooms
-   * into the point (9 Oct 2026). The owner: *"sağa sola sürüklerken grafiğin
-   * şekli değişmemeli, yukarı aşağı hareket ettirmemiz gerekiyor; ileriyi
-   * görmek … grafiğin çizilmediği yeri görmek gerekiyor"* and *"o noktada
-   * sabitken yakınlaştırma yaparken o noktaya yakınlaştırmıyor"*. Measured
+   * into the point (9 Oct 2026). Measured
    * first: a sideways pan re-fitted the price to every window it crossed, the
    * dot under the pointer slid 70–150px a wheel notch, and a zoom into a
    * point seventeen hours back on 1D jumped to 1H at now. Held here: a
@@ -17932,8 +17928,7 @@ await page.evaluate(`(() => { const m = document.querySelector("[data-practice-r
     await ctx.close();
   }
 
-  /* §112 — the monitor, with more to read (9 Oct 2026, *"terminal kısmı …
-   * monitör, ona biraz daha yetenek ekleyelim, çok yavan kalmış"*). Held: four
+  /* §112 — the monitor, with more to read (9 Oct 2026). Held: four
    * counted facts over the table; every row its 30 days as a line and its β
    * on Bitcoin (BTC itself 1.00); ↑ and ↓ walk the rows; the Market tab maps
    * the snapshot's coins as tiles sized by market value — largest first, the
@@ -18007,9 +18002,7 @@ await page.evaluate(`(() => { const m = document.querySelector("[data-practice-r
     await ctx.close();
   }
 
-  /* §113 — the futures page reads (9 Oct 2026, *"şu an kapatırsam ne kadar
-   * kârdayım … çok dandik … grafik çok bilgilendirici değil, belki büyütme …
-   * assistant kısmı grafikte yardımcı olmalı"*). Held: the close block is a
+  /* §113 — the futures page reads (9 Oct 2026). Held: the close block is a
    * statement whose lines add up — the move to the fill and the fee to close
    * make this close, and this close less what was paid on the way in makes
    * the contract's whole result; the readout sits at the pointer's height
@@ -18115,10 +18108,8 @@ await page.evaluate(`(() => { const m = document.querySelector("[data-practice-r
     await ctx.close();
   }
 
-  /* §114 — the helper on the futures chart (10 Oct 2026, the owner, five
-   * times from 17 Sep: *"bu yardımcı eşlikçinin grafikte görünür olması çok
-   * önemli"*, *"neyi nasıl yapacağımız daha anlaşılabilir olabilirdi"*,
-   * *"grafik içi yardımcı istedik"*). Held: the futures chart is the app's own
+  /* §114 — the helper on the futures chart (10 Oct 2026, asked for five
+   * times from 17 Sep). Held: the futures chart is the app's own
    * chart (its scale, its axis, its crosshair); the order being written is
    * drawn before it is placed — entry, liquidation, "+ SL" / "+ TP" handles —
    * and dragging a handle writes the ticket's field, with the pill on the
@@ -18305,9 +18296,7 @@ await page.evaluate(`(() => { const m = document.querySelector("[data-practice-r
   }
 
 
-  /* §115 — a drag pans, and only pans (10 Oct 2026). The owner: *"ana
-   * grafikte mouse'u sol tıkı basılı tutarken sağa sola gidince grafik
-   * bozuluyor … yakınlaştırmadan grafik bozulmamalı"*. Measured first on
+  /* §115 — a drag pans, and only pans (10 Oct 2026). Measured first on
    * the live chart: from the whole of 1D, pulling the past in did nothing
    * for 13 frames, then the line jumped 20–26px a frame and came back as 1W
    * (64 points for 362) — the drag had changed the range. Held here: the
@@ -18388,9 +18377,8 @@ await page.evaluate(`(() => { const m = document.querySelector("[data-practice-r
     await ctx.close();
   }
 
-  /* §116 — the calls made stay on the chart (10 Oct 2026). The owner:
-   * *"geçmişte verdiğimiz calls da grafikte işaretlenmiş kare olarak
-   * görmeliyiz, eğer silmediysek"*. They were drawn only with the board up and
+  /* §116 — the calls made stay on the chart (10 Oct 2026).
+   * They were drawn only with the board up and
    * only on the range they were made on. Held here: with the board down, a
    * settled call and an open one are marks on 1D where they were placed —
    * the hit in the up ink, the open one dashed, every coordinate a number,
@@ -18458,8 +18446,7 @@ await page.evaluate(`(() => { const m = document.querySelector("[data-practice-r
     await ctx.close();
   }
 
-  /* §117 — the terminal is a setting (10 Oct 2026, the owner: *"terminal
-   * düzeni ayarlarda olsun"*). The page's Settings → This page → Layout:
+  /* §117 — the terminal is a setting (10 Oct 2026). The page's Settings → This page → Layout:
    * Terminal puts the chart, the book and the ticket side by side (the book
    * its own cell, so More no longer lists it), keeps the choice across a
    * reload, and Simple puts layout D back. */
@@ -18513,8 +18500,7 @@ await page.evaluate(`(() => { const m = document.querySelector("[data-practice-r
     await ctx.close();
   }
 
-  /* §118 — nothing is selected by accident (10 Oct 2026, the owner:
-   * *"ekranda seçilmemesi gereken yazılar oluyor … mavi highlight"*). A
+  /* §118 — nothing is selected by accident (10 Oct 2026). A
    * double-click on the price, on a range button or across a tab column, and
    * a drag across the head, select nothing; a field still selects what is
    * typed in it, and what is marked to be read keeps its text selectable. */
@@ -18568,10 +18554,7 @@ await page.evaluate(`(() => { const m = document.querySelector("[data-practice-r
     await ctx.close();
   }
 
-  /* §119 — the futures page's areas (10 Oct 2026, the owner: *"grafiği
-   * büyütme … büyük ekran görme modu … alt kısımdaki assistant, market …
-   * büyüme modu … başlıklar hep kalır … raptiye butonu … sürükle bırakla yer
-   * değiştirilebilmeli"*). Held here: Enlarge puts the chart over the whole
+  /* §119 — the futures page's areas (10 Oct 2026). Held here: Enlarge puts the chart over the whole
    * grid and Esc puts it back without closing the page; the panel's tabs stay
    * where they are while its content scrolls; a pinned tab becomes a panel of
    * its own beside the chart and leaves the panel; a grip dropped on another
@@ -18658,9 +18641,7 @@ await page.evaluate(`(() => { const m = document.querySelector("[data-practice-r
   }
 
   /* §120 — the guide opened over the chart, the whole trade history, and a
-   * way to start over (10 Oct 2026, the owner: *"guide kısmı … hover menüsü
-   * ile ya da tıklanınca açılan … geçmişte yaptığımız trade'leri
-   * resetleyebilmeyi veya geçmişimizi görmeliyiz"*). Held here: pointing at
+   * way to start over (10 Oct 2026). Held here: pointing at
    * the guide's last chip opens every item, numbered as on the chart, and
    * leaving puts it away; a press keeps it until Esc or a press elsewhere;
    * Closed lists every contract the account closed although the ledger kept
@@ -18775,9 +18756,8 @@ await page.evaluate(`(() => { const m = document.querySelector("[data-practice-r
     await ctx.close();
   }
 
-  /* §121 — the wheel zooms about the pointer itself (11 Oct 2026, the
-   * owner: *"mouse imleci neredeyse oraya yakınlaştırılmalı, saçma sapan
-   * rastgele bir yerden olmamalı"*). Measured first: with the pointer 80px
+  /* §121 — the wheel zooms about the pointer itself (11 Oct 2026).
+   * Measured first: with the pointer 80px
    * off the line the price under it slid 31–40px in five notches (the zoom
    * was anchored on the line's price); with the pointer near the right edge
    * each settle pinned the window to now and the instant under the pointer
@@ -18864,7 +18844,7 @@ await page.evaluate(`(() => { const m = document.querySelector("[data-practice-r
     }
     check(worst2 <= 3 && (await range()) === "1D", "§121 near the right edge the instant under the pointer stays, and the range with it", JSON.stringify({ worst: +worst2.toFixed(1), range: await range() }));
 
-    /* A mouse notch glides (11 Oct 2026, *"smooth değil"*): it moved the
+    /* A mouse notch glides (11 Oct 2026): it moved the
        window 14–16% in one frame, a staircase; spread over frames now. The
        window's span, sampled every frame through three notches. */
     await page.mouse.dblclick(box.l + box.w * 0.5, box.t + box.h * 0.5);
@@ -18886,8 +18866,7 @@ await page.evaluate(`(() => { const m = document.querySelector("[data-practice-r
   }
 
   /* §122 — "Has this happened before?" and the monitor, easier to use (11 Oct
-   * 2026, the owner: *"base rate ve monitor kısmını biraz daha kullanıcı dostu
-   * hale getirelim"*). B ran 7,881px, every count a paragraph, and another
+   * 2026). B ran 7,881px, every count a paragraph, and another
    * coin meant closing it; M explained its columns only in tooltips and
    * nothing said a row opens its coin. Held here: B's index lists its
    * sections and a press puts that section just under it; the coins in its
@@ -18968,8 +18947,7 @@ await page.evaluate(`(() => { const m = document.querySelector("[data-practice-r
   }
 
   /* §123 — TradingView's room ahead, and a chart that holds under the hand
-   * (12 Oct 2026, the owner: *"trading view gibi ileriyi görmemiz gerekiyor
-   * ve sağa sola oynatırken grafik sabit kalmalı … mod şeklinde ayarlardan"*).
+   * (12 Oct 2026).
    * Measured first: the plain grid re-fitted the price in 356 of 368 frames
    * of a drag; merged candles were chunked from the first one on screen, so
    * a drag reshaped them (test-chart holds that); twelve notches out from 1D
@@ -19080,8 +19058,7 @@ await page.evaluate(`(() => { const m = document.querySelector("[data-practice-r
   }
 
   /* §124 — a phone gets around by the tab bar or by the swipes alone (12 Oct
-   * 2026, the owner: *"sağdan soldan swipe varsa alttaki menüye gerek yok
-   * belki … ya o ya bu … ayarlardan"*). Settings → This phone → Getting
+   * 2026). Settings → This phone → Getting
    * around: Swipes only takes the bar away, the page reaches the glass and the
    * chart takes the height; the edges still bring both columns out; the choice
    * outlives a reload laid out right from the first frame; and Tab bar puts it back. */
@@ -19174,9 +19151,7 @@ await page.evaluate(`(() => { const m = document.querySelector("[data-practice-r
   }
 
   /* §125 — one screen for the monitor and the base rates, and a phone's two
-   * columns face to face (12 Oct 2026, the owner: *"monitor ve base rates'i
-   * aynı menüye yedirelim … sol ve sağdan çıkan çentiklerin yerleşimleri eşit
-   * görünmüyor … toolbar şekil olarak bozuk"*). Measured before: the right
+   * columns face to face (12 Oct 2026). Measured before: the right
    * column began at 134px and the left at 258px, tabs 78–121px tall; the
    * screens' column carried Base rates and Monitor apart; the range row's +
    * sat in a 40px ring round a 44px button. */
@@ -19268,11 +19243,8 @@ await page.evaluate(`(() => { const m = document.querySelector("[data-practice-r
     await pctx.close();
   }
 
-  /* §126 — the monitor as one screen to read in (12 Oct 2026, the owner:
-   * *"base rate kısmındaki üst bar … yanlış … koinlere tıklayınca ana grafiğe
-   * gitmesin, ufak bir ekran açılsın … menü geçişleri animasyonlu olsun …
-   * korelasyondaki metrik son kullanıcının anlayabileceği bir metriğe
-   * dönüşsün"*). Held: a row opens the coin's card over the screen, not the
+  /* §126 — the monitor as one screen to read in (12 Oct 2026).
+   * Held: a row opens the coin's card over the screen, not the
    * chart; Esc closes the card and leaves the screen, the focus back on its
    * row; the card's two ways on; the Base rates tab wears the monitor's head;
    * a tab switch moves the content and not the frame; the correlation says
@@ -19413,8 +19385,8 @@ await page.evaluate(`(() => { const m = document.querySelector("[data-practice-r
     await ctx.close();
   }
 
-  /* §128 — the rating asked for at a good moment (12 Oct 2026, the owner:
-   * *"insanlardan review almalıyız"*). Held: an install past the first day
+  /* §128 — the rating asked for at a good moment (12 Oct 2026).
+   * Held: an install past the first day
    * but short of a week is not asked when a tab opens; a target that is
    * reached brings the ask a few seconds later, worded for that moment; its
    * Rate goes to the listing's reviews tab, as Settings' link does. */
@@ -19465,8 +19437,7 @@ await page.evaluate(`(() => { const m = document.querySelector("[data-practice-r
   }
 
   /* §129 — the toolbar popup in the house's design, and more to do in it (12
-   * Oct 2026, the owner: *"popup'ı tasarım dilimize uygunlaştırıp daha işlevsel
-   * hâle getirmek"*). Held: what is held sums at the top, its day beside it;
+   * Oct 2026). Held: what is held sums at the top, its day beside it;
    * every coin is a button that opens a tab on that coin; the nearest armed
    * targets, with how far each is; and a tab opened as index.html#coin=ETH
    * shows Ethereum and forgets the hash. */
@@ -19548,6 +19519,100 @@ await page.evaluate(`(() => { const m = document.querySelector("[data-practice-r
     await tab.waitForTimeout(800);
     const opened = await tab.evaluate(`({ head: document.body.innerText.slice(0, 400), hash: window.location.hash })`);
     check(/ETH\s*price/i.test(opened.head) && opened.hash === "", "§129 a tab opened as #coin=ETH shows Ethereum and forgets the hash", JSON.stringify({ hash: opened.hash }));
+    await ctx.close();
+  }
+
+  /* §130 — a longer language stays in its boxes, and the phone's home-screen
+   * app keeps clear of the clock (12 Oct 2026).
+   * Measured across all thirteen catalogues first (a scan of every screen at
+   * 1280 and 390): German's "Automatisch" ran 16px out of its pill, French
+   * "Depuis le plus haut" ran into "30 jours", "ni l'un ni l'autre" was cut
+   * at its card, Russian "Активность" was an ellipsis in a quarter of the
+   * phone's strip, "Allocation ·" was English in every language. On a phone
+   * opened from the home screen the screens' × sat 8px down under a 62px
+   * status bar and Settings' head at 47px; the settings rows ended 48px from
+   * the right edge against 16px on the left. */
+  {
+    const fs = require("fs");
+    const seedLocale = (code) => `
+      localStorage.setItem("crypto_chart_onboarding_seen", "1");
+      localStorage.setItem("crypto_chart_macro_events", "false");
+      localStorage.setItem("crypto_chart_portfolio", JSON.stringify([{ coin: "BTC", amount: 0.5 }, { coin: "ETH", amount: 2 }]));
+      localStorage.setItem("crypto_chart_language", ${JSON.stringify(code)});
+      localStorage.setItem("crypto_chart_language_cache", JSON.stringify({ locale: ${JSON.stringify(code)}, version: "", messages: ${fs.readFileSync(path.join(__dirname, "..", "_locales", code, "messages.json"), "utf8")} }));
+    `;
+    // The text inside each node, against the node's own box
+    const spill = (sel) => `[...document.querySelectorAll(${JSON.stringify(sel)})].filter((n) => n.getClientRects().length).map((n) => {
+      const r = n.getBoundingClientRect(); const range = document.createRange(); range.selectNodeContents(n);
+      const t = [...range.getClientRects()].filter((x) => x.width > 0.5);
+      const over = t.length ? Math.max(...t.map((x) => Math.max(x.right - r.right, r.left - x.left))) : 0;
+      return [n.textContent.trim().slice(0, 24), Math.round(over)];
+    }).filter(([, o]) => o > 2)`;
+
+    // German: Settings → Basics, and the portfolio's allocation row
+    let { ctx, page } = await newCtx(browser, seedLocale("de"));
+    await page.keyboard.press("s");
+    await page.waitForTimeout(700);
+    await page.click("[data-settings-card] button[data-pref-group=basics]");
+    await page.waitForTimeout(500);
+    const segs = await page.evaluate(`({ n: document.querySelectorAll("[data-settings-card] [data-direction-choice]").length, out: ${spill("[data-settings-card] [data-pref-section] button")} })`);
+    check(segs.n === 2 && segs.out.length === 0, "§130 in German every segment of Basics holds its word (Automatisch, the direction colours)", JSON.stringify(segs));
+    await page.keyboard.press("Escape");
+    await page.waitForTimeout(400);
+    await page.keyboard.press("p");
+    await page.waitForTimeout(1200);
+    const alloc = await page.evaluate(`(() => { const t = document.body.innerText; return { de: /Aufteilung ·/i.test(t), en: /Allocation ·/i.test(t) }; })()`);
+    check(alloc.de && !alloc.en, "§130 …and the portfolio's allocation row speaks German", JSON.stringify(alloc));
+    await ctx.close();
+
+    // French: the monitor's column heads, the news panel's wording tally
+    ({ ctx, page } = await newCtx(browser, seedLocale("fr")));
+    await page.keyboard.press("m");
+    await page.waitForTimeout(1200);
+    const heads = await page.evaluate(`(() => { const hs = [...document.querySelectorAll("[aria-sort], [data-monitor-wide=hide]")].filter((n) => n.tagName === "BUTTON" && n.getClientRects().length).map((n) => n.getBoundingClientRect());
+      let hit = 0; for (let i = 1; i < hs.length; i++) if (hs[i].left < hs[i - 1].right - 1 && Math.abs(hs[i].top - hs[i - 1].top) < 4) hit++;
+      return { n: hs.length, hit, out: ${spill("[data-monitor-wide=hide]")} }; })()`);
+    check(heads.out.length === 0, "§130 in French no monitor head runs out of its column (Depuis le plus haut)", JSON.stringify(heads));
+    await ctx.close();
+
+    // The home-screen app on a 440×956 iPhone: the status bar's 62px and the home bar's 34px
+    ({ ctx, page } = await newCtx(browser, `
+      localStorage.setItem("crypto_chart_onboarding_seen", "1");
+      localStorage.setItem("crypto_chart_touch_hint_seen", "true");
+      localStorage.setItem("crypto_chart_macro_events", "false");
+      Object.defineProperty(navigator, "standalone", { get: () => true });
+    `, PRICES, 0, false, { viewport: { width: 440, height: 956 }, isMobile: true, hasTouch: true }));
+    const cdp = await ctx.newCDPSession(page);
+    let insets = true;
+    try {
+      await cdp.send("Emulation.setSafeAreaInsetsOverride", { insets: { top: 62, bottom: 34, left: 0, right: 0 } });
+    } catch (error) {
+      insets = false;
+    }
+    await page.reload({ waitUntil: "load" });
+    await page.waitForSelector("svg path", { timeout: 20000 });
+    await page.waitForTimeout(1200);
+    const press = (k) => page.evaluate(`document.dispatchEvent(new KeyboardEvent("keydown", { key: ${JSON.stringify(k)}, bubbles: true }))`);
+    if (insets) {
+      await press("s");
+      await page.waitForTimeout(900);
+      const top = await page.evaluate(`(() => { const x = document.querySelector("[data-screen-close]").getBoundingClientRect(); const h = document.querySelector("[data-settings-card] h2, [data-settings-card] h1"); const reset = [...document.querySelectorAll("[data-settings-card] *")].find((n) => n.children.length === 0 && /Reset to defaults/i.test(n.textContent) && n.getClientRects().length);
+        const row = reset ? reset.parentElement.getBoundingClientRect() : null;
+        return { x: Math.round(x.top), head: h ? Math.round(h.getBoundingClientRect().top) : null, left: row ? Math.round(row.left) : null, right: row ? Math.round(innerWidth - row.right) : null }; })()`);
+      check(top.x >= 62 && top.head >= 62, "§130 opened from the home screen, a screen's × and Settings' head sit under the clock, not on it", JSON.stringify(top));
+      check(top.left != null && Math.abs(top.left - top.right) <= 2, "§130 …and Settings' rows keep the same gutter on both sides", JSON.stringify(top));
+    } else {
+      check(true, "§130 (this Chromium cannot emulate the safe area; the clock checks were skipped)");
+    }
+    // The size of everything heads This phone, with a step smaller than before
+    await page.evaluate(`document.querySelector("[data-settings-card] button[data-pref-group=webApp]").click()`);
+    await page.waitForTimeout(500);
+    const size = await page.evaluate(`(() => { const sec = document.querySelector("[data-settings-card] [data-pref-section]"); const first = sec && sec.textContent; const xs = [...document.querySelectorAll("[data-settings-card] button")].find((b) => b.textContent.trim() === "XS"); return { first: Boolean(first && first.indexOf("Text Size") > -1 && first.indexOf("Text Size") < 40), xs: Boolean(xs) }; })()`);
+    check(size.first && size.xs, "§130 on a phone, This phone opens on the size of everything, which now goes down to XS", JSON.stringify(size));
+    await page.evaluate(`[...document.querySelectorAll("[data-settings-card] button")].find((b) => b.textContent.trim() === "XS").click()`);
+    await page.waitForTimeout(400);
+    const root = await page.evaluate(`({ px: getComputedStyle(document.documentElement).fontSize, kept: localStorage.getItem("crypto_chart_text_size") })`);
+    check(root.px === "13px" && root.kept === "xsmall", "§130 …and XS sets the whole page at 13px, kept for the next open", JSON.stringify(root));
     await ctx.close();
   }
   await browser.close();

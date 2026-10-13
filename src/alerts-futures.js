@@ -5660,8 +5660,7 @@ const alertsFutures = (panel) => ({
     );
   },
 
-  /* **Start over** (10 Oct 2026, the owner: *"geçmişte yaptığımız trade'leri
-     resetleyebilmeyi"*). The model always had it (`resetPractice`) and no
+  /* **Start over** (10 Oct 2026). The model always had it (`resetPractice`) and no
      control reached it: the only ways to a fresh account were changing a
      setting that happens to start one. One press, confirmed like every other
      press here that cannot be taken back (`pressConfirm`); refused, with the

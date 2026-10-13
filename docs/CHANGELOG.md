@@ -242,6 +242,16 @@ submitted, so their changes reach the store here.
 
 ### Fixed
 
+- Longer languages stay inside their boxes: German, French, Russian and the
+  rest no longer run out of buttons, column heads, tabs and fields; a word
+  that cannot fit breaks with a hyphen, and a field too narrow for its hint
+  ends in an ellipsis. "Allocation" in the portfolio is translated.
+- Opened from an iPhone's home screen, the screens' × and the Settings head
+  sit under the clock instead of on it, and Settings keeps an even margin on
+  both sides.
+- Text size has a smaller step (XS), and on a phone it heads Settings → This
+  phone.
+
 - Calls and targets are no longer left in English in the twelve translated
   interfaces, and awkward literal wording across those catalogues — especially
   Turkish — now reads naturally and uses the app's established terms.

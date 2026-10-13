@@ -1761,9 +1761,8 @@ class LineBase extends PureComponent {
       return null;
     });
 
-    /* **The calls made, on the chart without the board** (10 Oct 2026, the
-     * owner: *"geçmişte verdiğimiz calls da grafikte işaretlenmiş kare olarak
-     * görmeliyiz, eğer silmediysek"*). They were drawn only while the board
+    /* **The calls made, on the chart without the board** (10 Oct 2026).
+     * They were drawn only while the board
      * was up, and only on the range they were made on. A call is a rectangle
      * of real time and price, so it stands on any range at its own minutes
      * and prices, through the scale the tools and the trade layer read
@@ -5712,9 +5711,7 @@ class LineBase extends PureComponent {
      * endorsed), where the price has gone since, and this coin's count against
      * an ordinary stretch, with the count's own size beside it.
      *
-     * **Beside the mark, not in a corner** (9 Oct 2026, *"üzerine gelince
-     * kenarda köşede yazı geliyor; imlecimizin yanında hoverlanan bir
-     * rectangle gibi bir şey olmalı"*): to its right, or its left when the
+     * **Beside the mark, not in a corner** (9 Oct 2026): to its right, or its left when the
      * right has no room, level with it and kept inside the plot; above a
      * badge on the foot's lane. The eye stays where the pointer is. The card
      * is a hit area for the same mark, padded by the gap between them, so

@@ -1477,6 +1477,13 @@ const AlertInput = styled.input`
   }
 
   ${refusedField};
+
+  /* The number is what the row is for: it takes twice the coin's share, so
+     a longer language's placeholder ("Ziel in USD") is not the field cut
+     to a stub beside a symbol that needs four letters (12 Oct 2026). */
+  &[data-target-field] {
+    flex: 2 1 7rem;
+  }
 `;
 
 // Filled rather than outlined: it is the one thing in the panel you press to

@@ -2,9 +2,7 @@
  * guide, on the chart's own scale (10 Oct 2026)
  *
  * Asked for five times between 17 Sep and 10 Oct: the derivatives page's
- * helper had to be *on the chart* (*"bu yardımcı eşlikçinin grafikte görünür
- * olması çok önemli"*, *"neyi nasıl yapacağımız daha anlaşılabilir
- * olabilirdi"*, *"grafik içi yardımcı istedik"*). Two faint bands were not
+ * helper had to be *on the chart*. Two faint bands were not
  * that. This layer draws what the page knows about this market where the
  * price is read:
  *

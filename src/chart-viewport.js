@@ -51,9 +51,7 @@ const VIEW_PAST_WHEEL = 300;
 const VIEW_PAST_IDLE_MS = 450;
 const VIEW_PAST_COOL_MS = 900;
 const VIEW_DRAG_SLOP = 6; // px before a press is a pan — CALL_DRAG_SLOP's rule
-/* **A drag pans, and only pans** (10 Oct 2026, the owner: *"sol tıkı basılı
-   tutarken sağa sola gidince grafik bozuluyor … yakınlaştırmadan grafik
-   bozulmamalı"*). From 1 Oct a hand pulling past the oldest point opened the
+/* **A drag pans, and only pans** (10 Oct 2026). From 1 Oct a hand pulling past the oldest point opened the
    longer range — measured: 13 frames of nothing, then the line jumped 20–26px
    a frame and came back as 64 points instead of 362. Now, as the window comes
    within this share of a window of the oldest bar loaded, the app is asked
@@ -64,9 +62,7 @@ const VIEW_DRAG_SLOP = 6; // px before a press is a pan — CALL_DRAG_SLOP's rul
 const VIEW_HISTORY_AHEAD = 0.75;
 // How far a vertical drag may slide the price window, in windows each way
 const VIEW_Y_MAX = 1.5;
-/* **The chart keeps its shape under the hand** (9 Oct 2026, the owner:
-   *"sağa sola sürüklerken grafiğin şekli değişmemeli, yukarı aşağı hareket
-   ettirmemiz gerekiyor"*). A pan holds the price window drawn when the hand
+/* **The chart keeps its shape under the hand** (9 Oct 2026). A pan holds the price window drawn when the hand
    started — shiftDomain's `{ lo, hi }` — and moves it up and down with the
    hand from the first pixel, as a map moves. Until then the price was held
    only after a deliberate vertical move (10px, 2 Oct 2026) and re-fitted to
@@ -74,16 +70,13 @@ const VIEW_Y_MAX = 1.5;
    under the hand. The price stays held when the hand lets go; the "Auto"
    under the price scale, a double-click, or Whole range gives it back to the
    data (`fitScale`). */
-/* **The wheel zooms into the point, in price too** (9 Oct 2026, *"o noktaya
-   yakınlaştırmıyor"*). Time zooms about the pointer, and the price window
+/* **The wheel zooms into the point, in price too** (9 Oct 2026). Time zooms about the pointer, and the price window
    about the line's own price there — the point the crosshair's dot sits on —
    by the time factor to this power: prices travel roughly with the square
    root of time, so the line keeps about the same roughness at every zoom,
    and the dot stays where it is. It re-fitted instead, and the dot slid
    70–150px a notch. Out at the whole range the scale is the data's again.
-   **About the pointer itself, not the line** (11 Oct 2026, the owner:
-   *"mouse imleci neredeyse oraya yakınlaştırılmalı, saçma sapan rastgele bir
-   yerden olmamalı"*). Anchored on the line's price, a pointer 80px above or
+   **About the pointer itself, not the line** (11 Oct 2026). Anchored on the line's price, a pointer 80px above or
    below the line watched the price under it slide 31–40px in five notches
    (measured, 1D and 1W): the zoom went towards the line, not where the
    pointer was. The price under the pointer is the anchor now — on the line
@@ -115,8 +108,7 @@ const VIEW_FUTURE_ROOM = 0.4;
    the same idea at every range. */
 const VIEW_REST_ROOM = 0.15;
 const VIEW_WHEEL_SETTLE_MS = 240; // quiet this long and a wheel gesture has ended
-/* **A mouse wheel's notch glides** (11 Oct 2026, the owner: *"smooth değil
-   bu zoom in ve zoom out"*). Measured frame by frame: a trackpad's stream of
+/* **A mouse wheel's notch glides** (11 Oct 2026). Measured frame by frame: a trackpad's stream of
    small deltas zoomed smoothly, and a mouse notch moved the window 14–16% in
    a single frame — a staircase. A notch now sets a target and each frame
    takes this much of what is left (an exponential ease, time constant
@@ -949,8 +941,7 @@ class ChartView extends Component {
         mode = "measure";
         chart.startMeasure(box.x, box.y);
       } else if (tools && this.props.tool) {
-        /* A drawing in the hand (9 Oct 2026, *"grafik çizerken daha
-           grafiğin çizilmediği yeri görmek gerekiyor"*): a press that travels
+        /* A drawing in the hand (9 Oct 2026): a press that travels
            pans — to the blank time past the latest price as well — and the
            click it ends with is swallowed; a press that stays is the click
            that places the anchor. It used to be the click and nothing else,

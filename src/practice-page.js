@@ -1675,8 +1675,7 @@ const practicePage = (panel) => ({
   /* **The market, on the app's own chart, with this account traded on it**
    * (10 Oct 2026). The futures chart was a drawing of its own — a 1000-unit
    * box stretched to the frame, text laid over it in HTML, a plot 150px tall
-   * with a contract open — and the owner called it "kalas vari" and asked
-   * for it to be what TradingView is. It is now the chart the main screen
+   * with a contract open — stiff, where it should be what TradingView is. It is now the chart the main screen
    * draws (`ChartView` + `Line`): the same price scale and last-price tag,
    * the same time axis, the same crosshair with the bar's OHLC, the wheel
    * zooming into the dot and a drag moving the window like a map, "Auto"
@@ -2423,7 +2422,7 @@ const practicePage = (panel) => ({
         ),
       ),
       panel.renderAreaTools("chart"),
-      React.createElement(PracticeMarketHead, null, panel.renderMarketPeriods(), panel.renderChartLegend(coin)),
+      React.createElement(PracticeMarketHead, { "data-practice-market-head": true }, panel.renderMarketPeriods(), panel.renderChartLegend(coin)),
       panel.renderChartFlags(coin, marks),
     );
   },

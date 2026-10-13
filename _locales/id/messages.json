@@ -6120,7 +6120,7 @@
     "message": "Ukuran $1 persen"
   },
   "pos_size_type": {
-    "message": "ketik ukuran"
+    "message": "ukuran"
   },
   "pos_size_typed": {
     "message": "diketik"
@@ -7709,9 +7709,6 @@
   },
   "pref_group_webapp": {
     "message": "Ponsel ini"
-  },
-  "pref_group_webapp_desc": {
-    "message": "Aplikasi di ponsel: dari layar utama, geser dari sisi, layar tetap menyala, dan di mana ia terbuka."
   },
   "pref_language_aria": {
     "message": "Bahasa"
@@ -10955,6 +10952,9 @@
   "mon_tab_market": {
     "message": "Pasar"
   },
+  "po_allocation": {
+    "message": "Alokasi"
+  },
   "pos_cn_all": {
     "message": "Dari dibuka sampai ditutup"
   },
@@ -11226,6 +11226,45 @@
   },
   "pp_layout_terminal_title": {
     "message": "Grafik, buku order, dan tiket berdampingan, yang terbuka di bawah grafik dan buku"
+  },
+  "pref_group_basics_desc_phone": {
+    "message": "Bahasa, mata uang, cara angka ditulis, dan tema — semuanya mengubah setiap layar."
+  },
+  "pref_group_webapp_desc_2": {
+    "message": "Aplikasi di ponsel: ukuran semuanya, berjalan dari layar utama, geser dari sisi, layar tetap menyala, dan tempat aplikasi dibuka."
+  },
+  "pref_phone_tabs_add_aria": {
+    "message": "Taruh di bilah"
+  },
+  "pref_phone_tabs_desc": {
+    "message": "Hingga $1 tempat di bilah, sesuai urutanmu. Lainnya memuat sisanya."
+  },
+  "pref_phone_tabs_desc_off": {
+    "message": "Bilah sedang mati (Berpindah): yang diatur di sini kembali bersamanya."
+  },
+  "pref_phone_tabs_down": {
+    "message": "Geser $1 ke kanan"
+  },
+  "pref_phone_tabs_full": {
+    "message": "Bilah memuat $1 — hapus satu dulu"
+  },
+  "pref_phone_tabs_heading": {
+    "message": "Bilah tab"
+  },
+  "pref_phone_tabs_keywords": {
+    "message": "bilah tab bawah ikon urutan atur lainnya"
+  },
+  "pref_phone_tabs_remove": {
+    "message": "Hapus $1 dari bilah"
+  },
+  "pref_phone_tabs_title": {
+    "message": "Bilah tab"
+  },
+  "pref_phone_tabs_up": {
+    "message": "Geser $1 ke kiri"
+  },
+  "pref_text_size_xs": {
+    "message": "XS"
   },
   "wdesc_eth_btc": {
     "message": "Ether dalam bitcoin, dan pergerakannya dalam 24 jam"

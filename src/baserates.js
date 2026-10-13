@@ -1104,9 +1104,7 @@ class BaseRatesPanel extends PureComponent {
       React.createElement(
         BaseCard,
         { still: this.props.still === true },
-        /* **Inside the monitor, the monitor's head** (12 Oct 2026, the owner:
-           *"monitor kısmının altında olduğu için bu base rate kısmındaki üst
-           bar … yanlış"*): the same title, key and line as the other three
+        /* **Inside the monitor, the monitor's head** (12 Oct 2026): the same title, key and line as the other three
            tabs, so a switch changes the page and not the frame; this screen's
            own question, its count and its coins move under the tabs. */
         embedded
