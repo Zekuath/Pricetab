@@ -1,18 +1,18 @@
 {
   "al_7d_hit_rate": {
-    "message": "hit rate"
+    "message": "Trefferquote"
   },
   "al_7d_hit_rate_hint": {
-    "message": "Settled calls in the last 7 days"
+    "message": "In den letzten 7 Tagen ausgewertete Prognosen"
   },
   "al_7d_settled": {
-    "message": "settled"
+    "message": "ausgewertet"
   },
   "al_7d_settled_hint": {
-    "message": "Calls that got an answer in the last 7 days"
+    "message": "Prognosen, die in den letzten 7 Tagen ausgewertet wurden"
   },
   "al_7d_snapshot": {
-    "message": "Last 7 days"
+    "message": "Letzte 7 Tage"
   },
   "al_a_pct_move": {
     "message": "Eine Bewegung von $1%"
@@ -119,10 +119,10 @@
     "message": "Prognosen"
   },
   "al_calls_info_b": {
-    "message": "Ein Tipp ist eine Behauptung: nicht „sag mir wann“, sondern „ich sage wo“. Zeige auf ein Feld im leeren Streifen rechts vom Chart, und du nennst ein Preisband und einen Moment — ein Klick entwirft, ein zweiter legt fest. Er wertet sich beim nächsten Öffnen eines Tabs selbst aus, gegen den Preis in diesem Moment, und das Kästchen bleibt auf dem Chart und sagt, ob du richtig lagst. Jedes Feld trägt seine Chance: aus den eigenen Kerzen dieses Coins, skaliert darauf, wie er sich gerade bewegt, und an Jahren früherer Felder gemessen, bevor es aufs Brett durfte — eine Chance, kein Tipp von uns. Ziehe das Brett nach oben oder unten für andere Preise, nach links oder rechts für mehr Brett oder mehr Verlauf."
+    "message": "Eine Prognose ist eine klare Aussage: nicht „Sag mir, wann es passiert“, sondern „Ich sage, wo der Preis liegen wird“. Wähle im freien Bereich rechts vom Chart ein Feld und lege damit Preisband und Zeitpunkt fest. Der erste Klick erstellt einen Entwurf, der zweite bestätigt ihn. Beim nächsten Öffnen eines Tabs wird die Prognose automatisch mit dem damaligen Preis ausgewertet; das Feld bleibt im Chart und zeigt, ob du richtig lagst. Jedes Feld zeigt eine Wahrscheinlichkeit, die aus historischen Kerzen dieses Coins berechnet, an seine aktuelle Schwankung angepasst und vor Freigabe des Boards an jahrelangen Daten geprüft wurde. Sie ist eine Wahrscheinlichkeit, keine Empfehlung. Ziehe das Board nach oben oder unten zu anderen Preisen und nach links oder rechts zu mehr Zukunft oder Verlauf."
   },
   "al_calls_learn_more": {
-    "message": "How calls work"
+    "message": "So funktionieren Prognosen"
   },
   "al_calls_more": {
     "message": "$1 weitere von $2 zeigen",
@@ -139,13 +139,13 @@
     "message": "Prognosen sind aus"
   },
   "al_calls_off_body": {
-    "message": "Zeig auf ein Quadrat leerer Zukunft im Chart, und du hast gesagt, wo der Kurs sein wird und wann. Es entscheidet sich beim nächsten Tab von selbst — nichts wird angekündigt, nichts gesendet, und der Punktestand ist nichts wert."
+    "message": "Wähle im freien Zukunftsbereich des Charts ein Feld und sage damit voraus, wo der Kurs zu welchem Zeitpunkt liegen wird. Beim nächsten Öffnen eines Tabs wird die Prognose automatisch ausgewertet. Es wird nichts veröffentlicht oder versendet, und der Punktestand hat keinen realen Wert."
   },
   "al_calls_practice": {
-    "message": "Try a practice call"
+    "message": "Eine Prognose ausprobieren"
   },
   "al_calls_pulse": {
-    "message": "$1 open · $2 due now · $3 on this range",
+    "message": "$1 offen · $2 jetzt fällig · $3 in diesem Zeitraum",
     "placeholders": {
       "arg1": {
         "content": "$1"
@@ -165,19 +165,19 @@
     "message": "An"
   },
   "al_calls_step_1": {
-    "message": "Turn calls on and go to the board."
+    "message": "Prognosen einschalten und zum Board wechseln."
   },
   "al_calls_step_2": {
-    "message": "Click a square once to draft, twice to lock."
+    "message": "Einmal auf ein Feld klicken, um einen Entwurf anzulegen, ein zweites Mal, um ihn festzulegen."
   },
   "al_calls_step_2_touch": {
-    "message": "Tippe ein Feld einmal für den Entwurf, zweimal zum Festlegen."
+    "message": "Tippe einmal auf ein Feld, um einen Entwurf anzulegen, und ein zweites Mal, um ihn festzulegen."
   },
   "al_calls_step_3": {
-    "message": "Come back with K to track open and settled calls."
+    "message": "Mit K zurückkehren, um offene und ausgewertete Prognosen zu verfolgen."
   },
   "al_calls_step_3_touch": {
-    "message": "Komm zu diesem Tab zurück, um offene und abgerechnete Calls zu verfolgen."
+    "message": "Komm zu diesem Tab zurück, um offene und ausgewertete Prognosen zu verfolgen."
   },
   "al_calls_switch": {
     "message": "Tipps auf dem Chart"
@@ -237,7 +237,7 @@
     "message": "Fällig — entscheidet sich beim nächsten Laden dieses Zeitraums"
   },
   "al_due_empty": {
-    "message": "No calls due in the next 24 hours on this view."
+    "message": "In dieser Ansicht sind in den nächsten 24 Stunden keine Prognosen fällig."
   },
   "al_duplicate": {
     "message": "Dieses Ziel hast du schon."
@@ -264,7 +264,7 @@
     "message": "$1 jetzt"
   },
   "al_fair_odds": {
-    "message": "Zu fairen Quoten, $1 Punkte je Call: riskiert $2, zurück $3"
+    "message": "Bei fairen Quoten bringt eine Prognose $1 Punkte: Einsatz $2, Rücklauf $3"
   },
   "al_falls": {
     "message": "fällt"
@@ -375,7 +375,7 @@
     "message": "Der Zufall allein schafft mindestens so viel in $1 der Fälle"
   },
   "al_luck_title": {
-    "message": "Jeder Call traf mit der Chance, die sein Feld hatte, als du es genannt hast. Diese Chancen als einzelne Münzwürfe zusammengezählt: so oft ergeben sie mindestens so viele Treffer wie deine."
+    "message": "Jede Prognose traf mit der Wahrscheinlichkeit, die ihr Feld beim Festlegen hatte. Fasst man diese Wahrscheinlichkeiten als einzelne Münzwürfe zusammen, zeigt dieser Wert, wie oft mindestens so viele Treffer wie deine herauskommen."
   },
   "al_missed": {
     "message": "Daneben"
@@ -405,10 +405,10 @@
     "message": "Noch keine Prognosen"
   },
   "al_no_calls_body": {
-    "message": "Zeigen Sie auf ein Feld rechts der gestrichelten Linie und klicken Sie zweimal — einmal zum Entwerfen, einmal zum Festlegen. Damit sagen Sie, dass der Kurs zu dieser Zeit in diesem Band liegen wird."
+    "message": "Wähle ein Feld rechts der gestrichelten Linie und klicke zweimal: einmal für den Entwurf und ein zweites Mal zum Festlegen. Damit sagst du voraus, dass der Kurs zu diesem Zeitpunkt in diesem Band liegen wird."
   },
   "al_no_calls_body_touch": {
-    "message": "Tippe auf ein Feld rechts der gestrichelten Linie: Ein Blatt sagt, was der Call ist, und „Festlegen“ gibt ihn ab. Du hast gesagt, der Preis liegt zu dieser Zeit in diesem Band."
+    "message": "Tippe auf ein Feld rechts der gestrichelten Linie. Ein Bedienfeld zeigt die Prognose; mit „Festlegen“ speicherst du sie. Damit sagst du voraus, dass der Preis zu diesem Zeitpunkt in diesem Band liegen wird."
   },
   "al_no_holdings": {
     "message": "Noch nichts zu summieren"
@@ -447,25 +447,25 @@
     "message": " · auf $1"
   },
   "al_open_empty": {
-    "message": "No open calls on this view."
+    "message": "In dieser Ansicht gibt es keine offenen Prognosen."
   },
   "al_open_n": {
     "message": "Offen · $1"
   },
   "al_open_now": {
-    "message": "open now"
+    "message": "jetzt offen"
   },
   "al_open_now_hint": {
-    "message": "Open calls currently waiting to settle"
+    "message": "Offene Prognosen, deren Auswertung noch aussteht"
   },
   "al_order_hint": {
-    "message": "Switch between due-first and newest-first ordering for open calls"
+    "message": "Offene Prognosen wahlweise nach Fälligkeit oder Aktualität sortieren"
   },
   "al_order_recent": {
-    "message": "recent first"
+    "message": "neueste zuerst"
   },
   "al_order_soon": {
-    "message": "due first"
+    "message": "bald fällige zuerst"
   },
   "al_paused_currency": {
     "message": "pausiert · $1"
@@ -561,7 +561,7 @@
     "message": "Gesetzt in $1 — läuft weiter, sobald du wieder $1 anzeigst"
   },
   "al_settled_empty": {
-    "message": "No settled calls on this view."
+    "message": "In dieser Ansicht gibt es keine ausgewerteten Prognosen."
   },
   "al_settled_n": {
     "message": "Erledigt · $1"
@@ -600,13 +600,13 @@
     "message": "sie laufen weiter"
   },
   "al_this_coin": {
-    "message": "this coin"
+    "message": "dieser Coin"
   },
   "al_this_coin_hint": {
-    "message": "Only calls for the coin on screen"
+    "message": "Nur Prognosen für den angezeigten Coin"
   },
   "al_this_coin_only": {
-    "message": "this coin only"
+    "message": "nur dieser Coin"
   },
   "al_time_title": {
     "message": "$1% des Wegs bis zur Abrechnung"
@@ -624,31 +624,31 @@
     "message": "Prognosen einschalten"
   },
   "al_view": {
-    "message": "View"
+    "message": "Ansicht"
   },
   "al_view_all": {
-    "message": "all"
+    "message": "alle"
   },
   "al_view_all_hint": {
-    "message": "Show open and settled calls together"
+    "message": "Offene und ausgewertete Prognosen zusammen anzeigen"
   },
   "al_view_due": {
-    "message": "due"
+    "message": "bald fällig"
   },
   "al_view_due_hint": {
-    "message": "Open calls due in the next 24 hours"
+    "message": "Offene Prognosen, die in den nächsten 24 Stunden fällig sind"
   },
   "al_view_open": {
-    "message": "open"
+    "message": "offen"
   },
   "al_view_open_hint": {
-    "message": "Only open calls"
+    "message": "Nur offene Prognosen"
   },
   "al_view_settled": {
-    "message": "settled"
+    "message": "ausgewertet"
   },
   "al_view_settled_hint": {
-    "message": "Only settled calls"
+    "message": "Nur ausgewertete Prognosen"
   },
   "al_vs_chance": {
     "message": "$1 von $2 getroffen · Zufall gäbe $3"
@@ -997,6 +997,12 @@
   },
   "app_rate_ask": {
     "message": "Gefällt dir PriceTab? Eine Bewertung ist der Weg, wie andere es finden — sie dauert ein paar Sekunden und hilft mehr als alles andere."
+  },
+  "app_rate_ask_call": {
+    "message": "Dieser Call ist eingetreten. Wenn PriceTab dir hilft, den Markt zu lesen, finden andere es über eine Bewertung — sie dauert nur ein paar Sekunden."
+  },
+  "app_rate_ask_target": {
+    "message": "Dein Ziel wurde erreicht. Wenn PriceTab dir nützt, finden andere es über eine Bewertung — sie dauert nur ein paar Sekunden."
   },
   "app_read_on": {
     "message": "Lesen auf "
@@ -1431,11 +1437,26 @@
   "br_edge_worse": {
     "message": "$1 Punkte schlechter als ein gewöhnlicher Abschnitt"
   },
+  "br_eyebrow_in_monitor": {
+    "message": "Basisraten · $1 · $2 Tagesschlusskurse"
+  },
   "br_failed": {
     "message": "Für $1 kam keine Tageshistorie. Ohne sie lässt sich nichts zählen, und eine erfundene Zahl wäre schlechter als keine."
   },
   "br_fomc_title": {
     "message": "Fed-Zinsentscheid · FOMC-Erklärung"
+  },
+  "br_glance_candle": {
+    "message": "Heutige Kerze"
+  },
+  "br_glance_candle_none": {
+    "message": "Heutige Kerze: keine benannte Form"
+  },
+  "br_glance_now": {
+    "message": "Aktuell zutreffende Zustände"
+  },
+  "br_glance_years": {
+    "message": "Ausgewertete Jahre mit Tagesschlusskursen"
   },
   "br_loading_body": {
     "message": "Die Tagesschlusskurse dieses Coins werden gelesen. Sie reichen so weit zurück, wie die Börse veröffentlicht — deshalb sind die Zahlen unten überhaupt druckwürdig."
@@ -2649,10 +2670,10 @@
     "message": "bis Liq."
   },
   "drawer_calls_aria_off": {
-    "message": "Calls, currently off"
+    "message": "Prognosen, derzeit ausgeschaltet"
   },
   "drawer_calls_aria_on": {
-    "message": "Calls, $1 open",
+    "message": "Offene Prognosen: $1",
     "placeholders": {
       "arg1": {
         "content": "$1"
@@ -2660,7 +2681,7 @@
     }
   },
   "drawer_calls_due_soon": {
-    "message": "$1 call due within 24h",
+    "message": "In den nächsten 24 Stunden fällige Prognosen: $1",
     "placeholders": {
       "arg1": {
         "content": "$1"
@@ -2668,7 +2689,7 @@
     }
   },
   "drawer_calls_title_off": {
-    "message": "Calls ($1) · off",
+    "message": "Prognosen ($1) · aus",
     "placeholders": {
       "arg1": {
         "content": "$1"
@@ -2676,7 +2697,7 @@
     }
   },
   "drawer_calls_title_on": {
-    "message": "Calls ($1) · $2 open",
+    "message": "Prognosen ($1) · $2 offen",
     "placeholders": {
       "arg1": {
         "content": "$1"
@@ -2810,19 +2831,19 @@
     }
   },
   "method_fifo": {
-    "message": "First in, first out"
+    "message": "Älteste zuerst"
   },
   "method_fifo_note": {
     "message": "Der älteste Kauf wird zuerst verkauft. Fast überall der Standard und in manchen Ländern die einzige zulässige Methode."
   },
   "method_hifo": {
-    "message": "Highest in, first out"
+    "message": "Teuerste zuerst"
   },
   "method_hifo_note": {
     "message": "Der teuerste Kauf wird zuerst verkauft, was den kleinsten Gewinn ausweist. Nicht überall zulässig."
   },
   "method_lifo": {
-    "message": "Last in, first out"
+    "message": "Neueste zuerst"
   },
   "method_lifo_note": {
     "message": "Der neueste Kauf wird zuerst verkauft. Mancherorts erlaubt, anderswo nicht — prüfe deinen Fall."
@@ -2986,6 +3007,9 @@
   "mon_close": {
     "message": "Monitor schließen"
   },
+  "mon_coins_note3": {
+    "message": "Preis und 24-Stunden-Veränderung stammen aus dem Ticker; fehlen sie dort, werden die 30-Tage-Daten des Coins verwendet. Alle übrigen Kennzahlen werden aus derselben 30-Tage-Reihe berechnet, die der 1M-Zeitraum zeichnet. β zeigt, wie stark sich der Coin im Mittel bewegte, wenn Bitcoin an denselben Tagen um 1 % stieg oder fiel. Eine Zeile öffnet die Übersicht des Coins; von dort ist der Chart einen Klick entfernt. Mit ↑ und ↓ wechselst du die Zeile."
+  },
   "mon_col_coin": {
     "message": "Coin"
   },
@@ -3007,17 +3031,80 @@
   "mon_corr_cell": {
     "message": "$1 und $2: $3, aus $4 Bewegungen"
   },
+  "mon_corr_cell_same": {
+    "message": "$1 und $2: $3 — in $4 % von $5 Bewegungen gleiche Richtung (r $6)"
+  },
   "mon_corr_few": {
     "message": "Zu wenige gemeinsame Bewegungen, um etwas zu sagen"
   },
-  "mon_corr_note": {
-    "message": "Wie sich jedes Paar in den letzten 30 Tagen gemeinsam bewegt hat: die Pearson-Korrelation ihrer Bewegungen, eine alle $1 — $2 Bewegungen pro Paar. 1 ist im Gleichschritt, 0 unabhängig, −1 entgegengesetzt. Sie beschreibt diese 30 Tage, nie das, was kommt."
+  "mon_corr_legend": {
+    "message": "Was die Zellen sagen"
+  },
+  "mon_corr_loosely": {
+    "message": "Schwach"
+  },
+  "mon_corr_mostly": {
+    "message": "Meist gemeinsam"
+  },
+  "mon_corr_note2": {
+    "message": "Zwei Zählungen je Paar über die letzten 30 Tage, eine Bewegung alle $1, $2 Bewegungen je Paar: wie oft beide in dieselbe Richtung gingen, und die Korrelation r ihrer Bewegungen — 1, wenn sie im Gleichschritt laufen, 0, wenn die eine nichts über die andere sagt, −1, wenn sie entgegengesetzt laufen. Gemeinsame Bewegung ist kein Grund, beide oder eine zu halten: Sie beschreibt diese 30 Tage, nie, was kommt."
+  },
+  "mon_corr_opposite": {
+    "message": "Gegenläufig"
+  },
+  "mon_corr_pair_line": {
+    "message": "ging bei $1 von 10 Bewegungen in dieselbe Richtung (r $2)."
+  },
+  "mon_corr_pair_line_r": {
+    "message": "r $1."
+  },
+  "mon_corr_pairs": {
+    "message": "In einfachen Worten"
+  },
+  "mon_corr_together": {
+    "message": "Im Gleichschritt"
+  },
+  "mon_corr_unrelated": {
+    "message": "Unabhängig"
+  },
+  "mon_detail_aria": {
+    "message": "$1 in den letzten 30 Tagen"
+  },
+  "mon_detail_base": {
+    "message": "Basisraten für $1"
+  },
+  "mon_detail_cap": {
+    "message": "Marktwert"
+  },
+  "mon_detail_chart": {
+    "message": "Im Chart öffnen"
+  },
+  "mon_detail_close": {
+    "message": "Schließen"
+  },
+  "mon_detail_high": {
+    "message": "Hoch $1"
+  },
+  "mon_detail_low": {
+    "message": "30-Tage-Tief $1"
+  },
+  "mon_detail_priced_only": {
+    "message": "PriceTab bepreist $1 aus dem Marktschnappschuss, kann die Münze aber nicht zeichnen – daher hier keine 30 Tage, kein Chart und keine Basisraten."
+  },
+  "mon_detail_range": {
+    "message": "In ihrer Spanne"
+  },
+  "mon_detail_volume": {
+    "message": "Gehandelt in 24 h"
   },
   "mon_eyebrow": {
     "message": "Deine $1 Coins · die letzten 30 Tage"
   },
   "mon_loading": {
     "message": "30 Tage Preise werden gelesen…"
+  },
+  "mon_market_card": {
+    "message": "$1 — $2 in 24 Stunden; öffnet ihre Karte"
   },
   "mon_need_two": {
     "message": "Füge einen zweiten Coin hinzu, um zu sehen, wie sich deine Coins gemeinsam bewegen."
@@ -3201,7 +3288,7 @@
     "message": "Mit diesen Filtern ist hier nichts. Erweitere den Bereich oder schalte unten eine Quelle wieder ein."
   },
   "news_none_note": {
-    "message": "Eine mit „none“ markierte Quelle hat geantwortet und diesmal nichts zu diesem Thema gehabt."
+    "message": "Eine mit „keine“ markierte Quelle hat geantwortet, hatte diesmal aber nichts zu diesem Thema."
   },
   "news_none_tone": {
     "message": "Gerade nichts auf dem Bildschirm, das so formuliert ist."
@@ -3794,10 +3881,10 @@
     "message": "endet um $1 — in $2 Min."
   },
   "ph_call_lock": {
-    "message": "Call festlegen"
+    "message": "Prognose festlegen"
   },
   "ph_call_title": {
-    "message": "Diesen Call abgeben?"
+    "message": "Diese Prognose abgeben?"
   },
   "ph_cancel": {
     "message": "Abbrechen"
@@ -3833,7 +3920,7 @@
     "message": "Zwei Finger"
   },
   "ph_hint_pinch_d": {
-    "message": "zum Zoomen — auf dem Calls-Feld seine Reichweite"
+    "message": "zum Zoomen — auf dem Prognose-Board für dessen Reichweite"
   },
   "ph_hint_title": {
     "message": "Der Chart per Touch"
@@ -4705,14 +4792,44 @@
   "pop_age_now": {
     "message": "gerade eben"
   },
+  "pop_blocks": {
+    "message": "$1 Blöcke"
+  },
+  "pop_btc_share": {
+    "message": "BTC $1 %"
+  },
+  "pop_coins": {
+    "message": "Deine Coins"
+  },
+  "pop_days": {
+    "message": "$1 Tage"
+  },
+  "pop_done": {
+    "message": "Fertig"
+  },
+  "pop_fear_greed": {
+    "message": "Angst & Gier"
+  },
   "pop_from": {
     "message": "Kurse von $1"
+  },
+  "pop_halving": {
+    "message": "Bitcoin-Halving"
+  },
+  "pop_holdings": {
+    "message": "Deine Bestände"
+  },
+  "pop_market": {
+    "message": "Der Markt"
   },
   "pop_no_prices": {
     "message": "Noch keine Kurse"
   },
   "pop_open": {
     "message": "Tab öffnen"
+  },
+  "pop_open_coin": {
+    "message": "$1 in einem neuen Tab öffnen"
   },
   "pop_open_hint": {
     "message": "Einen neuen Tab mit dem vollen Chart öffnen"
@@ -4726,8 +4843,20 @@
   "pop_refreshing": {
     "message": "Wird aktualisiert…"
   },
+  "pop_settings": {
+    "message": "Was das Popup zeigt"
+  },
+  "pop_target_away": {
+    "message": "$1 % entfernt"
+  },
+  "pop_targets": {
+    "message": "Kursziele"
+  },
   "pop_title": {
     "message": "PriceTab"
+  },
+  "pop_unpriced": {
+    "message": "$1 noch ohne Preis"
   },
   "pos_a_long": {
     "message": "Long"
@@ -4828,6 +4957,9 @@
   },
   "pos_book_spread_v": {
     "message": "$1 · $2 Bp"
+  },
+  "pos_breakeven": {
+    "message": "Nach TP1 den Stop auf Einstand ziehen"
   },
   "pos_cancel_all": {
     "message": "Alle stornieren"
@@ -5746,6 +5878,12 @@
   "pos_preview_ready_cash": {
     "message": "$1 von $2 zu $3 · Gebühr $4 zur Eröffnung."
   },
+  "pos_price": {
+    "message": "Preis"
+  },
+  "pos_protect": {
+    "message": "Preisschutz"
+  },
   "pos_record_all": {
     "message": "Alles"
   },
@@ -5987,6 +6125,15 @@
   "pos_size_typed": {
     "message": "eingegeben"
   },
+  "pos_src_last": {
+    "message": "Last"
+  },
+  "pos_src_mark": {
+    "message": "Mark"
+  },
+  "pos_src_note": {
+    "message": "Mark ist der Median der letzten drei Preise, den ein einzelner Ausreißer nicht bewegt; Last ist der letzte Trade. Der Preisschutz hält Stop und Ziele zurück, solange beide um mehr als 0,5 % abweichen — die Liquidation wartet nie."
+  },
   "pos_start_over": {
     "message": "Neu beginnen mit $1",
     "placeholders": {
@@ -6084,8 +6231,8 @@
   "pos_take": {
     "message": "Take Profit"
   },
-  "pos_take_all": {
-    "message": "alles"
+  "pos_take_add": {
+    "message": "+ Ziel hinzufügen"
   },
   "pos_take_aria": {
     "message": "Take-Profit-Preis"
@@ -6093,14 +6240,38 @@
   "pos_take_half": {
     "message": "die Hälfte"
   },
+  "pos_take_ladder": {
+    "message": "Take-Profit-Ziele"
+  },
+  "pos_take_leg_aria": {
+    "message": "Preis von Ziel $1"
+  },
+  "pos_take_n": {
+    "message": "TP$1"
+  },
+  "pos_take_none": {
+    "message": "Kein Ziel: Der Kontrakt läuft bis zum Stop, zum Trailing-Stop oder bis du ihn schließt."
+  },
   "pos_take_of": {
     "message": "$1 · $2"
+  },
+  "pos_take_over": {
+    "message": "Die Ziele ergeben mehr als den ganzen Kontrakt — $1 %."
+  },
+  "pos_take_plan": {
+    "message": "$1 % schließen über $2 Ziele; $3 % laufen unter dem Stop weiter."
+  },
+  "pos_take_plan_all": {
+    "message": "Alles schließt über $1 Ziele."
   },
   "pos_take_quarter": {
     "message": "ein Viertel"
   },
-  "pos_take_share": {
-    "message": "Schließt"
+  "pos_take_remove": {
+    "message": "Ziel $1 entfernen"
+  },
+  "pos_take_rest": {
+    "message": "der Rest"
   },
   "pos_terms_1": {
     "message": "Dies ist eine Simulation. Es wird keine Order platziert, nichts wird irgendwohin gesendet, und dahinter steht keine Börse, kein Broker und kein Konto."
@@ -6176,6 +6347,15 @@
   },
   "pos_trigger": {
     "message": "Auslöser"
+  },
+  "pos_trigger_head": {
+    "message": "Ausgelöst durch"
+  },
+  "pos_trigger_stop": {
+    "message": "Stop"
+  },
+  "pos_trigger_take": {
+    "message": "Ziele"
   },
   "pos_unit_risk": {
     "message": "Risiko"
@@ -7157,7 +7337,7 @@
     "message": "Abbrechen"
   },
   "pref_backup_desc": {
-    "message": "Alles, was dieser Browser weiß — Coins, Zielkurse, Calls, Portfolio, Widgets und Einstellungen — in einer Datei speichern und auf einem anderen Rechner wieder einlesen"
+    "message": "Alles, was dieser Browser weiß — Coins, Zielkurse, Prognosen, Portfolio, Widgets und Einstellungen — in einer Datei speichern und auf einem anderen Rechner wieder einlesen"
   },
   "pref_backup_found": {
     "message": "Diese Datei enthält $1 Einstellungen."
@@ -7420,10 +7600,10 @@
     "message": "Funktionen"
   },
   "pref_features_keywords": {
-    "message": "funktionen an aus aktivieren deaktivieren ausblenden anzeigen schaltflächen symbole ziele calls derivatemarkt derivate futures nachrichten basisraten portfolio vergleich widgets aufräumen vereinfachen"
+    "message": "funktionen an aus aktivieren deaktivieren ausblenden anzeigen schaltflächen symbole ziele prognosen derivatemarkt derivate futures nachrichten basisraten portfolio vergleich widgets aufräumen vereinfachen"
   },
   "pref_features_note": {
-    "message": "Einstellungen steht nicht auf dieser Liste und kann nicht abgeschaltet werden: es ist der Weg zurück zu diesem Bildschirm. Abschalten löscht nichts — Ihre Ziele, Calls, Positionen und Bestände bleiben genau so, wie Sie sie verlassen haben. Ruhige Bedienelemente ist die sanftere Variante: sie blendet die Schaltflächen ab, statt die Funktionen zu entfernen."
+    "message": "Einstellungen steht nicht auf dieser Liste und kann nicht abgeschaltet werden: es ist der Weg zurück zu diesem Bildschirm. Abschalten löscht nichts — Ihre Ziele, Prognosen, Positionen und Bestände bleiben genau so, wie Sie sie verlassen haben. Ruhige Bedienelemente ist die sanftere Variante: sie blendet die Schaltflächen ab, statt die Funktionen zu entfernen."
   },
   "pref_features_title": {
     "message": "Funktionen"
@@ -7585,7 +7765,7 @@
     "message": "log logarithmisch achse skala verhältnis prozent lange spanne jahre gestaucht"
   },
   "pref_log_scale_note": {
-    "message": "Auf der ALL-Spanne verbraucht eine normale Achse fast ihre ganze Höhe für die jüngsten Preise: an Bitcoins eigener Historie gemessen nimmt deren erste Hälfte 16% des Charts ein, hier 72%. Die beiden beantworten verschiedene Fragen — eine normale Achse zeigt, was das Geld tat, diese, was die Rate tat — und bei weniger als einem Jahr sehen sie gleich aus. Sie schaltet sich selbst ab, solange das Calls-Board oben ist, weil dessen Quadrate ein fester Preisschritt sind und diese Achse keinen festen Schritt hat."
+    "message": "Auf der ALL-Spanne verbraucht eine normale Achse fast ihre ganze Höhe für die jüngsten Preise: an Bitcoins eigener Historie gemessen nimmt deren erste Hälfte 16% des Charts ein, hier 72%. Die beiden beantworten verschiedene Fragen — eine normale Achse zeigt, was das Geld tat, diese, was die Rate tat — und bei weniger als einem Jahr sehen sie gleich aus. Sie schaltet sich selbst ab, solange das Prognose-Board oben ist, weil dessen Quadrate ein fester Preisschritt sind und diese Achse keinen festen Schritt hat."
   },
   "pref_log_scale_title": {
     "message": "Log-Skala"
@@ -7897,7 +8077,7 @@
     "message": "raum voraus zukunft leer rechter rand tradingview versatz jetzt kante"
   },
   "pref_room_ahead_note": {
-    "message": "Der Bereich behält seine Breite und verschiebt 15 % davon in die Zukunft; der älteste Teil liegt knapp links außerhalb — Ziehen holt ihn zurück. Ziehen oder das Mausrad kann den Chart immer über den letzten Kurs hinausführen, an oder aus; dies bestimmt nur, wo er ruht. Das Calls-Brett hat seine eigene Zukunft und ein Vergleich keine, daher zeigt keines von beiden dies."
+    "message": "Der Bereich behält seine Breite und verschiebt 15 % davon in die Zukunft; der älteste Teil liegt knapp links außerhalb — Ziehen holt ihn zurück. Ziehen oder das Mausrad kann den Chart immer über den letzten Kurs hinausführen, an oder aus; dies bestimmt nur, wo er ruht. Das Prognose-Board hat seine eigene Zukunft und ein Vergleich keine, daher zeigt keines von beiden dies."
   },
   "pref_room_ahead_title": {
     "message": "Raum voraus"
@@ -8330,7 +8510,7 @@
     "message": "Prognosen an / aus"
   },
   "sc_calls_panel": {
-    "message": "Calls — das Board, der Rekord und simulierte Positionen"
+    "message": "Prognosen — das Board und die Auswertung"
   },
   "sc_chart_bars": {
     "message": "Der Chart: die Balken lesen — Enter setzt ein Limit am gelesenen"
@@ -8468,7 +8648,7 @@
     "message": "Mit dem Chart im Fokus: Punkt für Punkt lesen — das Fenster folgt über seinen Rand hinaus"
   },
   "sc_view_zoom2": {
-    "message": "Chart vergrößern / verkleinern — in der Zeit, oder die Reichweite des Boards bei aktiven Calls"
+    "message": "Chart vergrößern / verkleinern — in der Zeit oder bei aktiven Prognosen in der Reichweite des Boards"
   },
   "screen_tabs": {
     "message": "Bildschirme"
@@ -10718,9 +10898,6 @@
   "view_auto_title": {
     "message": "Die Preisskala wieder an die Linie anpassen (oder doppelt auf die Preisskala klicken)"
   },
-  "mon_coins_note2": {
-    "message": "Preis und 24 Stunden kommen vom Ticker oder, wo er keine hat, aus den eigenen 30 Tagen des Coins; der Rest aus diesen 30 Tagen, der Reihe, die der 1M-Bereich zeichnet. β ist die Bewegung jedes Coins gegenüber der von Bitcoin an denselben Tagen. Eine Zeile öffnet den Coin im Chart; ↑ und ↓ gehen durch die Zeilen."
-  },
   "mon_col_beta": {
     "message": "β BTC"
   },
@@ -10765,9 +10942,6 @@
   },
   "mon_market_note": {
     "message": "Die Top $1 von Coinlore nach Marktwert, Stand $2, derselbe Schnappschuss wie in der Preisleiste — eine Anfrage pro Minute, solange dieser Tab offen ist. Die Größe einer Kachel ist ihr Marktwert, ihr Farbton die letzten 24 Stunden. Ein Coin, den der Chart zeichnen kann, öffnet sich dort."
-  },
-  "mon_market_open": {
-    "message": "$1 im Chart öffnen — $2 in 24 Stunden"
   },
   "mon_market_up": {
     "message": "Größtes Plus in 24 Stunden"

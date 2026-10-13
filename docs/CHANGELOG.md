@@ -19,6 +19,36 @@ submitted, so their changes reach the store here.
 - The monitor and the base rates are one screen: M opens it, B opens it on
   its Base rates tab, and the four tabs (Coins, Market, Correlation, Base
   rates) sit at its head. The screens' column has one tab for both.
+- The toolbar popup is redesigned and does more: what you hold and its day
+  at the top, each coin with its last day as a line, a press on a coin opens
+  a tab on it, and your nearest price targets with how far each is. The
+  next Bitcoin halving, Fear & Greed and the market's total value can sit at
+  its top, and its gear chooses what it shows and its language — which it
+  now actually follows, as the new tab does.
+- PriceTab asks for a rating at a better moment — a few seconds after a call
+  comes true or a target is reached, worded for it — and every Rate link
+  opens the store's reviews tab directly. The website and the README ask
+  too.
+- A futures contract's exit plan: up to three take-profit targets, each with
+  its share; the stop and the targets each triggered by Mark or Last; the
+  stop moved to break-even after the first target; and price protection that
+  holds the exits while Mark and Last disagree by more than 0.5%. Each target
+  is its own line on the chart, and dragging one moves only that one.
+- The monitor's market map takes the whole screen, and every tile opens its
+  coin's card beside where you pressed it — with its market value and the
+  day's trading too; a coin PriceTab prices but cannot draw says so.
+- A coin in the monitor opens its own card — the price, its 30 days, how far
+  it moved, its typical day and how it moves against Bitcoin — with the chart
+  and its base rates one press away, instead of leaving for the chart.
+- The monitor's correlation says each pair in words (in step, mostly together,
+  loosely, unrelated, opposite), with how often the two went the same way and
+  the pairs worth knowing in plain sentences.
+- Inside the monitor the base rates wear the monitor's head, and switching
+  tabs slides the new content in while the screen around it stays still.
+- The base rates open on a row of four figures — the RSI, how many states
+  are true right now, today's candle and how many years are counted — with
+  stronger section heads, the rows about today marked down their edge, and
+  one line of sections that shows where you are as you scroll.
 - On a phone the two side columns stand face to face, every tab the same
   height, and the range row's + is drawn like the ranges beside it.
 - The privacy page reads like the site: its theme, its type, and each
@@ -212,6 +242,9 @@ submitted, so their changes reach the store here.
 
 ### Fixed
 
+- Calls and targets are no longer left in English in the twelve translated
+  interfaces, and awkward literal wording across those catalogues — especially
+  Turkish — now reads naturally and uses the app's established terms.
 - Hacker News stories about cryptography no longer appear as crypto news.
 - A coin worth less than one unit kept only the decimals the setting asked
   for, so at the default two DOGE at $0.0849 headed the chart as $0.08, moved

@@ -376,6 +376,28 @@ const AlertPosChip = styled.button.attrs({ type: "button" })`
  * over the field's own left padding, `aria-hidden` because the input already
  * names itself, and `pointer-events: none` so the whole box still focuses the
  * input when it is clicked. */
+/* **One target, one row** (12 Oct 2026): its name, its price, its share,
+   its ×. The price box keeps a reading width; the chips wrap under it on a
+   narrow column rather than squeeze it. */
+const AlertPosTakeRow = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.6rem;
+  margin: 0.35rem 0;
+  > b {
+    flex: 0 0 auto;
+    min-width: 3.2rem;
+    font-size: 0.78rem;
+    font-weight: ${({ theme }) => theme.fontWeight.semibold};
+    color: ${({ theme }) => theme.color.text};
+  }
+  > input {
+    flex: 1 1 7rem;
+    min-width: 6rem;
+  }
+`;
+
 const AlertPosInputWrap = styled.div`
   position: relative;
   display: flex;

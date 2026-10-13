@@ -1,18 +1,18 @@
 {
   "al_7d_hit_rate": {
-    "message": "hit rate"
+    "message": "isabet oranı"
   },
   "al_7d_hit_rate_hint": {
-    "message": "Settled calls in the last 7 days"
+    "message": "Son 7 günde sonuçlanan tahminler"
   },
   "al_7d_settled": {
-    "message": "settled"
+    "message": "sonuçlanan"
   },
   "al_7d_settled_hint": {
-    "message": "Calls that got an answer in the last 7 days"
+    "message": "Son 7 günde sonucu belli olan tahminler"
   },
   "al_7d_snapshot": {
-    "message": "Last 7 days"
+    "message": "Son 7 gün"
   },
   "al_a_pct_move": {
     "message": "%$1'lik bir hareket"
@@ -119,10 +119,10 @@
     "message": "Tahminler"
   },
   "al_calls_info_b": {
-    "message": "Tahmin bir iddiadır: “bana ne zaman olduğunu söyle” değil, “nerede olacağını ben söylüyorum”. Grafiğin sağındaki boş şeritte bir kareyi gösterdiğinde bir fiyat bandı ve bir an adlandırırsın — bir tıklama taslak yapar, ikincisi kilitler. Bir sonraki sekmeyi açtığında o anki fiyata göre kendiliğinden sonuçlanır ve kutu grafikte kalıp haklı olup olmadığını söyler. Her kare olasılığını taşır: bu coin'in kendi mumlarından, şu anki hareketine göre ölçeklenmiş ve tahtaya girmeden önce yıllarca geçmiş karede ölçülmüş — bir olasılık, tavsiye değil. Başka fiyatlar için tahtayı yukarı ya da aşağı, daha çok tahta ya da geçmiş için sola ya da sağa sürükle."
+    "message": "Tahmin bir iddiadır: “ne zaman haber ver” değil, “fiyatın nerede olacağını söylüyorum”. Grafiğin sağındaki boş alanda bir kareyi seçtiğinde hem fiyat bandını hem de zamanı belirlersin. İlk tıklama taslak oluşturur, ikincisi tahmini kilitler. Sonraki sekme açılışında o zamanki fiyata göre kendiliğinden sonuçlanır; kutu grafikte kalıp doğru bilip bilmediğini gösterir. Her kare, bu coinin geçmiş mumlarından hesaplanan bir olasılık taşır. Bu olasılık mevcut hareketliliğe göre ölçeklenmiş ve tahta kullanıma açılmadan önce yıllarca geçmiş veri üzerinde sınanmıştır; tavsiye değildir. Başka fiyatları görmek için tahtayı yukarı-aşağı, daha fazla tahta ya da geçmiş için sağa-sola sürükle."
   },
   "al_calls_learn_more": {
-    "message": "How calls work"
+    "message": "Tahminler nasıl çalışır?"
   },
   "al_calls_more": {
     "message": "$2 kayıttan $1 tane daha göster",
@@ -139,13 +139,13 @@
     "message": "Tahminler kapalı"
   },
   "al_calls_off_body": {
-    "message": "Grafikte boş geleceğin bir karesini işaret et; fiyatın nerede ve ne zaman olacağını söylemiş olursun. Bir dahaki sekmeni açtığında kendi kendine sonuçlanır — hiçbir şey duyurulmaz, hiçbir şey gönderilmez ve puanın hiçbir değeri yoktur."
+    "message": "Grafikte geleceğe ait boş alandaki bir kareyi seçerek fiyatın nerede ve ne zaman olacağını tahmin edersin. Sonraki sekme açılışında kendiliğinden sonuçlanır. Hiçbir bildirim gönderilmez ve skorun gerçek bir değeri yoktur."
   },
   "al_calls_practice": {
-    "message": "Try a practice call"
+    "message": "Deneme tahmini yap"
   },
   "al_calls_pulse": {
-    "message": "$1 open · $2 due now · $3 on this range",
+    "message": "$1 açık · $2 şimdi sonuçlanacak · bu aralıkta $3",
     "placeholders": {
       "arg1": {
         "content": "$1"
@@ -165,16 +165,16 @@
     "message": "Açık"
   },
   "al_calls_step_1": {
-    "message": "Turn calls on and go to the board."
+    "message": "Tahminleri açıp tahtaya git."
   },
   "al_calls_step_2": {
-    "message": "Click a square once to draft, twice to lock."
+    "message": "Taslak için kareye bir kez, kilitlemek için ikinci kez tıkla."
   },
   "al_calls_step_2_touch": {
-    "message": "Taslak için bir kareye bir kez, kilitlemek için iki kez dokun."
+    "message": "Taslak için kareye bir kez dokun; ikinci dokunuş tahmini kilitler."
   },
   "al_calls_step_3": {
-    "message": "Come back with K to track open and settled calls."
+    "message": "Açık ve sonuçlanmış tahminleri izlemek için K ile geri dön."
   },
   "al_calls_step_3_touch": {
     "message": "Açık ve sonuçlanmış tahminleri izlemek için bu sekmeye dön."
@@ -189,7 +189,7 @@
     "message": "olasılıklar"
   },
   "al_cell_odds_hint": {
-    "message": "Her kareye, sütunu bittiğinde fiyatın o karede olma olasılığını yazar — bu coin'in kendi mumlarından, şu anki hareketine göre ölçeklenmiş ve tahtaya girmeden önce yıllarca karede sınanmış"
+    "message": "Her karede, sütunun süresi dolduğunda fiyatın o karede olma olasılığını gösterir. Olasılık bu coinin geçmiş mumlarından hesaplanır, mevcut hareketliliğe göre ölçeklenir ve tahta kullanıma açılmadan önce yıllarca geçmiş veri üzerinde sınanmıştır."
   },
   "al_clear_settled": {
     "message": "sonuçlananları temizle"
@@ -204,10 +204,10 @@
     "message": "Sık kullanılan"
   },
   "al_conf_chance": {
-    "message": "(şans $1 verirdi)"
+    "message": "(olasılık $1 verirdi)"
   },
   "al_conf_hint": {
-    "message": "Ne kadar eminsiniz — kayıt buna göre sayar"
+    "message": "Ne kadar eminsin? Kayıt, sonucu bu güven düzeyine göre de sayar."
   },
   "al_conf_hunch": {
     "message": "içgüdü"
@@ -219,7 +219,7 @@
     "message": "emin"
   },
   "al_detect_note_short": {
-    "message": "Her yeni sekmede, geçen haftanın mumları dahil kontrol edilir; gece geri dönen bir hareket de bildirilir. Cihazınızdan hiçbir şey çıkmaz."
+    "message": "Her yeni sekmede geçen haftanın mumları da kontrol edilir; gece geri dönen bir hareket bile bildirilir. Cihazından hiçbir şey çıkmaz."
   },
   "al_direction": {
     "message": "Hedef yönü"
@@ -237,7 +237,7 @@
     "message": "Vakti geldi — bu aralık bir dahaki yüklendiğinde sonuçlanır"
   },
   "al_due_empty": {
-    "message": "No calls due in the next 24 hours on this view."
+    "message": "Bu görünümde önümüzdeki 24 saatte sonuçlanacak tahmin yok."
   },
   "al_duplicate": {
     "message": "Bu hedef zaten var."
@@ -255,16 +255,16 @@
     "message": "dışa aktar"
   },
   "al_export_hint": {
-    "message": "Kaydı dosya olarak sakla. Sizin kalır ve hiçbir değeri yoktur"
+    "message": "Kaydı dosya olarak sakla. Dosya sende kalır; skorun gerçek bir değeri yoktur."
   },
   "al_fact_24h": {
-    "message": "24s değişim"
+    "message": "24 saatlik değişim"
   },
   "al_fact_now": {
     "message": "$1 şimdi"
   },
   "al_fair_odds": {
-    "message": "Adil oranla, çağrı başına $1 puan: riske edilen $2, dönen $3"
+    "message": "Adil olasılıkta bir tahmin $1 puan eder: $2 riske atılır, $3 geri döner"
   },
   "al_falls": {
     "message": "düşer"
@@ -279,7 +279,7 @@
     "message": "vadesi geldi"
   },
   "al_fig_hit": {
-    "message": "vuruldu"
+    "message": "ulaşıldı"
   },
   "al_fig_in_band": {
     "message": "bantta"
@@ -333,7 +333,7 @@
     "message": "1 hafta"
   },
   "al_keep_forever": {
-    "message": "vurulana kadar"
+    "message": "ulaşılana kadar"
   },
   "al_keep_label": {
     "message": "Hedefi şu kadar tut"
@@ -372,10 +372,10 @@
     "message": "Hedef sınırına ulaşıldı ($1). Yenisini eklemek için birini kaldır."
   },
   "al_luck": {
-    "message": "Şans tek başına en az bu kadar iyisini zamanın $1'inde yapar"
+    "message": "Yalnızca şansın en az bu kadar iyi sonuç verme olasılığı: $1"
   },
   "al_luck_title": {
-    "message": "Her tahmin, onu seçtiğinizde karesinin sahip olduğu şansla gerçekleşti. Bu şanslar ayrı ayrı yazı-turalar gibi toplandığında, en az sizin kadar isabet çıkma sıklığı budur."
+    "message": "Her tahmin, yapıldığı anda karesinin gösterdiği olasılıkla değerlendirildi. Bu olasılıkları bağımsız yazı turalar gibi topladığında, yalnızca şansla en az senin kadar isabetin ne sıklıkta çıkacağını bu oran gösterir."
   },
   "al_missed": {
     "message": "Iskaladın"
@@ -405,10 +405,10 @@
     "message": "Henüz tahmin yok"
   },
   "al_no_calls_body": {
-    "message": "Kesikli çizginin sağındaki bir kareyi işaret edip iki kez tıklayın — biri taslak, biri kilit. Fiyatın o anda o bantta olacağını söylemiş oldunuz."
+    "message": "Kesikli çizginin sağındaki bir kareyi iki kez tıkla: ilk tıklama taslak oluşturur, ikincisi tahmini kilitler. Böylece fiyatın o anda o bantta olacağını söylemiş olursun."
   },
   "al_no_calls_body_touch": {
-    "message": "Kesikli çizginin sağındaki bir kareye dokunun: bir sayfa tahmini söyler, Kilitle onu yapar. Fiyatın o saatte o bantta olacağını söylemiş olursunuz."
+    "message": "Kesikli çizginin sağındaki kareye dokun. Açılan sayfa tahmini açıklar; Kilitle'ye basınca kaydolur. Böylece fiyatın o anda o bantta olacağını söylemiş olursun."
   },
   "al_no_holdings": {
     "message": "Toplanacak bir varlık yok"
@@ -417,10 +417,10 @@
     "message": "Henüz hedef yok"
   },
   "al_no_targets_body": {
-    "message": "Bir fiyatı (“$1 $2 üzerine çıkar”) ya da bir hareketi (“$1 24 saatte %5 düşer”) izleyin. Gece olsa bile bir sonraki sekmeyi açtığınızda bildirilir."
+    "message": "Bir fiyatı (“$1, $2 üzerine çıkar”) ya da bir hareketi (“$1, 24 saatte %5 düşer”) izle. Gece gerçekleşse bile sonraki sekme açılışında bildirilir."
   },
   "al_note_label": {
-    "message": "Kendinize bir not"
+    "message": "Kendine bir not"
   },
   "al_note_placeholder": {
     "message": "not, isteğe bağlı"
@@ -447,31 +447,31 @@
     "message": " · $1 aralığında"
   },
   "al_open_empty": {
-    "message": "No open calls on this view."
+    "message": "Bu görünümde açık tahmin yok."
   },
   "al_open_n": {
     "message": "Açık · $1"
   },
   "al_open_now": {
-    "message": "open now"
+    "message": "şu anda açık"
   },
   "al_open_now_hint": {
-    "message": "Open calls currently waiting to settle"
+    "message": "Sonuçlanmayı bekleyen açık tahminler"
   },
   "al_order_hint": {
-    "message": "Switch between due-first and newest-first ordering for open calls"
+    "message": "Açık tahminleri sonuçlanma zamanına veya oluşturulma tarihine göre sırala"
   },
   "al_order_recent": {
-    "message": "recent first"
+    "message": "en yeni önce"
   },
   "al_order_soon": {
-    "message": "due first"
+    "message": "önce sonuçlanacaklar"
   },
   "al_paused_currency": {
     "message": "duraklatıldı · $1"
   },
   "al_paused_info": {
-    "message": "$1 duraklatıldı — başka bir para biriminde kuruldu, o yüzden ona geri döndüğünde $2. Harekete kurulmuş bir hedef asla duraklamaz: yüzde her yerde aynı şeyi ifade eder."
+    "message": "$1 duraklatıldı — başka bir para biriminde kuruldu; o para birimine döndüğünde $2."
   },
   "al_paused_set_in": {
     "message": " · duraklatıldı — $1 cinsinden kuruldu"
@@ -486,13 +486,13 @@
     "message": "$1 içinde %"
   },
   "al_pick_hint": {
-    "message": "Ya da fiyatı grafiğe tıklayarak seçin."
+    "message": "Ya da grafiğe tıklayarak bir fiyat seç."
   },
   "al_portfolio": {
     "message": "Portföy"
   },
   "al_portfolio_kind_hint": {
-    "message": "Tek bir coin yerine elinizdeki her şeyin toplamını izleyin. Bir sekme açıkken kontrol edilir; tutulan miktarlar yalnızca şu anki halleriyle bilindiğinden toplam mumlardan geriye doğru kurulamaz."
+    "message": "Tek bir coin yerine elindeki her şeyin toplamını izle. Bir sekme açıkken kontrol edilir. Elde tutulan miktarlar yalnızca bugünkü halleriyle bilindiği için toplam, geçmiş mumlardan geriye doğru kurulamıyor."
   },
   "al_progress_title": {
     "message": "Bunu kurduğunda bulunduğu yerden itibaren yolun %$1'i"
@@ -561,7 +561,7 @@
     "message": "$1 cinsinden kuruldu — yeniden $1 gösterdiğinde devam eder"
   },
   "al_settled_empty": {
-    "message": "No settled calls on this view."
+    "message": "Bu görünümde sonuçlanmış tahmin yok."
   },
   "al_settled_n": {
     "message": "Sonuçlanan · $1"
@@ -579,7 +579,7 @@
     "message": "hâlâ sonuçlanıyor"
   },
   "al_target_coin": {
-    "message": "Hedef coin"
+    "message": "Hedefteki coin"
   },
   "al_target_in": {
     "message": "hedef ($1)"
@@ -600,13 +600,13 @@
     "message": "devam ederler"
   },
   "al_this_coin": {
-    "message": "this coin"
+    "message": "bu coin"
   },
   "al_this_coin_hint": {
-    "message": "Only calls for the coin on screen"
+    "message": "Yalnızca ekrandaki coin'e ait tahminler"
   },
   "al_this_coin_only": {
-    "message": "this coin only"
+    "message": "yalnızca bu coin"
   },
   "al_time_title": {
     "message": "Sonuçlanmaya kadar yolun %$1'i"
@@ -618,40 +618,40 @@
     "message": " — toplam eksik sayılmak yerine ölçülmeden bırakılır"
   },
   "al_travel_band": {
-    "message": "yol bandı"
+    "message": "hareket bandı"
   },
   "al_turn_calls_on": {
     "message": "Tahminleri aç"
   },
   "al_view": {
-    "message": "View"
+    "message": "Görünüm"
   },
   "al_view_all": {
-    "message": "all"
+    "message": "tümü"
   },
   "al_view_all_hint": {
-    "message": "Show open and settled calls together"
+    "message": "Açık ve sonuçlanmış tahminleri birlikte göster"
   },
   "al_view_due": {
-    "message": "due"
+    "message": "yakında sonuçlanacak"
   },
   "al_view_due_hint": {
-    "message": "Open calls due in the next 24 hours"
+    "message": "Önümüzdeki 24 saatte sonuçlanacak açık tahminler"
   },
   "al_view_open": {
-    "message": "open"
+    "message": "açık"
   },
   "al_view_open_hint": {
-    "message": "Only open calls"
+    "message": "Yalnızca açık tahminler"
   },
   "al_view_settled": {
-    "message": "settled"
+    "message": "sonuçlanmış"
   },
   "al_view_settled_hint": {
-    "message": "Only settled calls"
+    "message": "Yalnızca sonuçlanmış tahminler"
   },
   "al_vs_chance": {
-    "message": "$2 çağrının $1 tanesi tuttu · şans $3 verirdi"
+    "message": "$2 tahminin $1 tanesi tuttu · olasılık $3 verirdi"
   },
   "al_waiting_price": {
     "message": "$1 için fiyat bekleniyor"
@@ -997,6 +997,12 @@
   },
   "app_rate_ask": {
     "message": "PriceTab hoşuna gitti mi? Bir puan, başkalarının onu bulma yolu — birkaç saniye sürer ve her şeyden çok yardımı olur."
+  },
+  "app_rate_ask_call": {
+    "message": "O call tuttu. PriceTab piyasayı okumana yardım ediyorsa, başkalarının onu bulmasını sağlayan şey bir puan — birkaç saniye sürer."
+  },
+  "app_rate_ask_target": {
+    "message": "Hedefine ulaşıldı. PriceTab işine yarıyorsa, başkalarının onu bulmasını sağlayan şey bir puan — birkaç saniye sürer."
   },
   "app_read_on": {
     "message": "Şurada oku: "
@@ -1431,11 +1437,26 @@
   "br_edge_worse": {
     "message": "sıradan bir döneme göre $1 puan daha kötü"
   },
+  "br_eyebrow_in_monitor": {
+    "message": "Taban oranlar · $1 · $2 günlük kapanış"
+  },
   "br_failed": {
     "message": "$1 için günlük geçmiş gelmedi. Onsuz hiçbir şey sayılamaz; uydurulmuş bir sayı ise hiç yoktan kötüdür."
   },
   "br_fomc_title": {
     "message": "Fed faiz kararı · FOMC açıklaması"
+  },
+  "br_glance_candle": {
+    "message": "Bugünkü mum"
+  },
+  "br_glance_candle_none": {
+    "message": "Bugünkü mum: adı olan bir şekil yok"
+  },
+  "br_glance_now": {
+    "message": "Şu anda görülen durumlar"
+  },
+  "br_glance_years": {
+    "message": "Sayılan günlük kapanışlar (yıl)"
   },
   "br_loading_body": {
     "message": "Bu coin'in günlük kapanışları okunuyor. Borsanın yayınladığı kadar geriye gidiyor; aşağıdaki sayıları yazmaya değer kılan da bu."
@@ -1736,7 +1757,7 @@
     "message": "sonraki 24s · model"
   },
   "chance_tomorrow_title": {
-    "message": "Bir sayım değil, bir model: calls tahtasının kendi modeli, bu coinin son $1 altı saatlik çubuğu üzerinde, fiyatın 24 saat sonrası için. $3'ten beri $2 günde bir kez sınandı (BTC, ETH, SOL, XRP): %80 aralığı günlerin $4'inde, %50 aralığı $5'inde tuttu. Fiyatın hangi yöne gideceğini yazı-turadan iyi söyleyemedi, bu yüzden onun için sayı vermiyor.",
+    "message": "Bir sayım değil, tahmin tahtasının modeli: bu coinin son $1 altı saatlik mumundan 24 saat sonraki fiyat için. $3'ten beri $2 günde bir kez sınandı (BTC, ETH, SOL, XRP): %80 aralığı günlerin $4'inde, %50 aralığı $5'inde tuttu. Yönü yazı turadan daha iyi bilemediği için yön olasılığı gösterilmiyor.",
     "placeholders": {
       "arg1": {
         "content": "$1"
@@ -2649,10 +2670,10 @@
     "message": "likidasyona"
   },
   "drawer_calls_aria_off": {
-    "message": "Calls, currently off"
+    "message": "Tahminler şu anda kapalı"
   },
   "drawer_calls_aria_on": {
-    "message": "Calls, $1 open",
+    "message": "Açık tahminler: $1",
     "placeholders": {
       "arg1": {
         "content": "$1"
@@ -2660,7 +2681,7 @@
     }
   },
   "drawer_calls_due_soon": {
-    "message": "$1 call due within 24h",
+    "message": "24 saat içinde sonuçlanacak tahminler: $1",
     "placeholders": {
       "arg1": {
         "content": "$1"
@@ -2668,7 +2689,7 @@
     }
   },
   "drawer_calls_title_off": {
-    "message": "Calls ($1) · off",
+    "message": "Tahminler ($1) · kapalı",
     "placeholders": {
       "arg1": {
         "content": "$1"
@@ -2676,7 +2697,7 @@
     }
   },
   "drawer_calls_title_on": {
-    "message": "Calls ($1) · $2 open",
+    "message": "Tahminler ($1) · $2 açık",
     "placeholders": {
       "arg1": {
         "content": "$1"
@@ -2986,6 +3007,9 @@
   "mon_close": {
     "message": "Monitörü kapat"
   },
+  "mon_coins_note3": {
+    "message": "Fiyat ve 24 saatlik değişim fiyat akışından gelir; orada yoksa coinin kendi 30 günlük verisi kullanılır. Diğer ölçümler, 1A aralığının çizdiği aynı 30 günlük seriden hesaplanır. β, her coinin aynı günlerde Bitcoin'deki %1'lik harekete karşı ortalama hareketini gösterir. Satır coinin özet kartını açar; grafiğe karttan tek dokunuşla geçilir. ↑ ve ↓ satırlar arasında gezinir."
+  },
   "mon_col_coin": {
     "message": "Coin"
   },
@@ -3007,17 +3031,80 @@
   "mon_corr_cell": {
     "message": "$1 ve $2: $3, $4 hareketten"
   },
+  "mon_corr_cell_same": {
+    "message": "$1 ve $2: $3 — $5 hareketin %$4'ünde aynı yöne (r $6)"
+  },
   "mon_corr_few": {
     "message": "Söylemek için ortak hareket çok az"
   },
-  "mon_corr_note": {
-    "message": "Her çiftin son 30 günde birlikte nasıl hareket ettiği: hareketlerinin Pearson korelasyonu, her $1 bir hareket — çift başına $2 hareket. 1 aynı yönde, 0 ilişkisiz, −1 zıt. Bu 30 günü anlatır, sonrasını asla."
+  "mon_corr_legend": {
+    "message": "Hücreler ne diyor"
+  },
+  "mon_corr_loosely": {
+    "message": "Zayıf"
+  },
+  "mon_corr_mostly": {
+    "message": "Çoğunlukla birlikte"
+  },
+  "mon_corr_note2": {
+    "message": "Son 30 günde her çift için iki ölçüm var; her $1 bir hareket, çift başına $2 hareket: ikisinin ne sıklıkla aynı yöne gittiği ve hareketleri arasındaki korelasyon r. Birlikte hareket ettiklerinde 1, birinin hareketi diğeri hakkında hiçbir şey söylemediğinde 0, ters yönlere gittiklerinde −1. Birlikte hareket etmeleri ikisini ya da birini elde tutma nedeni değildir; bu yalnızca son 30 günü anlatır, geleceği değil."
+  },
+  "mon_corr_opposite": {
+    "message": "Ters"
+  },
+  "mon_corr_pair_line": {
+    "message": "her 10 hareketin $1'inde aynı yöne gitti (r $2)."
+  },
+  "mon_corr_pair_line_r": {
+    "message": "r $1."
+  },
+  "mon_corr_pairs": {
+    "message": "Basitçe"
+  },
+  "mon_corr_together": {
+    "message": "Birlikte"
+  },
+  "mon_corr_unrelated": {
+    "message": "İlgisiz"
+  },
+  "mon_detail_aria": {
+    "message": "$1, son 30 gün"
+  },
+  "mon_detail_base": {
+    "message": "$1 için taban oranlar"
+  },
+  "mon_detail_cap": {
+    "message": "Piyasa değeri"
+  },
+  "mon_detail_chart": {
+    "message": "Grafikte aç"
+  },
+  "mon_detail_close": {
+    "message": "Kapat"
+  },
+  "mon_detail_high": {
+    "message": "30 günlük en yüksek $1"
+  },
+  "mon_detail_low": {
+    "message": "30 günlük düşük $1"
+  },
+  "mon_detail_priced_only": {
+    "message": "PriceTab $1 için piyasanın anlık görüntüsünden fiyat verir ama onu çizemez; bu yüzden burada 30 günü, grafiği ve taban oranları yok."
+  },
+  "mon_detail_range": {
+    "message": "Aralıktaki konumu"
+  },
+  "mon_detail_volume": {
+    "message": "24 saatte işlem"
   },
   "mon_eyebrow": {
     "message": "$1 coininiz · son 30 gün"
   },
   "mon_loading": {
     "message": "30 günlük fiyatlar okunuyor…"
+  },
+  "mon_market_card": {
+    "message": "$1 — 24 saatte $2; kartını açar"
   },
   "mon_need_two": {
     "message": "Coinlerinizin birlikte nasıl hareket ettiğini görmek için ikinci bir coin ekleyin."
@@ -3186,7 +3273,7 @@
     "message": "Bu filtrelerle burada bir şey yok. Kapsamı genişlet ya da aşağıdan bir kaynağı geri aç."
   },
   "news_none_note": {
-    "message": "“none” yazan bir kaynak cevap verdi ama bu sefer bu konuda bir şey getirmedi."
+    "message": "“yok” olarak işaretlenen kaynak yanıt verdi, ancak bu kez bu konuda bir içerik getirmedi."
   },
   "news_none_tone": {
     "message": "Şu anda ekranda öyle ifade edilmiş bir haber yok."
@@ -4682,14 +4769,44 @@
   "pop_age_now": {
     "message": "az önce"
   },
+  "pop_blocks": {
+    "message": "$1 blok"
+  },
+  "pop_btc_share": {
+    "message": "BTC %$1"
+  },
+  "pop_coins": {
+    "message": "Coinlerin"
+  },
+  "pop_days": {
+    "message": "$1 gün"
+  },
+  "pop_done": {
+    "message": "Tamam"
+  },
+  "pop_fear_greed": {
+    "message": "Korku ve Açgözlülük"
+  },
   "pop_from": {
     "message": "Fiyatlar $1"
+  },
+  "pop_halving": {
+    "message": "Bitcoin halving"
+  },
+  "pop_holdings": {
+    "message": "Varlıkların"
+  },
+  "pop_market": {
+    "message": "Piyasa"
   },
   "pop_no_prices": {
     "message": "Henüz fiyat yok"
   },
   "pop_open": {
     "message": "Sekme aç"
+  },
+  "pop_open_coin": {
+    "message": "$1'i yeni sekmede aç"
   },
   "pop_open_hint": {
     "message": "Tam grafiğin olduğu yeni bir sekme aç"
@@ -4703,8 +4820,20 @@
   "pop_refreshing": {
     "message": "Yenileniyor…"
   },
+  "pop_settings": {
+    "message": "Popup'ta neler görünsün"
+  },
+  "pop_target_away": {
+    "message": "%$1 uzakta"
+  },
+  "pop_targets": {
+    "message": "Fiyat hedefleri"
+  },
   "pop_title": {
     "message": "PriceTab"
+  },
+  "pop_unpriced": {
+    "message": "$1 tanesinin fiyatı henüz yok"
   },
   "pos_a_long": {
     "message": "long"
@@ -4805,6 +4934,9 @@
   },
   "pos_book_spread_v": {
     "message": "$1 · $2 bps"
+  },
+  "pos_breakeven": {
+    "message": "TP1'den sonra stop'u başabaşa çek"
   },
   "pos_cancel_all": {
     "message": "Tümünü iptal et"
@@ -5682,7 +5814,7 @@
     "message": "Bekleyen yok"
   },
   "pos_orders_none_text": {
-    "message": "Limit emri, adını verdiğin fiyatta bekler ve piyasa ona geldiğinde maker ücretini öder — makası geçmenin yarısı kadar. New contract'tan bir tane bırak."
+    "message": "Limit emri belirlediğin fiyatta bekler; piyasa o fiyata geldiğinde maker ücreti alınır. Bu, makası geçmenin yaklaşık yarı maliyetidir. Yeni kontrat bölümünden emir verebilirsin."
   },
   "pos_pane_measure": {
     "message": "En yakın tasfiye $1 uzakta. Bu pencerede $3 adımın $2 tanesi en az o kadar büyüktü."
@@ -5722,6 +5854,12 @@
   },
   "pos_preview_ready_cash": {
     "message": "$3 fiyatından $2 için $1 · açılış ücreti $4."
+  },
+  "pos_price": {
+    "message": "fiyat"
+  },
+  "pos_protect": {
+    "message": "Fiyat koruması"
   },
   "pos_record_all": {
     "message": "Hepsi"
@@ -5964,6 +6102,15 @@
   "pos_size_typed": {
     "message": "yazıldı"
   },
+  "pos_src_last": {
+    "message": "Last"
+  },
+  "pos_src_mark": {
+    "message": "Mark"
+  },
+  "pos_src_note": {
+    "message": "Mark son üç fiyatın medyanıdır, tek bir sapkın işlem onu oynatamaz; Last son işlemdir. Fiyat koruması, ikisi arasındaki fark %0,5'i aştığı sürece stop'u ve hedefleri bekletir — likidasyon asla beklemez."
+  },
   "pos_start_over": {
     "message": "$1 ile baştan başla",
     "placeholders": {
@@ -6061,8 +6208,8 @@
   "pos_take": {
     "message": "Kâr al"
   },
-  "pos_take_all": {
-    "message": "tamamını"
+  "pos_take_add": {
+    "message": "+ Hedef ekle"
   },
   "pos_take_aria": {
     "message": "Kâr al fiyatı"
@@ -6070,14 +6217,38 @@
   "pos_take_half": {
     "message": "yarısını"
   },
+  "pos_take_ladder": {
+    "message": "Kâr al hedefleri"
+  },
+  "pos_take_leg_aria": {
+    "message": "$1. hedefin fiyatı"
+  },
+  "pos_take_n": {
+    "message": "TP$1"
+  },
+  "pos_take_none": {
+    "message": "Hedef yok: kontrat stop'a, iz süren stop'a ya da sen kapatana kadar açık kalır."
+  },
   "pos_take_of": {
     "message": "$1 · $2"
+  },
+  "pos_take_over": {
+    "message": "Hedefler kontratın tamamından fazlasına denk geliyor — %$1."
+  },
+  "pos_take_plan": {
+    "message": "%$1 $2 hedefte kapanır; %$3 stop'un altında açık kalır."
+  },
+  "pos_take_plan_all": {
+    "message": "Tamamı $1 hedefte kapanır."
   },
   "pos_take_quarter": {
     "message": "çeyreğini"
   },
-  "pos_take_share": {
-    "message": "Şunu kapatır"
+  "pos_take_remove": {
+    "message": "$1. hedefi kaldır"
+  },
+  "pos_take_rest": {
+    "message": "kalanı"
   },
   "pos_terms_1": {
     "message": "Bu bir simülasyondur. Hiçbir emir verilmez, hiçbir yere bir şey gönderilmez ve arkasında bir borsa, aracı kurum ya da hesap yoktur."
@@ -6153,6 +6324,15 @@
   },
   "pos_trigger": {
     "message": "Tetik"
+  },
+  "pos_trigger_head": {
+    "message": "Tetikleyen"
+  },
+  "pos_trigger_stop": {
+    "message": "Stop"
+  },
+  "pos_trigger_take": {
+    "message": "Hedefler"
   },
   "pos_unit_risk": {
     "message": "Risk"
@@ -8307,7 +8487,7 @@
     "message": "Tahminler açık / kapalı"
   },
   "sc_calls_panel": {
-    "message": "Calls — tahta, sicil ve simüle pozisyonlar"
+    "message": "Tahminler — tahta ve sicil"
   },
   "sc_chart_bars": {
     "message": "Grafik: çubukları oku — Enter okunan çubukta limit hazırlar"
@@ -10695,9 +10875,6 @@
   "view_auto_title": {
     "message": "Fiyat ölçeğini yeniden çizgiye sığdır (ya da fiyat ölçeğine çift tıkla)"
   },
-  "mon_coins_note2": {
-    "message": "Fiyat ve 24 saat ticker'dan gelir; ticker'da yoksa coinin kendi 30 gününden. Gerisi o 30 günden, yani 1M aralığının çizdiği seriden gelir. β, her coinin aynı günlerde Bitcoin'in hareketine karşı hareketidir. Bir satır o coini grafikte açar; ↑ ve ↓ satırlar arasında gezdirir."
-  },
   "mon_col_beta": {
     "message": "β BTC"
   },
@@ -10742,9 +10919,6 @@
   },
   "mon_market_note": {
     "message": "Coinlore'un piyasa değerine göre ilk $1 coini, $2 itibarıyla; fiyat çubuğunun okuduğu aynı anlık görüntü — bu sekme açıkken dakikada bir istek. Bir karenin boyu piyasa değeri, tonu son 24 saattir. Grafiğin çizebildiği bir coin orada açılır."
-  },
-  "mon_market_open": {
-    "message": "$1 grafikte aç — 24 saatte $2"
   },
   "mon_market_up": {
     "message": "24 saatte en çok yükselen"

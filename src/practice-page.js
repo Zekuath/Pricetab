@@ -1325,7 +1325,23 @@ const practicePage = (panel) => ({
         ? (long ? priceE4 >= nowE4 : priceE4 <= nowE4)
         : (long ? priceE4 <= nowE4 : priceE4 >= nowE4));
       if (fires) why = "fires";
-      else if (panel.props.onPracticeTriggers) {
+      else if (panel.props.onPracticeExitPlan) {
+        /* **One line moves; the rest of the plan stays** (12 Oct 2026). The
+           one-target door rewrote the whole plan as a single take, so a drag
+           of the stop or of TP1 dropped TP2 and TP3. The exit plan takes only
+           what is named: the stop alone, or the ladder with one price moved
+           (nearest first again, the model refusing a wrong side). */
+        if (level.kind === "stop") {
+          why = panel.props.onPracticeExitPlan(p.id, { stop: priceE4 });
+        } else {
+          const long = p.side !== "short";
+          const legs = practiceTakeLegs(p);
+          const at = legs.length ? Math.max(0, Math.min(legs.length - 1, level.leg || 0)) : -1;
+          const takes = (at < 0 ? [{ price: priceE4, share: 1000000 }] : legs.map((leg, i) => ({ price: i === at ? priceE4 : leg.price, share: leg.share })))
+            .sort((a, b) => (long ? a.price - b.price : b.price - a.price));
+          why = panel.props.onPracticeExitPlan(p.id, { takes, breakEven: p.takeBreakEven === true });
+        }
+      } else if (panel.props.onPracticeTriggers) {
         why = panel.props.onPracticeTriggers(
           p.id,
           level.kind === "stop" ? priceE4 : p.stop || null,
@@ -1620,7 +1636,12 @@ const practicePage = (panel) => ({
       if (pos.stop) out.push({ key: `s${id}`, kind: "stop", price: pos.stop, tag, pos, drag: true });
       const trail = practiceTrailStop(pos);
       if (trail) out.push({ key: `t${id}`, kind: "stop", price: trail, tag: `${tag} trail` });
-      if (pos.take) out.push({ key: `p${id}`, kind: "take", price: pos.take, tag, pos, drag: true });
+      /* Every target of the ladder is its own line (12 Oct 2026); the first
+         keeps the old key, so a single take reads and drags as it always did */
+      const legs = practiceTakeLegs(pos);
+      legs.forEach((leg, i) =>
+        out.push({ key: i ? `p${id}x${i}` : `p${id}`, kind: "take", price: leg.price, tag: legs.length > 1 ? `${tag} TP${i + 1}` : tag, pos, leg: i, drag: true }),
+      );
       const liq = practiceLiquidationPrice(pos);
       if (liq) out.push({ key: `l${id}`, kind: "liq", price: liq, tag });
     }
@@ -1877,8 +1898,12 @@ const practicePage = (panel) => ({
         else handles.push({ key: `s${id}`, on: `e${id}`, text: msg("pp_trade_add_sl", "+ SL"), kind: "stop" });
         const trail = practiceTrailStop(pos);
         if (trail) levels.push({ key: `t${id}`, kind: "trail", price: trail / PRICE_SCALE, ink: "down", dash: "2 3", label: `${msg("pp_trade_trail", "trail")} ${priceText(trail / PRICE_SCALE)}` });
-        if (pos.take) levels.push({ key: `p${id}`, kind: "take", price: pos.take / PRICE_SCALE, ink: "up", drag: true, tag: priceText(pos.take / PRICE_SCALE), label: levelLabel("TP", pos.take, "take") });
-        else handles.push({ key: `p${id}`, on: `e${id}`, text: msg("pp_trade_add_tp", "+ TP"), kind: "take" });
+        const legs = practiceTakeLegs(pos);
+        legs.forEach((leg, i) => {
+          const word = legs.length > 1 ? `TP${i + 1} ${leg.all ? msg("pos_take_rest", "the rest") : `${Math.round(leg.share / 10000)}%`}` : "TP";
+          levels.push({ key: i ? `p${id}x${i}` : `p${id}`, kind: "take", price: leg.price / PRICE_SCALE, ink: "up", drag: true, tag: priceText(leg.price / PRICE_SCALE), label: levelLabel(word, leg.price, "take") });
+        });
+        if (!legs.length) handles.push({ key: `p${id}`, on: `e${id}`, text: msg("pp_trade_add_tp", "+ TP"), kind: "take" });
         const liq = practiceLiquidationPrice(pos);
         if (liq) {
           const reach = typeof assistantShareAtLeast === "function" ? assistantShareAtLeast(shaped.all, markE4, liq) : null;
@@ -2092,7 +2117,7 @@ const practicePage = (panel) => ({
          (the plan), or the order's new price. */
       dragText: (key, price) => {
         const e4 = Math.round(price * PRICE_SCALE);
-        const m = /^([spo])(\d+)$/.exec(key);
+        const m = /^([spo])(\d+)(?:x(\d))?$/.exec(key);
         if (m && m[1] === "o") return `${msg("pp_trade_move_to", "move to")} ${priceText(price)}`;
         if (m) {
           const pos = practiceAt(practice, Number(m[2]));
@@ -2172,7 +2197,7 @@ const practicePage = (panel) => ({
       panel.setState({ pTab: "trade", pTake: String(clean), pTicketWhy: null, ppDragWhy: null });
       return;
     }
-    const m = /^([spo])(\d+)$/.exec(key);
+    const m = /^([spo])(\d+)(?:x(\d))?$/.exec(key);
     if (!m) return;
     const priceE4 = Math.round(clean * PRICE_SCALE);
     const nowE4 = Math.round(nowPrice * PRICE_SCALE);
@@ -2182,7 +2207,7 @@ const practicePage = (panel) => ({
     }
     const pos = practiceAt(panel.props.practice, Number(m[2]));
     if (!pos) return;
-    panel.commitLevelDrag({ kind: m[1] === "s" ? "stop" : "take", pos }, priceE4, nowE4);
+    panel.commitLevelDrag({ kind: m[1] === "s" ? "stop" : "take", pos, leg: m[3] ? Number(m[3]) : 0 }, priceE4, nowE4);
   },
 
   /* A press that stayed on something: a × cancels its order (the same

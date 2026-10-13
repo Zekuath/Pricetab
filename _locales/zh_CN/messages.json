@@ -1,18 +1,18 @@
 {
   "al_7d_hit_rate": {
-    "message": "hit rate"
+    "message": "命中率"
   },
   "al_7d_hit_rate_hint": {
-    "message": "Settled calls in the last 7 days"
+    "message": "最近7天已结算的预测"
   },
   "al_7d_settled": {
-    "message": "settled"
+    "message": "已结算"
   },
   "al_7d_settled_hint": {
-    "message": "Calls that got an answer in the last 7 days"
+    "message": "最近7天已有结果的预测"
   },
   "al_7d_snapshot": {
-    "message": "Last 7 days"
+    "message": "最近7天"
   },
   "al_a_pct_move": {
     "message": "$1% 的波动"
@@ -135,10 +135,10 @@
     "message": "预测"
   },
   "al_calls_info_b": {
-    "message": "预测是一种主张：不是“告诉我什么时候”，而是“我说在哪里”。指向图表右侧空白带中的一个方格，你就点名了一个价格区间和一个时刻 — 点一次为草稿，第二次锁定。下次打开标签页时，它会按那一刻的价格自动结算，方框留在图上显示你是否说对。每个方格都带着它的概率：来自该币种自己的K线，按它当前的波动缩放，并在上盘之前用多年过去的方格测量过 — 是概率，不是建议。上下拖动棋盘查看其他价格，左右拖动获得更多棋盘或更多历史。"
+    "message": "预测不是提醒，而是你对某个时刻价格位置作出的判断。在图表右侧的空白区域选择方格，即可指定价格区间和时间。第一次点击会创建草稿，第二次点击则确认预测。下次打开标签页时，系统会按指定时刻的价格自动结算，方格会留在图表上显示结果。每个方格的概率都根据该币种的历史K线计算，并按当前波动率调整；在加入预测板前，还用多年数据进行了检验。这只是概率，不是建议。上下拖动预测板可查看其他价格，左右拖动可查看更多未来时段或历史记录。"
   },
   "al_calls_learn_more": {
-    "message": "How calls work"
+    "message": "预测如何运作"
   },
   "al_calls_more": {
     "message": "再显示 $1 条（共 $2 条）",
@@ -155,13 +155,13 @@
     "message": "预测已关闭"
   },
   "al_calls_off_body": {
-    "message": "在图表上指向一格空白的未来，你就已经说出了价格会在哪里、在什么时候。它会在你下次打开标签页时自动结算——不通知、不发送，分数也一文不值。"
+    "message": "在图表右侧的未来区域选择方格，预测价格会在什么时间落在哪个区间。下次打开标签页时，系统会自动结算。内容不会发布或发送，分数也没有现实价值。"
   },
   "al_calls_practice": {
-    "message": "Try a practice call"
+    "message": "试做一次预测"
   },
   "al_calls_pulse": {
-    "message": "$1 open · $2 due now · $3 on this range",
+    "message": "$1个待结算 · $2个现在到期 · 当前周期$3个",
     "placeholders": {
       "arg1": {
         "content": "$1"
@@ -181,16 +181,16 @@
     "message": "开"
   },
   "al_calls_step_1": {
-    "message": "Turn calls on and go to the board."
+    "message": "开启预测并前往预测板。"
   },
   "al_calls_step_2": {
-    "message": "Click a square once to draft, twice to lock."
+    "message": "单击方格一次创建草稿，再单击一次锁定。"
   },
   "al_calls_step_2_touch": {
     "message": "轻点方格一次为草稿，两次锁定。"
   },
   "al_calls_step_3": {
-    "message": "Come back with K to track open and settled calls."
+    "message": "按 K 返回，查看待结算和已结算的预测。"
   },
   "al_calls_step_3_touch": {
     "message": "回到此标签页查看未结算和已结算的预测。"
@@ -253,7 +253,7 @@
     "message": "已到期——下次加载该区间时结算"
   },
   "al_due_empty": {
-    "message": "No calls due in the next 24 hours on this view."
+    "message": "当前视图未来24小时内没有到期的预测。"
   },
   "al_duplicate": {
     "message": "你已经有这个目标了。"
@@ -421,10 +421,10 @@
     "message": "还没有预测"
   },
   "al_no_calls_body": {
-    "message": "指向虚线右侧的一个方格并点击两次——一次起草，一次锁定。您就此宣布价格在那个时刻会处于那个区间。"
+    "message": "点击虚线右侧的方格两次：第一次创建草稿，第二次锁定。这样就表示你预测价格会在指定时刻处于该区间。"
   },
   "al_no_calls_body_touch": {
-    "message": "轻点虚线右侧的方格:一个面板会说明这次预测,点锁定即完成。你预测价格在那个时间处于该区间。"
+    "message": "轻点虚线右侧的方格。面板会显示预测内容；点击“锁定”即可保存。这表示你预测价格会在指定时刻处于该区间。"
   },
   "al_no_holdings": {
     "message": "还没有可合计的持仓"
@@ -463,25 +463,25 @@
     "message": " · 在 $1"
   },
   "al_open_empty": {
-    "message": "No open calls on this view."
+    "message": "当前视图没有待结算的预测。"
   },
   "al_open_n": {
     "message": "进行中 · $1"
   },
   "al_open_now": {
-    "message": "open now"
+    "message": "当前待结算"
   },
   "al_open_now_hint": {
-    "message": "Open calls currently waiting to settle"
+    "message": "正在等待结算的预测"
   },
   "al_order_hint": {
-    "message": "Switch between due-first and newest-first ordering for open calls"
+    "message": "按临近到期或最新创建的顺序排列待结算预测"
   },
   "al_order_recent": {
-    "message": "recent first"
+    "message": "最新优先"
   },
   "al_order_soon": {
-    "message": "due first"
+    "message": "临近到期优先"
   },
   "al_paused_currency": {
     "message": "已暂停 · $1"
@@ -577,7 +577,7 @@
     "message": "以 $1 设定——当你再次显示 $1 时恢复"
   },
   "al_settled_empty": {
-    "message": "No settled calls on this view."
+    "message": "当前视图没有已结算的预测。"
   },
   "al_settled_n": {
     "message": "已结算 · $1"
@@ -616,13 +616,13 @@
     "message": "会恢复"
   },
   "al_this_coin": {
-    "message": "this coin"
+    "message": "此币种"
   },
   "al_this_coin_hint": {
-    "message": "Only calls for the coin on screen"
+    "message": "只显示当前币种的预测"
   },
   "al_this_coin_only": {
-    "message": "this coin only"
+    "message": "仅此币种"
   },
   "al_time_title": {
     "message": "距结算已过 $1%"
@@ -640,31 +640,31 @@
     "message": "开启预测"
   },
   "al_view": {
-    "message": "View"
+    "message": "视图"
   },
   "al_view_all": {
-    "message": "all"
+    "message": "全部"
   },
   "al_view_all_hint": {
-    "message": "Show open and settled calls together"
+    "message": "同时显示待结算和已结算的预测"
   },
   "al_view_due": {
-    "message": "due"
+    "message": "即将到期"
   },
   "al_view_due_hint": {
-    "message": "Open calls due in the next 24 hours"
+    "message": "未来24小时内到期的待结算预测"
   },
   "al_view_open": {
-    "message": "open"
+    "message": "待结算"
   },
   "al_view_open_hint": {
-    "message": "Only open calls"
+    "message": "仅显示待结算的预测"
   },
   "al_view_settled": {
-    "message": "settled"
+    "message": "已结算"
   },
   "al_view_settled_hint": {
-    "message": "Only settled calls"
+    "message": "仅显示已结算的预测"
   },
   "al_vs_chance": {
     "message": "$2 次中 $1 次命中 · 随机会给出 $3"
@@ -1013,6 +1013,12 @@
   },
   "app_rate_ask": {
     "message": "喜欢 PriceTab 吗？评分是其他人发现它的方式——只要几秒钟，比什么都有帮助。"
+  },
+  "app_rate_ask_call": {
+    "message": "这次预测应验了。如果 PriceTab 帮助你解读市场，评分是让其他人找到它的方式——只需几秒钟。"
+  },
+  "app_rate_ask_target": {
+    "message": "你的目标价已达到。如果 PriceTab 对你有用，评分是让其他人找到它的方式——只需几秒钟。"
   },
   "app_read_on": {
     "message": "阅读于 "
@@ -1447,11 +1453,26 @@
   "br_edge_worse": {
     "message": "比普通时段低 $1 个百分点"
   },
+  "br_eyebrow_in_monitor": {
+    "message": "基准率 · $1 · $2 个日收盘"
+  },
   "br_failed": {
     "message": "没有获取到 $1 的日线历史。没有它就无法统计，而编造的数字比没有更糟。"
   },
   "br_fomc_title": {
     "message": "美联储利率决议 · FOMC声明"
+  },
+  "br_glance_candle": {
+    "message": "今日K线"
+  },
+  "br_glance_candle_none": {
+    "message": "今日K线：没有命名的形态"
+  },
+  "br_glance_now": {
+    "message": "当前出现的状态"
+  },
+  "br_glance_years": {
+    "message": "纳入统计的日线年数"
   },
   "br_loading_body": {
     "message": "正在读取该币的日收盘价。能回溯到交易所公开的最早时间，这正是下面的统计值得展示的原因。"
@@ -2665,10 +2686,10 @@
     "message": "距强平"
   },
   "drawer_calls_aria_off": {
-    "message": "Calls, currently off"
+    "message": "预测当前已关闭"
   },
   "drawer_calls_aria_on": {
-    "message": "Calls, $1 open",
+    "message": "待结算预测：$1个",
     "placeholders": {
       "arg1": {
         "content": "$1"
@@ -2676,7 +2697,7 @@
     }
   },
   "drawer_calls_due_soon": {
-    "message": "$1 call due within 24h",
+    "message": "24小时内到期的预测：$1个",
     "placeholders": {
       "arg1": {
         "content": "$1"
@@ -2684,7 +2705,7 @@
     }
   },
   "drawer_calls_title_off": {
-    "message": "Calls ($1) · off",
+    "message": "预测（$1）· 已关闭",
     "placeholders": {
       "arg1": {
         "content": "$1"
@@ -2692,7 +2713,7 @@
     }
   },
   "drawer_calls_title_on": {
-    "message": "Calls ($1) · $2 open",
+    "message": "预测（$1）· $2个待结算",
     "placeholders": {
       "arg1": {
         "content": "$1"
@@ -2965,7 +2986,7 @@
     }
   },
   "mo_tested_title": {
-    "message": "模型估计：带 Student-t 新息（ν $2）的 EWMA 方差（λ $1），以截至 $3 的 Coinbase BTC-USD 小时收盘价拟合。在 $5 至 $6 的 $4 小时上测试：80% 区间命中 $7%（名义 80%），其 interval score 优于 24 小时滚动波动率（DM t $8）。",
+    "message": "模型估计：带 Student-t 新息（ν $2）的 EWMA 方差（λ $1），以截至 $3 的 Coinbase BTC-USD 小时收盘价拟合。在 $5 至 $6 的 $4 小时上测试：80% 区间命中 $7%（名义 80%），其 区间评分 优于 24 小时滚动波动率（DM t $8）。",
     "placeholders": {
       "arg1": {
         "content": "$1"
@@ -3002,6 +3023,9 @@
   "mon_close": {
     "message": "关闭监视器"
   },
+  "mon_coins_note3": {
+    "message": "价格和24小时涨跌幅来自行情条；若行情条没有，则使用该币种自身的30天数据。其他指标都按1M区间所绘制的同一组30天序列计算。β表示在相同日期里，比特币每波动1%时该币种平均波动多少。点按一行会打开该币种的摘要卡片，再点一次即可进入图表；↑和↓用于切换行。"
+  },
   "mon_col_coin": {
     "message": "币种"
   },
@@ -3023,17 +3047,80 @@
   "mon_corr_cell": {
     "message": "$1 与 $2:$3,基于 $4 次波动"
   },
+  "mon_corr_cell_same": {
+    "message": "$1 与 $2：$3 — $5 次波动中有 $4% 同向（r $6）"
+  },
   "mon_corr_few": {
     "message": "共同波动太少,无法判断"
   },
-  "mon_corr_note": {
-    "message": "最近 30 天每一对币种的联动程度:每 $1 一次波动的皮尔逊相关系数,每对 $2 次波动。1 为同步,0 为无关,−1 为反向。它描述这 30 天,从不预示未来。"
+  "mon_corr_legend": {
+    "message": "单元格的含义"
+  },
+  "mon_corr_loosely": {
+    "message": "较弱"
+  },
+  "mon_corr_mostly": {
+    "message": "大多同步"
+  },
+  "mon_corr_note2": {
+    "message": "最近30天每对的两项统计，每 $1 一次波动，每对 $2 次：两者同向的频率，以及波动的相关系数 r — 步调一致时为1，一方完全不说明另一方时为0，方向相反时为−1。一起波动并不是同时持有或持有其一的理由：它描述的是这30天，而不是之后。"
+  },
+  "mon_corr_opposite": {
+    "message": "反向"
+  },
+  "mon_corr_pair_line": {
+    "message": "每10次波动中有 $1 次同向（r $2）。"
+  },
+  "mon_corr_pair_line_r": {
+    "message": "r $1。"
+  },
+  "mon_corr_pairs": {
+    "message": "通俗地说"
+  },
+  "mon_corr_together": {
+    "message": "同步"
+  },
+  "mon_corr_unrelated": {
+    "message": "无关"
+  },
+  "mon_detail_aria": {
+    "message": "$1（最近30天）"
+  },
+  "mon_detail_base": {
+    "message": "$1 的基准率"
+  },
+  "mon_detail_cap": {
+    "message": "市值"
+  },
+  "mon_detail_chart": {
+    "message": "在图表中打开"
+  },
+  "mon_detail_close": {
+    "message": "关闭"
+  },
+  "mon_detail_high": {
+    "message": "高点 $1"
+  },
+  "mon_detail_low": {
+    "message": "30天低点 $1"
+  },
+  "mon_detail_priced_only": {
+    "message": "PriceTab 根据市场快照为 $1 报价，但无法绘制它，因此这里没有30天走势、图表和基准率。"
+  },
+  "mon_detail_range": {
+    "message": "在区间中的位置"
+  },
+  "mon_detail_volume": {
+    "message": "24小时成交额"
   },
   "mon_eyebrow": {
     "message": "你的 $1 个币种 · 最近 30 天"
   },
   "mon_loading": {
     "message": "正在读取 30 天的价格…"
+  },
+  "mon_market_card": {
+    "message": "$1 — 24小时 $2；打开其卡片"
   },
   "mon_need_two": {
     "message": "添加第二个币种,即可查看它们如何联动。"
@@ -3217,7 +3304,7 @@
     "message": "当前筛选下没有内容。请放宽范围，或在下方重新启用某个来源。"
   },
   "news_none_note": {
-    "message": "标着“none”的源有响应，只是这一次没有这方面的内容。"
+    "message": "标为“无”的来源已响应，但这次没有与该主题相关的内容。"
   },
   "news_none_tone": {
     "message": "当前屏幕上没有这样措辞的报道。"
@@ -4721,14 +4808,44 @@
   "pop_age_now": {
     "message": "刚刚"
   },
+  "pop_blocks": {
+    "message": "$1 个区块"
+  },
+  "pop_btc_share": {
+    "message": "BTC $1%"
+  },
+  "pop_coins": {
+    "message": "你的币种"
+  },
+  "pop_days": {
+    "message": "$1 天"
+  },
+  "pop_done": {
+    "message": "完成"
+  },
+  "pop_fear_greed": {
+    "message": "恐惧与贪婪"
+  },
   "pop_from": {
     "message": "$1的价格"
+  },
+  "pop_halving": {
+    "message": "比特币减半"
+  },
+  "pop_holdings": {
+    "message": "你的持仓"
+  },
+  "pop_market": {
+    "message": "市场"
   },
   "pop_no_prices": {
     "message": "暂无价格"
   },
   "pop_open": {
     "message": "打开标签页"
+  },
+  "pop_open_coin": {
+    "message": "在新标签页中打开 $1"
   },
   "pop_open_hint": {
     "message": "打开带完整图表的新标签页"
@@ -4742,8 +4859,20 @@
   "pop_refreshing": {
     "message": "正在刷新…"
   },
+  "pop_settings": {
+    "message": "弹窗显示内容"
+  },
+  "pop_target_away": {
+    "message": "还差 $1%"
+  },
+  "pop_targets": {
+    "message": "目标价"
+  },
   "pop_title": {
     "message": "PriceTab"
+  },
+  "pop_unpriced": {
+    "message": "$1 个尚无价格"
   },
   "pos_a_long": {
     "message": "多单"
@@ -4844,6 +4973,9 @@
   },
   "pos_book_spread_v": {
     "message": "$1 · $2 个基点"
+  },
+  "pos_breakeven": {
+    "message": "TP1 后将止损移至保本"
   },
   "pos_cancel_all": {
     "message": "全部取消"
@@ -5721,7 +5853,7 @@
     "message": "没有等待中的订单"
   },
   "pos_orders_none_text": {
-    "message": "限价单在你指定的价格等待，市场到来时支付 maker 费用 —— 大约是越过价差成本的一半。在 New contract 里下一个。"
+    "message": "限价单会在你指定的价格等待，市场到达该价格时收取挂单手续费，约为跨越买卖价差成本的一半。可从“新建合约”中下单。"
   },
   "pos_pane_measure": {
     "message": "最近的强平还有 $1。在这个区间里，$3 次波动中有 $2 次至少这么大。"
@@ -5761,6 +5893,12 @@
   },
   "pos_preview_ready_cash": {
     "message": "以 $3 买 $1 的 $2 · 开仓手续费 $4。"
+  },
+  "pos_price": {
+    "message": "价格"
+  },
+  "pos_protect": {
+    "message": "价格保护"
   },
   "pos_record_all": {
     "message": "全部"
@@ -6003,6 +6141,15 @@
   "pos_size_typed": {
     "message": "已输入"
   },
+  "pos_src_last": {
+    "message": "Last"
+  },
+  "pos_src_mark": {
+    "message": "Mark"
+  },
+  "pos_src_note": {
+    "message": "Mark 是最近三个价格的中位数，单笔异常成交无法推动它；Last 是最新成交。价格保护会在两者相差超过0.5%时暂缓止损和止盈目标——强平从不等待。"
+  },
   "pos_start_over": {
     "message": "以 $1 重新开始",
     "placeholders": {
@@ -6100,8 +6247,8 @@
   "pos_take": {
     "message": "止盈"
   },
-  "pos_take_all": {
-    "message": "全部"
+  "pos_take_add": {
+    "message": "+ 添加目标"
   },
   "pos_take_aria": {
     "message": "止盈价格"
@@ -6109,14 +6256,38 @@
   "pos_take_half": {
     "message": "一半"
   },
+  "pos_take_ladder": {
+    "message": "止盈目标"
+  },
+  "pos_take_leg_aria": {
+    "message": "目标 $1 的价格"
+  },
+  "pos_take_n": {
+    "message": "TP$1"
+  },
+  "pos_take_none": {
+    "message": "没有目标：合约会持续到止损、移动止损或你手动平仓。"
+  },
   "pos_take_of": {
     "message": "$1 · $2"
+  },
+  "pos_take_over": {
+    "message": "目标合计超过整张合约——$1%。"
+  },
+  "pos_take_plan": {
+    "message": "$1% 分 $2 个目标平仓；$3% 在止损下继续持有。"
+  },
+  "pos_take_plan_all": {
+    "message": "全部分 $1 个目标平仓。"
   },
   "pos_take_quarter": {
     "message": "四分之一"
   },
-  "pos_take_share": {
-    "message": "平掉"
+  "pos_take_remove": {
+    "message": "移除目标 $1"
+  },
+  "pos_take_rest": {
+    "message": "剩余"
   },
   "pos_terms_1": {
     "message": "这是一个模拟。不会下任何订单，不会向任何地方发送任何内容，背后也没有交易所、经纪商或账户。"
@@ -6192,6 +6363,15 @@
   },
   "pos_trigger": {
     "message": "触发价"
+  },
+  "pos_trigger_head": {
+    "message": "触发依据"
+  },
+  "pos_trigger_stop": {
+    "message": "止损"
+  },
+  "pos_trigger_take": {
+    "message": "目标"
   },
   "pos_unit_risk": {
     "message": "风险"
@@ -8346,7 +8526,7 @@
     "message": "预测 开 / 关"
   },
   "sc_calls_panel": {
-    "message": "Calls — 棋盘、记录与模拟仓位"
+    "message": "预测 — 预测板与记录"
   },
   "sc_chart_bars": {
     "message": "图表：读取K线 — 回车在所读K线下限价"
@@ -10734,9 +10914,6 @@
   "view_auto_title": {
     "message": "让价格刻度重新适配走势线（或双击价格刻度）"
   },
-  "mon_coins_note2": {
-    "message": "价格和24小时来自行情栏；行情栏没有时，来自该币自己的30天。其余来自这30天，即1M范围所绘的序列。β是每个币在同样几天里相对比特币波动的幅度。点一行会在图表上打开该币；↑和↓可逐行移动。"
-  },
   "mon_col_beta": {
     "message": "β BTC"
   },
@@ -10781,9 +10958,6 @@
   },
   "mon_market_note": {
     "message": "Coinlore按市值排名前$1的币，截至$2，与价格栏读取的是同一份快照 — 此标签页打开期间每分钟请求一次。方块大小为其市值，色调为最近24小时。图表能绘制的币会在图表中打开。"
-  },
-  "mon_market_open": {
-    "message": "在图表上打开$1 — 24小时$2"
   },
   "mon_market_up": {
     "message": "24小时内涨幅最大"

@@ -785,7 +785,7 @@ class SettingsPanel extends PureComponent {
             React.createElement(
               RatePromptLink,
               {
-                href: STORE_LISTING_URL,
+                href: STORE_REVIEWS_URL,
                 target: "_blank",
                 rel: "noreferrer",
                 onClick: this.handleRatePromptDismiss,
@@ -858,7 +858,7 @@ class SettingsPanel extends PureComponent {
               React.createElement(
                 RateHint,
                 {
-                  href: STORE_LISTING_URL,
+                  href: STORE_REVIEWS_URL,
                   target: "_blank",
                   rel: "noreferrer",
                   title: msg("pref_rate_hint", "Open the Chrome Web Store listing in a new tab"),

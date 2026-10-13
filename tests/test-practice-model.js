@@ -2317,6 +2317,119 @@ const C = (v) => Math.round(v * 100000000); // contract coin
     "an unoffered share falls back to the whole contract");
 }
 
+/* MULTI-TAKE EXIT PLANS AND TRIGGER REFERENCES ---------------------------
+ *
+ * Three exits are one plan, not three edits made after each fill. Quantities
+ * are shares of the position when the plan is saved, and a complete ladder
+ * closes the remainder exactly even where lots round. Stops and takes may
+ * listen to Last or Mark independently; liquidation remains on Mark. */
+{
+  const open = `practiceOpen(practiceEmptySession(),
+    { coin: "BTC", side: "long", qty: 40, leverage: 5 }, ${P(100000)})`;
+  sandbox.__ladder = run(`(() => {
+    const o = ${open};
+    const out = practiceSetExitPlan(o.state, o.id, {
+      stop: ${P(90000)},
+      takes: [
+        { price: ${P(110000)}, share: 250000 },
+        { price: ${P(120000)}, share: 250000 },
+        { price: ${P(130000)}, share: 500000 }
+      ],
+      stopSource: "last",
+      takeSource: "last",
+      breakEven: true,
+      protection: false
+    });
+    return { s: out.state, id: o.id };
+  })()`);
+  assert.deepStrictEqual(
+    json("practiceTakeLegs(practiceAt(__ladder.s, __ladder.id)).map((l) => [l.price, l.share, l.all])"),
+    [
+      [P(110000), 250000, false],
+      [P(120000), 250000, false],
+      [P(130000), 500000, true],
+    ],
+    "three linked take-profit legs keep their price, share and final remainder",
+  );
+  assert.strictEqual(run("practiceAt(__ladder.s, __ladder.id).takeBaseQty"), 40,
+    "the ladder shares are tied to the quantity held when it was saved");
+
+  /* What a dragged stop sends (practice-page's commitLevelDrag): the stop
+     alone. It must leave the ladder, the references and the break-even as
+     they were — the one-target door rewrote them all as a single take. */
+  sandbox.__stopOnly = run(`practiceSetExitPlan(__ladder.s, __ladder.id, { stop: ${P(95000)} }).state`);
+  assert.strictEqual(run("practiceAt(__stopOnly, __ladder.id).stop"), P(95000), "a stop-only plan moves the stop");
+  assert.strictEqual(run("practiceTakeLegs(practiceAt(__stopOnly, __ladder.id)).length"), 3,
+    "…and keeps all three targets");
+  assert.strictEqual(run("practiceAt(__stopOnly, __ladder.id).takeSource + '/' + practiceAt(__stopOnly, __ladder.id).stopSource"), "last/last",
+    "…and both trigger references");
+  assert.strictEqual(run("practiceAt(__stopOnly, __ladder.id).takeBreakEven"), true,
+    "…and the break-even instruction");
+
+  sandbox.__tp1 = run(`practiceStep(__ladder.s, 1,
+    { BTC: ${P(105000)} }, { last: { BTC: ${P(111000)} } })`);
+  assert.strictEqual(run("practiceAt(__tp1.state, __ladder.id).qty"), 30,
+    "a Last-price TP1 closes one quarter while Mark is still below it");
+  assert.strictEqual(run("practiceTakeLegs(practiceAt(__tp1.state, __ladder.id)).length"), 2,
+    "only the filled leg is spent; both later targets stay live");
+  assert.ok(run("practiceAt(__tp1.state, __ladder.id).stop") > P(100000),
+    "TP1 moves the remaining stop to the fee-covered break-even price");
+  assert.strictEqual(run("practiceAt(__tp1.state, __ladder.id).takeBreakEven"), false,
+    "the break-even instruction is consumed once");
+
+  sandbox.__tpAll = run(`practiceStep(__tp1.state, 2,
+    { BTC: ${P(125000)} }, { last: { BTC: ${P(131000)} } })`);
+  assert.strictEqual(run("Object.keys(__tpAll.state.positions).length"), 0,
+    "a gap through TP2 and TP3 executes both and the final leg closes the remainder");
+  assert.strictEqual(run("__tpAll.events.filter((e) => e.reason === 'take').length"), 2,
+    "each crossed target is an inspectable fill event");
+  assert.strictEqual(run("practiceReconcile(__tpAll.state).ok"), true,
+    "the account reconciles after the whole ladder");
+
+  sandbox.__lastStop = run(`(() => {
+    const o = ${open};
+    return practiceSetExitPlan(o.state, o.id, {
+      stop: ${P(90000)}, takes: [], stopSource: "last", takeSource: "mark"
+    }).state;
+  })()`);
+  assert.strictEqual(
+    run(`practiceStep(__lastStop, 1, { BTC: ${P(95000)} }, { last: { BTC: ${P(89000)} } }).events[0].reason`),
+    "stop",
+    "a Last-price stop fires while Mark remains above the stop",
+  );
+
+  sandbox.__protected = run(`(() => {
+    const o = ${open};
+    return practiceSetExitPlan(o.state, o.id, {
+      stop: null,
+      takes: [{ price: ${P(100500)}, share: 1000000 }],
+      stopSource: "mark", takeSource: "last", protection: true
+    }).state;
+  })()`);
+  sandbox.__heldProtected = run(`practiceStep(__protected, 1,
+    { BTC: ${P(100000)} }, { last: { BTC: ${P(101000)} } })`);
+  assert.ok(run("Boolean(practiceAt(__heldProtected.state, '1'))"),
+    "price protection holds the target while Mark and Last differ by more than its band");
+  assert.strictEqual(
+    run(`practiceStep(__heldProtected.state, 2,
+      { BTC: ${P(100600)} }, { last: { BTC: ${P(100600)} } }).events[0].reason`),
+    "take",
+    "the same target fires after Mark and Last converge",
+  );
+
+  sandbox.__ladderRound = run("sanitizePractice(JSON.parse(JSON.stringify(__ladder.s)))");
+  assert.deepStrictEqual(
+    json("practiceTakeLegs(practiceAt(__ladderRound, __ladder.id))"),
+    json("practiceTakeLegs(practiceAt(__ladder.s, __ladder.id))"),
+    "the linked targets survive storage whole",
+  );
+  assert.deepStrictEqual(
+    json("(() => { const x = JSON.parse(JSON.stringify(__ladder.s)); x.positions['1'].takeLegs.push({ price: -1, share: 7 }); return practiceTakeLegs(practiceAt(sanitizePractice(x), '1')); })()"),
+    json("practiceTakeLegs(practiceAt(__ladder.s, __ladder.id))"),
+    "a malformed stored leg is dropped without damaging the valid ladder",
+  );
+}
+
 /* ── the trailing stop ────────────────────────────────────────────────────
  *
  * The other half of scaling out. A stop is a line drawn once; a trail is the

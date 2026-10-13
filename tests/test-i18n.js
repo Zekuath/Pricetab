@@ -151,6 +151,30 @@ check("every translation carries the English key set, with the same placeholders
   return out;
 });
 
+/* A complete English sentence is not a translation. The key/placeholder check
+ * above used to accept one copied Calls block in all twelve catalogues: every
+ * locale had every key, but fourteen full sentences still appeared in
+ * English. Short labels are deliberately left alone because product names,
+ * market terms and abbreviations can be identical across languages. Five
+ * alphabetic words is the smallest threshold that caught the copied block
+ * without treating labels such as "First in, first out" as missing work. */
+check("no translation leaves a full English sentence unchanged", () => {
+  const out = [];
+  const en = readCatalogue("en");
+  for (const code of offeredLocales().filter((c) => c !== "en")) {
+    if (!fs.existsSync(path.join(LOCALES, code, "messages.json"))) continue;
+    const cat = readCatalogue(code);
+    for (const [key, entry] of Object.entries(en)) {
+      if (!cat[key] || cat[key].message !== entry.message) continue;
+      const words = String(entry.message).match(/[A-Za-z]+/g) || [];
+      if (words.length >= 5) {
+        out.push(`${code}.${key} is still the full English sentence`);
+      }
+    }
+  }
+  return out;
+});
+
 /* The manifest has to point at the catalogue, or Chrome ignores `_locales/`
  * entirely and every `chrome.i18n.getMessage` answers "". Nothing on screen
  * changes — every call site carries its English — which is exactly why this

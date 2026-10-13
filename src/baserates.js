@@ -140,9 +140,11 @@ class BaseRatesPanel extends PureComponent {
       coin: null,
       cpi: null,
       sections: [],
+      section: 0,
     };
     this.load = this.load.bind(this);
     this.bodyRef = null;
+    this.onBodyScroll = this.onBodyScroll.bind(this);
   }
 
   componentDidMount() {
@@ -150,10 +152,47 @@ class BaseRatesPanel extends PureComponent {
     this.findSections();
   }
 
-  componentDidUpdate(prev) {
+  componentDidUpdate(prev, prevState) {
     // The panel follows the chart: switch coin underneath it and it re-reads
     if (prev.coin !== this.props.coin) this.load();
     this.findSections();
+    // The index keeps the section you are in within its own row
+    if (prevState && prevState.section !== this.state.section) this.revealChip(this.state.section);
+  }
+
+  /* **The index says where you are** (12 Oct 2026): the section whose head
+     has passed under the index is the one lit. Two columns put two heads at
+     once near the top — the lower of those that have passed wins. One read a
+     frame, however fast the wheel turns. */
+  onBodyScroll() {
+    if (this._spy) return;
+    this._spy = requestAnimationFrame(() => {
+      this._spy = 0;
+      const body = this.bodyRef;
+      if (!body || this._gone) return;
+      const nav = body.querySelector("[data-base-nav]");
+      const line = (nav ? nav.getBoundingClientRect().bottom : body.getBoundingClientRect().top) + 72;
+      let best = 0;
+      let bestTop = -Infinity;
+      body.querySelectorAll("[data-base-section]").forEach((n, i) => {
+        const top = n.getBoundingClientRect().top;
+        if (top <= line && top > bestTop) {
+          best = i;
+          bestTop = top;
+        }
+      });
+      if (best !== this.state.section) this.setState({ section: best });
+    });
+  }
+
+  revealChip(i) {
+    const nav = this.bodyRef && this.bodyRef.querySelector("[data-base-nav]");
+    const chip = nav && nav.children[i];
+    if (!chip) return;
+    const left = chip.offsetLeft - nav.offsetLeft;
+    if (left < nav.scrollLeft || left + chip.offsetWidth > nav.scrollLeft + nav.clientWidth) {
+      nav.scrollLeft = Math.max(0, left - 24);
+    }
   }
 
   /* **The index reads the sections the panel drew** (11 Oct 2026): every
@@ -205,6 +244,7 @@ class BaseRatesPanel extends PureComponent {
 
   componentWillUnmount() {
     this._gone = true;
+    if (this._spy) cancelAnimationFrame(this._spy);
   }
 
   /* What followed the last US releases for this coin — CPI, the jobs
@@ -1036,6 +1076,24 @@ class BaseRatesPanel extends PureComponent {
         const n = (r) => (r.byHorizon[0].result ? r.byHorizon[0].result.n : 0);
         return n(b) - n(a);
       });
+    const embedded = Boolean(this.props.tabs);
+    /* The coins to read, here: it used to take closing the screen,
+       switching the chart and opening it again. A pick switches the
+       chart's coin too — this screen always reads the chart's. */
+    const coinChips =
+      Array.isArray(this.props.coins) && this.props.coins.length > 1 && this.props.onPickCoin
+        ? React.createElement(
+            BaseCoins,
+            { role: "group", "aria-label": msg("br_coins_aria", "Read another coin"), "data-base-coins": "1", inline: embedded },
+            ...this.props.coins.map((c) =>
+              React.createElement(
+                BaseChip,
+                { key: c, active: c === coin, "aria-pressed": c === coin ? "true" : "false", onClick: () => c !== coin && this.props.onPickCoin(c) },
+                c,
+              ),
+            ),
+          )
+        : null;
     return React.createElement(
       BaseOverlay,
       {
@@ -1045,74 +1103,120 @@ class BaseRatesPanel extends PureComponent {
       },
       React.createElement(
         BaseCard,
-        null,
+        { still: this.props.still === true },
+        /* **Inside the monitor, the monitor's head** (12 Oct 2026, the owner:
+           *"monitor kısmının altında olduğu için bu base rate kısmındaki üst
+           bar … yanlış"*): the same title, key and line as the other three
+           tabs, so a switch changes the page and not the frame; this screen's
+           own question, its count and its coins move under the tabs. */
+        embedded
+          ? React.createElement(
+              BaseHead,
+              null,
+              React.createElement(BaseTitle, null, msg("mon_title", "Monitor"), keyCap("M")),
+              React.createElement(
+                BaseEyebrow,
+                null,
+                readings
+                  ? msg("br_eyebrow_in_monitor", "Base rates · $1 · $2 daily closes", coin, readings.days)
+                  : msg("br_reading", "Reading the daily closes…"),
+              ),
+            )
+          : React.createElement(
+              BaseHead,
+              null,
+              React.createElement(
+                BaseTitle,
+                null,
+                msg("br_title", "$1 · has this happened before?", coin),
+                keyCap("B"),
+              ),
+              React.createElement(
+                BaseEyebrow,
+                null,
+                readings
+                  ? msg("br_daily_closes", "$1 daily closes", readings.days)
+                  : loading
+                    ? msg("br_reading", "Reading the daily closes…")
+                    : "",
+              ),
+              coinChips,
+            ),
         React.createElement(
-          BaseHead,
-          null,
-          React.createElement(
-            BaseTitle,
-            null,
-            msg("br_title", "$1 · has this happened before?", coin),
-            keyCap("B"),
-          ),
-          React.createElement(
-            BaseEyebrow,
-            null,
-            readings
-              ? msg("br_daily_closes", "$1 daily closes", readings.days)
-              : loading
-                ? msg("br_reading", "Reading the daily closes…")
-                : "",
-          ),
-          /* The coins to read, here: it used to take closing the screen,
-             switching the chart and opening it again. A pick switches the
-             chart's coin too — this screen always reads the chart's. */
-          Array.isArray(this.props.coins) && this.props.coins.length > 1 && this.props.onPickCoin
+          BaseBody,
+          { innerRef: (n) => (this.bodyRef = n), onScroll: this.onBodyScroll },
+          // The monitor's tabs, when this is the monitor's Base rates tab
+          this.props.tabs || null,
+          embedded &&
+            React.createElement(
+              BaseContext,
+              { "data-base-context": "1" },
+              React.createElement(
+                BaseContextTitle,
+                null,
+                msg("br_title", "$1 · has this happened before?", coin),
+                keyCap("B"),
+              ),
+              coinChips,
+            ),
+          this.state.sections.length > 2
             ? React.createElement(
-                BaseCoins,
-                { role: "group", "aria-label": msg("br_coins_aria", "Read another coin"), "data-base-coins": "1" },
-                ...this.props.coins.map((c) =>
+                BaseNav,
+                { "aria-label": msg("br_nav_aria", "Sections of this screen"), "data-base-nav": String(this.state.sections.length), afterTabs: Boolean(this.props.tabs) },
+                ...this.state.sections.map((t, i) =>
                   React.createElement(
-                    BaseChip,
-                    { key: c, active: c === coin, "aria-pressed": c === coin ? "true" : "false", onClick: () => c !== coin && this.props.onPickCoin(c) },
-                    c,
+                    BaseNavChip,
+                    { key: `${i}-${t}`, active: i === this.state.section, "aria-current": i === this.state.section ? "true" : undefined, onClick: () => this.goToSection(i) },
+                    t,
                   ),
                 ),
               )
             : null,
-        ),
-        React.createElement(
-          BaseBody,
-          { innerRef: (n) => (this.bodyRef = n) },
-          // The monitor's tabs, when this is the monitor's Base rates tab
-          this.props.tabs || null,
-          this.state.sections.length > 2
-            ? React.createElement(
-                BaseNav,
-                { "aria-label": msg("br_nav_aria", "Sections of this screen"), "data-base-nav": String(this.state.sections.length) },
-                ...this.state.sections.map((t, i) =>
-                  React.createElement(BaseChip, { key: `${i}-${t}`, onClick: () => this.goToSection(i) }, t),
-                ),
-              )
-            : null,
+          /* **At a glance** (12 Oct 2026): the four things somebody opens
+             this to ask, as figures over their names like the price head —
+             the RSI with its clock, how much is true right now, what today's
+             candle is, and how much history the counts stand on. Each is a
+             fact read off what is below; none is a verdict. */
           readings &&
             React.createElement(
-              BaseNow,
-              null,
+              BaseGlance,
+              { "data-base-glance": "1" },
               React.createElement(
-                BaseNowValue,
+                BaseGlanceTile,
                 null,
-                readings.rsiNow == null ? "—" : readings.rsiNow.toFixed(1),
+                React.createElement(BaseNowValue, null, readings.rsiNow == null ? "—" : readings.rsiNow.toFixed(1)),
+                /* The clock is part of the reading. The same three letters mean
+                 * six different numbers on the widget depending on which range
+                 * is on screen — measured on live BTC at one instant, 63.8 to
+                 * 82.2 — so a panel that counts history has to say which one it
+                 * counted. */
+                React.createElement(BaseNowLabel, null, msg("br_rsi_label", "RSI 14 · daily closes · 0–100")),
               ),
-              /* The clock is part of the reading. The same three letters mean
-               * six different numbers on the widget depending on which range
-               * is on screen — measured on live BTC at one instant, 63.8 to
-               * 82.2 — so a panel that counts history has to say which one it
-               * counted. */
               React.createElement(
-                BaseNowLabel,
+                BaseGlanceTile,
                 null,
-                msg("br_rsi_label", "RSI 14 · daily closes · 0–100"),
+                React.createElement(BaseNowValue, null, String(live.length)),
+                React.createElement(BaseNowLabel, null, msg("br_glance_now", "States true right now")),
+              ),
+              React.createElement(
+                BaseGlanceTile,
+                null,
+                React.createElement(
+                  BaseNowValue,
+                  { small: true },
+                  patternsLive.length ? patternsLive.map((p) => p.title).join(" · ") : "—",
+                ),
+                React.createElement(
+                  BaseNowLabel,
+                  null,
+                  patternsLive.length ? msg("br_glance_candle", "Today's candle") : msg("br_glance_candle_none", "Today's candle: no named shape"),
+                ),
+              ),
+              React.createElement(
+                BaseGlanceTile,
+                null,
+                React.createElement(BaseNowValue, null, (readings.days / 365.25).toFixed(1)),
+                React.createElement(BaseNowLabel, null, msg("br_glance_years", "Years of daily closes counted")),
               ),
             ),
           loading &&

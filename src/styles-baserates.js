@@ -15,6 +15,20 @@ const baseRatesIn = keyframes`
   to { opacity: 1; transform: translateY(0); }
 `;
 
+/* A screen's content as it arrives — the monitor's tabs and the base rates
+   share it, so a switch between them reads as one screen's pages (12 Oct
+   2026). Content only: the head and the tab strip never move. */
+const screenPaneKeys = keyframes`
+  from { opacity: 0; transform: translate3d(0, 10px, 0); }
+  to { opacity: 1; transform: none; }
+`;
+const screenPaneIn = css`
+  animation: ${screenPaneKeys} 0.26s cubic-bezier(0.22, 1, 0.36, 1);
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+`;
+
 const BaseOverlay = styled.div`
   position: fixed;
   inset: var(--pt-safe-top, 0px) var(--pt-safe-right, 0px) 0 var(--pt-safe-left, 0px);
@@ -52,7 +66,9 @@ const BaseCard = styled.div`
   height: 100dvh;
   background: ${({ theme }) => theme.color.bg};
   overflow: hidden;
-  animation: ${baseRatesIn} 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+  /* The screen's entrance — not replayed when the monitor only changes tab
+     (still), where the head and the strip stay put and the content moves */
+  animation: ${({ still }) => (still ? "none" : css`${baseRatesIn} 0.2s cubic-bezier(0.22, 1, 0.36, 1)`)};
 `;
 
 /* Settings' head, to the pixel: the same padding, rule and left edge. */
@@ -67,6 +83,17 @@ const BaseHead = styled.div`
      longest title of the five, and at 390px it ran its key under the ×. */
   @media (max-width: 600px) {
     padding: 1rem 3.25rem 1rem 1rem;
+    /* The coins go under the title as one row that scrolls sideways: beside
+       it they stacked into a column of four circles (12 Oct 2026) */
+    flex-wrap: wrap;
+    & > [data-base-coins] {
+      order: 3;
+      flex: 1 0 100%;
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      scrollbar-width: none;
+      margin: 0.25rem 0 0;
+    }
   }
 `;
 
@@ -122,6 +149,7 @@ const BaseColumns = styled.div`
   gap: 0 2.5rem;
   align-items: start;
   max-width: 110rem;
+  ${screenPaneIn};
 
   @media (min-width: 1100px) {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -144,9 +172,41 @@ const BaseNow = styled.div`
 `;
 
 const BaseNowValue = styled.div`
-  font-size: 1.6rem;
+  font-size: ${({ small }) => (small ? "1rem" : "1.6rem")};
+  line-height: ${({ small }) => (small ? 1.35 : 1.15)};
   font-weight: ${({ theme }) => theme.fontWeight.bold};
+  font-variant-numeric: tabular-nums;
   color: ${({ theme }) => theme.color.text};
+`;
+
+/* **At a glance** (12 Oct 2026): four tiles over the columns, value over
+   label like the price head; four across a wide window, two on a phone. A
+   tile's value sits at its foot so a short figure and a two-line candle name
+   share one baseline. */
+const BaseGlance = styled.div`
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.6rem;
+  margin: 0.4rem 0 1.4rem;
+  max-width: 110rem !important;
+  ${screenPaneIn};
+
+  @media (max-width: 900px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+`;
+
+const BaseGlanceTile = styled.div`
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 0.45rem;
+  min-width: 0;
+  padding: 0.9rem 1rem 0.85rem;
+  border: 1px solid ${({ theme }) => theme.color.border};
+  border-radius: 12px;
+  background: ${({ theme }) => theme.color.bgSecondary};
+  overflow-wrap: anywhere;
 `;
 
 const BaseNowLabel = styled.div`
@@ -156,13 +216,19 @@ const BaseNowLabel = styled.div`
   color: ${({ theme }) => theme.color.textSecondary};
 `;
 
-/* Marked so the panel's index can find every section it drew (11 Oct 2026). */
+/* Marked so the panel's index can find every section it drew (11 Oct 2026).
+   A head the eye can find the screen by (12 Oct 2026): the text ink, a
+   weight, a rule under it — it was the quietest type on the page. */
 const BaseSectionLabel = styled.div.attrs({ "data-base-section": "1" })`
-  margin: 1.1rem 0 0.5rem;
-  font-size: 0.66rem;
-  letter-spacing: 0.12em;
+  margin: 1.8rem 0 0.75rem;
+  padding-bottom: 0.45rem;
+  border-bottom: 1px solid ${({ theme }) => theme.color.border};
+  font-size: 0.72rem;
+  font-weight: ${({ theme }) => theme.fontWeight.semibold};
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: ${({ theme }) => theme.color.textSecondary};
+  color: ${({ theme }) => theme.color.text};
+  scroll-margin-top: 4rem;
 `;
 
 const BaseRow = styled.div`
@@ -177,6 +243,9 @@ const BaseRow = styled.div`
      it wears the fill; the rest are outlines on the page's own ground. */
   background: ${({ theme, live }) =>
     live ? theme.color.bgSecondary : "transparent"};
+  /* …and a strip in the text ink down its leading edge, so the rows that
+     are about today can be found by eye in a column of thirty */
+  box-shadow: ${({ theme, live }) => (live ? `inset 3px 0 0 ${theme.color.text}` : "none")};
 `;
 
 const BaseRowTitle = styled.div`
@@ -333,7 +402,41 @@ const BaseCoins = styled.div`
   flex-wrap: wrap;
   gap: 0.35rem;
   margin-left: auto;
-  margin-right: 2.5rem;
+  margin-right: ${({ inline }) => (inline ? "0" : "2.5rem")};
+`;
+
+/* **The question and its coins, under the monitor's tabs** (12 Oct 2026):
+   what the screen's own head said before it became a tab of the monitor. */
+const BaseContext = styled.div`
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.6rem 1rem;
+  margin: 0 0 0.9rem;
+  max-width: 110rem !important;
+  ${screenPaneIn};
+
+  @media (max-width: 600px) {
+    & > [data-base-coins] {
+      flex: 1 0 100%;
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      scrollbar-width: none;
+      margin-left: 0;
+    }
+  }
+`;
+
+const BaseContextTitle = styled.h3`
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.86rem;
+  font-weight: ${({ theme }) => theme.fontWeight.semibold};
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: ${({ theme }) => theme.color.text};
 `;
 
 const BaseChip = styled.button.attrs({ type: "button" })`
@@ -354,24 +457,63 @@ const BaseChip = styled.button.attrs({ type: "button" })`
   ${touchRow};
 `;
 
+/* **One row that says where you are** (12 Oct 2026): it wrapped to two and
+   three lines of twelve equal chips, none of them lit. Now one line that
+   scrolls sideways under the hand, the section you are in filled. */
 const BaseNav = styled.nav`
   position: sticky;
   top: -1.6rem;
   z-index: 2;
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
-  margin: -1.6rem -2.5rem 0.6rem;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+  gap: 0.3rem;
+  /* Up into the body's padding, unless the monitor's tabs are over it —
+     pulled up, it sat across their lower half (12 Oct 2026) */
+  margin: ${({ afterTabs }) => (afterTabs ? "0" : "-1.6rem")} -2.5rem 0.6rem;
   padding: 0.75rem 2.5rem 0.65rem;
   max-width: none !important;
   background: ${({ theme }) => theme.color.bg};
   border-bottom: 1px solid ${({ theme }) => theme.color.border};
 
   @media (max-width: 600px) {
-    margin: -1rem -1rem 0.6rem;
+    margin: ${({ afterTabs }) => (afterTabs ? "0" : "-1rem")} -1rem 0.6rem;
     padding: 0.6rem 1rem;
     top: -1rem;
   }
+`;
+
+const BaseNavChip = styled.button.attrs({ type: "button" })`
+  flex: 0 0 auto;
+  font-family: inherit;
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  padding: 0.32rem 0.7rem;
+  border-radius: 999px;
+  cursor: pointer;
+  border: 1px solid ${({ theme, active }) => (active ? theme.color.text : "transparent")};
+  background: ${({ theme, active }) => (active ? theme.color.bgSecondary : "transparent")};
+  color: ${({ theme, active }) => (active ? theme.color.text : theme.color.textSecondary)};
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease,
+    background 0.15s ease;
+
+  &:hover,
+  &:focus-visible {
+    color: ${({ theme }) => theme.color.text};
+    border-color: ${({ theme }) => theme.color.border};
+  }
+  &:focus-visible {
+    outline: 2px solid ${({ theme }) => theme.color.borderHover};
+    outline-offset: 1px;
+  }
+  ${touchRow};
 `;
 
 const BaseHorizon = styled.div`

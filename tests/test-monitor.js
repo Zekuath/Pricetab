@@ -35,6 +35,10 @@ const sandbox = {
   // The pairing is what is tested here; the coefficient itself is the compare
   // strip's, tested with it
   compareCorrelation: (a, b) => ({ r: a.length === b.length ? 0.5 : -0.5, n: Math.min(a.length, b.length) - 1 }),
+  // The same-direction count beside it (12 Oct 2026), the compare strip's too
+  compareSameDirection: (a, b) => ({ same: 1, n: Math.min(a.length, b.length) - 1 }),
+  // The content's entrance (styles-baserates.js), a css fragment at load
+  screenPaneIn: "",
   SUGGESTED_COINS: ["BTC", "ETH", "SOL", "XRP", "BCH"],
   COIN_NAMES: { BTC: "Bitcoin", ETH: "Ethereum", SOL: "Solana", XRP: "XRP", BCH: "Bitcoin Cash" },
   PERIOD_OPTIONS: [

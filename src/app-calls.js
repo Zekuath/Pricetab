@@ -578,6 +578,20 @@ const callHandlers = (app) => ({
       return null;
     },
 
+    /* The position editor's venue-style exit plan: up to three linked
+       targets, independent trigger references, TP1 → break-even and the
+       optional Mark/Last divergence guard. One model transition means a
+       failed save cannot leave half a ladder behind. */
+    setPracticeExitPlan: (id, plan) => {
+      const s = app.state.practice;
+      if (!s || !practiceAt(s, id)) return "none";
+      const out = practiceSetExitPlan(s, id, plan);
+      if (out.error) return out.error;
+      if (!savePractice(out.state)) return "save";
+      app.setState({ practice: out.state });
+      return null;
+    },
+
     /* Moving free balance into one isolated position is a model transition,
        not a UI edit. Return its named refusal so the preview and the commit
        can say the same thing; only expose the state after storage accepts the
@@ -1286,6 +1300,8 @@ const callHandlers = (app) => ({
         wonCalls:
           won.length && !quiet ? won.concat(prev.wonCalls) : prev.wonCalls,
       }));
+      // A call that came true is a good moment to ask for a rating (config.js)
+      if (won.length && !quiet && app.rateMomentNow) app.rateMomentNow("call");
     },
 
     /* The chart already guards against reporting the same numbers twice, so

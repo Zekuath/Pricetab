@@ -1,18 +1,18 @@
 {
   "al_7d_hit_rate": {
-    "message": "hit rate"
+    "message": "的中率"
   },
   "al_7d_hit_rate_hint": {
-    "message": "Settled calls in the last 7 days"
+    "message": "直近7日間に判定された予想"
   },
   "al_7d_settled": {
-    "message": "settled"
+    "message": "判定済み"
   },
   "al_7d_settled_hint": {
-    "message": "Calls that got an answer in the last 7 days"
+    "message": "直近7日間に結果が確定した予想"
   },
   "al_7d_snapshot": {
-    "message": "Last 7 days"
+    "message": "直近7日間"
   },
   "al_a_pct_move": {
     "message": "$1% の変動"
@@ -127,10 +127,10 @@
     "message": "予想"
   },
   "al_calls_info_b": {
-    "message": "予想とは主張です：「いつか教えて」ではなく「ここだと言う」。チャート右の空いた帯のマスを指せば、価格帯と時点を名指ししたことになります — 1回のクリックで下書き、2回目でロック。次にタブを開いたとき、その時点の価格に対して自動で判定され、ボックスは当たったかどうかを示してチャートに残ります。各マスには確率が付きます：このコイン自身の足から、いまの動き方に合わせ、盤に載せる前に何年分もの過去のマスで測ったもの — 確率であって、助言ではありません。盤を上下にドラッグすると別の価格を、左右にドラッグすると盤と履歴の配分を変えられます。"
+    "message": "予想は通知ではなく、「その時点で価格がどこにあるか」を示すものです。チャート右側の空いた領域でマスを選び、価格帯と時刻を指定します。1回目のクリックで下書きを作成し、2回目で確定します。次にタブを開いたとき、その時刻の価格を使って自動的に判定され、マスは結果とともにチャートに残ります。各マスの確率は、そのコインの過去のローソク足から計算し、現在の値動きに合わせて調整したうえで、盤に採用する前に数年分のデータで検証したものです。確率であり、助言ではありません。盤を上下にドラッグすると別の価格帯を、左右にドラッグするとより先の時間や過去の履歴を表示できます。"
   },
   "al_calls_learn_more": {
-    "message": "How calls work"
+    "message": "予想の仕組み"
   },
   "al_calls_more": {
     "message": "$2 件中あと $1 件表示",
@@ -147,13 +147,13 @@
     "message": "予想はオフです"
   },
   "al_calls_off_body": {
-    "message": "チャートの空白の未来のマスを指せば、価格がどこに、いつあるかを言ったことになります。次にタブを開いたとき自動で判定されます — 何も通知されず、何も送信されず、スコアには何の価値もありません。"
+    "message": "チャート右側の未来領域でマスを選び、価格がいつ、どの範囲にあるかを予想します。次にタブを開いたとき自動的に判定されます。内容が公開・送信されることはなく、スコアに現実の価値はありません。"
   },
   "al_calls_practice": {
-    "message": "Try a practice call"
+    "message": "予想を試す"
   },
   "al_calls_pulse": {
-    "message": "$1 open · $2 due now · $3 on this range",
+    "message": "未判定 $1件 · まもなく判定 $2件 · この期間 $3件",
     "placeholders": {
       "arg1": {
         "content": "$1"
@@ -173,19 +173,19 @@
     "message": "オン"
   },
   "al_calls_step_1": {
-    "message": "Turn calls on and go to the board."
+    "message": "予想をオンにしてボードを開きます。"
   },
   "al_calls_step_2": {
-    "message": "Click a square once to draft, twice to lock."
+    "message": "マスを1回クリックして下書きし、もう1回クリックして確定します。"
   },
   "al_calls_step_2_touch": {
     "message": "マスを1回タップで下書き、2回で確定。"
   },
   "al_calls_step_3": {
-    "message": "Come back with K to track open and settled calls."
+    "message": "Kキーで戻り、未判定と判定済みの予想を確認します。"
   },
   "al_calls_step_3_touch": {
-    "message": "このタブに戻って、未決と決着済みのコールを確認。"
+    "message": "このタブに戻り、未判定と判定済みの予想を確認します。"
   },
   "al_calls_switch": {
     "message": "チャート上の予想"
@@ -245,7 +245,7 @@
     "message": "期限到来 — この期間を次に読み込んだときに判定されます"
   },
   "al_due_empty": {
-    "message": "No calls due in the next 24 hours on this view."
+    "message": "この表示では、24時間以内に判定される予想はありません。"
   },
   "al_duplicate": {
     "message": "このターゲットはすでにあります。"
@@ -272,7 +272,7 @@
     "message": "$1 現在"
   },
   "al_fair_odds": {
-    "message": "フェアオッズで 1 コールあたり $1 ポイント: 賭け $2、戻り $3"
+    "message": "適正オッズなら予想1件は$1ポイント：リスク$2、戻り$3"
   },
   "al_falls": {
     "message": "下落"
@@ -383,7 +383,7 @@
     "message": "偶然だけでこれ以上の成績になるのは $1"
   },
   "al_luck_title": {
-    "message": "各コールは、指定した時点のマスの確率で当たりました。それらを別々のコイン投げとして合計すると、あなた以上の的中数になる頻度がこれです。"
+    "message": "各予想は、確定時にそのマスが示した確率で的中しました。それぞれを独立したコイン投げとして合計したとき、今回以上の的中数になる頻度がこの値です。"
   },
   "al_missed": {
     "message": "はずれ"
@@ -424,7 +424,7 @@
     "message": "点線の右側のマスを指して2回クリックします。1回目で下書き、2回目で確定。その時刻に価格がその帯にあると宣言したことになります。"
   },
   "al_no_calls_body_touch": {
-    "message": "点線の右のマスをタップすると、コールの内容がシートに表示され、確定で決まります。その時刻に価格がその範囲にある、と言ったことになります。"
+    "message": "点線の右にあるマスをタップすると、シートに予想の内容が表示されます。「確定」で登録すると、その時刻に価格がその範囲にあると予想したことになります。"
   },
   "al_no_holdings": {
     "message": "合計するものがまだありません"
@@ -463,25 +463,25 @@
     "message": " · $1 で"
   },
   "al_open_empty": {
-    "message": "No open calls on this view."
+    "message": "この表示には未判定の予想がありません。"
   },
   "al_open_n": {
     "message": "未判定 · $1"
   },
   "al_open_now": {
-    "message": "open now"
+    "message": "現在未判定"
   },
   "al_open_now_hint": {
-    "message": "Open calls currently waiting to settle"
+    "message": "結果の確定を待っている予想"
   },
   "al_order_hint": {
-    "message": "Switch between due-first and newest-first ordering for open calls"
+    "message": "未判定の予想を判定が近い順または新しい順に並べ替えます"
   },
   "al_order_recent": {
-    "message": "recent first"
+    "message": "新しい順"
   },
   "al_order_soon": {
-    "message": "due first"
+    "message": "判定が近い順"
   },
   "al_paused_currency": {
     "message": "一時停止 · $1"
@@ -577,7 +577,7 @@
     "message": "$1 で設定 — 再び $1 を表示すると再開します"
   },
   "al_settled_empty": {
-    "message": "No settled calls on this view."
+    "message": "この表示には判定済みの予想がありません。"
   },
   "al_settled_n": {
     "message": "判定済み · $1"
@@ -616,13 +616,13 @@
     "message": "再開します"
   },
   "al_this_coin": {
-    "message": "this coin"
+    "message": "この銘柄"
   },
   "al_this_coin_hint": {
-    "message": "Only calls for the coin on screen"
+    "message": "画面に表示中の銘柄の予想だけを表示"
   },
   "al_this_coin_only": {
-    "message": "this coin only"
+    "message": "この銘柄のみ"
   },
   "al_time_title": {
     "message": "決着までの$1%"
@@ -640,31 +640,31 @@
     "message": "予想をオンにする"
   },
   "al_view": {
-    "message": "View"
+    "message": "表示"
   },
   "al_view_all": {
-    "message": "all"
+    "message": "すべて"
   },
   "al_view_all_hint": {
-    "message": "Show open and settled calls together"
+    "message": "未判定と判定済みの予想をまとめて表示"
   },
   "al_view_due": {
-    "message": "due"
+    "message": "まもなく判定"
   },
   "al_view_due_hint": {
-    "message": "Open calls due in the next 24 hours"
+    "message": "24時間以内に判定される未判定の予想"
   },
   "al_view_open": {
-    "message": "open"
+    "message": "未判定"
   },
   "al_view_open_hint": {
-    "message": "Only open calls"
+    "message": "未判定の予想のみ"
   },
   "al_view_settled": {
-    "message": "settled"
+    "message": "判定済み"
   },
   "al_view_settled_hint": {
-    "message": "Only settled calls"
+    "message": "判定済みの予想のみ"
   },
   "al_vs_chance": {
     "message": "$2 件中 $1 件的中 · 偶然なら $3"
@@ -1013,6 +1013,12 @@
   },
   "app_rate_ask": {
     "message": "PriceTab は気に入りましたか。評価は他の人が見つけるきっかけになります。数秒で終わり、何よりも助けになります。"
+  },
+  "app_rate_ask_call": {
+    "message": "その予想が当たりました。PriceTab が相場を読む助けになっているなら、評価が他の人に見つけてもらう手段になります。数秒で済みます。"
+  },
+  "app_rate_ask_target": {
+    "message": "目標価格に到達しました。PriceTab が役に立っているなら、評価が他の人に見つけてもらう手段になります。数秒で済みます。"
   },
   "app_read_on": {
     "message": "記事を読む: "
@@ -1447,11 +1453,26 @@
   "br_edge_worse": {
     "message": "通常の期間より $1 ポイント悪い"
   },
+  "br_eyebrow_in_monitor": {
+    "message": "ベースレート · $1 · 日足終値 $2 本"
+  },
   "br_failed": {
     "message": "$1 の日足履歴が取得できませんでした。これなしでは何も数えられず、作った数字は無いより悪いものです。"
   },
   "br_fomc_title": {
     "message": "FRBの金利決定 · FOMC声明"
+  },
+  "br_glance_candle": {
+    "message": "今日のローソク足"
+  },
+  "br_glance_candle_none": {
+    "message": "今日のローソク足：名前のある形はなし"
+  },
+  "br_glance_now": {
+    "message": "現在当てはまる状態"
+  },
+  "br_glance_years": {
+    "message": "集計した日足終値の年数"
   },
   "br_loading_body": {
     "message": "このコインの日足終値を読み込んでいます。取引所が公開する限りさかのぼるため、下の集計に意味があります。"
@@ -1752,7 +1773,7 @@
     "message": "今後24時間・モデル"
   },
   "chance_tomorrow_title": {
-    "message": "集計ではなくモデル: コール盤自身のモデルを、このコインの直近 $1 本の6時間足に当て、24時間後の価格について。$3年以降の $2 日で一度だけ検証（BTC・ETH・SOL・XRP）: 80% 範囲は $4 の日で、50% 範囲は $5 の日で当たった。どちらに動くかはコイン投げ以上には分からなかったので、数字は出さない。",
+    "message": "集計ではなくモデル：予想ボードのモデルを、この銘柄の直近$1本の6時間足に当てた24時間後の価格です。$3以降の$2日で一度だけ検証（BTC・ETH・SOL・XRP）：80%範囲は$4の日で、50%範囲は$5の日で当たりました。方向はコイン投げより正確ではなかったため、その数値は表示しません。",
     "placeholders": {
       "arg1": {
         "content": "$1"
@@ -2665,10 +2686,10 @@
     "message": "強制決済まで"
   },
   "drawer_calls_aria_off": {
-    "message": "Calls, currently off"
+    "message": "予想は現在オフ"
   },
   "drawer_calls_aria_on": {
-    "message": "Calls, $1 open",
+    "message": "未判定の予想: $1件",
     "placeholders": {
       "arg1": {
         "content": "$1"
@@ -2676,7 +2697,7 @@
     }
   },
   "drawer_calls_due_soon": {
-    "message": "$1 call due within 24h",
+    "message": "24時間以内に判定される予想: $1件",
     "placeholders": {
       "arg1": {
         "content": "$1"
@@ -2684,7 +2705,7 @@
     }
   },
   "drawer_calls_title_off": {
-    "message": "Calls ($1) · off",
+    "message": "予想（$1）· オフ",
     "placeholders": {
       "arg1": {
         "content": "$1"
@@ -2692,7 +2713,7 @@
     }
   },
   "drawer_calls_title_on": {
-    "message": "Calls ($1) · $2 open",
+    "message": "予想（$1）· 未判定 $2件",
     "placeholders": {
       "arg1": {
         "content": "$1"
@@ -2832,7 +2853,7 @@
     "message": "最も古い購入から売却されます。ほぼ全ての国で既定であり、一部の国ではこれしか認められません。"
   },
   "method_hifo": {
-    "message": "高value先出し"
+    "message": "取得価格が高いものから売却"
   },
   "method_hifo_note": {
     "message": "最も高い購入から売却され、利益が最も小さく計上されます。すべての国で認められるわけではありません。"
@@ -2965,7 +2986,7 @@
     }
   },
   "mo_tested_title": {
-    "message": "モデル推定: スチューデント t 誤差（ν $2）付き EWMA 分散（λ $1）、$3 までの Coinbase BTC-USD 1 時間足終値で推定。$5 から $6 の $4 時間でテスト: 80% 帯は $7% の時間で当たり（名目 80%）、その interval score は 24 時間ローリング・ボラティリティを上回りました（DM t $8）。",
+    "message": "モデル推定: スチューデント t 誤差（ν $2）付き EWMA 分散（λ $1）、$3 までの Coinbase BTC-USD 1 時間足終値で推定。$5 から $6 の $4 時間でテスト: 80% 帯は $7% の時間で当たり（名目 80%）、その 区間スコア は 24 時間ローリング・ボラティリティを上回りました（DM t $8）。",
     "placeholders": {
       "arg1": {
         "content": "$1"
@@ -3002,6 +3023,9 @@
   "mon_close": {
     "message": "モニターを閉じる"
   },
+  "mon_coins_note3": {
+    "message": "価格と24時間変化はティッカーから取得し、そこにない場合はその銘柄の30日分のデータを使います。その他の指標は、1Mレンジが描く同じ30日系列から計算します。βは、同じ日にビットコインが1%動いたとき、この銘柄が平均で何%動いたかを示します。行を押すと銘柄の概要カードが開き、そこからワンタップでチャートを開けます。↑と↓で行を移動します。"
+  },
   "mon_col_coin": {
     "message": "コイン"
   },
@@ -3023,17 +3047,80 @@
   "mon_corr_cell": {
     "message": "$1と$2:$3($4回の値動きから)"
   },
+  "mon_corr_cell_same": {
+    "message": "$1 と $2：$3 — $5 回の値動きのうち $4% が同じ向き（r $6）"
+  },
   "mon_corr_few": {
     "message": "共通の値動きが少なすぎて判断できません"
   },
-  "mon_corr_note": {
-    "message": "直近30日で各ペアがどれだけ連動したか:$1ごとの値動きのピアソン相関(1ペアあたり$2回)。1は同じ動き、0は無関係、−1は逆の動き。この30日を表すもので、先行きではありません。"
+  "mon_corr_legend": {
+    "message": "セルの意味"
+  },
+  "mon_corr_loosely": {
+    "message": "弱い"
+  },
+  "mon_corr_mostly": {
+    "message": "おおむね連動"
+  },
+  "mon_corr_note2": {
+    "message": "直近30日の各ペアについて2つの集計（値動きは $1 ごと、ペアあたり $2 回）：2つが同じ向きに動いた頻度と、値動きの相関 r — 足並みがそろえば1、片方がもう片方について何も示さなければ0、逆向きなら−1。連動していることは、両方やどちらかを持つ理由にはなりません。この30日を表すもので、この先を表すものではありません。"
+  },
+  "mon_corr_opposite": {
+    "message": "逆向き"
+  },
+  "mon_corr_pair_line": {
+    "message": "10回の値動きのうち $1 回が同じ向き（r $2）。"
+  },
+  "mon_corr_pair_line_r": {
+    "message": "r $1。"
+  },
+  "mon_corr_pairs": {
+    "message": "わかりやすく言うと"
+  },
+  "mon_corr_together": {
+    "message": "連動"
+  },
+  "mon_corr_unrelated": {
+    "message": "無関係"
+  },
+  "mon_detail_aria": {
+    "message": "$1（直近30日）"
+  },
+  "mon_detail_base": {
+    "message": "$1 のベースレート"
+  },
+  "mon_detail_cap": {
+    "message": "時価総額"
+  },
+  "mon_detail_chart": {
+    "message": "チャートで開く"
+  },
+  "mon_detail_close": {
+    "message": "閉じる"
+  },
+  "mon_detail_high": {
+    "message": "高値 $1"
+  },
+  "mon_detail_low": {
+    "message": "30日安値 $1"
+  },
+  "mon_detail_priced_only": {
+    "message": "PriceTab は市場のスナップショットから $1 の価格を表示しますが、チャートは描けません。そのため、ここには30日分・チャート・ベースレートがありません。"
+  },
+  "mon_detail_range": {
+    "message": "レンジ内の位置"
+  },
+  "mon_detail_volume": {
+    "message": "24時間の取引高"
   },
   "mon_eyebrow": {
     "message": "あなたの$1コイン · 直近30日"
   },
   "mon_loading": {
     "message": "30日分の価格を読み込み中…"
+  },
+  "mon_market_card": {
+    "message": "$1 — 24時間で $2、カードを開きます"
   },
   "mon_need_two": {
     "message": "2つ目のコインを追加すると、連動の様子が見られます。"
@@ -3217,7 +3304,7 @@
     "message": "このフィルターでは何もありません。範囲を広げるか、下のソースを再度オンにしてください。"
   },
   "news_none_note": {
-    "message": "「none」と付いたものは応答しましたが、今回はこの分野の記事がありませんでした。"
+    "message": "「なし」と表示されたソースは応答しましたが、今回はこの分野の記事がありませんでした。"
   },
   "news_none_tone": {
     "message": "今画面にはそのような言い回しの記事はありません。"
@@ -3810,10 +3897,10 @@
     "message": "$1に確定 — あと$2分"
   },
   "ph_call_lock": {
-    "message": "コールを確定"
+    "message": "予想を確定"
   },
   "ph_call_title": {
-    "message": "このコールにしますか?"
+    "message": "この予想で確定しますか？"
   },
   "ph_cancel": {
     "message": "キャンセル"
@@ -3849,7 +3936,7 @@
     "message": "ピンチ"
   },
   "ph_hint_pinch_d": {
-    "message": "でズーム — コールの盤では範囲"
+    "message": "でズーム — 予想ボードでは表示範囲を変更"
   },
   "ph_hint_title": {
     "message": "指で操作するチャート"
@@ -4721,14 +4808,44 @@
   "pop_age_now": {
     "message": "たった今"
   },
+  "pop_blocks": {
+    "message": "$1 ブロック"
+  },
+  "pop_btc_share": {
+    "message": "BTC $1%"
+  },
+  "pop_coins": {
+    "message": "あなたのコイン"
+  },
+  "pop_days": {
+    "message": "$1 日"
+  },
+  "pop_done": {
+    "message": "完了"
+  },
+  "pop_fear_greed": {
+    "message": "恐怖と強欲"
+  },
   "pop_from": {
     "message": "$1 の価格"
+  },
+  "pop_halving": {
+    "message": "ビットコイン半減期"
+  },
+  "pop_holdings": {
+    "message": "保有資産"
+  },
+  "pop_market": {
+    "message": "市場"
   },
   "pop_no_prices": {
     "message": "価格はまだありません"
   },
   "pop_open": {
     "message": "タブを開く"
+  },
+  "pop_open_coin": {
+    "message": "$1 を新しいタブで開く"
   },
   "pop_open_hint": {
     "message": "フルチャートの新しいタブを開きます"
@@ -4742,8 +4859,20 @@
   "pop_refreshing": {
     "message": "更新中…"
   },
+  "pop_settings": {
+    "message": "ポップアップの表示内容"
+  },
+  "pop_target_away": {
+    "message": "あと $1%"
+  },
+  "pop_targets": {
+    "message": "目標価格"
+  },
   "pop_title": {
     "message": "PriceTab"
+  },
+  "pop_unpriced": {
+    "message": "$1 件はまだ価格なし"
   },
   "pos_a_long": {
     "message": "ロング"
@@ -4844,6 +4973,9 @@
   },
   "pos_book_spread_v": {
     "message": "$1 · $2 bp"
+  },
+  "pos_breakeven": {
+    "message": "TP1の後、ストップを建値に移す"
   },
   "pos_cancel_all": {
     "message": "すべて取消"
@@ -5721,7 +5853,7 @@
     "message": "待機中の注文はありません"
   },
   "pos_orders_none_text": {
-    "message": "指値注文は指定した価格で待ち、市場が来たときにメイカー手数料を払います — スプレッドを越える費用のおよそ半分です。New contract から出せます。"
+    "message": "指値注文は指定した価格で待機し、市場がその価格に来るとメイカー手数料がかかります。スプレッドを越える費用のおよそ半分です。「新規契約」から注文できます。"
   },
   "pos_pane_measure": {
     "message": "最も近いロスカットまで $1。この範囲では $3 本中 $2 本の値動きがそれ以上でした。"
@@ -5761,6 +5893,12 @@
   },
   "pos_preview_ready_cash": {
     "message": "$3 で $2 を $1 分 · 開始手数料 $4。"
+  },
+  "pos_price": {
+    "message": "価格"
+  },
+  "pos_protect": {
+    "message": "価格保護"
   },
   "pos_record_all": {
     "message": "全部"
@@ -6003,6 +6141,15 @@
   "pos_size_typed": {
     "message": "入力"
   },
+  "pos_src_last": {
+    "message": "Last"
+  },
+  "pos_src_mark": {
+    "message": "Mark"
+  },
+  "pos_src_note": {
+    "message": "Mark は直近3つの価格の中央値で、外れた約定1回では動きません。Last は最新の約定です。価格保護は、両者の差が0.5%を超える間はストップと利確目標を保留します。清算は決して待ちません。"
+  },
   "pos_start_over": {
     "message": "$1 でやり直す",
     "placeholders": {
@@ -6100,8 +6247,8 @@
   "pos_take": {
     "message": "利確"
   },
-  "pos_take_all": {
-    "message": "全部"
+  "pos_take_add": {
+    "message": "+ 目標を追加"
   },
   "pos_take_aria": {
     "message": "利確価格"
@@ -6109,14 +6256,38 @@
   "pos_take_half": {
     "message": "半分"
   },
+  "pos_take_ladder": {
+    "message": "利確目標"
+  },
+  "pos_take_leg_aria": {
+    "message": "目標 $1 の価格"
+  },
+  "pos_take_n": {
+    "message": "TP$1"
+  },
+  "pos_take_none": {
+    "message": "目標なし：契約はストップ、トレーリングストップ、または手動で閉じるまで続きます。"
+  },
   "pos_take_of": {
     "message": "$1 · $2"
+  },
+  "pos_take_over": {
+    "message": "目標の合計が契約全体を超えています（$1%）。"
+  },
+  "pos_take_plan": {
+    "message": "$1% を $2 つの目標で決済し、$3% はストップの下で保有を続けます。"
+  },
+  "pos_take_plan_all": {
+    "message": "全量を $1 つの目標で決済します。"
   },
   "pos_take_quarter": {
     "message": "4分の1"
   },
-  "pos_take_share": {
-    "message": "決済する量"
+  "pos_take_remove": {
+    "message": "目標 $1 を削除"
+  },
+  "pos_take_rest": {
+    "message": "残り"
   },
   "pos_terms_1": {
     "message": "これはシミュレーションです。注文は発注されず、どこにも何も送信されず、背後に取引所も証券会社も口座もありません。"
@@ -6192,6 +6363,15 @@
   },
   "pos_trigger": {
     "message": "トリガー"
+  },
+  "pos_trigger_head": {
+    "message": "トリガー基準"
+  },
+  "pos_trigger_stop": {
+    "message": "ストップ"
+  },
+  "pos_trigger_take": {
+    "message": "利確目標"
   },
   "pos_unit_risk": {
     "message": "リスク"
@@ -7173,7 +7353,7 @@
     "message": "キャンセル"
   },
   "pref_backup_desc": {
-    "message": "このブラウザが持っているすべて — 通貨、目標、コール、ポートフォリオ、ウィジェット、各種設定 — を一つのファイルに保存し、別のマシンで読み込めます"
+    "message": "このブラウザが持っているすべて — 通貨、目標、予想、ポートフォリオ、ウィジェット、各種設定 — を一つのファイルに保存し、別のマシンで読み込めます"
   },
   "pref_backup_found": {
     "message": "このファイルには $1 件の設定が入っています。"
@@ -7436,10 +7616,10 @@
     "message": "機能"
   },
   "pref_features_keywords": {
-    "message": "機能 オン オフ 有効 無効 非表示 表示 ボタン アイコン ターゲット コール デリバティブ 先物 ニュース ベースレート ポートフォリオ 比較 ウィジェット 簡素化"
+    "message": "機能 オン オフ 有効 無効 非表示 表示 ボタン アイコン ターゲット 予想 デリバティブ 先物 ニュース ベースレート ポートフォリオ 比較 ウィジェット 簡素化"
   },
   "pref_features_note": {
-    "message": "設定はこの一覧になく、オフにもできません。この画面へ戻る道だからです。オフにしても何も消えません — ターゲット、コール、ポジション、保有はそのまま残り、オンに戻せばそこにあります。控えめなコントロールはこれの穏やかな版で、機能を消さずにボタンを薄くします。"
+    "message": "設定はこの一覧になく、オフにもできません。この画面へ戻る道だからです。オフにしても何も消えません — ターゲット、予想、ポジション、保有はそのまま残り、オンに戻せばそこにあります。控えめなコントロールはこれの穏やかな版で、機能を消さずにボタンを薄くします。"
   },
   "pref_features_title": {
     "message": "機能"
@@ -7601,7 +7781,7 @@
     "message": "対数 log 軸 スケール 比率 パーセント 長期 年 つぶれる"
   },
   "pref_log_scale_note": {
-    "message": "ALL 範囲では通常の軸が高さのほとんどを直近の価格に使ってしまいます。ビットコイン自身の履歴で測ると、前半はチャートの 16% しか占めず、ここでは 72% になります。二つは別の問いに答えます — 通常の軸は金額がどう動いたかを、こちらは変化率がどう動いたかを示します — そして一年未満ではほぼ同じ絵になります。コールのボードが出ている間は自動的に切れます。ボードのマス目は価格の一定幅で、この軸には一定幅がないからです。"
+    "message": "ALL 範囲では通常の軸が高さのほとんどを直近の価格に使ってしまいます。ビットコイン自身の履歴で測ると、前半はチャートの 16% しか占めず、ここでは 72% になります。二つは別の問いに答えます — 通常の軸は金額がどう動いたかを、こちらは変化率がどう動いたかを示します — そして一年未満ではほぼ同じ絵になります。予想ボードが出ている間は自動的に切れます。ボードのマス目は価格の一定幅で、この軸には一定幅がないからです。"
   },
   "pref_log_scale_title": {
     "message": "対数スケール"
@@ -7913,7 +8093,7 @@
     "message": "先 余白 未来 空白 右マージン tradingview オフセット 現在 端"
   },
   "pref_room_ahead_note": {
-    "message": "範囲の幅はそのままで、その15%を未来側へずらします。最も古い部分は左に少しはみ出し、ドラッグで戻せます。オンでもオフでも、ドラッグやホイールでいつでも最新価格の先へ動かせます。これは静止位置だけを決めます。コールボードには独自の未来があり、比較には未来がないため、どちらにも表示されません。"
+    "message": "範囲の幅はそのままで、その15%を未来側へずらします。最も古い部分は左に少しはみ出し、ドラッグで戻せます。オンでもオフでも、ドラッグやホイールでいつでも最新価格の先へ動かせます。これは静止位置だけを決めます。予想ボードには独自の未来があり、比較には未来がないため、どちらにも表示されません。"
   },
   "pref_room_ahead_title": {
     "message": "先の余白"
@@ -8346,7 +8526,7 @@
     "message": "予想のオン / オフ"
   },
   "sc_calls_panel": {
-    "message": "コール — ボード、記録、シミュレーションのポジション"
+    "message": "予想 — ボードと記録"
   },
   "sc_chart_bars": {
     "message": "チャート: 足を読む — Enter で読んだ足に指値"
@@ -8484,7 +8664,7 @@
     "message": "チャートにフォーカス中：1 点ずつ読む — 端を越えると表示範囲が追従"
   },
   "sc_view_zoom2": {
-    "message": "チャートを拡大 / 縮小 — 時間方向、またはコール中はボードの範囲"
+    "message": "チャートを拡大 / 縮小 — 時間方向、または予想がオンのときはボードの範囲"
   },
   "screen_tabs": {
     "message": "画面"
@@ -10734,9 +10914,6 @@
   "view_auto_title": {
     "message": "価格スケールを再びラインに合わせる（または価格スケールをダブルクリック）"
   },
-  "mon_coins_note2": {
-    "message": "価格と24時間はティッカーから、ティッカーにない場合はそのコイン自身の30日から取ります。残りはその30日、つまり1M期間が描く系列からです。βは、同じ日々でのビットコインの動きに対する各コインの動きです。行を押すとそのコインがチャートで開きます。↑と↓で行を移動できます。"
-  },
   "mon_col_beta": {
     "message": "β BTC"
   },
@@ -10781,9 +10958,6 @@
   },
   "mon_market_note": {
     "message": "Coinloreの時価総額上位$1コイン($2時点)。価格バーが読むのと同じスナップショットで、このタブが開いている間は1分に1回リクエストします。タイルの大きさは時価総額、色の濃さは直近24時間です。チャートで描けるコインはそこで開きます。"
-  },
-  "mon_market_open": {
-    "message": "$1をチャートで開く — 24時間で$2"
   },
   "mon_market_up": {
     "message": "24時間で最も上昇"
@@ -11082,7 +11256,7 @@
     "message": "Bybitで建玉が最も多い無期限先物と、その合計"
   },
   "wdesc_options": {
-    "message": "Bybitのオプションより:直近の満期でオプション保有者の受取が最小になる権利行使価格、プット対コール、ATMのインプライド・ボラティリティ"
+    "message": "Bybitのオプション：直近の満期でオプション保有者の受取額が最小になる権利行使価格、プット対コール、ATMのインプライド・ボラティリティ"
   },
   "wdesc_stablecoins": {
     "message": "ドル建てステーブルコインの時価総額合計と、市場全体に占める割合"

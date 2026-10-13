@@ -1,18 +1,18 @@
 {
   "al_7d_hit_rate": {
-    "message": "hit rate"
+    "message": "taxa de acerto"
   },
   "al_7d_hit_rate_hint": {
-    "message": "Settled calls in the last 7 days"
+    "message": "Previsões encerradas nos últimos 7 dias"
   },
   "al_7d_settled": {
-    "message": "settled"
+    "message": "encerradas"
   },
   "al_7d_settled_hint": {
-    "message": "Calls that got an answer in the last 7 days"
+    "message": "Previsões que tiveram resultado nos últimos 7 dias"
   },
   "al_7d_snapshot": {
-    "message": "Last 7 days"
+    "message": "Últimos 7 dias"
   },
   "al_a_pct_move": {
     "message": "Um movimento de $1%"
@@ -119,10 +119,10 @@
     "message": "Previsões"
   },
   "al_calls_info_b": {
-    "message": "Uma previsão é uma afirmação: não “me avise quando”, mas “eu digo onde”. Aponte uma casa na faixa vazia à direita do gráfico e você nomeia uma faixa de preço e um momento — um clique rascunha, o segundo trava. Ela se resolve sozinha na próxima vez que você abrir uma aba, contra o preço naquele momento, e a caixa fica no gráfico dizendo se você acertou. Cada casa traz sua probabilidade: das próprias velas desta moeda, ajustada a como ela se move agora, e medida em anos de casas passadas antes de ser permitida no tabuleiro — uma probabilidade, não um conselho. Arraste o tabuleiro para cima ou para baixo para outros preços, e para a esquerda ou direita para mais tabuleiro ou mais histórico."
+    "message": "Uma previsão não é um alerta: ela não pede “avise quando”, mas afirma onde o preço estará. Escolha uma casa no espaço livre à direita do gráfico para definir uma faixa de preço e um momento. O primeiro clique cria um rascunho; o segundo confirma. Na próxima vez que você abrir uma aba, a previsão será avaliada automaticamente pelo preço daquele momento, e a casa ficará no gráfico para mostrar se você acertou. Cada casa exibe uma probabilidade calculada com o histórico de velas da própria cripto, ajustada à volatilidade atual e testada em anos de dados antes de entrar no tabuleiro. É uma probabilidade, não uma recomendação. Arraste o tabuleiro na vertical para ver outros preços e na horizontal para ver mais futuro ou mais histórico."
   },
   "al_calls_learn_more": {
-    "message": "How calls work"
+    "message": "Como funcionam as previsões"
   },
   "al_calls_more": {
     "message": "Mostrar mais $1 de $2",
@@ -139,13 +139,13 @@
     "message": "As previsões estão desligadas"
   },
   "al_calls_off_body": {
-    "message": "Aponte para um quadrado de futuro vazio no gráfico e você já disse onde o preço vai estar, e quando. Ela se resolve sozinha na próxima vez que você abrir uma aba — nada é anunciado, nada é enviado, e a pontuação não vale nada."
+    "message": "Escolha uma casa na área futura do gráfico para prever onde o preço estará e em qual momento. A previsão será avaliada automaticamente na próxima vez que você abrir uma aba. Nada é publicado ou enviado, e a pontuação não tem valor real."
   },
   "al_calls_practice": {
-    "message": "Try a practice call"
+    "message": "Testar uma previsão"
   },
   "al_calls_pulse": {
-    "message": "$1 open · $2 due now · $3 on this range",
+    "message": "$1 abertas · $2 vencem agora · $3 neste período",
     "placeholders": {
       "arg1": {
         "content": "$1"
@@ -165,16 +165,16 @@
     "message": "Sim"
   },
   "al_calls_step_1": {
-    "message": "Turn calls on and go to the board."
+    "message": "Ative as previsões e vá para o quadro."
   },
   "al_calls_step_2": {
-    "message": "Click a square once to draft, twice to lock."
+    "message": "Clique uma vez em um quadrado para criar o rascunho e outra vez para confirmá-lo."
   },
   "al_calls_step_2_touch": {
     "message": "Toque um quadrado uma vez para rascunho, duas para travar."
   },
   "al_calls_step_3": {
-    "message": "Come back with K to track open and settled calls."
+    "message": "Volte com K para acompanhar as previsões abertas e encerradas."
   },
   "al_calls_step_3_touch": {
     "message": "Volte a esta aba para acompanhar as previsões abertas e liquidadas."
@@ -237,7 +237,7 @@
     "message": "Vencida — resolve na próxima vez que este período carregar"
   },
   "al_due_empty": {
-    "message": "No calls due in the next 24 hours on this view."
+    "message": "Não há previsões com vencimento nas próximas 24 horas nesta visualização."
   },
   "al_duplicate": {
     "message": "Você já tem este alvo."
@@ -408,7 +408,7 @@
     "message": "Aponte para um quadrado à direita da linha pontilhada e clique duas vezes — uma para rascunhar, outra para fixar. Você disse que o preço estará naquela faixa, naquele momento."
   },
   "al_no_calls_body_touch": {
-    "message": "Toque um quadrado à direita da linha pontilhada: uma folha diz qual é a previsão, e Travar a faz. Você disse que o preço estará nessa faixa, nesse momento."
+    "message": "Toque em uma casa à direita da linha pontilhada. Um painel mostrará a previsão; pressione Travar para salvá-la. Assim, você indica que o preço estará nessa faixa naquele momento."
   },
   "al_no_holdings": {
     "message": "Ainda não há nada para somar"
@@ -447,25 +447,25 @@
     "message": " · em $1"
   },
   "al_open_empty": {
-    "message": "No open calls on this view."
+    "message": "Não há previsões abertas nesta visualização."
   },
   "al_open_n": {
     "message": "Abertas · $1"
   },
   "al_open_now": {
-    "message": "open now"
+    "message": "abertas agora"
   },
   "al_open_now_hint": {
-    "message": "Open calls currently waiting to settle"
+    "message": "Previsões abertas aguardando o resultado"
   },
   "al_order_hint": {
-    "message": "Switch between due-first and newest-first ordering for open calls"
+    "message": "Ordene as previsões abertas por vencimento ou pela data de criação"
   },
   "al_order_recent": {
-    "message": "recent first"
+    "message": "mais recentes primeiro"
   },
   "al_order_soon": {
-    "message": "due first"
+    "message": "vencimento mais próximo"
   },
   "al_paused_currency": {
     "message": "pausado · $1"
@@ -561,7 +561,7 @@
     "message": "Definido em $1 — volta quando você exibir $1 de novo"
   },
   "al_settled_empty": {
-    "message": "No settled calls on this view."
+    "message": "Não há previsões encerradas nesta visualização."
   },
   "al_settled_n": {
     "message": "Resolvidas · $1"
@@ -600,13 +600,13 @@
     "message": "eles voltam"
   },
   "al_this_coin": {
-    "message": "this coin"
+    "message": "esta cripto"
   },
   "al_this_coin_hint": {
-    "message": "Only calls for the coin on screen"
+    "message": "Somente as previsões da cripto exibida"
   },
   "al_this_coin_only": {
-    "message": "this coin only"
+    "message": "somente esta cripto"
   },
   "al_time_title": {
     "message": "$1% do caminho até a liquidação"
@@ -624,31 +624,31 @@
     "message": "Ligar as previsões"
   },
   "al_view": {
-    "message": "View"
+    "message": "Visualização"
   },
   "al_view_all": {
-    "message": "all"
+    "message": "todas"
   },
   "al_view_all_hint": {
-    "message": "Show open and settled calls together"
+    "message": "Mostre juntas as previsões abertas e encerradas"
   },
   "al_view_due": {
-    "message": "due"
+    "message": "a vencer"
   },
   "al_view_due_hint": {
-    "message": "Open calls due in the next 24 hours"
+    "message": "Previsões abertas que vencem nas próximas 24 horas"
   },
   "al_view_open": {
-    "message": "open"
+    "message": "abertas"
   },
   "al_view_open_hint": {
-    "message": "Only open calls"
+    "message": "Somente as previsões abertas"
   },
   "al_view_settled": {
-    "message": "settled"
+    "message": "encerradas"
   },
   "al_view_settled_hint": {
-    "message": "Only settled calls"
+    "message": "Somente as previsões encerradas"
   },
   "al_vs_chance": {
     "message": "$1 de $2 acertadas · o acaso daria $3"
@@ -997,6 +997,12 @@
   },
   "app_rate_ask": {
     "message": "Gostando do PriceTab? Uma avaliação é como outras pessoas o encontram — leva poucos segundos e ajuda mais que qualquer outra coisa."
+  },
+  "app_rate_ask_call": {
+    "message": "Esse palpite se confirmou. Se o PriceTab ajuda você a ler o mercado, uma avaliação é como outras pessoas o encontram — leva alguns segundos."
+  },
+  "app_rate_ask_target": {
+    "message": "Seu alvo foi atingido. Se o PriceTab é útil para você, uma avaliação é como outras pessoas o encontram — leva alguns segundos."
   },
   "app_read_on": {
     "message": "Ler em "
@@ -1431,11 +1437,26 @@
   "br_edge_worse": {
     "message": "$1 pontos pior que um trecho comum"
   },
+  "br_eyebrow_in_monitor": {
+    "message": "Taxas de base · $1 · $2 fechamentos diários"
+  },
   "br_failed": {
     "message": "O histórico diário de $1 não veio. Sem ele nada pode ser contado, e um número inventado seria pior que nenhum."
   },
   "br_fomc_title": {
     "message": "Decisão de juros do Fed · comunicado do FOMC"
+  },
+  "br_glance_candle": {
+    "message": "Vela de hoje"
+  },
+  "br_glance_candle_none": {
+    "message": "Vela de hoje: nenhuma forma com nome"
+  },
+  "br_glance_now": {
+    "message": "Condições presentes agora"
+  },
+  "br_glance_years": {
+    "message": "Anos de fechamentos diários analisados"
   },
   "br_loading_body": {
     "message": "Lendo os fechamentos diários desta moeda. Vai tão longe quanto a corretora publica, e é isso que torna as contagens abaixo dignas de exibir."
@@ -2649,10 +2670,10 @@
     "message": "até a liq."
   },
   "drawer_calls_aria_off": {
-    "message": "Calls, currently off"
+    "message": "Previsões, desativadas no momento"
   },
   "drawer_calls_aria_on": {
-    "message": "Calls, $1 open",
+    "message": "Previsões abertas: $1",
     "placeholders": {
       "arg1": {
         "content": "$1"
@@ -2660,7 +2681,7 @@
     }
   },
   "drawer_calls_due_soon": {
-    "message": "$1 call due within 24h",
+    "message": "Previsões que vencem nas próximas 24 horas: $1",
     "placeholders": {
       "arg1": {
         "content": "$1"
@@ -2668,7 +2689,7 @@
     }
   },
   "drawer_calls_title_off": {
-    "message": "Calls ($1) · off",
+    "message": "Previsões ($1) · desativadas",
     "placeholders": {
       "arg1": {
         "content": "$1"
@@ -2676,7 +2697,7 @@
     }
   },
   "drawer_calls_title_on": {
-    "message": "Calls ($1) · $2 open",
+    "message": "Previsões ($1) · $2 abertas",
     "placeholders": {
       "arg1": {
         "content": "$1"
@@ -2949,7 +2970,7 @@
     }
   },
   "mo_tested_title": {
-    "message": "Estimativa de modelo: variância EWMA (λ $1) com inovações t de Student (ν $2), ajustada aos fechamentos horários de BTC-USD da Coinbase até $3. Testada em $4 horas de $5 a $6: a faixa de 80% se manteve $7% do tempo (nominal 80%), e seu interval score superou uma volatilidade móvel de 24 horas (DM t $8).",
+    "message": "Estimativa de modelo: variância EWMA (λ $1) com inovações t de Student (ν $2), ajustada aos fechamentos horários de BTC-USD da Coinbase até $3. Testada em $4 horas de $5 a $6: a faixa de 80% se manteve $7% do tempo (nominal 80%), e seu pontuação de intervalo superou uma volatilidade móvel de 24 horas (DM t $8).",
     "placeholders": {
       "arg1": {
         "content": "$1"
@@ -2986,6 +3007,9 @@
   "mon_close": {
     "message": "Fechar o monitor"
   },
+  "mon_coins_note3": {
+    "message": "O preço e a variação em 24 h vêm do ticker; se não estiverem lá, são usados os 30 dias da própria cripto. As outras métricas são calculadas com essa mesma série de 30 dias, a que o intervalo 1M desenha. β indica quanto a cripto se moveu, em média, para cada movimento de 1% do Bitcoin nos mesmos dias. Uma linha abre o resumo da cripto e, dali, o gráfico fica a um toque; ↑ e ↓ percorrem as linhas."
+  },
   "mon_col_coin": {
     "message": "Moeda"
   },
@@ -3007,17 +3031,80 @@
   "mon_corr_cell": {
     "message": "$1 e $2: $3, de $4 movimentos"
   },
+  "mon_corr_cell_same": {
+    "message": "$1 e $2: $3 — no mesmo sentido em $4% de $5 movimentos (r $6)"
+  },
   "mon_corr_few": {
     "message": "Poucos movimentos em comum para dizer"
   },
-  "mon_corr_note": {
-    "message": "Como cada par se moveu junto nos últimos 30 dias: a correlação de Pearson de seus movimentos, um a cada $1 — $2 movimentos por par. 1 é em sintonia, 0 sem relação, −1 oposto. Descreve esses 30 dias, nunca o que vem."
+  "mon_corr_legend": {
+    "message": "O que as células dizem"
+  },
+  "mon_corr_loosely": {
+    "message": "Fracamente"
+  },
+  "mon_corr_mostly": {
+    "message": "Quase sempre juntas"
+  },
+  "mon_corr_note2": {
+    "message": "Duas contagens por par nos últimos 30 dias, um movimento a cada $1, $2 movimentos por par: com que frequência as duas foram no mesmo sentido e a correlação r dos movimentos — 1 quando andam juntas, 0 quando uma não diz nada sobre a outra, −1 quando vão em sentidos opostos. Moverem-se juntas não é motivo para ter as duas nem uma delas: isso descreve estes 30 dias, não o que vem depois."
+  },
+  "mon_corr_opposite": {
+    "message": "Opostas"
+  },
+  "mon_corr_pair_line": {
+    "message": "foram no mesmo sentido em $1 de cada 10 movimentos (r $2)."
+  },
+  "mon_corr_pair_line_r": {
+    "message": "r $1."
+  },
+  "mon_corr_pairs": {
+    "message": "Em palavras simples"
+  },
+  "mon_corr_together": {
+    "message": "Juntas"
+  },
+  "mon_corr_unrelated": {
+    "message": "Sem relação"
+  },
+  "mon_detail_aria": {
+    "message": "$1 nos últimos 30 dias"
+  },
+  "mon_detail_base": {
+    "message": "Taxas de base de $1"
+  },
+  "mon_detail_cap": {
+    "message": "Valor de mercado"
+  },
+  "mon_detail_chart": {
+    "message": "Abrir no gráfico"
+  },
+  "mon_detail_close": {
+    "message": "Fechar"
+  },
+  "mon_detail_high": {
+    "message": "máxima $1"
+  },
+  "mon_detail_low": {
+    "message": "mínima de 30 dias $1"
+  },
+  "mon_detail_priced_only": {
+    "message": "O PriceTab dá o preço de $1 pelo retrato do mercado, mas não consegue desenhá-la; por isso aqui não há 30 dias, gráfico nem taxas de base."
+  },
+  "mon_detail_range": {
+    "message": "Na sua faixa"
+  },
+  "mon_detail_volume": {
+    "message": "Negociado em 24 h"
   },
   "mon_eyebrow": {
     "message": "Suas $1 moedas · os últimos 30 dias"
   },
   "mon_loading": {
     "message": "Lendo 30 dias de preços…"
+  },
+  "mon_market_card": {
+    "message": "$1 — $2 em 24 horas; abre o cartão"
   },
   "mon_need_two": {
     "message": "Adicione uma segunda moeda para ver como elas se movem juntas."
@@ -3201,7 +3288,7 @@
     "message": "Nada aqui com esses filtros. Amplie o escopo ou reative uma fonte abaixo."
   },
   "news_none_note": {
-    "message": "Uma marcada como “none” respondeu e desta vez não trazia nada deste tema."
+    "message": "Uma fonte marcada como “nenhuma” respondeu, mas desta vez não tinha nada sobre o tema."
   },
   "news_none_tone": {
     "message": "Nada na tela com essa redação agora."
@@ -4705,14 +4792,44 @@
   "pop_age_now": {
     "message": "agora mesmo"
   },
+  "pop_blocks": {
+    "message": "$1 blocos"
+  },
+  "pop_btc_share": {
+    "message": "BTC $1%"
+  },
+  "pop_coins": {
+    "message": "Suas moedas"
+  },
+  "pop_days": {
+    "message": "$1 dias"
+  },
+  "pop_done": {
+    "message": "Concluído"
+  },
+  "pop_fear_greed": {
+    "message": "Medo e ganância"
+  },
   "pop_from": {
     "message": "Preços de $1 atrás"
+  },
+  "pop_halving": {
+    "message": "Halving do Bitcoin"
+  },
+  "pop_holdings": {
+    "message": "Seus ativos"
+  },
+  "pop_market": {
+    "message": "O mercado"
   },
   "pop_no_prices": {
     "message": "Ainda sem preços"
   },
   "pop_open": {
     "message": "Abrir aba"
+  },
+  "pop_open_coin": {
+    "message": "Abrir $1 em uma nova aba"
   },
   "pop_open_hint": {
     "message": "Abrir uma nova aba com o gráfico completo"
@@ -4726,8 +4843,20 @@
   "pop_refreshing": {
     "message": "Atualizando…"
   },
+  "pop_settings": {
+    "message": "O que o popup mostra"
+  },
+  "pop_target_away": {
+    "message": "a $1%"
+  },
+  "pop_targets": {
+    "message": "Preços-alvo"
+  },
   "pop_title": {
     "message": "PriceTab"
+  },
+  "pop_unpriced": {
+    "message": "$1 ainda sem preço"
   },
   "pos_a_long": {
     "message": "long"
@@ -4828,6 +4957,9 @@
   },
   "pos_book_spread_v": {
     "message": "$1 · $2 pb"
+  },
+  "pos_breakeven": {
+    "message": "Depois do TP1, levar o stop ao ponto de equilíbrio"
   },
   "pos_cancel_all": {
     "message": "Cancelar todas"
@@ -5746,6 +5878,12 @@
   "pos_preview_ready_cash": {
     "message": "$1 de $2 a $3 · taxa $4 para abrir."
   },
+  "pos_price": {
+    "message": "preço"
+  },
+  "pos_protect": {
+    "message": "Proteção de preço"
+  },
   "pos_record_all": {
     "message": "Tudo"
   },
@@ -5987,6 +6125,15 @@
   "pos_size_typed": {
     "message": "digitado"
   },
+  "pos_src_last": {
+    "message": "Last"
+  },
+  "pos_src_mark": {
+    "message": "Mark"
+  },
+  "pos_src_note": {
+    "message": "Mark é a mediana dos três últimos preços, que uma negociação isolada não move; Last é a última negociação. A proteção de preço segura o stop e os alvos enquanto os dois diferirem mais de 0,5% — a liquidação nunca espera."
+  },
   "pos_start_over": {
     "message": "Recomeçar com $1",
     "placeholders": {
@@ -6084,8 +6231,8 @@
   "pos_take": {
     "message": "Take profit"
   },
-  "pos_take_all": {
-    "message": "tudo"
+  "pos_take_add": {
+    "message": "+ Adicionar alvo"
   },
   "pos_take_aria": {
     "message": "Preço de take-profit"
@@ -6093,14 +6240,38 @@
   "pos_take_half": {
     "message": "metade"
   },
+  "pos_take_ladder": {
+    "message": "Alvos de take profit"
+  },
+  "pos_take_leg_aria": {
+    "message": "Preço do alvo $1"
+  },
+  "pos_take_n": {
+    "message": "TP$1"
+  },
+  "pos_take_none": {
+    "message": "Sem alvo: o contrato segue até o stop, o trailing ou até você fechá-lo."
+  },
   "pos_take_of": {
     "message": "$1 · $2"
+  },
+  "pos_take_over": {
+    "message": "Os alvos somam mais que o contrato inteiro — $1%."
+  },
+  "pos_take_plan": {
+    "message": "$1% fecha em $2 alvos; $3% segue sob o stop."
+  },
+  "pos_take_plan_all": {
+    "message": "Tudo fecha em $1 alvos."
   },
   "pos_take_quarter": {
     "message": "um quarto"
   },
-  "pos_take_share": {
-    "message": "Fecha"
+  "pos_take_remove": {
+    "message": "Remover o alvo $1"
+  },
+  "pos_take_rest": {
+    "message": "o resto"
   },
   "pos_terms_1": {
     "message": "Isto é uma simulação. Nenhuma ordem é enviada, nada é mandado a lugar nenhum e não há corretora, exchange ou conta por trás."
@@ -6176,6 +6347,15 @@
   },
   "pos_trigger": {
     "message": "Gatilho"
+  },
+  "pos_trigger_head": {
+    "message": "Acionado por"
+  },
+  "pos_trigger_stop": {
+    "message": "Stop"
+  },
+  "pos_trigger_take": {
+    "message": "Alvos"
   },
   "pos_unit_risk": {
     "message": "Risco"
@@ -8330,7 +8510,7 @@
     "message": "Previsões liga / desliga"
   },
   "sc_calls_panel": {
-    "message": "Chamadas — o quadro, o registro e posições simuladas"
+    "message": "Previsões — o quadro e o histórico"
   },
   "sc_chart_bars": {
     "message": "O gráfico: leia as barras — Enter põe um limite na lida"
@@ -10718,9 +10898,6 @@
   "view_auto_title": {
     "message": "Ajustar de novo a escala de preço à linha (ou clique duas vezes na escala de preço)"
   },
-  "mon_coins_note2": {
-    "message": "O preço e as 24 horas vêm do ticker ou, onde ele não tem, dos 30 dias da própria moeda; o resto vem desses 30 dias, a série que o intervalo 1M desenha. β é o movimento de cada moeda frente ao do Bitcoin nos mesmos dias. Uma linha abre essa moeda no gráfico; ↑ e ↓ percorrem as linhas."
-  },
   "mon_col_beta": {
     "message": "β BTC"
   },
@@ -10765,9 +10942,6 @@
   },
   "mon_market_note": {
     "message": "As $1 maiores da Coinlore por valor de mercado em $2, o mesmo instantâneo que a barra de preços lê — uma requisição por minuto enquanto esta aba está aberta. O tamanho de um bloco é seu valor de mercado e o tom, as últimas 24 horas. Uma moeda que o gráfico sabe desenhar abre nele."
-  },
-  "mon_market_open": {
-    "message": "Abrir $1 no gráfico — $2 em 24 horas"
   },
   "mon_market_up": {
     "message": "Maior alta em 24 horas"
@@ -11066,7 +11240,7 @@
     "message": "Os perpétuos com mais contratos em aberto na Bybit e o total"
   },
   "wdesc_options": {
-    "message": "Das opções da Bybit: o strike em que os titulares receberiam menos no vencimento mais próximo, puts contra calls e a volatilidade implícita no dinheiro"
+    "message": "Das opções da Bybit: o preço de exercício em que os titulares receberiam menos no vencimento mais próximo, puts contra calls e a volatilidade implícita ATM"
   },
   "wdesc_stablecoins": {
     "message": "O valor de mercado somado das stablecoins em dólar e a fatia do mercado total"

@@ -1,18 +1,18 @@
 {
   "al_7d_hit_rate": {
-    "message": "hit rate"
+    "message": "적중률"
   },
   "al_7d_hit_rate_hint": {
-    "message": "Settled calls in the last 7 days"
+    "message": "최근 7일 동안 정산된 예측"
   },
   "al_7d_settled": {
-    "message": "settled"
+    "message": "정산 완료"
   },
   "al_7d_settled_hint": {
-    "message": "Calls that got an answer in the last 7 days"
+    "message": "최근 7일 동안 결과가 확정된 예측"
   },
   "al_7d_snapshot": {
-    "message": "Last 7 days"
+    "message": "최근 7일"
   },
   "al_a_pct_move": {
     "message": "$1% 움직임"
@@ -127,10 +127,10 @@
     "message": "예측"
   },
   "al_calls_info_b": {
-    "message": "예측은 주장입니다: “언제인지 알려 줘”가 아니라 “내가 어디라고 말한다”. 차트 오른쪽 빈 띠의 칸을 가리키면 가격대와 시점을 지목하는 것입니다 — 한 번 클릭하면 초안, 두 번째로 확정. 다음에 탭을 열 때 그 시점의 가격에 맞춰 스스로 판정되고, 상자는 맞았는지를 보여 주며 차트에 남습니다. 각 칸에는 확률이 붙습니다: 이 코인 자체의 봉에서, 지금 움직이는 정도에 맞춰, 판에 올리기 전에 수년치 과거 칸으로 측정한 것 — 확률이지 조언이 아닙니다. 판을 위아래로 끌면 다른 가격을, 좌우로 끌면 판이나 기록을 더 봅니다."
+    "message": "예측은 알림이 아니라 특정 시점에 가격이 어디에 있을지를 직접 정하는 기능입니다. 차트 오른쪽의 빈 영역에서 칸을 골라 가격대와 시점을 지정하세요. 첫 클릭은 초안을 만들고 두 번째 클릭은 예측을 확정합니다. 다음에 탭을 열면 해당 시점의 가격으로 자동 판정되며, 칸은 결과와 함께 차트에 남습니다. 각 칸의 확률은 이 코인의 과거 캔들로 계산하고 현재 변동성에 맞춰 조정한 뒤, 보드에 적용하기 전에 수년치 데이터로 검증한 값입니다. 확률일 뿐 조언이 아닙니다. 보드를 위아래로 끌면 다른 가격대를, 좌우로 끌면 더 먼 미래나 과거 기록을 볼 수 있습니다."
   },
   "al_calls_learn_more": {
-    "message": "How calls work"
+    "message": "예측 이용 방법"
   },
   "al_calls_more": {
     "message": "$2개 중 $1개 더 보기",
@@ -147,13 +147,13 @@
     "message": "예측이 꺼져 있습니다"
   },
   "al_calls_off_body": {
-    "message": "차트에서 빈 미래의 칸을 가리키면, 가격이 어디에 언제 있을지를 말한 것입니다. 다음에 탭을 열 때 스스로 판정됩니다 — 아무것도 알리지 않고, 아무것도 보내지 않으며, 점수는 아무 가치도 없습니다."
+    "message": "차트 오른쪽 미래 영역에서 칸을 골라 가격이 언제 어느 범위에 있을지 예측하세요. 다음에 탭을 열면 자동으로 판정됩니다. 내용은 공개되거나 전송되지 않으며 점수에는 실제 가치가 없습니다."
   },
   "al_calls_practice": {
-    "message": "Try a practice call"
+    "message": "예측 연습하기"
   },
   "al_calls_pulse": {
-    "message": "$1 open · $2 due now · $3 on this range",
+    "message": "진행 중 $1개 · 지금 정산 $2개 · 이 범위 $3개",
     "placeholders": {
       "arg1": {
         "content": "$1"
@@ -173,19 +173,19 @@
     "message": "켬"
   },
   "al_calls_step_1": {
-    "message": "Turn calls on and go to the board."
+    "message": "예측을 켜고 보드로 이동하세요."
   },
   "al_calls_step_2": {
-    "message": "Click a square once to draft, twice to lock."
+    "message": "칸을 한 번 클릭하면 초안이 만들어지고, 한 번 더 클릭하면 확정됩니다."
   },
   "al_calls_step_2_touch": {
     "message": "칸을 한 번 탭하면 초안, 두 번 탭하면 확정."
   },
   "al_calls_step_3": {
-    "message": "Come back with K to track open and settled calls."
+    "message": "K 키로 돌아와 진행 중인 예측과 정산된 예측을 확인하세요."
   },
   "al_calls_step_3_touch": {
-    "message": "이 탭으로 돌아와 진행 중인 콜과 정산된 콜을 확인하세요."
+    "message": "이 탭으로 돌아와 진행 중인 예측과 정산된 예측을 확인하세요."
   },
   "al_calls_switch": {
     "message": "차트 위 예측"
@@ -245,7 +245,7 @@
     "message": "기한 도래 — 이 구간을 다음에 불러올 때 판정됩니다"
   },
   "al_due_empty": {
-    "message": "No calls due in the next 24 hours on this view."
+    "message": "이 보기에는 24시간 안에 정산될 예측이 없습니다."
   },
   "al_duplicate": {
     "message": "이미 같은 목표가 있습니다."
@@ -272,7 +272,7 @@
     "message": "$1 현재"
   },
   "al_fair_odds": {
-    "message": "공정 배당으로 콜당 $1 포인트: 건 것 $2, 돌아온 것 $3"
+    "message": "공정 배당 기준 예측당 $1포인트: 위험 $2, 반환 $3"
   },
   "al_falls": {
     "message": "하락"
@@ -383,7 +383,7 @@
     "message": "우연만으로 이만큼 이상 맞힐 확률은 $1"
   },
   "al_luck_title": {
-    "message": "각 콜은 지정할 때 그 칸이 가진 확률로 맞았습니다. 그 확률들을 각각의 동전 던지기로 더하면, 당신만큼 이상 맞힐 빈도가 이것입니다."
+    "message": "각 예측은 확정할 때 해당 칸에 표시된 확률로 적중했습니다. 이 확률을 각각 독립된 동전 던지기로 합산했을 때, 이번만큼 많이 적중할 빈도가 이 값입니다."
   },
   "al_missed": {
     "message": "빗나감"
@@ -424,7 +424,7 @@
     "message": "점선 오른쪽의 칸을 가리키고 두 번 클릭하세요. 한 번은 초안, 한 번은 확정입니다. 그 시각에 가격이 그 구간에 있을 것이라고 말한 것입니다."
   },
   "al_no_calls_body_touch": {
-    "message": "점선 오른쪽의 칸을 탭하면 콜 내용이 시트에 나오고, 확정을 누르면 콜이 됩니다. 그 시간에 가격이 그 범위에 있다고 말한 것입니다."
+    "message": "점선 오른쪽의 칸을 탭하면 시트에 예측 내용이 표시됩니다. 확정을 누르면 해당 시각에 가격이 그 범위에 있을 것이라고 예측한 것으로 기록됩니다."
   },
   "al_no_holdings": {
     "message": "아직 합산할 보유 자산이 없습니다"
@@ -463,25 +463,25 @@
     "message": " · $1에서"
   },
   "al_open_empty": {
-    "message": "No open calls on this view."
+    "message": "이 보기에는 진행 중인 예측이 없습니다."
   },
   "al_open_n": {
     "message": "진행 중 · $1"
   },
   "al_open_now": {
-    "message": "open now"
+    "message": "현재 진행 중"
   },
   "al_open_now_hint": {
-    "message": "Open calls currently waiting to settle"
+    "message": "정산을 기다리는 진행 중인 예측"
   },
   "al_order_hint": {
-    "message": "Switch between due-first and newest-first ordering for open calls"
+    "message": "진행 중인 예측을 정산 임박순 또는 최신순으로 정렬합니다"
   },
   "al_order_recent": {
-    "message": "recent first"
+    "message": "최신순"
   },
   "al_order_soon": {
-    "message": "due first"
+    "message": "정산 임박순"
   },
   "al_paused_currency": {
     "message": "일시정지 · $1"
@@ -577,7 +577,7 @@
     "message": "$1로 설정됨 — 다시 $1을(를) 표시하면 재개됩니다"
   },
   "al_settled_empty": {
-    "message": "No settled calls on this view."
+    "message": "이 보기에는 정산된 예측이 없습니다."
   },
   "al_settled_n": {
     "message": "판정됨 · $1"
@@ -616,13 +616,13 @@
     "message": "다시 시작됩니다"
   },
   "al_this_coin": {
-    "message": "this coin"
+    "message": "이 코인"
   },
   "al_this_coin_hint": {
-    "message": "Only calls for the coin on screen"
+    "message": "화면에 표시된 코인의 예측만 표시"
   },
   "al_this_coin_only": {
-    "message": "this coin only"
+    "message": "이 코인만"
   },
   "al_time_title": {
     "message": "정산까지 $1% 진행"
@@ -640,31 +640,31 @@
     "message": "예측 켜기"
   },
   "al_view": {
-    "message": "View"
+    "message": "보기"
   },
   "al_view_all": {
-    "message": "all"
+    "message": "전체"
   },
   "al_view_all_hint": {
-    "message": "Show open and settled calls together"
+    "message": "진행 중인 예측과 정산된 예측을 함께 표시"
   },
   "al_view_due": {
-    "message": "due"
+    "message": "정산 임박"
   },
   "al_view_due_hint": {
-    "message": "Open calls due in the next 24 hours"
+    "message": "24시간 안에 정산될 진행 중인 예측"
   },
   "al_view_open": {
-    "message": "open"
+    "message": "진행 중"
   },
   "al_view_open_hint": {
-    "message": "Only open calls"
+    "message": "진행 중인 예측만"
   },
   "al_view_settled": {
-    "message": "settled"
+    "message": "정산 완료"
   },
   "al_view_settled_hint": {
-    "message": "Only settled calls"
+    "message": "정산된 예측만"
   },
   "al_vs_chance": {
     "message": "$2 중 $1 적중 · 우연이라면 $3"
@@ -1013,6 +1013,12 @@
   },
   "app_rate_ask": {
     "message": "PriceTab이 마음에 드시나요? 평가는 다른 사람들이 이 확장을 찾는 방법입니다. 몇 초면 되고, 무엇보다 큰 도움이 됩니다."
+  },
+  "app_rate_ask_call": {
+    "message": "그 예측이 맞았습니다. PriceTab이 시장을 읽는 데 도움이 된다면, 평점이 다른 사람들이 찾게 해 줍니다. 몇 초면 됩니다."
+  },
+  "app_rate_ask_target": {
+    "message": "목표에 도달했습니다. PriceTab이 유용하다면, 평점이 다른 사람들이 찾게 해 줍니다. 몇 초면 됩니다."
   },
   "app_read_on": {
     "message": "출처에서 읽기: "
@@ -1447,11 +1453,26 @@
   "br_edge_worse": {
     "message": "보통 구간보다 $1포인트 나쁨"
   },
+  "br_eyebrow_in_monitor": {
+    "message": "기저율 · $1 · 일별 종가 $2개"
+  },
   "br_failed": {
     "message": "$1의 일봉 기록을 가져오지 못했습니다. 이것 없이는 아무것도 셀 수 없고, 지어낸 수치는 없느니만 못합니다."
   },
   "br_fomc_title": {
     "message": "연준 금리 결정 · FOMC 성명"
+  },
+  "br_glance_candle": {
+    "message": "오늘의 캔들"
+  },
+  "br_glance_candle_none": {
+    "message": "오늘의 캔들: 이름 있는 모양 없음"
+  },
+  "br_glance_now": {
+    "message": "현재 해당하는 상태"
+  },
+  "br_glance_years": {
+    "message": "집계한 일별 종가의 연수"
   },
   "br_loading_body": {
     "message": "이 코인의 일봉 종가를 읽는 중입니다. 거래소가 공개하는 만큼 거슬러 올라가며, 그래서 아래 수치가 의미를 가집니다."
@@ -1752,7 +1773,7 @@
     "message": "다음 24시간 · 모델"
   },
   "chance_tomorrow_title": {
-    "message": "집계가 아닌 모델: 콜 보드 자체의 모델을 이 코인의 최근 6시간 봉 $1개에 적용한 24시간 뒤 가격. $3년부터 $2일 동안 한 번 검증(BTC, ETH, SOL, XRP): 80% 범위는 $4의 날에, 50% 범위는 $5의 날에 맞았습니다. 방향은 동전 던지기보다 잘 맞히지 못해 숫자를 주지 않습니다.",
+    "message": "집계가 아닌 모델입니다. 예측 보드의 모델을 이 코인의 최근 6시간 봉 $1개에 적용해 24시간 뒤 가격을 추정합니다. $3년 이후 $2일을 대상으로 한 번 검증했습니다(BTC, ETH, SOL, XRP). 80% 범위는 $4의 날에, 50% 범위는 $5의 날에 들어맞았습니다. 방향은 동전 던지기보다 정확하지 않아 수치를 표시하지 않습니다.",
     "placeholders": {
       "arg1": {
         "content": "$1"
@@ -2665,10 +2686,10 @@
     "message": "청산까지"
   },
   "drawer_calls_aria_off": {
-    "message": "Calls, currently off"
+    "message": "예측, 현재 꺼짐"
   },
   "drawer_calls_aria_on": {
-    "message": "Calls, $1 open",
+    "message": "진행 중인 예측: $1개",
     "placeholders": {
       "arg1": {
         "content": "$1"
@@ -2676,7 +2697,7 @@
     }
   },
   "drawer_calls_due_soon": {
-    "message": "$1 call due within 24h",
+    "message": "24시간 안에 정산될 예측: $1개",
     "placeholders": {
       "arg1": {
         "content": "$1"
@@ -2684,7 +2705,7 @@
     }
   },
   "drawer_calls_title_off": {
-    "message": "Calls ($1) · off",
+    "message": "예측 ($1) · 꺼짐",
     "placeholders": {
       "arg1": {
         "content": "$1"
@@ -2692,7 +2713,7 @@
     }
   },
   "drawer_calls_title_on": {
-    "message": "Calls ($1) · $2 open",
+    "message": "예측 ($1) · $2개 진행 중",
     "placeholders": {
       "arg1": {
         "content": "$1"
@@ -2965,7 +2986,7 @@
     }
   },
   "mo_tested_title": {
-    "message": "모델 추정: 스튜던트 t 혁신(ν $2)을 쓰는 EWMA 분산(λ $1), $3까지의 Coinbase BTC-USD 시간별 종가로 적합. $5부터 $6까지 $4시간으로 테스트: 80% 범위가 $7%의 시간 동안 유지되었고(명목 80%), interval score는 24시간 롤링 변동성을 앞섰습니다(DM t $8).",
+    "message": "모델 추정: 스튜던트 t 혁신(ν $2)을 쓰는 EWMA 분산(λ $1), $3까지의 Coinbase BTC-USD 시간별 종가로 적합. $5부터 $6까지 $4시간으로 테스트: 80% 범위가 $7%의 시간 동안 유지되었고(명목 80%), 구간 점수는 24시간 롤링 변동성을 앞섰습니다(DM t $8).",
     "placeholders": {
       "arg1": {
         "content": "$1"
@@ -3002,6 +3023,9 @@
   "mon_close": {
     "message": "모니터 닫기"
   },
+  "mon_coins_note3": {
+    "message": "가격과 24시간 변동은 티커에서 가져오며, 티커에 없으면 해당 코인의 30일 데이터를 사용합니다. 나머지 지표는 1M 범위가 그리는 같은 30일 시계열에서 계산합니다. β는 같은 날 비트코인이 1% 움직일 때 이 코인이 평균 몇 % 움직였는지를 나타냅니다. 행을 누르면 코인 요약 카드가 열리고, 카드에서 한 번 더 누르면 차트가 열립니다. ↑와 ↓로 행을 이동합니다."
+  },
   "mon_col_coin": {
     "message": "코인"
   },
@@ -3023,17 +3047,80 @@
   "mon_corr_cell": {
     "message": "$1과 $2: $3, 움직임 $4회 기준"
   },
+  "mon_corr_cell_same": {
+    "message": "$1와 $2: $3 — $5번의 움직임 중 $4%가 같은 방향 (r $6)"
+  },
   "mon_corr_few": {
     "message": "공통된 움직임이 너무 적어 말할 수 없습니다"
   },
-  "mon_corr_note": {
-    "message": "최근 30일 동안 각 쌍이 함께 움직인 정도: $1마다의 움직임에 대한 피어슨 상관계수(쌍당 $2회). 1은 같은 방향, 0은 무관, −1은 반대. 이 30일을 설명할 뿐, 앞으로를 말하지 않습니다."
+  "mon_corr_legend": {
+    "message": "셀의 의미"
+  },
+  "mon_corr_loosely": {
+    "message": "약하게"
+  },
+  "mon_corr_mostly": {
+    "message": "대체로 함께"
+  },
+  "mon_corr_note2": {
+    "message": "최근 30일 각 쌍에 대한 두 가지 집계($1마다 한 번의 움직임, 쌍마다 $2번): 둘이 같은 방향으로 움직인 빈도와 움직임의 상관계수 r — 보조를 맞추면 1, 한쪽이 다른 쪽에 대해 아무것도 말해 주지 않으면 0, 반대로 움직이면 −1. 함께 움직인다는 것은 둘 다 또는 어느 하나를 보유할 이유가 아닙니다. 이 30일을 설명할 뿐, 앞으로를 말하지 않습니다."
+  },
+  "mon_corr_opposite": {
+    "message": "반대"
+  },
+  "mon_corr_pair_line": {
+    "message": "10번의 움직임 중 $1번 같은 방향 (r $2)."
+  },
+  "mon_corr_pair_line_r": {
+    "message": "r $1."
+  },
+  "mon_corr_pairs": {
+    "message": "쉽게 말하면"
+  },
+  "mon_corr_together": {
+    "message": "함께"
+  },
+  "mon_corr_unrelated": {
+    "message": "무관"
+  },
+  "mon_detail_aria": {
+    "message": "최근 30일의 $1"
+  },
+  "mon_detail_base": {
+    "message": "$1의 기저율"
+  },
+  "mon_detail_cap": {
+    "message": "시가총액"
+  },
+  "mon_detail_chart": {
+    "message": "차트에서 열기"
+  },
+  "mon_detail_close": {
+    "message": "닫기"
+  },
+  "mon_detail_high": {
+    "message": "고가 $1"
+  },
+  "mon_detail_low": {
+    "message": "30일 저가 $1"
+  },
+  "mon_detail_priced_only": {
+    "message": "PriceTab은 시장 스냅숏으로 $1의 가격을 보여 주지만 차트는 그릴 수 없어, 여기에는 30일·차트·기저율이 없습니다."
+  },
+  "mon_detail_range": {
+    "message": "범위 내 위치"
+  },
+  "mon_detail_volume": {
+    "message": "24시간 거래액"
   },
   "mon_eyebrow": {
     "message": "내 코인 $1개 · 최근 30일"
   },
   "mon_loading": {
     "message": "30일치 가격을 읽는 중…"
+  },
+  "mon_market_card": {
+    "message": "$1 — 24시간 $2, 카드를 엽니다"
   },
   "mon_need_two": {
     "message": "두 번째 코인을 추가하면 함께 움직이는 모습을 볼 수 있습니다."
@@ -3217,7 +3304,7 @@
     "message": "이 필터로는 아무것도 없습니다. 범위를 넓히거나 아래에서 소스를 다시 켜세요."
   },
   "news_none_note": {
-    "message": "“none”으로 표시된 곳은 응답했지만 이번에는 이 분야 기사가 없었습니다."
+    "message": "“없음”으로 표시된 소스는 응답했지만 이번에는 이 분야의 기사가 없었습니다."
   },
   "news_none_tone": {
     "message": "지금 화면에는 그렇게 표현된 기사가 없습니다."
@@ -3810,10 +3897,10 @@
     "message": "$1에 정산 — $2분 후"
   },
   "ph_call_lock": {
-    "message": "콜 확정"
+    "message": "예측 확정"
   },
   "ph_call_title": {
-    "message": "이 콜을 할까요?"
+    "message": "이 예측으로 확정할까요?"
   },
   "ph_cancel": {
     "message": "취소"
@@ -3849,7 +3936,7 @@
     "message": "핀치"
   },
   "ph_hint_pinch_d": {
-    "message": "으로 확대 — 콜 보드에서는 범위"
+    "message": "으로 확대 — 예측 보드에서는 범위 조절"
   },
   "ph_hint_title": {
     "message": "터치로 보는 차트"
@@ -4721,14 +4808,44 @@
   "pop_age_now": {
     "message": "방금"
   },
+  "pop_blocks": {
+    "message": "$1 블록"
+  },
+  "pop_btc_share": {
+    "message": "BTC $1%"
+  },
+  "pop_coins": {
+    "message": "내 코인"
+  },
+  "pop_days": {
+    "message": "$1일"
+  },
+  "pop_done": {
+    "message": "완료"
+  },
+  "pop_fear_greed": {
+    "message": "공포와 탐욕"
+  },
   "pop_from": {
     "message": "$1 시세"
+  },
+  "pop_halving": {
+    "message": "비트코인 반감기"
+  },
+  "pop_holdings": {
+    "message": "내 보유 자산"
+  },
+  "pop_market": {
+    "message": "시장"
   },
   "pop_no_prices": {
     "message": "아직 시세가 없습니다"
   },
   "pop_open": {
     "message": "탭 열기"
+  },
+  "pop_open_coin": {
+    "message": "$1을(를) 새 탭에서 열기"
   },
   "pop_open_hint": {
     "message": "전체 차트가 있는 새 탭 열기"
@@ -4742,8 +4859,20 @@
   "pop_refreshing": {
     "message": "새로고치는 중…"
   },
+  "pop_settings": {
+    "message": "팝업에 표시할 항목"
+  },
+  "pop_target_away": {
+    "message": "$1% 남음"
+  },
+  "pop_targets": {
+    "message": "목표 가격"
+  },
   "pop_title": {
     "message": "PriceTab"
+  },
+  "pop_unpriced": {
+    "message": "$1개는 아직 가격 없음"
   },
   "pos_a_long": {
     "message": "롱"
@@ -4844,6 +4973,9 @@
   },
   "pos_book_spread_v": {
     "message": "$1 · $2 bp"
+  },
+  "pos_breakeven": {
+    "message": "TP1 이후 스톱을 본전으로 옮기기"
   },
   "pos_cancel_all": {
     "message": "모두 취소"
@@ -5721,7 +5853,7 @@
     "message": "대기 중인 주문 없음"
   },
   "pos_orders_none_text": {
-    "message": "지정가 주문은 당신이 정한 가격에서 기다리고, 시장이 오면 메이커 수수료를 냅니다 — 스프레드를 넘는 비용의 절반 정도입니다. New contract에서 하나 넣어 보세요."
+    "message": "지정가 주문은 지정한 가격에서 기다리다가 시장이 도달하면 메이커 수수료가 부과됩니다. 스프레드를 넘는 비용의 절반 정도입니다. ‘새 계약’에서 주문할 수 있습니다."
   },
   "pos_pane_measure": {
     "message": "가장 가까운 청산까지 $1. 이 구간에서 $3 개 중 $2 개의 움직임이 그만큼 이상이었습니다."
@@ -5761,6 +5893,12 @@
   },
   "pos_preview_ready_cash": {
     "message": "$3에 $2 $1어치 · 개시 수수료 $4."
+  },
+  "pos_price": {
+    "message": "가격"
+  },
+  "pos_protect": {
+    "message": "가격 보호"
   },
   "pos_record_all": {
     "message": "전부"
@@ -6003,6 +6141,15 @@
   "pos_size_typed": {
     "message": "입력함"
   },
+  "pos_src_last": {
+    "message": "Last"
+  },
+  "pos_src_mark": {
+    "message": "Mark"
+  },
+  "pos_src_note": {
+    "message": "Mark는 최근 세 가격의 중앙값이라 튀는 체결 하나로는 움직이지 않습니다. Last는 마지막 체결입니다. 가격 보호는 둘의 차이가 0.5%를 넘는 동안 스톱과 목표를 보류합니다. 청산은 절대 기다리지 않습니다."
+  },
   "pos_start_over": {
     "message": "$1(으)로 다시 시작",
     "placeholders": {
@@ -6100,8 +6247,8 @@
   "pos_take": {
     "message": "익절"
   },
-  "pos_take_all": {
-    "message": "전부"
+  "pos_take_add": {
+    "message": "+ 목표 추가"
   },
   "pos_take_aria": {
     "message": "익절 가격"
@@ -6109,14 +6256,38 @@
   "pos_take_half": {
     "message": "절반"
   },
+  "pos_take_ladder": {
+    "message": "익절 목표"
+  },
+  "pos_take_leg_aria": {
+    "message": "목표 $1 가격"
+  },
+  "pos_take_n": {
+    "message": "TP$1"
+  },
+  "pos_take_none": {
+    "message": "목표 없음: 계약은 스톱, 추적 스톱 또는 직접 닫을 때까지 유지됩니다."
+  },
   "pos_take_of": {
     "message": "$1 · $2"
+  },
+  "pos_take_over": {
+    "message": "목표 합계가 계약 전체를 넘습니다 — $1%."
+  },
+  "pos_take_plan": {
+    "message": "$1%는 $2개 목표에서 청산되고 $3%는 스톱 아래에서 유지됩니다."
+  },
+  "pos_take_plan_all": {
+    "message": "전량이 $1개 목표에서 청산됩니다."
   },
   "pos_take_quarter": {
     "message": "4분의 1"
   },
-  "pos_take_share": {
-    "message": "닫는 양"
+  "pos_take_remove": {
+    "message": "목표 $1 삭제"
+  },
+  "pos_take_rest": {
+    "message": "나머지"
   },
   "pos_terms_1": {
     "message": "이것은 시뮬레이션입니다. 주문이 체결되지 않고, 어디로도 아무것도 전송되지 않으며, 뒤에 거래소나 중개사나 계좌가 없습니다."
@@ -6192,6 +6363,15 @@
   },
   "pos_trigger": {
     "message": "트리거"
+  },
+  "pos_trigger_head": {
+    "message": "트리거 기준"
+  },
+  "pos_trigger_stop": {
+    "message": "스톱"
+  },
+  "pos_trigger_take": {
+    "message": "목표"
   },
   "pos_unit_risk": {
     "message": "위험"
@@ -7173,7 +7353,7 @@
     "message": "취소"
   },
   "pref_backup_desc": {
-    "message": "이 브라우저가 아는 모든 것 — 코인, 목표가, 콜, 포트폴리오, 위젯, 환경설정 — 을 파일 하나에 저장하고 다른 기기에서 다시 읽어옵니다"
+    "message": "이 브라우저가 아는 모든 것 — 코인, 목표가, 예측, 포트폴리오, 위젯, 환경설정 — 을 파일 하나에 저장하고 다른 기기에서 다시 읽어옵니다"
   },
   "pref_backup_found": {
     "message": "그 파일에는 설정 $1개가 들어 있습니다."
@@ -7436,10 +7616,10 @@
     "message": "기능"
   },
   "pref_features_keywords": {
-    "message": "기능 켜기 끄기 사용 중지 숨기기 표시 버튼 아이콘 목표 콜 파생상품 선물 뉴스 기저율 포트폴리오 비교 위젯 단순화"
+    "message": "기능 켜기 끄기 사용 중지 숨기기 표시 버튼 아이콘 목표 예측 파생상품 선물 뉴스 기저율 포트폴리오 비교 위젯 단순화"
   },
   "pref_features_note": {
-    "message": "설정은 이 목록에 없고 끌 수도 없습니다. 이 화면으로 돌아오는 길이기 때문입니다. 끈다고 해서 지워지는 것은 없습니다 — 목표, 콜, 포지션, 보유는 그대로 남아 있고 다시 켜면 그 자리에 있습니다. 조용한 컨트롤은 이것의 부드러운 버전으로, 기능을 없애지 않고 버튼만 흐리게 합니다."
+    "message": "설정은 이 목록에 없고 끌 수도 없습니다. 이 화면으로 돌아오는 길이기 때문입니다. 끈다고 해서 지워지는 것은 없습니다 — 목표, 예측, 포지션, 보유는 그대로 남아 있고 다시 켜면 그 자리에 있습니다. 조용한 컨트롤은 이것의 부드러운 버전으로, 기능을 없애지 않고 버튼만 흐리게 합니다."
   },
   "pref_features_title": {
     "message": "기능"
@@ -7601,7 +7781,7 @@
     "message": "로그 logarithmic 축 스케일 비율 퍼센트 장기 연도 눌림"
   },
   "pref_log_scale_note": {
-    "message": "ALL 구간에서는 일반 축이 높이의 거의 전부를 최근 가격에 씁니다. 비트코인 자체 기록으로 재보면 전반부가 차트의 16%를 차지하는 데 비해 여기서는 72%입니다. 둘은 다른 질문에 답합니다 — 일반 축은 금액이 무엇을 했는지, 이 축은 비율이 무엇을 했는지 — 그리고 1년 미만에서는 거의 같아 보입니다. 콜 보드가 떠 있는 동안에는 스스로 꺼집니다. 보드의 칸은 고정된 가격 간격이고 이 축에는 고정 간격이 없기 때문입니다."
+    "message": "ALL 구간에서는 일반 축이 높이의 거의 전부를 최근 가격에 씁니다. 비트코인 자체 기록으로 재보면 전반부가 차트의 16%를 차지하는 데 비해 여기서는 72%입니다. 둘은 다른 질문에 답합니다 — 일반 축은 금액이 무엇을 했는지, 이 축은 비율이 무엇을 했는지 — 그리고 1년 미만에서는 거의 같아 보입니다. 예측 보드가 떠 있는 동안에는 스스로 꺼집니다. 보드의 칸은 고정된 가격 간격이고 이 축에는 고정 간격이 없기 때문입니다."
   },
   "pref_log_scale_title": {
     "message": "로그 스케일"
@@ -7913,7 +8093,7 @@
     "message": "앞 여백 미래 빈 공간 오른쪽 여백 tradingview 오프셋 현재 가장자리"
   },
   "pref_room_ahead_note": {
-    "message": "범위의 폭은 그대로 두고 그중 15%를 미래 쪽으로 옮깁니다. 가장 오래된 부분은 왼쪽 밖으로 살짝 밀려나며, 드래그하면 돌아옵니다. 켜든 끄든 드래그나 휠로 언제든 최신 가격 너머로 갈 수 있으며, 이 설정은 차트가 멈추는 위치만 정합니다. 콜 보드는 자체 미래가 있고 비교에는 미래가 없어 둘 다 표시하지 않습니다."
+    "message": "범위의 폭은 그대로 두고 그중 15%를 미래 쪽으로 옮깁니다. 가장 오래된 부분은 왼쪽 밖으로 살짝 밀려나며, 드래그하면 돌아옵니다. 켜든 끄든 드래그나 휠로 언제든 최신 가격 너머로 갈 수 있으며, 이 설정은 차트가 멈추는 위치만 정합니다. 예측 보드는 자체 미래가 있고 비교에는 미래가 없어 둘 다 표시하지 않습니다."
   },
   "pref_room_ahead_title": {
     "message": "앞쪽 여백"
@@ -8346,7 +8526,7 @@
     "message": "예측 켜기 / 끄기"
   },
   "sc_calls_panel": {
-    "message": "콜 — 보드, 기록, 모의 포지션"
+    "message": "예측 — 보드와 기록"
   },
   "sc_chart_bars": {
     "message": "차트: 봉 읽기 — Enter로 읽은 봉에 지정가"
@@ -8484,7 +8664,7 @@
     "message": "차트에 포커스가 있을 때: 한 지점씩 읽기 — 가장자리를 넘으면 창이 따라 이동"
   },
   "sc_view_zoom2": {
-    "message": "차트 확대 / 축소 — 시간 축, 또는 콜이 켜져 있으면 보드의 범위"
+    "message": "차트 확대 / 축소 — 시간 축, 또는 예측이 켜져 있으면 보드 범위"
   },
   "screen_tabs": {
     "message": "화면"
@@ -10734,9 +10914,6 @@
   "view_auto_title": {
     "message": "가격 축을 다시 선에 맞춥니다(또는 가격 축을 더블클릭)"
   },
-  "mon_coins_note2": {
-    "message": "가격과 24시간은 시세 표시줄에서, 거기에 없으면 코인 자체의 30일에서 가져옵니다. 나머지는 그 30일, 즉 1M 범위가 그리는 시계열에서 가져옵니다. β는 같은 날들에서 비트코인의 움직임에 대한 각 코인의 움직임입니다. 행을 누르면 그 코인이 차트에서 열리고, ↑와 ↓로 행을 오갑니다."
-  },
   "mon_col_beta": {
     "message": "β BTC"
   },
@@ -10781,9 +10958,6 @@
   },
   "mon_market_note": {
     "message": "Coinlore의 시가총액 상위 $1개($2 기준)로, 가격 표시줄이 읽는 것과 같은 스냅샷입니다. 이 탭이 열려 있는 동안 1분에 한 번 요청합니다. 타일의 크기는 시가총액, 색은 최근 24시간입니다. 차트가 그릴 수 있는 코인은 거기서 열립니다."
-  },
-  "mon_market_open": {
-    "message": "차트에서 $1 열기 — 24시간 $2"
   },
   "mon_market_up": {
     "message": "24시간 가장 많이 상승"

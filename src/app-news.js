@@ -295,7 +295,8 @@ const newsHandlers = (app) => ({
      * series behind it is about seventeen requests and 237 KB, which is right
      * for a coin somebody is studying and absurd for all 81. */
     toggleMonitor: () => {
-      app.setState((prev) => ({ showMonitor: !prev.showMonitor }));
+      // Opened or closed, the screen's own entrance plays (monitorStill is a tab switch's)
+      app.setState((prev) => ({ showMonitor: !prev.showMonitor, monitorStill: false }));
     },
 
     // The base rates are the monitor's last tab since 12 Oct 2026 (monitor.js)

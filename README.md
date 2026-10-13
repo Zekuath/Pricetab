@@ -1,15 +1,33 @@
-# PriceTab
+<p align="center">
+  <img src="assets/promotional/social-preview.png" alt="PriceTab — your new tab is now a live crypto dashboard: 81 coins, 26 widgets, zero permissions, 13 languages, open source" width="880">
+</p>
 
-**A live cryptocurrency chart on every new tab — with no account, no tracking
-and no permission asked at install.**
+<h1 align="center">PriceTab</h1>
 
-[Chrome Web Store](https://chromewebstore.google.com/detail/pricetab/dobkidjmhpnniiipliollbaefpppalaf) ·
-[Website](https://zekuath.github.io/Pricetab/site/) ·
-[Open it on the web](https://zekuath.github.io/Pricetab/) ·
-[Privacy policy](docs/PRIVACY.md) ·
-[Changelog](docs/CHANGELOG.md)
+<p align="center">
+  <strong>A live cryptocurrency chart on every new tab.</strong><br>
+  No account · no tracking · no permission asked at install
+</p>
 
-![A new tab with PriceTab: Bitcoin over one day, the price scale on the right and the six ranges](site/shots/hero.png)
+<p align="center">
+  <a href="https://chromewebstore.google.com/detail/pricetab/dobkidjmhpnniiipliollbaefpppalaf"><b>Add to Chrome</b></a>
+  &nbsp;·&nbsp;
+  <a href="https://zekuath.github.io/Pricetab/">Open it on the web</a>
+  &nbsp;·&nbsp;
+  <a href="https://zekuath.github.io/Pricetab/site/">Website</a>
+  &nbsp;·&nbsp;
+  <a href="docs/PRIVACY.md">Privacy</a>
+  &nbsp;·&nbsp;
+  <a href="docs/CHANGELOG.md">Changelog</a>
+  &nbsp;·&nbsp;
+  <a href="https://chromewebstore.google.com/detail/pricetab/dobkidjmhpnniiipliollbaefpppalaf/reviews">⭐ Leave a review</a>
+</p>
+
+<br>
+
+| 📈 **Chart** | 🎯 **Calls & targets** | 💼 **Portfolio** | 🧪 **Practice** |
+|---|---|---|---|
+| Six ranges, candles, drawing tools, zoom where you point | Call the next move on a board of squares; get told when a level is hit | Holdings, cost basis and a tax guide for 244 countries | A perpetual-contract terminal in units worth nothing |
 
 PriceTab replaces the new tab page with a chart of the coin you follow, and
 builds out from there: price targets, a private record of the moves you call,
@@ -17,13 +35,15 @@ a portfolio with a country-by-country tax guide, a derivatives account in units
 that are worth nothing, news, and widgets. Everything you keep stays in your
 browser.
 
-One rule runs through all of it: **the app counts, it does not advise.** There
-is no buy or sell signal anywhere. Where it says something about the market —
-how often a move this size happened, what followed a pattern, where the price
-may be tomorrow — the number carries the count behind it, and every reading of
-that kind was written down and tested on data it had never seen before it was
-allowed into the product. Several did not pass, and the app says so instead of
-showing them.
+> **The app counts, it does not advise.** There is no buy or sell signal
+> anywhere. Where it says something about the market — how often a move this
+> size happened, what followed a pattern, where the price may be tomorrow — the
+> number carries the count behind it, and every reading of that kind was
+> written down and tested on data it had never seen before it was allowed into
+> the product. Several did not pass, and the app says so instead of showing
+> them.
+
+![A new tab with PriceTab: Bitcoin over one day, the price scale on the right and the six ranges](site/shots/hero.png)
 
 ## Contents
 
@@ -46,7 +66,9 @@ scale and a time axis. Drag it in any direction — through time, or through
 prices — scroll or pinch to zoom where you point, and finer candles load as you
 go in. A logarithmic axis, a moving average that says what it covers, the US
 inflation, jobs, Fed and PCE releases marked where they fall, and every point
-readable from the keyboard and by a screen reader.
+readable from the keyboard and by a screen reader. Turn on **Room Ahead** and
+the chart rests with some blank time to the right of the latest price, as
+trading terminals do.
 
 | | |
 |---|---|
@@ -112,7 +134,7 @@ account.
 | ![The news reading room with dated headlines and every source's age](site/shots/news.png) | ![A story read beside the list under a counted reading of it](site/shots/newspreview.png) |
 | **News, dated and read.** Fourteen sources, narrowed to your coins or holdings, advertising kept out, one story told four times shown once. A story opens beside the list without its pictures. Point at a sharp move and the chart marks the stretch that moved, with what was written about it ranked first. | **Has this happened before?** What followed every past time this coin entered the state it is in now — with the count behind every figure, and no comparison at all under twelve episodes. |
 | ![The base-rate screen for Bitcoin](site/shots/baserates.png) | ![The monitor: every followed coin on one sortable table](site/shots/monitor.png) |
-| Each month of each year sits in a grid too. It was tested; no month stood apart, so none is called better. | **The monitor** (<kbd>M</kbd>). Every coin you follow on one sortable table, and how closely each pair has moved together. |
+| A glance row on top — the RSI, what is true right now, today's candle, how many years are counted — and each month of each year in a grid. It was tested; no month stood apart, so none is called better. | **The monitor** (<kbd>M</kbd>). Every coin you follow on one sortable table — press one for its card — the top 100 as a market map, how closely each pair has moved together said in plain words, and the base rates as its fourth tab (<kbd>B</kbd>). |
 
 ## Widgets
 
@@ -134,6 +156,8 @@ The same page runs on the web at
 phone's home screen and it opens full screen with its own icon: a tab bar for
 the chart, calls, targets and the portfolio, sheets that swipe away, and the
 side columns swiped in from the edges, clear of the browser's own back gesture.
+Prefer the screen to yourself? **Settings → This phone → Getting around →
+Swipes only** takes the tab bar away and gives the chart its height.
 
 ![PriceTab on a phone: the chart with its tab bar, a call being placed, and the More sheet](site/shots/phone.png)
 
@@ -186,7 +210,8 @@ Press <kbd>?</kbd> in PriceTab for the complete list. The most used:
 | <kbd>T</kbd> · <kbd>Y</kbd> · <kbd>G</kbd> | Candles · log axis · grid |
 | <kbd>L</kbd> · <kbd>K</kbd> · <kbd>A</kbd> | Calls on the chart · the calls record · price targets |
 | <kbd>C</kbd> · <kbd>W</kbd> · <kbd>V</kbd> | Compare · widgets · the chart's settings |
-| <kbd>P</kbd> · <kbd>F</kbd> · <kbd>N</kbd> · <kbd>B</kbd> · <kbd>M</kbd> | Portfolio · derivatives · news · base rates · monitor |
+| <kbd>P</kbd> · <kbd>F</kbd> · <kbd>N</kbd> | Portfolio · derivatives · news |
+| <kbd>M</kbd> · <kbd>B</kbd> | The monitor · its base-rates tab |
 | <kbd>I</kbd> | Save the chart as an image |
 | <kbd>Esc</kbd> | Close whatever is open |
 
@@ -213,6 +238,15 @@ npm --prefix tests run check
 - [Contributing](docs/CONTRIBUTING.md) — setup, the checklist, reporting a bug
   or a security issue
 - [Changelog](docs/CHANGELOG.md)
+
+## Like it?
+
+PriceTab is free, has no account and no advertising, and is found almost
+entirely through the store. If it is useful to you, a
+[review on the Chrome Web Store](https://chromewebstore.google.com/detail/pricetab/dobkidjmhpnniiipliollbaefpppalaf/reviews)
+is the most helpful thing you can give it — and a star on GitHub or an
+[issue](https://github.com/Zekuath/Pricetab/issues) about what to fix is the
+next.
 
 ## License
 

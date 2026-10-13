@@ -80,113 +80,381 @@
         --down: #b04a00;
       }
 
+      /* The surfaces the new tab and the site use: a soft ground for cards,
+         a hairline, a stronger hairline under the pointer. */
+      :root {
+        --soft: rgba(255, 255, 255, 0.05);
+        --line-strong: rgba(255, 255, 255, 0.24);
+      }
+      @media (prefers-color-scheme: light) {
+        :root {
+          --soft: rgba(15, 23, 32, 0.04);
+          --line-strong: rgba(15, 23, 32, 0.28);
+        }
+      }
+      html[data-theme="dark"] {
+        --soft: rgba(255, 255, 255, 0.05);
+        --line-strong: rgba(255, 255, 255, 0.24);
+      }
+      html[data-theme="light"] {
+        --soft: rgba(15, 23, 32, 0.04);
+        --line-strong: rgba(15, 23, 32, 0.28);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
       body {
         margin: 0;
-        /* Chrome sizes a popup to its content, up to 800×600. This is the
-           width that fits a symbol, a price of eight figures and a change
-           without wrapping at the font below. */
-        width: 17rem;
-        padding: 0.85rem 0.9rem 0.7rem;
+        /* Chrome sizes a popup to its content, up to 800×600: wide enough for
+           a symbol, a day's line, an eight-figure price and its change. */
+        width: 24rem;
+        padding: 0.9rem 0.9rem 0.75rem;
         background: var(--bg);
         color: var(--fg);
-        font-family: "Roboto Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-family: "Roboto Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
         font-size: 13px;
       }
 
       .head {
         display: flex;
-        align-items: baseline;
+        align-items: center;
         justify-content: space-between;
-        margin-bottom: 0.6rem;
+        gap: 0.6rem;
+        margin-bottom: 0.8rem;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 0.55rem;
+        font-size: 0.8rem;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+      }
+      .brand img {
+        width: 22px;
+        height: 22px;
+        border-radius: 6px;
       }
 
-      .title {
-        font-size: 0.66rem;
+      .label {
+        margin: 0.9rem 0 0.4rem;
+        font-size: 0.6rem;
         letter-spacing: 0.12em;
         text-transform: uppercase;
         color: var(--dim);
       }
 
-      .rows {
-        display: flex;
-        flex-direction: column;
+      /* What is held, at the top: the one sum a person opens this for */
+      .card {
+        padding: 0.75rem 0.85rem;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: var(--soft);
       }
-
-      .row {
+      .card .label {
+        margin: 0 0 0.3rem;
+      }
+      .card .value {
         display: flex;
         align-items: baseline;
         justify-content: space-between;
         gap: 0.5rem;
-        padding: 0.3rem 0;
-        border-top: 1px solid var(--line);
+        font-variant-numeric: tabular-nums;
+      }
+      .card .value b {
+        font-size: 1.25rem;
+        font-weight: 700;
       }
 
-      .row:first-child {
-        border-top: none;
+      .rows {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        max-height: 17rem;
+        overflow-y: auto;
+        scrollbar-width: thin;
+        scrollbar-color: var(--line-strong) transparent;
       }
 
+      /* A coin: its symbol and name, its day as a line, its price, its change.
+         The whole row is a button: it opens a tab on that coin. */
+      .row {
+        display: grid;
+        /* Fixed tracks, so the day's line and the figures stand in one
+           column down the list whatever each price's length */
+        grid-template-columns: minmax(0, 1fr) 3.6rem 6.6rem 4.4rem;
+        align-items: center;
+        gap: 0.6rem;
+        width: 100%;
+        padding: 0.5rem 0.55rem;
+        border: 1px solid transparent;
+        border-radius: 9px;
+        background: transparent;
+        color: inherit;
+        font: inherit;
+        text-align: left;
+        cursor: pointer;
+      }
+      .row:hover,
+      .row:focus-visible {
+        background: var(--soft);
+        border-color: var(--line);
+        outline: none;
+      }
+      .who {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+      }
       .coin {
         font-weight: 700;
         letter-spacing: 0.04em;
       }
-
-      .price {
-        margin-left: auto;
-        font-variant-numeric: tabular-nums;
+      .name {
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        font-size: 0.66rem;
+        color: var(--dim);
       }
-
-      .change {
-        width: 4.6rem;
+      .spark {
+        display: block;
+        width: 100%;
+        height: 1.4rem;
+        overflow: visible;
+      }
+      .spark path {
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 1.4;
+        stroke-linejoin: round;
+        vector-effect: non-scaling-stroke;
+      }
+      .price {
         text-align: right;
         font-variant-numeric: tabular-nums;
+      }
+      .change {
+        justify-self: end;
+        padding: 0.12rem 0.4rem;
+        border-radius: 999px;
+        font-size: 0.72rem;
+        font-variant-numeric: tabular-nums;
+        background: var(--soft);
       }
 
       .up {
         color: var(--up);
       }
-
       .down {
         color: var(--down);
       }
-
       .flat {
+        color: var(--dim);
+      }
+
+      /* The armed targets, nearest first */
+      .targets {
+        display: flex;
+        flex-direction: column;
+        gap: 0.3rem;
+      }
+      .target {
+        display: flex;
+        justify-content: space-between;
+        gap: 0.6rem;
+        padding: 0.4rem 0.55rem;
+        border: 1px solid var(--line);
+        border-radius: 9px;
+        font-size: 0.74rem;
+        font-variant-numeric: tabular-nums;
+      }
+      .target span:last-child {
         color: var(--dim);
       }
 
       .foot {
         display: flex;
-        align-items: baseline;
+        align-items: center;
         justify-content: space-between;
         gap: 0.5rem;
-        margin-top: 0.65rem;
-        padding-top: 0.5rem;
+        margin-top: 0.85rem;
+        padding-top: 0.6rem;
         border-top: 1px solid var(--line);
         font-size: 0.68rem;
         color: var(--dim);
       }
 
-      button {
+      button.btn {
         font-family: inherit;
-        font-size: 0.68rem;
+        font-size: 0.7rem;
+        letter-spacing: 0.04em;
         color: var(--fg);
         background: transparent;
         border: 1px solid var(--line);
-        border-radius: 6px;
-        padding: 0.2rem 0.45rem;
+        border-radius: 999px;
+        padding: 0.3rem 0.75rem;
         cursor: pointer;
       }
-
-      button:hover {
-        border-color: var(--fg);
+      button.btn:hover,
+      button.btn:focus-visible {
+        border-color: var(--line-strong);
+        background: var(--soft);
+        outline: none;
+      }
+      button.btn:disabled {
+        opacity: 0.55;
+        cursor: default;
       }
 
       a {
         color: var(--dim);
+        text-underline-offset: 0.2em;
+      }
+      a:hover {
+        color: var(--fg);
       }
 
       .note {
-        margin-top: 0.5rem;
+        margin-top: 0.55rem;
         font-size: 0.68rem;
+        line-height: 1.5;
+        color: var(--dim);
+      }
+      .tools {
+        display: flex;
+        gap: 0.4rem;
+      }
+      button.btn.icon {
+        width: 1.9rem;
+        padding: 0.3rem 0;
+        font-size: 0.85rem;
+        line-height: 1;
+      }
+      button.btn[aria-pressed="true"] {
+        border-color: var(--line-strong);
+        background: var(--soft);
+      }
+      button.btn.wide {
+        width: 100%;
+        margin-top: 0.7rem;
+        padding: 0.45rem 0.75rem;
+      }
+
+      .select {
+        width: 100%;
+        padding: 0.5rem 0.65rem;
+        border: 1px solid var(--line);
+        border-radius: 9px;
+        background: var(--bg);
+        color: var(--fg);
+        font: inherit;
+        cursor: pointer;
+      }
+      .select:hover,
+      .select:focus-visible {
+        border-color: var(--line-strong);
+        outline: none;
+      }
+
+      /* The market in three figures, side by side */
+      .tiles {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(6.4rem, 1fr));
+        gap: 0.4rem;
+        margin-bottom: 0.7rem;
+      }
+      .tile {
+        display: flex;
+        flex-direction: column;
+        gap: 0.15rem;
+        min-width: 0;
+        padding: 0.55rem 0.65rem;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: var(--soft);
+      }
+      .tile .label {
+        margin: 0;
+      }
+      .tile b {
+        font-size: 1rem;
+        font-variant-numeric: tabular-nums;
+      }
+      .tile span {
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        font-size: 0.66rem;
+        color: var(--dim);
+      }
+
+      /* The popup's settings: a switch a part */
+      .switches {
+        display: flex;
+        flex-direction: column;
+        gap: 0.3rem;
+      }
+      .switch {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+        padding: 0.55rem 0.65rem;
+        border: 1px solid var(--line);
+        border-radius: 9px;
+        background: transparent;
+        color: inherit;
+        font: inherit;
+        cursor: pointer;
+        text-align: left;
+      }
+      .switch:hover,
+      .switch:focus-visible {
+        border-color: var(--line-strong);
+        outline: none;
+      }
+      .knob {
+        position: relative;
+        width: 2rem;
+        height: 1.1rem;
+        border-radius: 999px;
+        background: var(--line);
+        transition: background 0.15s ease;
+      }
+      .knob::after {
+        content: "";
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: calc(1.1rem - 4px);
+        height: calc(1.1rem - 4px);
+        border-radius: 50%;
+        background: var(--fg);
+        transition: transform 0.15s ease;
+      }
+      /* On is the text ink, as the new tab's switches are: the direction
+         colours mean up and down and nothing else */
+      .switch[aria-pressed="true"] .knob {
+        background: var(--fg);
+      }
+      .switch[aria-pressed="true"] .knob::after {
+        transform: translateX(0.9rem);
+        background: var(--bg);
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .knob,
+        .knob::after {
+          transition: none;
+        }
+      }
+
+      .empty {
+        padding: 0.8rem 0.2rem;
+        font-size: 0.74rem;
         line-height: 1.5;
         color: var(--dim);
       }
@@ -195,10 +463,14 @@
   <body>
     <!-- The four the popup needs and nothing else. No React, no
          styled-components, no d3: this page prints numbers it already has. -->
+    <!-- In the new tab's own order (index.html): i18n.js reads the language
+         setting through storage.js as it loads, so storage.js comes first —
+         loaded after it, the popup took every chosen language for "auto"
+         (12 Oct 2026). -->
+    <script src="./src/api.js"></script>
+    <script src="./src/storage.js"></script>
     <script src="./src/i18n.js"></script>
     <script src="./src/config.js"></script>
-    <script src="./src/storage.js"></script>
-    <script src="./src/api.js"></script>
     <script src="./src/popup.js"></script>
   </body>
 </html>

@@ -1602,21 +1602,24 @@ const DrawerTabs = styled.nav`
        owner: *"sol ve sağdan çıkan çentiklerin yerleşimleri … eşit
        görünmüyor"*). Hung from the foot, each column started where its own
        count and its own names put it — measured at 390x844 the left began at
-       258px and the right at 134px, its tabs 78 to 121px tall. Now each is
-       centred in the space above the bar (the same middle for both), its rows
-       are one height (grid, 1fr: the tallest name sets it) over a common
-       floor, so two columns of five sit face to face. */
-    top: calc((100dvh - var(--pt-dock-lift, 0px)) / 2);
-    bottom: auto;
+       258px and the right at 134px, its tabs 78 to 121px tall. Both still
+       hang from the foot — centred, the left one lay over the price's
+       figures (polish holds it) — but every row is one height now (grid,
+       1fr: the tallest name sets it, over a common floor) and the tabs drop
+       their icons, as a short desktop window does, so two columns of five
+       stand tab for tab and end below the page's writing. */
+    top: auto;
+    /* Over the phone app's own bar, which floats on the page's foot. */
+    bottom: calc(var(--pt-dock-lift, 0px) + ${({ theme }) => theme.spacing.medium}rem);
     display: grid;
     grid-auto-rows: 1fr;
+    align-items: stretch;
     justify-items: ${({ side }) => (side === "right" ? "end" : "start")};
-    transform: translate(${(p) => (spineOut(p) ? "0" : spineAwayX(p))}, -50%);
     /* A phone's screen is the whole of a narrow window: the column stays
        in its drawer there and is pulled out by hand. */
     ${(p) =>
       p.pinned && !p.shown
-        ? `transform: translate(${spineAwayX(p)}, -50%); visibility: hidden; opacity: 0;`
+        ? `transform: translateX(${spineAwayX(p)}); visibility: hidden; opacity: 0;`
         : ""}
   }
 `;
@@ -1982,7 +1985,7 @@ const DrawerTab = styled.button.attrs({ type: "button" })`
   /* A phone's tabs share a floor, so a short name is as tall as a long one
      and the two columns match (DrawerTabs) */
   @media (max-width: 600px) {
-    min-height: 7.25rem;
+    min-height: 5.25rem;
     justify-content: center;
   }
 `;
@@ -2000,8 +2003,9 @@ const DrawerTabIcon = styled.span`
   justify-content: center;
   line-height: 0;
   color: ${({ lit, theme }) => (lit ? theme.color.accent : "inherit")};
-  /* A short window drops the icon to keep every tab on it (DrawerTab) */
-  @media (min-width: 601px) and (max-height: 880px) {
+  /* A short window drops the icon to keep every tab on it (DrawerTab), and
+     so does a phone, where the columns must end below the page's writing */
+  @media (min-width: 601px) and (max-height: 880px), (max-width: 600px) {
     display: none;
   }
 `;

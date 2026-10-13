@@ -16670,7 +16670,8 @@ await page.evaluate(`(() => { const m = document.querySelector("[data-practice-r
     check(after.length === 3 && Boolean(await page.$("[data-monitor-table] [aria-sort]")), "§95 a header sorts the rows and says which way", JSON.stringify(after));
     await page.click("[data-monitor-tab='corr']");
     await page.waitForTimeout(400);
-    const cells = await page.$$eval("[data-corr]", (n) => n.map((x) => x.textContent));
+    // The coefficient is the cell's first line since 12 Oct 2026; its word is under it (§126)
+    const cells = await page.$$eval("[data-corr]", (n) => n.map((x) => (x.querySelector("b") || x).textContent));
     check(cells.length === 6 && cells.every((t) => /^[+−-]?\d\.\d\d$|^—$/.test(t)), "§95 the correlation tab is every pair of three coins, each a coefficient", JSON.stringify(cells));
     const note = await page.evaluate(`document.querySelector("[data-monitor]").innerText`);
     check(/moves a pair/.test(note) && /never what comes next/.test(note), "§95 …with the count it rests on, and no forecast");
@@ -17460,8 +17461,9 @@ await page.evaluate(`(() => { const m = document.querySelector("[data-practice-r
     await page.keyboard.press(".");
     await page.waitForTimeout(900);
     const pulled = await read();
-    check(pulled.screens.length === 6 && pulled.screens.every((t) => t.bottom <= pulled.H && t.reach),
-      `§107 at ${w}x${h} all six screen tabs are inside the window and can be pressed`, JSON.stringify(pulled.screens.map((t) => t.bottom)));
+    // Five since 12 Oct 2026: the base rates are the monitor's tab (§125)
+    check(pulled.screens.length === 5 && pulled.screens.every((t) => t.bottom <= pulled.H && t.reach),
+      `§107 at ${w}x${h} all five screen tabs are inside the window and can be pressed`, JSON.stringify(pulled.screens.map((t) => t.bottom)));
     await page.keyboard.press(",");
     await page.waitForTimeout(900);
     const left = await read();
@@ -17977,14 +17979,30 @@ await page.evaluate(`(() => { const m = document.querySelector("[data-practice-r
     const area = Object.fromEntries(tiles.map(([c, a]) => [c, a]));
     check(tiles.length === 30 && Math.max(...tiles.map((t) => t[1])) === area.BTC && area.ETH > area.XRP && area.XRP > area.ZZ19,
       "§112 the Market tab maps every coin by market value, the largest the largest", JSON.stringify(tiles.slice(0, 6)));
+    /* Every tile opens its coin's card since 12 Oct 2026 (§126); the chart is
+       one press inside it for a coin the chart can draw */
     const kinds = Object.fromEntries(tiles.map(([c, , tag]) => [c, tag]));
-    check(kinds.ETH === "BUTTON" && kinds.ZZ3 !== "BUTTON", "§112 …a coin the chart can draw is a button, one it cannot is not", JSON.stringify([kinds.ETH, kinds.ZZ3]));
+    check(kinds.ETH === "BUTTON" && kinds.ZZ3 === "BUTTON", "§112 …every tile is a button", JSON.stringify([kinds.ETH, kinds.ZZ3]));
     const lists = await page.evaluate(`document.querySelector("[data-market-moves]").innerText`);
     check(/Up most/i.test(lists) && /Down most/i.test(lists), "§112 …with the day's largest moves both ways under it");
-    await page.click("[data-market-tile='ETH']");
+    await page.click("[data-market-tile='ZZ3']");
+    await page.waitForTimeout(600);
+    const priced = await page.evaluate(`(() => { const d = document.querySelector("[data-monitor-detail]"); return d ? { coin: d.getAttribute("data-monitor-detail"), note: Boolean(d.querySelector("[data-monitor-detail-priced-only]")), chart: Boolean(d.querySelector("[data-monitor-detail-chart]")) } : null; })()`);
+    check(priced && priced.coin === "ZZ3" && priced.note && !priced.chart, "§112 a coin the chart cannot draw opens a card that says so, with no way to a chart it has not", JSON.stringify(priced));
+    await page.keyboard.press("Escape");
+    await page.waitForTimeout(400);
+    const tileBox = await (await page.$("[data-market-tile='ETH']")).boundingBox();
+    await page.mouse.click(tileBox.x + tileBox.width * 0.3, tileBox.y + tileBox.height * 0.4);
+    await page.waitForTimeout(800);
+    const near = await page.evaluate(`(() => { const d = document.querySelector("[data-monitor-detail]"); if (!d) return null; const r = d.getBoundingClientRect(); return { coin: d.getAttribute("data-monitor-detail"), l: r.left, r: r.right, t: r.top, b: r.bottom, w: innerWidth, h: innerHeight }; })()`);
+    const px = tileBox.x + tileBox.width * 0.3;
+    const py = tileBox.y + tileBox.height * 0.4;
+    check(near && near.coin === "ETH" && near.l >= 0 && near.r <= near.w && near.t >= 0 && near.b <= near.h && (Math.abs(near.l - px) <= 40 || Math.abs(near.r - px) <= 40) && py >= near.t - 60 && py <= near.b + 60,
+      "§112 a tile's card opens beside where it was pressed, inside the window", JSON.stringify({ near, px: Math.round(px), py: Math.round(py) }));
+    await page.click("[data-monitor-detail-chart]");
     await page.waitForTimeout(1200);
     const head = await page.evaluate(`document.body.innerText`);
-    check(!(await page.$("[data-monitor]")) && /ETH\s*price/i.test(head), "§112 a tile opens its coin on the chart");
+    check(!(await page.$("[data-monitor]")) && /ETH\s*price/i.test(head), "§112 …and its Open on the chart opens the coin on the chart");
     check(errs.length === 0, "§112 nothing threw", errs.join(" | "));
     await ctx.close();
   }
@@ -19248,6 +19266,289 @@ await page.evaluate(`(() => { const m = document.querySelector("[data-practice-r
     check(/rgba\(0, 0, 0, 0\)|transparent/.test(ring), "§125 …and the range row's + carries no ring of its own while the tools are shut", ring);
     check(perrs.length === 0, "§125 nothing threw on the phone", perrs.join(" | "));
     await pctx.close();
+  }
+
+  /* §126 — the monitor as one screen to read in (12 Oct 2026, the owner:
+   * *"base rate kısmındaki üst bar … yanlış … koinlere tıklayınca ana grafiğe
+   * gitmesin, ufak bir ekran açılsın … menü geçişleri animasyonlu olsun …
+   * korelasyondaki metrik son kullanıcının anlayabileceği bir metriğe
+   * dönüşsün"*). Held: a row opens the coin's card over the screen, not the
+   * chart; Esc closes the card and leaves the screen, the focus back on its
+   * row; the card's two ways on; the Base rates tab wears the monitor's head;
+   * a tab switch moves the content and not the frame; the correlation says
+   * each cell in words, with a legend and the pairs in sentences. */
+  {
+    const NOW126 = Date.now();
+    const walk = (seed) => Array.from({ length: 360 }, (_, i) => ({ price: (100 * seed + Math.sin(i / (6 + seed)) * 4 * seed + i * 0.05 * seed).toFixed(2), time: Math.floor((NOW126 - (359 - i) * 2 * 3600e3) / 1000) }));
+    const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+    await ctx.route("**/*", (r) => {
+      const u = r.request().url();
+      if (u.startsWith("file://")) return r.continue();
+      const m = u.match(/prices\/([A-Z]+)-/);
+      const seed = m ? (m[1].charCodeAt(0) % 5) + 2 : 3;
+      if (u.includes("historic")) return r.fulfill(json({ data: { prices: walk(seed) } }));
+      if (u.includes("spot")) return r.fulfill(json({ data: { amount: String(100 * seed), currency: "USD" } }));
+      return r.fulfill(json({ data: {} }));
+    });
+    await ctx.addInitScript(`localStorage.setItem("crypto_chart_onboarding_seen", "1"); localStorage.setItem("crypto_chart_macro_events", "false"); localStorage.setItem("crypto_chart_coin_options", JSON.stringify(["BTC", "ETH", "SOL"]));`);
+    const page = await ctx.newPage();
+    const errs = [];
+    page.on("pageerror", (e) => errs.push(e.message));
+    await page.goto(INDEX, { waitUntil: "load" });
+    await page.waitForSelector("svg path", { timeout: 20000 });
+    await page.waitForTimeout(800);
+    await page.keyboard.press("m");
+    await page.waitForSelector("[data-monitor] [data-monitor-row='ETH'] [data-monitor-spark]", { timeout: 10000 });
+    await page.click("[data-monitor-row='ETH']");
+    await page.waitForTimeout(500);
+    const card = await page.evaluate(`(() => { const d = document.querySelector("[data-monitor-detail]"); return d ? { coin: d.getAttribute("data-monitor-detail"), text: d.innerText, focus: document.activeElement && document.activeElement.hasAttribute("data-monitor-detail-close"), screen: Boolean(document.querySelector("[data-monitor]")) } : null; })()`);
+    check(card && card.coin === "ETH" && card.screen && /30-day low/.test(card.text) && /7d/i.test(card.text) && card.focus,
+      "§126 a row opens the coin's card over the monitor — its figures and its 30 days — and the chart stays where it was", JSON.stringify(card && { coin: card.coin, focus: card.focus }));
+    await page.keyboard.press("Escape");
+    await page.waitForTimeout(400);
+    const after = await page.evaluate(`({ card: Boolean(document.querySelector("[data-monitor-detail]")), screen: Boolean(document.querySelector("[data-monitor]")), focus: document.activeElement && document.activeElement.getAttribute("data-monitor-row") })`);
+    check(!after.card && after.screen && after.focus === "ETH", "§126 Esc closes the card, not the screen, and the focus is back on its row", JSON.stringify(after));
+    await page.click("[data-monitor-row='SOL']");
+    await page.waitForTimeout(400);
+    await page.click("[data-monitor-detail-base]");
+    await page.waitForTimeout(1500);
+    const base = await page.evaluate(`({ tab: (document.querySelector("[data-monitor-tab][aria-pressed='true']") || { getAttribute: () => null }).getAttribute("data-monitor-tab"), head: (document.querySelector("[data-monitor-tabs]") ? document.querySelector("[data-monitor-tabs]").closest("[class]").parentElement.parentElement.innerText : ""), context: (document.querySelector("[data-base-context]") || { innerText: "" }).innerText, chip: (document.querySelector("[data-base-coins] [aria-pressed='true']") || { textContent: "" }).textContent })`);
+    check(base.tab === "base" && base.chip === "SOL" && /has this happened before/i.test(base.context),
+      "§126 the card's Base rates opens the monitor's Base rates tab on that coin, its question under the tabs", JSON.stringify({ tab: base.tab, chip: base.chip }));
+    const headTitle = await page.evaluate(`[...document.querySelectorAll("h2")].map((h) => h.textContent).join("|")`);
+    check(/^Monitor/i.test(headTitle) && !/happened before/i.test(headTitle), "§126 …and the head is the monitor's, as on the other three tabs", headTitle);
+    // A switch moves the content and not the frame
+    await page.click("[data-monitor-tab='corr']");
+    await page.waitForTimeout(60);
+    const motion = await page.evaluate(`(() => { const grid = document.querySelector("[data-corr-grid]"); const pane = grid && grid.parentElement; let card = pane; while (card && !(getComputedStyle(card).overflow === "hidden" && getComputedStyle(card).flexDirection === "column")) card = card.parentElement; return { pane: pane ? getComputedStyle(pane).animationName : null, card: card ? getComputedStyle(card).animationName : null }; })()`);
+    check(motion.pane && motion.pane !== "none" && motion.card === "none", "§126 a tab switch animates the content and leaves the screen's frame still", JSON.stringify(motion));
+    await page.waitForTimeout(800);
+    const corr = await page.evaluate(`({ words: [...document.querySelectorAll("[data-corr] small")].map((n) => n.textContent), bands: [...document.querySelectorAll("[data-corr-band]")].length, legend: [...document.querySelectorAll("[data-corr-legend] b")].map((n) => n.textContent), pairs: [...document.querySelectorAll("[data-corr-pairs] p")].map((n) => n.innerText) })`);
+    check(corr.words.length === 6 && corr.words.every((w) => /In step|Mostly together|Loosely|Unrelated|Opposite/.test(w)),
+      "§126 every correlation cell says in a word what the pair did", JSON.stringify(corr.words));
+    check(corr.legend.length === 5 && corr.pairs.length >= 2 && corr.pairs.every((p) => /of every 10 moves|r [+−-]/.test(p)),
+      "§126 …with the five words in a legend and the pairs worth it in sentences", JSON.stringify({ legend: corr.legend, pairs: corr.pairs.slice(0, 2) }));
+    // The card's other way on: the chart, and the screen gives way
+    await page.click("[data-monitor-tab='coins']");
+    await page.waitForTimeout(500);
+    await page.click("[data-monitor-row='ETH']");
+    await page.waitForTimeout(400);
+    await page.click("[data-monitor-detail-chart]");
+    await page.waitForTimeout(1200);
+    const chart = await page.evaluate(`({ screen: Boolean(document.querySelector("[data-monitor]")), head: document.body.innerText })`);
+    check(!chart.screen && /ETH\s*price/i.test(chart.head), "§126 the card's Open on the chart opens the coin there and the screen gives way", JSON.stringify({ screen: chart.screen }));
+    check(errs.length === 0, "§126 nothing threw", errs.join(" | "));
+    await ctx.close();
+  }
+
+  /* §127 — a contract's exit plan (12 Oct 2026: the model by another agent,
+   * the editor finished here). Held: the position editor writes up to three
+   * targets, each a price and a share, "the rest" made the remainder, saved
+   * nearest first; it says what the plan closes and what runs on; the stop's
+   * and the targets' trigger references, TP1 → break-even and the price
+   * protection reach the stored contract. */
+  {
+    const NOW127 = Date.now();
+    const prices127 = Array.from({ length: 300 }, (_, i) => ({ price: (112000 + Math.sin(i / 9) * 300 + i).toFixed(2), time: Math.floor((NOW127 - (299 - i) * 300e3) / 1000) }));
+    const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+    await ctx.route("**/*", (r) => {
+      const u = r.request().url();
+      if (u.startsWith("file://")) return r.continue();
+      if (u.includes("historic")) return r.fulfill(json({ data: { prices: prices127 } }));
+      if (u.includes("spot")) return r.fulfill(json({ data: { amount: "112480.00", currency: "USD" } }));
+      if (u.includes("market/ticker")) return r.fulfill(json({ code: "0", data: [{ instId: "BTC-USDT-SWAP", last: "112480", bidPx: "112479", askPx: "112481", ts: String(Date.now()) }] }));
+      return r.fulfill(json({}));
+    });
+    await ctx.addInitScript(`localStorage.setItem("crypto_chart_onboarding_seen", "1"); localStorage.setItem("crypto_chart_macro_events", "false"); localStorage.setItem("crypto_chart_practice_enabled", "true"); localStorage.setItem("crypto_chart_practice_consent", "true");`);
+    const page = await ctx.newPage();
+    const errs = [];
+    page.on("pageerror", (e) => errs.push(e.message));
+    await page.goto(INDEX, { waitUntil: "load" });
+    await page.waitForSelector("svg path", { timeout: 20000 });
+    await page.waitForTimeout(800);
+    await page.keyboard.press("f");
+    await page.waitForTimeout(1500);
+    const press = (re, within) => page.evaluate(`(() => { const root = ${within ? `document.querySelector(${JSON.stringify(within)})` : "document"}; const b = root && [...root.querySelectorAll("button")].find((n) => ${re}.test(n.innerText.trim())); if (b) b.click(); return Boolean(b); })()`);
+    await press("/^Open long on/");
+    await page.waitForTimeout(3000); // the open is a confirming press (2s)
+    await page.evaluate(`(() => { const r = document.querySelector("[data-practice-position] button[aria-expanded]"); if (r) r.click(); })()`);
+    await page.waitForTimeout(500);
+    check(await press("/^Stop \\/ TP$/"), "§127 an open contract offers its exit plan");
+    await page.waitForTimeout(500);
+    const none = await page.evaluate(`(document.querySelector("[data-practice-take-plan]") || { innerText: "" }).innerText`);
+    check(/No target/.test(none), "§127 with no target the plan says the contract runs on", none);
+    await press("/^\\+ Add a target$/");
+    await page.waitForTimeout(150);
+    await press("/^\\+ Add a target$/");
+    await page.waitForTimeout(150);
+    await press("/^\\+ Add a target$/");
+    await page.waitForTimeout(200);
+    const legs = await page.evaluate(`({ rows: document.querySelectorAll("[data-practice-take-leg]").length, add: Boolean(document.querySelector("[data-practice-take-add]")) })`);
+    check(legs.rows === 3 && !legs.add, "§127 up to three targets, and no fourth offered", JSON.stringify(legs));
+    await page.click("[data-practice-take-remove='3']");
+    await page.waitForTimeout(200);
+    await page.evaluate(`(() => {
+      const set = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
+      const put = (label, v) => { const e = document.querySelector("input[aria-label='" + label + "']"); set.call(e, v); e.dispatchEvent(new Event("input", { bubbles: true })); };
+      put("Target 1 price", "114000");
+      put("Target 2 price", "113000");
+    })()`);
+    await page.waitForTimeout(200);
+    await page.evaluate(`(() => { const b = [...document.querySelectorAll("[data-practice-take-share='1'] button")].find((n) => n.innerText.trim() === "50%"); b.click(); })()`);
+    await page.waitForTimeout(200);
+    const plan = await page.evaluate(`document.querySelector("[data-practice-take-plan]").innerText`);
+    check(/75% closes across 2 targets; 25% runs on/.test(plan), "§127 the plan says what closes and what runs on", plan);
+    await page.evaluate(`(() => { const b = [...document.querySelectorAll("[data-practice-source='stop'] button")].find((n) => n.innerText.trim() === "Last"); b.click(); })()`);
+    await press("/^After TP1, move the stop to break-even$/");
+    await press("/^Price protection$/");
+    await page.waitForTimeout(200);
+    await press("/^Save levels$/");
+    await page.waitForTimeout(600);
+    const stored = await page.evaluate(`(() => { const ps = JSON.parse(localStorage.getItem("crypto_chart_practice")).positions; const q = Object.values(ps)[0]; return { legs: (q.takeLegs || []).map((l) => [l.price, l.share]), take: q.take, src: [q.stopSource, q.takeSource], be: q.takeBreakEven, prot: q.triggerProtection }; })()`);
+    check(JSON.stringify(stored.legs) === JSON.stringify([[1130000000, 250000], [1140000000, 500000]]) && stored.take === 1130000000,
+      "§127 saved: two targets nearest first, each with its share, the first the contract's take", JSON.stringify(stored.legs));
+    check(stored.src.join("/") === "last/mark" && stored.be === true && stored.prot === true,
+      "§127 …with the stop on Last, the targets on Mark, TP1 → break-even and price protection", JSON.stringify(stored));
+    check(errs.length === 0, "§127 nothing threw", errs.join(" | "));
+    await ctx.close();
+  }
+
+  /* §128 — the rating asked for at a good moment (12 Oct 2026, the owner:
+   * *"insanlardan review almalıyız"*). Held: an install past the first day
+   * but short of a week is not asked when a tab opens; a target that is
+   * reached brings the ask a few seconds later, worded for that moment; its
+   * Rate goes to the listing's reviews tab, as Settings' link does. */
+  {
+    const DAY = 86400000;
+    const WHATS_NEW_ID = (require("fs").readFileSync(path.join(__dirname, "..", "src", "onboarding.js"), "utf8").match(/const WHATS_NEW_ID = "([^"]+)"/) || [])[1];
+    const make = async (alerts) => {
+      const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+      await ctx.route("**/*", (r) => {
+        const u = r.request().url();
+        if (u.startsWith("file://")) return r.continue();
+        if (u.includes("historic")) return r.fulfill(json({ data: { prices: PRICES } }));
+        if (u.includes("spot")) return r.fulfill(json({ data: { amount: "43480.00", currency: "USD" } }));
+        return r.fulfill(json({ data: {} }));
+      });
+      await ctx.addInitScript(`
+        localStorage.setItem("crypto_chart_onboarding_seen", "1");
+        localStorage.setItem("crypto_chart_first_use", String(Date.now() - 2 * ${DAY}));
+        localStorage.setItem("crypto_chart_whats_new_seen", "${WHATS_NEW_ID}");
+        localStorage.setItem("crypto_chart_macro_events", "false");
+        ${alerts ? `localStorage.setItem("crypto_chart_alerts", JSON.stringify(${JSON.stringify(alerts)}));` : ""}
+      `);
+      const page = await ctx.newPage();
+      await page.goto(INDEX, { waitUntil: "load" });
+      await page.waitForSelector("svg path", { timeout: 20000 });
+      return { ctx, page };
+    };
+    const card = (page) => page.evaluate(`(() => { const n = [...document.querySelectorAll("a")].find((a) => /\\/reviews$/.test(a.href) && a.closest("[data-rate-ask], div") && /rating/i.test(a.parentElement.innerText)); return n ? { text: n.parentElement.innerText, href: n.href } : null; })()`);
+    // Two days in, nothing reached: the tab opens and nothing asks, even after the old 20s settle
+    const quiet = await make(null);
+    await quiet.page.waitForTimeout(22000);
+    check(!(await card(quiet.page)), "§128 two days in, a tab that opens on nothing in particular does not ask");
+    await quiet.ctx.close();
+    // A target reached: the ask follows, worded for it, to the reviews tab
+    const hit = await make([{ id: "a", coin: "BTC", kind: "price", direction: "below", target: 50000, currency: "USD", startPrice: 51000, createdAt: Date.now() - 60000 }]);
+    let asked = null;
+    for (let i = 0; i < 30 && !asked; i += 1) {
+      await hit.page.waitForTimeout(1000);
+      asked = await card(hit.page);
+    }
+    check(asked && /target was reached/i.test(asked.text), "§128 a reached target brings the ask, worded for that moment", JSON.stringify(asked));
+    check(asked && /\/reviews$/.test(asked.href), "§128 …and its Rate goes to the listing's reviews tab", asked && asked.href);
+    await hit.page.keyboard.press("s");
+    await hit.page.waitForTimeout(700);
+    const settingsLink = await hit.page.evaluate(`[...document.querySelectorAll("[data-settings-card] a")].filter((a) => /Rate PriceTab/i.test(a.innerText)).map((a) => a.href)`);
+    check(settingsLink.length && settingsLink.every((h) => /\/reviews$/.test(h)), "§128 Settings' Rate PriceTab goes there too", JSON.stringify(settingsLink));
+    await hit.ctx.close();
+  }
+
+  /* §129 — the toolbar popup in the house's design, and more to do in it (12
+   * Oct 2026, the owner: *"popup'ı tasarım dilimize uygunlaştırıp daha işlevsel
+   * hâle getirmek"*). Held: what is held sums at the top, its day beside it;
+   * every coin is a button that opens a tab on that coin; the nearest armed
+   * targets, with how far each is; and a tab opened as index.html#coin=ETH
+   * shows Ethereum and forgets the hash. */
+  {
+    const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+    await ctx.route("**/*", (r) => {
+      const u = r.request().url();
+      if (u.startsWith("file://")) return r.continue();
+      if (u.includes("historic")) return r.fulfill(json({ data: { prices: PRICES } }));
+      if (u.includes("spot")) return r.fulfill(json({ data: { amount: "43480.00", currency: "USD" } }));
+      // The popup's three market figures (POPUP_PARTS): the hosts the widgets already use
+      if (u.includes("mempool.space")) return r.fulfill({ status: 200, contentType: "application/json", body: "915000" });
+      if (u.includes("alternative.me")) return r.fulfill(json({ data: [{ value: "57", value_classification: "Greed", timestamp: "1" }] }));
+      if (u.includes("coinlore") && u.includes("global")) return r.fulfill(json([{ total_mcap: 2760000000000, total_volume: 90000000000, btc_d: "59.9", eth_d: "11.2", mcap_change: "-1.2" }]));
+      if (u.includes("coinlore")) return r.fulfill(json({ data: [
+        { symbol: "BTC", price_usd: "43480", percent_change_24h: "1.5", market_cap_usd: "850000000000", volume24: "20000000000" },
+        { symbol: "ETH", price_usd: "2400", percent_change_24h: "-2.0", market_cap_usd: "290000000000", volume24: "9000000000" },
+        { symbol: "XRP", price_usd: "1.35", percent_change_24h: "0.5", market_cap_usd: "70000000000", volume24: "2000000000" },
+        { symbol: "LTC", price_usd: "61", percent_change_24h: "-1.0", market_cap_usd: "5000000000", volume24: "400000000" },
+      ] }));
+      return r.fulfill(json({ data: {} }));
+    });
+    await ctx.addInitScript(`
+      localStorage.setItem("crypto_chart_onboarding_seen", "1");
+      localStorage.setItem("crypto_chart_macro_events", "false");
+      localStorage.setItem("crypto_chart_portfolio", JSON.stringify([{ coin: "BTC", amount: 0.5 }, { coin: "ETH", amount: 2 }]));
+      localStorage.setItem("crypto_chart_alerts", JSON.stringify([
+        { id: "a", coin: "BTC", kind: "price", direction: "above", target: 50000, currency: "USD", startPrice: 43000, createdAt: Date.now() },
+        { id: "b", coin: "ETH", kind: "price", direction: "below", target: 2300, currency: "USD", startPrice: 2500, createdAt: Date.now() }]));
+    `);
+    const pop = await ctx.newPage();
+    const errs = [];
+    pop.on("pageerror", (e) => errs.push(e.message));
+    await pop.goto(POPUP, { waitUntil: "load" });
+    await pop.waitForTimeout(2500);
+    const seen = await pop.evaluate(`(() => ({
+      holdings: (document.querySelector("[data-popup-holdings]") || { innerText: "" }).innerText,
+      rows: [...document.querySelectorAll("[data-popup-coin]")].map((n) => n.tagName + ":" + n.getAttribute("data-popup-coin")),
+      targets: [...document.querySelectorAll("[data-popup-targets] .target")].map((n) => n.innerText.replace(/\\s+/g, " ")),
+      rate: (document.querySelector("a[href$='/reviews']") || {}).href || null,
+    }))()`);
+    check(/Your holdings/i.test(seen.holdings) && /26,540/.test(seen.holdings) && /%/.test(seen.holdings),
+      "§129 the popup sums what is held at the prices it has, with the day's move", JSON.stringify(seen.holdings));
+    check(seen.rows.length === 4 && seen.rows.every((r) => r.startsWith("BUTTON:")), "§129 every coin is a button", JSON.stringify(seen.rows));
+    check(seen.targets.length === 2 && /ETH ↓/.test(seen.targets[0]) && /away/.test(seen.targets[0]), "§129 the armed targets, nearest first, each with how far it is", JSON.stringify(seen.targets));
+    check(seen.rate && /\/reviews$/.test(seen.rate), "§129 …and its rating link goes to the reviews tab", seen.rate);
+    const tiles = await pop.evaluate(`[...document.querySelectorAll("[data-popup-tile]")].map((n) => n.getAttribute("data-popup-tile") + ":" + n.innerText.replace(/\\s+/g, " "))`);
+    check(tiles.length === 2 && /^halving:.*days.*blocks/i.test(tiles[0]) && /^fearGreed:.*57/.test(tiles[1]),
+      "§129 the next halving and Fear & Greed sit at the top by default; the market waits to be asked for", JSON.stringify(tiles));
+    // Opened again inside the cache's minute: the tiles are the kept ones and nothing is asked (§33's promise)
+    const again = await ctx.newPage();
+    const asked = [];
+    again.on("request", (q) => { if (!q.url().startsWith("file://")) asked.push(q.url()); });
+    await again.goto(POPUP, { waitUntil: "load" });
+    await again.waitForTimeout(800);
+    const keptTiles = await again.evaluate(`[...document.querySelectorAll("[data-popup-tile]")].map((n) => n.getAttribute("data-popup-tile"))`);
+    check(asked.length === 0 && keptTiles.join() === "halving,fearGreed",
+      "§129 opened again, the tiles come from the cache and nothing is asked", JSON.stringify({ asked, keptTiles }));
+    await again.close();
+    // Its own settings, from the gear
+    await pop.click("[data-popup-gear]");
+    await pop.waitForTimeout(300);
+    const parts = await pop.evaluate(`({ parts: [...document.querySelectorAll("[data-popup-part]")].map((n) => n.getAttribute("data-popup-part") + ":" + n.getAttribute("aria-pressed")), lang: Boolean(document.querySelector("select[data-popup-language]")) })`);
+    check(parts.parts.length === 6 && parts.parts.includes("market:false") && parts.parts.includes("coins:true") && parts.lang,
+      "§129 the gear opens what the popup shows — six parts as switches — and the language", JSON.stringify(parts));
+    await pop.click("[data-popup-part='coins']");
+    await pop.click("[data-popup-part='market']");
+    await pop.waitForTimeout(1500);
+    await pop.click("button.btn.wide"); // "Done" — text=Done also finds "Bahasa Indonesia"
+    await pop.waitForTimeout(400);
+    const after = await pop.evaluate(`({ rows: document.querySelectorAll("[data-popup-coin]").length, tiles: [...document.querySelectorAll("[data-popup-tile]")].map((n) => n.getAttribute("data-popup-tile")), kept: localStorage.getItem("crypto_chart_popup_parts") })`);
+    check(after.rows === 0 && after.tiles.includes("market") && /"coins":false/.test(after.kept) && /"market":true/.test(after.kept),
+      "§129 a switch takes its part away or brings it, and is kept", JSON.stringify(after));
+    check(errs.length === 0, "§129 the popup threw nothing", errs.join(" | "));
+    // A tab opened on a coin
+    const tab = await ctx.newPage();
+    await tab.goto(INDEX + "#coin=ETH", { waitUntil: "load" });
+    await tab.waitForSelector("svg path", { timeout: 20000 });
+    await tab.waitForTimeout(800);
+    const opened = await tab.evaluate(`({ head: document.body.innerText.slice(0, 400), hash: window.location.hash })`);
+    check(/ETH\s*price/i.test(opened.head) && opened.hash === "", "§129 a tab opened as #coin=ETH shows Ethereum and forgets the hash", JSON.stringify({ hash: opened.hash }));
+    await ctx.close();
   }
   await browser.close();
   if (failed) {

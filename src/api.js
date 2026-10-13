@@ -637,13 +637,14 @@ const fetchHalvingData = async () => {
        mempool.space while every other host answers. */
     let blockHeight = null;
     try {
-      // mempoolFetch (widgets-data.js): six seconds, then the second source
-      const response = await mempoolFetch(MEMPOOL_API);
+      // mempoolFetch (widgets-data.js): six seconds, then the second source.
+      // The toolbar popup loads no widgets-data.js: a plain fetch there.
+      const response = typeof mempoolFetch === "function" ? await mempoolFetch(MEMPOOL_API) : await fetch(MEMPOOL_API);
       if (response && response.ok) blockHeight = await response.json();
     } catch (e) {
       blockHeight = null;
     }
-    if (!(Number(blockHeight) > 0)) {
+    if (!(Number(blockHeight) > 0) && typeof fetchBtcChainStats === "function") {
       const stats = await fetchBtcChainStats();
       blockHeight = stats ? stats.height : null;
     }

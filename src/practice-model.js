@@ -28,7 +28,7 @@ const PRACTICE_MODEL_VERSION = 1;
    3, the same day: the contract quota was removed from the product altogether
    and the loss stop is cleared on load whatever it was set to — see the
    migration in `sanitizePractice`. */
-const PRACTICE_SCHEMA_VERSION = 5;
+const PRACTICE_SCHEMA_VERSION = 6;
 /* The schema each let-go migration arrived with. Named separately so a later
  * bump cannot re-run an earlier one: at 3 the loss stop was turned off and
  * ended accounts un-ended; at 4 the per-contract margin wall was turned off.
@@ -37,6 +37,11 @@ const PRACTICE_SCHEMA_LOSS_STOP_OFF = 3;
 const PRACTICE_SCHEMA_MARGIN_WALL_OFF = 4;
 /* 5 on 19 Sep 2026: the account became USDT-margined — see `PRACTICE_CURRENCY`. */
 const PRACTICE_SCHEMA_USDT = 5;
+/* 6 on 12 Oct 2026: one position may carry three linked take-profit legs,
+ * independent Mark/Last trigger references and the optional divergence
+ * guard. All are additive fields; an older account keeps its single target
+ * and Mark reference exactly as it was. */
+const PRACTICE_SCHEMA_EXIT_PLAN = 6;
 /* **The one currency this account is in.** A USDT-margined perpetual is
  * quoted, margined and settled in USDT whatever the rest of the app is set to
  * show, so every contract and order is stamped with it and priced off the
@@ -1541,6 +1546,13 @@ const practiceOpen = (s, order, priceE4) => {
     margin,
     stop: null,
     take: null,
+    takeShare: RATE_SCALE,
+    takeLegs: [],
+    takeBaseQty: order.qty,
+    takeBreakEven: false,
+    stopSource: "mark",
+    takeSource: "mark",
+    triggerProtection: false,
     /* A contract opens with no trail. The ticket does not offer one: a trail
        is a thing you put behind a position that is already running, and
        offering it in the order form would be a fifth number on a form that
@@ -1645,6 +1657,51 @@ const PRACTICE_MAX_ORDERS = 20;
    existed already means. Not an arbitrary field: a typed share would be a
    fourth number on a row that already carries three. */
 const PRACTICE_TAKE_SHARES = [250000, 500000, RATE_SCALE];
+const PRACTICE_MAX_TAKE_LEGS = 3;
+const PRACTICE_TRIGGER_SOURCES = ["mark", "last"];
+/* The lab's explicit trigger-protection band. This is a product assumption,
+ * not a claim about any venue's private threshold: while Mark and Last differ
+ * by more than 0.50%, conditional exits wait; liquidation never does. */
+const PRACTICE_TRIGGER_PROTECTION_PPM = 5000;
+
+/* The active take instructions in one shape. Positions written before the
+ * ladder have only `take` and `takeShare`; exposing that as one leg makes
+ * every reader backward compatible without migrating money-bearing state. */
+const practiceTakeLegs = (pos) => {
+  if (!pos) return [];
+  if (Array.isArray(pos.takeLegs) && pos.takeLegs.length) {
+    return pos.takeLegs.slice(0, PRACTICE_MAX_TAKE_LEGS).map((leg) => ({
+      price: leg.price,
+      share: leg.share,
+      all: leg.all === true,
+    }));
+  }
+  if (pos.take != null) {
+    const share = PRACTICE_TAKE_SHARES.includes(pos.takeShare)
+      ? pos.takeShare
+      : RATE_SCALE;
+    return [{ price: pos.take, share, all: share === RATE_SCALE }];
+  }
+  return [];
+};
+
+const practiceTriggerSource = (source) =>
+  PRACTICE_TRIGGER_SOURCES.includes(source) ? source : "mark";
+
+const practiceTriggerPrice = (pos, kind, markE4, lastE4) => {
+  const source = kind === "stop" ? pos.stopSource : pos.takeSource;
+  return practiceTriggerSource(source) === "last" && lastE4 > 0 ? lastE4 : markE4;
+};
+
+const practiceTriggerProtected = (pos, markE4, lastE4) =>
+  Boolean(
+    pos
+      && pos.triggerProtection === true
+      && markE4 > 0
+      && lastE4 > 0
+      && Math.abs(lastE4 - markE4)
+        > practiceRate(markE4, PRACTICE_TRIGGER_PROTECTION_PPM, ROUND_UP),
+  );
 
 /* **How far behind the best price a trailing stop follows**, in ppm: 1%, 2%,
    5%, 10%. Four distances rather than a typed one, for the reason the take's
@@ -2931,6 +2988,8 @@ const practiceStep = (s, stepIndex, marks, options) => {
     const coin = cur.coin;
     const priceE4 = marks && marks[coin];
     if (!(priceE4 > 0)) continue;
+    const lastE4 = opts.last && opts.last[coin] > 0 ? opts.last[coin] : priceE4;
+    const stopPriceE4 = practiceTriggerPrice(cur, "stop", priceE4, lastE4);
 
     /* **Funding, per coin, because every perpetual has its own rate.** This
        took a single `fundingPpm` for the whole step, which is only right in a
@@ -2972,10 +3031,10 @@ const practiceStep = (s, stepIndex, marks, options) => {
           trailFrom: !held.trail
             ? null
             : held.trailFrom == null
-              ? priceE4
+              ? stopPriceE4
               : held.side !== "short"
-                ? Math.max(held.trailFrom, priceE4)
-                : Math.min(held.trailFrom, priceE4),
+                ? Math.max(held.trailFrom, stopPriceE4)
+                : Math.min(held.trailFrom, stopPriceE4),
         },
       },
     };
@@ -2989,6 +3048,10 @@ const practiceStep = (s, stepIndex, marks, options) => {
       }
       continue;
     }
+    /* Price protection never stands between a position and liquidation: it
+       only holds conditional exits while the two public references disagree
+       beyond the lab's declared band. */
+    if (practiceTriggerProtected(pos, priceE4, lastE4)) continue;
     const long = pos.side !== "short";
     /* **A trailing stop is a stop**, and it closes the contract for the same
        reason and under the same name: the level moved with the price, but the
@@ -2997,10 +3060,10 @@ const practiceStep = (s, stepIndex, marks, options) => {
        winner does not cancel the line you drew when you were wrong. */
     const trailAt = practiceTrailStop(pos);
     const hitLevel = (level) =>
-      level != null && (long ? priceE4 <= level : priceE4 >= level);
+      level != null && (long ? stopPriceE4 <= level : stopPriceE4 >= level);
     const hitStop = hitLevel(pos.stop) || hitLevel(trailAt);
     if (hitStop) {
-      const out = practiceReduce(next, id, pos.qty, priceE4, "stop");
+      const out = practiceReduce(next, id, pos.qty, stopPriceE4, "stop");
       if (out.state) {
         next = out.state;
         events.push({ pos: id, coin, reason: "stop" });
@@ -3019,36 +3082,51 @@ const practiceStep = (s, stepIndex, marks, options) => {
      * were wrong; taking a third off at it is a decision nobody makes, and a
      * partial stop leaves a position running at the level that just proved it
      * should not be. */
-    const hitTake = pos.take != null && (long ? priceE4 >= pos.take : priceE4 <= pos.take);
-    if (hitTake) {
-      /* `practiceCloseSize` holds the lot and stub rules, so a share that
-         rounds to less than a lot — or leaves a stub behind — becomes the
-         whole contract there rather than a fraction here. */
-      const wanted = pos.takeShare > 0 && pos.takeShare < RATE_SCALE
-        ? practiceCloseSize(pos, practiceRate(pos.qty, pos.takeShare, ROUND_DOWN))
-        : pos.qty;
-      const out = practiceReduce(next, id, wanted || pos.qty, priceE4, "take");
-      if (out.state) {
-        next = out.state;
-        /* **A take that took a share is spent.**
-         *
-         * Left in place it fires again on the very next tick at the same
-         * price, and again, until the contract is gone — which is the exact
-         * opposite of what scaling out means. *Take half off here and let the
-         * rest run* is one instruction, not a standing one; the rest runs with
-         * no take-profit until somebody sets another. */
-        const rest = practiceAt(next, id);
-        if (rest && rest.take != null) {
-          next = {
-            ...next,
-            positions: {
-              ...next.positions,
-              [id]: { ...rest, take: null, takeShare: RATE_SCALE },
-            },
-          };
-        }
-        events.push({ pos: id, coin, reason: "take" });
+    const takePriceE4 = practiceTriggerPrice(pos, "take", priceE4, lastE4);
+    const legs = practiceTakeLegs(pos);
+    for (let i = 0; i < legs.length; i += 1) {
+      const leg = legs[i];
+      if (!(long ? takePriceE4 >= leg.price : takePriceE4 <= leg.price)) break;
+      const standing = practiceAt(next, id);
+      if (!standing) break;
+      /* Shares are of the quantity when the plan was saved, not of the
+         shrinking remainder. Otherwise 25% + 25% + 50% leaves 28% behind.
+         A ladder whose shares sum to 100% marks its final leg `all`, so lot
+         rounding and a later scale-in can never leave a stub. */
+      const base = standing.takeBaseQty > 0 ? standing.takeBaseQty : standing.qty;
+      const sized = practiceCloseSize(
+        standing,
+        practiceRate(base, leg.share, ROUND_DOWN),
+      );
+      const wanted = leg.all ? standing.qty : sized || standing.qty;
+      const out = practiceReduce(next, id, wanted, takePriceE4, "take");
+      if (!out.state) break;
+      next = out.state;
+      events.push({ pos: id, coin, reason: "take", leg: i + 1 });
+
+      const rest = practiceAt(next, id);
+      if (!rest) break;
+      const remaining = legs.slice(i + 1);
+      let stop = rest.stop;
+      if (rest.takeBreakEven === true) {
+        const even = practiceBreakEven(next, id);
+        if (even != null) stop = even;
       }
+      const first = remaining[0] || null;
+      next = {
+        ...next,
+        positions: {
+          ...next.positions,
+          [id]: {
+            ...rest,
+            stop,
+            take: first ? first.price : null,
+            takeShare: first ? first.share : RATE_SCALE,
+            takeLegs: remaining,
+            takeBreakEven: false,
+          },
+        },
+      };
     }
   }
   /* **The resting orders, after the contracts.**
@@ -3088,9 +3166,102 @@ const practiceStep = (s, stepIndex, marks, options) => {
   return { state: next, events };
 };
 
-/* Triggers are refused on the wrong side of the entry rather than swapped:
- * a stop above a long's entry is a take-profit typed into the wrong box, and
- * accepting it would fire on the very next step. */
+/* An active contract's whole exit plan. Unlike an entry order, its stop may
+ * cross the entry: moving a winner to break-even or into profit is ordinary
+ * position management. Take-profits remain on the profitable side of entry,
+ * ordered nearest first, and their shares may never promise more than the
+ * quantity held when the plan is saved. */
+const practiceSetExitPlan = (s, id, patch) => {
+  const pos = practiceAt(s, id);
+  if (!pos) return { error: "none" };
+  const plan = patch && typeof patch === "object" ? patch : {};
+  const owns = (key) => Object.prototype.hasOwnProperty.call(plan, key);
+  const long = pos.side !== "short";
+  const price = (v) => {
+    if (v == null) return null;
+    return Number.isSafeInteger(v) && v >= MIN_PRICE_E4 && v <= MAX_PRICE_E4
+      ? v
+      : undefined;
+  };
+
+  const stop = owns("stop") ? price(plan.stop) : pos.stop;
+  if (stop === undefined) return { error: "price" };
+
+  let legs = practiceTakeLegs(pos);
+  let takeBaseQty = pos.takeBaseQty > 0 ? pos.takeBaseQty : pos.qty;
+  if (owns("takes")) {
+    if (!Array.isArray(plan.takes) || plan.takes.length > PRACTICE_MAX_TAKE_LEGS) {
+      return { error: "size" };
+    }
+    legs = [];
+    let total = 0;
+    let before = null;
+    for (const raw of plan.takes) {
+      if (!raw || typeof raw !== "object") return { error: "size" };
+      const at = price(raw.price);
+      const share = Number(raw.share);
+      if (at === undefined || at === null || !Number.isSafeInteger(share) || share <= 0 || share > RATE_SCALE) {
+        return { error: at === undefined || at === null ? "price" : "size" };
+      }
+      if (long ? at <= pos.entry : at >= pos.entry) return { error: "side" };
+      if (before != null && (long ? at <= before : at >= before)) return { error: "side" };
+      total += share;
+      if (total > RATE_SCALE) return { error: "size" };
+      legs.push({ price: at, share, all: false });
+      before = at;
+    }
+    if (legs.length && total === RATE_SCALE) legs[legs.length - 1].all = true;
+    takeBaseQty = pos.qty;
+  }
+
+  let trailPpm = pos.trail || null;
+  if (owns("trail")) {
+    if (plan.trail === null || plan.trail === 0) trailPpm = null;
+    else if (!PRACTICE_TRAIL_CHOICES.includes(plan.trail)) return { error: "size" };
+    else trailPpm = plan.trail;
+  }
+  const first = legs[0] || null;
+  const stopSource = owns("stopSource")
+    ? practiceTriggerSource(plan.stopSource)
+    : practiceTriggerSource(pos.stopSource);
+  const takeSource = owns("takeSource")
+    ? practiceTriggerSource(plan.takeSource)
+    : practiceTriggerSource(pos.takeSource);
+
+  return {
+    state: {
+      ...s,
+      positions: {
+        ...s.positions,
+        [id]: {
+          ...pos,
+          stop,
+          stopFirst: pos.stopFirst || stop || null,
+          stopMoved: (pos.stopMoved || 0)
+            + (pos.stop != null && stop != null && (long ? stop < pos.stop : stop > pos.stop) ? 1 : 0),
+          take: first ? first.price : null,
+          takeShare: first ? first.share : RATE_SCALE,
+          takeLegs: legs,
+          takeBaseQty,
+          takeBreakEven: legs.length > 1 && owns("breakEven")
+            ? plan.breakEven === true
+            : legs.length > 1 && pos.takeBreakEven === true,
+          stopSource,
+          takeSource,
+          triggerProtection: owns("protection")
+            ? plan.protection === true
+            : pos.triggerProtection === true,
+          trail: trailPpm,
+          trailFrom: trailPpm ? pos.trailFrom || null : null,
+        },
+      },
+    },
+  };
+};
+
+/* The original one-target transition remains the small API used by entry
+ * fills and older callers. It writes the same plan shape, so there is one
+ * trigger engine and one storage contract. */
 /* **Change what a contract costs — for the contracts that come after it.**
  *
  * Refused while anything is running, the same rule every other account
@@ -3152,39 +3323,12 @@ const practiceSetTriggers = (s, id, stop, take, takeShare, trail) => {
      lot — the answer every stored position gives and the one the ticket means
      when nothing is pressed. */
   const share = PRACTICE_TAKE_SHARES.includes(takeShare) ? takeShare : RATE_SCALE;
-  let trailPpm = pos.trail || null;
-  if (trail !== undefined) {
-    if (trail === null || trail === 0) trailPpm = null;
-    else if (!PRACTICE_TRAIL_CHOICES.includes(trail)) return { error: "size" };
-    else trailPpm = trail;
-  }
-  return {
-    state: {
-      ...s,
-      positions: {
-        ...s.positions,
-        [id]: {
-          ...pos,
-          stop: s1,
-          /* **The process record.** The first stop a contract ever had is
-             what its risk was sized by; a stop moved *away* from the price
-             — a long's lowered, a short's raised — is the thing a grading
-             cannot forgive, so it is counted rather than forgotten. */
-          stopFirst: pos.stopFirst || s1 || null,
-          stopMoved: (pos.stopMoved || 0)
-            + (pos.stop != null && s1 != null && (long ? s1 < pos.stop : s1 > pos.stop) ? 1 : 0),
-          take: t1,
-          takeShare: t1 == null ? RATE_SCALE : share,
-          trail: trailPpm,
-          /* The anchor survives a change of distance — widening a trail from
-             1% to 5% is still the same trail following the same high-water
-             mark — and goes with the trail when it is taken off, so setting
-             one again starts from where the price is then. */
-          trailFrom: trailPpm ? pos.trailFrom || null : null,
-        },
-      },
-    },
-  };
+  return practiceSetExitPlan(s, id, {
+    stop: s1,
+    takes: t1 == null ? [] : [{ price: t1, share }],
+    ...(trail === undefined ? {} : { trail }),
+    breakEven: false,
+  });
 };
 
 /* Size from the plan's Practice-Unit loss budget rather than from a feeling.
@@ -3663,6 +3807,26 @@ const sanitizePractice = (raw) => {
      * guarantees. */
     if (inverse && practiceInverseTooBig(qty, entry)) continue;
     const side = p.side === "short" ? "short" : "long";
+    const long = side !== "short";
+    const takeLegs = [];
+    let takeTotal = 0;
+    let takeBefore = null;
+    for (const rawLeg of (Array.isArray(p.takeLegs) ? p.takeLegs : [])
+      .slice(0, PRACTICE_MAX_TAKE_LEGS)) {
+      if (!rawLeg || typeof rawLeg !== "object") continue;
+      const at = practiceInt(rawLeg.price, MIN_PRICE_E4, MAX_PRICE_E4, 0);
+      const share = Number(rawLeg.share);
+      if (!at || !Number.isSafeInteger(share) || share <= 0 || share > RATE_SCALE) continue;
+      if (long ? at <= entry : at >= entry) continue;
+      if (takeBefore != null && (long ? at <= takeBefore : at >= takeBefore)) continue;
+      if (takeTotal + share > RATE_SCALE) continue;
+      takeLegs.push({ price: at, share, all: false });
+      takeTotal += share;
+      takeBefore = at;
+    }
+    if (takeLegs.length && takeTotal === RATE_SCALE) {
+      takeLegs[takeLegs.length - 1].all = true;
+    }
     /* With the wall off, a contract may hold the whole account — so the
        bound on a stored margin is the account itself, not a wall of 0. */
     const accountIn = (inverse ? base.startCollateral : base.startBalance) + depositedIn(coin);
@@ -3696,6 +3860,13 @@ const sanitizePractice = (raw) => {
       takeShare: PRACTICE_TAKE_SHARES.includes(Number(p.takeShare))
         ? Number(p.takeShare)
         : RATE_SCALE,
+      takeLegs,
+      takeBaseQty: practiceInt(p.takeBaseQty,
+        inverse ? PRACTICE_INVERSE_LOT_E2 : PRACTICE_LOT_E3, qtyMax, qty),
+      takeBreakEven: takeLegs.length > 1 && p.takeBreakEven === true,
+      stopSource: practiceTriggerSource(p.stopSource),
+      takeSource: practiceTriggerSource(p.takeSource),
+      triggerProtection: p.triggerProtection === true,
       openedStep: practiceInt(p.openedStep, 0, 1e9, 0),
       /* Positions saved before this field existed have no stamp, and 0 is
          the answer that says so. */
@@ -3736,9 +3907,13 @@ const sanitizePractice = (raw) => {
     };
     /* A trigger on the wrong side of the entry would fire on the next step;
        drop it rather than store a booby trap. */
-    const long = side !== "short";
-    if (pos.stop != null && (long ? pos.stop >= entry : pos.stop <= entry)) pos.stop = null;
-    if (pos.take != null && (long ? pos.take <= entry : pos.take >= entry)) pos.take = null;
+    if (takeLegs.length) {
+      pos.take = takeLegs[0].price;
+      pos.takeShare = takeLegs[0].share;
+    } else if (pos.take != null && (long ? pos.take <= entry : pos.take >= entry)) {
+      pos.take = null;
+      pos.takeShare = RATE_SCALE;
+    }
     positions[id] = pos;
     /* Ids never go backwards inside an account: a file that already carries
        ids must not hand the next contract one that is in use. */

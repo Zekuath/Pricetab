@@ -1528,6 +1528,12 @@
   "app_rate_ask": {
     "message": "Liking PriceTab? A rating is how other people find it — it takes a few seconds and helps more than anything else."
   },
+  "app_rate_ask_call": {
+    "message": "That call came true. If PriceTab helps you read the market, a rating is how other people find it — it takes a few seconds."
+  },
+  "app_rate_ask_target": {
+    "message": "Your target was reached. If PriceTab is useful to you, a rating is how other people find it — it takes a few seconds."
+  },
   "app_read_on": {
     "message": "Read on "
   },
@@ -2424,6 +2430,17 @@
       }
     }
   },
+  "br_eyebrow_in_monitor": {
+    "message": "Base rates · $1 · $2 daily closes",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
   "br_failed": {
     "message": "No daily history came back for $1. Nothing can be counted without it, and a count made up would be worse than none.",
     "placeholders": {
@@ -2434,6 +2451,18 @@
   },
   "br_fomc_title": {
     "message": "Fed rate decision · FOMC statement"
+  },
+  "br_glance_candle": {
+    "message": "Today's candle"
+  },
+  "br_glance_candle_none": {
+    "message": "Today's candle: no named shape"
+  },
+  "br_glance_now": {
+    "message": "States true right now"
+  },
+  "br_glance_years": {
+    "message": "Years of daily closes counted"
   },
   "br_loading_body": {
     "message": "Reading this coin's daily closes. It goes back as far as the exchange publishes, which is what makes the counts below worth printing."
@@ -4555,8 +4584,8 @@
   "mon_close": {
     "message": "Close the monitor"
   },
-  "mon_coins_note2": {
-    "message": "The price and the 24 hours come from the ticker, or from the coin's own 30 days where the ticker has none; the rest from those 30 days, the series the 1M range draws. β is each coin's moves against Bitcoin's over the same days. A row opens that coin on the chart; ↑ and ↓ walk the rows."
+  "mon_coins_note3": {
+    "message": "The price and the 24 hours come from the ticker, or from the coin's own 30 days where the ticker has none; the rest from those 30 days, the series the 1M range draws. β is each coin's moves against Bitcoin's over the same days. A row opens the coin's card, with the chart one press inside it; ↑ and ↓ walk the rows."
   },
   "mon_col_beta": {
     "message": "β BTC"
@@ -4608,11 +4637,43 @@
       }
     }
   },
+  "mon_corr_cell_same": {
+    "message": "$1 and $2: $3 — the same way on $4% of $5 moves (r $6)",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      },
+      "arg4": {
+        "content": "$4"
+      },
+      "arg5": {
+        "content": "$5"
+      },
+      "arg6": {
+        "content": "$6"
+      }
+    }
+  },
   "mon_corr_few": {
     "message": "Too few shared moves to say"
   },
-  "mon_corr_note": {
-    "message": "How each pair moved together over the last 30 days: the Pearson correlation of their moves, one every $1 — $2 moves a pair. 1 is in step, 0 unrelated, −1 opposite. It describes these 30 days, never what comes next.",
+  "mon_corr_legend": {
+    "message": "What the cells say"
+  },
+  "mon_corr_loosely": {
+    "message": "Loosely"
+  },
+  "mon_corr_mostly": {
+    "message": "Mostly together"
+  },
+  "mon_corr_note2": {
+    "message": "Two counts for each pair over the last 30 days, one move every $1, $2 moves a pair: how often the two went the same way, and the correlation r of their moves — 1 when they move in step, 0 when one says nothing about the other, −1 when they go opposite ways. Moving together is not a reason to hold both or either: it describes these 30 days, never what comes next.",
     "placeholders": {
       "arg1": {
         "content": "$1"
@@ -4621,6 +4682,92 @@
         "content": "$2"
       }
     }
+  },
+  "mon_corr_opposite": {
+    "message": "Opposite"
+  },
+  "mon_corr_pair_line": {
+    "message": "went the same way on $1 of every 10 moves (r $2).",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "mon_corr_pair_line_r": {
+    "message": "r $1.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "mon_corr_pairs": {
+    "message": "In plain words"
+  },
+  "mon_corr_together": {
+    "message": "In step"
+  },
+  "mon_corr_unrelated": {
+    "message": "Unrelated"
+  },
+  "mon_detail_aria": {
+    "message": "$1 over the last 30 days",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "mon_detail_base": {
+    "message": "Base rates for $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "mon_detail_cap": {
+    "message": "Market value"
+  },
+  "mon_detail_chart": {
+    "message": "Open on the chart"
+  },
+  "mon_detail_close": {
+    "message": "Close"
+  },
+  "mon_detail_high": {
+    "message": "high $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "mon_detail_low": {
+    "message": "30-day low $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "mon_detail_priced_only": {
+    "message": "PriceTab prices $1 from the market's snapshot but cannot draw it, so it has no 30 days, chart or base rates here.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "mon_detail_range": {
+    "message": "In its range"
+  },
+  "mon_detail_volume": {
+    "message": "Traded in 24h"
   },
   "mon_eyebrow": {
     "message": "Your $1 coins · the last 30 days",
@@ -4651,6 +4798,17 @@
   "mon_loading": {
     "message": "Reading 30 days of prices…"
   },
+  "mon_market_card": {
+    "message": "$1 — $2 in 24 hours; opens its card",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
   "mon_market_down": {
     "message": "Down most in 24 hours"
   },
@@ -4667,17 +4825,6 @@
   },
   "mon_market_note": {
     "message": "Coinlore's top $1 by market value as of $2, the same snapshot the price bar reads — one request a minute while this tab is open. A tile's size is its market value and its shade its last 24 hours. A coin the chart can draw opens on it.",
-    "placeholders": {
-      "arg1": {
-        "content": "$1"
-      },
-      "arg2": {
-        "content": "$2"
-      }
-    }
-  },
-  "mon_market_open": {
-    "message": "Open $1 on the chart — $2 in 24 hours",
     "placeholders": {
       "arg1": {
         "content": "$1"
@@ -7134,6 +7281,39 @@
   "pop_age_now": {
     "message": "just now"
   },
+  "pop_blocks": {
+    "message": "$1 blocks",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "pop_btc_share": {
+    "message": "BTC $1%",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "pop_coins": {
+    "message": "Your coins"
+  },
+  "pop_days": {
+    "message": "$1 days",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "pop_done": {
+    "message": "Done"
+  },
+  "pop_fear_greed": {
+    "message": "Fear & Greed"
+  },
   "pop_from": {
     "message": "Prices from $1",
     "placeholders": {
@@ -7142,11 +7322,28 @@
       }
     }
   },
+  "pop_halving": {
+    "message": "Bitcoin halving"
+  },
+  "pop_holdings": {
+    "message": "Your holdings"
+  },
+  "pop_market": {
+    "message": "The market"
+  },
   "pop_no_prices": {
     "message": "No prices yet"
   },
   "pop_open": {
     "message": "Open a tab"
+  },
+  "pop_open_coin": {
+    "message": "Open $1 on a new tab",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
   },
   "pop_open_hint": {
     "message": "Open a new tab with the full chart"
@@ -7160,8 +7357,30 @@
   "pop_refreshing": {
     "message": "Refreshing…"
   },
+  "pop_settings": {
+    "message": "What the popup shows"
+  },
+  "pop_target_away": {
+    "message": "$1% away",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "pop_targets": {
+    "message": "Price targets"
+  },
   "pop_title": {
     "message": "PriceTab"
+  },
+  "pop_unpriced": {
+    "message": "$1 not priced yet",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
   },
   "pos_a_long": {
     "message": "long"
@@ -7305,6 +7524,9 @@
         "content": "$2"
       }
     }
+  },
+  "pos_breakeven": {
+    "message": "After TP1, move the stop to break-even"
   },
   "pos_cancel_all": {
     "message": "Cancel all"
@@ -8729,6 +8951,12 @@
       }
     }
   },
+  "pos_price": {
+    "message": "price"
+  },
+  "pos_protect": {
+    "message": "Price protection"
+  },
   "pos_record_all": {
     "message": "All"
   },
@@ -9082,6 +9310,15 @@
   "pos_size_typed": {
     "message": "typed"
   },
+  "pos_src_last": {
+    "message": "Last"
+  },
+  "pos_src_mark": {
+    "message": "Mark"
+  },
+  "pos_src_note": {
+    "message": "Mark is the median of the last three prices, which one stray print cannot move; Last is the latest trade. Price protection holds the stop and the targets while the two differ by more than 0.5% — liquidation never waits."
+  },
   "pos_start_over": {
     "message": "Start over with $1",
     "placeholders": {
@@ -9203,14 +9440,36 @@
   "pos_take": {
     "message": "Take profit"
   },
-  "pos_take_all": {
-    "message": "all of it"
+  "pos_take_add": {
+    "message": "+ Add a target"
   },
   "pos_take_aria": {
     "message": "Take-profit price"
   },
   "pos_take_half": {
     "message": "half"
+  },
+  "pos_take_ladder": {
+    "message": "Take-profit targets"
+  },
+  "pos_take_leg_aria": {
+    "message": "Target $1 price",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "pos_take_n": {
+    "message": "TP$1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "pos_take_none": {
+    "message": "No target: the contract runs until the stop, the trail or you close it."
   },
   "pos_take_of": {
     "message": "$1 · $2",
@@ -9223,11 +9482,49 @@
       }
     }
   },
+  "pos_take_over": {
+    "message": "The targets add up to more than the whole contract — $1%.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "pos_take_plan": {
+    "message": "$1% closes across $2 targets; $3% runs on under the stop.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      }
+    }
+  },
+  "pos_take_plan_all": {
+    "message": "All of it closes across $1 targets.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
   "pos_take_quarter": {
     "message": "a quarter"
   },
-  "pos_take_share": {
-    "message": "It closes"
+  "pos_take_remove": {
+    "message": "Remove target $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "pos_take_rest": {
+    "message": "the rest"
   },
   "pos_terms_1": {
     "message": "This is a simulation. No order is placed, nothing is sent anywhere, and there is no exchange, broker or account behind it."
@@ -9328,6 +9625,15 @@
   },
   "pos_trigger": {
     "message": "Trigger"
+  },
+  "pos_trigger_head": {
+    "message": "Triggered by"
+  },
+  "pos_trigger_stop": {
+    "message": "Stop"
+  },
+  "pos_trigger_take": {
+    "message": "Targets"
   },
   "pos_unit_risk": {
     "message": "Risk"

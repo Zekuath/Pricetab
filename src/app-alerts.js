@@ -437,6 +437,8 @@ const alertHandlers = (app) => ({
         saveAlerts(updated);
         return { alerts: updated, firedAlerts: [...prev.firedAlerts, ...fired] };
       });
+      // A target reached is a good moment to ask for a rating (config.js)
+      if (fired.length && app.rateMomentNow) app.rateMomentNow("target");
     },
 
     /* What everything held is worth right now, from the prices this check has

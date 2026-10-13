@@ -236,8 +236,23 @@ class CryptoChart extends PureComponent {
     // leave a timer running for a card that has already gone
     this.wonCallTimers = new Map();
 
+    /* **A tab opened on a coin** (12 Oct 2026): the toolbar popup's rows open
+       a new tab as index.html#coin=ETH. Only a coin already on the list is
+       honoured — the hash is read once and cleared, and adds nothing. */
+    const openOn = (() => {
+      try {
+        const m = /(?:^#|&)coin=([A-Z0-9]{1,12})(?:&|$)/.exec(window.location.hash || "");
+        if (!m) return 0;
+        window.history.replaceState(null, "", window.location.pathname + window.location.search);
+        const at = loadCoinOptionsFromStorage().indexOf(m[1]);
+        return at > 0 ? at : 0;
+      } catch (error) {
+        return 0;
+      }
+    })();
+
     _defineProperty(this, "state", {
-      coinIndex: 0,
+      coinIndex: openOn,
       currentValue: null,
       period: PERIOD_OPTIONS[0].value,
       valueHistory: [],
@@ -262,6 +277,7 @@ class CryptoChart extends PureComponent {
       settingsTab: null,
       showPortfolio: false, // Full-screen tracking-only portfolio view
       showRateAsk: false, // One-time rating ask (eligibility checked on mount)
+      rateMoment: null, // "call" | "target" — the moment an ask follows, for its wording
       // Price when this coin was last looked at, for the "since your last
       // visit" line: { price, time } or null. Frozen at mount so the line
       // never moves while the tab is open.
@@ -3586,17 +3602,18 @@ class CryptoChart extends PureComponent {
 
     /* The monitor on one of its tabs (B is its Base rates). Pressed while it
        is up: the tab it is on closes it, another tab switches to it. */
+    // A switch inside the open screen: its frame stays still, the content moves
     _defineProperty(this, "handleMonitorTab", (tab) => {
-      if (MONITOR_TABS.includes(tab)) this.setState({ monitorTab: tab });
+      if (MONITOR_TABS.includes(tab)) this.setState({ monitorTab: tab, monitorStill: true });
     });
     _defineProperty(this, "openMonitorTab", (tab) => {
       if (!MONITOR_TABS.includes(tab)) return;
       if (this.state.showMonitor) {
         if (this.state.monitorTab === tab) this.toggleMonitor();
-        else this.setState({ monitorTab: tab });
+        else this.setState({ monitorTab: tab, monitorStill: true });
         return;
       }
-      this.setState({ monitorTab: tab });
+      this.setState({ monitorTab: tab, monitorStill: false });
       this.pressScreenTab("monitor");
     });
 
@@ -4470,6 +4487,16 @@ class CryptoChart extends PureComponent {
       this.setState({ showRateAsk: true });
     });
 
+    /* A good moment (RATE_PROMPT_MOMENT_MS): a call came true or a target was
+       reached. A due ask comes a few seconds later, when the burst or the
+       toast has been seen; the same guards as any ask (tryRateAsk). */
+    _defineProperty(this, "rateMomentNow", (kind) => {
+      if (!rateAskDue() || this.state.showRateAsk) return;
+      clearTimeout(this.rateTimer);
+      this.setState({ rateMoment: kind });
+      this.rateTimer = setTimeout(this.tryRateAsk, RATE_PROMPT_MOMENT_MS);
+    });
+
     // × is "not now": the schedule already holds the next ask
     _defineProperty(this, "handleRateAskLater", () => {
       this.setState({ showRateAsk: false });
@@ -4838,7 +4865,9 @@ class CryptoChart extends PureComponent {
        the moment the tab opens, only after it has been up a while, visible,
        with nothing out over the chart — and recorded the moment it is
        shown, so one ask is spent once whichever tab shows it. */
-    if (rateAskDue()) this.rateTimer = setTimeout(this.tryRateAsk, RATE_PROMPT_SETTLE_MS);
+    if (rateAskDue() && Date.now() - getOrInitFirstUse() >= RATE_PROMPT_FALLBACK_MS) {
+      this.rateTimer = setTimeout(this.tryRateAsk, RATE_PROMPT_SETTLE_MS);
+    }
 
     /* The web app: the screen kept on if asked, and the screen it opens on —
        once, at launch, on a phone (WEBAPP_START_KEY). After the first frame,
@@ -5735,6 +5764,7 @@ class CryptoChart extends PureComponent {
             onPickCoin: (coin) => this.handleQuickSwitchPick(coin, true),
             onClose: this.toggleMonitor,
             tabs: monitorTabStrip("base", this.handleMonitorTab),
+            still: this.state.monitorStill === true,
           }),
 
         this.state.showMonitor &&
@@ -5742,6 +5772,12 @@ class CryptoChart extends PureComponent {
           React.createElement(MonitorPanel, {
             tab: this.state.monitorTab,
             onTab: this.handleMonitorTab,
+            still: this.state.monitorStill === true,
+            // The coin's card: its base rates, on the monitor's own tab
+            onBase: (coin) => {
+              this.handleQuickSwitchPick(coin, true);
+              this.handleMonitorTab("base");
+            },
             coins: coinOptions,
             currency,
             stats: this.coinStats(),
@@ -5773,15 +5809,19 @@ class CryptoChart extends PureComponent {
                * is the only thing a user can give that helps. It stays a
                * question rather than a claim — "if you like it" — because the
                * app does not know whether they do. */
-              msg(
-                "app_rate_ask",
-                "Liking PriceTab? A rating is how other people find it — it takes a few seconds and helps more than anything else.",
-              ),
+              this.state.rateMoment === "call"
+                ? msg("app_rate_ask_call", "That call came true. If PriceTab helps you read the market, a rating is how other people find it — it takes a few seconds.")
+                : this.state.rateMoment === "target"
+                  ? msg("app_rate_ask_target", "Your target was reached. If PriceTab is useful to you, a rating is how other people find it — it takes a few seconds.")
+                  : msg(
+                      "app_rate_ask",
+                      "Liking PriceTab? A rating is how other people find it — it takes a few seconds and helps more than anything else.",
+                    ),
             ),
             React.createElement(
               RatePromptLink,
               {
-                href: STORE_LISTING_URL,
+                href: STORE_REVIEWS_URL,
                 target: "_blank",
                 rel: "noreferrer",
                 onClick: this.handleRateAskDismiss,
@@ -8790,6 +8830,10 @@ class CryptoChart extends PureComponent {
             !this.state.touchHintSeen &&
               touchFirst() &&
               !this.state.tourActive &&
+              /* Not over a column that is out: on a phone the columns end at
+                 the foot, where this sheet sits, and it took their presses */
+              !this.spineShown() &&
+              !this.screenSpineShown() &&
               !this.screenUp() &&
               !this.leftDrawer() &&
               !this.state.callDraft &&
@@ -9454,6 +9498,7 @@ class CryptoChart extends PureComponent {
             onPracticeAnnotate: this.annotatePractice,
             onPracticeReduce: this.reducePractice,
             onPracticeTriggers: this.setPracticeTriggers,
+            onPracticeExitPlan: this.setPracticeExitPlan,
             onPracticeMargin: this.addPracticeMargin,
             onPracticeMarginOut: this.removePracticeMargin,
             onPracticeDeposit: this.depositPractice,

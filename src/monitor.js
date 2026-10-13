@@ -83,6 +83,9 @@ const monitorRow = (series) => {
     change30d: monitorChangeSince(pts, 30 * MONITOR_DAY_MS),
     range: hi > lo ? (last - lo) / (hi - lo) : null,
     fromHigh: hi > 0 ? (last / hi - 1) * 100 : null,
+    // The month's ends, for the coin's card (12 Oct 2026)
+    high: hi,
+    low: lo,
     dailyMove,
     step,
   };
@@ -96,11 +99,55 @@ const correlationMatrix = (coins, seriesByCoin) => {
     for (let j = i + 1; j < coins.length; j += 1) {
       const a = seriesByCoin[coins[i]];
       const b = seriesByCoin[coins[j]];
-      const c = Array.isArray(a) && Array.isArray(b) ? compareCorrelation(a, b) : null;
+      let c = Array.isArray(a) && Array.isArray(b) ? compareCorrelation(a, b) : null;
+      /* …and the plainer of the two counts beside it: how many of the steps
+         both took went the same way (12 Oct 2026) */
+      const sd = c ? compareSameDirection(a, b) : null;
+      if (c && sd) c = Object.assign({}, c, { same: sd.same, sameN: sd.n });
       out[`${coins[i]}|${coins[j]}`] = c;
       out[`${coins[j]}|${coins[i]}`] = c;
     }
   }
+  return out;
+};
+
+/* **The correlation in words** (12 Oct 2026, the owner: *"korelasyondaki
+   metrik … son kullanıcının anlayabileceği bir metriğe dönüşsün"*). Five
+   bands of r with a name each — the conventional cut points (0.2, 0.5, 0.8),
+   said as what the two lines did, never as what they will do. Pure. */
+const CORR_BANDS = [
+  { min: 0.8, key: "together" },
+  { min: 0.5, key: "mostly" },
+  { min: 0.2, key: "loosely" },
+  { min: -0.2, key: "unrelated" },
+  { min: -Infinity, key: "opposite" },
+];
+const corrBand = (r) => (Number.isFinite(r) ? CORR_BANDS.find((b) => r >= b.min).key : null);
+const corrWord = (band) =>
+  ({
+    together: msg("mon_corr_together", "In step"),
+    mostly: msg("mon_corr_mostly", "Mostly together"),
+    loosely: msg("mon_corr_loosely", "Loosely"),
+    unrelated: msg("mon_corr_unrelated", "Unrelated"),
+    opposite: msg("mon_corr_opposite", "Opposite"),
+  })[band] || "";
+
+/* The pairs worth a sentence: the three most in step, the one least related,
+   and any that went opposite ways. Each pair once. Pure. */
+const corrHighlights = (coins, matrix) => {
+  const pairs = [];
+  for (let i = 0; i < coins.length; i += 1) {
+    for (let j = i + 1; j < coins.length; j += 1) {
+      const c = matrix[`${coins[i]}|${coins[j]}`];
+      if (c && Number.isFinite(c.r)) pairs.push({ a: coins[i], b: coins[j], c });
+    }
+  }
+  if (!pairs.length) return [];
+  const byR = pairs.slice().sort((x, y) => y.c.r - x.c.r);
+  const out = byR.slice(0, Math.min(3, byR.length));
+  const least = pairs.slice().sort((x, y) => Math.abs(x.c.r) - Math.abs(y.c.r))[0];
+  if (least && !out.includes(least)) out.push(least);
+  for (const p of byR) if (p.c.r <= -0.2 && !out.includes(p)) out.push(p);
   return out;
 };
 
@@ -218,7 +265,7 @@ const squarify = (items, w, h) => {
 // The market map's tiles: the largest this many by market value
 const MONITOR_MAP_MAX = 100;
 // The smallest type a tile's label is set in, in rem; a smaller tile has none
-const MONITOR_MAP_MIN_TYPE = 0.64;
+const MONITOR_MAP_MIN_TYPE = 0.72; // rem — raised from 0.64 with the larger map (12 Oct 2026)
 // The snapshot is asked again this often while the map is open
 const MONITOR_MAP_REFRESH_MS = 60000;
 
@@ -228,11 +275,19 @@ const MonitorTabs = styled.div`
   display: flex;
   gap: 0.4rem;
   margin-bottom: 1.2rem;
+  /* Four now (the base rates joined): on a phone they scroll as a row
+     rather than push the screen sideways */
+  overflow-x: auto;
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
 `;
 
 const MonitorTab = styled.button.attrs({ type: "button" })`
   min-height: 2.25rem;
   padding: 0 0.9rem;
+  white-space: nowrap;
   border-radius: 8px;
   border: 1px solid ${({ theme, active }) => (active ? theme.color.text : theme.color.border)};
   background: ${({ theme, active }) => (active ? theme.color.text : "transparent")};
@@ -246,6 +301,13 @@ const MonitorTab = styled.button.attrs({ type: "button" })`
   &:focus-visible {
     outline: 2px solid ${({ theme }) => theme.color.accent};
     outline-offset: 2px;
+  }
+  // The four fit a 390px phone at this size
+  @media (max-width: 600px) {
+    flex: 1 0 auto;
+    padding: 0 0.6rem;
+    font-size: 0.7rem;
+    letter-spacing: 0.02em;
   }
 `;
 
@@ -364,6 +426,185 @@ const MonitorCell = styled.span`
    where the line ends is where the price sits in its range — what the range
    bar said, with the shape that got it there. In the 30 days' direction ink;
    a stroke that does not scale with the stretched box. */
+/* **A tab's content arrives; the screen around it stays** (12 Oct 2026, the
+   owner: *"menü geçişleri arası animasyonlu olsun"*). Keyed by the tab, so a
+   switch replays it and nothing else moves; none under reduced motion. */
+const MonitorPane = styled.div`
+  ${screenPaneIn};
+  /* The body holds its children to a reading measure; the market map and the
+     table want the window (12 Oct 2026, *"market kısmını büyütelim"*) */
+  max-width: none !important;
+`;
+
+/* **A coin's card, over the monitor** (12 Oct 2026, the owner: *"koinlere
+   tıklayınca ana grafiğe gitmesin, ufak bir ekran açılsın … bilgi versin"*).
+   A row used to close the screen and switch the chart; now it opens this,
+   and the chart is one press inside it. */
+const monitorCardIn = keyframes`
+  from { opacity: 0; transform: translate3d(0, 10px, 0) scale(0.98); }
+  to { opacity: 1; transform: none; }
+`;
+const MonitorDetailScrim = styled.div`
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  /* The body holds its children to a reading measure (BaseBody); the scrim
+     is the whole window, or the right of the table stayed lit */
+  max-width: none !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: ${({ theme }) => (theme.color.bg === "#ffffff" ? "rgba(15, 23, 32, 0.28)" : "rgba(0, 0, 0, 0.6)")};
+`;
+const MonitorDetail = styled.div`
+  position: relative;
+  width: min(30rem, 100%);
+  max-height: calc(100dvh - 2rem);
+  overflow-y: auto;
+  padding: 1.3rem 1.4rem 1.2rem;
+  border: 1px solid ${({ theme }) => theme.color.borderHover};
+  border-radius: 16px;
+  background: ${({ theme }) => theme.color.bg};
+  box-shadow: 0 24px 60px ${({ theme }) => theme.color.shadow};
+  font-family: ${({ theme }) => theme.font.primary};
+  color: ${({ theme }) => theme.color.text};
+  animation: ${monitorCardIn} 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+`;
+const MonitorDetailClose = styled.button.attrs({ type: "button" })`
+  position: absolute;
+  top: 0.7rem;
+  right: 0.7rem;
+  width: 2rem;
+  height: 2rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: ${({ theme }) => theme.color.textSecondary};
+  font: inherit;
+  font-size: 1.1rem;
+  cursor: pointer;
+  &:hover,
+  &:focus-visible {
+    color: ${({ theme }) => theme.color.text};
+    background: ${({ theme }) => theme.color.bgSecondary};
+  }
+  ${touchSquare};
+`;
+const MonitorDetailHead = styled.div`
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  padding-right: 2rem;
+  strong {
+    font-size: 1.1rem;
+    letter-spacing: 0.08em;
+  }
+  span {
+    font-size: 0.8rem;
+    color: ${({ theme }) => theme.color.textSecondary};
+  }
+`;
+const MonitorDetailPrice = styled.div`
+  display: flex;
+  align-items: baseline;
+  gap: 0.7rem;
+  margin: 0.8rem 0 0.2rem;
+  b {
+    font-size: 1.6rem;
+    font-weight: ${({ theme }) => theme.fontWeight.bold};
+    font-variant-numeric: tabular-nums;
+  }
+`;
+const MonitorDetailChart = styled.div`
+  margin: 0.6rem 0 0.2rem;
+  color: ${({ theme, tone }) =>
+    tone === "up" ? theme.color.chartLineGreen : tone === "down" ? theme.color.chartLineRed : theme.color.text};
+  svg {
+    display: block;
+    width: 100%;
+    height: 4.5rem;
+    overflow: visible;
+  }
+  path {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.6;
+    stroke-linejoin: round;
+    vector-effect: non-scaling-stroke;
+  }
+  circle {
+    fill: currentColor;
+  }
+`;
+const MonitorDetailEnds = styled.div`
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.74rem;
+  font-variant-numeric: tabular-nums;
+  color: ${({ theme }) => theme.color.textSecondary};
+`;
+const MonitorDetailGrid = styled.dl`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(8rem, 1fr));
+  gap: 0.5rem;
+  margin: 1rem 0;
+  div {
+    padding: 0.55rem 0.65rem;
+    border: 1px solid ${({ theme }) => theme.color.border};
+    border-radius: 10px;
+    background: ${({ theme }) => theme.color.bgSecondary};
+  }
+  dt {
+    font-size: 0.66rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: ${({ theme }) => theme.color.textSecondary};
+  }
+  dd {
+    margin: 0.25rem 0 0;
+    font-size: 1rem;
+    font-weight: ${({ theme }) => theme.fontWeight.semibold};
+    font-variant-numeric: tabular-nums;
+  }
+`;
+const MonitorDetailNote = styled.p`
+  margin: 0.8rem 0;
+  font-size: 0.78rem;
+  line-height: 1.55;
+  color: ${({ theme }) => theme.color.textSecondary};
+`;
+
+const MonitorDetailActions = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+`;
+const MonitorDetailAction = styled.button.attrs({ type: "button" })`
+  flex: 1 1 auto;
+  min-height: 2.5rem;
+  padding: 0 1rem;
+  border-radius: 999px;
+  border: 1px solid ${({ theme, primary }) => (primary ? theme.color.text : theme.color.border)};
+  background: ${({ theme, primary }) => (primary ? theme.color.text : "transparent")};
+  color: ${({ theme, primary }) => (primary ? theme.color.bg : theme.color.text)};
+  font: inherit;
+  font-size: 0.82rem;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  &:hover {
+    border-color: ${({ theme }) => theme.color.text};
+  }
+  &:focus-visible {
+    outline: 2px solid ${({ theme }) => theme.color.borderHover};
+    outline-offset: 2px;
+  }
+  ${touchRow};
+`;
+
 const MonitorSpark = styled.svg`
   display: block;
   width: calc(100% - 1rem);
@@ -418,7 +659,7 @@ const MonitorFact = styled.button.attrs({ type: "button" })`
   span {
     display: block;
     margin-top: 0.25rem;
-    font-size: 0.64rem;
+    font-size: 0.68rem;
     letter-spacing: 0.06em;
     text-transform: uppercase;
     color: ${({ theme }) => theme.color.textSecondary};
@@ -430,7 +671,9 @@ const MonitorFact = styled.button.attrs({ type: "button" })`
 const MarketMap = styled.div`
   position: relative;
   width: 100%;
-  max-width: 72rem;
+  /* As wide as the screen allows, and never taller than the window leaves
+     under the head, the tabs and the lists' first lines */
+  max-width: min(100%, calc((100dvh - 17rem) * ${({ aspect }) => aspect}));
   aspect-ratio: ${({ ratio }) => ratio};
   border-radius: 10px;
   overflow: hidden;
@@ -493,12 +736,12 @@ const MarketMoves = styled.div`
   gap: 1.2rem;
   max-width: 72rem;
   margin-top: 1.2rem;
-  font-size: 0.78rem;
+  font-size: 0.85rem;
   font-variant-numeric: tabular-nums;
 
   h4 {
     margin: 0 0 0.4rem;
-    font-size: 0.64rem;
+    font-size: 0.7rem;
     font-weight: ${({ theme }) => theme.fontWeight.regular};
     letter-spacing: 0.08em;
     text-transform: uppercase;
@@ -575,7 +818,7 @@ const CorrGrid = styled.div`
   display: grid;
   width: max-content;
   max-width: 100%;
-  grid-template-columns: minmax(3rem, auto) repeat(${({ n }) => n}, minmax(0, 4.5rem));
+  grid-template-columns: minmax(3rem, auto) repeat(${({ n }) => n}, minmax(0, 5.5rem));
   gap: 2px;
   font-size: 0.76rem;
   font-variant-numeric: tabular-nums;
@@ -616,6 +859,83 @@ const CorrCell = styled.span`
         : `rgba(255, 255, 255, ${0.04 + strength * 0.3})`};
   color: ${({ theme, strength }) => (strength == null ? theme.color.textSecondary : theme.color.text)};
   font-weight: ${({ theme, strength }) => (strength != null && strength >= 0.7 ? theme.fontWeight.semibold : theme.fontWeight.regular)};
+  flex-direction: column;
+  gap: 0.1rem;
+  min-height: 3rem;
+  text-align: center;
+  b {
+    font-weight: inherit;
+  }
+  small {
+    font-size: 0.58rem;
+    letter-spacing: 0.02em;
+    line-height: 1.15;
+    color: ${({ theme }) => theme.color.textSecondary};
+  }
+  @media (max-width: 600px) {
+    min-height: 2.25rem;
+    small {
+      display: none;
+    }
+  }
+`;
+
+/* The cell's two lines: r, and its word under it — the word steps aside on
+   a narrow phone with many coins, where the shade still says it */
+const CorrLegend = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1rem;
+  margin: 0.9rem 0 0;
+  font-size: 0.68rem;
+  color: ${({ theme }) => theme.color.textSecondary};
+  span {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  b {
+    font-weight: ${({ theme }) => theme.fontWeight.semibold};
+    color: ${({ theme }) => theme.color.text};
+  }
+`;
+const CorrSwatch = styled.i`
+  display: inline-block;
+  width: 0.9rem;
+  height: 0.9rem;
+  border-radius: 3px;
+  background: ${({ theme, strength }) =>
+    theme.color.bg === "#ffffff" ? `rgba(0, 0, 0, ${0.04 + strength * 0.32})` : `rgba(255, 255, 255, ${0.04 + strength * 0.3})`};
+`;
+const CorrPairs = styled.div`
+  max-width: 52rem;
+  margin: 1.2rem 0 0;
+  padding: 0.9rem 1rem;
+  border: 1px solid ${({ theme }) => theme.color.border};
+  border-radius: 12px;
+  background: ${({ theme }) => theme.color.bgSecondary};
+  h4 {
+    margin: 0 0 0.5rem;
+    font-size: 0.68rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: ${({ theme }) => theme.color.textSecondary};
+  }
+  p {
+    margin: 0.35rem 0;
+    font-size: 0.78rem;
+    line-height: 1.55;
+    color: ${({ theme }) => theme.color.text};
+  }
+`;
+const CorrTag = styled.span`
+  display: inline-block;
+  padding: 0.05rem 0.45rem;
+  border-radius: 999px;
+  border: 1px solid ${({ theme }) => theme.color.border};
+  font-size: 0.66rem;
+  letter-spacing: 0.04em;
+  color: ${({ theme }) => theme.color.text};
 `;
 
 /* ── component ─────────────────────────────────────────────────────────── */
@@ -652,13 +972,33 @@ const monitorTabStrip = (active, onTab) =>
 class MonitorPanel extends PureComponent {
   constructor(props) {
     super(props);
-    this.state = { tab: "coins", series: {}, failed: {}, sort: { key: null, dir: -1 } };
+    this.state = { tab: "coins", series: {}, failed: {}, sort: { key: null, dir: -1 }, detail: null, mapPx: 0 };
+    this.detailKey = this.detailKey.bind(this);
+    this.onResize = this.onResize.bind(this);
     this._token = 0;
   }
 
   componentDidMount() {
     this.load();
     if (this.tab() === "market") this.refreshMarket();
+    window.addEventListener("resize", this.onResize);
+    this.measureMap();
+  }
+
+  // The map's labels are sized from its drawn width; the card keeps its place
+  onResize() {
+    if (this._rz) return;
+    this._rz = requestAnimationFrame(() => {
+      this._rz = 0;
+      if (this._gone) return;
+      this.measureMap();
+      this.placeDetail();
+    });
+  }
+
+  measureMap() {
+    const w = this._mapNode ? this._mapNode.offsetWidth : 0;
+    if (w && Math.abs(w - this.state.mapPx) > 8) this.setState({ mapPx: w });
   }
 
   // The app's tab when it holds one (the shared screen), else this panel's own
@@ -666,11 +1006,17 @@ class MonitorPanel extends PureComponent {
     return this.props.tab && this.props.tab !== "base" ? this.props.tab : this.state.tab;
   }
 
-  componentDidUpdate(prev) {
+  componentDidUpdate(prev, prevState) {
     if (prev.currency !== this.props.currency || prev.coins !== this.props.coins) this.load();
+    this.measureMap();
+    // A card that grew (its 30 days arrived) keeps inside the window
+    if (this.state.detail && (prevState.detail !== this.state.detail || prevState.series !== this.state.series)) this.placeDetail();
   }
 
   componentWillUnmount() {
+    window.removeEventListener("keydown", this.detailKey, true);
+    window.removeEventListener("resize", this.onResize);
+    if (this._rz) cancelAnimationFrame(this._rz);
     this._token += 1;
     this._gone = true;
     if (this._abort) this._abort.abort();
@@ -813,7 +1159,7 @@ class MonitorPanel extends PureComponent {
   }
 
   renderCoins() {
-    const { formatPrice, activeCoin, onPick } = this.props;
+    const { formatPrice, activeCoin } = this.props;
     const rows = this.rows();
     const head = [
       this.renderHead("coin", msg("mon_col_coin", "Coin"), { left: true }),
@@ -849,7 +1195,8 @@ class MonitorPanel extends PureComponent {
           current: r.coin === activeCoin,
           "data-monitor-row": r.coin,
           "aria-label": msg("mon_open", "Open $1 on the chart", COIN_NAMES[r.coin] || r.coin),
-          onClick: () => onPick && onPick(r.coin),
+          "aria-haspopup": "dialog",
+          onClick: (ev) => this.openDetail(r.coin, ev.currentTarget, ev),
         },
         React.createElement(MonitorCell, { left: true, strong: true }, r.coin),
         React.createElement(MonitorCell, null, r.price != null && formatPrice ? formatPrice(r.price) : "—"),
@@ -904,8 +1251,220 @@ class MonitorPanel extends PureComponent {
         MonitorNote,
         null,
         msg(
-          "mon_coins_note2",
-          "The price and the 24 hours come from the ticker, or from the coin's own 30 days where the ticker has none; the rest from those 30 days, the series the 1M range draws. β is each coin's moves against Bitcoin's over the same days. A row opens that coin on the chart; ↑ and ↓ walk the rows.",
+          "mon_coins_note3",
+          "The price and the 24 hours come from the ticker, or from the coin's own 30 days where the ticker has none; the rest from those 30 days, the series the 1M range draws. β is each coin's moves against Bitcoin's over the same days. A row opens the coin's card, with the chart one press inside it; ↑ and ↓ walk the rows.",
+        ),
+      ),
+    );
+  }
+
+  /* The coin's card: opened by a row, closed by its ×, Esc (taken before the
+     screen's own Esc, in the capture phase) or a press outside it; the focus
+     goes back to the row it came from. */
+  /* **Where it was pressed** (12 Oct 2026, the owner: *"tıkladığımız yerde
+     bir pencere açsın"*): beside the press on a wide window — to its right,
+     or its left where the right has no room, held inside the window — and
+     the centred sheet it was on a phone. A press from the keyboard has no
+     point; the element's middle stands in. */
+  openDetail(coin, from, ev) {
+    this._detailFrom = from || null;
+    const r = from && from.getBoundingClientRect ? from.getBoundingClientRect() : null;
+    const keyed = !ev || (ev.clientX === 0 && ev.clientY === 0);
+    this._detailAt = keyed
+      ? r
+        ? { x: r.left + Math.min(r.width, 160) / 2, y: r.top + r.height / 2 }
+        : null
+      : { x: ev.clientX, y: ev.clientY };
+    window.addEventListener("keydown", this.detailKey, true);
+    this.loadOne(coin);
+    this.setState({ detail: coin }, () => {
+      const x = this._detailNode && this._detailNode.querySelector("[data-monitor-detail-close]");
+      if (x) x.focus({ preventScroll: true });
+    });
+  }
+
+  // A coin off the list has no 30 days yet: asked for when its card opens
+  loadOne(coin) {
+    if (!SUGGESTED_COINS.includes(coin) || this.state.series[coin] || this.state.failed[coin]) return;
+    const token = this._token;
+    fetchValueHistory(coin, MONITOR_PERIOD, this.props.currency, null, true, this.props.coins)
+      .then((data) => {
+        if (!this._gone && token === this._token) this.setState((st) => ({ series: { ...st.series, [coin]: data } }));
+      })
+      .catch(() => {
+        if (!this._gone && token === this._token) this.setState((st) => ({ failed: { ...st.failed, [coin]: true } }));
+      });
+  }
+
+  placeDetail() {
+    const node = this._detailNode;
+    const at = this._detailAt;
+    if (!node) return;
+    const phone = typeof matchMedia === "function" && matchMedia("(max-width: 600px)").matches;
+    if (phone || !at) {
+      node.style.position = "";
+      node.style.left = "";
+      node.style.top = "";
+      return;
+    }
+    const gap = 16;
+    const edge = 12;
+    const w = node.offsetWidth;
+    const h = node.offsetHeight;
+    let left = at.x + gap;
+    if (left + w > window.innerWidth - edge) left = at.x - gap - w;
+    left = Math.max(edge, Math.min(left, window.innerWidth - w - edge));
+    const top = Math.max(edge, Math.min(at.y - 48, window.innerHeight - h - edge));
+    node.style.position = "fixed";
+    node.style.left = `${Math.round(left)}px`;
+    node.style.top = `${Math.round(top)}px`;
+  }
+
+  // Any coin's figures: its row when it is on the list, else the market's snapshot and its 30 days
+  rowFor(coin) {
+    const listed = this.rows().find((x) => x.coin === coin);
+    const cur = this.props.currency;
+    const t = typeof pageTickerCache !== "undefined" && cur ? pageTickerCache.get(`${coin}-${cur}`) : null;
+    const market = { cap: t && Number.isFinite(t.marketCap) ? t.marketCap : null, volume: t && Number.isFinite(t.volume24) ? t.volume24 : null };
+    if (listed) return { ...listed, ...market, chartable: SUGGESTED_COINS.includes(coin) };
+    const own = this.state.series[coin];
+    const r = monitorRow(own) || {};
+    const btc = this.state.series.BTC;
+    const vs = coin !== "BTC" && Array.isArray(own) && Array.isArray(btc) ? compareCorrelation(own, btc) : null;
+    return {
+      coin,
+      ...r,
+      price: t && Number.isFinite(t.price) ? t.price : Number.isFinite(r.last) ? r.last : null,
+      change24h: t && Number.isFinite(t.change) ? t.change : Number.isFinite(r.change1d) ? r.change1d : null,
+      beta: vs && Number.isFinite(vs.beta) ? vs.beta : null,
+      spark: monitorSpark(own),
+      ...market,
+      chartable: SUGGESTED_COINS.includes(coin),
+    };
+  }
+
+  closeDetail() {
+    window.removeEventListener("keydown", this.detailKey, true);
+    const from = this._detailFrom;
+    this.setState({ detail: null }, () => {
+      if (from && from.focus && document.body.contains(from)) from.focus();
+    });
+  }
+
+  detailKey(e) {
+    if (e.key !== "Escape" || !this.state.detail) return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    this.closeDetail();
+  }
+
+  renderDetail() {
+    const coin = this.state.detail;
+    const r = coin && this.rowFor(coin);
+    if (!r) return null;
+    const { formatPrice, onPick, onBase } = this.props;
+    const waiting = r.chartable && !this.state.series[coin] && !this.state.failed[coin];
+    const compact = (v) => {
+      try {
+        return new Intl.NumberFormat(undefined, { notation: "compact", maximumFractionDigits: 2 }).format(v);
+      } catch (error) {
+        return String(Math.round(v));
+      }
+    };
+    const dash = waiting ? "…" : "—";
+    const tone = monitorTone(r.change30d);
+    const spark = r.spark
+      ? React.createElement(
+          "svg",
+          { viewBox: "0 0 100 24", preserveAspectRatio: "none", "aria-hidden": "true" },
+          React.createElement("path", {
+            d: r.spark.map(([x, y], i) => `${i ? "L" : "M"}${(x * 100).toFixed(2)} ${(22 - y * 20).toFixed(2)}`).join(" "),
+          }),
+          React.createElement("circle", { cx: (r.spark[r.spark.length - 1][0] * 100).toFixed(2), cy: (22 - r.spark[r.spark.length - 1][1] * 20).toFixed(2), r: 1.4 }),
+        )
+      : null;
+    const cell = (label, value, cellTone, asTyped) =>
+      React.createElement(
+        "div",
+        { key: label },
+        // β upper-cased is Β, which reads as a Latin B (the table's own rule)
+        React.createElement("dt", asTyped ? { style: { textTransform: "none" } } : null, label),
+        React.createElement("dd", null, React.createElement(MonitorCell, { tone: cellTone, style: { padding: 0, textAlign: "left" } }, value)),
+      );
+    return React.createElement(
+      MonitorDetailScrim,
+      {
+        "data-monitor-detail-scrim": "true",
+        onMouseDown: (e) => {
+          if (e.target === e.currentTarget) this.closeDetail();
+        },
+      },
+      React.createElement(
+        MonitorDetail,
+        {
+          innerRef: (n) => (this._detailNode = n),
+          role: "dialog",
+          "aria-modal": "true",
+          "aria-label": msg("mon_detail_aria", "$1 over the last 30 days", COIN_NAMES[coin] || coin),
+          "data-monitor-detail": coin,
+        },
+        React.createElement(MonitorDetailClose, { "data-monitor-detail-close": "true", "aria-label": msg("mon_detail_close", "Close"), onClick: () => this.closeDetail() }, "×"),
+        React.createElement(
+          MonitorDetailHead,
+          null,
+          React.createElement("strong", null, coin),
+          React.createElement("span", null, COIN_NAMES[coin] || ""),
+        ),
+        React.createElement(
+          MonitorDetailPrice,
+          null,
+          React.createElement("b", null, r.price != null && formatPrice ? formatPrice(r.price) : dash),
+          React.createElement(MonitorCell, { tone: monitorTone(r.change24h), style: { padding: 0 } }, `${monitorSigned(r.change24h, 2)} · 24h`),
+        ),
+        spark && React.createElement(MonitorDetailChart, { tone: tone === "quiet" ? null : tone }, spark),
+        r.low != null &&
+          formatPrice &&
+          React.createElement(
+            MonitorDetailEnds,
+            null,
+            React.createElement("span", null, msg("mon_detail_low", "30-day low $1", formatPrice(r.low))),
+            React.createElement("span", null, msg("mon_detail_high", "high $1", formatPrice(r.high))),
+          ),
+        React.createElement(
+          MonitorDetailGrid,
+          null,
+          cell("7d", r.change7d == null ? dash : monitorSigned(r.change7d), monitorTone(r.change7d)),
+          cell("30d", r.change30d == null ? dash : monitorSigned(r.change30d), monitorTone(r.change30d)),
+          cell(msg("mon_col_from_high", "From high"), r.fromHigh == null ? dash : monitorSigned(r.fromHigh), "quiet"),
+          cell(msg("mon_col_move", "Typical day"), r.dailyMove == null ? dash : `${r.dailyMove.toFixed(1)}%`),
+          cell(msg("mon_col_beta", "β BTC"), coin === "BTC" ? "1.00" : r.beta == null ? dash : r.beta.toFixed(2), null, true),
+          cell(msg("mon_detail_range", "In its range"), r.range == null ? dash : `${Math.round(r.range * 100)}%`),
+          r.cap != null && cell(msg("mon_detail_cap", "Market value"), `${compact(r.cap)} ${this.props.currency || ""}`.trim()),
+          r.volume != null && cell(msg("mon_detail_volume", "Traded in 24h"), `${compact(r.volume)} ${this.props.currency || ""}`.trim()),
+        ),
+        !r.chartable &&
+          React.createElement(
+            MonitorDetailNote,
+            { "data-monitor-detail-priced-only": "true" },
+            msg("mon_detail_priced_only", "PriceTab prices $1 from the market's snapshot but cannot draw it, so it has no 30 days, chart or base rates here.", coin),
+          ),
+        React.createElement(
+          MonitorDetailActions,
+          null,
+          onPick &&
+            r.chartable &&
+            React.createElement(
+              MonitorDetailAction,
+              { primary: true, "data-monitor-detail-chart": "true", onClick: () => onPick(coin) },
+              msg("mon_detail_chart", "Open on the chart"),
+            ),
+          onBase &&
+            r.chartable &&
+            React.createElement(
+              MonitorDetailAction,
+              { "data-monitor-detail-base": "true", onClick: () => { this.closeDetail(); onBase(coin); } },
+              msg("mon_detail_base", "Base rates for $1", coin),
+            ),
         ),
       ),
     );
@@ -921,7 +1480,7 @@ class MonitorPanel extends PureComponent {
     for (const [key, v] of pageTickerCache) {
       if (!key.endsWith(`-${cur}`) || !v || !(v.marketCap > 0)) continue;
       if (now - v.timestamp > PAGE_TICKER_MAX_AGE) continue;
-      out.push({ coin: key.slice(0, -(cur.length + 1)), cap: v.marketCap, change: v.change, at: v.timestamp });
+      out.push({ coin: key.slice(0, -(cur.length + 1)), cap: v.marketCap, change: v.change, price: v.price, volume: v.volume24, at: v.timestamp });
     }
     return out.sort((a, b) => b.cap - a.cap).slice(0, MONITOR_MAP_MAX);
   }
@@ -957,7 +1516,7 @@ class MonitorPanel extends PureComponent {
     const rects = squarify(tiles.map((t) => ({ key: t.coin, value: t.cap })), W, H);
     const byCoin = {};
     for (const t of tiles) byCoin[t.coin] = t;
-    const { onPick, currency } = this.props;
+    const { currency } = this.props;
     const compact = (v) => {
       try {
         return `${new Intl.NumberFormat(undefined, { notation: "compact", maximumFractionDigits: 1 }).format(v)} ${currency}`;
@@ -968,7 +1527,7 @@ class MonitorPanel extends PureComponent {
     /* About how many rem the box is wide, so a label is drawn only where it
        fits: a monospace glyph is 0.6em, a line 1.15em, the tile's padding
        0.45em a side. Measured once per render, not per tile. */
-    const remPerUnit = (phone ? 22 : 72) / W;
+    const remPerUnit = (this.state.mapPx ? this.state.mapPx / 16 : phone ? 22 : 72) / W;
     const cells = rects.map((rc) => {
       const t = byCoin[rc.key];
       const name = COIN_NAMES[t.coin] || t.coin;
@@ -992,22 +1551,22 @@ class MonitorPanel extends PureComponent {
         ? [React.createElement("strong", { key: "c" }, t.coin), both ? React.createElement("small", { key: "d" }, day) : null]
         : [];
       const title = `${name} · ${day} · ${msg("mon_market_value", "market value $1", compact(t.cap))}`;
-      if (SUGGESTED_COINS.includes(t.coin) && onPick) {
-        return React.createElement(
-          MarketTileButton,
-          {
-            key: t.coin,
-            change: t.change,
-            style,
-            title,
-            "aria-label": msg("mon_market_open", "Open $1 on the chart — $2 in 24 hours", name, day),
-            "data-market-tile": t.coin,
-            onClick: () => onPick(t.coin),
-          },
-          ...children,
-        );
-      }
-      return React.createElement(MarketTile, { key: t.coin, change: t.change, style, title, "aria-hidden": "true", "data-market-tile": t.coin }, ...children);
+      /* Every tile opens its coin's card where it was pressed (12 Oct 2026),
+         the chart one press inside it for a coin the chart can draw */
+      return React.createElement(
+        MarketTileButton,
+        {
+          key: t.coin,
+          change: t.change,
+          style,
+          title,
+          "aria-haspopup": "dialog",
+          "aria-label": msg("mon_market_card", "$1 — $2 in 24 hours; opens its card", name, day),
+          "data-market-tile": t.coin,
+          onClick: (ev) => this.openDetail(t.coin, ev.currentTarget, ev),
+        },
+        ...children,
+      );
     });
     const moved = tiles.filter((t) => Number.isFinite(t.change));
     const list = (items) =>
@@ -1032,6 +1591,8 @@ class MonitorPanel extends PureComponent {
         MarketMap,
         {
           ratio: `${W} / ${H}`,
+          aspect: (W / H).toFixed(3),
+          innerRef: (n) => (this._mapNode = n),
           role: "group",
           "data-market-map": "true",
           "aria-label": msg("mon_market_label", "The top $1 coins by market value, each sized by it and shaded by its last 24 hours", String(tiles.length)),
@@ -1088,6 +1649,7 @@ class MonitorPanel extends PureComponent {
           continue;
         }
         const c = matrix[`${a}|${b}`];
+        const band = c ? corrBand(c.r) : null;
         cells.push(
           React.createElement(
             CorrCell,
@@ -1095,11 +1657,21 @@ class MonitorPanel extends PureComponent {
               key: `${a}|${b}`,
               strength: c ? Math.min(1, Math.abs(c.r)) : null,
               "data-corr": `${a}|${b}`,
+              "data-corr-band": band || undefined,
               title: c
-                ? msg("mon_corr_cell", "$1 and $2: $3, from $4 moves", a, b, signedFixed(c.r, 2), c.n)
+                ? c.sameN
+                  ? msg("mon_corr_cell_same", "$1 and $2: $3 — the same way on $4% of $5 moves (r $6)", a, b, corrWord(band), String(Math.round((c.same / c.sameN) * 100)), String(c.sameN), signedFixed(c.r, 2))
+                  : msg("mon_corr_cell", "$1 and $2: $3, from $4 moves", a, b, signedFixed(c.r, 2), c.n)
                 : msg("mon_corr_few", "Too few shared moves to say"),
             },
-            c ? signedFixed(c.r, 2) : "—",
+            c
+              ? React.createElement(
+                  Fragment,
+                  null,
+                  React.createElement("b", null, signedFixed(c.r, 2)),
+                  React.createElement("small", null, corrWord(band)),
+                )
+              : "—",
           ),
         );
       }
@@ -1110,12 +1682,57 @@ class MonitorPanel extends PureComponent {
       coins.length < 2
         ? React.createElement(MonitorNote, null, msg("mon_loading", "Reading 30 days of prices…"))
         : React.createElement(CorrGrid, { n: coins.length, "data-corr-grid": "true" }, ...cells),
+      // What the shades say, in the cells' own words
+      coins.length >= 2 &&
+        React.createElement(
+          CorrLegend,
+          { "aria-label": msg("mon_corr_legend", "What the cells say"), "data-corr-legend": "true" },
+          ...[
+            ["together", "0.8 – 1", 0.9],
+            ["mostly", "0.5 – 0.8", 0.65],
+            ["loosely", "0.2 – 0.5", 0.35],
+            ["unrelated", "−0.2 – 0.2", 0.05],
+            ["opposite", "< −0.2", 0.5],
+          ].map(([band, range, strength]) =>
+            React.createElement(
+              "span",
+              { key: band },
+              React.createElement(CorrSwatch, { strength, "aria-hidden": "true" }),
+              React.createElement("b", null, corrWord(band)),
+              React.createElement("small", null, range),
+            ),
+          ),
+        ),
+      // The pairs worth a sentence, in plain words
+      coins.length >= 2 &&
+        (() => {
+          const lines = corrHighlights(coins, matrix);
+          if (!lines.length) return null;
+          return React.createElement(
+            CorrPairs,
+            { "data-corr-pairs": "true" },
+            React.createElement("h4", null, msg("mon_corr_pairs", "In plain words")),
+            ...lines.map(({ a, b, c }) =>
+              React.createElement(
+                "p",
+                { key: `${a}|${b}` },
+                React.createElement("b", null, `${a} · ${b}`),
+                " ",
+                React.createElement(CorrTag, { band: corrBand(c.r) }, corrWord(corrBand(c.r))),
+                " ",
+                c.sameN
+                  ? msg("mon_corr_pair_line", "went the same way on $1 of every 10 moves (r $2).", String(Math.round((c.same / c.sameN) * 10)), signedFixed(c.r, 2))
+                  : msg("mon_corr_pair_line_r", "r $1.", signedFixed(c.r, 2)),
+              ),
+            ),
+          );
+        })(),
       React.createElement(
         MonitorNote,
         null,
         msg(
-          "mon_corr_note",
-          "How each pair moved together over the last 30 days: the Pearson correlation of their moves, one every $1 — $2 moves a pair. 1 is in step, 0 unrelated, −1 opposite. It describes these 30 days, never what comes next.",
+          "mon_corr_note2",
+          "Two counts for each pair over the last 30 days, one move every $1, $2 moves a pair: how often the two went the same way, and the correlation r of their moves — 1 when they move in step, 0 when one says nothing about the other, −1 when they go opposite ways. Moving together is not a reason to hold both or either: it describes these 30 days, never what comes next.",
           describeSpan(step) || "—",
           nText,
         ),
@@ -1136,7 +1753,7 @@ class MonitorPanel extends PureComponent {
       },
       React.createElement(
         BaseCard,
-        null,
+        { still: this.props.still === true },
         React.createElement(
           BaseHead,
           null,
@@ -1151,7 +1768,12 @@ class MonitorPanel extends PureComponent {
           BaseBody,
           null,
           this.props.onTab ? monitorTabStrip(tab, (t) => this.setTab(t)) : null,
-          tab === "corr" ? this.renderCorrelation() : tab === "market" ? this.renderMarket() : this.renderCoins(),
+          React.createElement(
+            MonitorPane,
+            { key: tab },
+            tab === "corr" ? this.renderCorrelation() : tab === "market" ? this.renderMarket() : this.renderCoins(),
+          ),
+          this.state.detail ? this.renderDetail() : null,
         ),
       ),
     );

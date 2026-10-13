@@ -2360,6 +2360,32 @@ const alertsFutures = (panel) => ({
           ),
         )
       : 0;
+    /* **The exit plan being written** (12 Oct 2026): up to three targets,
+       each a price and a share of the contract as it stands when saved —
+       "the rest" is whatever the others leave. Shares are ppm, the model's. */
+    const editTakes = panel.state.pEdit === pos.id && Array.isArray(panel.state.pEditTakes)
+      ? panel.state.pEditTakes.slice(0, PRACTICE_MAX_TAKE_LEGS)
+      : [];
+    const editFixed = editTakes.reduce((sum, leg) => sum + (leg.share === "rest" ? 0 : Number(leg.share) || 0), 0);
+    const editRest = editTakes.some((leg) => leg.share === "rest");
+    const editTakeTotal = editRest ? Math.max(editFixed, RATE_SCALE) : editFixed;
+    const setLeg = (i, patch) =>
+      panel.setState((prev) => ({
+        pEditTakes: (prev.pEditTakes || []).map((leg, j) =>
+          j === i ? { ...leg, ...patch } : patch.share === "rest" && leg.share === "rest" ? { ...leg, share: 250000 } : leg,
+        ),
+        pEditWhy: null,
+      }));
+    const legPrice = (i, raw) => {
+      const d = numericDraft(raw);
+      setLeg(i, { price: d.value });
+      if (!d.refused) return;
+      panel.setState({ numWarn: "pEditTakes" });
+      clearTimeout(panel._numT);
+      panel._numT = setTimeout(() => {
+        if (!panel._gone) panel.setState((st) => (st.numWarn === "pEditTakes" ? { numWarn: null } : null));
+      }, NUMBER_WARN_MS);
+    };
     return React.createElement(
       headless ? AlertPosContractDetail : AlertPosCard,
       /* **Keyed by the contract, not by its market.** A coin names as many
@@ -2835,22 +2861,34 @@ const alertsFutures = (panel) => ({
                     "aria-expanded": panel.state.pEdit === pos.id,
                     "aria-label": msg("pos_edit_aria", "Change the stop, take-profit and trail"),
                     onClick: () =>
-                      panel.setState((prev) => ({
-                        pEdit: prev.pEdit === pos.id ? null : pos.id,
+                      panel.setState((prev) => {
+                        const opening = prev.pEdit !== pos.id;
+                        const legs = practiceTakeLegs(pos);
+                        return {
+                        pEdit: opening ? pos.id : null,
                         pMargin: null,
                         pClose: null,
                         pEditStop:
                           pos.stop > 0 ? String(pos.stop / PRICE_SCALE) : "",
                         pEditTake:
                           pos.take > 0 ? String(pos.take / PRICE_SCALE) : "",
+                        pEditTakes: legs.map((leg) => ({
+                          price: String(leg.price / PRICE_SCALE),
+                          share: leg.all ? "rest" : leg.share,
+                        })),
                         /* The share and the trail are read off the contract
                            the way the two prices are: an editor that opens
                            showing defaults instead of what is set is an
                            editor that changes things by being opened. */
                         pEditShare: pos.takeShare || 1000000,
                         pEditTrail: pos.trail || 0,
+                        pEditStopSource: practiceTriggerSource(pos.stopSource),
+                        pEditTakeSource: practiceTriggerSource(pos.takeSource),
+                        pEditBreakEven: pos.takeBreakEven === true,
+                        pEditProtection: pos.triggerProtection === true,
                         pEditWhy: null,
-                      })),
+                      };
+                      }),
                   },
                   msg("pos_edit", "Stop / TP"),
                 ),
@@ -3068,61 +3106,180 @@ const alertsFutures = (panel) => ({
                       onChange: (e) => panel.numberField("pEditStop", e.target.value),
                     }),
                   ),
-                  React.createElement(
-                    AlertPosField,
-                    null,
-                    msg("pos_take", "Take profit"),
-                    React.createElement(AlertPosInput, {
-                      type: "text",
-                      inputMode: "decimal",
-                      value: panel.state.pEditTake || "",
-                      placeholder: msg("pos_none", "none"),
-                      "aria-label": msg("pos_take_aria", "Take-profit price"),
-                      "aria-invalid": panel.state.numWarn === "pEditTake" ? "true" : "false",
-                      onChange: (e) => panel.numberField("pEditTake", e.target.value),
-                    }),
-                  ),
                 ),
-                /* **How much of it the take closes.** Scaling out — "take half
-                   off here and let the rest run" — had no expression at all:
-                   the take-profit closed everything, so the technique could be
-                   described but not practised. Three shares, because they are
-                   the three a person says out loud; a typed share would be a
-                   fourth number on a row that carries three.
-                   Only drawn with a take-profit in the box: a share of nothing
-                   is a control with no subject. */
-                (panel.state.pEditTake || "").trim()
-                  ? React.createElement(
-                      AlertPosStep,
-                      { key: "share" },
-                      React.createElement(
-                        AlertPosStepHead,
-                        null,
-                        React.createElement("span", null, msg("pos_take_share", "It closes")),
-                      ),
+                /* **Targets, not a target** (12 Oct 2026). Up to three, each a
+                   price and a share — the way a venue's position TP/SL takes
+                   them. The ladder is the model's (practiceSetExitPlan): it
+                   orders them nearest first and refuses one on the wrong side
+                   of the entry, so this saves what is typed and hands back the
+                   refusal. */
+                React.createElement(
+                  AlertPosStep,
+                  { key: "takes", "data-practice-takes": String(editTakes.length) },
+                  React.createElement(
+                    AlertPosStepHead,
+                    null,
+                    React.createElement("span", null, msg("pos_take_ladder", "Take-profit targets")),
+                  ),
+                  ...editTakes.map((leg, i) =>
+                    React.createElement(
+                      AlertPosTakeRow,
+                      { key: `leg-${i}`, "data-practice-take-leg": String(i + 1) },
+                      React.createElement("b", null, msg("pos_take_n", "TP$1", String(i + 1))),
+                      React.createElement(AlertPosInput, {
+                        type: "text",
+                        inputMode: "decimal",
+                        value: leg.price || "",
+                        placeholder: msg("pos_price", "price"),
+                        "aria-label": msg("pos_take_leg_aria", "Target $1 price", String(i + 1)),
+                        onChange: (ev) => legPrice(i, ev.target.value),
+                      }),
                       React.createElement(
                         AlertPosChips,
-                        { "data-practice-take-share": "true" },
+                        { "data-practice-take-share": String(i + 1) },
                         ...[
-                          [250000, msg("pos_take_quarter", "a quarter")],
-                          [500000, msg("pos_take_half", "half")],
-                          [1000000, msg("pos_take_all", "all of it")],
-                        ].map(([ppm, label]) => {
-                          const active = (panel.state.pEditShare || 1000000) === ppm;
-                          return React.createElement(
+                          [250000, "25%"],
+                          [500000, "50%"],
+                          [750000, "75%"],
+                          ["rest", msg("pos_take_rest", "the rest")],
+                        ].map(([ppm, label]) =>
+                          React.createElement(
                             AlertPosChip,
                             {
-                              key: ppm,
-                              active,
-                              "aria-pressed": active,
-                              onClick: () => panel.setState({ pEditShare: ppm }),
+                              key: String(ppm),
+                              active: leg.share === ppm,
+                              "aria-pressed": leg.share === ppm,
+                              onClick: () => setLeg(i, { share: ppm }),
                             },
                             label,
+                          ),
+                        ),
+                      ),
+                      React.createElement(
+                        AlertPosChip,
+                        {
+                          "aria-label": msg("pos_take_remove", "Remove target $1", String(i + 1)),
+                          "data-practice-take-remove": String(i + 1),
+                          onClick: () =>
+                            panel.setState((prev) => ({ pEditTakes: (prev.pEditTakes || []).filter((_, j) => j !== i), pEditWhy: null })),
+                        },
+                        "×",
+                      ),
+                    ),
+                  ),
+                  editTakes.length < PRACTICE_MAX_TAKE_LEGS &&
+                    React.createElement(
+                      AlertPosChips,
+                      null,
+                      React.createElement(
+                      AlertPosChip,
+                      {
+                        "data-practice-take-add": "true",
+                        onClick: () =>
+                          panel.setState((prev) => {
+                            const now = prev.pEditTakes || [];
+                            const restUsed = now.some((leg) => leg.share === "rest");
+                            return { pEditTakes: [...now, { price: "", share: restUsed ? 250000 : "rest" }], pEditWhy: null };
+                          }),
+                      },
+                      msg("pos_take_add", "+ Add a target"),
+                      ),
+                    ),
+                  React.createElement(
+                    AlertPosNote,
+                    { "data-practice-take-plan": "true" },
+                    !editTakes.length
+                      ? msg("pos_take_none", "No target: the contract runs until the stop, the trail or you close it.")
+                      : editFixed > RATE_SCALE || (editRest && editFixed >= RATE_SCALE)
+                        ? msg("pos_take_over", "The targets add up to more than the whole contract — $1%.", String(Math.round(editFixed / 10000)))
+                        : editTakeTotal >= RATE_SCALE
+                          ? msg("pos_take_plan_all", "All of it closes across $1 targets.", String(editTakes.length))
+                          : msg(
+                              "pos_take_plan",
+                              "$1% closes across $2 targets; $3% runs on under the stop.",
+                              String(Math.round(editTakeTotal / 10000)),
+                              String(editTakes.length),
+                              String(Math.round((RATE_SCALE - editTakeTotal) / 10000)),
+                            ),
+                  ),
+                  /* After the first target, the stop to break-even: what a
+                     ladder is usually written for, and only with a second
+                     target to protect */
+                  editTakes.length > 1 &&
+                    React.createElement(
+                      AlertPosChips,
+                      { "data-practice-breakeven": "true" },
+                      React.createElement(
+                        AlertPosChip,
+                        {
+                          active: panel.state.pEditBreakEven === true,
+                          "aria-pressed": panel.state.pEditBreakEven === true,
+                          onClick: () => panel.setState((prev) => ({ pEditBreakEven: prev.pEditBreakEven !== true })),
+                        },
+                        msg("pos_breakeven", "After TP1, move the stop to break-even"),
+                      ),
+                    ),
+                ),
+                /* **What the levels are measured against** (12 Oct 2026). The
+                   mark (the median of the last three prices, which one stray
+                   print cannot move) or the last trade — chosen for the stop
+                   and the targets apart, as venues let you; and the guard that
+                   holds both while the two disagree by more than 0.5%. */
+                React.createElement(
+                  AlertPosStep,
+                  { key: "sources" },
+                  React.createElement(
+                    AlertPosStepHead,
+                    null,
+                    React.createElement("span", null, msg("pos_trigger_head", "Triggered by")),
+                  ),
+                  ...[
+                    ["pEditStopSource", msg("pos_trigger_stop", "Stop"), "stop"],
+                    ["pEditTakeSource", msg("pos_trigger_take", "Targets"), "take"],
+                  ].map(([key, label, kind]) =>
+                    React.createElement(
+                      AlertPosTakeRow,
+                      { key, "data-practice-source": kind },
+                      React.createElement("b", null, label),
+                      React.createElement(
+                        AlertPosChips,
+                        null,
+                        ...[
+                          ["mark", msg("pos_src_mark", "Mark")],
+                          ["last", msg("pos_src_last", "Last")],
+                        ].map(([src, text]) => {
+                          const on = practiceTriggerSource(panel.state[key]) === src;
+                          return React.createElement(
+                            AlertPosChip,
+                            { key: src, active: on, "aria-pressed": on, onClick: () => panel.setState({ [key]: src }) },
+                            text,
                           );
                         }),
                       ),
-                    )
-                  : null,
+                    ),
+                  ),
+                  React.createElement(
+                    AlertPosChips,
+                    { "data-practice-protection": "true" },
+                    React.createElement(
+                      AlertPosChip,
+                      {
+                        active: panel.state.pEditProtection === true,
+                        "aria-pressed": panel.state.pEditProtection === true,
+                        onClick: () => panel.setState((prev) => ({ pEditProtection: prev.pEditProtection !== true })),
+                      },
+                      msg("pos_protect", "Price protection"),
+                    ),
+                  ),
+                  React.createElement(
+                    AlertPosNote,
+                    null,
+                    msg(
+                      "pos_src_note",
+                      "Mark is the median of the last three prices, which one stray print cannot move; Last is the latest trade. Price protection holds the stop and the targets while the two differ by more than 0.5% — liquidation never waits.",
+                    ),
+                  ),
+                ),
                 /* **The trailing stop — a stop that follows.**
                  *
                  * The other half of scaling out, and the half the model could
@@ -3190,11 +3347,11 @@ const alertsFutures = (panel) => ({
                     })(),
                   ),
                 ),
-                panel.numberWarning("pEditStop", "pEditTake")
+                panel.numberWarning("pEditStop", "pEditTakes")
                   ? React.createElement(
                       AlertPosNote,
                       null,
-                      panel.numberWarning("pEditStop", "pEditTake"),
+                      panel.numberWarning("pEditStop", "pEditTakes"),
                     )
                   : panel.state.pEditWhy
                   ? React.createElement(
@@ -3217,22 +3374,32 @@ const alertsFutures = (panel) => ({
                     onClick: () => {
                       const num = (v) =>
                         v && Number(v) > 0 ? Math.round(Number(v) * PRICE_SCALE) : null;
-                      const why =
-                        panel.props.onPracticeTriggers &&
-                        panel.props.onPracticeTriggers(
-                          pos.id,
-                          num(panel.state.pEditStop),
-                          num(panel.state.pEditTake),
-                          panel.state.pEditShare || 1000000,
-                          /* `0` is the model's "take it off"; `undefined`
-                             would mean "leave it", which is not what an
-                             editor showing `off` as pressed says. */
-                          panel.state.pEditTrail || 0,
-                        );
+                      /* The plan as the model takes it: empty rows dropped,
+                         "the rest" made a share, nearest first. */
+                      const typed = (panel.state.pEditTakes || []).filter((leg) => num(leg.price));
+                      const fixed = typed.reduce((sum, leg) => sum + (leg.share === "rest" ? 0 : Number(leg.share) || 0), 0);
+                      const long = pos.side !== "short";
+                      const takes = typed
+                        .map((leg) => ({ price: num(leg.price), share: leg.share === "rest" ? RATE_SCALE - fixed : Number(leg.share) }))
+                        .sort((a, b) => (long ? a.price - b.price : b.price - a.price));
+                      const why = takes.some((t) => !(t.share > 0))
+                        ? "size"
+                        : panel.props.onPracticeExitPlan
+                          ? panel.props.onPracticeExitPlan(pos.id, {
+                              stop: num(panel.state.pEditStop),
+                              takes,
+                              // 0 is the model's "take it off"
+                              trail: panel.state.pEditTrail || 0,
+                              stopSource: practiceTriggerSource(panel.state.pEditStopSource),
+                              takeSource: practiceTriggerSource(panel.state.pEditTakeSource),
+                              breakEven: panel.state.pEditBreakEven === true,
+                              protection: panel.state.pEditProtection === true,
+                            })
+                          : "none";
                       panel.setState(
                         why
                           ? { pEditWhy: why }
-                          : { pEdit: null, pEditWhy: null, pEditShare: null, pEditTrail: 0 },
+                          : { pEdit: null, pEditWhy: null, pEditShare: null, pEditTrail: 0, pEditTakes: null },
                       );
                     },
                   },

@@ -2189,6 +2189,32 @@
          Theme and language in the top-right corner, under the ticker, and
          remembered on this device. One row, small, and out of the hero's
          way; on a phone the same row, a touch target each. */
+      /* The ask for a review, under the last steps */
+      .rate-band {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 1rem 2rem;
+        margin-top: 2.6rem;
+        padding: 1.4rem 1.6rem;
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        background: rgba(var(--ink), 0.03);
+      }
+      .rate-band h3 {
+        margin: 0 0 0.35rem;
+        font-size: 0.95rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+      .rate-band p {
+        margin: 0;
+        max-width: 38rem;
+        color: var(--text-dim);
+        font-size: 0.85rem;
+        line-height: 1.6;
+      }
       .site-prefs {
         /* On the page, not over it: set once, it scrolls away with the top
            rather than floating over the copy on a phone. */
@@ -2964,6 +2990,15 @@
             <p data-i18n="s6.p117">Click the price to switch coins, or open settings to make it yours.</p>
           </div>
         </div>
+        <!-- A review is how anybody else finds a free extension (12 Oct 2026):
+             asked for once, plainly, after the page has said what it is. -->
+        <div class="rate-band">
+          <div>
+            <h3 data-i18n="s6.rate.h">Already using it?</h3>
+            <p data-i18n="s6.rate.p">A review on the Chrome Web Store is how other people find PriceTab — and the way to tell us what to fix. It takes a minute.</p>
+          </div>
+          <a class="cta-secondary" href="https://chromewebstore.google.com/detail/pricetab/dobkidjmhpnniiipliollbaefpppalaf/reviews" data-i18n="s6.rate.cta">Write a review</a>
+        </div>
       </div>
     </section>
 
@@ -2973,6 +3008,7 @@
           <a href="https://chromewebstore.google.com/detail/pricetab/dobkidjmhpnniiipliollbaefpppalaf" data-i18n="s7.a118">Chrome Web Store</a>
           <a href="https://github.com/Zekuath/Pricetab" data-i18n="s7.a119">GitHub</a>
           <a href="https://github.com/Zekuath/Pricetab/issues" data-i18n="s7.a120">Support</a>
+          <a href="https://chromewebstore.google.com/detail/pricetab/dobkidjmhpnniiipliollbaefpppalaf/reviews" data-i18n="s7.review">Write a review</a>
           <a href="../privacy.html" data-i18n="s7.a121">Privacy Policy</a>
         </div>
         <p class="disclaimer" data-i18n="foot.memory">This page remembers your theme, your language and whether you have seen what is new — in your browser's storage, on this device. It sets no cookie and sends none of it anywhere.</p>

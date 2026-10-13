@@ -950,6 +950,15 @@ const RATE_PROMPT_ASKS_KEY = "crypto_chart_rate_prompt_asks";
 const RATE_PROMPT_SNOOZE_DAYS = [3, 7, 30];
 const RATE_PROMPT_MAX_ASKS = 4;
 const RATE_PROMPT_SETTLE_MS = 20000;
+/* **Asked at a good moment** (12 Oct 2026, the owner: *"insanlardan review
+ * almalıyız"*). A call that came true and a target that was reached are the
+ * moments somebody is pleased with the thing, so a due ask waits for one and
+ * comes `RATE_PROMPT_MOMENT_MS` after it — once the burst or the toast has
+ * been seen. Without such a moment the ask still comes, on the same schedule,
+ * from `RATE_PROMPT_FALLBACK_MS` after first use; the Settings bar and the
+ * permanent link are unchanged. */
+const RATE_PROMPT_MOMENT_MS = 6000;
+const RATE_PROMPT_FALLBACK_MS = 7 * 24 * 60 * 60 * 1000;
 /* PRICE PROVIDERS
  * Coinbase serves everything by default. Coins it doesn't list are routed
  * to Kraken, whose public OHLC endpoint is keyless and CORS-enabled and
@@ -2691,8 +2700,21 @@ const PORTFOLIO_SORT_OPTIONS = [
 const PORTFOLIO_HIDDEN_KEY = "crypto_chart_portfolio_hidden";
 const DEFAULT_PORTFOLIO_HIDDEN = false;
 
+/* **What the toolbar popup shows** (12 Oct 2026, the owner: *"pop kısmının
+ * ayarları da olsun … btc halving countdown"*): each part a switch, changed
+ * from the popup's own gear. The three market figures are the widgets' own
+ * fetchers (api.js) and their cache, so a part that is on costs at most one
+ * request to a host already declared, and one that is off costs nothing. */
+const POPUP_PARTS_KEY = "crypto_chart_popup_parts";
+const POPUP_PARTS = ["holdings", "coins", "targets", "halving", "fearGreed", "market"];
+const DEFAULT_POPUP_PARTS = { holdings: true, coins: true, targets: true, halving: true, fearGreed: true, market: false };
+
 const STORE_LISTING_URL =
   "https://chromewebstore.google.com/detail/pricetab/dobkidjmhpnniiipliollbaefpppalaf";
+/* Every "Rate" lands on the listing's own reviews tab (12 Oct 2026): from the
+   listing's front the stars are a scroll and a tab away, and each step on
+   the way is somebody who gave up. */
+const STORE_REVIEWS_URL = `${STORE_LISTING_URL}/reviews`;
 
 // Ticker constants
 const DEFAULT_TICKER_ENABLED = false;
