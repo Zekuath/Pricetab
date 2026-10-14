@@ -143,7 +143,10 @@ const chartBoardGeometry = (chart) => ({
       const t1 = +data[data.length - 1].time;
       const span = t1 - t0;
       if (!(span > 0) || !chart.width) return data;
-      const cut = t0 + (span * chart.futureWidth()) / chart.width;
+      /* A slide into the future (boardSlide) takes the history off screen;
+         the price window stays the one the board had at its edge, or the
+         squares shrink to whatever two points are left. */
+      const cut = t0 + (span * (chart.futureWidth() - Math.max(0, chart.boardSlideNow()))) / chart.width;
       const from = data.filter((d) => +d.time >= cut);
       // Never fewer than two points: a window that has outrun the data still
       // has to have a scale
@@ -925,6 +928,8 @@ const chartBoardGeometry = (chart) => ({
          * the key has to change on every frame of it or the walk arrives in
          * one jump at the end. */
         chart.props.predict ? Math.round(chart.boardPanRows() * 1000) : 0,
+        // …and on how far it has slid in time past the now line's limits
+        chart.props.predict ? Math.round(chart.boardSlideNow()) : 0,
         chart.props.grid,
         // the step and the window are remembered per range, so the answer is
         // a different one on a different range even for identical-looking data
@@ -969,7 +974,18 @@ const chartBoardGeometry = (chart) => ({
       const most = chart.width - MIN_HISTORY_CELLS * pitch;
       // A window too narrow to hold both gives what it can to the board
       if (!(most > least)) return Math.min(chart.width * 0.5, least);
-      return Math.min(most, Math.max(least, chart.width * share));
+      // The slide past the line's limits (BOARD_SLIDE_MAX_COLUMNS), on top
+      return Math.min(most, Math.max(least, chart.width * share)) + chart.boardSlideNow();
+    },
+
+    /* The board's slide in time past the "now" line's limits, in pixels:
+     * the hand's while it is down, the kept one after. Positive is the
+     * future (more squares, the line off the left edge), negative the past
+     * (fewer squares, down to the range's first point at the left edge). */
+    boardSlideNow: () => {
+      if (!chart.props.predict) return 0;
+      const v = chart._slideDrag != null ? chart._slideDrag : chart.boardSlide || 0;
+      return Number.isFinite(v) ? v : 0;
     },
 
     /* The blank time a window dragged past the latest price leaves on the

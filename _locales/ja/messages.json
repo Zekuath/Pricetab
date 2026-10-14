@@ -5,14 +5,8 @@
   "al_7d_hit_rate_hint": {
     "message": "直近7日間に判定された予想"
   },
-  "al_7d_settled": {
-    "message": "判定済み"
-  },
-  "al_7d_settled_hint": {
-    "message": "直近7日間に結果が確定した予想"
-  },
-  "al_7d_snapshot": {
-    "message": "直近7日間"
+  "al_7d_short": {
+    "message": "7日"
   },
   "al_a_pct_move": {
     "message": "$1% の変動"
@@ -468,12 +462,6 @@
   "al_open_n": {
     "message": "未判定 · $1"
   },
-  "al_open_now": {
-    "message": "現在未判定"
-  },
-  "al_open_now_hint": {
-    "message": "結果の確定を待っている予想"
-  },
   "al_order_hint": {
     "message": "未判定の予想を判定が近い順または新しい順に並べ替えます"
   },
@@ -528,8 +516,20 @@
   "al_record": {
     "message": "記録"
   },
-  "al_record_kept": {
-    "message": "記録は保持されます。この端末にのみ存在し、何の価値もありません"
+  "al_record_device": {
+    "message": "この端末のみ"
+  },
+  "al_record_right": {
+    "message": "的中"
+  },
+  "al_record_ring": {
+    "message": "$2 件中 $1 件的中"
+  },
+  "al_record_title": {
+    "message": "あなたの成績"
+  },
+  "al_record_trail": {
+    "message": "直近 $1 件（古い順）：塗りつぶしは的中"
   },
   "al_remove_aria": {
     "message": "$1 のターゲットを削除"
@@ -593,6 +593,9 @@
   },
   "al_still_settling": {
     "message": "判定中"
+  },
+  "al_streak_now": {
+    "message": "現在の連続"
   },
   "al_target_coin": {
     "message": "ターゲットのコイン"
@@ -1690,6 +1693,12 @@
   },
   "ch_since_first": {
     "message": "$2 から $1"
+  },
+  "ch_slide_ahead": {
+    "message": "$1 マス先 · 現在へ戻る"
+  },
+  "ch_slide_back": {
+    "message": "$1 マス前 · 現在へ戻る"
   },
   "ch_span": {
     "message": "期間"
@@ -10962,11 +10971,38 @@
   "mon_market_value": {
     "message": "時価総額 $1"
   },
+  "mon_race_aria": {
+    "message": "直近30日の各コインの変化率: $1"
+  },
+  "mon_race_head": {
+    "message": "直近30日を並べて · 各コインの起点から"
+  },
+  "mon_race_spread": {
+    "message": "$1 が先頭、$2 が最後 · 差 $3 ポイント"
+  },
   "mon_range_at": {
     "message": "30日の安値から高値までの$1%の位置"
   },
   "mon_tab_market": {
     "message": "市場"
+  },
+  "news_pulse_aria": {
+    "message": "直近24時間の1時間ごとの件数。最も多かったのは $1 からの1時間で $2 件"
+  },
+  "news_pulse_bar": {
+    "message": "$1 · $2 件"
+  },
+  "news_pulse_from": {
+    "message": "24時間前"
+  },
+  "news_pulse_head": {
+    "message": "直近24時間 · $1 件"
+  },
+  "news_pulse_now": {
+    "message": "現在"
+  },
+  "news_pulse_peak": {
+    "message": "最多: $1 · $2"
   },
   "po_allocation": {
     "message": "構成"

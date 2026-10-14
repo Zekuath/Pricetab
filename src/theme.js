@@ -528,11 +528,14 @@ const chartDrawerPhone = css`
     top: auto;
     /* Above the phone app's own bar (the shim's lift; 0 in the extension):
        at bottom 0 the bar covered the sheet's last 64px — its foot line and
-       the last row of every list. */
+       the last row of every list. And above the keyboard while it is up
+       (--pt-kb, app.js syncKeyboard), never more than the window it leaves. */
     bottom: var(--pt-dock-lift, 0px);
+    bottom: max(var(--pt-dock-lift, 0px), var(--pt-kb, 0px));
     height: auto;
     max-height: 70vh;
     max-height: 70dvh;
+    max-height: min(70dvh, calc(var(--pt-vvh, 100dvh) - var(--pt-safe-top, 0px) - 1rem));
     /* The grabber: the one mark that says a sheet is pulled down to close
        (the swipe is in app.js, pullSwipeStart). Drawn, never pressed. */
     &::before {

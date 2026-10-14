@@ -5,14 +5,8 @@
   "al_7d_hit_rate_hint": {
     "message": "最近7天已结算的预测"
   },
-  "al_7d_settled": {
-    "message": "已结算"
-  },
-  "al_7d_settled_hint": {
-    "message": "最近7天已有结果的预测"
-  },
-  "al_7d_snapshot": {
-    "message": "最近7天"
+  "al_7d_short": {
+    "message": "7天"
   },
   "al_a_pct_move": {
     "message": "$1% 的波动"
@@ -468,12 +462,6 @@
   "al_open_n": {
     "message": "进行中 · $1"
   },
-  "al_open_now": {
-    "message": "当前待结算"
-  },
-  "al_open_now_hint": {
-    "message": "正在等待结算的预测"
-  },
   "al_order_hint": {
     "message": "按临近到期或最新创建的顺序排列待结算预测"
   },
@@ -528,8 +516,20 @@
   "al_record": {
     "message": "记录"
   },
-  "al_record_kept": {
-    "message": "你的战绩会被保留。它只存在于这台设备上，一文不值"
+  "al_record_device": {
+    "message": "仅限本设备"
+  },
+  "al_record_right": {
+    "message": "猜中"
+  },
+  "al_record_ring": {
+    "message": "$2 次中猜中 $1 次"
+  },
+  "al_record_title": {
+    "message": "你的战绩"
+  },
+  "al_record_trail": {
+    "message": "最近 $1 次，按时间先后：实心方块为猜中"
   },
   "al_remove_aria": {
     "message": "移除 $1 目标"
@@ -593,6 +593,9 @@
   },
   "al_still_settling": {
     "message": "仍在结算"
+  },
+  "al_streak_now": {
+    "message": "当前连胜"
   },
   "al_target_coin": {
     "message": "目标币种"
@@ -1690,6 +1693,12 @@
   },
   "ch_since_first": {
     "message": "自 $2 起 $1"
+  },
+  "ch_slide_ahead": {
+    "message": "向后 $1 格 · 回到现在"
+  },
+  "ch_slide_back": {
+    "message": "向前 $1 格 · 回到现在"
   },
   "ch_span": {
     "message": "时段"
@@ -10962,11 +10971,38 @@
   "mon_market_value": {
     "message": "市值 $1"
   },
+  "mon_race_aria": {
+    "message": "各币最近 30 天的涨跌幅：$1"
+  },
+  "mon_race_head": {
+    "message": "最近 30 天并排 · 各币从自身起点算起"
+  },
+  "mon_race_spread": {
+    "message": "$1 领先，$2 落后 · 相差 $3 个百分点"
+  },
   "mon_range_at": {
     "message": "从30天低点到高点的$1%位置"
   },
   "mon_tab_market": {
     "message": "市场"
+  },
+  "news_pulse_aria": {
+    "message": "最近 24 小时每小时的篇数；最多的一小时从 $1 开始，有 $2 篇"
+  },
+  "news_pulse_bar": {
+    "message": "$1 · $2 篇"
+  },
+  "news_pulse_from": {
+    "message": "24 小时前"
+  },
+  "news_pulse_head": {
+    "message": "最近 24 小时 · $1 篇"
+  },
+  "news_pulse_now": {
+    "message": "现在"
+  },
+  "news_pulse_peak": {
+    "message": "最多：$1 · $2"
   },
   "po_allocation": {
     "message": "配置"

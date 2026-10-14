@@ -9903,8 +9903,9 @@ await page.evaluate(`(() => { const m = document.querySelector("[data-practice-r
   // ── 33b. the first open: the panels say what is on the chart and step aside for the board ──
   /* A fresh profile. Targets' empty screen names the coin on the chart and
    * writes its example from that coin's price, and shows the price as a
-   * fact; "Turn calls on" turns the board on **and closes the card**, since
-   * the board is behind it; the on-and-empty screen offers the way there. */
+   * fact; "Turn calls on" turns the board on **and keeps the card** (13 Oct
+   * 2026 — closing it read as the panel thrown away), now the on screen with
+   * the board drawn beside it; the on-and-empty screen offers the way there. */
   {
     const { ctx, page, errors } = await newCtx(browser,
       `localStorage.setItem("crypto_chart_onboarding_seen", "1");
@@ -9931,10 +9932,8 @@ await page.evaluate(`(() => { const m = document.querySelector("[data-practice-r
       on: localStorage.getItem("crypto_chart_predict") === "true",
       board: Boolean(document.querySelector(".pt-now-grip")),
     })`);
-    check(pressed && !after.card && after.on, "Turn calls on turns the board on and steps aside", JSON.stringify(after));
+    check(pressed && after.card && after.on, "Turn calls on turns the board on and the calls panel stays", JSON.stringify(after));
     check(after.board, "…and the board is there to point at");
-    await page.keyboard.press("k");
-    await page.waitForTimeout(700);
     const way = await page.evaluate(`(() => { const b = Array.from(document.querySelectorAll("[data-alerts-card] button")).find((n) => /Go to the board/i.test(n.innerText)); if (!b) return false; b.click(); return true; })()`);
     await page.waitForTimeout(500);
     const gone = await page.evaluate(`Boolean(document.querySelector("[data-alerts-card]"))`);
@@ -10390,7 +10389,7 @@ await page.evaluate(`(() => { const m = document.querySelector("[data-practice-r
       if (u.includes("funding/history")) {
         const m = u.match(/endTime=(\d+)/);
         const end = m ? Number(m[1]) : Date.now();
-        return r.fulfill(json({ retCode: 0, result: { list: Array.from({ length: m ? 120 : 200 }, (_, i) => ({ symbol: "BTCUSDT", fundingRate: String(0.0001 * (1 + Math.sin((end - i * 8 * 3600e3) / 864000e3)) + (!m && i < 3 ? 0.0006 : 0)), fundingRateTimestamp: String(end - (i + 1) * 8 * 3600e3) })) } }));
+        return r.fulfill(json({ retCode: 0, result: { list: Array.from({ length: m ? 120 : 200 }, (_, i) => ({ symbol: "BTCUSDT", fundingRate: String(0.0001 * (1 + Math.sin((end - today - i * 8 * 3600e3) / 864000e3)) + (!m && i < 3 ? 0.0006 : 0)), fundingRateTimestamp: String(end - (i + 1) * 8 * 3600e3) })) } }));
       }
       if (u.includes("open-interest?category=linear")) {
         const paged = u.includes("cursor=");
@@ -19613,8 +19612,148 @@ await page.evaluate(`(() => { const m = document.querySelector("[data-practice-r
     await page.waitForTimeout(400);
     const root = await page.evaluate(`({ px: getComputedStyle(document.documentElement).fontSize, kept: localStorage.getItem("crypto_chart_text_size") })`);
     check(root.px === "13px" && root.kept === "xsmall", "§130 …and XS sets the whole page at 13px, kept for the next open", JSON.stringify(root));
+    // The bar is arranged there too: take Targets off, put News on, move it up a place
+    await page.click("[data-phone-tab-remove=targets]");
+    await page.click("[data-phone-tab-add=news]");
+    await page.click("[data-phone-tab-up=news]");
+    await press("Escape");
+    await page.waitForTimeout(600);
+    const bar = await page.evaluate(`({ bar: [...document.querySelectorAll("[data-phone-tab]")].map((n) => n.getAttribute("data-phone-tab")).join(), kept: localStorage.getItem("crypto_chart_phone_tabs") })`);
+    check(bar.bar === "home,calls,news,portfolio,more" && bar.kept === '["home","calls","news","portfolio"]',
+      "§130 This phone arranges the tab bar: a place taken off, another put on and moved, kept", JSON.stringify(bar));
     await ctx.close();
   }
+  /* §131 — the board slides in time, the calls panel keeps itself, and a
+   * phone's keyboard is a floor (13 Oct 2026). Measured first: with calls on
+   * a sideways drag only moved the "now" line between its two limits, so the
+   * squares past the right edge and the history before the left one could
+   * not be reached; sliding past them first shrank the board's squares to
+   * ±$4 (the price window was fitted to history that had gone off screen).
+   * "Turn calls on" closed the panel. The calls screen switched off was an
+   * icon and prose; the record is now a ring, its figures and a trail. On a
+   * phone the targets panel raised the keyboard on open, and a sheet stood
+   * on the tab bar under it. */
+  {
+    const T = Date.now();
+    const done = [];
+    for (let i = 0; i < 12; i++) {
+      done.push({ id: `d${i}`, coin: "BTC", currency: "USD", period: "hour", target: T - (i + 2) * 3600e3, span: 600e3, lo: 1, hi: 2,
+        placed: T - (i + 3) * 3600e3, result: i % 3 === 1 ? "miss" : "hit", settledPrice: 1.5, settledAt: T - (i + 2) * 3600e3 + 60000 });
+    }
+    const calls = JSON.stringify({ record: { hits: 8, total: 12, streak: 2, best: 4 }, done, open: [] });
+    let { ctx, page, errors } = await newCtx(browser,
+      `localStorage.setItem("crypto_chart_onboarding_seen", "1");
+       localStorage.setItem("crypto_chart_macro_events", "false");
+       localStorage.setItem("crypto_chart_calls", ${JSON.stringify(calls)});`, BIG_PRICES);
+    // The calls screen, switched off: the board drawn, the record as a ring and a trail
+    await page.keyboard.press("k");
+    await page.waitForTimeout(800);
+    const off = await page.evaluate(`(() => {
+      const ring = document.querySelector("[data-calls-record] [role=img]");
+      return { hero: Boolean(document.querySelector("[data-calls-hero] svg rect.called")),
+               ring: ring ? ring.getAttribute("aria-label") : null,
+               trail: document.querySelectorAll("[data-calls-record] [role=img] + * span, [data-calls-record] > div:last-child > span").length,
+               pct: (document.querySelector("[data-calls-record]") || { innerText: "" }).innerText };
+    })()`);
+    check(off.hero && /8 of 12/.test(off.ring || "") && /67%/.test(off.pct) && off.trail === 12,
+      "§131 calls switched off draws the board and the record: a ring of 8 of 12, its figures and the last twelve calls", JSON.stringify(off));
+    await page.click("[data-calls-turn-on]");
+    await page.waitForTimeout(900);
+    const kept = await page.evaluate(`({ card: Boolean(document.querySelector("[data-alerts-card]")), on: localStorage.getItem("crypto_chart_predict") === "true", sw: (document.querySelector("[data-calls-switch]") || {}).getAttribute && document.querySelector("[data-calls-switch]").getAttribute("data-calls-switch") })`);
+    check(kept.card && kept.on && kept.sw === "on", "§131 Turn calls on keeps the panel, now switched on", JSON.stringify(kept));
+    await page.keyboard.press("Escape");
+    await page.waitForTimeout(600);
+    // The board slides in time past the now line's limits
+    const geo = await page.evaluate(`(() => {
+      const s = Array.from(document.querySelectorAll("svg")).sort((a, b) => b.getBoundingClientRect().width - a.getBoundingClientRect().width)[0];
+      const r = s.getBoundingClientRect();
+      return { left: r.left, top: r.top, w: r.width, h: r.height };
+    })()`);
+    const read = () => page.evaluate(`(() => {
+      const n = document.querySelector(".pt-now-line");
+      const z = Array.from(document.querySelectorAll(".pt-zoom text")).map((t) => t.textContent).join("");
+      const home = document.querySelector(".pt-pan-home");
+      return { now: n ? Number(n.getAttribute("x1")) : null, zoom: z,
+               home: home && home.getAttribute("tabindex") === "0" ? home.textContent : "" };
+    })()`);
+    const before = await read();
+    const pull = async (dx) => {
+      const x = geo.left + geo.w * 0.6;
+      const y = geo.top + geo.h * 0.55;
+      await page.mouse.move(x, y);
+      await page.mouse.down();
+      for (let k = 1; k <= 16; k++) await page.mouse.move(x + (dx * k) / 16, y + (k % 2));
+      await page.mouse.up();
+      await page.waitForTimeout(500);
+    };
+    // The line reaches its limit within three pulls; the slide is what follows
+    for (let k = 0; k < 3; k++) await pull(-380);
+    const into = await read();
+    for (let k = 0; k < 2; k++) await pull(-380);
+    const ahead = await read();
+    check(ahead.now !== null && ahead.now < 0 && /ahead/i.test(ahead.home),
+      "§131 dragged left past the now line's limit, the board goes on into the squares that were off screen", JSON.stringify({ before, ahead }));
+    /* The line's own limit refits the board to the history left beside it
+       (the existing rule); sliding further must not refit it again — it
+       collapsed to ±$4 before, fitted to two points. */
+    check(/ahead/i.test(into.home) && ahead.zoom === into.zoom, "§131 …and sliding further keeps the squares' size", JSON.stringify({ into: into.zoom, ahead: ahead.zoom }));
+    await page.click(".pt-pan-home");
+    await page.waitForTimeout(600);
+    const home = await read();
+    check(home.now >= 0 && home.now < geo.w && home.home === "", "§131 …and the way back puts now on screen again", JSON.stringify(home));
+    for (let k = 0; k < 3; k++) await pull(380);
+    const back = await read();
+    check(/back/i.test(back.home) && back.now > home.now, "§131 dragged right past the other limit, the history comes in back to the range's start", JSON.stringify(back));
+    check(errors.length === 0, "§131 nothing threw on the board", errors.join(" | "));
+    await ctx.close();
+
+    // A phone: the targets panel raises no keyboard, and a sheet stands on the keyboard
+    ({ ctx, page, errors } = await newCtx(browser,
+      `localStorage.setItem("crypto_chart_onboarding_seen", "1");
+       localStorage.setItem("crypto_chart_touch_hint_seen", "true");
+       localStorage.setItem("crypto_chart_macro_events", "false");`,
+      PRICES, 0, false, { viewport: { width: 440, height: 956 }, isMobile: true, hasTouch: true }));
+    await page.tap("[data-phone-tab=targets]");
+    await page.waitForTimeout(900);
+    const focus = await page.evaluate(`document.activeElement ? document.activeElement.tagName : ""`);
+    check(focus !== "INPUT", "§131 on a phone the targets panel opens without raising the keyboard", focus);
+    await page.evaluate(`document.documentElement.style.setProperty("--pt-kb", "336px"); document.documentElement.style.setProperty("--pt-vvh", (innerHeight - 336) + "px");`);
+    await page.tap("[data-target-field]");
+    await page.waitForTimeout(900);
+    const kb = await page.evaluate(`(() => { const c = document.querySelector("[data-alerts-card]").getBoundingClientRect(); const f = document.querySelector("[data-target-field]").getBoundingClientRect(); return { card: Math.round(c.bottom), field: [Math.round(f.top), Math.round(f.bottom)], floor: innerHeight - 336 }; })()`);
+    check(kb.card <= kb.floor + 1 && kb.field[0] >= 0 && kb.field[1] <= kb.floor, "§131 …and with the keyboard up the sheet stands on it, the field being typed into in view", JSON.stringify(kb));
+    check(errors.length === 0, "§131 nothing threw on the phone", errors.join(" | "));
+    await ctx.close();
+  }
+
+  /* §132 — the news aside and the monitor draw what they count (13 Oct 2026):
+   * the stories of the last day an hour a bar, and the coins' months side by
+   * side, each line from its own start. */
+  {
+    const { ctx, page, errors } = await newCtx(browser, `localStorage.setItem("crypto_chart_onboarding_seen", "1");`);
+    const pulse = await page.evaluate(`(() => {
+      const now = Date.UTC(2026, 9, 13, 15, 30);
+      const H = 3600e3;
+      const r = newsPulseBins([{ time: now - 10 * 60e3 }, { time: now - 20 * 60e3 }, { time: now - 5 * H }, { time: now - 30 * H }, { time: 0 }, { time: now + 2 * H }], now);
+      return { bins: r.bins, dated: r.dated };
+    })()`);
+    check(pulse.bins.length === 24 && pulse.dated === 3 && pulse.bins[23] === 2 && pulse.bins[18] === 1,
+      "§132 the news pulse counts the last 24 hours an hour a bar, leaving out undated, older and future stories", JSON.stringify(pulse));
+    await page.keyboard.press("m");
+    await page.waitForTimeout(2500);
+    const race = await page.evaluate(`(() => {
+      const fig = document.querySelector("[data-monitor-race]");
+      const lines = Array.from(document.querySelectorAll("[data-monitor-race-line]"));
+      const lit = lines.filter((l) => l.getAttribute("data-lit") === "true").map((l) => l.getAttribute("data-monitor-race-line"));
+      const nan = lines.some((l) => /NaN/.test(l.getAttribute("points") || ""));
+      return { fig: Boolean(fig), n: lines.length, lit, nan };
+    })()`);
+    check(race.fig && race.n >= 2 && race.lit.join() === "BTC" && !race.nan,
+      "§132 the monitor draws the coins' months side by side, the coin on the chart lit, every point a number", JSON.stringify(race));
+    check(errors.length === 0, "§132 nothing threw", errors.join(" | "));
+    await ctx.close();
+  }
+
   await browser.close();
   if (failed) {
     console.error(`\n✘ ${failed} POLISH CHECK(S) FAILED`);

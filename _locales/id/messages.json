@@ -5,14 +5,8 @@
   "al_7d_hit_rate_hint": {
     "message": "Prediksi yang selesai dalam 7 hari terakhir"
   },
-  "al_7d_settled": {
-    "message": "selesai"
-  },
-  "al_7d_settled_hint": {
-    "message": "Prediksi yang mendapat hasil dalam 7 hari terakhir"
-  },
-  "al_7d_snapshot": {
-    "message": "7 hari terakhir"
+  "al_7d_short": {
+    "message": "7 h"
   },
   "al_a_pct_move": {
     "message": "Pergerakan $1%"
@@ -452,12 +446,6 @@
   "al_open_n": {
     "message": "Terbuka · $1"
   },
-  "al_open_now": {
-    "message": "aktif sekarang"
-  },
-  "al_open_now_hint": {
-    "message": "Prediksi aktif yang masih menunggu hasil"
-  },
   "al_order_hint": {
     "message": "Urutkan prediksi aktif berdasarkan waktu jatuh tempo atau waktu dibuat"
   },
@@ -512,8 +500,20 @@
   "al_record": {
     "message": "Catatan"
   },
-  "al_record_kept": {
-    "message": "Catatan Anda disimpan. Ia hanya ada di perangkat ini dan tidak bernilai apa pun"
+  "al_record_device": {
+    "message": "hanya di perangkat ini"
+  },
+  "al_record_right": {
+    "message": "tepat"
+  },
+  "al_record_ring": {
+    "message": "$1 dari $2 tepat"
+  },
+  "al_record_title": {
+    "message": "Catatanmu"
+  },
+  "al_record_trail": {
+    "message": "$1 call terakhir, dari yang terlama: kotak terisi berarti tepat"
   },
   "al_remove_aria": {
     "message": "Hapus target $1"
@@ -577,6 +577,9 @@
   },
   "al_still_settling": {
     "message": "masih diselesaikan"
+  },
+  "al_streak_now": {
+    "message": "beruntun sekarang"
   },
   "al_target_coin": {
     "message": "Koin target"
@@ -1674,6 +1677,12 @@
   },
   "ch_since_first": {
     "message": "$1 sejak $2"
+  },
+  "ch_slide_ahead": {
+    "message": "$1 kotak ke depan · kembali ke sekarang"
+  },
+  "ch_slide_back": {
+    "message": "$1 kotak ke belakang · kembali ke sekarang"
   },
   "ch_span": {
     "message": "Rentang"
@@ -10946,11 +10955,38 @@
   "mon_market_value": {
     "message": "nilai pasar $1"
   },
+  "mon_race_aria": {
+    "message": "Perubahan persentase tiap koin selama 30 hari terakhir: $1"
+  },
+  "mon_race_head": {
+    "message": "30 hari terakhir berdampingan · dari awal masing-masing koin"
+  },
+  "mon_race_spread": {
+    "message": "$1 di depan, $2 di belakang · selisih $3 poin"
+  },
   "mon_range_at": {
     "message": "$1% dari jalan antara terendah dan tertinggi 30 hari"
   },
   "mon_tab_market": {
     "message": "Pasar"
+  },
+  "news_pulse_aria": {
+    "message": "Berita per jam selama 24 jam terakhir; jam tersibuk mulai $1 punya $2"
+  },
+  "news_pulse_bar": {
+    "message": "$1 · $2 berita"
+  },
+  "news_pulse_from": {
+    "message": "24 jam lalu"
+  },
+  "news_pulse_head": {
+    "message": "24 jam terakhir · $1 berita"
+  },
+  "news_pulse_now": {
+    "message": "sekarang"
+  },
+  "news_pulse_peak": {
+    "message": "tersibuk: $1 · $2"
   },
   "po_allocation": {
     "message": "Alokasi"

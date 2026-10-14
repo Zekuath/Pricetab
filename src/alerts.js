@@ -651,7 +651,10 @@ class AlertsPanel extends PureComponent {
     /* The book polls only while it is the thing on screen — see `bookTimer`;
        the base-rate strip asks once per coin, from the same condition. */
     this.syncBook();
-    if (this.inputRef && this.props.alerts.length < MAX_ALERTS) {
+    /* Not on a touch screen (13 Oct 2026): the focus raised the keyboard
+       the moment the panel opened, over the panel. A finger on the field
+       asks for it. */
+    if (this.inputRef && this.props.alerts.length < MAX_ALERTS && !touchFirst()) {
       this.inputRef.focus();
     }
   }
@@ -667,6 +670,14 @@ class AlertsPanel extends PureComponent {
      opening a second contract work without finding a tab. */
   componentDidUpdate(prev, prevState) {
     this.confirmSeen();
+    /* Calls switched on from inside the panel: it becomes the on screen,
+       read from its head, not from wherever the off screen's button was. */
+    if (prev.predict !== true && this.props.predict === true && this.bodyRef) {
+      this.bodyRef.scrollTop = 0;
+      // On a phone the card itself is the sheet that scrolls
+      const card = this.bodyRef.closest && this.bodyRef.closest("[data-alerts-card]");
+      if (card) card.scrollTop = 0;
+    }
     /* **A pending order belongs to the ticket it was pressed on** (9 Oct
        2026): a change of coin, side, kind, price or count stops its fill
        rather than land an order the button no longer names. */
@@ -1003,7 +1014,7 @@ class AlertsPanel extends PureComponent {
       },
     );
     this.setState({ target: "", note: "" });
-    if (this.inputRef) this.inputRef.focus();
+    if (this.inputRef && !touchFirst()) this.inputRef.focus();
   }
 
   handleRemove(a) {
@@ -1086,7 +1097,7 @@ class AlertsPanel extends PureComponent {
         this.state.direction === "above" ? 1 + step / 100 : 1 - step / 100;
       this.setState({ target: String(roundTargetPrice(price * factor)) });
     }
-    if (this.inputRef) this.inputRef.focus();
+    if (this.inputRef && !touchFirst()) this.inputRef.focus();
   }
 
   // An identical armed target already in the list. Adding it again would
@@ -1832,6 +1843,148 @@ class AlertsPanel extends PureComponent {
     return { inside: false, percent: ((edge - price) / price) * 100 };
   }
 
+  /* The board, drawn small: a price line up to a dotted "now", then the
+     squares of the future with one called and its chance written in. */
+  renderCallsHero() {
+    const W = 320;
+    const H = 112;
+    const nowX = 128;
+    const cell = 24;
+    const top = 16;
+    const line = [86, 80, 84, 70, 74, 62, 66, 58, 64, 52, 56, 50, 54];
+    const pts = line.map((y, i) => `${Math.round((i * nowX) / (line.length - 1))},${y}`).join(" ");
+    const cells = [];
+    for (let col = 0; col < 7; col++) {
+      for (let row = 0; row < 4; row++) {
+        const x = nowX + 8 + col * cell;
+        const y = top + row * cell;
+        const called = col === 3 && row === 1;
+        const odds = [8, 27, 34, 21][row] - col;
+        cells.push(
+          React.createElement("rect", {
+            key: `r${col}-${row}`,
+            x: x + 1,
+            y: y + 1,
+            width: cell - 2,
+            height: cell - 2,
+            rx: 3,
+            className: called ? "called" : "cell",
+          }),
+          col < 4
+            ? React.createElement(
+                "text",
+                {
+                  key: `t${col}-${row}`,
+                  x: x + cell / 2,
+                  y: y + cell / 2 + 3,
+                  "text-anchor": "middle",
+                  "font-size": 7,
+                  className: called ? "odds called" : "odds",
+                },
+                `${Math.max(1, odds)}%`,
+              )
+            : null,
+        );
+      }
+    }
+    return React.createElement(
+      CallsOffHero,
+      { "aria-hidden": "true", "data-calls-hero": "true" },
+      React.createElement(
+        "svg",
+        { viewBox: `0 0 ${W} ${H}`, role: "presentation", focusable: "false" },
+        React.createElement("polyline", { points: pts, className: "price" }),
+        React.createElement("circle", { cx: nowX, cy: line[line.length - 1], r: 3, className: "dot" }),
+        React.createElement("line", { x1: nowX, x2: nowX, y1: 8, y2: H - 8, className: "now" }),
+        ...cells,
+      ),
+    );
+  }
+
+  /* The record, as the subject of the off screen: a ring for the share
+     called right with its count, the streaks, the last week, what is still
+     settling, and the last calls as a trail of squares (filled: right). A
+     first visit has no record and shows none of it. */
+  renderCallsRecord({ kept, paused, recentDone, recentRate }) {
+    if (!(kept.total > 0) && !(paused > 0)) return null;
+    const share = kept.total > 0 ? kept.hits / kept.total : 0;
+    const R = 40;
+    const L = 2 * Math.PI * R;
+    const trail = (Array.isArray(this.props.settledCalls) ? this.props.settledCalls : [])
+      .filter((x) => x && (x.result === "hit" || x.result === "miss"))
+      .slice()
+      .sort((a, b) => (a.settledAt || 0) - (b.settledAt || 0))
+      .slice(-24);
+    const row = (label, value, title) =>
+      React.createElement(
+        Fragment,
+        { key: label },
+        React.createElement("dt", { title }, label),
+        React.createElement("dd", null, value),
+      );
+    return React.createElement(
+      CallsRecordCard,
+      { "data-calls-record": "true" },
+      React.createElement(
+        CallsRecordHead,
+        null,
+        React.createElement("span", null, msg("al_record_title", "Your record")),
+        React.createElement("span", null, msg("al_record_device", "this device only")),
+      ),
+      React.createElement(
+        CallsRecordRing,
+        {
+          role: "img",
+          "aria-label": msg("al_record_ring", "$1 of $2 called right", String(kept.hits), String(kept.total)),
+        },
+        React.createElement(
+          "svg",
+          { viewBox: "0 0 100 100", "aria-hidden": "true" },
+          React.createElement("circle", { cx: 50, cy: 50, r: R, className: "track" }),
+          kept.total > 0
+            ? React.createElement("circle", {
+                cx: 50,
+                cy: 50,
+                r: R,
+                className: "share",
+                "stroke-dasharray": `${(L * share).toFixed(2)} ${L.toFixed(2)}`,
+              })
+            : null,
+        ),
+        React.createElement(
+          "div",
+          null,
+          React.createElement("b", null, kept.total > 0 ? `${Math.round(share * 100)}%` : "—"),
+          React.createElement("span", null, msg("al_of_total", "of $1", kept.total)),
+        ),
+      ),
+      React.createElement(
+        CallsRecordStats,
+        null,
+        row(msg("al_record_right", "called right"), `${kept.hits} / ${kept.total}`),
+        kept.best > 0 ? row(msg("al_best_streak", "best streak"), kept.best, msg("al_best_streak_hint", "The longest run of calls you got right")) : null,
+        kept.streak > 0 ? row(msg("al_streak_now", "streak now"), kept.streak) : null,
+        recentDone.length > 0
+          ? row(msg("al_7d_hit_rate", "hit rate"), `${recentRate} · ${msg("al_7d_short", "7d")}`, msg("al_7d_hit_rate_hint", "Settled calls in the last 7 days"))
+          : null,
+        paused > 0
+          ? row(
+              msg("al_still_settling", "still settling"),
+              paused,
+              msg("al_still_judged", "Calls you have already made are still judged while this is off — turning it back on brings the board back with them"),
+            )
+          : null,
+      ),
+      trail.length
+        ? React.createElement(
+            CallsTrail,
+            { role: "img", "aria-label": msg("al_record_trail", "The last $1 calls, oldest first: a filled square was called right", String(trail.length)) },
+            ...trail.map((x, i) => React.createElement(CallsTrailMark, { key: x.id || i, hit: x.result === "hit", title: x.coin })),
+          )
+        : null,
+    );
+  }
+
   renderCallsBody() {
     const {
       calls,
@@ -1867,29 +2020,16 @@ class AlertsPanel extends PureComponent {
       const recentRate = recentDone.length
         ? `${Math.round((recentHits / recentDone.length) * 100)}%`
         : "—";
-      const fact = (value, label, title) =>
-        React.createElement(
-          AlertsEmptyFact,
-          { title },
-          React.createElement(AlertsEmptyFactValue, null, value),
-          React.createElement(AlertsEmptyFactLabel, null, label),
-        );
       return React.createElement(
         Fragment,
         null,
         React.createElement(
           AlertsEmpty,
           null,
-          React.createElement(
-            AlertsEmptyMark,
-            { "aria-hidden": "true" },
-            /* The board, not the target's rings. Both empty states borrowed
-             * the rings back when this was a tab inside the targets panel and
-             * there was nothing else to borrow; with its own control in the
-             * corner, an empty calls screen wearing the targets mark says you
-             * are in the wrong place. */
-            icon("calls", 1.3),
-          ),
+          /* What the switch turns on, drawn (13 Oct 2026): the mark was an
+           * icon in a ring, and the screen said in words what a picture of
+           * the board says at a glance. */
+          this.renderCallsHero(),
           React.createElement(
             AlertsEmptyTitle,
             null,
@@ -1914,7 +2054,8 @@ class AlertsPanel extends PureComponent {
             ),
           ),
 
-          React.createElement(
+          // The steps until there is a record; then the record says it
+          kept.total > 0 ? null : React.createElement(
             AlertsEmptySteps,
             null,
             React.createElement(
@@ -1971,77 +2112,7 @@ class AlertsPanel extends PureComponent {
            * It is the only concrete fact on the screen, so it goes above the
            * button as a figure — with the record beside it, which survives the
            * switch in exactly the same way and was not shown at all. */
-          (paused > 0 || kept.total > 0) &&
-            React.createElement(
-              AlertsEmptyFacts,
-              null,
-              paused > 0 &&
-                fact(
-                  paused,
-                  msg("al_still_settling", "still settling"),
-                  msg(
-                    "al_still_judged",
-                    "Calls you have already made are still judged while this is off — turning it back on brings the board back with them",
-                  ),
-                ),
-              kept.total > 0 &&
-                fact(
-                  `${Math.round((kept.hits / kept.total) * 100)}%`,
-                  msg("al_of_total", "of $1", kept.total),
-                  msg(
-                    "al_record_kept",
-                    "Your record is kept. It lives on this device only and is worth nothing",
-                  ),
-                ),
-              kept.best > 0 &&
-                fact(
-                  kept.best,
-                  msg("al_best_streak", "best streak"),
-                  msg(
-                    "al_best_streak_hint",
-                    "The longest run of calls you got right",
-                  ),
-                ),
-            ),
-
-          (recentDone.length > 0 || paused > 0) &&
-            React.createElement(
-              AlertsEmptyPanel,
-              null,
-              React.createElement(
-                AlertsEmptyPanelTitle,
-                null,
-                msg("al_7d_snapshot", "Last 7 days"),
-              ),
-              React.createElement(
-                AlertsEmptyFacts,
-                { style: { marginTop: "0.2rem" } },
-                fact(
-                  recentRate,
-                  msg("al_7d_hit_rate", "hit rate"),
-                  msg(
-                    "al_7d_hit_rate_hint",
-                    "Settled calls in the last 7 days",
-                  ),
-                ),
-                fact(
-                  recentDone.length,
-                  msg("al_7d_settled", "settled"),
-                  msg(
-                    "al_7d_settled_hint",
-                    "Calls that got an answer in the last 7 days",
-                  ),
-                ),
-                fact(
-                  paused,
-                  msg("al_open_now", "open now"),
-                  msg(
-                    "al_open_now_hint",
-                    "Open calls currently waiting to settle",
-                  ),
-                ),
-              ),
-            ),
+          this.renderCallsRecord({ kept, paused, recentDone, recentRate }),
 
           /* The thing this switches on is the board, and the board is on the
            * chart behind this card. Leaving the card up after the press put
@@ -2070,13 +2141,15 @@ class AlertsPanel extends PureComponent {
               },
               msg("al_calls_practice", "Try a practice call"),
             ),
+            /* **Turn calls on keeps the panel** (13 Oct 2026): it closed and
+               left the chart, and the switch looked like it had thrown the
+               panel away. It now stays and turns into the on screen, the
+               board drawn beside it, with "Go to the board" for the way out. */
             React.createElement(
               AlertPrimaryButton,
               {
-                onClick: () => {
-                  this.props.onPredictChange(true);
-                  if (this.props.onClose) this.props.onClose();
-                },
+                "data-calls-turn-on": "true",
+                onClick: () => this.props.onPredictChange(true),
               },
               msg("al_turn_calls_on", "Turn calls on"),
             ),

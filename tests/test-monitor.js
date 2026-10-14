@@ -189,5 +189,26 @@ const T = Date.UTC(2026, 9, 1);
   eq(tab({ kind: "coin", coin: "SOL" }), "sol ", "…and a coin ready for its range");
 }
 
+/* ── The month, side by side (13 Oct 2026) ── */
+{
+  // __up rises 100 → 131; a falling one, and one too short to draw
+  sandbox.__down = sandbox.__up.map((p, i) => ({ time: p.time, price: 200 - i / 24 }));
+  sandbox.__race = { BTC: sandbox.__up, ETH: sandbox.__down, SOL: [{ time: T, price: 1 }] };
+  const race = run(`monitorRace(__race, ["BTC", "ETH", "SOL"])`);
+  eq(race.lines.length, 2, "a coin with fewer than three points is not a line");
+  eq(race.lines[0].coin, "BTC", "the lines are ordered by where they ended, the leader first");
+  ok(race.lines.every((l) => l.pts[0].v === 0), "every line starts at 0% — from its own first point");
+  ok(Math.abs(race.lines[0].last - 31) < 0.01 && Math.abs(race.lines[1].last - ((169 / 200) - 1) * 100) < 0.01,
+    "…and ends at its own change over the month", JSON.stringify(race.lines.map((l) => l.last)));
+  ok(race.lo <= race.lines[1].last && race.hi >= 31, "the window holds both ends");
+  ok(race.lines.every((l) => l.pts.length <= 2 * 120 + 2), "each line is thinned");
+  eq(run(`monitorRace(__race, ["BTC"])`), null, "one line is not a race");
+  const lab = run(`monitorRaceLabels([100, 104, 300], 16, 10, 290)`);
+  ok(lab[1] - lab[0] >= 16 && lab[2] <= 290, "end labels keep a line's height apart and inside the frame", JSON.stringify(lab));
+  const crowd = run(`monitorRaceLabels([285, 286, 287, 288], 16, 10, 290)`);
+  ok(crowd.every((y) => y <= 290) && crowd.slice().sort((a, b) => a - b).every((y, i, arr) => i === 0 || y - arr[i - 1] >= 16),
+    "…pushed back up from the foot when they crowd it", JSON.stringify(crowd));
+}
+
 console.log(`✔ ${checks} monitor checks`);
 console.log("MONITOR TESTS OK");

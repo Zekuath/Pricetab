@@ -5,14 +5,8 @@
   "al_7d_hit_rate_hint": {
     "message": "Son 7 günde sonuçlanan tahminler"
   },
-  "al_7d_settled": {
-    "message": "sonuçlanan"
-  },
-  "al_7d_settled_hint": {
-    "message": "Son 7 günde sonucu belli olan tahminler"
-  },
-  "al_7d_snapshot": {
-    "message": "Son 7 gün"
+  "al_7d_short": {
+    "message": "7 g"
   },
   "al_a_pct_move": {
     "message": "%$1'lik bir hareket"
@@ -452,12 +446,6 @@
   "al_open_n": {
     "message": "Açık · $1"
   },
-  "al_open_now": {
-    "message": "şu anda açık"
-  },
-  "al_open_now_hint": {
-    "message": "Sonuçlanmayı bekleyen açık tahminler"
-  },
   "al_order_hint": {
     "message": "Açık tahminleri sonuçlanma zamanına veya oluşturulma tarihine göre sırala"
   },
@@ -512,8 +500,20 @@
   "al_record": {
     "message": "Kayıt"
   },
-  "al_record_kept": {
-    "message": "Kaydın saklanır. Yalnızca bu cihazda yaşar ve hiçbir değeri yoktur"
+  "al_record_device": {
+    "message": "yalnızca bu cihazda"
+  },
+  "al_record_right": {
+    "message": "tutan"
+  },
+  "al_record_ring": {
+    "message": "$2 tahminden $1 tuttu"
+  },
+  "al_record_title": {
+    "message": "Kaydın"
+  },
+  "al_record_trail": {
+    "message": "Son $1 tahmin, eskiden yeniye: dolu kare tuttu"
   },
   "al_remove_aria": {
     "message": "$1 hedefini kaldır"
@@ -577,6 +577,9 @@
   },
   "al_still_settling": {
     "message": "hâlâ sonuçlanıyor"
+  },
+  "al_streak_now": {
+    "message": "şu anki seri"
   },
   "al_target_coin": {
     "message": "Hedefteki coin"
@@ -1674,6 +1677,12 @@
   },
   "ch_since_first": {
     "message": "$2 tarihinden beri $1"
+  },
+  "ch_slide_ahead": {
+    "message": "$1 kare ileride · şimdiye dön"
+  },
+  "ch_slide_back": {
+    "message": "$1 kare geride · şimdiye dön"
   },
   "ch_span": {
     "message": "Süre"
@@ -10923,11 +10932,38 @@
   "mon_market_value": {
     "message": "piyasa değeri $1"
   },
+  "mon_race_aria": {
+    "message": "Her coinin son 30 gündeki yüzde değişimi: $1"
+  },
+  "mon_race_head": {
+    "message": "Son 30 gün yan yana · her coin kendi başlangıcından"
+  },
+  "mon_race_spread": {
+    "message": "$1 önde, $2 geride · aralarında $3 puan"
+  },
   "mon_range_at": {
     "message": "30 günlük dip–tepe aralığında konum: %$1"
   },
   "mon_tab_market": {
     "message": "Piyasa"
+  },
+  "news_pulse_aria": {
+    "message": "Son 24 saatte saat başına haber; en yoğun saat $1 itibarıyla $2 haber"
+  },
+  "news_pulse_bar": {
+    "message": "$1 · $2 haber"
+  },
+  "news_pulse_from": {
+    "message": "24 saat önce"
+  },
+  "news_pulse_head": {
+    "message": "Son 24 saat · $1 haber"
+  },
+  "news_pulse_now": {
+    "message": "şimdi"
+  },
+  "news_pulse_peak": {
+    "message": "en yoğun: $1 · $2"
   },
   "po_allocation": {
     "message": "Dağılım"

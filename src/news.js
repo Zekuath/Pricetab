@@ -186,6 +186,24 @@ const newsroomsOf = (row) =>
  * the morning. */
 const NEWS_UNUSUAL_MAX_AGE_MS = 6 * 60 * 60 * 1000;
 
+/* The stories of the last 24 hours, counted per clock hour: 24 bins ending
+   with the hour now in progress. Undated and future-dated rows are left out
+   and `dated` says how many were counted. Pure. */
+const newsPulseBins = (items, now) => {
+  const HOUR = 3600e3;
+  const end = Math.ceil(now / HOUR) * HOUR;
+  const from = end - 24 * HOUR;
+  const bins = new Array(24).fill(0);
+  let dated = 0;
+  for (const row of Array.isArray(items) ? items : []) {
+    const t = Number(row && row.time) || 0;
+    if (!t || t > now + 60e3 || t < from) continue;
+    bins[Math.min(23, Math.floor((t - from) / HOUR))] += 1;
+    dated += 1;
+  }
+  return { bins, dated, end };
+};
+
 class NewsPanel extends PureComponent {
   constructor(props) {
     super(props);
@@ -879,6 +897,48 @@ class NewsPanel extends PureComponent {
   /* What the feed adds up to, in the column beside it. Counts with what they
    * are counts of, and nothing that judges: the tone tiles are words, the
    * coin chips are mentions, the source table is ages. */
+  /* **The last 24 hours, an hour a bar** (13 Oct 2026): how many of the
+     stories on the list were published in each hour, the busiest one named.
+     Undated stories are left out, and say so in the count. */
+  renderPulse(all) {
+    const HOUR = 3600e3;
+    const { bins, dated, end } = newsPulseBins(all, Date.now());
+    if (!dated) return null;
+    const peak = Math.max(...bins);
+    const peakAt = bins.lastIndexOf(peak);
+    const hourOf = (i) => {
+      try {
+        return new Date(end - (24 - i) * HOUR).toLocaleTimeString(intlTag(activeLocale()), { hour: "2-digit", minute: "2-digit" });
+      } catch (error) {
+        return "";
+      }
+    };
+    return React.createElement(
+      NewsAsideSection,
+      { "data-news-pulse": "true" },
+      React.createElement(NewsAsideLabel, null, msg("news_pulse_head", "The last 24 hours · $1 stories", dated)),
+      React.createElement(
+        NewsPulse,
+        { role: "img", "aria-label": msg("news_pulse_aria", "Stories per hour over the last 24 hours; the busiest hour from $1 had $2", hourOf(peakAt), peak) },
+        ...bins.map((n, i) =>
+          React.createElement("span", {
+            key: i,
+            "data-peak": n === peak && i === peakAt ? "true" : undefined,
+            title: msg("news_pulse_bar", "$1 · $2 stories", hourOf(i), n),
+            style: { height: `${peak ? Math.max(4, (n / peak) * 100) : 4}%` },
+          }),
+        ),
+      ),
+      React.createElement(
+        NewsPulseEnds,
+        null,
+        React.createElement("span", null, msg("news_pulse_from", "24h ago")),
+        React.createElement("span", null, msg("news_pulse_peak", "busiest: $1 · $2", hourOf(peakAt), peak)),
+        React.createElement("span", null, msg("news_pulse_now", "now")),
+      ),
+    );
+  }
+
   renderAside(all, matchers, newest, staleNote) {
     const tally = { up: 0, down: 0, flat: 0 };
     for (const row of all) {
@@ -926,6 +986,14 @@ class NewsPanel extends PureComponent {
           fact(tally.down, msg("news_tone_down", "worded down")),
           fact(tally.flat, msg("news_tone_flat", "neither")),
         ),
+        all.length > 0 &&
+          React.createElement(
+            NewsToneBar,
+            { "data-news-tone-bar": "true", "aria-hidden": "true" },
+            ...["up", "down", "flat"].map((k) =>
+              React.createElement("span", { key: k, "data-tone": k, style: { width: `${(tally[k] / all.length) * 100}%` } }),
+            ),
+          ),
         React.createElement(
           NewsAsideNote,
           null,
@@ -935,6 +1003,7 @@ class NewsPanel extends PureComponent {
           ),
         ),
       ),
+      this.renderPulse(all),
       perCoin.length > 0 &&
         React.createElement(
           NewsAsideSection,

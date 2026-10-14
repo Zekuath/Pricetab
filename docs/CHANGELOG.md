@@ -12,6 +12,15 @@ submitted, so their changes reach the store here.
 - The web version is a proper app on a phone: add it to the home screen and
   it opens full screen under its own name and icon, clear of the notch and
   the home indicator. The side tabs open with a swipe from either edge.
+- The monitor draws your coins' last 30 days side by side, each from its
+  own start, with the coin on the chart lit and each line's change at its end.
+- The news panel's side column shows the wording tally as a bar and the last
+  24 hours of stories an hour at a time.
+- Calls switched off shows a picture of the board and your record: the share
+  called right as a ring, the streaks, the last week and the last calls as
+  a row of squares.
+- Settings → This phone → Tab bar: choose up to four places for the phone's
+  bar and their order; everything else stays under More.
 - Settings → This phone: the swipe edge's width, keeping the screen on while
   the app is open, and which screen it opens on.
 - The derivatives page on a phone has Trade, Chart, Book and Open tabs, with
@@ -241,6 +250,16 @@ submitted, so their changes reach the store here.
   more newsrooms, first, saying why each is there.
 
 ### Fixed
+
+- With calls on, dragging the chart sideways keeps going past the "now"
+  line's limits: forward into squares that were off screen, back to the
+  start of the range. A chip at the top of the board says how far and brings
+  it back to now.
+- A drag into the past on the plain chart asks for the older prices as soon
+  as it is pressed, so the first pull stalls less.
+- "Turn calls on" keeps the calls panel open instead of closing it.
+- On a phone the targets panel no longer raises the keyboard when it opens,
+  and a panel being typed in stands above the keyboard.
 
 - Longer languages stay inside their boxes: German, French, Russian and the
   rest no longer run out of buttons, column heads, tabs and fields; a word

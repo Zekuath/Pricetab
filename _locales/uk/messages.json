@@ -5,14 +5,8 @@
   "al_7d_hit_rate_hint": {
     "message": "Прогнози, завершені за останні 7 днів"
   },
-  "al_7d_settled": {
-    "message": "завершені"
-  },
-  "al_7d_settled_hint": {
-    "message": "Прогнози, за якими протягом останніх 7 днів з'явився результат"
-  },
-  "al_7d_snapshot": {
-    "message": "Останні 7 днів"
+  "al_7d_short": {
+    "message": "7 дн."
   },
   "al_a_pct_move": {
     "message": "Рух на $1%"
@@ -452,12 +446,6 @@
   "al_open_n": {
     "message": "Відкрито · $1"
   },
-  "al_open_now": {
-    "message": "відкриті зараз"
-  },
-  "al_open_now_hint": {
-    "message": "Відкриті прогнози, що очікують результату"
-  },
   "al_order_hint": {
     "message": "Сортуйте відкриті прогнози за часом завершення або створення"
   },
@@ -512,8 +500,20 @@
   "al_record": {
     "message": "Підсумки"
   },
-  "al_record_kept": {
-    "message": "Ваш запис зберігається. Він живе лише на цьому пристрої й нічого не вартий"
+  "al_record_device": {
+    "message": "лише на цьому пристрої"
+  },
+  "al_record_right": {
+    "message": "влучно"
+  },
+  "al_record_ring": {
+    "message": "$1 з $2 влучно"
+  },
+  "al_record_title": {
+    "message": "Ваш рахунок"
+  },
+  "al_record_trail": {
+    "message": "Останні $1 прогнозів, від старих: зафарбований квадрат — влучно"
   },
   "al_remove_aria": {
     "message": "Прибрати ціль $1"
@@ -577,6 +577,9 @@
   },
   "al_still_settling": {
     "message": "досі вирішується"
+  },
+  "al_streak_now": {
+    "message": "серія зараз"
   },
   "al_target_coin": {
     "message": "Монета цілі"
@@ -1674,6 +1677,12 @@
   },
   "ch_since_first": {
     "message": "$1 з $2"
+  },
+  "ch_slide_ahead": {
+    "message": "на $1 кв. вперед · до поточного"
+  },
+  "ch_slide_back": {
+    "message": "на $1 кв. назад · до поточного"
   },
   "ch_span": {
     "message": "Період"
@@ -10946,11 +10955,38 @@
   "mon_market_value": {
     "message": "ринкова вартість $1"
   },
+  "mon_race_aria": {
+    "message": "Зміна кожної монети за 30 днів у відсотках: $1"
+  },
+  "mon_race_head": {
+    "message": "Останні 30 днів поруч · від початку кожної монети"
+  },
+  "mon_race_spread": {
+    "message": "$1 попереду, $2 позаду · розрив $3 п."
+  },
   "mon_range_at": {
     "message": "$1% шляху від мінімуму до максимуму за 30 днів"
   },
   "mon_tab_market": {
     "message": "Ринок"
+  },
+  "news_pulse_aria": {
+    "message": "Новини по годинах за 24 години; найнасиченіша година з $1 — $2"
+  },
+  "news_pulse_bar": {
+    "message": "$1 · $2"
+  },
+  "news_pulse_from": {
+    "message": "24 год тому"
+  },
+  "news_pulse_head": {
+    "message": "Останні 24 години · новин: $1"
+  },
+  "news_pulse_now": {
+    "message": "зараз"
+  },
+  "news_pulse_peak": {
+    "message": "пік: $1 · $2"
   },
   "po_allocation": {
     "message": "Розподіл"

@@ -5,14 +5,8 @@
   "al_7d_hit_rate_hint": {
     "message": "Settled calls in the last 7 days"
   },
-  "al_7d_settled": {
-    "message": "settled"
-  },
-  "al_7d_settled_hint": {
-    "message": "Calls that got an answer in the last 7 days"
-  },
-  "al_7d_snapshot": {
-    "message": "Last 7 days"
+  "al_7d_short": {
+    "message": "7d"
   },
   "al_a_pct_move": {
     "message": "A $1% move",
@@ -726,12 +720,6 @@
       }
     }
   },
-  "al_open_now": {
-    "message": "open now"
-  },
-  "al_open_now_hint": {
-    "message": "Open calls currently waiting to settle"
-  },
   "al_order_hint": {
     "message": "Switch between due-first and newest-first ordering for open calls"
   },
@@ -840,8 +828,33 @@
   "al_record": {
     "message": "Record"
   },
-  "al_record_kept": {
-    "message": "Your record is kept. It lives on this device only and is worth nothing"
+  "al_record_device": {
+    "message": "this device only"
+  },
+  "al_record_right": {
+    "message": "called right"
+  },
+  "al_record_ring": {
+    "message": "$1 of $2 called right",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "al_record_title": {
+    "message": "Your record"
+  },
+  "al_record_trail": {
+    "message": "The last $1 calls, oldest first: a filled square was called right",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
   },
   "al_remove_aria": {
     "message": "Remove $1 target",
@@ -943,6 +956,9 @@
   },
   "al_still_settling": {
     "message": "still settling"
+  },
+  "al_streak_now": {
+    "message": "streak now"
   },
   "al_target_coin": {
     "message": "Target coin"
@@ -2757,6 +2773,22 @@
       },
       "arg2": {
         "content": "$2"
+      }
+    }
+  },
+  "ch_slide_ahead": {
+    "message": "$1 squares ahead · back to now",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "ch_slide_back": {
+    "message": "$1 squares back · back to now",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
       }
     }
   },
@@ -4856,6 +4888,31 @@
       }
     }
   },
+  "mon_race_aria": {
+    "message": "The percent change of each coin over the last 30 days: $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "mon_race_head": {
+    "message": "The last 30 days, side by side · from each coin's own start"
+  },
+  "mon_race_spread": {
+    "message": "$1 ahead, $2 behind · $3 points apart",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      }
+    }
+  },
   "mon_range_at": {
     "message": "$1% of the way from the 30-day low to the high",
     "placeholders": {
@@ -5173,6 +5230,53 @@
   },
   "news_preview_saved": {
     "message": "Saved"
+  },
+  "news_pulse_aria": {
+    "message": "Stories per hour over the last 24 hours; the busiest hour from $1 had $2",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "news_pulse_bar": {
+    "message": "$1 · $2 stories",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "news_pulse_from": {
+    "message": "24h ago"
+  },
+  "news_pulse_head": {
+    "message": "The last 24 hours · $1 stories",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "news_pulse_now": {
+    "message": "now"
+  },
+  "news_pulse_peak": {
+    "message": "busiest: $1 · $2",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
   },
   "news_read_allow": {
     "message": "Allow $1",

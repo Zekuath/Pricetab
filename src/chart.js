@@ -117,6 +117,13 @@ const LOCK_PULSE_MS = 520;
  * is fails on a trackpad. Six pixels is also about the distance a hand shakes
  * on a mouse button — and the chart's own pan uses the same number. */
 const BOARD_DRAG_SLOP = 6;
+/* **How far the board slides in time past the "now" line's own limits**
+ * (13 Oct 2026). Sideways, the drag first moves the line between history and
+ * board — the stored setting — and once the line is at a limit the whole
+ * chart keeps travelling with the hand: into the future, squares that did not
+ * fit on screen come in; into the past, the board narrows until the range's
+ * first point. Held for the session, never stored, measured in squares. */
+const BOARD_SLIDE_MAX_COLUMNS = 48;
 /* A call drawn without the board (`drawPlainCalls`): never under this many
    pixels a side, so a square on a long range is still a mark, and named only
    when it is at least this wide. */
@@ -679,10 +686,22 @@ class LineBase extends PureComponent {
         return;
       }
       if (typeof this.props.onFutureShareChange !== "function") return;
-      const { least, most } = this.nowLimits();
-      const future = Math.min(most, Math.max(least, d.fw0 - (d.x - d.x0)));
+      const { pitch, least, most } = this.nowLimits();
+      /* Inside the line's limits the hand moves the line (the stored share);
+       * past them the chart itself slides in time (`boardSlide`): squares
+       * beyond the right edge come in, or the history back to its start. */
+      const raw = d.fw0 - (d.x - d.x0);
+      const future = Math.min(most, Math.max(least, raw));
+      const slide = raw > most
+        ? Math.min(raw - most, BOARD_SLIDE_MAX_COLUMNS * pitch)
+        : raw < least
+          ? Math.max(raw - least, -least)
+          : 0;
       const share = future / this.width;
+      const slid = slide !== (this._slideDrag != null ? this._slideDrag : this.boardSlide || 0);
+      this._slideDrag = slide;
       if (share !== this.props.futureShare) this.props.onFutureShareChange(share);
+      else if (slid) this.updatePath();
     });
 
     /* Let go: the last frame is honoured, and a walk settles on the nearest
@@ -697,6 +716,10 @@ class LineBase extends PureComponent {
       }
       if (d.axis) this.applyBoardDrag();
       this.boardDrag = null;
+      if (this._slideDrag != null) {
+        this.boardSlide = this._slideDrag;
+        this._slideDrag = null;
+      }
       const svg = this.svgRef.current;
       if (svg) {
         svg.style.cursor = "";
@@ -4764,7 +4787,15 @@ class LineBase extends PureComponent {
           const homeTitle = document.createElementNS(ns, "title");
           homeTitle.textContent = msg("ch_pan_home", "Bring the board back to the price");
           home.appendChild(homeTitle);
-          const goHome = () => this.panBoard(0, true);
+          const goHome = () => {
+            // Back to the price, and back to now in time
+            if (this.boardSlide || this._slideDrag != null) {
+              this.boardSlide = 0;
+              this._slideDrag = null;
+              this.updatePath();
+            }
+            this.panBoard(0, true);
+          };
           home.addEventListener("click", (e) => {
             e.stopPropagation();
             goHome();
@@ -4781,12 +4812,20 @@ class LineBase extends PureComponent {
           g.appendChild(ui);
         }
         const { home, homeBox, homeText } = this._panParts;
-        const midX = Math.round((nowX + this.width) / 2);
+        const midRaw = Math.round((Math.max(0, nowX) + this.width) / 2);
         const walked = this._panDrag != null ? Math.round(this._panDrag) : this.boardPan || 0;
-        const panned = walked !== 0 || (this.boardPan || 0) !== 0;
-        const homeLabel = msg("ch_pan_off", "$1 off · back", `${walked > 0 ? "+" : ""}${walked}`);
+        // Squares slid in time past the now line's limits (boardSlide)
+        const slidCols = this.cellPitch > 0 ? Math.round(this.boardSlideNow() / this.cellPitch) : 0;
+        const panned = walked !== 0 || (this.boardPan || 0) !== 0 || slidCols !== 0;
+        const homeLabel = slidCols !== 0 && walked === 0
+          ? slidCols > 0
+            ? msg("ch_slide_ahead", "$1 squares ahead · back to now", String(slidCols))
+            : msg("ch_slide_back", "$1 squares back · back to now", String(-slidCols))
+          : msg("ch_pan_off", "$1 off · back", `${walked > 0 ? "+" : ""}${walked}`);
         if (homeText.textContent !== homeLabel) homeText.textContent = homeLabel;
         const homeW = homeLabel.length * 5.6 + 14;
+        // On the board's visible part, whole
+        const midX = Math.round(Math.max(homeW / 2 + 4, Math.min(this.width - homeW / 2 - 4, midRaw)));
         // Under the fade, clear of the zoom pill at the strip's top right
         const homeY = Math.round(this.fadeEnd() + 6);
         homeBox.setAttribute("x", midX - homeW / 2);
@@ -6270,6 +6309,9 @@ class LineBase extends PureComponent {
       this.panAnim = null;
       this._panDrag = null;
       this.boardDrag = null;
+      // The slide in time is this board's too
+      this.boardSlide = 0;
+      this._slideDrag = null;
     }
 
     /* **A new palette repaints what the chart draws itself** (30 Sep 2026).

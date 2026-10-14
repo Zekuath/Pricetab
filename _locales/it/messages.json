@@ -5,14 +5,8 @@
   "al_7d_hit_rate_hint": {
     "message": "Previsioni concluse negli ultimi 7 giorni"
   },
-  "al_7d_settled": {
-    "message": "concluse"
-  },
-  "al_7d_settled_hint": {
-    "message": "Previsioni il cui esito è stato stabilito negli ultimi 7 giorni"
-  },
-  "al_7d_snapshot": {
-    "message": "Ultimi 7 giorni"
+  "al_7d_short": {
+    "message": "7 g"
   },
   "al_a_pct_move": {
     "message": "Un movimento del $1%"
@@ -452,12 +446,6 @@
   "al_open_n": {
     "message": "Aperte · $1"
   },
-  "al_open_now": {
-    "message": "aperte ora"
-  },
-  "al_open_now_hint": {
-    "message": "Previsioni aperte in attesa dell'esito"
-  },
   "al_order_hint": {
     "message": "Ordina le previsioni aperte per scadenza o per data di creazione"
   },
@@ -512,8 +500,20 @@
   "al_record": {
     "message": "Storico"
   },
-  "al_record_kept": {
-    "message": "Il tuo storico è conservato. Vive solo su questo dispositivo e non vale nulla"
+  "al_record_device": {
+    "message": "solo su questo dispositivo"
+  },
+  "al_record_right": {
+    "message": "azzeccate"
+  },
+  "al_record_ring": {
+    "message": "$1 su $2 azzeccate"
+  },
+  "al_record_title": {
+    "message": "Il tuo bilancio"
+  },
+  "al_record_trail": {
+    "message": "Le ultime $1 previsioni, dalla più vecchia: un quadrato pieno era giusta"
   },
   "al_remove_aria": {
     "message": "Rimuovi l'obiettivo di $1"
@@ -577,6 +577,9 @@
   },
   "al_still_settling": {
     "message": "ancora in risoluzione"
+  },
+  "al_streak_now": {
+    "message": "serie attuale"
   },
   "al_target_coin": {
     "message": "Moneta dell'obiettivo"
@@ -1674,6 +1677,12 @@
   },
   "ch_since_first": {
     "message": "$1 dal $2"
+  },
+  "ch_slide_ahead": {
+    "message": "$1 quadrati avanti · torna ad adesso"
+  },
+  "ch_slide_back": {
+    "message": "$1 quadrati indietro · torna ad adesso"
   },
   "ch_span": {
     "message": "Periodo"
@@ -10946,11 +10955,38 @@
   "mon_market_value": {
     "message": "valore di mercato $1"
   },
+  "mon_race_aria": {
+    "message": "La variazione percentuale di ogni moneta negli ultimi 30 giorni: $1"
+  },
+  "mon_race_head": {
+    "message": "Gli ultimi 30 giorni fianco a fianco · dall'inizio di ciascuna moneta"
+  },
+  "mon_race_spread": {
+    "message": "$1 davanti, $2 dietro · $3 punti di distanza"
+  },
   "mon_range_at": {
     "message": "$1% del percorso dal minimo al massimo di 30 giorni"
   },
   "mon_tab_market": {
     "message": "Mercato"
+  },
+  "news_pulse_aria": {
+    "message": "Notizie per ora nelle ultime 24 ore; l'ora più intensa, dalle $1, ne ha avute $2"
+  },
+  "news_pulse_bar": {
+    "message": "$1 · $2 notizie"
+  },
+  "news_pulse_from": {
+    "message": "24 ore fa"
+  },
+  "news_pulse_head": {
+    "message": "Le ultime 24 ore · $1 notizie"
+  },
+  "news_pulse_now": {
+    "message": "adesso"
+  },
+  "news_pulse_peak": {
+    "message": "più intensa: $1 · $2"
   },
   "po_allocation": {
     "message": "Ripartizione"

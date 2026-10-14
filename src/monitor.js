@@ -37,6 +37,60 @@ const monitorPoints = (series) =>
     .filter((p) => isFinite(p.t) && p.price > 0)
     .sort((a, b) => a.t - b.t);
 
+/* **The month, side by side** (13 Oct 2026): each coin's 30 days as the
+   percent change from its own first point, on one time axis — who is ahead,
+   who fell behind and when. Thinned to `n` points a line (bucket low and
+   high kept, as the spark does). Pure; null under two lines. */
+const monitorRace = (seriesBy, coins, n = 120) => {
+  const lines = [];
+  let t0 = Infinity;
+  let t1 = -Infinity;
+  for (const coin of coins) {
+    const pts = monitorPoints(seriesBy[coin]);
+    if (pts.length < 3) continue;
+    const base = pts[0].price;
+    const size = Math.max(1, Math.ceil(pts.length / n));
+    const kept = [];
+    for (let i = 0; i < pts.length; i += size) {
+      let a = pts[i];
+      let b = pts[i];
+      for (let j = i; j < Math.min(pts.length, i + size); j += 1) {
+        if (pts[j].price < a.price) a = pts[j];
+        if (pts[j].price > b.price) b = pts[j];
+      }
+      for (const q of a === b ? [a] : a.t <= b.t ? [a, b] : [b, a]) kept.push(q);
+    }
+    const lastPt = pts[pts.length - 1];
+    if (kept[kept.length - 1] !== lastPt) kept.push(lastPt);
+    const line = kept.map((q) => ({ t: q.t, v: (q.price / base - 1) * 100 }));
+    t0 = Math.min(t0, pts[0].t);
+    t1 = Math.max(t1, lastPt.t);
+    lines.push({ coin, pts: line, last: line[line.length - 1].v });
+  }
+  if (lines.length < 2 || !(t1 > t0)) return null;
+  let lo = 0;
+  let hi = 0;
+  for (const l of lines) for (const p of l.pts) {
+    if (p.v < lo) lo = p.v;
+    if (p.v > hi) hi = p.v;
+  }
+  lines.sort((a, b) => b.last - a.last);
+  return { lines, t0, t1, lo, hi };
+};
+
+/* End labels a line's height apart at least, in the order of their lines,
+   kept inside [top, bottom]. Pure. */
+const monitorRaceLabels = (ys, gap, top, bottom) => {
+  const order = ys.map((y, i) => ({ y, i })).sort((a, b) => a.y - b.y);
+  for (let k = 1; k < order.length; k += 1) order[k].y = Math.max(order[k].y, order[k - 1].y + gap);
+  const over = order.length ? order[order.length - 1].y - bottom : 0;
+  if (over > 0) for (const o of order) o.y -= over;
+  for (let k = 0; k < order.length; k += 1) order[k].y = Math.max(order[k].y, top + k * gap);
+  const out = new Array(ys.length);
+  for (const o of order) out[o.i] = o.y;
+  return out;
+};
+
 /* The change since `ms` before the last point, in percent — null when the
    series does not reach that far back (a coin listed last week has no
    month). */
@@ -809,6 +863,85 @@ const MonitorLegend = styled.details`
   }
 `;
 
+/* The race: a frame with its own head, the lines in the ink of the text and
+   the one pointed at (or on the chart) drawn full; the rest stand back. */
+const MonitorRace = styled.figure`
+  margin: 1.4rem 0 0;
+  padding: 0.9rem 1rem 0.8rem;
+  border: 1px solid ${({ theme }) => theme.color.border};
+  border-radius: 12px;
+  background: ${({ theme }) => theme.color.bgSecondary};
+  && {
+    max-width: 72rem;
+  }
+
+  figcaption {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0.3rem 1rem;
+    margin-bottom: 0.6rem;
+    font-size: 0.68rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: ${({ theme }) => theme.color.textSecondary};
+  }
+
+  svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    overflow: visible;
+  }
+
+  .grid {
+    stroke: ${({ theme }) => theme.color.border};
+    stroke-width: 1;
+  }
+  .zero {
+    stroke: ${({ theme }) => theme.color.textSecondary};
+    stroke-dasharray: 3 4;
+  }
+  .tick {
+    fill: ${({ theme }) => theme.color.textSecondary};
+    font-size: 11px;
+    font-family: ${({ theme }) => theme.font.primary};
+  }
+  .line {
+    fill: none;
+    stroke: ${({ theme }) => theme.color.textSecondary};
+    stroke-width: 1.4;
+    stroke-linejoin: round;
+    opacity: 0.55;
+    transition: opacity 0.15s ease, stroke-width 0.15s ease;
+  }
+  .line[data-lit="true"] {
+    stroke: ${({ theme }) => theme.color.text};
+    stroke-width: 2.4;
+    opacity: 1;
+  }
+  .label {
+    font-size: 12px;
+    font-family: ${({ theme }) => theme.font.primary};
+    fill: ${({ theme }) => theme.color.textSecondary};
+    cursor: default;
+  }
+  .label[data-lit="true"] {
+    fill: ${({ theme }) => theme.color.text};
+    font-weight: ${({ theme }) => theme.fontWeight.semibold};
+  }
+  .label .up {
+    fill: ${({ theme }) => theme.color.chartLineGreen};
+  }
+  .label .down {
+    fill: ${({ theme }) => theme.color.chartLineRed};
+  }
+
+  @media (max-width: 600px) {
+    padding: 0.7rem 0.6rem 0.6rem;
+  }
+`;
+
 const MonitorNote = styled.p`
   max-width: 52rem;
   margin: 1.2rem 0 0;
@@ -1159,6 +1292,108 @@ class MonitorPanel extends PureComponent {
     );
   }
 
+  /* **The month, side by side** — see monitorRace. Pointing at a line or its
+     label lights it; with nothing pointed at, the coin on the chart is lit. */
+  renderRace() {
+    const coins = Array.isArray(this.props.coins) ? this.props.coins : [];
+    const race = monitorRace(this.state.series, coins);
+    if (!race) return null;
+    const W = 1000;
+    const H = 300;
+    const L = 52;
+    const R = 130;
+    const T = 10;
+    const B = 26;
+    const pad = Math.max(0.5, (race.hi - race.lo) * 0.06);
+    const lo = race.lo - pad;
+    const hi = race.hi + pad;
+    const x = (t) => L + ((t - race.t0) / (race.t1 - race.t0)) * (W - L - R);
+    const y = (v) => T + ((hi - v) / (hi - lo)) * (H - T - B);
+    const lit = this.state.raceLit || this.props.activeCoin;
+    // Round percent levels, about five
+    const raw = (hi - lo) / 5;
+    const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+    const step = [1, 2, 2.5, 5, 10].map((m) => m * mag).find((s) => s >= raw) || mag * 10;
+    const levels = [];
+    for (let v = Math.ceil(lo / step) * step; v <= hi; v += step) levels.push(Math.round(v * 1e6) / 1e6);
+    const ends = monitorRaceLabels(race.lines.map((l) => y(l.last)), 16, T + 6, H - B);
+    const days = [0, 7, 14, 21, 28].map((d) => race.t1 - d * 86400e3).filter((t) => t >= race.t0);
+    const dayText = (t) => {
+      try {
+        return new Date(t).toLocaleDateString(intlTag(activeLocale()), { month: "short", day: "numeric" });
+      } catch (error) {
+        return "";
+      }
+    };
+    const leader = race.lines[0];
+    const last = race.lines[race.lines.length - 1];
+    const lightOn = (coin) => () => this.setState({ raceLit: coin });
+    const lightOff = () => this.setState({ raceLit: null });
+    return React.createElement(
+      MonitorRace,
+      { "data-monitor-race": "true" },
+      React.createElement(
+        "figcaption",
+        null,
+        React.createElement("span", null, msg("mon_race_head", "The last 30 days, side by side · from each coin's own start")),
+        React.createElement(
+          "span",
+          null,
+          msg("mon_race_spread", "$1 ahead, $2 behind · $3 points apart", leader.coin, last.coin, (leader.last - last.last).toFixed(1)),
+        ),
+      ),
+      React.createElement(
+        "svg",
+        {
+          viewBox: `0 0 ${W} ${H}`,
+          role: "img",
+          "aria-label": msg("mon_race_aria", "The percent change of each coin over the last 30 days: $1", race.lines.map((l) => `${l.coin} ${monitorSigned(l.last)}`).join(", ")),
+          onMouseLeave: lightOff,
+        },
+        ...levels.map((v) =>
+          React.createElement(
+            "g",
+            { key: `l${v}` },
+            React.createElement("line", { x1: L, x2: W - R, y1: y(v), y2: y(v), className: v === 0 ? "zero" : "grid" }),
+            React.createElement("text", { x: L - 8, y: y(v) + 4, textAnchor: "end", className: "tick" }, `${v > 0 ? "+" : ""}${v}%`),
+          ),
+        ),
+        ...days.map((t) =>
+          React.createElement("text", { key: `d${t}`, x: x(t), y: H - 6, textAnchor: "middle", className: "tick" }, dayText(t)),
+        ),
+        // The lit line last, so it is drawn over the others
+        ...race.lines
+          .slice()
+          .sort((a, b) => (a.coin === lit) - (b.coin === lit))
+          .map((l) =>
+            React.createElement("polyline", {
+              key: `p${l.coin}`,
+              points: l.pts.map((p) => `${x(p.t).toFixed(1)},${y(p.v).toFixed(1)}`).join(" "),
+              className: "line",
+              "data-lit": l.coin === lit ? "true" : "false",
+              "data-monitor-race-line": l.coin,
+              onMouseEnter: lightOn(l.coin),
+            }),
+          ),
+        ...race.lines.map((l, i) =>
+          React.createElement(
+            "text",
+            {
+              key: `t${l.coin}`,
+              x: W - R + 10,
+              y: ends[i] + 4,
+              className: "label",
+              "data-lit": l.coin === lit ? "true" : "false",
+              onMouseEnter: lightOn(l.coin),
+            },
+            `${l.coin} `,
+            React.createElement("tspan", { className: monitorTone(l.last) === "up" ? "up" : monitorTone(l.last) === "down" ? "down" : undefined }, monitorSigned(l.last)),
+          ),
+        ),
+      ),
+    );
+  }
+
   renderCoins() {
     const { formatPrice, activeCoin } = this.props;
     const rows = this.rows();
@@ -1229,6 +1464,7 @@ class MonitorPanel extends PureComponent {
       null,
       this.renderFacts(rows),
       React.createElement(MonitorTable, { "data-monitor-table": "true", onKeyDown: (e) => this.rowKey(e) }, ...head, ...body),
+      this.renderRace(),
       /* **What the columns mean, where it can be found** (11 Oct 2026): each
          heading carried its definition as a tooltip, which nobody finds. The
          same words, one press away. */

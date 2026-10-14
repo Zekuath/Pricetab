@@ -972,6 +972,12 @@ class ChartView extends Component {
         yAt: null,
         touch: e.pointerType === "touch",
       };
+      /* Older bars asked for at the press, not at the first move past the
+         oldest one (13 Oct 2026): measured from the whole of 1H, the first
+         400px pull moved the chart 200px and stood still while they came.
+         Not on a pointer merely passing over: a wheel zoom on 1H asks for
+         nothing, and hovering must not either (polish holds it). */
+      if (mode === "pan" && this.enabled()) this.askHistory(this._drag.from, this.reach());
       // A finger held still becomes the crosshair (VIEW_HOLD_MS)
       if (e.pointerType === "touch" && mode === "pan") {
         const d = this._drag;

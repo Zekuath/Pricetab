@@ -3572,6 +3572,32 @@ class CryptoChart extends PureComponent {
 
     /* Safari's own pinch: it honours touch-action for panning but still
        zooms the page on a pinch unless its gesture event is refused. */
+    // The keyboard's share of the window, as two CSS variables (see componentDidMount)
+    _defineProperty(this, "syncKeyboard", () => {
+      const vv = window.visualViewport;
+      if (!vv) return;
+      const kb = Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop));
+      const root = document.documentElement.style;
+      root.setProperty("--pt-kb", `${kb}px`);
+      root.setProperty("--pt-vvh", `${Math.round(vv.height)}px`);
+    });
+
+    /* A field taking the focus on a touch screen is brought into the part of
+       the window the keyboard leaves — once the keyboard has risen. */
+    _defineProperty(this, "fieldIntoView", (e) => {
+      const el = e.target;
+      if (!el || !/^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName) || !touchFirst()) return;
+      clearTimeout(this._fieldTimer);
+      this._fieldTimer = setTimeout(() => {
+        if (document.activeElement !== el || !el.scrollIntoView) return;
+        try {
+          el.scrollIntoView({ block: "center", behavior: "smooth" });
+        } catch (error) {
+          el.scrollIntoView();
+        }
+      }, 320);
+    });
+
     _defineProperty(this, "stopPageZoom", (event) => {
       event.preventDefault();
     });
@@ -4990,6 +5016,18 @@ class CryptoChart extends PureComponent {
     });
     window.addEventListener("touchend", this.pullSwipeEnd, true);
     document.addEventListener("gesturestart", this.stopPageZoom, { passive: false });
+    /* **The phone's keyboard is a floor too** (13 Oct 2026): a sheet stood
+       on the tab bar while the keyboard came up over it, so a target was
+       typed into a field nobody could see. The visual viewport says how much
+       of the window the keyboard takes (--pt-kb) and how tall what is left
+       is (--pt-vvh); the sheets stand on whichever is higher, and a field
+       that takes the focus is brought to the middle of what is left. */
+    if (typeof window !== "undefined" && window.visualViewport && (touchFirst() || isWebApp())) {
+      window.visualViewport.addEventListener("resize", this.syncKeyboard);
+      window.visualViewport.addEventListener("scroll", this.syncKeyboard);
+      this.syncKeyboard();
+    }
+    document.addEventListener("focusin", this.fieldIntoView);
     window.addEventListener("touchcancel", this.pullSwipeEnd, true);
     // The companion, when it was left on
     this.syncCompanion();
@@ -5005,6 +5043,12 @@ class CryptoChart extends PureComponent {
     window.removeEventListener("touchmove", this.pullSwipeMove, true);
     window.removeEventListener("touchend", this.pullSwipeEnd, true);
     document.removeEventListener("gesturestart", this.stopPageZoom);
+    if (typeof window !== "undefined" && window.visualViewport) {
+      window.visualViewport.removeEventListener("resize", this.syncKeyboard);
+      window.visualViewport.removeEventListener("scroll", this.syncKeyboard);
+    }
+    document.removeEventListener("focusin", this.fieldIntoView);
+    clearTimeout(this._fieldTimer);
     window.removeEventListener("touchcancel", this.pullSwipeEnd, true);
     this.chartSpine.clear();
     this.screenSpine.clear();

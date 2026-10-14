@@ -5,14 +5,8 @@
   "al_7d_hit_rate_hint": {
     "message": "Прогнозы, завершённые за последние 7 дней"
   },
-  "al_7d_settled": {
-    "message": "завершённые"
-  },
-  "al_7d_settled_hint": {
-    "message": "Прогнозы, по которым за последние 7 дней появился результат"
-  },
-  "al_7d_snapshot": {
-    "message": "Последние 7 дней"
+  "al_7d_short": {
+    "message": "7 дн."
   },
   "al_a_pct_move": {
     "message": "Движение на $1%"
@@ -452,12 +446,6 @@
   "al_open_n": {
     "message": "Открыто · $1"
   },
-  "al_open_now": {
-    "message": "открыты сейчас"
-  },
-  "al_open_now_hint": {
-    "message": "Открытые прогнозы, ожидающие результата"
-  },
   "al_order_hint": {
     "message": "Сортируйте открытые прогнозы по сроку завершения или времени создания"
   },
@@ -512,8 +500,20 @@
   "al_record": {
     "message": "Итоги"
   },
-  "al_record_kept": {
-    "message": "Ваша история сохраняется. Она живёт только на этом устройстве и ничего не стоит"
+  "al_record_device": {
+    "message": "только на этом устройстве"
+  },
+  "al_record_right": {
+    "message": "верно"
+  },
+  "al_record_ring": {
+    "message": "$1 из $2 верно"
+  },
+  "al_record_title": {
+    "message": "Ваш счёт"
+  },
+  "al_record_trail": {
+    "message": "Последние $1 прогнозов, от старых: закрашенный квадрат — верно"
   },
   "al_remove_aria": {
     "message": "Убрать цель $1"
@@ -577,6 +577,9 @@
   },
   "al_still_settling": {
     "message": "ещё решаются"
+  },
+  "al_streak_now": {
+    "message": "серия сейчас"
   },
   "al_target_coin": {
     "message": "Монета цели"
@@ -1674,6 +1677,12 @@
   },
   "ch_since_first": {
     "message": "$1 с $2"
+  },
+  "ch_slide_ahead": {
+    "message": "на $1 кв. вперёд · к текущему"
+  },
+  "ch_slide_back": {
+    "message": "на $1 кв. назад · к текущему"
   },
   "ch_span": {
     "message": "Период"
@@ -10946,11 +10955,38 @@
   "mon_market_value": {
     "message": "рыночная стоимость $1"
   },
+  "mon_race_aria": {
+    "message": "Изменение каждой монеты за 30 дней в процентах: $1"
+  },
+  "mon_race_head": {
+    "message": "Последние 30 дней рядом · от начала каждой монеты"
+  },
+  "mon_race_spread": {
+    "message": "$1 впереди, $2 позади · разрыв $3 п."
+  },
   "mon_range_at": {
     "message": "$1% пути от минимума к максимуму за 30 дней"
   },
   "mon_tab_market": {
     "message": "Рынок"
+  },
+  "news_pulse_aria": {
+    "message": "Новости по часам за 24 часа; самый насыщенный час с $1 — $2"
+  },
+  "news_pulse_bar": {
+    "message": "$1 · $2"
+  },
+  "news_pulse_from": {
+    "message": "24 ч назад"
+  },
+  "news_pulse_head": {
+    "message": "Последние 24 часа · новостей: $1"
+  },
+  "news_pulse_now": {
+    "message": "сейчас"
+  },
+  "news_pulse_peak": {
+    "message": "пик: $1 · $2"
   },
   "po_allocation": {
     "message": "Распределение"

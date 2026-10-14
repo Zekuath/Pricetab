@@ -187,6 +187,63 @@ const NewsAsideNote = styled.div`
   color: ${({ theme }) => theme.color.textSecondary};
 `;
 
+/* The tally as one bar (13 Oct 2026): the three counts as shares of the
+   stories, so the balance reads at a glance; the counts stay above it. */
+const NewsToneBar = styled.div`
+  display: flex;
+  height: 6px;
+  margin-top: 0.55rem;
+  border-radius: 3px;
+  overflow: hidden;
+  background: ${({ theme }) => theme.color.border};
+
+  > span {
+    display: block;
+    height: 100%;
+  }
+  > [data-tone="up"] {
+    background: ${({ theme }) => theme.color.chartLineGreen};
+  }
+  > [data-tone="down"] {
+    background: ${({ theme }) => theme.color.chartLineRed};
+  }
+  > [data-tone="flat"] {
+    background: ${({ theme }) => theme.color.textSecondary};
+    opacity: 0.35;
+  }
+`;
+
+/* The last day, an hour a bar: when the beat was busy. A count of stories
+   published, never what they said or what the price did. */
+const NewsPulse = styled.div`
+  display: grid;
+  grid-template-columns: repeat(24, minmax(0, 1fr));
+  align-items: end;
+  gap: 2px;
+  height: 3.2rem;
+
+  > span {
+    display: block;
+    min-height: 1px;
+    border-radius: 2px 2px 0 0;
+    background: ${({ theme }) => theme.color.textSecondary};
+    opacity: 0.45;
+  }
+  > span[data-peak="true"] {
+    background: ${({ theme }) => theme.color.text};
+    opacity: 1;
+  }
+`;
+
+const NewsPulseEnds = styled.div`
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.3rem;
+  font-size: 0.6rem;
+  letter-spacing: 0.06em;
+  color: ${({ theme }) => theme.color.textSecondary};
+`;
+
 /* Three figures over three labels — the scoreboard's shape, brought here. */
 const NewsFacts = styled.div`
   display: grid;

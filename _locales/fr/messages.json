@@ -5,14 +5,8 @@
   "al_7d_hit_rate_hint": {
     "message": "Pronostics terminés au cours des 7 derniers jours"
   },
-  "al_7d_settled": {
-    "message": "terminés"
-  },
-  "al_7d_settled_hint": {
-    "message": "Pronostics dont le résultat a été connu au cours des 7 derniers jours"
-  },
-  "al_7d_snapshot": {
-    "message": "7 derniers jours"
+  "al_7d_short": {
+    "message": "7 j"
   },
   "al_a_pct_move": {
     "message": "Un mouvement de $1%"
@@ -452,12 +446,6 @@
   "al_open_n": {
     "message": "Ouverts · $1"
   },
-  "al_open_now": {
-    "message": "en cours maintenant"
-  },
-  "al_open_now_hint": {
-    "message": "Pronostics en cours dans l'attente de leur résultat"
-  },
   "al_order_hint": {
     "message": "Classez les pronostics en cours par échéance ou par date de création"
   },
@@ -512,8 +500,20 @@
   "al_record": {
     "message": "Bilan"
   },
-  "al_record_kept": {
-    "message": "Votre palmarès est conservé. Il ne vit que sur cet appareil et ne vaut rien"
+  "al_record_device": {
+    "message": "sur cet appareil seulement"
+  },
+  "al_record_right": {
+    "message": "justes"
+  },
+  "al_record_ring": {
+    "message": "$1 sur $2 justes"
+  },
+  "al_record_title": {
+    "message": "Votre bilan"
+  },
+  "al_record_trail": {
+    "message": "Les $1 derniers calls, du plus ancien : un carré plein était juste"
   },
   "al_remove_aria": {
     "message": "Retirer l'objectif $1"
@@ -577,6 +577,9 @@
   },
   "al_still_settling": {
     "message": "toujours en cours de règlement"
+  },
+  "al_streak_now": {
+    "message": "série en cours"
   },
   "al_target_coin": {
     "message": "Crypto de l'objectif"
@@ -1674,6 +1677,12 @@
   },
   "ch_since_first": {
     "message": "$1 depuis $2"
+  },
+  "ch_slide_ahead": {
+    "message": "$1 carrés en avant · retour à maintenant"
+  },
+  "ch_slide_back": {
+    "message": "$1 carrés en arrière · retour à maintenant"
   },
   "ch_span": {
     "message": "Durée"
@@ -10946,11 +10955,38 @@
   "mon_market_value": {
     "message": "capitalisation $1"
   },
+  "mon_race_aria": {
+    "message": "La variation en pourcentage de chaque crypto sur les 30 derniers jours : $1"
+  },
+  "mon_race_head": {
+    "message": "Les 30 derniers jours côte à côte · depuis le départ de chaque crypto"
+  },
+  "mon_race_spread": {
+    "message": "$1 devant, $2 derrière · $3 points d'écart"
+  },
   "mon_range_at": {
     "message": "$1 % du chemin du plus bas au plus haut sur 30 jours"
   },
   "mon_tab_market": {
     "message": "Marché"
+  },
+  "news_pulse_aria": {
+    "message": "Articles par heure sur les dernières 24 heures ; l'heure la plus chargée, à partir de $1, en a eu $2"
+  },
+  "news_pulse_bar": {
+    "message": "$1 · $2 articles"
+  },
+  "news_pulse_from": {
+    "message": "il y a 24 h"
+  },
+  "news_pulse_head": {
+    "message": "Les dernières 24 heures · $1 articles"
+  },
+  "news_pulse_now": {
+    "message": "maintenant"
+  },
+  "news_pulse_peak": {
+    "message": "plus chargée : $1 · $2"
   },
   "po_allocation": {
     "message": "Répartition"

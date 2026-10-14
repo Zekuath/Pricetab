@@ -1713,6 +1713,171 @@ const AlertsEmptyFactValue = styled.div`
   font-variant-numeric: tabular-nums;
 `;
 
+/* ---- calls, switched off: a picture of the board and the record ------ */
+
+/* What the switch turns on, drawn: history up to a dotted "now", then the
+ * board's squares with one of them called. A static drawing — nothing on a
+ * new-tab page animates at rest — in the theme's own inks. */
+const CallsOffHero = styled.div`
+  width: min(26rem, 100%);
+  border: 1px solid ${({ theme }) => theme.color.border};
+  border-radius: 12px;
+  background: ${({ theme }) => theme.color.bgSecondary};
+  overflow: hidden;
+  line-height: 0;
+
+  svg {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  .cell {
+    fill: ${({ theme }) => theme.color.bg};
+    stroke: ${({ theme }) => theme.color.border};
+  }
+  .called {
+    fill: ${({ theme }) => theme.color.chartLineGreen};
+    fill-opacity: 0.18;
+    stroke: ${({ theme }) => theme.color.chartLineGreen};
+    stroke-width: 1.5;
+  }
+  .odds {
+    fill: ${({ theme }) => theme.color.textSecondary};
+    font-family: ${({ theme }) => theme.font.primary};
+  }
+  text.called {
+    fill: ${({ theme }) => theme.color.text};
+    fill-opacity: 1;
+    stroke: none;
+  }
+  .price {
+    fill: none;
+    stroke: ${({ theme }) => theme.color.text};
+    stroke-width: 1.6;
+    stroke-linejoin: round;
+  }
+  .dot {
+    fill: ${({ theme }) => theme.color.text};
+  }
+  .now {
+    stroke: ${({ theme }) => theme.color.textSecondary};
+    stroke-dasharray: 2 3;
+  }
+`;
+
+/* The record as the panel's subject: a ring for the share called right,
+ * the figures beside it, and the last calls as a trail of squares. */
+const CallsRecordCard = styled.div`
+  width: min(26rem, 100%);
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.6rem 1rem;
+  padding: 0.85rem 0.9rem;
+  border: 1px solid ${({ theme }) => theme.color.border};
+  border-radius: 12px;
+  background: ${({ theme }) => theme.color.bg};
+  text-align: left;
+`;
+
+const CallsRecordRing = styled.div`
+  position: relative;
+  width: 5.5rem;
+  height: 5.5rem;
+
+  svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+  }
+
+  .track,
+  .share {
+    fill: none;
+    stroke-width: 9;
+  }
+  .track {
+    stroke: ${({ theme }) => theme.color.border};
+  }
+  .share {
+    stroke: ${({ theme }) => theme.color.chartLineGreen};
+    stroke-linecap: round;
+  }
+
+  > div {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    line-height: 1.1;
+  }
+
+  b {
+    font-size: ${posType.lead};
+    font-weight: ${posWeight.strong};
+    font-variant-numeric: tabular-nums;
+    color: ${({ theme }) => theme.color.text};
+  }
+
+  span {
+    font-size: 0.625rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: ${({ theme }) => theme.color.textSecondary};
+  }
+`;
+
+const CallsRecordStats = styled.dl`
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.3rem 0.75rem;
+  margin: 0;
+  font-size: ${posType.body};
+
+  dt {
+    color: ${({ theme }) => theme.color.textSecondary};
+  }
+
+  dd {
+    margin: 0;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    font-weight: ${posWeight.figure};
+    color: ${({ theme }) => theme.color.text};
+  }
+`;
+
+const CallsRecordHead = styled.div`
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: ${posType.micro};
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: ${({ theme }) => theme.color.textSecondary};
+`;
+
+const CallsTrail = styled.div`
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+`;
+
+const CallsTrailMark = styled.span`
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 3px;
+  border: 1px solid
+    ${({ theme, hit }) => (hit ? theme.color.chartLineGreen : theme.color.borderHover)};
+  background: ${({ theme, hit }) => (hit ? theme.color.chartLineGreen : "transparent")};
+`;
+
 const AlertsEmptyFactLabel = styled.div`
   font-size: ${posType.micro};
   letter-spacing: 0.14em;
