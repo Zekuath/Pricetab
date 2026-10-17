@@ -1562,6 +1562,16 @@ const DrawerTabs = styled.nav`
   align-items: ${({ side }) => (side === "right" ? "flex-end" : "flex-start")};
   gap: 4px;
 
+  /* A custom arrangement can put every tab on one edge. Keep the last one
+     reachable without shrinking the names into each other. */
+  ${({ crowded }) => crowded ? `
+    max-height: calc(100dvh - var(--pt-dock-lift, 0px) - 8rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    & > button { flex-shrink: 0; }
+  ` : ""}
+  ${themedScrollbar};
+
   /* **It rests in a drawer of its own** (26 Sep 2026): slid out past the
      window's edge until the handle below brings it back, a drawer is open, or
      the tour is pointing at one of its tabs (spineShown, app.js). transform
@@ -1611,7 +1621,7 @@ const DrawerTabs = styled.nav`
     /* Over the phone app's own bar, which floats on the page's foot. */
     bottom: calc(var(--pt-dock-lift, 0px) + ${({ theme }) => theme.spacing.medium}rem);
     display: grid;
-    grid-auto-rows: 1fr;
+    grid-auto-rows: ${({ crowded }) => crowded ? "minmax(5.25rem, max-content)" : "1fr"};
     align-items: stretch;
     justify-items: ${({ side }) => (side === "right" ? "end" : "start")};
     /* A phone's screen is the whole of a narrow window: the column stays

@@ -7612,8 +7612,9 @@ const perpFromCoinbase = (handler) => async (r) => {
         return r.fulfill(json({ data: { amount: "43480.00", currency: "USD" } }));
       return r.fulfill(json({}));
     });
-    /* A profile that has never been asked: no consent key at all. */
-    await ctx.addInitScript('localStorage.setItem("crypto_chart_onboarding_seen", "1");');
+    /* A hidden section that has never been accepted: showing it asks for terms.
+       A visible terms-only tab can be hidden without accepting anything. */
+    await ctx.addInitScript('localStorage.setItem("crypto_chart_onboarding_seen", "1"); localStorage.setItem("crypto_chart_practice_enabled", "false");');
     const page = await ctx.newPage();
     await page.goto(INDEX, { waitUntil: "load" });
     await page.waitForTimeout(1600);
@@ -7714,6 +7715,9 @@ const perpFromCoinbase = (handler) => async (r) => {
 
     await flip();
     await page.waitForTimeout(450);
+    check((await askState()).enabled === "true", "hiding first asks for confirmation without changing the feature");
+    await page.click("[data-nav-hide-confirm]");
+    check((await askState()).enabled === "false", "confirming hides it while preserving consent");
     await flip();
     await page.waitForTimeout(450);
     const again = await askState();
@@ -10601,6 +10605,7 @@ await page.evaluate(`(() => { const m = document.querySelector("[data-practice-r
     await page.keyboard.press("b");
     // The deep series pages backwards with a gap between requests
     await page.waitForTimeout(9000);
+    await page.click("[data-base-tab='library']");
 
     const read = await page.evaluate(`(() => {
       const label = document.querySelector("[data-base-patterns]");
@@ -11023,15 +11028,14 @@ await page.evaluate(`(() => { const m = document.querySelector("[data-practice-r
     })()`);
     await page.waitForTimeout(700);
     const after = await order();
-    const stored = await page.evaluate(`localStorage.getItem("crypto_chart_panel_order")`);
+    const stored = await page.evaluate(`localStorage.getItem("crypto_chart_nav_layout")`);
     check(after.join() !== before.join() && after.indexOf("futures") < after.indexOf("portfolio"),
       "a tab dragged onto another one moves to exactly where it was dropped",
       `${before.join()} → ${after.join()}`);
     check(after[0] === "settings",
-      "…and Settings stays first, whatever is dragged over it", after.join());
-    /* The column shows the screens; the stored order holds every panel, so
-       the two are compared on the part they share. */
-    check(stored && JSON.parse(stored).filter((k) => after.includes(k)).join() === after.join(),
+      "…and this move keeps Settings in its existing first slot", after.join());
+    // Placement now stores both edges; this drag edits the right edge.
+    check(stored && JSON.parse(stored).right.join() === after.join(),
       "…and the order is written down, not just drawn", stored);
     check(errors.length === 0, "nothing threw across the phone's columns and the reorder", errors.join(" | "));
     await ctx.close();
@@ -12456,6 +12460,7 @@ await page.evaluate(`(() => { const m = document.querySelector("[data-practice-r
       "26 hours before a release the line under the price says it is tomorrow", String(r.line));
     check(on.minute.length === 0, "…and no minute candle has been asked for yet", on.minute.join(" "));
     await on.page.keyboard.press("b");
+    await on.page.click("[data-base-tab='calendar']");
     await on.page.waitForFunction(
       `(document.querySelector("[data-base-cpi]") || {}).getAttribute &&
        document.querySelector("[data-base-cpi]").getAttribute("data-base-cpi") === "done"`,
@@ -12745,6 +12750,7 @@ await page.evaluate(`(() => { const m = document.querySelector("[data-practice-r
     check(away && away.cards === 0, "…and a click on the chart puts it away", JSON.stringify(away));
     await page.keyboard.press("b");
     await page.waitForTimeout(3000);
+    await page.click("[data-base-tab='library']");
     const base = await page.evaluate(`(() => ({
       rows: [...document.querySelectorAll("[data-base-setup]")].map((r) => r.getAttribute("data-base-setup")),
       now: [...document.querySelectorAll("[data-base-setup]")].filter((r) => /· now/.test(r.innerText)).map((r) => r.getAttribute("data-base-setup")),
@@ -16669,9 +16675,9 @@ await page.evaluate(`(() => { const m = document.querySelector("[data-practice-r
     check(after.length === 3 && Boolean(await page.$("[data-monitor-table] [aria-sort]")), "§95 a header sorts the rows and says which way", JSON.stringify(after));
     await page.click("[data-monitor-tab='corr']");
     await page.waitForTimeout(400);
-    // The coefficient is the cell's first line since 12 Oct 2026; its word is under it (§126)
+    // Each pair once since 14 Oct 2026: a triangle, the coins on its diagonal
     const cells = await page.$$eval("[data-corr]", (n) => n.map((x) => (x.querySelector("b") || x).textContent));
-    check(cells.length === 6 && cells.every((t) => /^[+−-]?\d\.\d\d$|^—$/.test(t)), "§95 the correlation tab is every pair of three coins, each a coefficient", JSON.stringify(cells));
+    check(cells.length === 3 && cells.every((t) => /^[+−-]?\d\.\d\d$|^—$/.test(t)), "§95 the correlation tab is every pair of three coins, once each, each a coefficient", JSON.stringify(cells));
     const note = await page.evaluate(`document.querySelector("[data-monitor]").innerText`);
     check(/moves a pair/.test(note) && /never what comes next/.test(note), "§95 …with the count it rests on, and no forecast");
     await page.click("[data-monitor-tab]:not([data-monitor-tab='corr'])").catch(() => {});
@@ -16939,6 +16945,7 @@ await page.evaluate(`(() => { const m = document.querySelector("[data-practice-r
       await page.waitForSelector("svg path", { timeout: 20000 });
       await page.waitForTimeout(800);
       await page.evaluate(`document.dispatchEvent(new KeyboardEvent("keydown", { key: "b", bubbles: true }))`);
+      await page.click("[data-base-tab='calendar']");
       await page.waitForSelector("[data-base-months]", { timeout: 20000 }).catch(() => {});
       await page.waitForTimeout(600);
       const read = await page.evaluate(`(() => {
@@ -17875,7 +17882,15 @@ await page.evaluate(`(() => { const m = document.querySelector("[data-practice-r
        dot allowed (measured ≤9px in time and ≤5px in price at the deepest
        notch, before and after the wheel's glide). */
     const SCALE = `(() => { const svg = document.querySelector("[data-axes]").ownerSVGElement; let n = svg, key; while (n && !(key = Object.keys(n).find((k) => k.startsWith("__reactInternalInstance")))) n = n.parentNode; let f = n[key]; while (f && !(f.stateNode && f.stateNode.plotScale && f.stateNode.drawnDomain)) f = f.return; return { s: f.stateNode.plotScale(), r: svg.getBoundingClientRect() }; })()`;
-    const held = await page.evaluate(`(() => { const { s, r } = ${SCALE}; return { t: +s.toT(${start.x} - r.left), p: s.toV(${start.y} - r.top) }; })()`);
+    /* Chromium's wheel event has integer client coordinates: measured a dot
+       at (361.2083, 521.1841) delivered (361, 521). Holding the fractional
+       dot instead magnifies that subpixel offset to 9–11px at deep zoom,
+       especially with the main chart's 0.68 power. Capture the real event's
+       point before the chart handles it, with the same tolerances below. */
+    await page.evaluate(`document.addEventListener("wheel", (e) => {
+      const { s, r } = ${SCALE};
+      window.__wheelAnchor = { x: e.clientX, y: e.clientY, t: +s.toT(e.clientX - r.left), p: s.toV(e.clientY - r.top) };
+    }, { capture: true, once: true })`);
     const trail = [];
     for (let n = 0; n < 7; n++) {
       for (let k = 0; k < 3; k++) {
@@ -17883,10 +17898,10 @@ await page.evaluate(`(() => { const m = document.querySelector("[data-practice-r
         await page.waitForTimeout(30);
       }
       await page.waitForTimeout(850);
-      trail.push(await page.evaluate(`(() => { const { s, r } = ${SCALE}; return [Math.round(s.toX(${held.t}) + r.left - ${start.x}), Math.round(s.toY(${held.p}) + r.top - ${start.y})]; })()`));
+      trail.push(await page.evaluate(`(() => { const { s, r } = ${SCALE}; const held = window.__wheelAnchor; return [Math.round(s.toX(held.t) + r.left - held.x), Math.round(s.toY(held.p) + r.top - held.y)]; })()`));
     }
     const w2 = await win();
-    check(trail.every((t) => t && Math.abs(t[1]) <= 8 && Math.abs(t[0]) <= 12), "§111 the wheel keeps the point under the pointer where it is, notch after notch", JSON.stringify(trail));
+    check(trail.every((t) => t && Math.abs(t[1]) <= 8 && Math.abs(t[0]) <= 12), "§111 the wheel keeps the point under the pointer where it is, notch after notch", JSON.stringify({ trail, start, anchor: await page.evaluate("window.__wheelAnchor") }));
     check((await range()) === "1D" && w2 && w2[1] - w2[0] < 3600000 && w2[1] < NOW_MS - 6 * 3600000,
       "§111 …zooming in on that hour of 1D, not jumping to 1H at now", JSON.stringify({ range: await range(), w2 }));
 
@@ -18909,6 +18924,10 @@ await page.evaluate(`(() => { const m = document.querySelector("[data-practice-r
     await page.waitForSelector("svg path", { timeout: 20000 });
     await page.waitForTimeout(1200);
     await page.keyboard.press("b");
+    await page.waitForSelector("[data-base-glance]", { timeout: 20000 });
+    const nowCount = await page.evaluate(`({ tile: (document.querySelector("[data-base-now-count]") || {}).textContent, list: document.querySelector("[data-base-ahead]").getAttribute("data-base-ahead") })`);
+    check(nowCount.tile === nowCount.list, "§122 the glance counts the same live items as What came after", JSON.stringify(nowCount));
+    await page.evaluate(`(() => { const b = document.querySelector("[data-base-tab='library']"); if (b) b.click(); })()`);
     await page.waitForSelector("[data-base-nav]", { timeout: 20000 }).catch(() => {});
     await page.waitForTimeout(800);
     const nav = await page.evaluate(`[...document.querySelectorAll("[data-base-nav] button")].map((b) => b.innerText)`);
@@ -18919,7 +18938,27 @@ await page.evaluate(`(() => { const m = document.querySelector("[data-practice-r
     const landed = await page.evaluate(`(() => { const navR = document.querySelector("[data-base-nav]").getBoundingClientRect(); const l = document.querySelectorAll("[data-base-section]")[3].getBoundingClientRect(); return { gap: Math.round(l.top - navR.bottom) }; })()`);
     check(landed.gap >= 0 && landed.gap <= 40, "§122 …and a press puts that section just under the index, not behind it", JSON.stringify(landed));
     const bars = await page.evaluate(`(() => { const lines = [...document.querySelectorAll("[data-base-bars]")].flatMap((b) => b.innerText.split("\\n")).filter((l) => /up \\d+%/.test(l)); return { lines: lines.length, bare: lines.filter((l) => !/\\d[\\d,]*×/.test(l)).length }; })()`);
-    check(bars.lines >= 4 && bars.bare === 0, "§122 every share up is a bar whose line carries its count", JSON.stringify(bars));
+    check(bars.lines >= 4 && bars.bare === 0, "§122 every share up carries its count", JSON.stringify(bars));
+    const comparison = await page.evaluate(`(() => {
+      const pairs = [...document.querySelectorAll("[data-base-bars]")];
+      const body = document.querySelector("[data-base-context]").parentNode;
+      const forbidden = body.innerText.split(/(?<=[.!?])\\s/).filter((s) => /\\b(better|worse)\\b/i.test(s) && !/none is called better or worse/.test(s));
+      return { forbidden, pairs: pairs.length,
+        drawn: pairs.every((n) => n.querySelectorAll("[data-base-fill]").length === 1 && n.querySelectorAll("[data-base-tick]").length === 1 && /After this.*Any day/.test(n.getAttribute("aria-label"))),
+        intervals: pairs.filter((n) => +n.getAttribute("data-base-n") >= 12).every((n) => n.querySelector("[data-base-interval]")),
+        quiet: pairs.filter((n) => n.getAttribute("data-base-quiet") === "true").length };
+    })()`);
+    check(comparison.pairs > 0 && comparison.drawn && comparison.intervals && comparison.quiet > 0 && !comparison.forbidden.length,
+      "§122 one bar, one baseline tick, a Wilson interval and neutral wording", JSON.stringify(comparison));
+    const knownQuiet = await page.evaluate(`(() => {
+      const box = document.createElement("div"); document.body.appendChild(box);
+      const panel = new BaseRatesPanel({coin: "BTC"});
+      ReactDOM.render(React.createElement(ThemeProvider, {theme: THEMES.classic.light}, panel.renderBars(["After this", 50, null, 20], ["Any day", 50, null, 100])), box);
+      const row = box.querySelector("[data-base-bars]");
+      const result = { quiet: row.getAttribute("data-base-quiet"), name: row.getAttribute("aria-label"), interval: Boolean(row.querySelector("[data-base-interval]")) };
+      ReactDOM.unmountComponentAtNode(box); box.remove(); return result;
+    })()`);
+    check(knownQuiet.quiet === "true" && knownQuiet.interval && /within what chance gives/.test(knownQuiet.name), "§122 a known 10/20 interval covering the ordinary 50% carries quiet ink and wording", JSON.stringify(knownQuiet));
     const coins = await page.evaluate(`[...document.querySelectorAll("[data-base-coins] button")].map((b) => b.innerText)`);
     const other = coins.find((c) => c !== "BTC");
     await page.click(`[data-base-coins] button:has-text("${other}")`);
@@ -19291,12 +19330,21 @@ await page.evaluate(`(() => { const m = document.querySelector("[data-practice-r
     // A switch moves the content and not the frame
     await page.click("[data-monitor-tab='corr']");
     await page.waitForTimeout(60);
-    const motion = await page.evaluate(`(() => { const grid = document.querySelector("[data-corr-grid]"); const pane = grid && grid.parentElement; let card = pane; while (card && !(getComputedStyle(card).overflow === "hidden" && getComputedStyle(card).flexDirection === "column")) card = card.parentElement; return { pane: pane ? getComputedStyle(pane).animationName : null, card: card ? getComputedStyle(card).animationName : null }; })()`);
+    const motion = await page.evaluate(`(() => { const grid = document.querySelector("[data-corr-grid]"); const pane = grid && grid.closest("[data-monitor-pane]"); let card = pane; while (card && !(getComputedStyle(card).overflow === "hidden" && getComputedStyle(card).flexDirection === "column")) card = card.parentElement; return { pane: pane ? getComputedStyle(pane).animationName : null, card: card ? getComputedStyle(card).animationName : null }; })()`);
     check(motion.pane && motion.pane !== "none" && motion.card === "none", "§126 a tab switch animates the content and leaves the screen's frame still", JSON.stringify(motion));
     await page.waitForTimeout(800);
-    const corr = await page.evaluate(`({ words: [...document.querySelectorAll("[data-corr] small")].map((n) => n.textContent), bands: [...document.querySelectorAll("[data-corr-band]")].length, legend: [...document.querySelectorAll("[data-corr-legend] b")].map((n) => n.textContent), pairs: [...document.querySelectorAll("[data-corr-pairs] p")].map((n) => n.innerText) })`);
-    check(corr.words.length === 6 && corr.words.every((w) => /In step|Mostly together|Loosely|Unrelated|Opposite/.test(w)),
+    const corr = await page.evaluate(`({ words: [...document.querySelectorAll("[data-corr]")].map((n) => n.getAttribute("aria-label")), bands: [...document.querySelectorAll("[data-corr-band]")].length, legend: [...document.querySelectorAll("[data-corr-legend] b")].map((n) => n.textContent), pairs: [...document.querySelectorAll("[data-corr-pairs] p")].map((n) => n.innerText) })`);
+    check(corr.words.length === 3 && corr.words.every((w) => /In step|Mostly together|Loosely|Unrelated|Opposite/.test(w)),
       "§126 every correlation cell says in a word what the pair did", JSON.stringify(corr.words));
+    // Pointing at a pair puts it in words beside the triangle
+    const firstPair = await page.evaluate(`document.querySelector("[data-corr]").getAttribute("data-corr")`);
+    await page.hover(`[data-corr='${firstPair}']`);
+    await page.waitForTimeout(250);
+    const detail = await page.evaluate(`(() => { const d = document.querySelector("[data-corr-detail]"); return d ? { pair: d.getAttribute("data-corr-detail"), text: d.innerText } : null; })()`);
+    check(detail && detail.pair === firstPair && /In step|Mostly together|Loosely|Unrelated|Opposite/.test(detail.text) && /of every 10 moves|From \d+ moves/.test(detail.text),
+      "§126 pointing at a pair says it beside the triangle, with its word and its count", JSON.stringify(detail));
+    const alone = await page.evaluate(`[...document.querySelectorAll("[data-corr-alone] li")].map((n) => n.innerText.replace(/\\s+/g, " "))`);
+    check(alone.length === 3, "§126 …and every coin is ranked by how much it moved on its own", JSON.stringify(alone));
     check(corr.legend.length === 5 && corr.pairs.length >= 2 && corr.pairs.every((p) => /of every 10 moves|r [+−-]/.test(p)),
       "§126 …with the five words in a legend and the pairs worth it in sentences", JSON.stringify({ legend: corr.legend, pairs: corr.pairs.slice(0, 2) }));
     // The card's other way on: the chart, and the screen gives way
@@ -19730,7 +19778,56 @@ await page.evaluate(`(() => { const m = document.querySelector("[data-practice-r
    * the stories of the last day an hour a bar, and the coins' months side by
    * side, each line from its own start. */
   {
-    const { ctx, page, errors } = await newCtx(browser, `localStorage.setItem("crypto_chart_onboarding_seen", "1");`);
+    let { ctx, page, errors } = await newCtx(browser, `localStorage.setItem("crypto_chart_onboarding_seen", "1");
+      localStorage.setItem("crypto_chart_macro_events", "false");
+      localStorage.setItem("crypto_chart_room_ahead", "true");`);
+    /* A drag towards the future goes on (14 Oct 2026): at VIEW_FUTURE_ROOM
+       0.4 the latest price stopped 60% across, so with Room Ahead resting at
+       15% one pull hit the wall. Measured on the line's own right end. */
+    const lineEnd = () => page.evaluate(`(() => {
+      const s = Array.from(document.querySelectorAll("svg")).sort((a, b) => b.getBoundingClientRect().width * b.getBoundingClientRect().height - a.getBoundingClientRect().width * a.getBoundingClientRect().height)[0];
+      const r = s.getBoundingClientRect();
+      const p = Array.from(s.querySelectorAll("path")).map((n) => n.getBoundingClientRect()).filter((b) => b.width > 50).sort((a, b) => b.width - a.width)[0];
+      return { end: p ? Math.round(p.right - r.left) : null, w: Math.round(r.width), left: r.left, top: r.top, h: r.height };
+    })()`);
+    const g0 = await lineEnd();
+    const ends = [g0.end];
+    for (let k = 0; k < 4; k++) {
+      const x = g0.left + g0.w * 0.5;
+      const y = g0.top + g0.h * 0.55;
+      await page.mouse.move(x, y);
+      await page.mouse.down();
+      for (let i = 1; i <= 15; i++) await page.mouse.move(x - (250 * i) / 15, y);
+      await page.mouse.up();
+      await page.waitForTimeout(500);
+      ends.push((await lineEnd()).end);
+    }
+    check(ends[1] < ends[0] - 200 && ends[2] < ends[1] - 200 && ends[ends.length - 1] < g0.w * 0.3,
+      "§132 with Room Ahead on, pulls towards the future keep moving the chart until the latest price is near the left edge", JSON.stringify({ ends, w: g0.w }));
+    check(errors.length === 0, "§132 nothing threw with Room Ahead on", errors.join(" | "));
+    await ctx.close();
+    // With the usual range on, a pull towards the future pans the window: it neither narrows nor stands still
+    ({ ctx, page, errors } = await newCtx(browser, `localStorage.setItem("crypto_chart_onboarding_seen", "1");
+      localStorage.setItem("crypto_chart_macro_events", "false");
+      localStorage.setItem("crypto_chart_studies", JSON.stringify(["usualRange", "profile", "where"]));`));
+    const win = () => page.evaluate(`(() => { const n = document.querySelector("[data-chart-window]"); if (!n) return null; const [a, b] = n.getAttribute("data-chart-window").split("-").map(Number); return { t0: a, t1: b }; })()`);
+    const wins = [];
+    for (let k = 0; k < 3; k++) {
+      const x = g0.left + g0.w * 0.5;
+      const y = g0.top + g0.h * 0.55;
+      await page.mouse.move(x, y);
+      await page.mouse.down();
+      for (let i = 1; i <= 15; i++) await page.mouse.move(x - (250 * i) / 15, y);
+      await page.mouse.up();
+      await page.waitForTimeout(500);
+      wins.push(await win());
+    }
+    const spans = wins.map((w) => (w ? w.t1 - w.t0 : 0));
+    check(wins.every(Boolean) && wins[1].t0 > wins[0].t0 && wins[2].t0 > wins[1].t0 && Math.max(...spans) - Math.min(...spans) < spans[0] * 0.02,
+      "§132 with the usual range on, pulls towards the future pan the window at its width (it narrowed from 50 minutes to 9)", JSON.stringify({ spans }));
+    const cone = await page.evaluate(`Boolean(document.querySelector("[data-study='usual-range']"))`);
+    check(cone, "§132 …and the usual range is drawn into the window's own room past the price");
+    check(errors.length === 0, "§132 nothing threw with the studies on", errors.join(" | "));
     const pulse = await page.evaluate(`(() => {
       const now = Date.UTC(2026, 9, 13, 15, 30);
       const H = 3600e3;
@@ -19751,6 +19848,201 @@ await page.evaluate(`(() => { const m = document.querySelector("[data-practice-r
     check(race.fig && race.n >= 2 && race.lit.join() === "BTC" && !race.nan,
       "§132 the monitor draws the coins' months side by side, the coin on the chart lit, every point a number", JSON.stringify(race));
     check(errors.length === 0, "§132 nothing threw", errors.join(" | "));
+    await ctx.close();
+  }
+
+  /* §133 — the market map zooms (14 Oct 2026): "at least a little
+   * information, and zoom, so the names the small tiles do not show appear".
+   * A line over the map says what it is and, under the pointer, which coin
+   * and its share; the wheel zooms about the pointer, a tile is labelled from
+   * its zoomed size, a tile running off the edge keeps its label in view, a
+   * drag moves the map without opening a card, and Whole map goes back. */
+  {
+    const { ctx, page, errors } = await newCtx(browser, () => {
+      localStorage.setItem("crypto_chart_onboarding_seen", "1");
+      localStorage.setItem("crypto_chart_coin_options", JSON.stringify(["BTC", "ETH", "SOL"]));
+    }, PRICES, 0, true);
+    const market = ["BTC", "ETH", "USDT", "XRP", "SOL", "DOGE", "ADA", "TRX", "LINK", "AVAX"].concat(Array.from({ length: 30 }, (_, i) => `ZZ${i}`));
+    const tickers = market.map((c, i) => ({
+      id: i, symbol: c, name: c, price_usd: String(1000 / (i + 1)),
+      percent_change_24h: String(((i % 7) - 3) * 1.3), market_cap_usd: String(Math.round(2e12 / Math.pow(i + 1, 1.9))), volume24: "50000",
+    }));
+    const lore = (r) => (r.request().url().includes("coinlore") ? r.fulfill(json({ data: tickers, info: { coins_num: tickers.length } })) : r.fallback());
+    lore.answersOkx = true;
+    await ctx.route("**/*", lore);
+    await page.keyboard.press("m");
+    await page.waitForTimeout(1500);
+    await page.click("[data-monitor-tab='market']");
+    await page.waitForSelector("[data-market-tile='ZZ29']", { timeout: 10000 });
+    await page.waitForTimeout(400);
+    const read = () => page.evaluate(`({ tiles: document.querySelectorAll("[data-market-tile]").length, labelled: document.querySelectorAll("[data-market-labelled]").length, small: Boolean(document.querySelector("[data-market-tile='ZZ29'][data-market-labelled]")), k: (document.querySelector("[data-market-zoom-level]") || {}).textContent, bar: (document.querySelector("[data-market-bar]") || { innerText: "" }).innerText })`);
+    const whole = await read();
+    check(/market value/i.test(whole.bar) && /zoom/i.test(whole.bar) && !whole.small,
+      "§133 a line over the map says what it is and how to zoom; at the whole map the smallest tile has no name", JSON.stringify(whole));
+    const box = await (await page.$("[data-market-map]")).boundingBox();
+    await page.mouse.move(box.x + box.width * 0.97, box.y + box.height * 0.97);
+    for (let i = 0; i < 8; i++) {
+      await page.mouse.wheel(0, -240);
+      await page.waitForTimeout(60);
+    }
+    await page.waitForTimeout(400);
+    const zoomed = await read();
+    // Unnamed in view: only a sliver the edge cuts down to under 40px
+    const unnamed = await page.evaluate(`[...document.querySelectorAll("[data-market-tile]:not([data-market-labelled])")].map((n) => { const r = n.getBoundingClientRect(); return [n.getAttribute("data-market-tile"), Math.round(r.width), Math.round(r.height)]; })`);
+    check(zoomed.k !== "1.0×" && zoomed.tiles < whole.tiles && zoomed.labelled > 0 && unnamed.every(([, w, h]) => w < 40 || h < 40),
+      "§133 the wheel zooms about the pointer into the small tiles, and every tile in view with room for it is named", JSON.stringify({ zoomed, unnamed }));
+    const over = await page.evaluate(`document.querySelector("[data-market-tile]").getAttribute("data-market-tile")`);
+    await page.hover(`[data-market-tile='${over}']`);
+    await page.waitForTimeout(200);
+    const hovered = await read();
+    check(hovered.bar.includes(over) && /% of the top \d+/.test(hovered.bar), "§133 …the line names the tile under the pointer with its share of the map", hovered.bar);
+    // A drag moves the map and opens nothing
+    const before = await page.evaluate(`[...document.querySelectorAll("[data-market-tile]")].map((n) => n.getAttribute("data-market-tile")).join()`);
+    await page.mouse.move(box.x + box.width * 0.5, box.y + box.height * 0.5);
+    await page.mouse.down();
+    for (let i = 1; i <= 10; i++) await page.mouse.move(box.x + box.width * 0.5 + i * 30, box.y + box.height * 0.5 + i * 20);
+    await page.mouse.up();
+    await page.waitForTimeout(400);
+    const after = await page.evaluate(`({ tiles: [...document.querySelectorAll("[data-market-tile]")].map((n) => n.getAttribute("data-market-tile")).join(), card: Boolean(document.querySelector("[data-monitor-detail]")) })`);
+    check(after.tiles !== before && !after.card, "§133 a drag moves the zoomed map and opens no card", JSON.stringify({ card: after.card }));
+    await page.click("[data-market-zoom='whole']");
+    await page.waitForTimeout(300);
+    const back = await read();
+    check(back.k === "1.0×" && back.tiles === whole.tiles, "§133 Whole map puts every tile back", JSON.stringify(back));
+    check(errors.length === 0, "§133 nothing threw", errors.join(" | "));
+    await ctx.close();
+  }
+
+  /* §134 — base-rate views and retrospective history. These figures reuse
+     the daily cache: changing a selection, horizon or coin table asks nothing. */
+  {
+    const DAY = 86400;
+    const today = Math.floor(Date.now() / 1000 / DAY) * DAY;
+    const candles = Array.from({ length: 1600 }, (_, i) => {
+      const close = 100 * Math.exp(0.12 * Math.sin(i / 8));
+      return [today - (1599 - i) * DAY, close, close * 1.01, close * 0.99, close];
+    });
+    const ctx = await browser.newContext({ viewport: { width: 1280, height: 950 }, acceptDownloads: true });
+    let dailyAsks = 0;
+    await ctx.route("**/*", (r) => {
+      const u = r.request().url();
+      if (u.startsWith("file://")) return r.continue();
+      if (u.includes("granularity=86400")) dailyAsks++;
+      if (u.includes("historic")) return r.fulfill(json({ data: { prices: PRICES } }));
+      if (u.includes("spot")) return r.fulfill(json({ data: { amount: "100", currency: "USD" } }));
+      return r.fulfill(json({ data: {} }));
+    });
+    await ctx.addInitScript(({ candles }) => {
+      localStorage.setItem("crypto_chart_onboarding_seen", "1");
+      localStorage.setItem("crypto_chart_touch_hint_seen", "true");
+      localStorage.setItem("crypto_chart_coin_options", JSON.stringify(["BTC", "ETH", "SOL"]));
+      localStorage.setItem("crypto_chart_daily_closes", JSON.stringify(["BTC", "ETH"].map((coin) => [coin, { t: Date.now(), rows: candles }])));
+    }, { candles });
+    const page = await ctx.newPage();
+    const errors = [];
+    page.on("pageerror", (e) => errors.push(e.message));
+    await page.goto(INDEX, { waitUntil: "load" });
+    await page.waitForSelector("svg path");
+    await page.keyboard.press("b");
+    await page.waitForSelector("[data-base-glance]");
+    const earlyHistory = await page.evaluate(`({ paths: document.querySelectorAll("[data-base-path]").length, episodes: document.querySelectorAll("[data-base-episode]").length, across: Boolean(document.querySelector("[data-base-across]")) })`);
+    check(earlyHistory.paths === 4, "§134 a selected live item has after-this and any-day mean/median paths", JSON.stringify(earlyHistory));
+    check(earlyHistory.episodes >= 12, "§134 complete past episodes have their own timeline ticks", JSON.stringify(earlyHistory));
+    check(earlyHistory.across, "§134 the selected item's cached record is compared across coins");
+    await page.evaluate(`(() => { const n = document.querySelector("[data-base-tab='library']"); if (n) n.click(); })()`);
+    const earlyLibrary = await page.evaluate(`({ similar: document.querySelectorAll("[data-base-similar-after]").length, horizon: Boolean(document.querySelector("[data-base-horizon-pick]")), tools: Boolean(document.querySelector("[data-base-library-tools]")), csv: Boolean(document.querySelector("[data-base-csv]")) })`);
+    check(earlyLibrary.similar === 20, "§134 the similar past is a list of twenty small charts", JSON.stringify(earlyLibrary));
+    check(earlyLibrary.horizon, "§134 Library offers the descriptive horizon picker");
+    check(earlyLibrary.tools, "§134 Library offers search, filters and sorting");
+    check(earlyLibrary.csv, "§134 Library offers a local CSV export");
+    await page.evaluate(`(() => { const n = document.querySelector("[data-base-tab='calendar']"); if (n) n.click(); })()`);
+    const earlyCalendar = await page.evaluate(`({ weekdays: document.querySelectorAll("[data-base-weekday-bar]").length, months: document.querySelectorAll("[data-month-up]").length })`);
+    check(earlyCalendar.weekdays === 7, "§134 weekday counts are seven bars", JSON.stringify(earlyCalendar));
+    check(earlyCalendar.months === 12, "§134 the existing months summary is retained", JSON.stringify(earlyCalendar));
+    await page.evaluate(`(() => { const n = document.querySelector("[data-base-tab='now']"); if (n) n.click(); })()`);
+    const onlyNow = await page.evaluate(`({ now: document.querySelector("[data-base-tab='now']").getAttribute("aria-selected"), library: Boolean(document.querySelector("[data-base-patterns]")), calendar: Boolean(document.querySelector("[data-base-months]")), index: Boolean(document.querySelector("[data-base-nav]")) })`);
+    check(onlyNow.now === "true" && !onlyNow.library && !onlyNow.calendar && !onlyNow.index, "§134 B opens on Now, rendering only its sections", JSON.stringify(onlyNow));
+    await page.focus("[data-base-tab='now']");
+    await page.keyboard.press("ArrowRight");
+    check(await page.locator("[data-base-tab='library']").getAttribute("aria-selected") === "true", "§134 right arrow opens Library and moves focus");
+    const libraryOnly = await page.evaluate(`({ index: Boolean(document.querySelector("[data-base-nav]")), glance: Boolean(document.querySelector("[data-base-glance]")), calendar: Boolean(document.querySelector("[data-base-months]")) })`);
+    check(libraryOnly.index && !libraryOnly.glance && !libraryOnly.calendar, "§134 Library owns its index and renders only its sections", JSON.stringify(libraryOnly));
+    const similar = await page.locator("[data-base-similar-window]").count();
+    check(similar === 20 && await page.locator("[data-base-similar-after]").count() === 20, "§134 twenty similar windows are individual lines with grey follow-ups", String(similar));
+    await page.locator("[data-base-library-tools] input[type='search']").fill("RSI above 70");
+    const filtered = await page.evaluate(`[...document.querySelectorAll("[data-base-library-row]")].map((n) => n.textContent)`);
+    check(filtered.length > 0 && filtered.every((t) => /RSI above 70/.test(t)), "§134 search filters the Library's item names", JSON.stringify(filtered));
+    await page.locator("[data-base-library-tools] input[type='search']").fill("");
+    await page.locator("[data-base-library-tools] input[type='checkbox']").check();
+    const liveOnly = await page.evaluate(`(() => {
+      const head = document.querySelector("[data-base-library-tools]");
+      let f = head[Object.keys(head).find((k) => k.startsWith("__reactInternalInstance"))];
+      while (f && !(f.stateNode && f.stateNode.readings)) f = f.return;
+      const live = baseHistoryItems(f.stateNode, f.stateNode.readings()).filter((it) => it.live).map((it) => it.key);
+      const drawn = [...document.querySelectorAll("[data-base-library-row]")].map((n) => n.getAttribute("data-base-library-row"));
+      return { drawn, valid: drawn.length > 0 && drawn.every((key) => live.includes(key)) };
+    })()`);
+    check(liveOnly.valid, "§134 the live filter leaves only current items", JSON.stringify(liveOnly));
+    await page.locator("[data-base-library-tools] input[type='checkbox']").uncheck();
+    await page.locator("[data-base-library-tools] select").first().selectOption("n");
+    const sorted = await page.evaluate(`(() => {
+      const head = document.querySelector("[data-base-library-tools]");
+      let f = head[Object.keys(head).find((k) => k.startsWith("__reactInternalInstance"))];
+      while (f && !(f.stateNode && f.stateNode.readings)) f = f.return;
+      const all = baseHistoryItems(f.stateNode, f.stateNode.readings());
+      const ns = [...document.querySelectorAll("[data-base-setup]")].filter((el) => STRATEGY_SETUPS.some((d) => d.id === el.getAttribute("data-base-setup")))
+        .map((el) => all.find((it) => it.key === el.getAttribute("data-base-library-row")).records[0].result.n);
+      return { ns, ordered: ns.every((n, i) => i === 0 || ns[i - 1] >= n) };
+    })()`);
+    check(sorted.ns.length === 12 && sorted.ordered, "§134 sample-size sort orders each Library group by completed episodes", JSON.stringify(sorted));
+    await page.selectOption("[data-base-horizon-pick]", "3");
+    check(await page.locator("[data-base-untested]").count() === 1, "§134 a selected horizon explicitly says the original tests do not apply");
+    const horizons = await page.evaluate(`[...document.querySelectorAll("[data-base-library-row]:not([data-base-shape]) [data-base-horizon]")].map((n) => n.getAttribute("data-base-horizon"))`);
+    check(horizons.includes("3") && horizons.every((h) => h === "3" || h === "10"), "§134 the picker recounts states and setups, leaving candle horizons fixed", JSON.stringify([...new Set(horizons)]));
+    const download = page.waitForEvent("download");
+    await page.click("[data-base-csv]");
+    const file = await download;
+    const content = require("fs").readFileSync(await file.path(), "utf8");
+    check(file.suggestedFilename() === "base-rates-BTC.csv" && /wilson95_lo/.test(content) && content.split("\r\n").length > 40, "§134 CSV downloads the coin's counted rows and intervals", content.slice(0, 120));
+    await page.click("[data-base-tab='calendar']");
+    check(await page.locator("[data-base-weekday-bar]").count() === 7 && await page.locator("[data-month-up]").count() === 12, "§134 Calendar draws seven weekday bars and twelve completed-month summaries");
+    check(await page.locator("[data-base-patterns]").count() === 0 && await page.locator("[data-base-glance]").count() === 0, "§134 Calendar renders only its sections");
+    await page.click("[data-base-tab='now']");
+    await page.waitForSelector("[data-base-history]");
+    const history = await page.evaluate(`(() => {
+      const n = document.querySelector("[data-base-history]");
+      return { paths: n.querySelectorAll("[data-base-path]").length, ticks: n.querySelectorAll("[data-base-episode]").length,
+        coins: [...n.querySelectorAll("[data-base-across-coin]")].map((c) => c.textContent),
+        caption: n.textContent, invalid: [...n.querySelectorAll("path,polygon,line")].some((p) => [...p.attributes].some((a) => /NaN|Infinity/.test(a.value))) };
+    })()`);
+    check(history.paths === 4 && history.ticks >= 12 && !history.invalid && /not a forecast/.test(history.caption), "§134 after-this and any-day mean/median paths have complete episodes and finite coordinates", JSON.stringify(history));
+    check(history.coins.length === 3 && /No fresh daily history cached/.test(history.coins[2]) && dailyAsks === 0, "§134 across coins uses only cached history, naming missing coins without fetching", JSON.stringify({ coins: history.coins, dailyAsks }));
+    if (process.env.BASE_RATES_SHOT) await page.screenshot({ path: process.env.BASE_RATES_SHOT, fullPage: true });
+    await page.keyboard.press("Escape");
+    await page.keyboard.press("b");
+    check(await page.locator("[data-base-tab='now']").getAttribute("aria-selected") === "true", "§134 reopening B starts on Now");
+    await page.setViewportSize({ width: 390, height: 844 });
+    for (const locale of ["en", "tr", "de", "es", "fr", "id", "it", "ja", "ko", "pt_BR", "ru", "uk", "zh_CN"]) {
+      await page.evaluate((l) => localStorage.setItem("crypto_chart_language", l), locale);
+      await page.reload({ waitUntil: "load" });
+      await page.waitForSelector("svg path");
+      await page.evaluate(`document.dispatchEvent(new KeyboardEvent("keydown", { key: "b", bubbles: true }))`);
+      await page.waitForSelector("[data-base-tab='now']");
+      const spill = await page.evaluate(`({ tabs: [...document.querySelectorAll("[data-base-tab]")].map((n) => ({ label: n.textContent, spill: n.scrollWidth > n.clientWidth + 1, right: n.getBoundingClientRect().right })), body: document.querySelector("[data-base-tab]").closest("[data-base-body]") })`);
+      check(spill.tabs.length === 3 && spill.tabs.every((t) => !t.spill && t.right <= 391), `§134 ${locale}: all three labels fit at 390px`, JSON.stringify(spill.tabs));
+      for (const tab of ["now", "library", "calendar"]) {
+        await page.click(`[data-base-tab='${tab}']`);
+        const overflow = await page.evaluate(`(() => {
+          const body = document.querySelector("[data-base-body]");
+          const r = body.getBoundingClientRect();
+          return { wide: body.scrollWidth > body.clientWidth + 1, controls: [...body.querySelectorAll("button, input, select")]
+            .filter((n) => { const b = n.getBoundingClientRect(); return b.width > 0 && (b.left < r.left - 1 || b.right > r.right + 1) && !n.closest("[data-base-nav]"); })
+            .map((n) => n.getAttribute("aria-label") || n.textContent) };
+        })()`);
+        check(!overflow.wide && !overflow.controls.length, `§134 ${locale}/${tab}: the phone view and its controls stay inside the screen`, JSON.stringify(overflow));
+      }
+    }
+    check(errors.length === 0, "§134 nothing threw", errors.join(" | "));
     await ctx.close();
   }
 

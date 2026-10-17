@@ -58,7 +58,8 @@ const monitorRace = (seriesBy, coins, n = 120) => {
         if (pts[j].price < a.price) a = pts[j];
         if (pts[j].price > b.price) b = pts[j];
       }
-      for (const q of a === b ? [a] : a.t <= b.t ? [a, b] : [b, a]) kept.push(q);
+      for (const q of a === b ? [a] : a.t <= b.t ? [a, b] : [b, a])
+        kept.push(q);
     }
     const lastPt = pts[pts.length - 1];
     if (kept[kept.length - 1] !== lastPt) kept.push(lastPt);
@@ -70,10 +71,11 @@ const monitorRace = (seriesBy, coins, n = 120) => {
   if (lines.length < 2 || !(t1 > t0)) return null;
   let lo = 0;
   let hi = 0;
-  for (const l of lines) for (const p of l.pts) {
-    if (p.v < lo) lo = p.v;
-    if (p.v > hi) hi = p.v;
-  }
+  for (const l of lines)
+    for (const p of l.pts) {
+      if (p.v < lo) lo = p.v;
+      if (p.v > hi) hi = p.v;
+    }
   lines.sort((a, b) => b.last - a.last);
   return { lines, t0, t1, lo, hi };
 };
@@ -82,10 +84,12 @@ const monitorRace = (seriesBy, coins, n = 120) => {
    kept inside [top, bottom]. Pure. */
 const monitorRaceLabels = (ys, gap, top, bottom) => {
   const order = ys.map((y, i) => ({ y, i })).sort((a, b) => a.y - b.y);
-  for (let k = 1; k < order.length; k += 1) order[k].y = Math.max(order[k].y, order[k - 1].y + gap);
+  for (let k = 1; k < order.length; k += 1)
+    order[k].y = Math.max(order[k].y, order[k - 1].y + gap);
   const over = order.length ? order[order.length - 1].y - bottom : 0;
   if (over > 0) for (const o of order) o.y -= over;
-  for (let k = 0; k < order.length; k += 1) order[k].y = Math.max(order[k].y, top + k * gap);
+  for (let k = 0; k < order.length; k += 1)
+    order[k].y = Math.max(order[k].y, top + k * gap);
   const out = new Array(ys.length);
   for (const o of order) out[o.i] = o.y;
   return out;
@@ -119,13 +123,19 @@ const monitorRow = (series) => {
      scaled to a day by the steps a day holds. Either way — it is a size,
      not a direction. */
   const steps = [];
-  for (let i = 1; i < pts.length; i += 1) steps.push(Math.log(pts[i].price / pts[i - 1].price));
-  const gaps = pts.slice(1).map((p, i) => p.t - pts[i].t).sort((a, b) => a - b);
+  for (let i = 1; i < pts.length; i += 1)
+    steps.push(Math.log(pts[i].price / pts[i - 1].price));
+  const gaps = pts
+    .slice(1)
+    .map((p, i) => p.t - pts[i].t)
+    .sort((a, b) => a - b);
   const step = gaps[Math.floor(gaps.length / 2)];
   let dailyMove = null;
   if (steps.length >= 2 && step > 0) {
     const mean = steps.reduce((a, b) => a + b, 0) / steps.length;
-    const sd = Math.sqrt(steps.reduce((a, b) => a + (b - mean) ** 2, 0) / (steps.length - 1));
+    const sd = Math.sqrt(
+      steps.reduce((a, b) => a + (b - mean) ** 2, 0) / (steps.length - 1),
+    );
     dailyMove = sd * Math.sqrt(MONITOR_DAY_MS / step) * 100;
   }
   return {
@@ -152,7 +162,8 @@ const correlationMatrix = (coins, seriesByCoin) => {
     for (let j = i + 1; j < coins.length; j += 1) {
       const a = seriesByCoin[coins[i]];
       const b = seriesByCoin[coins[j]];
-      let c = Array.isArray(a) && Array.isArray(b) ? compareCorrelation(a, b) : null;
+      let c =
+        Array.isArray(a) && Array.isArray(b) ? compareCorrelation(a, b) : null;
       /* …and the plainer of the two counts beside it: how many of the steps
          both took went the same way (12 Oct 2026) */
       const sd = c ? compareSameDirection(a, b) : null;
@@ -174,7 +185,8 @@ const CORR_BANDS = [
   { min: -0.2, key: "unrelated" },
   { min: -Infinity, key: "opposite" },
 ];
-const corrBand = (r) => (Number.isFinite(r) ? CORR_BANDS.find((b) => r >= b.min).key : null);
+const corrBand = (r) =>
+  Number.isFinite(r) ? CORR_BANDS.find((b) => r >= b.min).key : null;
 const corrWord = (band) =>
   ({
     together: msg("mon_corr_together", "In step"),
@@ -191,17 +203,40 @@ const corrHighlights = (coins, matrix) => {
   for (let i = 0; i < coins.length; i += 1) {
     for (let j = i + 1; j < coins.length; j += 1) {
       const c = matrix[`${coins[i]}|${coins[j]}`];
-      if (c && Number.isFinite(c.r)) pairs.push({ a: coins[i], b: coins[j], c });
+      if (c && Number.isFinite(c.r))
+        pairs.push({ a: coins[i], b: coins[j], c });
     }
   }
   if (!pairs.length) return [];
   const byR = pairs.slice().sort((x, y) => y.c.r - x.c.r);
   const out = byR.slice(0, Math.min(3, byR.length));
-  const least = pairs.slice().sort((x, y) => Math.abs(x.c.r) - Math.abs(y.c.r))[0];
+  const least = pairs
+    .slice()
+    .sort((x, y) => Math.abs(x.c.r) - Math.abs(y.c.r))[0];
   if (least && !out.includes(least)) out.push(least);
   for (const p of byR) if (p.c.r <= -0.2 && !out.includes(p)) out.push(p);
   return out;
 };
+
+/* Each coin's mean correlation with the others, lowest first: the coin that
+   moved most on its own heads the list. A pair without r is left out, and a
+   coin with none is not listed. Pure. */
+const corrAverages = (coins, matrix) =>
+  coins
+    .map((a) => {
+      const rs = coins
+        .filter((b) => b !== a)
+        .map((b) => matrix[`${a}|${b}`])
+        .filter((c) => c && Number.isFinite(c.r))
+        .map((c) => c.r);
+      return {
+        coin: a,
+        r: rs.length ? rs.reduce((s, v) => s + v, 0) / rs.length : null,
+        n: rs.length,
+      };
+    })
+    .filter((x) => x.r != null)
+    .sort((x, y) => x.r - y.r);
 
 /* A coin's 30 days as a line in a box of 0..1 each way, thinned to about `n`
    buckets by keeping each bucket's low and high in their own order — so a
@@ -232,7 +267,10 @@ const monitorSpark = (series, n = 48) => {
   const last = pts[pts.length - 1];
   if (kept[kept.length - 1] !== last) kept.push(last);
   const span = hi - lo;
-  return kept.map((q) => [(q.t - t0) / (t1 - t0), span > 0 ? (q.price - lo) / span : 0.5]);
+  return kept.map((q) => [
+    (q.t - t0) / (t1 - t0),
+    span > 0 ? (q.price - lo) / span : 0.5,
+  ]);
 };
 
 /* Four facts about the list at once, each a count or a figure with its coin.
@@ -240,11 +278,21 @@ const monitorSpark = (series, n = 48) => {
 const monitorSummary = (rows) => {
   const has = (k) => rows.filter((r) => r[k] != null && Number.isFinite(r[k]));
   const day = has("change24h");
-  const month = has("change30d").map((r) => r.change30d).sort((a, b) => a - b);
+  const month = has("change30d")
+    .map((r) => r.change30d)
+    .sort((a, b) => a - b);
   const mid = month.length >> 1;
-  const median = !month.length ? null : month.length % 2 ? month[mid] : (month[mid - 1] + month[mid]) / 2;
-  const widest = has("dailyMove").sort((a, b) => b.dailyMove - a.dailyMove)[0] || null;
-  const mover = has("change30d").sort((a, b) => Math.abs(b.change30d) - Math.abs(a.change30d))[0] || null;
+  const median = !month.length
+    ? null
+    : month.length % 2
+      ? month[mid]
+      : (month[mid - 1] + month[mid]) / 2;
+  const widest =
+    has("dailyMove").sort((a, b) => b.dailyMove - a.dailyMove)[0] || null;
+  const mover =
+    has("change30d").sort(
+      (a, b) => Math.abs(b.change30d) - Math.abs(a.change30d),
+    )[0] || null;
   return {
     up: day.filter((r) => r.change24h > 0).length,
     of: day.length,
@@ -260,7 +308,9 @@ const monitorSummary = (rows) => {
    tiles stay as near square as the sizes allow and the labels fit. Pure;
    rects in the box's own units. */
 const squarify = (items, w, h) => {
-  const list = items.filter((d) => d.value > 0).sort((a, b) => b.value - a.value);
+  const list = items
+    .filter((d) => d.value > 0)
+    .sort((a, b) => b.value - a.value);
   const total = list.reduce((a, d) => a + d.value, 0);
   const out = [];
   if (!(total > 0) || !(w > 0) || !(h > 0)) return out;
@@ -273,7 +323,10 @@ const squarify = (items, w, h) => {
     const sum = row.reduce((a, d) => a + d.area, 0);
     let max = 0;
     for (const d of row) {
-      const ratio = Math.max((side * side * d.area) / (sum * sum), (sum * sum) / (side * side * d.area));
+      const ratio = Math.max(
+        (side * side * d.area) / (sum * sum),
+        (sum * sum) / (side * side * d.area),
+      );
       if (ratio > max) max = ratio;
     }
     return max;
@@ -304,7 +357,8 @@ const squarify = (items, w, h) => {
   for (const d of list) {
     const tile = { key: d.key, area: d.value * scale };
     const side = Math.min(rw, rh);
-    if (!row.length || worst(row.concat(tile), side) <= worst(row, side)) row.push(tile);
+    if (!row.length || worst(row.concat(tile), side) <= worst(row, side))
+      row.push(tile);
     else {
       lay(row);
       row = [tile];
@@ -318,6 +372,12 @@ const squarify = (items, w, h) => {
 const MONITOR_MAP_MAX = 100;
 // The smallest type a tile's label is set in, in rem; a smaller tile has none
 const MONITOR_MAP_MIN_TYPE = 0.72; // rem — raised from 0.64 with the larger map (12 Oct 2026)
+/* **The map zooms** (14 Oct 2026): the wheel about the pointer, two fingers,
+   or the − / + by it; a drag moves a zoomed map. Labels are worked out from
+   each tile's zoomed size, so a tile too small to name at the whole map is
+   named once it is big enough. */
+const MONITOR_MAP_MAX_ZOOM = 12;
+const MONITOR_MAP_ZOOM_STEP = 1.6;
 // The snapshot is asked again this often while the map is open
 const MONITOR_MAP_REFRESH_MS = 60000;
 
@@ -341,9 +401,12 @@ const MonitorTab = styled.button.attrs({ type: "button" })`
   padding: 0 0.9rem;
   white-space: nowrap;
   border-radius: 8px;
-  border: 1px solid ${({ theme, active }) => (active ? theme.color.text : theme.color.border)};
-  background: ${({ theme, active }) => (active ? theme.color.text : "transparent")};
-  color: ${({ theme, active }) => (active ? theme.color.bg : theme.color.textSecondary)};
+  border: 1px solid
+    ${({ theme, active }) => (active ? theme.color.text : theme.color.border)};
+  background: ${({ theme, active }) =>
+    active ? theme.color.text : "transparent"};
+  color: ${({ theme, active }) =>
+    active ? theme.color.bg : theme.color.textSecondary};
   font-family: ${({ theme }) => theme.font.primary};
   font-size: 0.78rem;
   letter-spacing: 0.04em;
@@ -366,8 +429,10 @@ const MonitorTab = styled.button.attrs({ type: "button" })`
 /* Nine columns on a wide window; on a phone the line, the high, the typical
    day and β step aside rather than push the row past the edge — nothing here
    scrolls sideways. */
-const MONITOR_COLUMNS = "minmax(4.5rem, 1fr) minmax(6rem, 1.3fr) repeat(3, minmax(4rem, 0.8fr)) minmax(8rem, 1.7fr) minmax(5rem, 0.9fr) minmax(5rem, 0.9fr) minmax(4rem, 0.7fr)";
-const MONITOR_COLUMNS_PHONE = "minmax(3.2rem, 0.9fr) minmax(4.6rem, 1.3fr) repeat(3, minmax(2.9rem, 0.8fr))";
+const MONITOR_COLUMNS =
+  "minmax(4.5rem, 1fr) minmax(6rem, 1.3fr) repeat(3, minmax(4rem, 0.8fr)) minmax(8rem, 1.7fr) minmax(5rem, 0.9fr) minmax(5rem, 0.9fr) minmax(4rem, 0.7fr)";
+const MONITOR_COLUMNS_PHONE =
+  "minmax(3.2rem, 0.9fr) minmax(4.6rem, 1.3fr) repeat(3, minmax(2.9rem, 0.8fr))";
 
 const MonitorTable = styled.div`
   display: grid;
@@ -398,7 +463,8 @@ const MonitorHeadCell = styled.button.attrs({ type: "button" })`
   border: none;
   border-bottom: 1px solid ${({ theme }) => theme.color.border};
   background: transparent;
-  color: ${({ theme, active }) => (active ? theme.color.text : theme.color.textSecondary)};
+  color: ${({ theme, active }) =>
+    active ? theme.color.text : theme.color.textSecondary};
   font-family: ${({ theme }) => theme.font.primary};
   font-size: 0.66rem;
   letter-spacing: 0.08em;
@@ -429,7 +495,8 @@ const MonitorRowButton = styled.button.attrs({ type: "button" })`
   padding: 0;
   border: none;
   border-bottom: 1px solid ${({ theme }) => theme.color.border};
-  background: ${({ theme, current }) => (current ? theme.color.bgSecondary : "transparent")};
+  background: ${({ theme, current }) =>
+    current ? theme.color.bgSecondary : "transparent"};
   color: ${({ theme }) => theme.color.text};
   font-family: ${({ theme }) => theme.font.primary};
   font-size: inherit;
@@ -476,8 +543,15 @@ const MonitorCell = styled.span`
   overflow: hidden;
   text-overflow: ellipsis;
   color: ${({ theme, tone }) =>
-    tone === "up" ? theme.color.chartLineGreen : tone === "down" ? theme.color.chartLineRed : tone === "quiet" ? theme.color.textSecondary : theme.color.text};
-  font-weight: ${({ strong, theme }) => (strong ? theme.fontWeight.semibold : theme.fontWeight.regular)};
+    tone === "up"
+      ? theme.color.chartLineGreen
+      : tone === "down"
+        ? theme.color.chartLineRed
+        : tone === "quiet"
+          ? theme.color.textSecondary
+          : theme.color.text};
+  font-weight: ${({ strong, theme }) =>
+    strong ? theme.fontWeight.semibold : theme.fontWeight.regular};
 `;
 
 /* The month as a line (`monitorSpark`): low to high is the cell's height, so
@@ -512,7 +586,10 @@ const MonitorDetailScrim = styled.div`
   align-items: center;
   justify-content: center;
   padding: 1rem;
-  background: ${({ theme }) => (theme.color.bg === "#ffffff" ? "rgba(15, 23, 32, 0.28)" : "rgba(0, 0, 0, 0.6)")};
+  background: ${({ theme }) =>
+    theme.color.bg === "#ffffff"
+      ? "rgba(15, 23, 32, 0.28)"
+      : "rgba(0, 0, 0, 0.6)"};
 `;
 const MonitorDetail = styled.div`
   position: relative;
@@ -579,7 +656,11 @@ const MonitorDetailPrice = styled.div`
 const MonitorDetailChart = styled.div`
   margin: 0.6rem 0 0.2rem;
   color: ${({ theme, tone }) =>
-    tone === "up" ? theme.color.chartLineGreen : tone === "down" ? theme.color.chartLineRed : theme.color.text};
+    tone === "up"
+      ? theme.color.chartLineGreen
+      : tone === "down"
+        ? theme.color.chartLineRed
+        : theme.color.text};
   svg {
     display: block;
     width: 100%;
@@ -645,9 +726,12 @@ const MonitorDetailAction = styled.button.attrs({ type: "button" })`
   min-height: 2.5rem;
   padding: 0 1rem;
   border-radius: 999px;
-  border: 1px solid ${({ theme, primary }) => (primary ? theme.color.text : theme.color.border)};
-  background: ${({ theme, primary }) => (primary ? theme.color.text : "transparent")};
-  color: ${({ theme, primary }) => (primary ? theme.color.bg : theme.color.text)};
+  border: 1px solid
+    ${({ theme, primary }) => (primary ? theme.color.text : theme.color.border)};
+  background: ${({ theme, primary }) =>
+    primary ? theme.color.text : "transparent"};
+  color: ${({ theme, primary }) =>
+    primary ? theme.color.bg : theme.color.text};
   font: inherit;
   font-size: 0.82rem;
   letter-spacing: 0.04em;
@@ -711,7 +795,11 @@ const MonitorFact = styled.button.attrs({ type: "button" })`
     font-weight: ${({ theme }) => theme.fontWeight.semibold};
     font-variant-numeric: tabular-nums;
     color: ${({ theme, tone }) =>
-      tone === "up" ? theme.color.chartLineGreen : tone === "down" ? theme.color.chartLineRed : theme.color.text};
+      tone === "up"
+        ? theme.color.chartLineGreen
+        : tone === "down"
+          ? theme.color.chartLineRed
+          : theme.color.text};
   }
   span {
     display: block;
@@ -755,8 +843,10 @@ const marketTile = css`
   text-align: left;
   line-height: 1.15;
   background: ${({ theme, change }) => {
-    if (change == null || !Number.isFinite(change) || Math.abs(change) < 0.05) return theme.color.bgSecondary;
-    const ink = change > 0 ? theme.color.chartLineGreen : theme.color.chartLineRed;
+    if (change == null || !Number.isFinite(change) || Math.abs(change) < 0.05)
+      return theme.color.bgSecondary;
+    const ink =
+      change > 0 ? theme.color.chartLineGreen : theme.color.chartLineRed;
     const share = Math.round(14 + 41 * Math.min(1, Math.abs(change) / 8));
     return `color-mix(in srgb, ${ink} ${share}%, ${theme.color.bg})`;
   }};
@@ -787,6 +877,56 @@ const MarketTileButton = styled.button.attrs({ type: "button" })`
 `;
 
 /* The day's largest moves under the map, as lines a reader can read. */
+/* The line over the map: what it is, or the tile under the pointer, and the
+   zoom by it. */
+const MarketBar = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem 1rem;
+  min-height: 2rem;
+  margin-bottom: 0.45rem;
+  font-size: 0.74rem;
+  color: ${({ theme }) => theme.color.textSecondary};
+
+  > span {
+    min-width: 0;
+  }
+  b {
+    color: ${({ theme }) => theme.color.text};
+    font-weight: ${({ theme }) => theme.fontWeight.semibold};
+  }
+`;
+
+const MarketZoom = styled.div`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-variant-numeric: tabular-nums;
+
+  button {
+    min-width: 2rem;
+    height: 2rem;
+    padding: 0 0.5rem;
+    border-radius: 8px;
+    border: 1px solid ${({ theme }) => theme.color.border};
+    background: ${({ theme }) => theme.color.bg};
+    color: ${({ theme }) => theme.color.text};
+    font-family: ${({ theme }) => theme.font.primary};
+    font-size: 0.8rem;
+    cursor: pointer;
+  }
+  button:disabled {
+    opacity: 0.35;
+    cursor: default;
+  }
+  span {
+    min-width: 2.6rem;
+    text-align: center;
+  }
+`;
+
 const MarketMoves = styled.div`
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -913,7 +1053,9 @@ const MonitorRace = styled.figure`
     stroke-width: 1.4;
     stroke-linejoin: round;
     opacity: 0.55;
-    transition: opacity 0.15s ease, stroke-width 0.15s ease;
+    transition:
+      opacity 0.15s ease,
+      stroke-width 0.15s ease;
   }
   .line[data-lit="true"] {
     stroke: ${({ theme }) => theme.color.text};
@@ -950,116 +1092,300 @@ const MonitorNote = styled.p`
   color: ${({ theme }) => theme.color.textSecondary};
 `;
 
+/* **The correlation, redrawn** (14 Oct 2026). It was a full square of
+   boxed cells — every pair written twice, a label column stretched to half
+   the width and the same two words in every box. Now: one triangle, the
+   coins on its diagonal like a staircase, each pair once as a square whose
+   ink is how closely the two moved (a sign written, never a colour: together
+   is not up), and beside it what the triangle says — the pair pointed at in
+   words, and which coin moved most on its own. */
+const corrInk = (theme, r) => {
+  const a = Math.min(1, Math.abs(r));
+  return `color-mix(in srgb, ${theme.color.text} ${Math.round(6 + a * 72)}%, ${theme.color.bg})`;
+};
+
+const CorrLayout = styled.div`
+  display: grid;
+  grid-template-columns: max-content minmax(16rem, 22rem);
+  justify-content: start;
+  align-items: start;
+  gap: 1.25rem;
+  && {
+    max-width: 72rem;
+  }
+  @media (max-width: 1099px) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+`;
+
+const CorrBoard = styled.div`
+  justify-self: start;
+  max-width: 100%;
+  padding: 1rem;
+  border: 1px solid ${({ theme }) => theme.color.border};
+  border-radius: 14px;
+  background: ${({ theme }) => theme.color.bgSecondary};
+  overflow-x: auto;
+  ${themedScrollbar};
+`;
+
 const CorrGrid = styled.div`
   display: grid;
+  grid-template-columns: repeat(
+    ${({ n }) => n},
+    ${({ n }) =>
+      n > 9 ? "2.7rem" : n > 6 ? "3.4rem" : n > 4 ? "4rem" : "4.6rem"}
+  );
+  /* Bigger squares for fewer coins, so a short list is not a postage stamp */
+  grid-auto-rows: ${({ n }) =>
+    n > 9 ? "2.7rem" : n > 6 ? "3.4rem" : n > 4 ? "4rem" : "4.6rem"};
+  gap: 3px;
   width: max-content;
-  max-width: 100%;
-  grid-template-columns: minmax(3rem, auto) repeat(${({ n }) => n}, minmax(0, 5.5rem));
-  gap: 2px;
-  font-size: 0.76rem;
   font-variant-numeric: tabular-nums;
 
   @media (max-width: 600px) {
-    width: 100%;
-    grid-template-columns: minmax(2.4rem, auto) repeat(${({ n }) => n}, minmax(0, 1fr));
-    font-size: ${({ n }) => (n > 6 ? "0.6rem" : "0.68rem")};
+    grid-template-columns: repeat(
+      ${({ n }) => n},
+      ${({ n }) => (n > 6 ? "2.35rem" : "2.8rem")}
+    );
+    grid-auto-rows: ${({ n }) => (n > 6 ? "2.35rem" : "2.8rem")};
   }
 `;
 
+/* A coin on the diagonal: the step its row ends on and its column starts. */
 const CorrLabel = styled.span`
   display: flex;
   align-items: center;
-  justify-content: ${({ top }) => (top ? "center" : "flex-start")};
-  min-height: 2.25rem;
-  padding: 0 0.3rem;
-  font-weight: ${({ theme }) => theme.fontWeight.semibold};
-  color: ${({ theme }) => theme.color.textSecondary};
+  justify-content: center;
+  border-radius: 8px;
   font-size: 0.7rem;
+  font-weight: ${({ theme }) => theme.fontWeight.semibold};
   letter-spacing: 0.04em;
-  overflow: hidden;
+  color: ${({ theme, lit }) => (lit ? theme.color.bg : theme.color.text)};
+  background: ${({ theme, lit }) => (lit ? theme.color.text : "transparent")};
+  border: 1px solid
+    ${({ theme, lit }) => (lit ? theme.color.text : theme.color.border)};
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
 `;
 
-/* The strength of a relation is the cell's weight; its sign is written. The
-   palette's direction colours stay out: together is not up. */
-const CorrCell = styled.span`
+const CorrCell = styled.button.attrs({ type: "button" })`
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 2.25rem;
-  border-radius: 4px;
-  background: ${({ theme, strength }) =>
-    strength == null
+  padding: 0;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  font-family: ${({ theme }) => theme.font.primary};
+  font-size: ${({ n }) => (n > 9 ? "0.62rem" : "0.72rem")};
+  font-weight: ${({ theme }) => theme.fontWeight.medium};
+  cursor: pointer;
+  background: ${({ theme, r }) =>
+    r == null
       ? "transparent"
-      : theme.color.bg === "#ffffff"
-        ? `rgba(0, 0, 0, ${0.04 + strength * 0.32})`
-        : `rgba(255, 255, 255, ${0.04 + strength * 0.3})`};
-  color: ${({ theme, strength }) => (strength == null ? theme.color.textSecondary : theme.color.text)};
-  font-weight: ${({ theme, strength }) => (strength != null && strength >= 0.7 ? theme.fontWeight.semibold : theme.fontWeight.regular)};
-  flex-direction: column;
-  gap: 0.1rem;
-  min-height: 3rem;
-  text-align: center;
+      : r < 0
+        ? `repeating-linear-gradient(135deg, ${corrInk(theme, r)} 0 4px, ${theme.color.bg} 4px 7px)`
+        : corrInk(theme, r)};
+  color: ${({ theme, r }) =>
+    r != null && Math.abs(r) >= 0.55 ? theme.color.bg : theme.color.text};
+  ${({ theme, r }) =>
+    r == null
+      ? `border-color: ${theme.color.border}; color: ${theme.color.textSecondary};`
+      : ""}
+  opacity: ${({ dim }) => (dim ? 0.35 : 1)};
+  transition:
+    opacity 0.15s ease,
+    transform 0.12s ease,
+    box-shadow 0.12s ease;
+
+  &[data-corr-on="true"] {
+    box-shadow:
+      0 0 0 2px ${({ theme }) => theme.color.bgSecondary},
+      0 0 0 4px ${({ theme }) => theme.color.text};
+    z-index: 1;
+  }
+  &:focus-visible {
+    outline: none;
+    box-shadow:
+      0 0 0 2px ${({ theme }) => theme.color.bgSecondary},
+      0 0 0 4px ${({ theme }) => theme.color.borderHover};
+  }
   b {
     font-weight: inherit;
   }
-  small {
-    font-size: 0.58rem;
-    letter-spacing: 0.02em;
-    line-height: 1.15;
-    color: ${({ theme }) => theme.color.textSecondary};
-  }
   @media (max-width: 600px) {
-    min-height: 2.25rem;
-    small {
-      display: none;
-    }
+    font-size: 0.6rem;
   }
 `;
 
-/* The cell's two lines: r, and its word under it — the word steps aside on
-   a narrow phone with many coins, where the shade still says it */
-const CorrLegend = styled.div`
+/* The side: the pair in words, the coins by how much they moved alone, the
+   scale. */
+const CorrSide = styled.div`
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem 1rem;
-  margin: 0.9rem 0 0;
-  font-size: 0.68rem;
-  color: ${({ theme }) => theme.color.textSecondary};
+  flex-direction: column;
+  gap: 0.85rem;
+`;
+
+const CorrCard = styled.section`
+  padding: 0.9rem 1rem;
+  border: 1px solid ${({ theme }) => theme.color.border};
+  border-radius: 14px;
+  background: ${({ theme }) => theme.color.bg};
+
+  h4 {
+    margin: 0 0 0.55rem;
+    font-size: 0.66rem;
+    font-weight: ${({ theme }) => theme.fontWeight.regular};
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: ${({ theme }) => theme.color.textSecondary};
+  }
+`;
+
+const CorrPairHead = styled.div`
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+
+  strong {
+    font-size: 1.05rem;
+    font-weight: ${({ theme }) => theme.fontWeight.semibold};
+    color: ${({ theme }) => theme.color.text};
+    letter-spacing: 0.02em;
+  }
   span {
-    display: inline-flex;
+    font-size: 1.05rem;
+    font-variant-numeric: tabular-nums;
+    color: ${({ theme }) => theme.color.text};
+  }
+`;
+
+const CorrPairWord = styled.div`
+  margin: 0.25rem 0 0.5rem;
+  font-size: 0.8rem;
+  font-weight: ${({ theme }) => theme.fontWeight.semibold};
+  color: ${({ theme }) => theme.color.text};
+`;
+
+const CorrPairText = styled.p`
+  margin: 0;
+  font-size: 0.74rem;
+  line-height: 1.55;
+  color: ${({ theme }) => theme.color.textSecondary};
+`;
+
+/* Ten moves as ten squares, filled for each that went the same way. */
+const CorrTen = styled.div`
+  display: flex;
+  gap: 3px;
+  margin: 0.15rem 0 0.55rem;
+
+  i {
+    width: 0.8rem;
+    height: 0.8rem;
+    border-radius: 3px;
+    border: 1px solid ${({ theme }) => theme.color.borderHover};
+  }
+  i[data-on="true"] {
+    background: ${({ theme }) => theme.color.text};
+    border-color: ${({ theme }) => theme.color.text};
+  }
+`;
+
+const CorrAlone = styled.ol`
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+
+  li {
+    display: grid;
+    grid-template-columns: 3.2rem minmax(0, 1fr) 3rem;
     align-items: center;
-    gap: 0.4rem;
+    gap: 0.5rem;
+    font-size: 0.74rem;
+    color: ${({ theme }) => theme.color.text};
+  }
+  li b {
+    font-weight: ${({ theme }) => theme.fontWeight.semibold};
+  }
+  li span:last-child {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    color: ${({ theme }) => theme.color.textSecondary};
+  }
+`;
+
+const CorrBar = styled.span`
+  position: relative;
+  height: 6px;
+  border-radius: 3px;
+  background: ${({ theme }) => theme.color.border};
+  overflow: hidden;
+
+  &::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: ${({ share }) => Math.round(Math.max(0, Math.min(1, share)) * 100)}%;
+    border-radius: 3px;
+    background: ${({ theme }) => theme.color.text};
+  }
+`;
+
+/* The scale as one bar, its five words under the stretches they name. */
+const CorrLegend = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1.5fr 1fr 1fr 1fr;
+  gap: 4px;
+
+  span {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    font-size: 0.62rem;
+    line-height: 1.3;
+    color: ${({ theme }) => theme.color.textSecondary};
   }
   b {
     font-weight: ${({ theme }) => theme.fontWeight.semibold};
     color: ${({ theme }) => theme.color.text};
   }
 `;
+
 const CorrSwatch = styled.i`
-  display: inline-block;
-  width: 0.9rem;
-  height: 0.9rem;
+  display: block;
+  height: 0.7rem;
   border-radius: 3px;
-  background: ${({ theme, strength }) =>
-    theme.color.bg === "#ffffff" ? `rgba(0, 0, 0, ${0.04 + strength * 0.32})` : `rgba(255, 255, 255, ${0.04 + strength * 0.3})`};
+  background: ${({ theme, r }) =>
+    r < 0
+      ? `repeating-linear-gradient(135deg, ${corrInk(theme, r)} 0 4px, ${theme.color.bg} 4px 7px)`
+      : corrInk(theme, r)};
+  border: 1px solid ${({ theme }) => theme.color.border};
 `;
+
 const CorrPairs = styled.div`
   max-width: 52rem;
   margin: 1.2rem 0 0;
-  padding: 0.9rem 1rem;
-  border: 1px solid ${({ theme }) => theme.color.border};
-  border-radius: 12px;
-  background: ${({ theme }) => theme.color.bgSecondary};
+
   h4 {
-    margin: 0 0 0.5rem;
-    font-size: 0.68rem;
+    margin: 0 0 0.45rem;
+    font-size: 0.66rem;
+    font-weight: ${({ theme }) => theme.fontWeight.regular};
     letter-spacing: 0.12em;
     text-transform: uppercase;
     color: ${({ theme }) => theme.color.textSecondary};
   }
   p {
-    margin: 0.35rem 0;
-    font-size: 0.78rem;
+    margin: 0.3rem 0;
+    font-size: 0.76rem;
     line-height: 1.55;
     color: ${({ theme }) => theme.color.text};
   }
@@ -1076,8 +1402,14 @@ const CorrTag = styled.span`
 
 /* ── component ─────────────────────────────────────────────────────────── */
 
-const monitorSigned = (v, digits = 1) => (v == null || !isFinite(v) ? "—" : `${signedFixed(v, digits)}%`);
-const monitorTone = (v) => (v == null || !isFinite(v) || Math.abs(v) < 0.05 ? "quiet" : v > 0 ? "up" : "down");
+const monitorSigned = (v, digits = 1) =>
+  v == null || !isFinite(v) ? "—" : `${signedFixed(v, digits)}%`;
+const monitorTone = (v) =>
+  v == null || !isFinite(v) || Math.abs(v) < 0.05
+    ? "quiet"
+    : v > 0
+      ? "up"
+      : "down";
 
 /* **The monitor and the base rates are one screen** (12 Oct 2026): one tab on the screens' column, and this strip at the
    head of both bodies — Coins, Market, Correlation, Base rates. The two
@@ -1088,7 +1420,11 @@ const MONITOR_TABS = ["coins", "market", "corr", "base"];
 const monitorTabStrip = (active, onTab) =>
   React.createElement(
     MonitorTabs,
-    { role: "group", "aria-label": msg("mon_title", "Monitor"), "data-monitor-tabs": "true" },
+    {
+      role: "group",
+      "aria-label": msg("mon_title", "Monitor"),
+      "data-monitor-tabs": "true",
+    },
     ...[
       ["coins", msg("mon_tab_coins", "Coins")],
       ["market", msg("mon_tab_market", "Market")],
@@ -1097,7 +1433,13 @@ const monitorTabStrip = (active, onTab) =>
     ].map(([id, label]) =>
       React.createElement(
         MonitorTab,
-        { key: id, active: active === id, "aria-pressed": active === id ? "true" : "false", "data-monitor-tab": id, onClick: () => onTab(id) },
+        {
+          key: id,
+          active: active === id,
+          "aria-pressed": active === id ? "true" : "false",
+          "data-monitor-tab": id,
+          onClick: () => onTab(id),
+        },
         label,
       ),
     ),
@@ -1106,8 +1448,23 @@ const monitorTabStrip = (active, onTab) =>
 class MonitorPanel extends PureComponent {
   constructor(props) {
     super(props);
-    this.state = { tab: "coins", series: {}, failed: {}, sort: { key: null, dir: -1 }, detail: null, mapPx: 0 };
+    this.state = {
+      tab: "coins",
+      series: {},
+      failed: {},
+      sort: { key: null, dir: -1 },
+      detail: null,
+      mapPx: 0,
+      // The market map's zoom: k, and the window's top-left in map units
+      mapView: { k: 1, x: 0, y: 0 },
+      mapHover: null,
+    };
     this.detailKey = this.detailKey.bind(this);
+    this.mapWheel = this.mapWheel.bind(this);
+    this.mapDown = this.mapDown.bind(this);
+    this.mapMove = this.mapMove.bind(this);
+    this.mapUp = this.mapUp.bind(this);
+    this.setMapNode = this.setMapNode.bind(this);
     this.onResize = this.onResize.bind(this);
     this._token = 0;
   }
@@ -1130,6 +1487,140 @@ class MonitorPanel extends PureComponent {
     });
   }
 
+  /* The map's node: the wheel is listened to directly, not passively, so a
+     zoom does not also scroll the screen. */
+  setMapNode(n) {
+    if (this._mapNode === n) return;
+    if (this._mapNode)
+      this._mapNode.removeEventListener("wheel", this.mapWheel);
+    this._mapNode = n;
+    if (n) n.addEventListener("wheel", this.mapWheel, { passive: false });
+  }
+
+  // The map's geometry in its own units (renderMarket's W × H)
+  mapUnits() {
+    const phone =
+      typeof matchMedia === "function" &&
+      matchMedia("(max-width: 600px)").matches;
+    return phone ? { W: 100, H: 140 } : { W: 220, H: 100 };
+  }
+
+  /* Zoom to k about a point given in the map's units on screen (0..W), the
+     point under it staying where it is; the window kept inside the map. */
+  zoomMap(k, px, py) {
+    const { W, H } = this.mapUnits();
+    const v = this.state.mapView;
+    const nk = Math.max(1, Math.min(MONITOR_MAP_MAX_ZOOM, k));
+    const ux = v.x + px / v.k;
+    const uy = v.y + py / v.k;
+    const clampTo = (val, span) => Math.max(0, Math.min(span - span / nk, val));
+    this.setState({
+      mapView: {
+        k: nk,
+        x: clampTo(ux - px / nk, W),
+        y: clampTo(uy - py / nk, H),
+      },
+    });
+  }
+
+  mapPoint(clientX, clientY) {
+    const n = this._mapNode;
+    if (!n) return null;
+    const r = n.getBoundingClientRect();
+    const { W, H } = this.mapUnits();
+    return {
+      x: ((clientX - r.left) / r.width) * W,
+      y: ((clientY - r.top) / r.height) * H,
+      r,
+    };
+  }
+
+  mapWheel(e) {
+    if (
+      e.ctrlKey === false &&
+      Math.abs(e.deltaX) > Math.abs(e.deltaY) &&
+      this.state.mapView.k === 1
+    )
+      return;
+    e.preventDefault();
+    const p = this.mapPoint(e.clientX, e.clientY);
+    if (!p) return;
+    this.zoomMap(this.state.mapView.k * Math.exp(-e.deltaY * 0.0022), p.x, p.y);
+  }
+
+  // A drag moves a zoomed map; two fingers pinch it
+  mapDown(e) {
+    if (!this._mapPtrs) this._mapPtrs = new Map();
+    this._mapPtrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    this._mapDrag = {
+      x: e.clientX,
+      y: e.clientY,
+      view: this.state.mapView,
+      moved: false,
+      pinch: null,
+    };
+    if (this._mapPtrs.size === 2) {
+      const [a, b] = [...this._mapPtrs.values()];
+      const mid = this.mapPoint((a.x + b.x) / 2, (a.y + b.y) / 2);
+      this._mapDrag.pinch = {
+        d: Math.hypot(a.x - b.x, a.y - b.y),
+        k: this.state.mapView.k,
+        mid,
+      };
+    }
+    window.addEventListener("pointermove", this.mapMove);
+    window.addEventListener("pointerup", this.mapUp);
+    window.addEventListener("pointercancel", this.mapUp);
+  }
+
+  mapMove(e) {
+    const d = this._mapDrag;
+    if (!d || !this._mapPtrs || !this._mapPtrs.has(e.pointerId)) return;
+    this._mapPtrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (d.pinch && this._mapPtrs.size >= 2) {
+      const [a, b] = [...this._mapPtrs.values()];
+      const dist = Math.hypot(a.x - b.x, a.y - b.y);
+      if (d.pinch.d > 0 && d.pinch.mid) {
+        d.moved = true;
+        this.zoomMap(
+          d.pinch.k * (dist / d.pinch.d),
+          d.pinch.mid.x,
+          d.pinch.mid.y,
+        );
+      }
+      return;
+    }
+    const dx = e.clientX - d.x;
+    const dy = e.clientY - d.y;
+    if (!d.moved && Math.hypot(dx, dy) < 5) return;
+    d.moved = true;
+    if (d.view.k <= 1) return;
+    const r = this._mapNode && this._mapNode.getBoundingClientRect();
+    if (!r) return;
+    const { W, H } = this.mapUnits();
+    const k = d.view.k;
+    const clampTo = (val, span) => Math.max(0, Math.min(span - span / k, val));
+    this.setState({
+      mapView: {
+        k,
+        x: clampTo(d.view.x - ((dx / r.width) * W) / k, W),
+        y: clampTo(d.view.y - ((dy / r.height) * H) / k, H),
+      },
+    });
+  }
+
+  mapUp(e) {
+    if (this._mapPtrs) this._mapPtrs.delete(e.pointerId);
+    if (this._mapPtrs && this._mapPtrs.size) return;
+    const d = this._mapDrag;
+    this._mapDrag = null;
+    // A drag or a pinch is not a press on the tile it ended over
+    this._mapMoved = Boolean(d && d.moved);
+    window.removeEventListener("pointermove", this.mapMove);
+    window.removeEventListener("pointerup", this.mapUp);
+    window.removeEventListener("pointercancel", this.mapUp);
+  }
+
   measureMap() {
     const w = this._mapNode ? this._mapNode.offsetWidth : 0;
     if (w && Math.abs(w - this.state.mapPx) > 8) this.setState({ mapPx: w });
@@ -1137,17 +1628,32 @@ class MonitorPanel extends PureComponent {
 
   // The app's tab when it holds one (the shared screen), else this panel's own
   tab() {
-    return this.props.tab && this.props.tab !== "base" ? this.props.tab : this.state.tab;
+    return this.props.tab && this.props.tab !== "base"
+      ? this.props.tab
+      : this.state.tab;
   }
 
   componentDidUpdate(prev, prevState) {
-    if (prev.currency !== this.props.currency || prev.coins !== this.props.coins) this.load();
+    if (
+      prev.currency !== this.props.currency ||
+      prev.coins !== this.props.coins
+    )
+      this.load();
     this.measureMap();
     // A card that grew (its 30 days arrived) keeps inside the window
-    if (this.state.detail && (prevState.detail !== this.state.detail || prevState.series !== this.state.series)) this.placeDetail();
+    if (
+      this.state.detail &&
+      (prevState.detail !== this.state.detail ||
+        prevState.series !== this.state.series)
+    )
+      this.placeDetail();
   }
 
   componentWillUnmount() {
+    this.setMapNode(null);
+    window.removeEventListener("pointermove", this.mapMove);
+    window.removeEventListener("pointerup", this.mapUp);
+    window.removeEventListener("pointercancel", this.mapUp);
     window.removeEventListener("keydown", this.detailKey, true);
     window.removeEventListener("resize", this.onResize);
     if (this._rz) cancelAnimationFrame(this._rz);
@@ -1162,7 +1668,8 @@ class MonitorPanel extends PureComponent {
   load() {
     const token = (this._token += 1);
     if (this._abort) this._abort.abort();
-    const abort = typeof AbortController === "function" ? new AbortController() : null;
+    const abort =
+      typeof AbortController === "function" ? new AbortController() : null;
     this._abort = abort;
     const { coins, currency } = this.props;
     /* Bitcoin's 30 days ride along when it is not on the list: β is each
@@ -1174,10 +1681,19 @@ class MonitorPanel extends PureComponent {
       const coin = queue.shift();
       if (!coin || token !== this._token) return;
       try {
-        const data = await fetchValueHistory(coin, MONITOR_PERIOD, currency, abort ? abort.signal : null, true, coins);
-        if (token === this._token) this.setState((s) => ({ series: { ...s.series, [coin]: data } }));
+        const data = await fetchValueHistory(
+          coin,
+          MONITOR_PERIOD,
+          currency,
+          abort ? abort.signal : null,
+          true,
+          coins,
+        );
+        if (token === this._token)
+          this.setState((s) => ({ series: { ...s.series, [coin]: data } }));
       } catch (error) {
-        if (token === this._token) this.setState((s) => ({ failed: { ...s.failed, [coin]: true } }));
+        if (token === this._token)
+          this.setState((s) => ({ failed: { ...s.failed, [coin]: true } }));
       }
       return next();
     };
@@ -1191,12 +1707,30 @@ class MonitorPanel extends PureComponent {
       const r = monitorRow(this.state.series[coin]) || {};
       /* The ticker's figures where it has them — they are the freshest — and
          the 30-day series' own last price and day where it has not. */
-      const price = Number.isFinite(s.price) ? s.price : Number.isFinite(r.last) ? r.last : null;
-      const change24h = Number.isFinite(s.change) ? s.change : Number.isFinite(r.change1d) ? r.change1d : null;
+      const price = Number.isFinite(s.price)
+        ? s.price
+        : Number.isFinite(r.last)
+          ? r.last
+          : null;
+      const change24h = Number.isFinite(s.change)
+        ? s.change
+        : Number.isFinite(r.change1d)
+          ? r.change1d
+          : null;
       const own = this.state.series[coin];
       const btc = this.state.series.BTC;
-      const vs = coin !== "BTC" && Array.isArray(own) && Array.isArray(btc) ? compareCorrelation(own, btc) : null;
-      return { coin, ...r, price, change24h, beta: vs && Number.isFinite(vs.beta) ? vs.beta : null, spark: monitorSpark(own) };
+      const vs =
+        coin !== "BTC" && Array.isArray(own) && Array.isArray(btc)
+          ? compareCorrelation(own, btc)
+          : null;
+      return {
+        coin,
+        ...r,
+        price,
+        change24h,
+        beta: vs && Number.isFinite(vs.beta) ? vs.beta : null,
+        spark: monitorSpark(own),
+      };
     });
     const { key, dir } = this.state.sort;
     if (!key) return list;
@@ -1212,7 +1746,12 @@ class MonitorPanel extends PureComponent {
   }
 
   sortBy(key) {
-    this.setState((s) => ({ sort: { key, dir: s.sort.key === key ? -s.sort.dir : key === "coin" ? 1 : -1 } }));
+    this.setState((s) => ({
+      sort: {
+        key,
+        dir: s.sort.key === key ? -s.sort.dir : key === "coin" ? 1 : -1,
+      },
+    }));
   }
 
   renderHead(key, label, opts = {}) {
@@ -1224,7 +1763,11 @@ class MonitorPanel extends PureComponent {
         left: opts.left,
         active: on,
         title: opts.title || msg("mon_sort", "Sort by $1", label),
-        "aria-sort": on ? (this.state.sort.dir > 0 ? "ascending" : "descending") : undefined,
+        "aria-sort": on
+          ? this.state.sort.dir > 0
+            ? "ascending"
+            : "descending"
+          : undefined,
         "data-monitor-wide": opts.wide ? "hide" : undefined,
         // β upper-cased is Β, a Greek capital that reads as a Latin B
         style: opts.asTyped ? { textTransform: "none" } : undefined,
@@ -1239,11 +1782,19 @@ class MonitorPanel extends PureComponent {
      list, and Tab stays the way out of it. */
   rowKey(e) {
     if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(e.key)) return;
-    const rows = Array.from(e.currentTarget.querySelectorAll("[data-monitor-row]"));
+    const rows = Array.from(
+      e.currentTarget.querySelectorAll("[data-monitor-row]"),
+    );
     if (!rows.length) return;
     const at = rows.indexOf(document.activeElement);
     const to =
-      e.key === "Home" ? 0 : e.key === "End" ? rows.length - 1 : e.key === "ArrowDown" ? Math.min(rows.length - 1, at + 1) : Math.max(0, at < 0 ? 0 : at - 1);
+      e.key === "Home"
+        ? 0
+        : e.key === "End"
+          ? rows.length - 1
+          : e.key === "ArrowDown"
+            ? Math.min(rows.length - 1, at + 1)
+            : Math.max(0, at < 0 ? 0 : at - 1);
     e.preventDefault();
     e.stopPropagation();
     rows[to].focus();
@@ -1251,7 +1802,12 @@ class MonitorPanel extends PureComponent {
 
   renderFacts(rows) {
     const f = monitorSummary(rows);
-    const sortFor = { up: "change24h", median: "change30d", widest: "dailyMove", mover: "change30d" };
+    const sortFor = {
+      up: "change24h",
+      median: "change30d",
+      widest: "dailyMove",
+      mover: "change30d",
+    };
     const fact = (key, value, label, tone) =>
       React.createElement(
         MonitorFact,
@@ -1260,7 +1816,8 @@ class MonitorPanel extends PureComponent {
           tone,
           "data-monitor-fact": key,
           title: msg("mon_fact_sort", "Sort the table by this"),
-          onClick: () => this.setState({ sort: { key: sortFor[key], dir: -1 } }),
+          onClick: () =>
+            this.setState({ sort: { key: sortFor[key], dir: -1 } }),
         },
         React.createElement("strong", null, value),
         React.createElement("span", null, label),
@@ -1268,16 +1825,39 @@ class MonitorPanel extends PureComponent {
     return React.createElement(
       MonitorFacts,
       { "data-monitor-facts": "true" },
-      fact("up", f.of ? `${f.up} / ${f.of}` : "—", msg("mon_fact_up", "Up in the last 24 hours")),
-      fact("median", monitorSigned(f.median30), msg("mon_fact_median", "The middle coin's 30 days"), monitorTone(f.median30)),
-      fact("widest", f.widest ? `${f.widest.coin} ${f.widest.v.toFixed(1)}%` : "—", msg("mon_fact_widest", "Widest typical day")),
-      fact("mover", f.mover ? `${f.mover.coin} ${monitorSigned(f.mover.v)}` : "—", msg("mon_fact_mover", "Moved most in 30 days"), f.mover ? monitorTone(f.mover.v) : null),
+      fact(
+        "up",
+        f.of ? `${f.up} / ${f.of}` : "—",
+        msg("mon_fact_up", "Up in the last 24 hours"),
+      ),
+      fact(
+        "median",
+        monitorSigned(f.median30),
+        msg("mon_fact_median", "The middle coin's 30 days"),
+        monitorTone(f.median30),
+      ),
+      fact(
+        "widest",
+        f.widest ? `${f.widest.coin} ${f.widest.v.toFixed(1)}%` : "—",
+        msg("mon_fact_widest", "Widest typical day"),
+      ),
+      fact(
+        "mover",
+        f.mover ? `${f.mover.coin} ${monitorSigned(f.mover.v)}` : "—",
+        msg("mon_fact_mover", "Moved most in 30 days"),
+        f.mover ? monitorTone(f.mover.v) : null,
+      ),
     );
   }
 
   renderSpark(r) {
     if (!r.spark) return null;
-    const d = r.spark.map(([x, y], i) => `${i ? "L" : "M"}${(x * 100).toFixed(2)} ${(22 - y * 20).toFixed(2)}`).join(" ");
+    const d = r.spark
+      .map(
+        ([x, y], i) =>
+          `${i ? "L" : "M"}${(x * 100).toFixed(2)} ${(22 - y * 20).toFixed(2)}`,
+      )
+      .join(" ");
     const [ex, ey] = r.spark[r.spark.length - 1];
     return React.createElement(
       MonitorSpark,
@@ -1288,7 +1868,11 @@ class MonitorPanel extends PureComponent {
         "data-monitor-spark": r.coin,
       },
       React.createElement("path", { d }),
-      React.createElement("circle", { cx: (ex * 100).toFixed(2), cy: (22 - ey * 20).toFixed(2), r: 1.6 }),
+      React.createElement("circle", {
+        cx: (ex * 100).toFixed(2),
+        cy: (22 - ey * 20).toFixed(2),
+        r: 1.6,
+      }),
     );
   }
 
@@ -1313,14 +1897,26 @@ class MonitorPanel extends PureComponent {
     // Round percent levels, about five
     const raw = (hi - lo) / 5;
     const mag = Math.pow(10, Math.floor(Math.log10(raw)));
-    const step = [1, 2, 2.5, 5, 10].map((m) => m * mag).find((s) => s >= raw) || mag * 10;
+    const step =
+      [1, 2, 2.5, 5, 10].map((m) => m * mag).find((s) => s >= raw) || mag * 10;
     const levels = [];
-    for (let v = Math.ceil(lo / step) * step; v <= hi; v += step) levels.push(Math.round(v * 1e6) / 1e6);
-    const ends = monitorRaceLabels(race.lines.map((l) => y(l.last)), 16, T + 6, H - B);
-    const days = [0, 7, 14, 21, 28].map((d) => race.t1 - d * 86400e3).filter((t) => t >= race.t0);
+    for (let v = Math.ceil(lo / step) * step; v <= hi; v += step)
+      levels.push(Math.round(v * 1e6) / 1e6);
+    const ends = monitorRaceLabels(
+      race.lines.map((l) => y(l.last)),
+      16,
+      T + 6,
+      H - B,
+    );
+    const days = [0, 7, 14, 21, 28]
+      .map((d) => race.t1 - d * 86400e3)
+      .filter((t) => t >= race.t0);
     const dayText = (t) => {
       try {
-        return new Date(t).toLocaleDateString(intlTag(activeLocale()), { month: "short", day: "numeric" });
+        return new Date(t).toLocaleDateString(intlTag(activeLocale()), {
+          month: "short",
+          day: "numeric",
+        });
       } catch (error) {
         return "";
       }
@@ -1335,11 +1931,24 @@ class MonitorPanel extends PureComponent {
       React.createElement(
         "figcaption",
         null,
-        React.createElement("span", null, msg("mon_race_head", "The last 30 days, side by side · from each coin's own start")),
         React.createElement(
           "span",
           null,
-          msg("mon_race_spread", "$1 ahead, $2 behind · $3 points apart", leader.coin, last.coin, (leader.last - last.last).toFixed(1)),
+          msg(
+            "mon_race_head",
+            "The last 30 days, side by side · from each coin's own start",
+          ),
+        ),
+        React.createElement(
+          "span",
+          null,
+          msg(
+            "mon_race_spread",
+            "$1 ahead, $2 behind · $3 points apart",
+            leader.coin,
+            last.coin,
+            (leader.last - last.last).toFixed(1),
+          ),
         ),
       ),
       React.createElement(
@@ -1347,19 +1956,45 @@ class MonitorPanel extends PureComponent {
         {
           viewBox: `0 0 ${W} ${H}`,
           role: "img",
-          "aria-label": msg("mon_race_aria", "The percent change of each coin over the last 30 days: $1", race.lines.map((l) => `${l.coin} ${monitorSigned(l.last)}`).join(", ")),
+          "aria-label": msg(
+            "mon_race_aria",
+            "The percent change of each coin over the last 30 days: $1",
+            race.lines
+              .map((l) => `${l.coin} ${monitorSigned(l.last)}`)
+              .join(", "),
+          ),
           onMouseLeave: lightOff,
         },
         ...levels.map((v) =>
           React.createElement(
             "g",
             { key: `l${v}` },
-            React.createElement("line", { x1: L, x2: W - R, y1: y(v), y2: y(v), className: v === 0 ? "zero" : "grid" }),
-            React.createElement("text", { x: L - 8, y: y(v) + 4, textAnchor: "end", className: "tick" }, `${v > 0 ? "+" : ""}${v}%`),
+            React.createElement("line", {
+              x1: L,
+              x2: W - R,
+              y1: y(v),
+              y2: y(v),
+              className: v === 0 ? "zero" : "grid",
+            }),
+            React.createElement(
+              "text",
+              { x: L - 8, y: y(v) + 4, textAnchor: "end", className: "tick" },
+              `${v > 0 ? "+" : ""}${v}%`,
+            ),
           ),
         ),
         ...days.map((t) =>
-          React.createElement("text", { key: `d${t}`, x: x(t), y: H - 6, textAnchor: "middle", className: "tick" }, dayText(t)),
+          React.createElement(
+            "text",
+            {
+              key: `d${t}`,
+              x: x(t),
+              y: H - 6,
+              textAnchor: "middle",
+              className: "tick",
+            },
+            dayText(t),
+          ),
         ),
         // The lit line last, so it is drawn over the others
         ...race.lines
@@ -1368,7 +2003,9 @@ class MonitorPanel extends PureComponent {
           .map((l) =>
             React.createElement("polyline", {
               key: `p${l.coin}`,
-              points: l.pts.map((p) => `${x(p.t).toFixed(1)},${y(p.v).toFixed(1)}`).join(" "),
+              points: l.pts
+                .map((p) => `${x(p.t).toFixed(1)},${y(p.v).toFixed(1)}`)
+                .join(" "),
               className: "line",
               "data-lit": l.coin === lit ? "true" : "false",
               "data-monitor-race-line": l.coin,
@@ -1387,7 +2024,18 @@ class MonitorPanel extends PureComponent {
               onMouseEnter: lightOn(l.coin),
             },
             `${l.coin} `,
-            React.createElement("tspan", { className: monitorTone(l.last) === "up" ? "up" : monitorTone(l.last) === "down" ? "down" : undefined }, monitorSigned(l.last)),
+            React.createElement(
+              "tspan",
+              {
+                className:
+                  monitorTone(l.last) === "up"
+                    ? "up"
+                    : monitorTone(l.last) === "down"
+                      ? "down"
+                      : undefined,
+              },
+              monitorSigned(l.last),
+            ),
           ),
         ),
       ),
@@ -1405,20 +2053,32 @@ class MonitorPanel extends PureComponent {
       this.renderHead("change30d", "30d"),
       this.renderHead("range", msg("mon_col_spark", "30 days"), {
         wide: true,
-        title: msg("mon_col_spark_title", "The last 30 days, low to high — sorted by where the price sits between them"),
+        title: msg(
+          "mon_col_spark_title",
+          "The last 30 days, low to high — sorted by where the price sits between them",
+        ),
       }),
       this.renderHead("fromHigh", msg("mon_col_from_high", "From high"), {
         wide: true,
-        title: msg("mon_col_from_high_title", "How far the price is under the 30-day high"),
+        title: msg(
+          "mon_col_from_high_title",
+          "How far the price is under the 30-day high",
+        ),
       }),
       this.renderHead("dailyMove", msg("mon_col_move", "Typical day"), {
         wide: true,
-        title: msg("mon_col_move_title", "How far a day's move usually goes, either way: the standard deviation of the last 30 days, scaled to a day"),
+        title: msg(
+          "mon_col_move_title",
+          "How far a day's move usually goes, either way: the standard deviation of the last 30 days, scaled to a day",
+        ),
       }),
       this.renderHead("beta", msg("mon_col_beta", "β BTC"), {
         wide: true,
         asTyped: true,
-        title: msg("mon_col_beta_title", "How far it moved for each 1% Bitcoin moved, over the same 30 days — the slope of its moves on Bitcoin's. It describes these 30 days, never what comes next"),
+        title: msg(
+          "mon_col_beta_title",
+          "How far it moved for each 1% Bitcoin moved, over the same 30 days — the slope of its moves on Bitcoin's. It describes these 30 days, never what comes next",
+        ),
       }),
     ];
     const body = rows.map((r) => {
@@ -1430,31 +2090,80 @@ class MonitorPanel extends PureComponent {
           key: r.coin,
           current: r.coin === activeCoin,
           "data-monitor-row": r.coin,
-          "aria-label": msg("mon_open", "Open $1 on the chart", COIN_NAMES[r.coin] || r.coin),
+          "aria-label": msg(
+            "mon_open",
+            "Open $1 on the chart",
+            COIN_NAMES[r.coin] || r.coin,
+          ),
           "aria-haspopup": "dialog",
           onClick: (ev) => this.openDetail(r.coin, ev.currentTarget, ev),
         },
         React.createElement(MonitorCell, { left: true, strong: true }, r.coin),
-        React.createElement(MonitorCell, null, r.price != null && formatPrice ? formatPrice(r.price) : "—"),
-        React.createElement(MonitorCell, { tone: monitorTone(r.change24h) }, monitorSigned(r.change24h, 2)),
-        React.createElement(MonitorCell, { tone: monitorTone(r.change7d) }, r.change7d == null ? dash : monitorSigned(r.change7d)),
-        React.createElement(MonitorCell, { tone: monitorTone(r.change30d) }, r.change30d == null ? dash : monitorSigned(r.change30d)),
+        React.createElement(
+          MonitorCell,
+          null,
+          r.price != null && formatPrice ? formatPrice(r.price) : "—",
+        ),
+        React.createElement(
+          MonitorCell,
+          { tone: monitorTone(r.change24h) },
+          monitorSigned(r.change24h, 2),
+        ),
+        React.createElement(
+          MonitorCell,
+          { tone: monitorTone(r.change7d) },
+          r.change7d == null ? dash : monitorSigned(r.change7d),
+        ),
+        React.createElement(
+          MonitorCell,
+          { tone: monitorTone(r.change30d) },
+          r.change30d == null ? dash : monitorSigned(r.change30d),
+        ),
         React.createElement(
           "span",
           {
             "data-monitor-wide": "hide",
             style: { color: "inherit" },
-            title: r.range == null ? undefined : msg("mon_range_at", "$1% of the way from the 30-day low to the high", String(Math.round(r.range * 100))),
+            title:
+              r.range == null
+                ? undefined
+                : msg(
+                    "mon_range_at",
+                    "$1% of the way from the 30-day low to the high",
+                    String(Math.round(r.range * 100)),
+                  ),
           },
           r.spark
-            ? React.createElement(MonitorCell, { tone: monitorTone(r.change30d) === "quiet" ? null : monitorTone(r.change30d), style: { display: "block", padding: 0 } }, this.renderSpark(r))
+            ? React.createElement(
+                MonitorCell,
+                {
+                  tone:
+                    monitorTone(r.change30d) === "quiet"
+                      ? null
+                      : monitorTone(r.change30d),
+                  style: { display: "block", padding: 0 },
+                },
+                this.renderSpark(r),
+              )
             : React.createElement(MonitorCell, { tone: "quiet" }, dash),
         ),
-        React.createElement(MonitorCell, { tone: "quiet", "data-monitor-wide": "hide" }, r.fromHigh == null ? dash : monitorSigned(r.fromHigh)),
-        React.createElement(MonitorCell, { "data-monitor-wide": "hide" }, r.dailyMove == null ? dash : `${r.dailyMove.toFixed(1)}%`),
         React.createElement(
           MonitorCell,
-          { "data-monitor-wide": "hide", tone: r.beta == null ? "quiet" : null, "data-monitor-beta": r.coin },
+          { tone: "quiet", "data-monitor-wide": "hide" },
+          r.fromHigh == null ? dash : monitorSigned(r.fromHigh),
+        ),
+        React.createElement(
+          MonitorCell,
+          { "data-monitor-wide": "hide" },
+          r.dailyMove == null ? dash : `${r.dailyMove.toFixed(1)}%`,
+        ),
+        React.createElement(
+          MonitorCell,
+          {
+            "data-monitor-wide": "hide",
+            tone: r.beta == null ? "quiet" : null,
+            "data-monitor-beta": r.coin,
+          },
           r.coin === "BTC" ? "1.00" : r.beta == null ? dash : r.beta.toFixed(2),
         ),
       );
@@ -1463,7 +2172,12 @@ class MonitorPanel extends PureComponent {
       Fragment,
       null,
       this.renderFacts(rows),
-      React.createElement(MonitorTable, { "data-monitor-table": "true", onKeyDown: (e) => this.rowKey(e) }, ...head, ...body),
+      React.createElement(
+        MonitorTable,
+        { "data-monitor-table": "true", onKeyDown: (e) => this.rowKey(e) },
+        ...head,
+        ...body,
+      ),
       this.renderRace(),
       /* **What the columns mean, where it can be found** (11 Oct 2026): each
          heading carried its definition as a tooltip, which nobody finds. The
@@ -1471,17 +2185,54 @@ class MonitorPanel extends PureComponent {
       React.createElement(
         MonitorLegend,
         { "data-monitor-legend": "true" },
-        React.createElement("summary", null, msg("mon_legend", "What the columns mean")),
+        React.createElement(
+          "summary",
+          null,
+          msg("mon_legend", "What the columns mean"),
+        ),
         React.createElement(
           "dl",
           null,
           ...[
-            ["24h · 7d · 30d", msg("mon_col_changes_title", "How far the price moved over the last day, week and month")],
-            [msg("mon_col_spark", "30 days"), msg("mon_col_spark_title", "The last 30 days, low to high — sorted by where the price sits between them")],
-            [msg("mon_col_from_high", "From high"), msg("mon_col_from_high_title", "How far the price is under the 30-day high")],
-            [msg("mon_col_move", "Typical day"), msg("mon_col_move_title", "How far a day's move usually goes, either way: the standard deviation of the last 30 days, scaled to a day")],
-            [msg("mon_col_beta", "β BTC"), msg("mon_col_beta_title", "How far it moved for each 1% Bitcoin moved, over the same 30 days — the slope of its moves on Bitcoin's. It describes these 30 days, never what comes next")],
-          ].flatMap(([t, d]) => [React.createElement("dt", { key: `t-${t}` }, t), React.createElement("dd", { key: `d-${t}` }, d)]),
+            [
+              "24h · 7d · 30d",
+              msg(
+                "mon_col_changes_title",
+                "How far the price moved over the last day, week and month",
+              ),
+            ],
+            [
+              msg("mon_col_spark", "30 days"),
+              msg(
+                "mon_col_spark_title",
+                "The last 30 days, low to high — sorted by where the price sits between them",
+              ),
+            ],
+            [
+              msg("mon_col_from_high", "From high"),
+              msg(
+                "mon_col_from_high_title",
+                "How far the price is under the 30-day high",
+              ),
+            ],
+            [
+              msg("mon_col_move", "Typical day"),
+              msg(
+                "mon_col_move_title",
+                "How far a day's move usually goes, either way: the standard deviation of the last 30 days, scaled to a day",
+              ),
+            ],
+            [
+              msg("mon_col_beta", "β BTC"),
+              msg(
+                "mon_col_beta_title",
+                "How far it moved for each 1% Bitcoin moved, over the same 30 days — the slope of its moves on Bitcoin's. It describes these 30 days, never what comes next",
+              ),
+            ],
+          ].flatMap(([t, d]) => [
+            React.createElement("dt", { key: `t-${t}` }, t),
+            React.createElement("dd", { key: `d-${t}` }, d),
+          ]),
         ),
       ),
       React.createElement(
@@ -1504,7 +2255,8 @@ class MonitorPanel extends PureComponent {
      point; the element's middle stands in. */
   openDetail(coin, from, ev) {
     this._detailFrom = from || null;
-    const r = from && from.getBoundingClientRect ? from.getBoundingClientRect() : null;
+    const r =
+      from && from.getBoundingClientRect ? from.getBoundingClientRect() : null;
     const keyed = !ev || (ev.clientX === 0 && ev.clientY === 0);
     this._detailAt = keyed
       ? r
@@ -1514,21 +2266,37 @@ class MonitorPanel extends PureComponent {
     window.addEventListener("keydown", this.detailKey, true);
     this.loadOne(coin);
     this.setState({ detail: coin }, () => {
-      const x = this._detailNode && this._detailNode.querySelector("[data-monitor-detail-close]");
+      const x =
+        this._detailNode &&
+        this._detailNode.querySelector("[data-monitor-detail-close]");
       if (x) x.focus({ preventScroll: true });
     });
   }
 
   // A coin off the list has no 30 days yet: asked for when its card opens
   loadOne(coin) {
-    if (!SUGGESTED_COINS.includes(coin) || this.state.series[coin] || this.state.failed[coin]) return;
+    if (
+      !SUGGESTED_COINS.includes(coin) ||
+      this.state.series[coin] ||
+      this.state.failed[coin]
+    )
+      return;
     const token = this._token;
-    fetchValueHistory(coin, MONITOR_PERIOD, this.props.currency, null, true, this.props.coins)
+    fetchValueHistory(
+      coin,
+      MONITOR_PERIOD,
+      this.props.currency,
+      null,
+      true,
+      this.props.coins,
+    )
       .then((data) => {
-        if (!this._gone && token === this._token) this.setState((st) => ({ series: { ...st.series, [coin]: data } }));
+        if (!this._gone && token === this._token)
+          this.setState((st) => ({ series: { ...st.series, [coin]: data } }));
       })
       .catch(() => {
-        if (!this._gone && token === this._token) this.setState((st) => ({ failed: { ...st.failed, [coin]: true } }));
+        if (!this._gone && token === this._token)
+          this.setState((st) => ({ failed: { ...st.failed, [coin]: true } }));
       });
   }
 
@@ -1536,7 +2304,9 @@ class MonitorPanel extends PureComponent {
     const node = this._detailNode;
     const at = this._detailAt;
     if (!node) return;
-    const phone = typeof matchMedia === "function" && matchMedia("(max-width: 600px)").matches;
+    const phone =
+      typeof matchMedia === "function" &&
+      matchMedia("(max-width: 600px)").matches;
     if (phone || !at) {
       node.style.position = "";
       node.style.left = "";
@@ -1550,7 +2320,10 @@ class MonitorPanel extends PureComponent {
     let left = at.x + gap;
     if (left + w > window.innerWidth - edge) left = at.x - gap - w;
     left = Math.max(edge, Math.min(left, window.innerWidth - w - edge));
-    const top = Math.max(edge, Math.min(at.y - 48, window.innerHeight - h - edge));
+    const top = Math.max(
+      edge,
+      Math.min(at.y - 48, window.innerHeight - h - edge),
+    );
     node.style.position = "fixed";
     node.style.left = `${Math.round(left)}px`;
     node.style.top = `${Math.round(top)}px`;
@@ -1560,18 +2333,42 @@ class MonitorPanel extends PureComponent {
   rowFor(coin) {
     const listed = this.rows().find((x) => x.coin === coin);
     const cur = this.props.currency;
-    const t = typeof pageTickerCache !== "undefined" && cur ? pageTickerCache.get(`${coin}-${cur}`) : null;
-    const market = { cap: t && Number.isFinite(t.marketCap) ? t.marketCap : null, volume: t && Number.isFinite(t.volume24) ? t.volume24 : null };
-    if (listed) return { ...listed, ...market, chartable: SUGGESTED_COINS.includes(coin) };
+    const t =
+      typeof pageTickerCache !== "undefined" && cur
+        ? pageTickerCache.get(`${coin}-${cur}`)
+        : null;
+    const market = {
+      cap: t && Number.isFinite(t.marketCap) ? t.marketCap : null,
+      volume: t && Number.isFinite(t.volume24) ? t.volume24 : null,
+    };
+    if (listed)
+      return {
+        ...listed,
+        ...market,
+        chartable: SUGGESTED_COINS.includes(coin),
+      };
     const own = this.state.series[coin];
     const r = monitorRow(own) || {};
     const btc = this.state.series.BTC;
-    const vs = coin !== "BTC" && Array.isArray(own) && Array.isArray(btc) ? compareCorrelation(own, btc) : null;
+    const vs =
+      coin !== "BTC" && Array.isArray(own) && Array.isArray(btc)
+        ? compareCorrelation(own, btc)
+        : null;
     return {
       coin,
       ...r,
-      price: t && Number.isFinite(t.price) ? t.price : Number.isFinite(r.last) ? r.last : null,
-      change24h: t && Number.isFinite(t.change) ? t.change : Number.isFinite(r.change1d) ? r.change1d : null,
+      price:
+        t && Number.isFinite(t.price)
+          ? t.price
+          : Number.isFinite(r.last)
+            ? r.last
+            : null,
+      change24h:
+        t && Number.isFinite(t.change)
+          ? t.change
+          : Number.isFinite(r.change1d)
+            ? r.change1d
+            : null,
       beta: vs && Number.isFinite(vs.beta) ? vs.beta : null,
       spark: monitorSpark(own),
       ...market,
@@ -1599,10 +2396,14 @@ class MonitorPanel extends PureComponent {
     const r = coin && this.rowFor(coin);
     if (!r) return null;
     const { formatPrice, onPick, onBase } = this.props;
-    const waiting = r.chartable && !this.state.series[coin] && !this.state.failed[coin];
+    const waiting =
+      r.chartable && !this.state.series[coin] && !this.state.failed[coin];
     const compact = (v) => {
       try {
-        return new Intl.NumberFormat(undefined, { notation: "compact", maximumFractionDigits: 2 }).format(v);
+        return new Intl.NumberFormat(undefined, {
+          notation: "compact",
+          maximumFractionDigits: 2,
+        }).format(v);
       } catch (error) {
         return String(Math.round(v));
       }
@@ -1612,11 +2413,24 @@ class MonitorPanel extends PureComponent {
     const spark = r.spark
       ? React.createElement(
           "svg",
-          { viewBox: "0 0 100 24", preserveAspectRatio: "none", "aria-hidden": "true" },
+          {
+            viewBox: "0 0 100 24",
+            preserveAspectRatio: "none",
+            "aria-hidden": "true",
+          },
           React.createElement("path", {
-            d: r.spark.map(([x, y], i) => `${i ? "L" : "M"}${(x * 100).toFixed(2)} ${(22 - y * 20).toFixed(2)}`).join(" "),
+            d: r.spark
+              .map(
+                ([x, y], i) =>
+                  `${i ? "L" : "M"}${(x * 100).toFixed(2)} ${(22 - y * 20).toFixed(2)}`,
+              )
+              .join(" "),
           }),
-          React.createElement("circle", { cx: (r.spark[r.spark.length - 1][0] * 100).toFixed(2), cy: (22 - r.spark[r.spark.length - 1][1] * 20).toFixed(2), r: 1.4 }),
+          React.createElement("circle", {
+            cx: (r.spark[r.spark.length - 1][0] * 100).toFixed(2),
+            cy: (22 - r.spark[r.spark.length - 1][1] * 20).toFixed(2),
+            r: 1.4,
+          }),
         )
       : null;
     const cell = (label, value, cellTone, asTyped) =>
@@ -1624,8 +2438,20 @@ class MonitorPanel extends PureComponent {
         "div",
         { key: label },
         // β upper-cased is Β, which reads as a Latin B (the table's own rule)
-        React.createElement("dt", asTyped ? { style: { textTransform: "none" } } : null, label),
-        React.createElement("dd", null, React.createElement(MonitorCell, { tone: cellTone, style: { padding: 0, textAlign: "left" } }, value)),
+        React.createElement(
+          "dt",
+          asTyped ? { style: { textTransform: "none" } } : null,
+          label,
+        ),
+        React.createElement(
+          "dd",
+          null,
+          React.createElement(
+            MonitorCell,
+            { tone: cellTone, style: { padding: 0, textAlign: "left" } },
+            value,
+          ),
+        ),
       );
     return React.createElement(
       MonitorDetailScrim,
@@ -1641,10 +2467,22 @@ class MonitorPanel extends PureComponent {
           innerRef: (n) => (this._detailNode = n),
           role: "dialog",
           "aria-modal": "true",
-          "aria-label": msg("mon_detail_aria", "$1 over the last 30 days", COIN_NAMES[coin] || coin),
+          "aria-label": msg(
+            "mon_detail_aria",
+            "$1 over the last 30 days",
+            COIN_NAMES[coin] || coin,
+          ),
           "data-monitor-detail": coin,
         },
-        React.createElement(MonitorDetailClose, { "data-monitor-detail-close": "true", "aria-label": msg("mon_detail_close", "Close"), onClick: () => this.closeDetail() }, "×"),
+        React.createElement(
+          MonitorDetailClose,
+          {
+            "data-monitor-detail-close": "true",
+            "aria-label": msg("mon_detail_close", "Close"),
+            onClick: () => this.closeDetail(),
+          },
+          "×",
+        ),
         React.createElement(
           MonitorDetailHead,
           null,
@@ -1654,35 +2492,91 @@ class MonitorPanel extends PureComponent {
         React.createElement(
           MonitorDetailPrice,
           null,
-          React.createElement("b", null, r.price != null && formatPrice ? formatPrice(r.price) : dash),
-          React.createElement(MonitorCell, { tone: monitorTone(r.change24h), style: { padding: 0 } }, `${monitorSigned(r.change24h, 2)} · 24h`),
+          React.createElement(
+            "b",
+            null,
+            r.price != null && formatPrice ? formatPrice(r.price) : dash,
+          ),
+          React.createElement(
+            MonitorCell,
+            { tone: monitorTone(r.change24h), style: { padding: 0 } },
+            `${monitorSigned(r.change24h, 2)} · 24h`,
+          ),
         ),
-        spark && React.createElement(MonitorDetailChart, { tone: tone === "quiet" ? null : tone }, spark),
+        spark &&
+          React.createElement(
+            MonitorDetailChart,
+            { tone: tone === "quiet" ? null : tone },
+            spark,
+          ),
         r.low != null &&
           formatPrice &&
           React.createElement(
             MonitorDetailEnds,
             null,
-            React.createElement("span", null, msg("mon_detail_low", "30-day low $1", formatPrice(r.low))),
-            React.createElement("span", null, msg("mon_detail_high", "high $1", formatPrice(r.high))),
+            React.createElement(
+              "span",
+              null,
+              msg("mon_detail_low", "30-day low $1", formatPrice(r.low)),
+            ),
+            React.createElement(
+              "span",
+              null,
+              msg("mon_detail_high", "high $1", formatPrice(r.high)),
+            ),
           ),
         React.createElement(
           MonitorDetailGrid,
           null,
-          cell("7d", r.change7d == null ? dash : monitorSigned(r.change7d), monitorTone(r.change7d)),
-          cell("30d", r.change30d == null ? dash : monitorSigned(r.change30d), monitorTone(r.change30d)),
-          cell(msg("mon_col_from_high", "From high"), r.fromHigh == null ? dash : monitorSigned(r.fromHigh), "quiet"),
-          cell(msg("mon_col_move", "Typical day"), r.dailyMove == null ? dash : `${r.dailyMove.toFixed(1)}%`),
-          cell(msg("mon_col_beta", "β BTC"), coin === "BTC" ? "1.00" : r.beta == null ? dash : r.beta.toFixed(2), null, true),
-          cell(msg("mon_detail_range", "In its range"), r.range == null ? dash : `${Math.round(r.range * 100)}%`),
-          r.cap != null && cell(msg("mon_detail_cap", "Market value"), `${compact(r.cap)} ${this.props.currency || ""}`.trim()),
-          r.volume != null && cell(msg("mon_detail_volume", "Traded in 24h"), `${compact(r.volume)} ${this.props.currency || ""}`.trim()),
+          cell(
+            "7d",
+            r.change7d == null ? dash : monitorSigned(r.change7d),
+            monitorTone(r.change7d),
+          ),
+          cell(
+            "30d",
+            r.change30d == null ? dash : monitorSigned(r.change30d),
+            monitorTone(r.change30d),
+          ),
+          cell(
+            msg("mon_col_from_high", "From high"),
+            r.fromHigh == null ? dash : monitorSigned(r.fromHigh),
+            "quiet",
+          ),
+          cell(
+            msg("mon_col_move", "Typical day"),
+            r.dailyMove == null ? dash : `${r.dailyMove.toFixed(1)}%`,
+          ),
+          cell(
+            msg("mon_col_beta", "β BTC"),
+            coin === "BTC" ? "1.00" : r.beta == null ? dash : r.beta.toFixed(2),
+            null,
+            true,
+          ),
+          cell(
+            msg("mon_detail_range", "In its range"),
+            r.range == null ? dash : `${Math.round(r.range * 100)}%`,
+          ),
+          r.cap != null &&
+            cell(
+              msg("mon_detail_cap", "Market value"),
+              `${compact(r.cap)} ${this.props.currency || ""}`.trim(),
+            ),
+          r.volume != null &&
+            cell(
+              msg("mon_detail_volume", "Traded in 24h"),
+              `${compact(r.volume)} ${this.props.currency || ""}`.trim(),
+            ),
         ),
         !r.chartable &&
           React.createElement(
             MonitorDetailNote,
             { "data-monitor-detail-priced-only": "true" },
-            msg("mon_detail_priced_only", "PriceTab prices $1 from the market's snapshot but cannot draw it, so it has no 30 days, chart or base rates here.", coin),
+            msg(
+              "mon_detail_priced_only",
+              "PriceTab prices $1 from the market's snapshot but cannot draw it, so it has no 30 days, chart or base rates here.",
+              coin,
+            ),
           ),
         React.createElement(
           MonitorDetailActions,
@@ -1691,14 +2585,24 @@ class MonitorPanel extends PureComponent {
             r.chartable &&
             React.createElement(
               MonitorDetailAction,
-              { primary: true, "data-monitor-detail-chart": "true", onClick: () => onPick(coin) },
+              {
+                primary: true,
+                "data-monitor-detail-chart": "true",
+                onClick: () => onPick(coin),
+              },
               msg("mon_detail_chart", "Open on the chart"),
             ),
           onBase &&
             r.chartable &&
             React.createElement(
               MonitorDetailAction,
-              { "data-monitor-detail-base": "true", onClick: () => { this.closeDetail(); onBase(coin); } },
+              {
+                "data-monitor-detail-base": "true",
+                onClick: () => {
+                  this.closeDetail();
+                  onBase(coin);
+                },
+              },
               msg("mon_detail_base", "Base rates for $1", coin),
             ),
         ),
@@ -1716,7 +2620,14 @@ class MonitorPanel extends PureComponent {
     for (const [key, v] of pageTickerCache) {
       if (!key.endsWith(`-${cur}`) || !v || !(v.marketCap > 0)) continue;
       if (now - v.timestamp > PAGE_TICKER_MAX_AGE) continue;
-      out.push({ coin: key.slice(0, -(cur.length + 1)), cap: v.marketCap, change: v.change, price: v.price, volume: v.volume24, at: v.timestamp });
+      out.push({
+        coin: key.slice(0, -(cur.length + 1)),
+        cap: v.marketCap,
+        change: v.change,
+        price: v.price,
+        volume: v.volume24,
+        at: v.timestamp,
+      });
     }
     return out.sort((a, b) => b.cap - a.cap).slice(0, MONITOR_MAP_MAX);
   }
@@ -1724,7 +2635,9 @@ class MonitorPanel extends PureComponent {
   // One request for the whole top 100, again each minute while the map is open
   refreshMarket() {
     const ask = () =>
-      Promise.resolve(bulkRefreshPageTickerCache(HOLDABLE_COINS, this.props.currency))
+      Promise.resolve(
+        bulkRefreshPageTickerCache(HOLDABLE_COINS, this.props.currency),
+      )
         .catch(() => false)
         .then(() => {
           if (!this._gone) this.setState({ marketAt: Date.now() });
@@ -1744,12 +2657,22 @@ class MonitorPanel extends PureComponent {
   renderMarket() {
     const tiles = this.marketEntries();
     if (!tiles.length) {
-      return React.createElement(MonitorNote, null, msg("mon_market_loading", "Reading the market…"));
+      return React.createElement(
+        MonitorNote,
+        null,
+        msg("mon_market_loading", "Reading the market…"),
+      );
     }
-    const phone = typeof matchMedia === "function" && matchMedia("(max-width: 600px)").matches;
-    const W = phone ? 100 : 220;
-    const H = phone ? 140 : 100;
-    const rects = squarify(tiles.map((t) => ({ key: t.coin, value: t.cap })), W, H);
+    const phone =
+      typeof matchMedia === "function" &&
+      matchMedia("(max-width: 600px)").matches;
+    const { W, H } = this.mapUnits();
+    const view = this.state.mapView || { k: 1, x: 0, y: 0 };
+    const rects = squarify(
+      tiles.map((t) => ({ key: t.coin, value: t.cap })),
+      W,
+      H,
+    );
     const byCoin = {};
     for (const t of tiles) byCoin[t.coin] = t;
     const { currency } = this.props;
@@ -1763,18 +2686,47 @@ class MonitorPanel extends PureComponent {
     /* About how many rem the box is wide, so a label is drawn only where it
        fits: a monospace glyph is 0.6em, a line 1.15em, the tile's padding
        0.45em a side. Measured once per render, not per tile. */
-    const remPerUnit = (this.state.mapPx ? this.state.mapPx / 16 : phone ? 22 : 72) / W;
-    const cells = rects.map((rc) => {
+    const remPerUnit =
+      (this.state.mapPx ? this.state.mapPx / 16 : phone ? 22 : 72) / W;
+    const totalCap = tiles.reduce((s, t) => s + (Number(t.cap) || 0), 0);
+    const cells = [];
+    for (const raw of rects) {
+      // The tile as the zoom draws it, in map units; one wholly outside is left out
+      const zx = (raw.x - view.x) * view.k;
+      const zy = (raw.y - view.y) * view.k;
+      const zw = raw.w * view.k;
+      const zh = raw.h * view.k;
+      if (zx >= W || zy >= H || zx + zw <= 0 || zy + zh <= 0) continue;
+      /* Cut to what is on screen, so a tile running off the edge keeps its
+         label in the part that can be seen */
+      const x0 = Math.max(0, zx);
+      const y0 = Math.max(0, zy);
+      const rc = {
+        key: raw.key,
+        x: x0,
+        y: y0,
+        w: Math.min(W, zx + zw) - x0,
+        h: Math.min(H, zy + zh) - y0,
+      };
       const t = byCoin[rc.key];
       const name = COIN_NAMES[t.coin] || t.coin;
       const day = monitorSigned(t.change);
       const wRem = rc.w * remPerUnit;
       const hRem = rc.h * remPerUnit;
-      const fits = (f, lines, chars) => chars * 0.6 * f + 0.9 * f <= wRem && lines * 1.15 * f + 0.7 * f <= hRem;
+      const fits = (f, lines, chars) =>
+        chars * 0.6 * f + 0.9 * f <= wRem && lines * 1.15 * f + 0.7 * f <= hRem;
       // Under 0.64rem a label is noise, not reading: the tile keeps its title
-      let size = Math.min(1.5, Math.sqrt(wRem * hRem) / 5);
-      while (size > MONITOR_MAP_MIN_TYPE && !fits(size, 1, t.coin.length)) size -= 0.04;
-      const label = size >= MONITOR_MAP_MIN_TYPE && fits(size, 1, t.coin.length);
+      /* From the smallest readable size up, never under it: a guess under the
+         floor was never tried, and a 54×43px tile that holds its name at
+         0.72rem was left blank (14 Oct 2026) */
+      let size = Math.max(
+        MONITOR_MAP_MIN_TYPE,
+        Math.min(1.5, Math.sqrt(wRem * hRem) / 5),
+      );
+      while (size > MONITOR_MAP_MIN_TYPE && !fits(size, 1, t.coin.length))
+        size -= 0.04;
+      const label =
+        size >= MONITOR_MAP_MIN_TYPE && fits(size, 1, t.coin.length);
       const both = label && fits(size, 2, Math.max(t.coin.length, day.length));
       const style = {
         left: `${(rc.x / W) * 100}%`,
@@ -1784,26 +2736,123 @@ class MonitorPanel extends PureComponent {
         fontSize: `${Math.max(MONITOR_MAP_MIN_TYPE, size).toFixed(2)}rem`,
       };
       const children = label
-        ? [React.createElement("strong", { key: "c" }, t.coin), both ? React.createElement("small", { key: "d" }, day) : null]
+        ? [
+            React.createElement("strong", { key: "c" }, t.coin),
+            both ? React.createElement("small", { key: "d" }, day) : null,
+          ]
         : [];
       const title = `${name} · ${day} · ${msg("mon_market_value", "market value $1", compact(t.cap))}`;
       /* Every tile opens its coin's card where it was pressed (12 Oct 2026),
          the chart one press inside it for a coin the chart can draw */
-      return React.createElement(
-        MarketTileButton,
-        {
-          key: t.coin,
-          change: t.change,
-          style,
-          title,
-          "aria-haspopup": "dialog",
-          "aria-label": msg("mon_market_card", "$1 — $2 in 24 hours; opens its card", name, day),
-          "data-market-tile": t.coin,
-          onClick: (ev) => this.openDetail(t.coin, ev.currentTarget, ev),
-        },
-        ...children,
+      cells.push(
+        React.createElement(
+          MarketTileButton,
+          {
+            key: t.coin,
+            change: t.change,
+            style,
+            title,
+            "aria-haspopup": "dialog",
+            "aria-label": msg(
+              "mon_market_card",
+              "$1 — $2 in 24 hours; opens its card",
+              name,
+              day,
+            ),
+            "data-market-tile": t.coin,
+            "data-market-labelled": label ? "true" : undefined,
+            onMouseEnter: () => this.setState({ mapHover: t.coin }),
+            onFocus: () => this.setState({ mapHover: t.coin }),
+            onClick: (ev) => {
+              // The end of a drag or a pinch over a tile is not a press on it
+              if (this._mapMoved) {
+                this._mapMoved = false;
+                return;
+              }
+              this.openDetail(t.coin, ev.currentTarget, ev);
+            },
+          },
+          ...children,
+        ),
       );
-    });
+    }
+    const hover = this.state.mapHover && byCoin[this.state.mapHover];
+    const k = view.k;
+    const zoomBtn = (label, aria, next, disabled, key) =>
+      React.createElement(
+        "button",
+        {
+          type: "button",
+          key,
+          "aria-label": aria,
+          title: aria,
+          disabled,
+          "data-market-zoom": key,
+          onClick: () => this.zoomMap(next, W / 2, H / 2),
+        },
+        label,
+      );
+    const bar = React.createElement(
+      MarketBar,
+      { "data-market-bar": "true", "aria-live": "polite" },
+      React.createElement(
+        "span",
+        null,
+        hover
+          ? [
+              React.createElement(
+                "b",
+                { key: "n" },
+                COIN_NAMES[hover.coin] && COIN_NAMES[hover.coin] !== hover.coin
+                  ? `${hover.coin} · ${COIN_NAMES[hover.coin]}`
+                  : hover.coin,
+              ),
+              ` · ${monitorSigned(hover.change, 2)} · ${msg("mon_market_value", "market value $1", compact(hover.cap))}`,
+              totalCap > 0
+                ? ` · ${msg("mon_market_share", "$1% of the top $2", ((hover.cap / totalCap) * 100).toFixed(hover.cap / totalCap < 0.01 ? 2 : 1), String(tiles.length))}`
+                : "",
+            ]
+          : touchFirst()
+            ? msg(
+                "mon_market_hint_touch",
+                "Size is market value, shade is the last 24 hours. Pinch to zoom in on the small ones; a tile opens its card.",
+              )
+            : msg(
+                "mon_market_hint",
+                "Size is market value, shade is the last 24 hours. Scroll to zoom in on the small ones, drag to move; a tile opens its card.",
+              ),
+      ),
+      React.createElement(
+        MarketZoom,
+        { role: "group", "aria-label": msg("mon_market_zoom", "Zoom the map") },
+        zoomBtn(
+          "−",
+          msg("mon_market_zoom_out", "Zoom out"),
+          k / MONITOR_MAP_ZOOM_STEP,
+          k <= 1,
+          "out",
+        ),
+        React.createElement(
+          "span",
+          { "data-market-zoom-level": String(Math.round(k * 10) / 10) },
+          `${k < 10 ? k.toFixed(1) : Math.round(k)}×`,
+        ),
+        zoomBtn(
+          "+",
+          msg("mon_market_zoom_in", "Zoom in"),
+          k * MONITOR_MAP_ZOOM_STEP,
+          k >= MONITOR_MAP_MAX_ZOOM,
+          "in",
+        ),
+        zoomBtn(
+          msg("mon_market_zoom_whole", "Whole map"),
+          msg("mon_market_zoom_whole", "Whole map"),
+          1,
+          k <= 1,
+          "whole",
+        ),
+      ),
+    );
     const moved = tiles.filter((t) => Number.isFinite(t.change));
     const list = (items) =>
       React.createElement(
@@ -1813,25 +2862,46 @@ class MonitorPanel extends PureComponent {
           React.createElement(
             "li",
             { key: t.coin },
-            React.createElement("span", null, COIN_NAMES[t.coin] && COIN_NAMES[t.coin] !== t.coin ? `${t.coin} · ${COIN_NAMES[t.coin]}` : t.coin),
-            React.createElement(MonitorCell, { tone: monitorTone(t.change), style: { padding: 0 } }, monitorSigned(t.change, 2)),
+            React.createElement(
+              "span",
+              null,
+              COIN_NAMES[t.coin] && COIN_NAMES[t.coin] !== t.coin
+                ? `${t.coin} · ${COIN_NAMES[t.coin]}`
+                : t.coin,
+            ),
+            React.createElement(
+              MonitorCell,
+              { tone: monitorTone(t.change), style: { padding: 0 } },
+              monitorSigned(t.change, 2),
+            ),
           ),
         ),
       );
     const at = Math.max(...tiles.map((t) => t.at));
-    const when = new Date(at).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
+    const when = new Date(at).toLocaleTimeString(undefined, {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
     return React.createElement(
       Fragment,
       null,
+      bar,
       React.createElement(
         MarketMap,
         {
           ratio: `${W} / ${H}`,
           aspect: (W / H).toFixed(3),
-          innerRef: (n) => (this._mapNode = n),
+          innerRef: this.setMapNode,
+          onPointerDown: this.mapDown,
+          onMouseLeave: () => this.setState({ mapHover: null }),
+          style: { touchAction: "none", cursor: k > 1 ? "grab" : undefined },
           role: "group",
           "data-market-map": "true",
-          "aria-label": msg("mon_market_label", "The top $1 coins by market value, each sized by it and shaded by its last 24 hours", String(tiles.length)),
+          "aria-label": msg(
+            "mon_market_label",
+            "The top $1 coins by market value, each sized by it and shaded by its last 24 hours",
+            String(tiles.length),
+          ),
         },
         ...cells,
       ),
@@ -1841,14 +2911,32 @@ class MonitorPanel extends PureComponent {
         React.createElement(
           "div",
           null,
-          React.createElement("h4", null, msg("mon_market_up", "Up most in 24 hours")),
-          list(moved.slice().sort((a, b) => b.change - a.change).slice(0, 5)),
+          React.createElement(
+            "h4",
+            null,
+            msg("mon_market_up", "Up most in 24 hours"),
+          ),
+          list(
+            moved
+              .slice()
+              .sort((a, b) => b.change - a.change)
+              .slice(0, 5),
+          ),
         ),
         React.createElement(
           "div",
           null,
-          React.createElement("h4", null, msg("mon_market_down", "Down most in 24 hours")),
-          list(moved.slice().sort((a, b) => a.change - b.change).slice(0, 5)),
+          React.createElement(
+            "h4",
+            null,
+            msg("mon_market_down", "Down most in 24 hours"),
+          ),
+          list(
+            moved
+              .slice()
+              .sort((a, b) => a.change - b.change)
+              .slice(0, 5),
+          ),
         ),
       ),
       React.createElement(
@@ -1865,104 +2953,314 @@ class MonitorPanel extends PureComponent {
   }
 
   renderCorrelation() {
-    const coins = (Array.isArray(this.props.coins) ? this.props.coins : []).filter((c) => this.state.series[c]);
+    const coins = (
+      Array.isArray(this.props.coins) ? this.props.coins : []
+    ).filter((c) => this.state.series[c]);
     if ((this.props.coins || []).length < 2) {
-      return React.createElement(MonitorNote, null, msg("mon_need_two", "Add a second coin to see how your coins move together."));
+      return React.createElement(
+        MonitorNote,
+        null,
+        msg(
+          "mon_need_two",
+          "Add a second coin to see how your coins move together.",
+        ),
+      );
+    }
+    if (coins.length < 2) {
+      return React.createElement(
+        MonitorNote,
+        null,
+        msg("mon_loading", "Reading 30 days of prices…"),
+      );
     }
     const matrix = correlationMatrix(coins, this.state.series);
-    const step = coins.length ? (monitorRow(this.state.series[coins[0]]) || {}).step : 0;
-    // The counts the cells rest on, said once under the grid (a tooltip is
-    // no denominator on a phone)
-    const ns = Object.values(matrix).filter(Boolean).map((c) => c.n);
-    const nText = ns.length ? (Math.min(...ns) === Math.max(...ns) ? String(ns[0]) : `${Math.min(...ns)}–${Math.max(...ns)}`) : "—";
-    const cells = [React.createElement(CorrLabel, { key: "corner" }, "")];
-    for (const c of coins) cells.push(React.createElement(CorrLabel, { key: `h-${c}`, top: true }, c));
-    for (const a of coins) {
-      cells.push(React.createElement(CorrLabel, { key: `r-${a}` }, a));
-      for (const b of coins) {
-        if (a === b) {
-          cells.push(React.createElement(CorrCell, { key: `${a}|${b}`, strength: null }, "·"));
+    const step = (monitorRow(this.state.series[coins[0]]) || {}).step;
+    // The counts the cells rest on, said once (a tooltip is no denominator on a phone)
+    const ns = Object.values(matrix)
+      .filter(Boolean)
+      .map((c) => c.n);
+    const nText = ns.length
+      ? Math.min(...ns) === Math.max(...ns)
+        ? String(ns[0])
+        : `${Math.min(...ns)}–${Math.max(...ns)}`
+      : "—";
+    const highlights = corrHighlights(coins, matrix);
+    // The pair the side speaks for: the one pointed at, else the most in step
+    const fallback = highlights[0]
+      ? `${highlights[0].a}|${highlights[0].b}`
+      : null;
+    const pick =
+      this.state.corrPick && matrix[this.state.corrPick] !== undefined
+        ? this.state.corrPick
+        : fallback;
+    const [pa, pb] = pick ? pick.split("|") : [null, null];
+    const pc = pick ? matrix[pick] : null;
+    const n = coins.length;
+    const cellWords = (a, b, c, band) =>
+      c
+        ? c.sameN
+          ? msg(
+              "mon_corr_cell_same",
+              "$1 and $2: $3 — the same way on $4% of $5 moves (r $6)",
+              a,
+              b,
+              corrWord(band),
+              String(Math.round((c.same / c.sameN) * 100)),
+              String(c.sameN),
+              signedFixed(c.r, 2),
+            )
+          : msg(
+              "mon_corr_cell",
+              "$1 and $2: $3, from $4 moves",
+              a,
+              b,
+              signedFixed(c.r, 2),
+              c.n,
+            )
+        : msg("mon_corr_few", "Too few shared moves to say");
+    // The staircase: coins on the diagonal, each pair once below it
+    const cells = [];
+    for (let i = 0; i < n; i += 1) {
+      for (let j = 0; j < n; j += 1) {
+        const a = coins[i];
+        const b = coins[j];
+        if (i === j) {
+          cells.push(
+            React.createElement(
+              CorrLabel,
+              {
+                key: `d-${a}`,
+                lit: a === pa || a === pb,
+                "data-corr-label": a,
+              },
+              a,
+            ),
+          );
           continue;
         }
-        const c = matrix[`${a}|${b}`];
+        if (j > i) {
+          cells.push(
+            React.createElement("span", {
+              key: `e-${a}-${b}`,
+              "aria-hidden": "true",
+            }),
+          );
+          continue;
+        }
+        const key = `${b}|${a}`;
+        const c = matrix[key] || matrix[`${a}|${b}`];
         const band = c ? corrBand(c.r) : null;
+        const on = pick === key || pick === `${a}|${b}`;
         cells.push(
           React.createElement(
             CorrCell,
             {
-              key: `${a}|${b}`,
-              strength: c ? Math.min(1, Math.abs(c.r)) : null,
-              "data-corr": `${a}|${b}`,
+              key,
+              n,
+              r: c && Number.isFinite(c.r) ? c.r : null,
+              // Only while the pointer is on the triangle: at rest every pair reads
+              dim:
+                this.state.corrHover === true &&
+                !on &&
+                !(a === pa || a === pb || b === pa || b === pb),
+              "data-corr": key,
               "data-corr-band": band || undefined,
-              title: c
-                ? c.sameN
-                  ? msg("mon_corr_cell_same", "$1 and $2: $3 — the same way on $4% of $5 moves (r $6)", a, b, corrWord(band), String(Math.round((c.same / c.sameN) * 100)), String(c.sameN), signedFixed(c.r, 2))
-                  : msg("mon_corr_cell", "$1 and $2: $3, from $4 moves", a, b, signedFixed(c.r, 2), c.n)
-                : msg("mon_corr_few", "Too few shared moves to say"),
+              "data-corr-on": on ? "true" : undefined,
+              "aria-label": cellWords(b, a, c, band),
+              "aria-pressed": on ? "true" : "false",
+              title: cellWords(b, a, c, band),
+              onMouseEnter: () =>
+                this.setState({ corrPick: key, corrHover: true }),
+              onFocus: () => this.setState({ corrPick: key }),
+              onClick: () => this.setState({ corrPick: key }),
             },
-            c
-              ? React.createElement(
-                  Fragment,
-                  null,
-                  React.createElement("b", null, signedFixed(c.r, 2)),
-                  React.createElement("small", null, corrWord(band)),
-                )
-              : "—",
+            React.createElement("b", null, c ? signedFixed(c.r, 2) : "—"),
           ),
         );
       }
     }
+    const pband = pc ? corrBand(pc.r) : null;
+    const tens = pc && pc.sameN ? Math.round((pc.same / pc.sameN) * 10) : null;
+    const alone = corrAverages(coins, matrix);
     return React.createElement(
       Fragment,
       null,
-      coins.length < 2
-        ? React.createElement(MonitorNote, null, msg("mon_loading", "Reading 30 days of prices…"))
-        : React.createElement(CorrGrid, { n: coins.length, "data-corr-grid": "true" }, ...cells),
-      // What the shades say, in the cells' own words
-      coins.length >= 2 &&
+      React.createElement(
+        CorrLayout,
+        null,
         React.createElement(
-          CorrLegend,
-          { "aria-label": msg("mon_corr_legend", "What the cells say"), "data-corr-legend": "true" },
-          ...[
-            ["together", "0.8 – 1", 0.9],
-            ["mostly", "0.5 – 0.8", 0.65],
-            ["loosely", "0.2 – 0.5", 0.35],
-            ["unrelated", "−0.2 – 0.2", 0.05],
-            ["opposite", "< −0.2", 0.5],
-          ].map(([band, range, strength]) =>
+          CorrBoard,
+          null,
+          React.createElement(
+            CorrGrid,
+            {
+              n,
+              "data-corr-grid": "true",
+              role: "group",
+              "aria-label": msg(
+                "mon_corr_grid",
+                "Every pair of your coins, once",
+              ),
+              onMouseLeave: () => this.setState({ corrHover: false }),
+            },
+            ...cells,
+          ),
+        ),
+        React.createElement(
+          CorrSide,
+          null,
+          pc &&
             React.createElement(
-              "span",
-              { key: band },
-              React.createElement(CorrSwatch, { strength, "aria-hidden": "true" }),
-              React.createElement("b", null, corrWord(band)),
-              React.createElement("small", null, range),
+              CorrCard,
+              { "data-corr-detail": pick },
+              React.createElement(
+                "h4",
+                null,
+                msg("mon_corr_pair_head", "The pair"),
+              ),
+              React.createElement(
+                CorrPairHead,
+                null,
+                React.createElement("strong", null, `${pa} · ${pb}`),
+                React.createElement("span", null, `r ${signedFixed(pc.r, 2)}`),
+              ),
+              React.createElement(CorrPairWord, null, corrWord(pband)),
+              tens != null &&
+                React.createElement(
+                  CorrTen,
+                  {
+                    role: "img",
+                    "aria-label": msg(
+                      "mon_corr_ten",
+                      "$1 of every 10 moves the same way",
+                      String(tens),
+                    ),
+                  },
+                  ...Array.from({ length: 10 }, (_, k) =>
+                    React.createElement("i", {
+                      key: k,
+                      "data-on": k < tens ? "true" : "false",
+                    }),
+                  ),
+                ),
+              React.createElement(
+                CorrPairText,
+                null,
+                tens != null
+                  ? msg(
+                      "mon_corr_pair_text",
+                      "Over these 30 days the two went the same way on $1 of every 10 moves ($2 moves).",
+                      String(tens),
+                      String(pc.sameN),
+                    )
+                  : msg("mon_corr_pair_text_r", "From $1 moves.", String(pc.n)),
+              ),
+            ),
+          alone.length >= 2 &&
+            React.createElement(
+              CorrCard,
+              { "data-corr-alone": "true" },
+              React.createElement(
+                "h4",
+                null,
+                msg(
+                  "mon_corr_alone_head",
+                  "On its own · the mean r with the rest",
+                ),
+              ),
+              React.createElement(
+                CorrAlone,
+                null,
+                ...alone.map((x) =>
+                  React.createElement(
+                    "li",
+                    { key: x.coin },
+                    React.createElement("b", null, x.coin),
+                    React.createElement(CorrBar, {
+                      share: Math.max(0, x.r),
+                      "aria-hidden": "true",
+                    }),
+                    React.createElement("span", null, signedFixed(x.r, 2)),
+                  ),
+                ),
+              ),
+              React.createElement(
+                CorrPairText,
+                { style: { marginTop: "0.5rem" } },
+                msg(
+                  "mon_corr_alone_note",
+                  "$1 moved most on its own, $2 most with the rest.",
+                  alone[0].coin,
+                  alone[alone.length - 1].coin,
+                ),
+              ),
+            ),
+          React.createElement(
+            CorrCard,
+            null,
+            React.createElement(
+              "h4",
+              null,
+              msg("mon_corr_scale", "What the shades say"),
+            ),
+            React.createElement(
+              CorrLegend,
+              {
+                "aria-label": msg("mon_corr_legend", "What the cells say"),
+                "data-corr-legend": "true",
+              },
+              ...[
+                ["opposite", "< −0.2", -0.5],
+                ["unrelated", "−0.2 – 0.2", 0],
+                ["loosely", "0.2 – 0.5", 0.35],
+                ["mostly", "0.5 – 0.8", 0.65],
+                ["together", "0.8 – 1", 0.92],
+              ].map(([band, range, r]) =>
+                React.createElement(
+                  "span",
+                  { key: band },
+                  React.createElement(CorrSwatch, { r, "aria-hidden": "true" }),
+                  React.createElement("b", null, corrWord(band)),
+                  React.createElement("small", null, range),
+                ),
+              ),
             ),
           ),
         ),
+      ),
       // The pairs worth a sentence, in plain words
-      coins.length >= 2 &&
-        (() => {
-          const lines = corrHighlights(coins, matrix);
-          if (!lines.length) return null;
-          return React.createElement(
-            CorrPairs,
-            { "data-corr-pairs": "true" },
-            React.createElement("h4", null, msg("mon_corr_pairs", "In plain words")),
-            ...lines.map(({ a, b, c }) =>
+      highlights.length > 0 &&
+        React.createElement(
+          CorrPairs,
+          { "data-corr-pairs": "true" },
+          React.createElement(
+            "h4",
+            null,
+            msg("mon_corr_pairs", "In plain words"),
+          ),
+          ...highlights.map(({ a, b, c }) =>
+            React.createElement(
+              "p",
+              { key: `${a}|${b}` },
+              React.createElement("b", null, `${a} · ${b}`),
+              " ",
               React.createElement(
-                "p",
-                { key: `${a}|${b}` },
-                React.createElement("b", null, `${a} · ${b}`),
-                " ",
-                React.createElement(CorrTag, { band: corrBand(c.r) }, corrWord(corrBand(c.r))),
-                " ",
-                c.sameN
-                  ? msg("mon_corr_pair_line", "went the same way on $1 of every 10 moves (r $2).", String(Math.round((c.same / c.sameN) * 10)), signedFixed(c.r, 2))
-                  : msg("mon_corr_pair_line_r", "r $1.", signedFixed(c.r, 2)),
+                CorrTag,
+                { band: corrBand(c.r) },
+                corrWord(corrBand(c.r)),
               ),
+              " ",
+              c.sameN
+                ? msg(
+                    "mon_corr_pair_line",
+                    "went the same way on $1 of every 10 moves (r $2).",
+                    String(Math.round((c.same / c.sameN) * 10)),
+                    signedFixed(c.r, 2),
+                  )
+                : msg("mon_corr_pair_line_r", "r $1.", signedFixed(c.r, 2)),
             ),
-          );
-        })(),
+          ),
+        ),
       React.createElement(
         MonitorNote,
         null,
@@ -1993,11 +3291,20 @@ class MonitorPanel extends PureComponent {
         React.createElement(
           BaseHead,
           null,
-          React.createElement(BaseTitle, null, msg("mon_title", "Monitor"), keyCap("M")),
+          React.createElement(
+            BaseTitle,
+            null,
+            msg("mon_title", "Monitor"),
+            keyCap("M"),
+          ),
           React.createElement(
             BaseEyebrow,
             null,
-            msg("mon_eyebrow", "Your $1 coins · the last 30 days", (coins || []).length),
+            msg(
+              "mon_eyebrow",
+              "Your $1 coins · the last 30 days",
+              (coins || []).length,
+            ),
           ),
         ),
         React.createElement(
@@ -2006,8 +3313,12 @@ class MonitorPanel extends PureComponent {
           this.props.onTab ? monitorTabStrip(tab, (t) => this.setTab(t)) : null,
           React.createElement(
             MonitorPane,
-            { key: tab },
-            tab === "corr" ? this.renderCorrelation() : tab === "market" ? this.renderMarket() : this.renderCoins(),
+            { key: tab, "data-monitor-pane": tab },
+            tab === "corr"
+              ? this.renderCorrelation()
+              : tab === "market"
+                ? this.renderMarket()
+                : this.renderCoins(),
           ),
           this.state.detail ? this.renderDetail() : null,
         ),
@@ -2016,4 +3327,12 @@ class MonitorPanel extends PureComponent {
   }
 }
 
-MonitorPanel.defaultProps = { coins: [], stats: {}, onPick: null, activeCoin: null };
+MonitorPanel.defaultProps = {
+  coins: [],
+  stats: {},
+  onPick: null,
+  onBase: null,
+  activeCoin: null,
+  isWatchlistCoin: null,
+  isTemporaryCoin: null,
+};

@@ -89,8 +89,7 @@ const movingAverage = (closes, period) => {
   return out;
 };
 
-// "+1.4 pts better" / "0.9 pts worse" / "no different" — the comparison in
-// words, and only ever about what already happened
+// `edge` is a difference of medians, not a difference of up shares.
 const describeEdge = (edge) => {
   if (edge == null) return null;
   const rounded = Number(edge.toFixed(1));
@@ -99,13 +98,13 @@ const describeEdge = (edge) => {
   }
   return rounded > 0
     ? msg(
-        "br_edge_better",
-        "$1 points better than an ordinary stretch",
+        "br_edge_above",
+        "a typical move $1 points above an ordinary stretch",
         Math.abs(rounded).toFixed(1),
       )
     : msg(
-        "br_edge_worse",
-        "$1 points worse than an ordinary stretch",
+        "br_edge_below",
+        "a typical move $1 points below an ordinary stretch",
         Math.abs(rounded).toFixed(1),
       );
 };
@@ -141,15 +140,23 @@ class BaseRatesPanel extends PureComponent {
       cpi: null,
       sections: [],
       section: 0,
+      tab: "now",
+      horizon: 0,
+      selected: "",
+      query: "",
+      sort: "default",
+      liveOnly: false,
     };
     this.load = this.load.bind(this);
     this.bodyRef = null;
     this.onBodyScroll = this.onBodyScroll.bind(this);
+    this.onTabKey = this.onTabKey.bind(this);
   }
 
   componentDidMount() {
     this.load();
     this.findSections();
+    if (this.tabRef) this.tabRef.addEventListener("keydown", this.onTabKey);
   }
 
   componentDidUpdate(prev, prevState) {
@@ -220,31 +227,36 @@ class BaseRatesPanel extends PureComponent {
     body.scrollBy({ top, behavior: still ? "auto" : "smooth" });
   }
 
-  /* Two counts as two bars: after this state, and after any day of the same
-     coin — the share that ended up, with the typical move and how many
-     times beside it. */
+  /* One counted bar, its uncertainty, and the ordinary share as a tick.
+     The reference used to take a second bar for every comparison. */
   renderBars(self, base) {
-    const row = ([label, up, median, n], isBase) => [
-      React.createElement(BaseBarLabel, { key: `${label}-l`, base: isBase }, label),
-      React.createElement(
-        BaseBarTrack,
-        { key: `${label}-t`, base: isBase, "aria-hidden": "true" },
-        React.createElement("i", { style: { width: `${Math.max(0, Math.min(100, up))}%` } }),
+    const [, up, , n] = self;
+    if (n < BASE_RATE_MIN_EPISODES) return React.createElement(BaseVerdict, { weak: true },
+      msg("br_too_few", "$1 episodes is too few to compare — the difference is not printed.", String(n)));
+    const interval = n >= BASE_RATE_MIN_EPISODES ? wilsonInterval(Math.round(up * n / 100), n) : null;
+    const quiet = !interval || (base[1] >= interval.lo * 100 && base[1] <= interval.hi * 100);
+    const describe = ([label, share, median, count]) => `${label}: ` + (median == null
+      ? msg("br_bar_up", "up $1% · $2×", share.toFixed(0), String(count))
+      : msg("br_bar_value", "up $1% · $2 typically · $3×", share.toFixed(0), formatSigned(median), String(count)));
+    const chance = interval && quiet ? msg("br_within_chance", "within what chance gives") : "";
+    const uncertainty = interval ? msg("br_interval", "Wilson 95% interval: $1–$2%", (interval.lo * 100).toFixed(1), (interval.hi * 100).toFixed(1)) : "";
+    const name = [describe(self), describe(base), uncertainty, chance].filter(Boolean).join("; ");
+    return React.createElement(BaseBars, { quiet, "data-base-bars": "1", "data-base-n": n, "data-base-quiet": String(quiet), role: "img", "aria-label": name, title: name },
+      React.createElement(BaseBarLabel, null, describe(self)),
+      React.createElement(BaseBarTrack, { "aria-hidden": "true", quiet },
+        React.createElement("i", { "data-base-fill": "1", style: { width: `${up}%` } }),
+        React.createElement("b", { "data-base-tick": "1", style: { left: `${base[1]}%` } }),
+        interval && React.createElement("em", { "data-base-interval": "1", style: { left: `${interval.lo * 100}%`, width: `${(interval.hi - interval.lo) * 100}%` } }),
       ),
-      React.createElement(
-        BaseBarLabel,
-        { key: `${label}-v`, base: isBase },
-        median == null
-          ? msg("br_bar_up", "up $1% · $2×", up.toFixed(0), String(n))
-          : msg("br_bar_value", "up $1% · $2 typically · $3×", up.toFixed(0), formatSigned(median), String(n)),
-      ),
-    ];
-    return React.createElement(BaseBars, { "data-base-bars": "1" }, ...row(self, false), ...row(base, true));
+      React.createElement(BaseBarLabel, { base: true }, describe(base)),
+      chance && React.createElement(BaseBarLabel, { base: true }, chance),
+    );
   }
 
   componentWillUnmount() {
     this._gone = true;
     if (this._spy) cancelAnimationFrame(this._spy);
+    if (this.tabRef) this.tabRef.removeEventListener("keydown", this.onTabKey);
   }
 
   /* What followed the last US releases for this coin — CPI, the jobs
@@ -436,8 +448,8 @@ class BaseRatesPanel extends PureComponent {
     const coin = this.props.coin;
     if (coin && !(this.state.cpi && this.state.cpi.coin === coin))
       this.loadCpi();
-    if (!coin || this.state.loading) return;
-    this.setState({ loading: true, failed: false, coin });
+    if (!coin || (this.state.loading && this.state.coin === coin)) return;
+    this.setState({ candles: null, loading: true, failed: false, coin });
     const candles = await fetchDailyCandles(coin).catch(() => null);
     if (this._gone) return;
     // Guard the coin as well as the mount: a switch mid-fetch must not put one
@@ -464,9 +476,9 @@ class BaseRatesPanel extends PureComponent {
      * changed in place, so its identity is the whole key. */
     const { candles } = this.state;
     const kept = this._readings;
-    if (kept && kept.candles === candles) return kept.out;
+    if (kept && kept.candles === candles && kept.horizon === this.state.horizon) return kept.out;
     const out = this.countReadings(candles);
-    this._readings = { candles, out };
+    this._readings = { candles, out, horizon: this.state.horizon };
     return out;
   }
 
@@ -476,14 +488,15 @@ class BaseRatesPanel extends PureComponent {
     const rsi = dailyRsi(closes);
     const ma200 = movingAverage(closes, 200);
     const last = closes.length - 1;
+    const horizons = this.state.horizon ? [{ days: this.state.horizon, label: msg("cp_next_days", "next $1 days", String(this.state.horizon)) }] : BASE_RATE_HORIZONS;
     const rows = [];
     for (const state of BASE_RATE_STATES) {
       const live = state.test(rsi[last]);
-      const byHorizon = BASE_RATE_HORIZONS.map((h) => ({
+      const byHorizon = horizons.map((h) => ({
         ...h,
         result: baseRateFor(closes, rsi, state.test, h.days),
       }));
-      rows.push({ ...state, live, byHorizon });
+      rows.push({ ...state, live, byHorizon, entries: strategySetupEntries(rsi.map(state.test)) });
     }
     // The regime line, read off the same series
     const above = ma200.map((v, i) => (v == null ? null : closes[i] > v));
@@ -495,7 +508,8 @@ class BaseRatesPanel extends PureComponent {
         "the line institutions read as a regime, not as an entry",
       ),
       live: above[last] === true,
-      byHorizon: BASE_RATE_HORIZONS.map((h) => ({
+      entries: strategySetupEntries(above.map((v) => v === true)),
+      byHorizon: horizons.map((h) => ({
         ...h,
         result: baseRateFor(closes, above, (v) => v === true, h.days),
       })),
@@ -519,6 +533,7 @@ class BaseRatesPanel extends PureComponent {
         title: pattern.title,
         claim: pattern.claim,
         live,
+        entries: strategySetupEntries(hits),
         byHorizon: [
           {
             ...horizon,
@@ -559,8 +574,16 @@ class BaseRatesPanel extends PureComponent {
    * each one's own count. Never combined into a score or a direction: tested,
    * almost none of them told the next ten days apart from any ten days, and the
    * last sentence says so. */
-  renderAhead(readings) {
+  aheadItems(readings) {
     const items = [];
+    for (const row of readings.rows.concat(readings.patterns).filter((r) => r.live)) {
+      const h = row.byHorizon[0];
+      const r = h && h.result;
+      const text = r && r.n >= BASE_RATE_MIN_EPISODES
+        ? msg("br_ah_up", "$1 days later up $2% of $3 times; any $1 days up $4%.", String(h.days), r.up.toFixed(0), String(r.n), r.baseUp.toFixed(0))
+        : msg("br_n_times", "$1 times", String(r ? r.n : 0));
+      items.push({ key: row.id, title: row.title, text });
+    }
     const day = (t) =>
       new Date(t * 1000).toLocaleDateString(intlTag(activeLocale()), { day: "numeric", month: "short" });
     const money = (v) => formatAxisPrice(v, v / 2000, "");
@@ -571,7 +594,7 @@ class BaseRatesPanel extends PureComponent {
       const last = entries[entries.length - 1];
       if (last == null) continue;
       const ago = states.length - 1 - last;
-      const horizon = def.horizon || (def.kind === "move" ? SETUP_MOVE_HORIZON : SETUP_HORIZON);
+      const horizon = this.state.horizon || def.horizon || (def.kind === "move" ? SETUP_MOVE_HORIZON : SETUP_HORIZON);
       // Inside its horizon, the rule the row's own " · now" uses
       if (ago >= (def.recentDays || SETUP_HORIZON)) continue;
       let record;
@@ -582,9 +605,9 @@ class BaseRatesPanel extends PureComponent {
           : msg("br_ah_never", "nothing earlier to count.");
       } else {
         const r = baseRateFor(readings.closes, states, (v) => v, horizon);
-        record = r && r.n
+        record = r && r.n >= BASE_RATE_MIN_EPISODES
           ? msg("br_ah_up", "$1 days later up $2% of $3 times; any $1 days up $4%.", String(horizon), r.up.toFixed(0), String(r.n), r.baseUp.toFixed(0))
-          : msg("br_ah_never", "nothing earlier to count.");
+          : r && r.n ? msg("br_n_times", "$1 times", String(r.n)) : msg("br_ah_never", "nothing earlier to count.");
       }
       const when =
         ago === 0 ? msg("ss_formed_today", "Formed on today's close.") : ago === 1 ? msg("ss_formed_yesterday", "Formed yesterday.") : msg("ss_formed_ago", "Formed $1 days ago.", String(ago));
@@ -604,6 +627,11 @@ class BaseRatesPanel extends PureComponent {
           tested,
       });
     }
+    return items;
+  }
+
+  renderAhead(readings) {
+    const items = this.aheadItems(readings);
     const sim = readings.similar;
     return [
       React.createElement(BaseSectionLabel, { key: "ahead-label", "data-base-ahead": String(items.length) }, msg("br_ah_title", "What came after, for what is true now")),
@@ -647,26 +675,20 @@ class BaseRatesPanel extends PureComponent {
         { key: "ahead-note", "data-base-ahead-note": "1" },
         msg(
           "br_ah_note",
-          "These are counts of what followed, not a forecast, and they are not added up. Tested on four coins before they were shown, none of the readings and none of the setups told the next ten days apart from any ten days; the similar past did no better than an ordinary day; of the patterns only a triangle broken downwards did — and it reached its measured move first one time in three.",
+          "These are counts of what followed, not a forecast, and they are not added up. Tested on four coins before they were shown, none of the readings and none of the setups told the next ten days apart from any ten days; the similar past was not told apart from an ordinary day; of the patterns only a triangle broken downwards did — and it reached its measured move first one time in three.",
         ),
       ),
     ];
   }
 
   /* **The similar past, listed** (companions-prereg.md, group 4): the
-   * twenty stretches and what each was followed by. Listed, never drawn —
+   * twenty stretches and what each was followed by. Individual small charts
+   * in a list, never a fan over the main price chart —
    * scored from 2021 on, they said no more about the next ten days than an
    * ordinary day did. */
   renderSimilar(readings) {
     const sim = readings.similar;
     if (!sim) return [];
-    const day = (t) =>
-      new Date(t * 1000).toLocaleDateString(intlTag(activeLocale()), { day: "numeric", month: "short", year: "numeric" });
-    const list = sim.stretches
-      .slice()
-      .sort((a, b) => b.t - a.t)
-      .map((s) => `${day(s.t)} ${signedFixed(s.after, 1)}%`)
-      .join(" · ");
     return [
       React.createElement(BaseSectionLabel, { key: "sim-label", "data-base-similar": String(sim.n) }, msg("br_sim_section", "The similar past · daily candles")),
       React.createElement(
@@ -680,7 +702,7 @@ class BaseRatesPanel extends PureComponent {
           String(ANALOG_AHEAD),
         ),
       ),
-      React.createElement(BaseDetail, { key: "sim-list", "data-base-similar-list": "1" }, list),
+      React.createElement(React.Fragment, { key: "sim-list" }, renderBaseSimilar(this, readings)),
       React.createElement(
         BaseNote,
         { key: "sim-note" },
@@ -699,7 +721,7 @@ class BaseRatesPanel extends PureComponent {
     const q = WEEKDAY_TESTED[coin];
     const w = readings.weekday;
     const label = React.createElement(BaseSectionLabel, { key: "wd-label" }, msg("br_wd_section", "The next day, by weekday"));
-    if (q == null || !w)
+    if (!w)
       return [
         label,
         React.createElement(
@@ -708,30 +730,22 @@ class BaseRatesPanel extends PureComponent {
           msg("br_wd_untested", "Tested on BTC, ETH, SOL and LTC: the next day's direction differed by weekday on ETH and LTC only. $1 was not tested.", coin),
         ),
       ];
-    if (q >= 0.05)
-      return [
-        label,
-        React.createElement(
-          BaseEmpty,
-          { key: "wd-same" },
-          msg("br_wd_same", "Tested on this coin: no weekday's next day differed from the others'."),
-        ),
-      ];
     const names = [
       msg("wd_mon", "Mon"), msg("wd_tue", "Tue"), msg("wd_wed", "Wed"), msg("wd_thu", "Thu"),
       msg("wd_fri", "Fri"), msg("wd_sat", "Sat"), msg("wd_sun", "Sun"),
     ];
     return [
       label,
-      React.createElement(
-        BaseDetail,
-        { key: "wd-list", "data-base-weekday": coin },
-        w.shares.map((s, d) => `${names[d]} ${s.toFixed(0)}%`).join(" · "),
+      React.createElement(BaseHistoryBox, { key: "wd-list", "data-base-weekday": coin },
+        ...w.shares.map((s, d) => React.createElement(BaseHorizon, { key: d, "data-base-weekday-bar": String(d) },
+          React.createElement(BaseHorizonLabel, null, names[d]),
+          this.renderBars([msg("br_bar_this", "After this"), s, null, w.counts[d]], [msg("br_bar_base", "Any day"), w.all, null, w.n]),
+        )),
       ),
       React.createElement(
         BaseNote,
         { key: "wd-note" },
-        msg(
+        q == null ? msg("br_wd_untested", "Tested on BTC, ETH, SOL and LTC: the next day's direction differed by weekday on ETH and LTC only. $1 was not tested.", coin) : q >= 0.05 ? msg("br_wd_same", "Tested on this coin: no weekday's next day differed from the others'.") : msg(
           "br_wd_note",
           "How often the next day closed higher, by the weekday of the close (UTC), over $1 days; any day: $2%. Tested on four coins, this coin's weekdays differed from one another by more than chance — a small difference in a day's direction, not a size, and nothing about this week.",
           String(w.n),
@@ -855,18 +869,19 @@ class BaseRatesPanel extends PureComponent {
     const last = entries[entries.length - 1];
     const ago = last == null ? null : states.length - 1 - last;
     const live = ago != null && ago < (def.recentDays || SETUP_HORIZON);
+    const days = this.state.horizon || def.horizon || (def.kind === "move" ? SETUP_MOVE_HORIZON : SETUP_HORIZON);
     const detail = (() => {
       if (def.kind === "move") {
-        const m = moveRateFor(readings.closes, states, def.horizon || SETUP_MOVE_HORIZON);
+        const m = moveRateFor(readings.closes, states, days);
         if (!m || !m.n)
           return msg("ss_none", "Not once in this coin's daily history.");
-        if (def.horizon)
+        if (days)
           return msg(
             "ss_move_detail_h",
             "The next $3 days moved more than an ordinary $3 days of this coin in $1 of $2 episodes — half would, if it meant nothing.",
             String(m.bigger),
             String(m.n),
-            String(def.horizon),
+            String(days),
           );
         return msg(
           "ss_move_detail",
@@ -875,14 +890,14 @@ class BaseRatesPanel extends PureComponent {
           String(m.n),
         );
       }
-      const r = baseRateFor(readings.closes, states, (v) => v, def.horizon || SETUP_HORIZON);
+      const r = baseRateFor(readings.closes, states, (v) => v, days);
       if (!r || !r.n)
         return msg("ss_none", "Not once in this coin's daily history.");
       // The two counts and no verdict: tested, none of these differed (see the note)
       return React.createElement(
         BaseHorizon,
-        { "data-base-horizon": String(def.horizon || SETUP_HORIZON) },
-        React.createElement(BaseHorizonLabel, null, msg("cp_next_days", "next $1 days", String(def.horizon || SETUP_HORIZON))),
+        { "data-base-horizon": String(days) },
+        React.createElement(BaseHorizonLabel, null, msg("cp_next_days", "next $1 days", String(days))),
         this.renderBars(
           [msg("br_bar_this", "After this"), r.up, null, r.n],
           [msg("br_bar_base", "Any day"), r.baseUp, null, r.baseN],
@@ -1021,7 +1036,7 @@ class BaseRatesPanel extends PureComponent {
           ),
           React.createElement(
             BaseVerdict,
-            { weak: !enough },
+            { weak: !enough, "data-base-verdict": "1" },
             enough
               ? msg("br_that_is", "That is $1.", edge)
               : msg(
@@ -1057,9 +1072,43 @@ class BaseRatesPanel extends PureComponent {
     );
   }
 
+  selectTab(tab) {
+    this.setState({ tab, section: 0 });
+    if (this.bodyRef) this.bodyRef.scrollTop = 0;
+  }
+
+  /* Native at the strip: React 16 delegates keys to document, where the
+     app's coin arrows had already acted before React could stop them. */
+  onTabKey(e) {
+    const tabs = ["now", "library", "calendar"];
+    const i = tabs.indexOf(e.target.getAttribute("data-base-tab"));
+    if (i < 0) return;
+    const step = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0;
+    if (!step && e.key !== "Home" && e.key !== "End") return;
+    e.preventDefault();
+    e.stopPropagation();
+    const next = e.key === "Home" ? 0 : e.key === "End" ? tabs.length - 1 : (i + step + tabs.length) % tabs.length;
+    this.selectTab(tabs[next]);
+    this.tabRef.children[next].focus();
+  }
+
+  renderTabs() {
+    const tabs = [
+      ["now", msg("br_tab_now", "Now")],
+      ["library", msg("br_tab_library", "Library")],
+      ["calendar", msg("br_tab_calendar", "Calendar")],
+    ];
+    return React.createElement(BaseSubTabs, { innerRef: (n) => (this.tabRef = n), role: "tablist", "aria-label": msg("br_tabs", "Base rate views") },
+      ...tabs.map(([id, label]) => React.createElement(BaseSubTab, {
+        key: id, role: "tab", "aria-selected": this.state.tab === id, tabIndex: this.state.tab === id ? 0 : -1,
+        "data-base-tab": id, onClick: () => this.selectTab(id),
+      }, label)),
+    );
+  }
+
   render() {
     const { coin, onClose } = this.props;
-    const { loading, failed } = this.state;
+    const { loading, failed, tab } = this.state;
     const readings = this.readings();
     const live = readings ? readings.rows.filter((r) => r.live) : [];
     const rest = readings ? readings.rows.filter((r) => !r.live) : [];
@@ -1142,7 +1191,7 @@ class BaseRatesPanel extends PureComponent {
             ),
         React.createElement(
           BaseBody,
-          { innerRef: (n) => (this.bodyRef = n), onScroll: this.onBodyScroll },
+          { "data-base-body": "1", innerRef: (n) => (this.bodyRef = n), onScroll: this.onBodyScroll },
           // The monitor's tabs, when this is the monitor's Base rates tab
           this.props.tabs || null,
           embedded &&
@@ -1157,7 +1206,10 @@ class BaseRatesPanel extends PureComponent {
               ),
               coinChips,
             ),
-          this.state.sections.length > 2
+          this.renderTabs(),
+          this.state.horizon > 0 && React.createElement(BaseNote, { "data-base-untested": "1" }, msg("br_horizon_untested", "Untested horizon: descriptive counts only; the original tests do not apply to this selection.")),
+          readings && tab === "library" && renderBaseLibraryTools(this, readings),
+          tab === "library" && this.state.sections.length > 2
             ? React.createElement(
                 BaseNav,
                 { "aria-label": msg("br_nav_aria", "Sections of this screen"), "data-base-nav": String(this.state.sections.length), afterTabs: Boolean(this.props.tabs) },
@@ -1175,7 +1227,7 @@ class BaseRatesPanel extends PureComponent {
              the RSI with its clock, how much is true right now, what today's
              candle is, and how much history the counts stand on. Each is a
              fact read off what is below; none is a verdict. */
-          readings &&
+          readings && tab === "now" &&
             React.createElement(
               BaseGlance,
               { "data-base-glance": "1" },
@@ -1193,8 +1245,15 @@ class BaseRatesPanel extends PureComponent {
               React.createElement(
                 BaseGlanceTile,
                 null,
-                React.createElement(BaseNowValue, null, String(live.length)),
-                React.createElement(BaseNowLabel, null, msg("br_glance_now", "States true right now")),
+                React.createElement(BaseNowJump, {
+                  onClick: () => {
+                    const ahead = this.bodyRef && this.bodyRef.querySelector("[data-base-ahead]");
+                    if (ahead) ahead.scrollIntoView({ block: "start", behavior: reducedMotion() ? "auto" : "smooth" });
+                  },
+                },
+                  React.createElement(BaseNowValue, { "data-base-now-count": "1" }, String(this.aheadItems(readings).length)),
+                  React.createElement(BaseNowLabel, null, msg("br_glance_now", "Items true right now")),
+                ),
               ),
               React.createElement(
                 BaseGlanceTile,
@@ -1245,7 +1304,7 @@ class BaseRatesPanel extends PureComponent {
           /* The CPI count stands on its own request, so it does not wait
              for — or disappear with — the daily history: without the
              columns it is drawn by itself. */
-          !readings &&
+          !readings && tab === "calendar" &&
             React.createElement(
               BaseColumns,
               null,
@@ -1266,7 +1325,8 @@ class BaseRatesPanel extends PureComponent {
               React.createElement(
                 BaseColumn,
                 { "data-base-states": "1" },
-                ...this.renderAhead(readings),
+                ...(tab === "now" ? this.renderAhead(readings) : []),
+                ...(tab === "library" ? [
                 React.createElement(
                   BaseSectionLabel,
                   null,
@@ -1275,7 +1335,7 @@ class BaseRatesPanel extends PureComponent {
                     : msg("br_nothing_unusual", "Nothing unusual right now"),
                 ),
                 live.length
-                  ? live.map((r) => this.renderRow(r))
+                  ? baseLibraryRows(this, live.map((r) => this.renderRow(r)), readings)
                   : React.createElement(
                       BaseEmpty,
                       null,
@@ -1295,18 +1355,18 @@ class BaseRatesPanel extends PureComponent {
                       msg("br_the_rest", "The rest, for reference"),
                     )
                   : null,
-                ...restRows,
-                ...this.renderCpi(),
+                ...baseLibraryRows(this, restRows, readings),
                 ...this.renderSimilar(readings),
-                ...this.renderWeekday(readings),
-                ...this.renderMonths(readings),
+                ] : []),
+                ...(tab === "calendar" ? [...this.renderWeekday(readings), ...this.renderMonths(readings)] : []),
               ),
               /* **The candlestick shapes, counted.** Whatever range is on the
                  chart, these are read off the daily candle — a pattern is a
                  claim about a bar, and a bar is half a minute on 1H and a
                  fortnight on ALL, so one name would mean six things. The
                  same argument `dailyRsi` settled, and the label says it. */
-              React.createElement(
+              tab === "now" ? React.createElement(BaseColumn, { "data-base-history-col": "1" }, renderBaseHistory(this, readings)) :
+              tab === "calendar" ? React.createElement(BaseColumn, null, ...this.renderCpi()) : React.createElement(
                 BaseColumn,
                 { "data-base-patterns-col": "1" },
                 React.createElement(
@@ -1331,8 +1391,7 @@ class BaseRatesPanel extends PureComponent {
                         String(patterns.length),
                       ),
                 ),
-                ...patternsLive.map((r) => this.renderRow(r)),
-                ...patternsRest.map((r) => this.renderRow(r)),
+                ...baseLibraryRows(this, patternsLive.concat(patternsRest).map((r) => this.renderRow(r)), readings),
                 /* **Chart patterns** (27 Sep 2026) — the geometric ones, by
                    rule on swing points. Counted; see `price-patterns.js` and
                    the preregistration it points to. */
@@ -1349,9 +1408,9 @@ class BaseRatesPanel extends PureComponent {
                     "Found by rule on swing points five days either side, and followed for 90 days to the measured move or the invalidation, whichever came first. The same rules found 60 of these in eleven years of four coins together — rare enough that none of them can be compared with an ordinary day yet.",
                   ),
                 ),
-                ...PRICE_PATTERNS.map((def) =>
+                ...baseLibraryRows(this, PRICE_PATTERNS.map((def) =>
                   this.renderShape(def, readings.shapes),
-                ),
+                ), readings),
                 /* **Strategy setups** (27 Sep 2026) — what trend, breakout,
                    mean-reversion and volatility strategies wait for, counted
                    on the same candles. */
@@ -1368,9 +1427,9 @@ class BaseRatesPanel extends PureComponent {
                     "What common strategies wait for — crosses, breakouts, closes outside the bands, Supertrend flips — with what followed each time on this coin, beside an ordinary day. The chart companion names them where they happened.",
                   ),
                 ),
-                ...STRATEGY_SETUPS.map((def) =>
+                ...baseLibraryRows(this, STRATEGY_SETUPS.map((def) =>
                   this.renderSetup(def, readings),
-                ),
+                ), readings),
                 React.createElement(
                   BaseNote,
                   { "data-base-setups-note": "1" },
@@ -1395,9 +1454,9 @@ class BaseRatesPanel extends PureComponent {
                     "Triangles, wedges, ranges, flags and triple tops, drawn through swing points rather than fitted, each followed for 90 days to its measured move or its invalidation. Under each, how the same rule did on four coins together against the same two distances from an ordinary day.",
                   ),
                 ),
-                ...SWING_PATTERNS.map((def) =>
+                ...baseLibraryRows(this, SWING_PATTERNS.map((def) =>
                   this.renderShape(def, readings.swing),
-                ),
+                ), readings),
                 /* **Readings** (1 Oct 2026) — divergences, Ichimoku, the
                    stochastic, Fibonacci, pivots, highs, streaks and quiet days. */
                 React.createElement(
@@ -1413,9 +1472,9 @@ class BaseRatesPanel extends PureComponent {
                     "What chart tools read off a chart to say what comes next — divergences, the Ichimoku cloud, the stochastic, Fibonacci retracements, weekly pivots, new highs, streaks, the Mayer multiple, quiet days — with what followed each on this coin over ten days, beside any ten days.",
                   ),
                 ),
-                ...COMPANION_READINGS.map((def) =>
+                ...baseLibraryRows(this, COMPANION_READINGS.map((def) =>
                   this.renderSetup(def, readings),
-                ),
+                ), readings),
                 React.createElement(
                   BaseNote,
                   { "data-base-readings-note": "1" },
@@ -1434,8 +1493,8 @@ class BaseRatesPanel extends PureComponent {
               "This counts what happened after a state, against what happened after an ordinary day in the same coin. It is not a signal and there is nothing to act on here. ",
             ),
             msg(
-              "br_note_2",
-              "Nine textbook rules tested over 21,669 daily closes on eight coins produced 0 of 70 results that survived correction for multiple testing, and on live data the “overbought” line was followed by a better-than-ordinary month on four coins of six. ",
+              "br_note_tested",
+              "Nine textbook rules tested over 21,669 daily closes on eight coins produced 0 of 70 results that survived correction for multiple testing. ",
             ),
             msg(
               "br_note_3",

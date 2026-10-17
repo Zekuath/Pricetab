@@ -17,10 +17,30 @@ const HIDDEN_WIDGETS_KEY = "crypto_chart_hidden_widgets";
 const WIDGET_SIZE_KEY = "crypto_chart_widget_size";
 const DEFAULT_WIDGET_SIZE = "medium";
 const WIDGET_SIZE_OPTIONS = [
-  { value: "small", short: "S", label: msg("wsize_compact", "Compact"), scale: 0.85 },
-  { value: "medium", short: "M", label: msg("wsize_default", "Default"), scale: 1 },
-  { value: "large", short: "L", label: msg("wsize_large", "Large"), scale: 1.2 },
-  { value: "xlarge", short: "XL", label: msg("wsize_xlarge", "Extra large"), scale: 1.45 },
+  {
+    value: "small",
+    short: "S",
+    label: msg("wsize_compact", "Compact"),
+    scale: 0.85,
+  },
+  {
+    value: "medium",
+    short: "M",
+    label: msg("wsize_default", "Default"),
+    scale: 1,
+  },
+  {
+    value: "large",
+    short: "L",
+    label: msg("wsize_large", "Large"),
+    scale: 1.2,
+  },
+  {
+    value: "xlarge",
+    short: "XL",
+    label: msg("wsize_xlarge", "Extra large"),
+    scale: 1.45,
+  },
 ];
 
 const widgetSizeScale = (value) => {
@@ -47,17 +67,32 @@ const saveWidgetSizeToStorage = (size) => saveSetting(WIDGET_SIZE_KEY, size);
  * and in the menu a long press opens (app-widgets.js). */
 const WIDGET_CARD_SIZES_KEY = "crypto_chart_widget_card_sizes";
 const WIDGET_CARD_SIZES = ["s", "m", "l"];
-const WIDGET_CARD_MEDIUM = ["watchlist", "topMovers", "regimes", "outlook", "modelOutlook", "halvingCountdown"];
+const WIDGET_CARD_MEDIUM = [
+  "watchlist",
+  "topMovers",
+  "regimes",
+  "outlook",
+  "modelOutlook",
+  "halvingCountdown",
+];
 
 const widgetCardSize = (sizes, key) =>
-  sizes && WIDGET_CARD_SIZES.includes(sizes[key]) ? sizes[key] : WIDGET_CARD_MEDIUM.includes(key) ? "m" : "s";
+  sizes && WIDGET_CARD_SIZES.includes(sizes[key])
+    ? sizes[key]
+    : WIDGET_CARD_MEDIUM.includes(key)
+      ? "m"
+      : "s";
 
 // Only widgets that exist and sizes that do — a stored file is not trusted
 const sanitizeWidgetCardSizes = (raw) => {
   const out = {};
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return out;
   for (const key of Object.keys(raw)) {
-    if (Object.prototype.hasOwnProperty.call(DEFAULT_WIDGETS, key) && WIDGET_CARD_SIZES.includes(raw[key])) out[key] = raw[key];
+    if (
+      Object.prototype.hasOwnProperty.call(DEFAULT_WIDGETS, key) &&
+      WIDGET_CARD_SIZES.includes(raw[key])
+    )
+      out[key] = raw[key];
   }
   return out;
 };
@@ -71,13 +106,24 @@ const PINNED_WIDGETS_KEY = "crypto_chart_pinned_widgets";
 const WIDGET_PIN_MAX = 4;
 const sanitizePinnedWidgets = (raw) =>
   Array.isArray(raw)
-    ? raw.filter((k, i) => typeof k === "string" && Object.prototype.hasOwnProperty.call(DEFAULT_WIDGETS, k) && raw.indexOf(k) === i).slice(0, WIDGET_PIN_MAX)
+    ? raw
+        .filter(
+          (k, i) =>
+            typeof k === "string" &&
+            Object.prototype.hasOwnProperty.call(DEFAULT_WIDGETS, k) &&
+            raw.indexOf(k) === i,
+        )
+        .slice(0, WIDGET_PIN_MAX)
     : [];
-const loadPinnedWidgets = () => sanitizePinnedWidgets(loadJsonSetting(PINNED_WIDGETS_KEY, null));
-const savePinnedWidgets = (keys) => saveJsonSetting(PINNED_WIDGETS_KEY, sanitizePinnedWidgets(keys));
+const loadPinnedWidgets = () =>
+  sanitizePinnedWidgets(loadJsonSetting(PINNED_WIDGETS_KEY, null));
+const savePinnedWidgets = (keys) =>
+  saveJsonSetting(PINNED_WIDGETS_KEY, sanitizePinnedWidgets(keys));
 
-const loadWidgetCardSizes = () => sanitizeWidgetCardSizes(loadJsonSetting(WIDGET_CARD_SIZES_KEY, null));
-const saveWidgetCardSizes = (sizes) => saveJsonSetting(WIDGET_CARD_SIZES_KEY, sanitizeWidgetCardSizes(sizes));
+const loadWidgetCardSizes = () =>
+  sanitizeWidgetCardSizes(loadJsonSetting(WIDGET_CARD_SIZES_KEY, null));
+const saveWidgetCardSizes = (sizes) =>
+  saveJsonSetting(WIDGET_CARD_SIZES_KEY, sanitizeWidgetCardSizes(sizes));
 
 /* The widgets drawer's width, in pixels, where its right edge was let go
  * (27 Sep 2026). **Absent means the 30rem it opens at** — nothing is written
@@ -191,7 +237,10 @@ const WIDGET_GROUPS = [
       {
         key: "watchlist",
         label: msg("wname_watchlist", "Watchlist"),
-        desc: msg("wdesc_watchlist", "Your coins with their price and 24h change, tinted by the move"),
+        desc: msg(
+          "wdesc_watchlist",
+          "Your coins with their price and 24h change, tinted by the move",
+        ),
       },
       {
         key: "topMovers",
@@ -211,12 +260,18 @@ const WIDGET_GROUPS = [
       {
         key: "marketOverview",
         label: msg("wname_market_overview", "Market Overview"),
-        desc: msg("wdesc_market_overview", "Total market cap and BTC/ETH dominance"),
+        desc: msg(
+          "wdesc_market_overview",
+          "Total market cap and BTC/ETH dominance",
+        ),
       },
       {
         key: "altcoinSeason",
         label: msg("wname_altcoin_season", "Altcoin Season"),
-        desc: msg("wdesc_altcoin_season", "Are altcoins outperforming Bitcoin?"),
+        desc: msg(
+          "wdesc_altcoin_season",
+          "Are altcoins outperforming Bitcoin?",
+        ),
       },
       /* The chart's own range replayed forward: where its steps land at the
        * next horizons, as a counted band — never a direction. Costs no
@@ -224,7 +279,10 @@ const WIDGET_GROUPS = [
       {
         key: "outlook",
         label: msg("wname_outlook", "Outlook"),
-        desc: msg("wdesc_outlook", "Where this range's own steps land at the next horizons — a counted band, not a call"),
+        desc: msg(
+          "wdesc_outlook",
+          "Where this range's own steps land at the next horizons — a counted band, not a call",
+        ),
       },
       /* A model's estimate, not a count: the next completed hour of BTC-USD on
        * Coinbase from an EWMA-t fitted and tested offline (model-outlook.js),
@@ -232,7 +290,10 @@ const WIDGET_GROUPS = [
       {
         key: "modelOutlook",
         label: msg("wname_model_outlook", "Next hour · model"),
-        desc: msg("wdesc_model_outlook", "BTC-USD's next completed hour as a model estimates it: a median, an 80% band, a target's chance at the close — and how often the band held when tested"),
+        desc: msg(
+          "wdesc_model_outlook",
+          "BTC-USD's next completed hour as a model estimates it: a median, an 80% band, a target's chance at the close — and how often the band held when tested",
+        ),
       },
       /* The 3×3 regime picture the sector draws, counted the way this app
        * counts: each entry into a state and the state 20 days later, beside
@@ -240,7 +301,10 @@ const WIDGET_GROUPS = [
       {
         key: "regimes",
         label: msg("wname_regimes", "Regimes"),
-        desc: msg("wdesc_regimes", "Rising, flat or falling over 20 days — and what each was 20 days after it began, beside any day. Counted, not forecast"),
+        desc: msg(
+          "wdesc_regimes",
+          "Rising, flat or falling over 20 days — and what each was 20 days after it began, beside any day. Counted, not forecast",
+        ),
       },
       /* The second round (10 Oct 2026):
          what the market dashboards traders keep open carry beside a price —
@@ -249,12 +313,18 @@ const WIDGET_GROUPS = [
       {
         key: "stablecoins",
         label: msg("wname_stablecoins", "Stablecoins"),
-        desc: msg("wdesc_stablecoins", "The dollar stablecoins' combined market value, and their share of the whole market"),
+        desc: msg(
+          "wdesc_stablecoins",
+          "The dollar stablecoins' combined market value, and their share of the whole market",
+        ),
       },
       {
         key: "ethBtc",
         label: msg("wname_eth_btc", "ETH / BTC"),
-        desc: msg("wdesc_eth_btc", "Ether priced in bitcoin, and how that moved in 24 hours"),
+        desc: msg(
+          "wdesc_eth_btc",
+          "Ether priced in bitcoin, and how that moved in 24 hours",
+        ),
       },
       /* The US spot bitcoin ETFs' daily net flow (10 Oct 2026, the owner
          approved the host): TFTC's open record, built from SoSoValue and
@@ -262,12 +332,18 @@ const WIDGET_GROUPS = [
       {
         key: "etfFlows",
         label: msg("wname_etf_flows", "BTC ETF Flows"),
-        desc: msg("wdesc_etf_flows", "What went into and out of the US spot bitcoin ETFs on the last trading day, and over a week and a month of them"),
+        desc: msg(
+          "wdesc_etf_flows",
+          "What went into and out of the US spot bitcoin ETFs on the last trading day, and over a week and a month of them",
+        ),
       },
       {
         key: "macroCalendar",
         label: msg("wname_macro_calendar", "Next US releases"),
-        desc: msg("wdesc_macro_calendar", "When the next CPI, jobs report, Fed statement and PCE come out — the releases the chart marks"),
+        desc: msg(
+          "wdesc_macro_calendar",
+          "When the next CPI, jobs report, Fed statement and PCE come out — the releases the chart marks",
+        ),
       },
     ],
   },
@@ -280,7 +356,10 @@ const WIDGET_GROUPS = [
       {
         key: "ethGas",
         label: msg("wname_eth_gas", "ETH Gas"),
-        desc: msg("wdesc_eth_gas", "Gas price now, and what a plain ETH transfer costs"),
+        desc: msg(
+          "wdesc_eth_gas",
+          "Gas price now, and what a plain ETH transfer costs",
+        ),
       },
       {
         key: "difficulty",
@@ -296,12 +375,18 @@ const WIDGET_GROUPS = [
         // card: 141 vB is a one-in-two-out native SegWit spend, the ordinary
         // wallet transaction. Yours may be bigger.
         label: msg("wname_btc_fees", "BTC Fees"),
-        desc: msg("wdesc_btc_fees", "Fee rate now, and what a typical 141 vB transfer costs"),
+        desc: msg(
+          "wdesc_btc_fees",
+          "Fee rate now, and what a typical 141 vB transfer costs",
+        ),
       },
       {
         key: "halvingCountdown",
         label: msg("wname_halving_countdown", "BTC Halving Countdown"),
-        desc: msg("wdesc_halving_countdown", "Time until the next Bitcoin halving"),
+        desc: msg(
+          "wdesc_halving_countdown",
+          "Time until the next Bitcoin halving",
+        ),
       },
       {
         key: "mempool",
@@ -321,7 +406,10 @@ const WIDGET_GROUPS = [
         label: msg("wname_rsi_widget", "RSI"),
         // Not "overbought above 70, oversold below 30": that describes the
         // daily RSI, and this one's period follows the range on screen
-        desc: msg("wdesc_rsi_widget", "Momentum on a 0–100 scale, over the range you are looking at"),
+        desc: msg(
+          "wdesc_rsi_widget",
+          "Momentum on a 0–100 scale, over the range you are looking at",
+        ),
       },
       {
         key: "worstFall",
@@ -329,17 +417,26 @@ const WIDGET_GROUPS = [
         // The risk column, and the only survivor of the algorithm research:
         // 59 of 64 rule x coin pairs cut the worst fall while only 28 beat
         // holding. A description of what happened, never an entry.
-        desc: msg("wdesc_worst_fall", "The deepest peak-to-trough fall inside the range on screen"),
+        desc: msg(
+          "wdesc_worst_fall",
+          "The deepest peak-to-trough fall inside the range on screen",
+        ),
       },
       {
         key: "fundingRate",
         label: msg("wname_funding_rate", "Funding Rate"),
-        desc: msg("wdesc_funding_rate", "What longs pay shorts on perpetual futures"),
+        desc: msg(
+          "wdesc_funding_rate",
+          "What longs pay shorts on perpetual futures",
+        ),
       },
       {
         key: "longShortRatio",
         label: msg("wname_long_short_ratio", "Long / Short Ratio"),
-        desc: msg("wdesc_long_short_ratio", "How traders are positioned right now"),
+        desc: msg(
+          "wdesc_long_short_ratio",
+          "How traders are positioned right now",
+        ),
       },
       {
         key: "openInterest",
@@ -349,22 +446,34 @@ const WIDGET_GROUPS = [
       {
         key: "liquidations",
         label: msg("wname_liquidations", "Liquidations 24h"),
-        desc: msg("wdesc_liquidations", "Forced position closures, last 24 hours"),
+        desc: msg(
+          "wdesc_liquidations",
+          "Forced position closures, last 24 hours",
+        ),
       },
       {
         key: "options",
         label: msg("wname_options", "Options"),
-        desc: msg("wdesc_options", "From Bybit's options: the strike where option holders would collect least at the nearest expiry, puts against calls, and the implied volatility at the money"),
+        desc: msg(
+          "wdesc_options",
+          "From Bybit's options: the strike where option holders would collect least at the nearest expiry, puts against calls, and the implied volatility at the money",
+        ),
       },
       {
         key: "fundingBoard",
         label: msg("wname_funding_board", "Funding Board"),
-        desc: msg("wdesc_funding_board", "Funding across every perpetual this app charts, on Bybit: how many pay longs or shorts, the middle one and the two ends"),
+        desc: msg(
+          "wdesc_funding_board",
+          "Funding across every perpetual this app charts, on Bybit: how many pay longs or shorts, the middle one and the two ends",
+        ),
       },
       {
         key: "oiLeaders",
         label: msg("wname_oi_leaders", "Open Interest Leaders"),
-        desc: msg("wdesc_oi_leaders", "The perpetuals with the most open contracts on Bybit, and the total"),
+        desc: msg(
+          "wdesc_oi_leaders",
+          "The perpetuals with the most open contracts on Bybit, and the total",
+        ),
       },
     ],
   },
@@ -457,21 +566,43 @@ const formatWidgetUsdt = (n) => formatWidgetUsd(n).slice(1);
 const OPTION_BASES = ["BTC", "ETH", "SOL"];
 const OPTION_MIN_AHEAD_MS = 12 * 3600e3;
 const OPTION_IV_DAYS = 30;
-const OPTION_MONTHS = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+const OPTION_MONTHS = [
+  "JAN",
+  "FEB",
+  "MAR",
+  "APR",
+  "MAY",
+  "JUN",
+  "JUL",
+  "AUG",
+  "SEP",
+  "OCT",
+  "NOV",
+  "DEC",
+];
 
 // "BTC-30OCT26-72000-C-USDT" → { base, expiry (08:00 UTC), strike, type }
 const parseOptionSymbol = (symbol) => {
-  const m = /^([A-Z0-9]+)-(\d{1,2})([A-Z]{3})(\d{2})-([\d.]+)-([CP])\b/.exec(String(symbol || ""));
+  const m = /^([A-Z0-9]+)-(\d{1,2})([A-Z]{3})(\d{2})-([\d.]+)-([CP])\b/.exec(
+    String(symbol || ""),
+  );
   if (!m) return null;
   const month = OPTION_MONTHS.indexOf(m[3]);
   if (month < 0) return null;
-  return { base: m[1], expiry: Date.UTC(2000 + Number(m[4]), month, Number(m[2]), 8), strike: Number(m[5]), type: m[6] };
+  return {
+    base: m[1],
+    expiry: Date.UTC(2000 + Number(m[4]), month, Number(m[2]), 8),
+    strike: Number(m[5]),
+    type: m[6],
+  };
 };
 
 /* The three readings from parsed rows ({ expiry, strike, type, oi, iv,
    under }). Pure; null where the rows cannot say. */
 const optionsSummary = (rows, now) => {
-  const list = (Array.isArray(rows) ? rows : []).filter((r) => r && r.strike > 0 && r.expiry > now);
+  const list = (Array.isArray(rows) ? rows : []).filter(
+    (r) => r && r.strike > 0 && r.expiry > now,
+  );
   if (!list.length) return null;
   let calls = 0;
   let puts = 0;
@@ -480,16 +611,29 @@ const optionsSummary = (rows, now) => {
     if (r.type === "C") calls += r.oi;
     else puts += r.oi;
   }
-  const expiries = Array.from(new Set(list.map((r) => r.expiry))).sort((a, b) => a - b);
-  const near = expiries.find((e) => e - now >= OPTION_MIN_AHEAD_MS && list.some((r) => r.expiry === e && r.oi > 0));
+  const expiries = Array.from(new Set(list.map((r) => r.expiry))).sort(
+    (a, b) => a - b,
+  );
+  const near = expiries.find(
+    (e) =>
+      e - now >= OPTION_MIN_AHEAD_MS &&
+      list.some((r) => r.expiry === e && r.oi > 0),
+  );
   let maxPain = null;
   if (near) {
     const at = list.filter((r) => r.expiry === near && r.oi > 0);
-    const strikes = Array.from(new Set(at.map((r) => r.strike))).sort((a, b) => a - b);
+    const strikes = Array.from(new Set(at.map((r) => r.strike))).sort(
+      (a, b) => a - b,
+    );
     let best = Infinity;
     for (const k of strikes) {
       let pay = 0;
-      for (const r of at) pay += r.oi * (r.type === "C" ? Math.max(0, k - r.strike) : Math.max(0, r.strike - k));
+      for (const r of at)
+        pay +=
+          r.oi *
+          (r.type === "C"
+            ? Math.max(0, k - r.strike)
+            : Math.max(0, r.strike - k));
       if (pay < best) {
         best = pay;
         maxPain = k;
@@ -497,12 +641,20 @@ const optionsSummary = (rows, now) => {
     }
   }
   const target = now + OPTION_IV_DAYS * 86400e3;
-  const ivExpiry = expiries.slice().sort((a, b) => Math.abs(a - target) - Math.abs(b - target))[0];
-  const under = (list.find((r) => r.expiry === ivExpiry && r.under > 0) || list.find((r) => r.under > 0) || {}).under;
+  const ivExpiry = expiries
+    .slice()
+    .sort((a, b) => Math.abs(a - target) - Math.abs(b - target))[0];
+  const under = (
+    list.find((r) => r.expiry === ivExpiry && r.under > 0) ||
+    list.find((r) => r.under > 0) ||
+    {}
+  ).under;
   let atmIv = null;
   if (ivExpiry && under > 0) {
     const at = list.filter((r) => r.expiry === ivExpiry && r.iv > 0);
-    const strike = at.map((r) => r.strike).sort((a, b) => Math.abs(a - under) - Math.abs(b - under))[0];
+    const strike = at
+      .map((r) => r.strike)
+      .sort((a, b) => Math.abs(a - under) - Math.abs(b - under))[0];
     const ivs = at.filter((r) => r.strike === strike).map((r) => r.iv);
     if (ivs.length) atmIv = ivs.reduce((a, b) => a + b, 0) / ivs.length;
   }
@@ -522,15 +674,27 @@ const fetchOptionsSummary = async (coin) => {
   const cached = getWidgetCache(key);
   if (cached) return cached;
   try {
-    const res = await politeFetch(`${BYBIT_API}/v5/market/tickers?category=option&baseCoin=${base}`);
+    const res = await politeFetch(
+      `${BYBIT_API}/v5/market/tickers?category=option&baseCoin=${base}`,
+    );
     if (!res.ok) return null;
     const json = await res.json();
-    const list = json && json.result && Array.isArray(json.result.list) ? json.result.list : [];
+    const list =
+      json && json.result && Array.isArray(json.result.list)
+        ? json.result.list
+        : [];
     const rows = [];
     for (const t of list) {
       const p = parseOptionSymbol(t && t.symbol);
       if (!p || p.base !== base) continue;
-      rows.push({ expiry: p.expiry, strike: p.strike, type: p.type, oi: parseFloat(t.openInterest) || 0, iv: parseFloat(t.markIv) || 0, under: parseFloat(t.underlyingPrice) || 0 });
+      rows.push({
+        expiry: p.expiry,
+        strike: p.strike,
+        type: p.type,
+        oi: parseFloat(t.openInterest) || 0,
+        iv: parseFloat(t.markIv) || 0,
+        under: parseFloat(t.underlyingPrice) || 0,
+      });
     }
     const sum = optionsSummary(rows, Date.now());
     if (!sum) return null;
@@ -551,10 +715,15 @@ const fetchPerpBoard = async () => {
   const cached = getWidgetCache("perpBoard");
   if (cached) return cached;
   try {
-    const res = await politeFetch(`${BYBIT_API}/v5/market/tickers?category=linear`);
+    const res = await politeFetch(
+      `${BYBIT_API}/v5/market/tickers?category=linear`,
+    );
     if (!res.ok) return null;
     const json = await res.json();
-    const list = json && json.result && Array.isArray(json.result.list) ? json.result.list : [];
+    const list =
+      json && json.result && Array.isArray(json.result.list)
+        ? json.result.list
+        : [];
     const known = new Set(SUGGESTED_COINS);
     const rows = [];
     for (const t of list) {
@@ -578,10 +747,18 @@ const fetchPerpBoard = async () => {
    middle rate and the two ends; the total open interest and the three
    largest. Pure. */
 const perpBoardSummary = (board) => {
-  const rows = board && Array.isArray(board.rows) ? board.rows.filter((r) => isFinite(r.funding) && r.oi > 0) : [];
+  const rows =
+    board && Array.isArray(board.rows)
+      ? board.rows.filter((r) => isFinite(r.funding) && r.oi > 0)
+      : [];
   if (!rows.length) return null;
   const byRate = rows.slice().sort((a, b) => a.funding - b.funding);
-  const mid = byRate.length % 2 ? byRate[(byRate.length - 1) / 2].funding : (byRate[byRate.length / 2 - 1].funding + byRate[byRate.length / 2].funding) / 2;
+  const mid =
+    byRate.length % 2
+      ? byRate[(byRate.length - 1) / 2].funding
+      : (byRate[byRate.length / 2 - 1].funding +
+          byRate[byRate.length / 2].funding) /
+        2;
   const byOi = rows.slice().sort((a, b) => b.oi - a.oi);
   return {
     n: rows.length,
@@ -599,7 +776,20 @@ const perpBoardSummary = (board) => {
  * already keeps (`pageTickerCache`, in USD) and the market's total from the
  * Market Cap card's request — no request of its own beyond a sweep the TTL
  * usually answers from memory. */
-const STABLECOIN_SYMBOLS = ["USDT", "USDC", "USDE", "DAI", "USDS", "FDUSD", "PYUSD", "USD1", "TUSD", "USDD", "RLUSD", "USDG"];
+const STABLECOIN_SYMBOLS = [
+  "USDT",
+  "USDC",
+  "USDE",
+  "DAI",
+  "USDS",
+  "FDUSD",
+  "PYUSD",
+  "USD1",
+  "TUSD",
+  "USDD",
+  "RLUSD",
+  "USDG",
+];
 const fetchStablecoins = async () => {
   try {
     const overview = await fetchMarketOverview();
@@ -616,8 +806,14 @@ const fetchStablecoins = async () => {
     if (!parts.length) return null;
     parts.sort((a, b) => b.cap - a.cap);
     const cap = parts.reduce((a, p) => a + p.cap, 0);
-    const total = overview && overview.totalMarketCap > 0 ? overview.totalMarketCap : null;
-    return { cap, share: total ? cap / total : null, top: parts.slice(0, 2), count: parts.length };
+    const total =
+      overview && overview.totalMarketCap > 0 ? overview.totalMarketCap : null;
+    return {
+      cap,
+      share: total ? cap / total : null,
+      top: parts.slice(0, 2),
+      count: parts.length,
+    };
   } catch (e) {
     return null;
   }
@@ -638,7 +834,9 @@ const fetchEthBtc = async (currency) => {
     if (!eth || !btc || !(eth.price > 0) || !(btc.price > 0)) return null;
     const ratio = eth.price / btc.price;
     const change =
-      isFinite(eth.change) && isFinite(btc.change) ? ((1 + eth.change / 100) / (1 + btc.change / 100) - 1) * 100 : null;
+      isFinite(eth.change) && isFinite(btc.change)
+        ? ((1 + eth.change / 100) / (1 + btc.change / 100) - 1) * 100
+        : null;
     return { ratio, change };
   } catch (e) {
     return null;
@@ -654,21 +852,31 @@ const fetchEthBtc = async (currency) => {
 const ETF_FLOWS_URL = "https://www.tftc.io/bitcoin-etf-flows/data.json";
 
 const etfFlowsSummary = (days) => {
-  const rows = (Array.isArray(days) ? days : []).filter((d) => d && typeof d.date === "string" && isFinite(Number(d.netFlowUsd)));
+  const rows = (Array.isArray(days) ? days : []).filter(
+    (d) => d && typeof d.date === "string" && isFinite(Number(d.netFlowUsd)),
+  );
   if (!rows.length) return null;
   rows.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
   const last = rows[rows.length - 1];
-  const sum = (n) => rows.slice(-n).reduce((a, d) => a + Number(d.netFlowUsd), 0);
-  const funds = Object.entries(last.perEtfUsd || {}).filter(([, v]) => isFinite(Number(v)) && Number(v) !== 0).map(([k, v]) => [k, Number(v)]);
+  const sum = (n) =>
+    rows.slice(-n).reduce((a, d) => a + Number(d.netFlowUsd), 0);
+  const funds = Object.entries(last.perEtfUsd || {})
+    .filter(([, v]) => isFinite(Number(v)) && Number(v) !== 0)
+    .map(([k, v]) => [k, Number(v)]);
   funds.sort((a, b) => b[1] - a[1]);
   return {
     date: last.date,
     net: Number(last.netFlowUsd),
     week: sum(5),
     month: sum(20),
-    aum: isFinite(Number(last.totalNetAssetsUsd)) ? Number(last.totalNetAssetsUsd) : null,
+    aum: isFinite(Number(last.totalNetAssetsUsd))
+      ? Number(last.totalNetAssetsUsd)
+      : null,
     topIn: funds.length && funds[0][1] > 0 ? funds[0] : null,
-    topOut: funds.length && funds[funds.length - 1][1] < 0 ? funds[funds.length - 1] : null,
+    topOut:
+      funds.length && funds[funds.length - 1][1] < 0
+        ? funds[funds.length - 1]
+        : null,
   };
 };
 
@@ -726,13 +934,15 @@ const fetchFundingRate = async (coin) => {
        hours is only the fallback for an answer without the second stamp. */
     const at = Number(d.fundingTime) || 0;
     const next = Number(d.nextFundingTime) || 0;
-    const intervalMs = at > 0 && next > at ? next - at : FUNDING_DEFAULT_INTERVAL_MS;
+    const intervalMs =
+      at > 0 && next > at ? next - at : FUNDING_DEFAULT_INTERVAL_MS;
     const perYear = (365 * 24 * 3600e3) / intervalMs;
     /* OKX's premium: how far the perpetual sits from its own spot index, the
        figure funding is set from. A basis in one number and no new request.
        Absent from an older cache entry, and left null when the venue sends
        nothing. */
-    const premium = d.premium === "" || d.premium == null ? null : parseFloat(d.premium);
+    const premium =
+      d.premium === "" || d.premium == null ? null : parseFloat(d.premium);
     const data = {
       rate,
       percent: (rate * 100).toFixed(4),
@@ -835,7 +1045,13 @@ const fetchLiquidations = async (coin) => {
         if (det.posSide === "long") longLiq += val;
         else shortLiq += val;
         const price = parseFloat(det.bkPx);
-        if (isFinite(ts) && price > 0 && val > 0) prints.push({ t: ts, price, value: val, side: det.posSide === "long" ? "long" : "short" });
+        if (isFinite(ts) && price > 0 && val > 0)
+          prints.push({
+            t: ts,
+            price,
+            value: val,
+            side: det.posSide === "long" ? "long" : "short",
+          });
       });
     });
     prints.sort((a, b) => b.value - a.value);
@@ -879,14 +1095,24 @@ const fetchCrowdHistory = async (coin) => {
   if (cached) return cached;
   try {
     const [ratioRes, klineRes] = await Promise.all([
-      fetch(`${BYBIT_API}/v5/market/account-ratio?category=linear&symbol=${coin}USDT&period=1d&limit=${CROWD_HISTORY_DAYS}`),
-      fetch(`${BYBIT_API}/v5/market/kline?category=linear&symbol=${coin}USDT&interval=D&limit=${CROWD_HISTORY_DAYS}`),
+      fetch(
+        `${BYBIT_API}/v5/market/account-ratio?category=linear&symbol=${coin}USDT&period=1d&limit=${CROWD_HISTORY_DAYS}`,
+      ),
+      fetch(
+        `${BYBIT_API}/v5/market/kline?category=linear&symbol=${coin}USDT&interval=D&limit=${CROWD_HISTORY_DAYS}`,
+      ),
     ]);
     if (!ratioRes.ok || !klineRes.ok) return null;
     const ratio = await ratioRes.json();
     const kline = await klineRes.json();
-    const ratios = ratio && ratio.result && Array.isArray(ratio.result.list) ? ratio.result.list : [];
-    const candles = kline && kline.result && Array.isArray(kline.result.list) ? kline.result.list : [];
+    const ratios =
+      ratio && ratio.result && Array.isArray(ratio.result.list)
+        ? ratio.result.list
+        : [];
+    const candles =
+      kline && kline.result && Array.isArray(kline.result.list)
+        ? kline.result.list
+        : [];
     const closeAt = new Map();
     for (const row of candles) {
       const t = Number(row && row[0]);
@@ -941,7 +1167,10 @@ const fetchFundingHistory = async (coin) => {
       );
       if (!res.ok) return null;
       const json = await res.json();
-      const list = json && json.result && Array.isArray(json.result.list) ? json.result.list : [];
+      const list =
+        json && json.result && Array.isArray(json.result.list)
+          ? json.result.list
+          : [];
       if (!list.length) break;
       let oldest = Infinity;
       for (const r of list) {
@@ -955,7 +1184,8 @@ const fetchFundingHistory = async (coin) => {
         e.n += 1;
         byDay.set(day, e);
       }
-      if (list.length < STRUCTURE_PAGE || !isFinite(oldest) || oldest <= since) break;
+      if (list.length < STRUCTURE_PAGE || !isFinite(oldest) || oldest <= since)
+        break;
       end = String(oldest - 1);
     }
     const rows = Array.from(byDay, ([t, e]) => ({ t, value: e.sum / e.n }))
@@ -983,7 +1213,10 @@ const fetchOpenInterestHistory = async (coin) => {
       );
       if (!res.ok) return null;
       const json = await res.json();
-      const list = json && json.result && Array.isArray(json.result.list) ? json.result.list : [];
+      const list =
+        json && json.result && Array.isArray(json.result.list)
+          ? json.result.list
+          : [];
       if (!list.length) break;
       let oldest = Infinity;
       for (const r of list) {
@@ -1020,14 +1253,22 @@ const fetchPerpCoins = async () => {
   const cached = getWidgetCache(key);
   if (cached) return cached;
   try {
-    const res = await politeFetch(`${OKX_API}/public/instruments?instType=SWAP`);
+    const res = await politeFetch(
+      `${OKX_API}/public/instruments?instType=SWAP`,
+    );
     if (!res.ok) return null;
     const json = await res.json();
     if (!json || json.code !== "0" || !Array.isArray(json.data)) return null;
     const coins = Array.from(
       new Set(
         json.data
-          .filter((d) => d && d.settleCcy === "USDT" && d.state === "live" && typeof d.instId === "string")
+          .filter(
+            (d) =>
+              d &&
+              d.settleCcy === "USDT" &&
+              d.state === "live" &&
+              typeof d.instId === "string",
+          )
           .map((d) => d.instId.split("-")[0]),
       ),
     ).sort();
@@ -1040,7 +1281,18 @@ const fetchPerpCoins = async () => {
 };
 
 const STABLE_SYMBOLS = new Set([
-  "USDT","USDC","BUSD","DAI","TUSD","USDP","FRAX","LUSD","GUSD","USDD","USDE","FDUSD",
+  "USDT",
+  "USDC",
+  "BUSD",
+  "DAI",
+  "TUSD",
+  "USDP",
+  "FRAX",
+  "LUSD",
+  "GUSD",
+  "USDD",
+  "USDE",
+  "FDUSD",
 ]);
 
 /* The model outlook for the widget (model-outlook.js): the bars are always
@@ -1051,7 +1303,8 @@ const STABLE_SYMBOLS = new Set([
  * closes, once per origin, and earlier ones are settled from the same bars. */
 const fetchModelOutlook = async (targetPrice) => {
   const series = await fetchOddsSeries("BTC", "USD", 3600);
-  if (!series || !Array.isArray(series.closes)) return { forecast: { state: "unavailable" }, at: Date.now() };
+  if (!series || !Array.isArray(series.closes))
+    return { forecast: { state: "unavailable" }, at: Date.now() };
   const gaps = new Set(series.missing || []);
   const bars = [];
   series.closes.forEach((close, i) => {
@@ -1061,7 +1314,10 @@ const fetchModelOutlook = async (targetPrice) => {
   const forecast = modelOutlookForecast(OUTLOOK_MODEL, bars, now, targetPrice);
   // Read, change and write in one turn, so two tabs cannot lose each other's hour
   let records = loadModelOutlookRecords();
-  const rec = OUTLOOK_MODEL.evaluation && OUTLOOK_MODEL.evaluation.status === "passed" ? modelOutlookRecord(forecast, "coinbase") : null;
+  const rec =
+    OUTLOOK_MODEL.evaluation && OUTLOOK_MODEL.evaluation.status === "passed"
+      ? modelOutlookRecord(forecast, "coinbase")
+      : null;
   const next = modelOutlookAppend(records, rec);
   if (next !== records) {
     records = next;
@@ -1070,7 +1326,12 @@ const fetchModelOutlook = async (targetPrice) => {
   const before = loadModelOutlookOutcomes();
   const outcomes = modelOutlookSettle(records, before, bars, now);
   if (outcomes !== before) saveModelOutlookOutcomes(outcomes);
-  return { forecast, tally: modelOutlookTally(records, outcomes), lastBar: bars.length ? bars[bars.length - 1].time : null, at: now };
+  return {
+    forecast,
+    tally: modelOutlookTally(records, outcomes),
+    lastBar: bars.length ? bars[bars.length - 1].time : null,
+    at: now,
+  };
 };
 
 /* The regime grid for one coin, from the daily closes the base-rate screen
@@ -1092,7 +1353,9 @@ const fetchAltcoinSeason = async () => {
     if (!isFinite(dom)) return null;
     // Map BTC dominance to 0-100 alt season index
     // dom ≥ 65% → index ~0 (BTC Season), dom ≤ 40% → index ~100 (Alt Season)
-    const index = Math.round(Math.max(0, Math.min(100, ((65 - dom) / 25) * 100)));
+    const index = Math.round(
+      Math.max(0, Math.min(100, ((65 - dom) / 25) * 100)),
+    );
     let label;
     if (index >= 75) label = "Altcoin Season";
     else if (index <= 25) label = "BTC Season";
@@ -1212,8 +1475,11 @@ const BTC_RETARGET_BLOCKS = 2016;
  * like any other, and the fallback below takes it. */
 const MEMPOOL_TIMEOUT_MS = 6000;
 const mempoolFetch = (url) => {
-  const ctrl = typeof AbortController === "function" ? new AbortController() : null;
-  const timer = ctrl ? setTimeout(() => ctrl.abort(), MEMPOOL_TIMEOUT_MS) : null;
+  const ctrl =
+    typeof AbortController === "function" ? new AbortController() : null;
+  const timer = ctrl
+    ? setTimeout(() => ctrl.abort(), MEMPOOL_TIMEOUT_MS)
+    : null;
   return politeFetch(url, ctrl ? { signal: ctrl.signal } : undefined)
     .catch(() => null)
     .finally(() => timer && clearTimeout(timer));
@@ -1233,7 +1499,11 @@ const fetchBtcChainStats = async () => {
       const height = Number(d && d.best_block_height);
       if (!(height > 0)) return null;
       const num = (v) => (isFinite(Number(v)) ? Number(v) : null);
-      const retargetAt = d.next_retarget_time_estimate ? Date.parse(`${String(d.next_retarget_time_estimate).replace(" ", "T")}Z`) : NaN;
+      const retargetAt = d.next_retarget_time_estimate
+        ? Date.parse(
+            `${String(d.next_retarget_time_estimate).replace(" ", "T")}Z`,
+          )
+        : NaN;
       const data = {
         height,
         difficulty: num(d.difficulty),
@@ -1257,24 +1527,39 @@ const fetchBtcChainStats = async () => {
 /* The four cards' readings from Blockchair's stats, or null. */
 const btcFeesFromStats = (st) =>
   st && st.feeRate > 0
-    ? { rate: st.feeRate, fastest: st.feeRate, hour: st.feeRate, transferBtc: (st.feeRate * BTC_TYPICAL_VBYTES) / 1e8, source: "blockchair" }
+    ? {
+        rate: st.feeRate,
+        fastest: st.feeRate,
+        hour: st.feeRate,
+        transferBtc: (st.feeRate * BTC_TYPICAL_VBYTES) / 1e8,
+        source: "blockchair",
+      }
     : null;
 
 // Blockchair reports the queue in bytes, not vbytes: "blocks deep" is near enough to say, and marked as from there
 const mempoolFromStats = (st) =>
   st && st.mempoolCount >= 0 && st.mempoolBytes >= 0
-    ? { count: st.mempoolCount, vsize: st.mempoolBytes, blocks: st.mempoolBytes / MEMPOOL_BLOCK_VBYTES, feesBtc: null, source: "blockchair" }
+    ? {
+        count: st.mempoolCount,
+        vsize: st.mempoolBytes,
+        blocks: st.mempoolBytes / MEMPOOL_BLOCK_VBYTES,
+        feesBtc: null,
+        source: "blockchair",
+      }
     : null;
 
 const difficultyFromStats = (st, now) => {
   if (!st || !(st.difficulty > 0) || !(st.nextDifficulty > 0)) return null;
-  const next = Math.ceil((st.height + 1) / BTC_RETARGET_BLOCKS) * BTC_RETARGET_BLOCKS;
+  const next =
+    Math.ceil((st.height + 1) / BTC_RETARGET_BLOCKS) * BTC_RETARGET_BLOCKS;
   const remaining = next - st.height;
   return {
     change: (st.nextDifficulty / st.difficulty - 1) * 100,
     remaining,
     progress: ((BTC_RETARGET_BLOCKS - remaining) / BTC_RETARGET_BLOCKS) * 100,
-    remainingMs: st.retargetAt ? Math.max(0, st.retargetAt - (now || Date.now())) : null,
+    remainingMs: st.retargetAt
+      ? Math.max(0, st.retargetAt - (now || Date.now()))
+      : null,
     previous: null,
     source: "blockchair",
   };
@@ -1292,7 +1577,9 @@ const fetchBtcFees = async () => {
   const cached = getWidgetCache("btcFees");
   if (cached) return cached;
   try {
-    const res = await mempoolFetch("https://mempool.space/api/v1/fees/recommended");
+    const res = await mempoolFetch(
+      "https://mempool.space/api/v1/fees/recommended",
+    );
     const json = res && res.ok ? await res.json() : null;
     const rate = Number(json && json.halfHourFee);
     if (!isFinite(rate) || rate <= 0) {
@@ -1337,7 +1624,13 @@ const fetchMempool = async () => {
     const json = res && res.ok ? await res.json() : null;
     const count = Number(json && json.count);
     const vsize = Number(json && json.vsize);
-    if (!json || !isFinite(count) || count < 0 || !isFinite(vsize) || vsize < 0) {
+    if (
+      !json ||
+      !isFinite(count) ||
+      count < 0 ||
+      !isFinite(vsize) ||
+      vsize < 0
+    ) {
       const second = mempoolFromStats(await fetchBtcChainStats());
       if (second) setWidgetCache("mempool", second);
       return second;
@@ -1347,7 +1640,9 @@ const fetchMempool = async () => {
       vsize,
       blocks: vsize / MEMPOOL_BLOCK_VBYTES,
       // Total fees waiting, in BTC — what the next blocks are worth to miners
-      feesBtc: isFinite(Number(json.total_fee)) ? Number(json.total_fee) / 1e8 : null,
+      feesBtc: isFinite(Number(json.total_fee))
+        ? Number(json.total_fee) / 1e8
+        : null,
     };
     setWidgetCache("mempool", data);
     return data;
@@ -1373,7 +1668,9 @@ const fetchDifficulty = async () => {
   const cached = getWidgetCache("difficulty");
   if (cached) return cached;
   try {
-    const res = await mempoolFetch("https://mempool.space/api/v1/difficulty-adjustment");
+    const res = await mempoolFetch(
+      "https://mempool.space/api/v1/difficulty-adjustment",
+    );
     const json = res && res.ok ? await res.json() : null;
     const change = Number(json && json.difficultyChange);
     const remaining = Number(json && json.remainingBlocks);
@@ -1388,8 +1685,9 @@ const fetchDifficulty = async () => {
       progress: Number(json.progressPercent) || 0,
       // Their estimate of when, in ms from now. Null rather than a date when
       // the field is missing: a countdown is the one thing here worth refusing
-      remainingMs:
-        isFinite(Number(json.remainingTime)) ? Number(json.remainingTime) : null,
+      remainingMs: isFinite(Number(json.remainingTime))
+        ? Number(json.remainingTime)
+        : null,
       previous: isFinite(Number(json.previousRetarget))
         ? Number(json.previousRetarget)
         : null,
@@ -1484,7 +1782,8 @@ const parseBookSide = (rows, want, ctVal) => {
     const price = parseFloat(row && row[0]);
     /* Contracts on the wire, coins on the screen — see `fetchContractSpec`. */
     const size = parseFloat(row && row[1]) * ctVal;
-    if (!isFinite(price) || !isFinite(size) || price <= 0 || size <= 0) continue;
+    if (!isFinite(price) || !isFinite(size) || price <= 0 || size <= 0)
+      continue;
     depth += size;
     out.push({ price, size, depth });
     if (out.length >= want) break;
@@ -1541,7 +1840,9 @@ const fetchRecentTrades = async (coin) => {
   const hit = recentTradesCache.get(coin);
   if (hit && Date.now() - hit.at < ORDER_BOOK_FRESH) return hit.data;
   try {
-    const res = await fetch(`${OKX_API}/market/trades?instId=${coin}-USDT-SWAP&limit=${RECENT_TRADES_ROWS}`);
+    const res = await fetch(
+      `${OKX_API}/market/trades?instId=${coin}-USDT-SWAP&limit=${RECENT_TRADES_ROWS}`,
+    );
     if (!res.ok) return null;
     const json = await res.json();
     if (!json || json.code !== "0" || !Array.isArray(json.data)) return null;
@@ -1554,7 +1855,10 @@ const fetchRecentTrades = async (coin) => {
         side: t && t.side === "sell" ? "sell" : "buy",
         at: Number(t && t.ts) || 0,
       }))
-      .filter((t) => isFinite(t.price) && t.price > 0 && isFinite(t.size) && t.size > 0);
+      .filter(
+        (t) =>
+          isFinite(t.price) && t.price > 0 && isFinite(t.size) && t.size > 0,
+      );
     recentTradesCache.set(coin, { at: Date.now(), data });
     return data;
   } catch (e) {
@@ -1638,7 +1942,13 @@ const bookLadder = (book, opts) => {
     const grouped = [];
     for (const r of Array.isArray(levels) ? levels : []) {
       const price = step
-        ? Math.round((up ? Math.ceil(r.price / step - 1e-9) : Math.floor(r.price / step + 1e-9)) * step * 1e8) / 1e8
+        ? Math.round(
+            (up
+              ? Math.ceil(r.price / step - 1e-9)
+              : Math.floor(r.price / step + 1e-9)) *
+              step *
+              1e8,
+          ) / 1e8
         : r.price;
       const last = grouped[grouped.length - 1];
       if (last && last.price === price) last.size += r.size;
@@ -1654,12 +1964,13 @@ const bookLadder = (book, opts) => {
   const asks = o.view === "bids" ? [] : side(book && book.asks, true);
   const bids = o.view === "asks" ? [] : side(book && book.bids, false);
   const drawn = [...asks, ...bids];
-  const fetched = book && book.asks && book.bids && book.asks.length && book.bids.length
-    ? Math.max(
-        book.asks[book.asks.length - 1].price - book.asks[0].price,
-        book.bids[0].price - book.bids[book.bids.length - 1].price,
-      )
-    : 0;
+  const fetched =
+    book && book.asks && book.bids && book.asks.length && book.bids.length
+      ? Math.max(
+          book.asks[book.asks.length - 1].price - book.asks[0].price,
+          book.bids[0].price - book.bids[book.bids.length - 1].price,
+        )
+      : 0;
   return {
     asks,
     bids,
@@ -1704,7 +2015,8 @@ const bookSteps = (tick, book) => {
  * what would fill. */
 const BOOK_DEPTH_MARKS_BP = [1, 2, 5, 10, 25, 50];
 const bookDepthCurve = (book) => {
-  if (!book || !Array.isArray(book.asks) || !Array.isArray(book.bids)) return null;
+  if (!book || !Array.isArray(book.asks) || !Array.isArray(book.bids))
+    return null;
   if (!book.asks.length || !book.bids.length) return null;
   const mid = (book.asks[0].price + book.bids[0].price) / 2;
   if (!(mid > 0)) return null;
@@ -1771,10 +2083,15 @@ const fetchPerpTicker = async (coin) => {
      the book's slack it was 9). */
   if (hit && Date.now() - hit.at < ORDER_BOOK_TTL) return hit.data;
   try {
-    const res = await fetch(`${OKX_API}/market/ticker?instId=${coin}-USDT-SWAP`);
+    const res = await fetch(
+      `${OKX_API}/market/ticker?instId=${coin}-USDT-SWAP`,
+    );
     if (!res.ok) return null;
     const json = await res.json();
-    const d = json && json.code === "0" && Array.isArray(json.data) ? json.data[0] : null;
+    const d =
+      json && json.code === "0" && Array.isArray(json.data)
+        ? json.data[0]
+        : null;
     const last = parseFloat(d && d.last);
     if (!(last > 0)) return null;
     const open = parseFloat(d.open24h);
@@ -1833,15 +2150,19 @@ const fetchPerpPriorDay = async (coin) => {
   const cached = getWidgetCache(key);
   if (cached) return cached;
   try {
-    const res = await fetch(`${OKX_API}/market/candles?instId=${coin}-USDT-SWAP&bar=1Dutc&limit=2`);
+    const res = await fetch(
+      `${OKX_API}/market/candles?instId=${coin}-USDT-SWAP&bar=1Dutc&limit=2`,
+    );
     if (!res.ok) return null;
     const json = await res.json();
-    const rows = json && json.code === "0" && Array.isArray(json.data) ? json.data : [];
+    const rows =
+      json && json.code === "0" && Array.isArray(json.data) ? json.data : [];
     const y = rows.find((r) => r && r[8] === "1") || rows[1];
     const high = y ? parseFloat(y[2]) : NaN;
     const low = y ? parseFloat(y[3]) : NaN;
     const t = y ? Number(y[0]) : NaN;
-    if (!(high > 0) || !(low > 0) || !(high >= low) || !isFinite(t)) return null;
+    if (!(high > 0) || !(low > 0) || !(high >= low) || !isFinite(t))
+      return null;
     const data = { t, high, low };
     setWidgetCache(key, data);
     return data;
@@ -1864,14 +2185,19 @@ const fetchPerpSeries = async (coin, period) => {
     const rows = [];
     let before = null;
     while (rows.length < want) {
-      const n = before == null ? Math.min(300, want) : Math.min(100, want - rows.length);
-      const url = before == null
-        ? `${OKX_API}/market/candles?instId=${coin}-USDT-SWAP&bar=${bar}&limit=${n}`
-        : `${OKX_API}/market/history-candles?instId=${coin}-USDT-SWAP&bar=${bar}&limit=${n}&after=${before}`;
+      const n =
+        before == null
+          ? Math.min(300, want)
+          : Math.min(100, want - rows.length);
+      const url =
+        before == null
+          ? `${OKX_API}/market/candles?instId=${coin}-USDT-SWAP&bar=${bar}&limit=${n}`
+          : `${OKX_API}/market/history-candles?instId=${coin}-USDT-SWAP&bar=${bar}&limit=${n}&after=${before}`;
       const res = await fetch(url);
       if (!res.ok) break;
       const json = await res.json();
-      const page = json && json.code === "0" && Array.isArray(json.data) ? json.data : [];
+      const page =
+        json && json.code === "0" && Array.isArray(json.data) ? json.data : [];
       if (!page.length) break;
       for (const c of page) {
         const time = Number(c && c[0]);
@@ -1888,11 +2214,26 @@ const fetchPerpSeries = async (coin, period) => {
         const open = parseFloat(c && c[1]);
         const high = parseFloat(c && c[2]);
         const low = parseFloat(c && c[3]);
-        const whole = open > 0 && high > 0 && low > 0 && high >= low && high >= Math.max(open, price) && low <= Math.min(open, price);
+        const whole =
+          open > 0 &&
+          high > 0 &&
+          low > 0 &&
+          high >= low &&
+          high >= Math.max(open, price) &&
+          low <= Math.min(open, price);
         if (isFinite(time) && price > 0) {
-          rows.push(whole
-            ? { price, time, vol: isFinite(vol) && vol >= 0 ? vol : 0, open, high, low }
-            : { price, time, vol: isFinite(vol) && vol >= 0 ? vol : 0 });
+          rows.push(
+            whole
+              ? {
+                  price,
+                  time,
+                  vol: isFinite(vol) && vol >= 0 ? vol : 0,
+                  open,
+                  high,
+                  low,
+                }
+              : { price, time, vol: isFinite(vol) && vol >= 0 ? vol : 0 },
+          );
         }
       }
       before = Number(page[page.length - 1][0]);
@@ -1941,12 +2282,18 @@ const fetchMarketSeries = async (id, period) => {
   const [interval, span, name] = spec;
   const key = `${name}:${id}`;
   const cached = getWidgetCache(key);
-  if (cached) return cached.map((p) => ({ price: p.price, time: new Date(p.time) }));
+  if (cached)
+    return cached.map((p) => ({ price: p.price, time: new Date(p.time) }));
   try {
-    const res = await politeFetch(`https://api.kraken.com/0/public/OHLC?pair=${market.pair}&interval=${interval}&asset_class=tokenized_asset`);
+    const res = await politeFetch(
+      `https://api.kraken.com/0/public/OHLC?pair=${market.pair}&interval=${interval}&asset_class=tokenized_asset`,
+    );
     if (!res.ok) return null;
     const json = await res.json();
-    const rows = json && json.result ? Object.values(json.result).find(Array.isArray) : null;
+    const rows =
+      json && json.result
+        ? Object.values(json.result).find(Array.isArray)
+        : null;
     if (!rows || !rows.length) return null;
     const last = Number(rows[rows.length - 1][0]) * 1000;
     const series = rows
@@ -1959,4 +2306,3 @@ const fetchMarketSeries = async (id, period) => {
     return null;
   }
 };
-

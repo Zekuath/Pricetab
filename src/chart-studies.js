@@ -281,9 +281,14 @@ const chartStudies = (chart) => ({
   studyOn: (id) => chart.studiesOn() && chart.props.studies.includes(id),
 
   /* The strip of future the usual range is drawn into. The series slides
-     left by it, the board's own arrangement, so nothing is squeezed. */
+     left by it, the board's own arrangement, so nothing is squeezed.
+     **Only on the whole range at rest** (14 Oct 2026): with a window set —
+     a pan, a zoom, Room Ahead — the window brings its own blank time past
+     the price, and the strip on top of it slid a series that was already
+     cut to the window. Measured: a pull towards the future narrowed the
+     axis from 50 minutes to 9 while the line stood still. */
   studyFutureWidth: () =>
-    chart.studyOn("usualRange") && chart.width > 0 ? Math.round(chart.width * STUDY_FUTURE_SHARE) : 0,
+    chart.studyOn("usualRange") && chart.width > 0 && !chart.props.viewWindow ? Math.round(chart.width * STUDY_FUTURE_SHARE) : 0,
 
   studyNode: (pool, tag, layer) => chart.poolNode(chart._studies[pool], tag, layer),
 
@@ -482,7 +487,8 @@ const chartStudies = (chart) => ({
     if (chart.studyOn("usualRange")) {
       const scaled = chart.scaled;
       const data = safePrices(chart.props.prices);
-      const future = chart.studyFutureWidth();
+      // The strip at rest, or the window's own blank past the latest price
+      const future = chart.studyFutureWidth() || chart.viewFutureWidth();
       if (scaled && scaled.length > 2 && future > 0) {
         const first = scaled[0];
         const lastPt = scaled[scaled.length - 1];

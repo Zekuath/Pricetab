@@ -1399,6 +1399,70 @@ const SuggestionList = styled.div`
   padding: 0.25rem 0;
 `;
 
+const CoinRecommendBox = styled.div`
+  margin-top: 0.85rem;
+  padding: 0.7rem;
+  border: 1px solid ${({ theme }) => theme.color.border};
+  border-radius: 0.7rem;
+  background: ${({ theme }) => theme.color.bgSecondary};
+`;
+
+const CoinRecommendList = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.2rem 0.6rem;
+  margin-top: 0;
+
+  @media (max-width: 1180px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+const CoinRecommendChip = styled.button.attrs({ type: "button" })`
+  display: inline-grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  justify-content: flex-start;
+  column-gap: 0.38rem;
+  width: 100%;
+  min-height: 1.9rem;
+  padding: 0.2rem 0.15rem;
+  border: none;
+  border-bottom: 1px dashed ${({ theme }) => theme.color.border}aa;
+  border-radius: 0;
+  background: transparent;
+  color: ${({ theme }) => theme.color.text};
+  font-family: ${({ theme }) => theme.font.primary};
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-weight: ${({ theme }) => theme.fontWeight.bold};
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    background 0.15s ease;
+
+  &:hover {
+    color: ${({ theme }) => theme.color.text};
+    background: ${({ theme }) => theme.color.bg};
+  }
+
+  &:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+`;
+
+const CoinRecommendName = styled.span`
+  min-width: 0;
+  font-size: 0.62rem;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  color: ${({ theme }) => theme.color.textSecondary};
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+`;
+
 /* The two answers to the futures terms, side by side and sized to their own
  * words. Accept is the weighted one because it is the thing being asked for;
  * declining is a preset-shaped button because it changes nothing. */
@@ -1948,8 +2012,6 @@ const ToggleLabel = styled.label`
   opacity: 0.6;
 `;
 
-
-
 const ToggleDesc = styled.span`
   font-size: 0.62rem;
   letter-spacing: 0.02em;
@@ -2027,8 +2089,6 @@ const PresetRow = styled.div`
   max-width: 36rem;
 `;
 
-
-
 /* Save, and deliberately **not** a `PresetButton`.
  *
  * It was one, and the result is why this component exists: `PresetButton`
@@ -2087,7 +2147,6 @@ const PresetButton = styled.button.attrs({ type: "button" })`
   }
   ${touchRow};
 `;
-
 
 const ToggleSwitch = styled.button.attrs({ type: "button" })`
   position: relative;
@@ -2308,6 +2367,36 @@ const PrefSubhead = styled.h4`
 `;
 
 const PrefRow = styled.div`
+  > [data-navigation-settings] {
+    grid-column: 1 / -1;
+    button:not(${ToggleSwitch}) {
+      height: auto;
+      min-height: 36px;
+      white-space: normal;
+    }
+    [data-nav-row] > select {
+      width: auto;
+      flex: 0 1 auto;
+      max-width: 11rem;
+      margin: 0;
+    }
+    [data-nav-row] > button:not(${ToggleSwitch}) {
+      flex: 0 0 36px;
+      min-width: 36px;
+      width: 36px;
+      padding: 0;
+    }
+    @media (max-width: 700px) {
+      [data-nav-row] > span:first-child {
+        flex-basis: 100%;
+      }
+      [data-nav-row] > select {
+        flex: 1;
+        max-width: none;
+        min-width: 0;
+      }
+    }
+  }
   display: grid;
   /* **A definite width, which matters inside the two-column layout.**
      A grid whose available width is indefinite resolves 1fr to zero and
@@ -2986,7 +3075,8 @@ const ComparePickRow = styled.button.attrs({ type: "button" })`
   width: 100%;
   padding: 0.6rem 0.75rem;
   border: none;
-  background: ${({ on, theme }) => (on ? theme.color.bgSecondary : "transparent")};
+  background: ${({ on, theme }) =>
+    on ? theme.color.bgSecondary : "transparent"};
   text-align: left;
   font-family: ${({ theme }) => theme.font.primary};
   color: ${({ theme }) => theme.color.text};

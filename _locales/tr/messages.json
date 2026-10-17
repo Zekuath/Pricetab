@@ -1340,6 +1340,9 @@
   "br_above_200d": {
     "message": "200 günlük ortalamasının üzerinde"
   },
+  "br_across": {
+    "message": "Coinlerin arasında · yalnızca önbellekteki günlük geçmiş"
+  },
   "br_ah_move": {
     "message": "sonraki $1 günde $3 seferin $2'inde olağandan fazla hareket etti; yarısı ederdi."
   },
@@ -1392,6 +1395,9 @@
       }
     }
   },
+  "br_cache_missing": {
+    "message": "Önbellekte güncel günlük geçmiş yok"
+  },
   "br_close": {
     "message": "Baz oranları kapat"
   },
@@ -1431,14 +1437,17 @@
   "br_daily_closes": {
     "message": "$1 günlük kapanış"
   },
-  "br_edge_better": {
-    "message": "sıradan bir döneme göre $1 puan daha iyi"
+  "br_edge_above": {
+    "message": "tipik hareket sıradan bir dönemden $1 puan yukarıda"
+  },
+  "br_edge_below": {
+    "message": "tipik hareket sıradan bir dönemden $1 puan aşağıda"
   },
   "br_edge_none": {
     "message": "sıradan bir dönemden farksız"
   },
-  "br_edge_worse": {
-    "message": "sıradan bir döneme göre $1 puan daha kötü"
+  "br_export_csv": {
+    "message": "CSV indir"
   },
   "br_eyebrow_in_monitor": {
     "message": "Taban oranlar · $1 · $2 günlük kapanış"
@@ -1456,10 +1465,25 @@
     "message": "Bugünkü mum: adı olan bir şekil yok"
   },
   "br_glance_now": {
-    "message": "Şu anda görülen durumlar"
+    "message": "Şu anda görülenler"
   },
   "br_glance_years": {
     "message": "Sayılan günlük kapanışlar (yıl)"
+  },
+  "br_history_item": {
+    "message": "Şu an görülen bir öğeyi incele"
+  },
+  "br_horizon": {
+    "message": "Süre"
+  },
+  "br_horizon_untested": {
+    "message": "Bu süre test edilmedi: yalnızca geçmiş sayımlar gösterilir; ilk testler bu seçime uygulanmaz."
+  },
+  "br_interval": {
+    "message": "Wilson %95 aralığı: %$1–$2"
+  },
+  "br_live_only": {
+    "message": "Yalnızca şu an görülenler"
   },
   "br_loading_body": {
     "message": "Bu coin'in günlük kapanışları okunuyor. Borsanın yayınladığı kadar geriye gidiyor; aşağıdaki sayıları yazmaya değer kılan da bu."
@@ -1532,9 +1556,6 @@
   "br_note_1": {
     "message": "Bu, bir durumdan sonra ne olduğunu, aynı coin'in sıradan bir gününden sonra ne olduğuyla karşılaştırarak sayar. Bir sinyal değildir; burada yapılacak bir şey yoktur. "
   },
-  "br_note_2": {
-    "message": "Sekiz coin'in 21.669 günlük kapanışı üzerinde denenen dokuz ders kitabı kuralı, çoklu test düzeltmesinden sağ çıkan 0/70 sonuç verdi; canlı veride “aşırı alım” çizgisinin ardından altı coin'in dördünde sıradandan iyi bir ay geldi. "
-  },
   "br_note_200d": {
     "message": "kurumsalların giriş noktası değil, rejim olarak okuduğu çizgi"
   },
@@ -1550,6 +1571,9 @@
   "br_note_oversold": {
     "message": "genelde aşırı satım denen çizgi"
   },
+  "br_note_tested": {
+    "message": "Sekiz coinin 21.669 günlük kapanışı üzerinde denenen dokuz ders kitabı kuralının 70 sonucundan hiçbiri çoklu test düzeltmesini geçmedi. "
+  },
   "br_nothing_unusual": {
     "message": "Şu anda sıra dışı bir şey yok"
   },
@@ -1558,6 +1582,15 @@
   },
   "br_one_time": {
     "message": "1 kez"
+  },
+  "br_order": {
+    "message": "Kitaplık sırası"
+  },
+  "br_original": {
+    "message": "İlk süreler"
+  },
+  "br_path_caption": {
+    "message": "Ardından ne oldu; tahmin değil: sonraki 30 gün · bu durumdan sonra n=$1; herhangi bir gün n=$2. Düz: medyan; kesik: ortalama; gölge: geçmiş yolların ortadaki %80’i. Dönemler örtüşür, bağımsız denemeler değildir."
   },
   "br_pce_title": {
     "message": "ABD PCE · kişisel tüketim fiyatları"
@@ -1580,6 +1613,9 @@
   "br_rsi_label": {
     "message": "RSI 14 · günlük kapanış · 0–100"
   },
+  "br_search": {
+    "message": "Kitaplıkta ara"
+  },
   "br_sim_intro": {
     "message": "Bu coinin geçmişinde son $2 günü, son $2 günle aynı şekli taşıyan $1 dönem — seviyesi ya da büyüklüğü değil, yolu — her biri ardından gelen $3 günle."
   },
@@ -1595,11 +1631,38 @@
   "br_sim_title": {
     "message": "En benzer geçmiş"
   },
+  "br_sort_gap": {
+    "message": "Herhangi bir günden en büyük fark"
+  },
+  "br_sort_live": {
+    "message": "Şu an görülenler önce"
+  },
+  "br_sort_n": {
+    "message": "En çok olay"
+  },
+  "br_tab_calendar": {
+    "message": "Takvim"
+  },
+  "br_tab_library": {
+    "message": "Kitaplık"
+  },
+  "br_tab_now": {
+    "message": "Şimdi"
+  },
+  "br_tabs": {
+    "message": "Geçmiş sıklık görünümleri"
+  },
   "br_that_is": {
     "message": "Yani $1."
   },
   "br_the_rest": {
     "message": "Diğerleri, referans için"
+  },
+  "br_timeline": {
+    "message": "Geçmiş olaylar · 30 günlük sonuçlar"
+  },
+  "br_timeline_n": {
+    "message": "Günlük zaman çizgisinde $1 tamamlanmış olay"
   },
   "br_title": {
     "message": "$1 · bu daha önce oldu mu?"
@@ -1624,6 +1687,9 @@
   },
   "br_wd_untested": {
     "message": "BTC, ETH, SOL ve LTC üzerinde test edildi: ertesi günün yönü yalnızca ETH ve LTC'de hafta gününe göre farklıydı. $1 test edilmedi."
+  },
+  "br_within_chance": {
+    "message": "rastlantının açıklayabileceği aralıkta"
   },
   "ch_band": {
     "message": "Bant"
@@ -1965,6 +2031,17 @@
   "cmp_c_few": {
     "message": "$1'den az — karşılaştırmak için çok az."
   },
+  "cmp_c_group": {
+    "message": "Bu günlerde $1 kurulum, en yenisi önce",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "cmp_c_group_step": {
+    "message": "Teker teker okumak için tıklayın"
+  },
   "cmp_c_hit": {
     "message": "Boyun çizgisini $1 kırdı; ölçülen hareketi $2 tamamladı."
   },
@@ -1994,17 +2071,6 @@
   },
   "cmp_c_pin": {
     "message": "Açık kalması için tıklayın"
-  },
-  "cmp_c_group": {
-    "message": "Bu günlerde $1 kurulum, en yenisi önce",
-    "placeholders": {
-      "arg1": {
-        "content": "$1"
-      }
-    }
-  },
-  "cmp_c_group_step": {
-    "message": "Teker teker okumak için tıklayın"
   },
   "cmp_c_prec": {
     "message": "Bu coinde: sonuçlanan $2 taneden $1 tanesi önce ölçülen harekete ulaştı · $3 bulundu. $4"
@@ -2640,6 +2706,9 @@
   "dock_close_share": {
     "message": "Bu kontratın yüzde $1'ini kapat"
   },
+  "dock_closing_aria": {
+    "message": "$1 kapatılıyor — durdurmak için bas"
+  },
   "dock_count": {
     "message": "$1 kontrattan 1'i",
     "placeholders": {
@@ -2674,6 +2743,9 @@
   },
   "dock_size": {
     "message": "Boyut"
+  },
+  "dock_stop": {
+    "message": "Durdur"
   },
   "dock_to_liq": {
     "message": "likidasyona"
@@ -3019,6 +3091,15 @@
   "mon_coins_note3": {
     "message": "Fiyat ve 24 saatlik değişim fiyat akışından gelir; orada yoksa coinin kendi 30 günlük verisi kullanılır. Diğer ölçümler, 1A aralığının çizdiği aynı 30 günlük seriden hesaplanır. β, her coinin aynı günlerde Bitcoin'deki %1'lik harekete karşı ortalama hareketini gösterir. Satır coinin özet kartını açar; grafiğe karttan tek dokunuşla geçilir. ↑ ve ↓ satırlar arasında gezinir."
   },
+  "mon_col_beta": {
+    "message": "β BTC"
+  },
+  "mon_col_beta_title": {
+    "message": "Aynı 30 günde Bitcoin her %1 hareket ettiğinde ne kadar hareket etti — hareketlerinin Bitcoin'inkilere eğimi. Bu 30 günü anlatır, sonrasını asla"
+  },
+  "mon_col_changes_title": {
+    "message": "Fiyatın son bir günde, haftada ve ayda ne kadar hareket ettiği"
+  },
   "mon_col_coin": {
     "message": "Coin"
   },
@@ -3037,6 +3118,18 @@
   "mon_col_price": {
     "message": "Fiyat"
   },
+  "mon_col_spark": {
+    "message": "30 gün"
+  },
+  "mon_col_spark_title": {
+    "message": "Son 30 gün, düşükten yükseğe — fiyatın aralarında nerede durduğuna göre sıralı"
+  },
+  "mon_corr_alone_head": {
+    "message": "Kendi başına · diğerleriyle ortalama r"
+  },
+  "mon_corr_alone_note": {
+    "message": "$1 en çok kendi başına, $2 en çok diğerleriyle birlikte hareket etti."
+  },
   "mon_corr_cell": {
     "message": "$1 ve $2: $3, $4 hareketten"
   },
@@ -3045,6 +3138,9 @@
   },
   "mon_corr_few": {
     "message": "Söylemek için ortak hareket çok az"
+  },
+  "mon_corr_grid": {
+    "message": "Coinlerinin her çifti, birer kez"
   },
   "mon_corr_legend": {
     "message": "Hücreler ne diyor"
@@ -3061,14 +3157,29 @@
   "mon_corr_opposite": {
     "message": "Ters"
   },
+  "mon_corr_pair_head": {
+    "message": "Çift"
+  },
   "mon_corr_pair_line": {
     "message": "her 10 hareketin $1'inde aynı yöne gitti (r $2)."
   },
   "mon_corr_pair_line_r": {
     "message": "r $1."
   },
+  "mon_corr_pair_text": {
+    "message": "Bu 30 günde ikisi her 10 hareketin $1'inde aynı yöne gitti ($2 hareket)."
+  },
+  "mon_corr_pair_text_r": {
+    "message": "$1 hareketten."
+  },
   "mon_corr_pairs": {
     "message": "Basitçe"
+  },
+  "mon_corr_scale": {
+    "message": "Tonlar ne söylüyor"
+  },
+  "mon_corr_ten": {
+    "message": "Her 10 hareketin $1'i aynı yönde"
   },
   "mon_corr_together": {
     "message": "Birlikte"
@@ -3109,11 +3220,68 @@
   "mon_eyebrow": {
     "message": "$1 coininiz · son 30 gün"
   },
+  "mon_fact_median": {
+    "message": "30 günde ortadaki coin"
+  },
+  "mon_fact_mover": {
+    "message": "30 günde en çok hareket eden"
+  },
+  "mon_fact_sort": {
+    "message": "Tabloyu buna göre sırala"
+  },
+  "mon_fact_up": {
+    "message": "Son 24 saatte yükselen"
+  },
+  "mon_fact_widest": {
+    "message": "En geniş tipik gün"
+  },
+  "mon_legend": {
+    "message": "Sütunlar ne anlama geliyor"
+  },
   "mon_loading": {
     "message": "30 günlük fiyatlar okunuyor…"
   },
   "mon_market_card": {
     "message": "$1 — 24 saatte $2; kartını açar"
+  },
+  "mon_market_down": {
+    "message": "24 saatte en çok düşen"
+  },
+  "mon_market_hint": {
+    "message": "Boyut piyasa değeri, renk son 24 saat. Küçükleri büyütmek için kaydır, gezinmek için sürükle; bir kare kendi kartını açar."
+  },
+  "mon_market_hint_touch": {
+    "message": "Boyut piyasa değeri, renk son 24 saat. Küçükleri büyütmek için iki parmakla yakınlaştır; bir kare kendi kartını açar."
+  },
+  "mon_market_label": {
+    "message": "Piyasa değerine göre ilk $1 coin; her biri değeri kadar büyük, son 24 saatine göre renklendirilmiş"
+  },
+  "mon_market_loading": {
+    "message": "Piyasa okunuyor…"
+  },
+  "mon_market_note": {
+    "message": "Coinlore'un piyasa değerine göre ilk $1 coini, $2 itibarıyla; fiyat çubuğunun okuduğu aynı anlık görüntü — bu sekme açıkken dakikada bir istek. Bir karenin boyu piyasa değeri, tonu son 24 saattir. Grafiğin çizebildiği bir coin orada açılır."
+  },
+  "mon_market_share": {
+    "message": "ilk $2'nin %$1'i"
+  },
+  "mon_market_up": {
+    "message": "24 saatte en çok yükselen"
+  },
+  "mon_market_value": {
+    "message": "piyasa değeri $1"
+  },
+  "mon_market_zoom": {
+    "message": "Haritayı yakınlaştır"
+  },
+  "mon_market_zoom_in": {
+    "message": "Yakınlaştır"
+  },
+  "mon_market_zoom_out": {
+    "message": "Uzaklaştır"
+  },
+  "mon_market_zoom_whole": {
+    "message": "Tüm harita"
   },
   "mon_need_two": {
     "message": "Coinlerinizin birlikte nasıl hareket ettiğini görmek için ikinci bir coin ekleyin."
@@ -3121,8 +3289,23 @@
   "mon_open": {
     "message": "$1 grafikte aç"
   },
+  "mon_race_aria": {
+    "message": "Her coinin son 30 gündeki yüzde değişimi: $1"
+  },
+  "mon_race_head": {
+    "message": "Son 30 gün yan yana · her coin kendi başlangıcından"
+  },
+  "mon_race_spread": {
+    "message": "$1 önde, $2 geride · aralarında $3 puan"
+  },
+  "mon_range_at": {
+    "message": "30 günlük dip–tepe aralığında konum: %$1"
+  },
   "mon_sort": {
     "message": "$1 ölçütüne göre sırala"
+  },
+  "mon_tab_base": {
+    "message": "Taban oranlar"
   },
   "mon_tab_coins": {
     "message": "Coinler"
@@ -3130,11 +3313,98 @@
   "mon_tab_corr": {
     "message": "Korelasyon"
   },
-  "mon_tab_base": {
-    "message": "Taban oranlar"
+  "mon_tab_market": {
+    "message": "Piyasa"
   },
   "mon_title": {
     "message": "Monitör"
+  },
+  "nav_always": {
+    "message": "Her zaman görünür"
+  },
+  "nav_cancel": {
+    "message": "Vazgeç"
+  },
+  "nav_data_calls": {
+    "message": "Tüm açık tahminler, sonuçlanan tahminler ve tahmin sicilin."
+  },
+  "nav_data_chart": {
+    "message": "Tüm coinler için kaydedilmiş grafik çizimleri ve notlar."
+  },
+  "nav_data_futures": {
+    "message": "Simülasyon hesabı, açık pozisyonlar, emirler, işlem geçmişi ve kayıtlı emir formu."
+  },
+  "nav_data_news": {
+    "message": "Kaydedilen haberler ve son okuma işareti."
+  },
+  "nav_data_portfolio": {
+    "message": "Tüm varlıklar, alışlar, satışlar ve izlenen adresler."
+  },
+  "nav_data_targets": {
+    "message": "Tüm fiyat hedefleri ve tetiklenme kayıtları."
+  },
+  "nav_data_widgets": {
+    "message": "Widget seçimleri, boyutları, sırası ve ana ekrana sabitlenenler."
+  },
+  "nav_delete": {
+    "message": "Bu verileri kalıcı olarak sil: $1"
+  },
+  "nav_delete_note": {
+    "message": "Bu işlem geri alınamaz. Silme sonrasında sayfa yenilenir."
+  },
+  "nav_down": {
+    "message": "$1 öğesini aşağı taşı"
+  },
+  "nav_group_desc": {
+    "message": "Sekmelerin, konumları ve sakladığın veriler."
+  },
+  "nav_hide_delete": {
+    "message": "Gizle ve verileri sil"
+  },
+  "nav_hide_desc": {
+    "message": "Sekmesi ve kısayolu kullanılamaz. Buradan istediğin zaman yeniden gösterebilirsin."
+  },
+  "nav_hide_keep": {
+    "message": "Gizle ve verileri sakla"
+  },
+  "nav_hide_title": {
+    "message": "$1 gizlensin mi?"
+  },
+  "nav_intro": {
+    "message": "Her kenarda hangi sekmelerin görüneceğini seç ve sırala. Gizlenen sekmelerin yeri korunur. Ayarlar her zaman erişilebilir kalır."
+  },
+  "nav_keep": {
+    "message": "Verilerimi sakla"
+  },
+  "nav_keywords": {
+    "message": "menü gezinme sekmeler kenarlar sol sağ sıra düzenle gizle göster veri sil futures vadeli"
+  },
+  "nav_left": {
+    "message": "Sol kenar"
+  },
+  "nav_position": {
+    "message": "$1 konumu"
+  },
+  "nav_preview": {
+    "message": "Menü önizlemesi"
+  },
+  "nav_requires_monitor": {
+    "message": "Monitörün açık olması gerekir"
+  },
+  "nav_reset": {
+    "message": "Konumları ve sıralamayı sıfırla"
+  },
+  "nav_right": {
+    "message": "Sağ kenar"
+  },
+  "nav_save_error": {
+    "message": "Değişiklik kaydedilemedi. Tarayıcının kullanılabilir depolama alanını kontrol edip tekrar dene."
+  },
+  "nav_title": {
+    "message": "Menü düzeni"
+  },
+  "nav_up": {
+    "message": "$1 öğesini yukarı taşı"
   },
   "news_allow_rest": {
     "message": "Kalanlara izin ver"
@@ -3229,6 +3499,21 @@
   },
   "news_day_undated": {
     "message": "Tarihsiz"
+  },
+  "news_feed_24h": {
+    "message": "son 24 saatte"
+  },
+  "news_feed_active_sources": {
+    "message": "aktif kaynak"
+  },
+  "news_feed_head": {
+    "message": "Akış özeti"
+  },
+  "news_feed_multi": {
+    "message": "çok kaynaklı haber"
+  },
+  "news_feed_note": {
+    "message": "Yalnızca şu anda ekranda olanlar sayılır: son 24 saatte tarihli satırlar, açık ve satır üreten kaynaklar ile bu akışta en az iki haber odasının yayımladığı haberler."
   },
   "news_fetching": {
     "message": "Başlıklar getiriliyor…"
@@ -3336,6 +3621,24 @@
   },
   "news_preview_saved": {
     "message": "Kaydedildi"
+  },
+  "news_pulse_aria": {
+    "message": "Son 24 saatte saat başına haber; en yoğun saat $1 itibarıyla $2 haber"
+  },
+  "news_pulse_bar": {
+    "message": "$1 · $2 haber"
+  },
+  "news_pulse_from": {
+    "message": "24 saat önce"
+  },
+  "news_pulse_head": {
+    "message": "Son 24 saat · $1 haber"
+  },
+  "news_pulse_now": {
+    "message": "şimdi"
+  },
+  "news_pulse_peak": {
+    "message": "en yoğun: $1 · $2"
   },
   "news_read_allow": {
     "message": "$1 için izin ver",
@@ -3952,6 +4255,9 @@
   },
   "po_address_label": {
     "message": "İzlenecek adres"
+  },
+  "po_allocation": {
+    "message": "Dağılım"
   },
   "po_allocation_prefix": {
     "message": "Dağılım: "
@@ -4950,6 +5256,9 @@
   "pos_cancel_all": {
     "message": "Tümünü iptal et"
   },
+  "pos_cancel_all_running": {
+    "message": "$1 emir iptal ediliyor — durdurmak için bas"
+  },
   "pos_capped_loss": {
     "message": "Bu seans, kendisini bitiren $1 tutarında zarar etti. Paran ve kaydın olduğu gibi duruyor — devam etmek için sonraki seansı başlat."
   },
@@ -5116,6 +5425,39 @@
       }
     }
   },
+  "pos_cn_all": {
+    "message": "Açılıştan kapanışa"
+  },
+  "pos_cn_all_d": {
+    "message": "bu kontratın kazandığı ve ödediği her şey"
+  },
+  "pos_cn_back": {
+    "message": "teminatın ($2) $1'i · $3 geri döner · bakiye $4"
+  },
+  "pos_cn_fee": {
+    "message": "Kapatma ücreti"
+  },
+  "pos_cn_head": {
+    "message": "Hepsini şimdi kapatırsan"
+  },
+  "pos_cn_move": {
+    "message": "Fiyat hareketi"
+  },
+  "pos_cn_move_d": {
+    "message": "$1 → $2, kapatmanın gerçekleştiği fiyat"
+  },
+  "pos_cn_paid": {
+    "message": "Girişte ödenen"
+  },
+  "pos_cn_paid_d": {
+    "message": "açılış ücreti ve şimdiye kadarki fonlama"
+  },
+  "pos_cn_total": {
+    "message": "Bu kapanış"
+  },
+  "pos_cn_why": {
+    "message": "Satırdaki $1, kontratın mark fiyatıyla değerlenmiş hali: $2. Kapatma $3 fiyatından gerçekleşir — son fiyat, makas üzerinden — ve ücret öder; yani hesaba geçen, yukarıdaki satırdır."
+  },
   "pos_cone": {
     "message": "$2 aralığından yeniden örneklenen $1 sonraki saatin: $3'ü önce tasfiyeye, $4'ü stopa, $5'i kâr alıma değdi, $6'sı saati tamamladı — ortadaki $7'da (5.–95. $8 … $9)."
   },
@@ -5124,6 +5466,15 @@
   },
   "pos_cone_thin": {
     "message": "Bu aralıkta sonraki saati yeniden örneklemek için çubuk çok az ($2 gerekli, $1 var)."
+  },
+  "pos_confirm_long": {
+    "message": "$1 üzerinde long açılıyor — durdurmak için bas"
+  },
+  "pos_confirm_placing": {
+    "message": "Emir veriliyor — durdurmak için bas"
+  },
+  "pos_confirm_short": {
+    "message": "$1 üzerinde short açılıyor — durdurmak için bas"
   },
   "pos_contracts": {
     "message": "kontrat"
@@ -5148,6 +5499,12 @@
   },
   "pos_detail_trail": {
     "message": "Takip"
+  },
+  "pos_details_less": {
+    "message": "Ayrıntıları gizle"
+  },
+  "pos_details_more": {
+    "message": "Ayrıntılar — kurulum, teminat, ücretler, likidasyon"
   },
   "pos_edge_count": {
     "message": "$1, $2 kez. Bir hafta sonra fiyat bunların %$3'ünde daha yüksekti; buradaki sıradan haftaların %$4'üne karşılık.",
@@ -5495,6 +5852,9 @@
   "pos_kind_market": {
     "message": "Piyasa"
   },
+  "pos_kind_more": {
+    "message": "Diğer emir türleri"
+  },
   "pos_kind_scale": {
     "message": "Kademeli"
   },
@@ -5504,11 +5864,17 @@
   "pos_kind_stop_entry": {
     "message": "stop giriş"
   },
+  "pos_lev_size_cap": {
+    "message": "bu büyüklükte en fazla $1x"
+  },
   "pos_level_none": {
     "message": "yok"
   },
   "pos_level_pct_aria": {
     "message": "Girişten $2 yüzde uzakta $1"
+  },
+  "pos_levels_drag": {
+    "message": "Ya da grafikte + SL ve + TP'yi sürükle."
   },
   "pos_leverage": {
     "message": "Kaldıraç"
@@ -5616,6 +5982,33 @@
   },
   "pos_margin_out_none": {
     "message": "Bu kontratın arkasında serbest marj yok — tasfiyesine zaten yeterince yakın; ne çekseniz onu oraya götürür."
+  },
+  "pos_means_away": {
+    "message": "girişten $1 uzakta"
+  },
+  "pos_means_liq": {
+    "message": "Tasfiye fiyatı"
+  },
+  "pos_means_no_stop": {
+    "message": "Stop yok"
+  },
+  "pos_means_no_stop_note": {
+    "message": "kaybı piyasa belirler"
+  },
+  "pos_means_no_take": {
+    "message": "Kâr al yok"
+  },
+  "pos_means_of_account": {
+    "message": "hesabın $1 kadarı"
+  },
+  "pos_means_rr2": {
+    "message": "risk : kazanç 1 : $1"
+  },
+  "pos_means_stop": {
+    "message": "Stopa değerse"
+  },
+  "pos_means_take": {
+    "message": "Kâr al seviyesine değerse"
   },
   "pos_money_done": {
     "message": "Simülasyon güncellendi — $1. Gerçek para hareket etmedi."
@@ -5984,6 +6377,9 @@
   },
   "pos_reverse_refused": {
     "message": "Ters çevrilmedi — $1."
+  },
+  "pos_reverse_running": {
+    "message": "Ters çevriliyor — durdurmak için bas"
   },
   "pos_risk_ask": {
     "message": "Bu sözleşmenin stopta kaybedebileceği en fazlayı yazın; büyüklük aşağıdaki stoptan çıkar."
@@ -6412,6 +6808,18 @@
   "pos_wrong_short": {
     "message": "Short'ta stop girişinin üstüne, kâr al altına konur."
   },
+  "pp_at_many": {
+    "message": "$1 kontrat"
+  },
+  "pp_at_mine": {
+    "message": "buradaki $1: $2"
+  },
+  "pp_at_one": {
+    "message": "kontrat"
+  },
+  "pp_at_price": {
+    "message": "$1 · şimdiden $2 uzakta"
+  },
   "pp_book_asks": {
     "message": "Satışlar"
   },
@@ -6507,6 +6915,9 @@
   },
   "pp_close_all": {
     "message": "Tümünü kapat"
+  },
+  "pp_close_all_running": {
+    "message": "$1 sözleşme kapatılıyor — durdurmak için bas"
   },
   "pp_code_above": {
     "message": "değerin üstünde"
@@ -6718,6 +7129,44 @@
   "pp_grip_title": {
     "message": "Yer değiştirmek için başka bir alanın üstüne sürükle — ya da ok tuşları"
   },
+  "pp_guide": {
+    "message": "Rehber"
+  },
+  "pp_guide_all": {
+    "message": "Yardımcı"
+  },
+  "pp_guide_aria": {
+    "message": "Rehber — grafiğin işaretlediği şeyler, numaralı"
+  },
+  "pp_guide_chip_title": {
+    "message": "Grafikte görmek için üzerine gel; orada tutmak için bas"
+  },
+  "pp_guide_close": {
+    "message": "Rehberi kapat"
+  },
+  "pp_guide_drag_sl": {
+    "message": "grafikte + SL'yi sürükle"
+  },
+  "pp_guide_drag_tp": {
+    "message": "grafikte + TP'yi sürükle"
+  },
+  "pp_guide_in_panel": {
+    "message": "Panelde aç"
+  },
+  "pp_guide_more": {
+    "message": "+$1 · yardımcı"
+  },
+  "pp_guide_pop_aria": {
+    "message": "Rehber — her madde, grafikteki numarasıyla"
+  },
+  "pp_guide_pop_head": {
+    "message": "Rehber · $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
   "pp_h_15m": {
     "message": "15dk"
   },
@@ -6739,6 +7188,45 @@
   "pp_h_5m": {
     "message": "5dk"
   },
+  "pp_layer_book": {
+    "message": "Defterin en büyük kademeleri"
+  },
+  "pp_layer_clock": {
+    "message": "Sonraki fonlama"
+  },
+  "pp_layer_contracts": {
+    "message": "Kontratlar ve emirler"
+  },
+  "pp_layer_fan": {
+    "message": "Tekrar oynatılan yollar"
+  },
+  "pp_layer_guide": {
+    "message": "Rehberin numaraları"
+  },
+  "pp_layer_liquidations": {
+    "message": "Tasfiyeler · OKX"
+  },
+  "pp_layer_location": {
+    "message": "Fiyata göre hacim"
+  },
+  "pp_layer_plan": {
+    "message": "Yazdığın emir"
+  },
+  "pp_layout": {
+    "message": "Düzen"
+  },
+  "pp_layout_simple": {
+    "message": "Sade"
+  },
+  "pp_layout_simple_title": {
+    "message": "Bilet solda, grafik sağda, emir defteri Daha Fazla altında tek tık uzakta"
+  },
+  "pp_layout_terminal": {
+    "message": "Terminal"
+  },
+  "pp_layout_terminal_title": {
+    "message": "Grafik, emir defteri ve bilet yan yana; açık olanlar grafik ve defterin altında"
+  },
   "pp_lean_long": {
     "message": "Long'a eğilimli"
   },
@@ -6747,6 +7235,18 @@
   },
   "pp_lean_short": {
     "message": "Short'a eğilimli"
+  },
+  "pp_legend_candles": {
+    "message": "$1 mumlar · OKX"
+  },
+  "pp_legend_hand": {
+    "message": "limit için bir fiyata tıkla, bir çizgiyi taşımak için sürükle"
+  },
+  "pp_legend_line": {
+    "message": "$1 kapanışlar · OKX"
+  },
+  "pp_legend_volume": {
+    "message": "altta $1 cinsinden hacim"
   },
   "pp_liq": {
     "message": "24s tasfiye"
@@ -6816,6 +7316,12 @@
   },
   "pp_oi": {
     "message": "Açık pozisyon"
+  },
+  "pp_open_moment_fill": {
+    "message": "$2 fiyatından $1 açıldı"
+  },
+  "pp_open_moment_size": {
+    "message": "$1 · teminat $2"
   },
   "pp_outlook_all": {
     "message": "Ekrandaki $1 çubuğun tamamından yeniden örneklendi — yalnızca onlardan çekmek için $2 duran çubuk çok azdı — $3 tekrarın indiği yerin 5.–95. yüzdeliği."
@@ -6941,8 +7447,14 @@
   "pp_read_crowd": {
     "message": "Kalabalık"
   },
+  "pp_read_less": {
+    "message": "Daha az"
+  },
   "pp_read_market": {
     "message": "Piyasa"
+  },
+  "pp_read_more": {
+    "message": "Daha fazla"
   },
   "pp_read_news": {
     "message": "Manşetler"
@@ -7028,11 +7540,23 @@
   "pp_settings_hint": {
     "message": "Grafik, yerleşim, emir onayı ve alarm"
   },
+  "pp_settings_layers": {
+    "message": "Grafikte"
+  },
+  "pp_settings_main_chart": {
+    "message": "Ana grafikte"
+  },
   "pp_settings_page": {
     "message": "Bu sayfa"
   },
   "pp_settings_reset": {
     "message": "Yerleşimi sıfırla"
+  },
+  "pp_settings_sizes": {
+    "message": "Fiş genişliği $1 · panel yüksekliği $2"
+  },
+  "pp_settings_sizes_note": {
+    "message": "Fişin yanındaki dikişi ya da grafiğin altındakini sürükleyerek boyutlarını değiştir — ya da Tab ile birine gelip ok tuşlarını kullan. Bir dikişe çift tıklamak varsayılanı geri getirir. Boyutlar bu cihazda saklanır; 1280 pikselden dar bir pencerede sayfa tek sütundur ve boyutlar bekler."
   },
   "pp_settings_title": {
     "message": "Türev piyasası ayarları"
@@ -7100,9 +7624,6 @@
   "pp_strip_funding": {
     "message": "$1 · $2 sonra"
   },
-  "pp_strip_range": {
-    "message": "24s aralık"
-  },
   "pp_strip_hm": {
     "message": "$1 sa $2 dk"
   },
@@ -7117,6 +7638,9 @@
   },
   "pp_strip_perp": {
     "message": "$1 sürekli"
+  },
+  "pp_strip_range": {
+    "message": "24s aralık"
   },
   "pp_struct_fall": {
     "message": "O güne kadar %$1'i aşan düşüş: $3 seferin $2'si; sıradan günlerde $5'te $4."
@@ -7177,6 +7701,63 @@
   },
   "pp_tape_delta": {
     "message": "Delta, son $1 işlem"
+  },
+  "pp_trade_add_sl": {
+    "message": "+ SL"
+  },
+  "pp_trade_add_tp": {
+    "message": "+ TP"
+  },
+  "pp_trade_be": {
+    "message": "başabaş"
+  },
+  "pp_trade_buy": {
+    "message": "Alış"
+  },
+  "pp_trade_entry": {
+    "message": "$1 $2x #$3 · $4"
+  },
+  "pp_trade_fan": {
+    "message": "sonraki $1 · $2 tekrar · 5–95%"
+  },
+  "pp_trade_first": {
+    "message": "ilk değme: $1"
+  },
+  "pp_trade_funding": {
+    "message": "fonlama $1"
+  },
+  "pp_trade_liq_print": {
+    "message": "$1 tasfiye edildi · $2 · OKX · $3"
+  },
+  "pp_trade_market": {
+    "message": "piyasa"
+  },
+  "pp_trade_move_to": {
+    "message": "taşı:"
+  },
+  "pp_trade_of_account": {
+    "message": "hesabın $1 kadarı"
+  },
+  "pp_trade_pdh": {
+    "message": "dün en yüksek"
+  },
+  "pp_trade_pdl": {
+    "message": "dün en düşük"
+  },
+  "pp_trade_plan": {
+    "message": "Plan · $1 $2x · $3 $4"
+  },
+  "pp_trade_plan_market": {
+    "message": "Plan · $1 $2x · $3"
+  },
+  "pp_trade_reach": {
+    "message": "bu kadar giden: $1 / $2 adım"
+  },
+  "pp_trade_sell": {
+    "message": "Satış"
+  },
+  "pp_trade_trail": {
+    "message": "takip"
   },
   "pp_trades_none": {
     "message": "Şu anda bu piyasada işlem yok."
@@ -7258,6 +7839,9 @@
   },
   "pp_w_val": {
     "message": "değer alt"
+  },
+  "pp_zoom_reset_title": {
+    "message": "Tüm aralığı yeniden göster"
   },
   "pref_alert_tab_title_aria": {
     "message": "Fiyat hedefi duyurularını sekme başlığında aç/kapat"
@@ -7579,21 +8163,6 @@
       }
     }
   },
-  "pref_features_desc": {
-    "message": "Bu sekmede ne olacağını seç. Birini kapatmak düğmesini de kısayolunu da alır — grafik, fiyat ve bu ekran her zaman durur"
-  },
-  "pref_features_heading": {
-    "message": "Özellikler"
-  },
-  "pref_features_keywords": {
-    "message": "özellikler aç kapat etkinleştir devre dışı gizle göster düğmeler simgeler hedefler çağrılar türev piyasası vadeli haberler taban oranlar portföy karşılaştır widget sadeleştir"
-  },
-  "pref_features_note": {
-    "message": "Ayarlar bu listede değildir ve kapatılamaz: bu ekrana dönüş yolu odur. Bir özelliği kapatmak hiçbir şeyi silmez — hedeflerin, çağrıların, pozisyonların ve varlıkların bıraktığın gibi durur, geri açtığında oradadırlar. Sessiz Kontroller bunun yumuşak hâli: özellikleri kaldırmak yerine düğmelerini soluklaştırır."
-  },
-  "pref_features_title": {
-    "message": "Özellikler"
-  },
   "pref_gloss_contract": {
     "message": "Kontrat"
   },
@@ -7657,6 +8226,9 @@
   "pref_group_basics_desc": {
     "message": "Dil, para birimi, sayıların yazılışı, tema ve her şeyin boyutu — hepsi her ekranı değiştirir."
   },
+  "pref_group_basics_desc_phone": {
+    "message": "Dil, para birimi, sayıların yazılışı ve tema — hepsi her ekranı değiştirir."
+  },
   "pref_group_chart": {
     "message": "Grafik"
   },
@@ -7669,11 +8241,8 @@
   "pref_group_data_desc": {
     "message": "Bu tarayıcının PriceTab için tuttuğu her şey, başka bir yere taşıyabileceğin tek bir dosyada."
   },
-  "pref_group_features": {
-    "message": "Özellikler"
-  },
-  "pref_group_features_desc": {
-    "message": "Bu sekmede neler olduğu. Burada kapatılan hiçbir şey geride sekme, tuş ya da istek bırakmaz."
+  "pref_group_open_contract": {
+    "message": "Açık kontrat"
   },
   "pref_group_tab_tickers": {
     "message": "Sekme ve şeritler"
@@ -7695,6 +8264,9 @@
   },
   "pref_group_webapp": {
     "message": "Bu telefon"
+  },
+  "pref_group_webapp_desc_2": {
+    "message": "Telefondaki uygulama: her şeyin boyutu, ana ekrandan çalışması, kenarlardan kaydırma, açık kalan ekran ve açıldığı yer."
   },
   "pref_language_aria": {
     "message": "Dil"
@@ -7963,6 +8535,36 @@
   "pref_phone_nav_title": {
     "message": "Gezinme"
   },
+  "pref_phone_tabs_add_aria": {
+    "message": "Çubuğa ekle"
+  },
+  "pref_phone_tabs_desc": {
+    "message": "Çubukta en fazla $1 yer, senin sıranla. Gerisi Daha fazla'da."
+  },
+  "pref_phone_tabs_desc_off": {
+    "message": "Çubuk kapalı (Gezinme): burada ayarlanan, çubukla birlikte geri gelir."
+  },
+  "pref_phone_tabs_down": {
+    "message": "$1 sağa taşı"
+  },
+  "pref_phone_tabs_full": {
+    "message": "Çubuk $1 tane alır — önce birini kaldır"
+  },
+  "pref_phone_tabs_heading": {
+    "message": "Sekme çubuğu"
+  },
+  "pref_phone_tabs_keywords": {
+    "message": "sekme çubuğu alt simgeler sıra düzenle daha fazla"
+  },
+  "pref_phone_tabs_remove": {
+    "message": "$1 çubuktan kaldır"
+  },
+  "pref_phone_tabs_title": {
+    "message": "Sekme çubuğu"
+  },
+  "pref_phone_tabs_up": {
+    "message": "$1 sola taşı"
+  },
   "pref_position_bottom": {
     "message": "Altta"
   },
@@ -7993,11 +8595,32 @@
   "pref_practice_dock_heading": {
     "message": "Kontrat Şeridini Grafikte Göster"
   },
+  "pref_practice_dock_note2": {
+    "message": "Kontratın kendi seviyelerinin kendi anahtarı aşağıdadır: bu, onların üstünde duran kontroldür."
+  },
   "pref_practice_dock_title": {
     "message": "Kontrat şeridi"
   },
+  "pref_practice_fill_desc": {
+    "message": "Emir düğmesi bir sözleşme açmadan ya da emir vermeden önce üzerinde iki saniyelik bir dolum çalıştırır — bu sırada basmak onu durdurur; buradaki geri alınamayan her basış gibi"
+  },
+  "pref_practice_fill_note": {
+    "message": "Varsayılan olarak açık: sözleşme açmak, parayı bir fiyata bağlayan tek basış; bu yüzden ters çevirme ya da tümünü kapatma gibi aynı iki saniyeyi bekler ve ikinci bir basış istemez. Kapalıyken basıldığı anda açar — hesabı hızlıca denemek için."
+  },
   "pref_practice_keywords": {
     "message": "türev piyasası vadeli sürekli alıştırma şerit grafik onay emir kontrat simülasyon"
+  },
+  "pref_practice_lines_aria": {
+    "message": "Ana grafikteki kontrat çizgilerini aç veya kapat"
+  },
+  "pref_practice_lines_desc": {
+    "message": "Baktığın coin'deki kontratın girişi ve sonucu, stop, kâr al ve tasfiye seviyeleri. Türev sayfasının kendi grafiği bunları her iki durumda da çizer."
+  },
+  "pref_practice_lines_heading": {
+    "message": "Açık Kontratı Ana Grafikte Çiz"
+  },
+  "pref_practice_lines_title": {
+    "message": "Ana grafikte kontrat çizgileri"
   },
   "pref_quiet_chrome_aria": {
     "message": "Sessiz kontrolleri aç/kapat"
@@ -8175,6 +8798,9 @@
   },
   "pref_text_size_xl": {
     "message": "XL"
+  },
+  "pref_text_size_xs": {
+    "message": "XS"
   },
   "pref_theme_auto": {
     "message": "Otomatik"
@@ -10256,6 +10882,12 @@
   "tour_title_widgets": {
     "message": "Widget'lar"
   },
+  "view_auto": {
+    "message": "Otomatik"
+  },
+  "view_auto_title": {
+    "message": "Fiyat ölçeğini yeniden çizgiye sığdır (ya da fiyat ölçeğine çift tıkla)"
+  },
   "view_label2": {
     "message": "Fiyat grafiği. ← ve → noktaları tek tek okur, Home ve End uçlara gider; Shift ile ← ve → zamanda ilerletir; + ve − yakınlaştırır; çift tık bütün aralığı gösterir."
   },
@@ -10358,11 +10990,17 @@
   "wdesc_etf_flows": {
     "message": "ABD spot bitcoin ETF'lerine son işlem gününde, bir haftalık ve bir aylık işlem gününde girip çıkan para"
   },
+  "wdesc_eth_btc": {
+    "message": "Bitcoin cinsinden Ether ve 24 saatte nasıl hareket ettiği"
+  },
   "wdesc_eth_gas": {
     "message": "Şu anki gas fiyatı ve düz bir ETH transferinin maliyeti"
   },
   "wdesc_fear_greed": {
     "message": "Piyasa duyarlılığı, 0 ile 100 arasında"
+  },
+  "wdesc_funding_board": {
+    "message": "Bybit'te bu uygulamanın grafiğini çizdiği tüm kalıcı vadelilerde fonlama: kaç tanesinde longlar, kaç tanesinde shortlar ödüyor, ortadaki değer ve iki uç"
   },
   "wdesc_funding_rate": {
     "message": "Kalıcı vadeli işlemlerde longların shortlara ödediği"
@@ -10376,6 +11014,9 @@
   "wdesc_long_short_ratio": {
     "message": "Yatırımcıların şu anki pozisyonu"
   },
+  "wdesc_macro_calendar": {
+    "message": "Sıradaki CPI, istihdam raporu, Fed açıklaması ve PCE ne zaman çıkıyor — grafiğin işaretlediği veriler"
+  },
   "wdesc_market_overview": {
     "message": "Toplam piyasa değeri ve BTC/ETH hakimiyeti"
   },
@@ -10385,8 +11026,14 @@
   "wdesc_model_outlook": {
     "message": "BTC-USD'nin bir sonraki tamamlanan saati, bir modelin tahminiyle: medyan, %80 bandı, bir hedefin kapanıştaki olasılığı — ve testte bandın ne sıklıkla tuttuğu"
   },
+  "wdesc_oi_leaders": {
+    "message": "Bybit'te en çok açık sözleşmesi olan kalıcı vadeliler ve toplamları"
+  },
   "wdesc_open_interest": {
     "message": "Açık vadeli işlem sözleşmelerinin değeri"
+  },
+  "wdesc_options": {
+    "message": "Bybit opsiyonlarından: en yakın vadede opsiyon sahiplerinin toplamda en az alacağı kullanım fiyatı, put'ların call'lara oranı ve fiyata en yakın kullanım fiyatındaki (ATM) zımni volatilite"
   },
   "wdesc_outlook": {
     "message": "Bu aralığın kendi adımlarının sonraki ufuklarda indiği yer — sayılmış bir bant, tahmin değil"
@@ -10396,6 +11043,9 @@
   },
   "wdesc_rsi_widget": {
     "message": "Baktığın aralık boyunca 0–100 ölçeğinde momentum"
+  },
+  "wdesc_stablecoins": {
+    "message": "Dolar stablecoin'lerin toplam piyasa değeri ve tüm piyasadaki payları"
   },
   "wdesc_top_movers": {
     "message": "Bugünün en çok yükselen ve düşenleri"
@@ -10563,6 +11213,9 @@
   "widget_etf_source": {
     "message": "kaynak: TFTC · SoSoValue, Farside"
   },
+  "widget_eth_btc": {
+    "message": "ETH / BTC"
+  },
   "widget_eth_gas": {
     "message": "ETH gas"
   },
@@ -10580,6 +11233,15 @@
   },
   "widget_from_to": {
     "message": "$1 – $2"
+  },
+  "widget_funding_board": {
+    "message": "Fonlama Panosu"
+  },
+  "widget_funding_board_mid": {
+    "message": "medyan"
+  },
+  "widget_funding_board_pos": {
+    "message": "$1/$2 pozitif"
   },
   "widget_funding_rate": {
     "message": "$1 fonlama oranı"
@@ -10610,6 +11272,18 @@
   },
   "widget_long_short": {
     "message": "$1 Long / short"
+  },
+  "widget_macro_calendar": {
+    "message": "Sıradaki ABD verileri"
+  },
+  "widget_macro_days": {
+    "message": "$1 gün içinde"
+  },
+  "widget_macro_hours": {
+    "message": "$1 saat içinde"
+  },
+  "widget_macro_none": {
+    "message": "Takvimde hiçbiri kalmadı"
   },
   "widget_market_cap": {
     "message": "Piyasa değeri"
@@ -10664,11 +11338,29 @@
   "widget_none": {
     "message": "Yok"
   },
+  "widget_oi_leaders": {
+    "message": "Açık pozisyon · Bybit"
+  },
   "widget_only_rose": {
     "message": "bu aralıkta yalnızca yükseldi"
   },
   "widget_open_interest": {
     "message": "$1 açık pozisyon"
+  },
+  "widget_options": {
+    "message": "$1 opsiyonları"
+  },
+  "widget_options_iv": {
+    "message": "ATM IV"
+  },
+  "widget_options_other": {
+    "message": "Bybit BTC, ETH ve SOL için opsiyon listeliyor"
+  },
+  "widget_options_pain": {
+    "message": "max pain"
+  },
+  "widget_options_pc": {
+    "message": "P/C"
   },
   "widget_outlook": {
     "message": "$1 Görünüm · $2"
@@ -10708,6 +11400,17 @@
   "widget_regime_now": {
     "message": "$1 · $2 g"
   },
+  "widget_regime_state_count": {
+    "message": "$1 / $2 gün",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
   "widget_regimes": {
     "message": "$1 Rejimler · 20g"
   },
@@ -10733,6 +11436,12 @@
   },
   "widget_size_small": {
     "message": "küçük"
+  },
+  "widget_stablecoins": {
+    "message": "Stablecoin'ler"
+  },
+  "widget_stablecoins_share": {
+    "message": "piyasanın payı: %$1"
   },
   "widget_top_movers": {
     "message": "En çok hareket edenler 24s"
@@ -10779,11 +11488,17 @@
   "wname_etf_flows": {
     "message": "BTC ETF Akışları"
   },
+  "wname_eth_btc": {
+    "message": "ETH / BTC"
+  },
   "wname_eth_gas": {
     "message": "ETH gas"
   },
   "wname_fear_greed": {
     "message": "Korku ve açgözlülük"
+  },
+  "wname_funding_board": {
+    "message": "Fonlama Panosu"
   },
   "wname_funding_rate": {
     "message": "Fonlama oranı"
@@ -10797,6 +11512,9 @@
   "wname_long_short_ratio": {
     "message": "Long/short oranı"
   },
+  "wname_macro_calendar": {
+    "message": "Sıradaki ABD verileri"
+  },
   "wname_market_overview": {
     "message": "Piyasa özeti"
   },
@@ -10806,8 +11524,14 @@
   "wname_model_outlook": {
     "message": "Sonraki saat · model"
   },
+  "wname_oi_leaders": {
+    "message": "Açık Pozisyon Liderleri"
+  },
   "wname_open_interest": {
     "message": "Açık pozisyon"
+  },
+  "wname_options": {
+    "message": "Opsiyonlar"
   },
   "wname_outlook": {
     "message": "Görünüm"
@@ -10817,6 +11541,9 @@
   },
   "wname_rsi_widget": {
     "message": "RSI"
+  },
+  "wname_stablecoins": {
+    "message": "Stablecoin'ler"
   },
   "wname_top_movers": {
     "message": "En çok hareket edenler"
@@ -10838,529 +11565,5 @@
   },
   "wsize_xlarge": {
     "message": "Çok büyük"
-  },
-  "pos_confirm_placing": {
-    "message": "Emir veriliyor — durdurmak için bas"
-  },
-  "pos_confirm_long": {
-    "message": "$1 üzerinde long açılıyor — durdurmak için bas"
-  },
-  "pos_confirm_short": {
-    "message": "$1 üzerinde short açılıyor — durdurmak için bas"
-  },
-  "pos_reverse_running": {
-    "message": "Ters çevriliyor — durdurmak için bas"
-  },
-  "pos_cancel_all_running": {
-    "message": "$1 emir iptal ediliyor — durdurmak için bas"
-  },
-  "pp_close_all_running": {
-    "message": "$1 sözleşme kapatılıyor — durdurmak için bas"
-  },
-  "pp_open_moment_fill": {
-    "message": "$2 fiyatından $1 açıldı"
-  },
-  "pp_open_moment_size": {
-    "message": "$1 · teminat $2"
-  },
-  "dock_closing_aria": {
-    "message": "$1 kapatılıyor — durdurmak için bas"
-  },
-  "dock_stop": {
-    "message": "Durdur"
-  },
-  "pref_practice_fill_desc": {
-    "message": "Emir düğmesi bir sözleşme açmadan ya da emir vermeden önce üzerinde iki saniyelik bir dolum çalıştırır — bu sırada basmak onu durdurur; buradaki geri alınamayan her basış gibi"
-  },
-  "pref_practice_fill_note": {
-    "message": "Varsayılan olarak açık: sözleşme açmak, parayı bir fiyata bağlayan tek basış; bu yüzden ters çevirme ya da tümünü kapatma gibi aynı iki saniyeyi bekler ve ikinci bir basış istemez. Kapalıyken basıldığı anda açar — hesabı hızlıca denemek için."
-  },
-  "view_auto": {
-    "message": "Otomatik"
-  },
-  "view_auto_title": {
-    "message": "Fiyat ölçeğini yeniden çizgiye sığdır (ya da fiyat ölçeğine çift tıkla)"
-  },
-  "mon_col_beta": {
-    "message": "β BTC"
-  },
-  "mon_col_beta_title": {
-    "message": "Aynı 30 günde Bitcoin her %1 hareket ettiğinde ne kadar hareket etti — hareketlerinin Bitcoin'inkilere eğimi. Bu 30 günü anlatır, sonrasını asla"
-  },
-  "mon_col_changes_title": {
-    "message": "Fiyatın son bir günde, haftada ve ayda ne kadar hareket ettiği"
-  },
-  "mon_col_spark": {
-    "message": "30 gün"
-  },
-  "mon_col_spark_title": {
-    "message": "Son 30 gün, düşükten yükseğe — fiyatın aralarında nerede durduğuna göre sıralı"
-  },
-  "mon_fact_median": {
-    "message": "30 günde ortadaki coin"
-  },
-  "mon_fact_mover": {
-    "message": "30 günde en çok hareket eden"
-  },
-  "mon_fact_sort": {
-    "message": "Tabloyu buna göre sırala"
-  },
-  "mon_fact_up": {
-    "message": "Son 24 saatte yükselen"
-  },
-  "mon_fact_widest": {
-    "message": "En geniş tipik gün"
-  },
-  "mon_legend": {
-    "message": "Sütunlar ne anlama geliyor"
-  },
-  "mon_market_down": {
-    "message": "24 saatte en çok düşen"
-  },
-  "mon_market_label": {
-    "message": "Piyasa değerine göre ilk $1 coin; her biri değeri kadar büyük, son 24 saatine göre renklendirilmiş"
-  },
-  "mon_market_loading": {
-    "message": "Piyasa okunuyor…"
-  },
-  "mon_market_note": {
-    "message": "Coinlore'un piyasa değerine göre ilk $1 coini, $2 itibarıyla; fiyat çubuğunun okuduğu aynı anlık görüntü — bu sekme açıkken dakikada bir istek. Bir karenin boyu piyasa değeri, tonu son 24 saattir. Grafiğin çizebildiği bir coin orada açılır."
-  },
-  "mon_market_up": {
-    "message": "24 saatte en çok yükselen"
-  },
-  "mon_market_value": {
-    "message": "piyasa değeri $1"
-  },
-  "mon_race_aria": {
-    "message": "Her coinin son 30 gündeki yüzde değişimi: $1"
-  },
-  "mon_race_head": {
-    "message": "Son 30 gün yan yana · her coin kendi başlangıcından"
-  },
-  "mon_race_spread": {
-    "message": "$1 önde, $2 geride · aralarında $3 puan"
-  },
-  "mon_range_at": {
-    "message": "30 günlük dip–tepe aralığında konum: %$1"
-  },
-  "mon_tab_market": {
-    "message": "Piyasa"
-  },
-  "news_pulse_aria": {
-    "message": "Son 24 saatte saat başına haber; en yoğun saat $1 itibarıyla $2 haber"
-  },
-  "news_pulse_bar": {
-    "message": "$1 · $2 haber"
-  },
-  "news_pulse_from": {
-    "message": "24 saat önce"
-  },
-  "news_pulse_head": {
-    "message": "Son 24 saat · $1 haber"
-  },
-  "news_pulse_now": {
-    "message": "şimdi"
-  },
-  "news_pulse_peak": {
-    "message": "en yoğun: $1 · $2"
-  },
-  "po_allocation": {
-    "message": "Dağılım"
-  },
-  "pos_cn_all": {
-    "message": "Açılıştan kapanışa"
-  },
-  "pos_cn_all_d": {
-    "message": "bu kontratın kazandığı ve ödediği her şey"
-  },
-  "pos_cn_back": {
-    "message": "teminatın ($2) $1'i · $3 geri döner · bakiye $4"
-  },
-  "pos_cn_fee": {
-    "message": "Kapatma ücreti"
-  },
-  "pos_cn_head": {
-    "message": "Hepsini şimdi kapatırsan"
-  },
-  "pos_cn_move": {
-    "message": "Fiyat hareketi"
-  },
-  "pos_cn_move_d": {
-    "message": "$1 → $2, kapatmanın gerçekleştiği fiyat"
-  },
-  "pos_cn_paid": {
-    "message": "Girişte ödenen"
-  },
-  "pos_cn_paid_d": {
-    "message": "açılış ücreti ve şimdiye kadarki fonlama"
-  },
-  "pos_cn_total": {
-    "message": "Bu kapanış"
-  },
-  "pos_cn_why": {
-    "message": "Satırdaki $1, kontratın mark fiyatıyla değerlenmiş hali: $2. Kapatma $3 fiyatından gerçekleşir — son fiyat, makas üzerinden — ve ücret öder; yani hesaba geçen, yukarıdaki satırdır."
-  },
-  "pp_at_many": {
-    "message": "$1 kontrat"
-  },
-  "pp_at_mine": {
-    "message": "buradaki $1: $2"
-  },
-  "pp_at_one": {
-    "message": "kontrat"
-  },
-  "pp_at_price": {
-    "message": "$1 · şimdiden $2 uzakta"
-  },
-  "pp_zoom_reset_title": {
-    "message": "Tüm aralığı yeniden göster"
-  },
-  "pos_details_less": {
-    "message": "Ayrıntıları gizle"
-  },
-  "pos_details_more": {
-    "message": "Ayrıntılar — kurulum, teminat, ücretler, likidasyon"
-  },
-  "pp_read_less": {
-    "message": "Daha az"
-  },
-  "pp_read_more": {
-    "message": "Daha fazla"
-  },
-  "pos_means_away": {
-    "message": "girişten $1 uzakta"
-  },
-  "pos_means_liq": {
-    "message": "Tasfiye fiyatı"
-  },
-  "pos_means_no_stop": {
-    "message": "Stop yok"
-  },
-  "pos_means_no_stop_note": {
-    "message": "kaybı piyasa belirler"
-  },
-  "pos_means_no_take": {
-    "message": "Kâr al yok"
-  },
-  "pos_means_of_account": {
-    "message": "hesabın $1 kadarı"
-  },
-  "pos_means_stop": {
-    "message": "Stopa değerse"
-  },
-  "pos_means_take": {
-    "message": "Kâr al seviyesine değerse"
-  },
-  "pp_guide": {
-    "message": "Rehber"
-  },
-  "pp_guide_all": {
-    "message": "Yardımcı"
-  },
-  "pp_guide_aria": {
-    "message": "Rehber — grafiğin işaretlediği şeyler, numaralı"
-  },
-  "pp_guide_chip_title": {
-    "message": "Grafikte görmek için üzerine gel; orada tutmak için bas"
-  },
-  "pp_guide_close": {
-    "message": "Rehberi kapat"
-  },
-  "pp_guide_drag_sl": {
-    "message": "grafikte + SL'yi sürükle"
-  },
-  "pp_guide_drag_tp": {
-    "message": "grafikte + TP'yi sürükle"
-  },
-  "pp_guide_in_panel": {
-    "message": "Panelde aç"
-  },
-  "pp_guide_more": {
-    "message": "+$1 · yardımcı"
-  },
-  "pp_guide_pop_aria": {
-    "message": "Rehber — her madde, grafikteki numarasıyla"
-  },
-  "pp_guide_pop_head": {
-    "message": "Rehber · $1",
-    "placeholders": {
-      "arg1": {
-        "content": "$1"
-      }
-    }
-  },
-  "pp_layer_book": {
-    "message": "Defterin en büyük kademeleri"
-  },
-  "pp_layer_clock": {
-    "message": "Sonraki fonlama"
-  },
-  "pp_layer_contracts": {
-    "message": "Kontratlar ve emirler"
-  },
-  "pp_layer_fan": {
-    "message": "Tekrar oynatılan yollar"
-  },
-  "pp_layer_guide": {
-    "message": "Rehberin numaraları"
-  },
-  "pp_layer_location": {
-    "message": "Fiyata göre hacim"
-  },
-  "pp_layer_plan": {
-    "message": "Yazdığın emir"
-  },
-  "pp_settings_layers": {
-    "message": "Grafikte"
-  },
-  "pp_settings_sizes": {
-    "message": "Fiş genişliği $1 · panel yüksekliği $2"
-  },
-  "pp_settings_sizes_note": {
-    "message": "Fişin yanındaki dikişi ya da grafiğin altındakini sürükleyerek boyutlarını değiştir — ya da Tab ile birine gelip ok tuşlarını kullan. Bir dikişe çift tıklamak varsayılanı geri getirir. Boyutlar bu cihazda saklanır; 1280 pikselden dar bir pencerede sayfa tek sütundur ve boyutlar bekler."
-  },
-  "pp_trade_add_sl": {
-    "message": "+ SL"
-  },
-  "pp_trade_add_tp": {
-    "message": "+ TP"
-  },
-  "pp_trade_be": {
-    "message": "başabaş"
-  },
-  "pp_trade_buy": {
-    "message": "Alış"
-  },
-  "pp_trade_entry": {
-    "message": "$1 $2x #$3 · $4"
-  },
-  "pp_trade_fan": {
-    "message": "sonraki $1 · $2 tekrar · 5–95%"
-  },
-  "pp_trade_first": {
-    "message": "ilk değme: $1"
-  },
-  "pp_trade_funding": {
-    "message": "fonlama $1"
-  },
-  "pp_trade_market": {
-    "message": "piyasa"
-  },
-  "pp_trade_move_to": {
-    "message": "taşı:"
-  },
-  "pp_trade_of_account": {
-    "message": "hesabın $1 kadarı"
-  },
-  "pp_trade_plan": {
-    "message": "Plan · $1 $2x · $3 $4"
-  },
-  "pp_trade_reach": {
-    "message": "bu kadar giden: $1 / $2 adım"
-  },
-  "pp_trade_sell": {
-    "message": "Satış"
-  },
-  "pp_trade_trail": {
-    "message": "takip"
-  },
-  "pref_practice_dock_note2": {
-    "message": "Kontratın kendi seviyelerinin kendi anahtarı aşağıdadır: bu, onların üstünde duran kontroldür."
-  },
-  "pref_practice_lines_aria": {
-    "message": "Ana grafikteki kontrat çizgilerini aç veya kapat"
-  },
-  "pref_practice_lines_desc": {
-    "message": "Baktığın coin'deki kontratın girişi ve sonucu, stop, kâr al ve tasfiye seviyeleri. Türev sayfasının kendi grafiği bunları her iki durumda da çizer."
-  },
-  "pref_practice_lines_heading": {
-    "message": "Açık Kontratı Ana Grafikte Çiz"
-  },
-  "pref_practice_lines_title": {
-    "message": "Ana grafikte kontrat çizgileri"
-  },
-  "pos_means_rr2": {
-    "message": "risk : kazanç 1 : $1"
-  },
-  "pp_legend_candles": {
-    "message": "$1 mumlar · OKX"
-  },
-  "pp_legend_line": {
-    "message": "$1 kapanışlar · OKX"
-  },
-  "pp_legend_volume": {
-    "message": "altta $1 cinsinden hacim"
-  },
-  "pp_layer_liquidations": {
-    "message": "Tasfiyeler · OKX"
-  },
-  "pp_legend_hand": {
-    "message": "limit için bir fiyata tıkla, bir çizgiyi taşımak için sürükle"
-  },
-  "pp_trade_liq_print": {
-    "message": "$1 tasfiye edildi · $2 · OKX · $3"
-  },
-  "pp_trade_pdh": {
-    "message": "dün en yüksek"
-  },
-  "pp_trade_pdl": {
-    "message": "dün en düşük"
-  },
-  "pp_trade_plan_market": {
-    "message": "Plan · $1 $2x · $3"
-  },
-  "pos_kind_more": {
-    "message": "Diğer emir türleri"
-  },
-  "pos_lev_size_cap": {
-    "message": "bu büyüklükte en fazla $1x"
-  },
-  "pos_levels_drag": {
-    "message": "Ya da grafikte + SL ve + TP'yi sürükle."
-  },
-  "pp_settings_main_chart": {
-    "message": "Ana grafikte"
-  },
-  "pref_group_open_contract": {
-    "message": "Açık kontrat"
-  },
-  "pp_layout": {
-    "message": "Düzen"
-  },
-  "pp_layout_simple": {
-    "message": "Sade"
-  },
-  "pp_layout_terminal": {
-    "message": "Terminal"
-  },
-  "pp_layout_simple_title": {
-    "message": "Bilet solda, grafik sağda, emir defteri Daha Fazla altında tek tık uzakta"
-  },
-  "pp_layout_terminal_title": {
-    "message": "Grafik, emir defteri ve bilet yan yana; açık olanlar grafik ve defterin altında"
-  },
-  "pref_group_basics_desc_phone": {
-    "message": "Dil, para birimi, sayıların yazılışı ve tema — hepsi her ekranı değiştirir."
-  },
-  "pref_group_webapp_desc_2": {
-    "message": "Telefondaki uygulama: her şeyin boyutu, ana ekrandan çalışması, kenarlardan kaydırma, açık kalan ekran ve açıldığı yer."
-  },
-  "pref_phone_tabs_add_aria": {
-    "message": "Çubuğa ekle"
-  },
-  "pref_phone_tabs_desc": {
-    "message": "Çubukta en fazla $1 yer, senin sıranla. Gerisi Daha fazla'da."
-  },
-  "pref_phone_tabs_desc_off": {
-    "message": "Çubuk kapalı (Gezinme): burada ayarlanan, çubukla birlikte geri gelir."
-  },
-  "pref_phone_tabs_down": {
-    "message": "$1 sağa taşı"
-  },
-  "pref_phone_tabs_full": {
-    "message": "Çubuk $1 tane alır — önce birini kaldır"
-  },
-  "pref_phone_tabs_heading": {
-    "message": "Sekme çubuğu"
-  },
-  "pref_phone_tabs_keywords": {
-    "message": "sekme çubuğu alt simgeler sıra düzenle daha fazla"
-  },
-  "pref_phone_tabs_remove": {
-    "message": "$1 çubuktan kaldır"
-  },
-  "pref_phone_tabs_title": {
-    "message": "Sekme çubuğu"
-  },
-  "pref_phone_tabs_up": {
-    "message": "$1 sola taşı"
-  },
-  "pref_text_size_xs": {
-    "message": "XS"
-  },
-  "wdesc_eth_btc": {
-    "message": "Bitcoin cinsinden Ether ve 24 saatte nasıl hareket ettiği"
-  },
-  "wdesc_funding_board": {
-    "message": "Bybit'te bu uygulamanın grafiğini çizdiği tüm kalıcı vadelilerde fonlama: kaç tanesinde longlar, kaç tanesinde shortlar ödüyor, ortadaki değer ve iki uç"
-  },
-  "wdesc_macro_calendar": {
-    "message": "Sıradaki CPI, istihdam raporu, Fed açıklaması ve PCE ne zaman çıkıyor — grafiğin işaretlediği veriler"
-  },
-  "wdesc_oi_leaders": {
-    "message": "Bybit'te en çok açık sözleşmesi olan kalıcı vadeliler ve toplamları"
-  },
-  "wdesc_options": {
-    "message": "Bybit opsiyonlarından: en yakın vadede opsiyon sahiplerinin toplamda en az alacağı kullanım fiyatı, put'ların call'lara oranı ve fiyata en yakın kullanım fiyatındaki (ATM) zımni volatilite"
-  },
-  "wdesc_stablecoins": {
-    "message": "Dolar stablecoin'lerin toplam piyasa değeri ve tüm piyasadaki payları"
-  },
-  "widget_eth_btc": {
-    "message": "ETH / BTC"
-  },
-  "widget_funding_board": {
-    "message": "Fonlama Panosu"
-  },
-  "widget_funding_board_mid": {
-    "message": "medyan"
-  },
-  "widget_funding_board_pos": {
-    "message": "$1/$2 pozitif"
-  },
-  "widget_macro_calendar": {
-    "message": "Sıradaki ABD verileri"
-  },
-  "widget_macro_days": {
-    "message": "$1 gün içinde"
-  },
-  "widget_macro_hours": {
-    "message": "$1 saat içinde"
-  },
-  "widget_macro_none": {
-    "message": "Takvimde hiçbiri kalmadı"
-  },
-  "widget_oi_leaders": {
-    "message": "Açık pozisyon · Bybit"
-  },
-  "widget_options": {
-    "message": "$1 opsiyonları"
-  },
-  "widget_options_iv": {
-    "message": "ATM IV"
-  },
-  "widget_options_other": {
-    "message": "Bybit BTC, ETH ve SOL için opsiyon listeliyor"
-  },
-  "widget_options_pain": {
-    "message": "max pain"
-  },
-  "widget_options_pc": {
-    "message": "P/C"
-  },
-  "widget_stablecoins": {
-    "message": "Stablecoin'ler"
-  },
-  "widget_stablecoins_share": {
-    "message": "piyasanın payı: %$1"
-  },
-  "wname_eth_btc": {
-    "message": "ETH / BTC"
-  },
-  "wname_funding_board": {
-    "message": "Fonlama Panosu"
-  },
-  "wname_macro_calendar": {
-    "message": "Sıradaki ABD verileri"
-  },
-  "wname_oi_leaders": {
-    "message": "Açık Pozisyon Liderleri"
-  },
-  "wname_options": {
-    "message": "Opsiyonlar"
-  },
-  "wname_stablecoins": {
-    "message": "Stablecoin'ler"
   }
 }

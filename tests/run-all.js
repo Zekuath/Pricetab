@@ -41,6 +41,7 @@ const suites = [
   "test-onboarding.js",
   "test-settings.js",
   "test-chart.js",
+  "test-baserates.js",
   // The chart's axes: ticks, time labels and the lane allocator, on real d3.
   "test-axes.js",
   // The chart's window in time: the window arithmetic, the cut series, LTTB.
@@ -91,6 +92,7 @@ const suites = [
   "test-modes-render.js",
   "test-polish-render.js",
   "test-i18n-render.js",
+  "test-navigation-render.js",
   "test-portfolio-chart-render.js",
   "test-transition-render.js",
 ];

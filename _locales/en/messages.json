@@ -2250,6 +2250,9 @@
   "br_above_200d": {
     "message": "Above its 200-day average"
   },
+  "br_across": {
+    "message": "Across your coins · cached daily history only"
+  },
   "br_ah_move": {
     "message": "the next $1 days moved more than usual $2 of $3 times; half would.",
     "placeholders": {
@@ -2271,7 +2274,7 @@
     "message": "No pattern, setup or reading on this screen has formed in its last ten days. The ordinary case."
   },
   "br_ah_note": {
-    "message": "These are counts of what followed, not a forecast, and they are not added up. Tested on four coins before they were shown, none of the readings and none of the setups told the next ten days apart from any ten days; the similar past did no better than an ordinary day; of the patterns only a triangle broken downwards did — and it reached its measured move first one time in three."
+    "message": "These are counts of what followed, not a forecast, and they are not added up. Tested on four coins before they were shown, none of the readings and none of the setups told the next ten days apart from any ten days; the similar past was not told apart from an ordinary day; of the patterns only a triangle broken downwards did — and it reached its measured move first one time in three."
   },
   "br_ah_pattern": {
     "message": "Broke out on $1: measured move $2, invalidation $3, neither reached yet.",
@@ -2337,6 +2340,9 @@
         "content": "$3"
       }
     }
+  },
+  "br_cache_missing": {
+    "message": "No fresh daily history cached"
   },
   "br_close": {
     "message": "Close base rates"
@@ -2427,8 +2433,16 @@
       }
     }
   },
-  "br_edge_better": {
-    "message": "$1 points better than an ordinary stretch",
+  "br_edge_above": {
+    "message": "a typical move $1 points above an ordinary stretch",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "br_edge_below": {
+    "message": "a typical move $1 points below an ordinary stretch",
     "placeholders": {
       "arg1": {
         "content": "$1"
@@ -2438,13 +2452,8 @@
   "br_edge_none": {
     "message": "no different from an ordinary stretch"
   },
-  "br_edge_worse": {
-    "message": "$1 points worse than an ordinary stretch",
-    "placeholders": {
-      "arg1": {
-        "content": "$1"
-      }
-    }
+  "br_export_csv": {
+    "message": "Export CSV"
   },
   "br_eyebrow_in_monitor": {
     "message": "Base rates · $1 · $2 daily closes",
@@ -2475,10 +2484,33 @@
     "message": "Today's candle: no named shape"
   },
   "br_glance_now": {
-    "message": "States true right now"
+    "message": "Items true right now"
   },
   "br_glance_years": {
     "message": "Years of daily closes counted"
+  },
+  "br_history_item": {
+    "message": "Read one live item"
+  },
+  "br_horizon": {
+    "message": "Horizon"
+  },
+  "br_horizon_untested": {
+    "message": "Untested horizon: descriptive counts only; the original tests do not apply to this selection."
+  },
+  "br_interval": {
+    "message": "Wilson 95% interval: $1–$2%",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "br_live_only": {
+    "message": "Live only"
   },
   "br_loading_body": {
     "message": "Reading this coin's daily closes. It goes back as far as the exchange publishes, which is what makes the counts below worth printing."
@@ -2561,9 +2593,6 @@
   "br_note_1": {
     "message": "This counts what happened after a state, against what happened after an ordinary day in the same coin. It is not a signal and there is nothing to act on here. "
   },
-  "br_note_2": {
-    "message": "Nine textbook rules tested over 21,669 daily closes on eight coins produced 0 of 70 results that survived correction for multiple testing, and on live data the “overbought” line was followed by a better-than-ordinary month on four coins of six. "
-  },
   "br_note_200d": {
     "message": "the line institutions read as a regime, not as an entry"
   },
@@ -2579,6 +2608,9 @@
   "br_note_oversold": {
     "message": "the line usually called oversold"
   },
+  "br_note_tested": {
+    "message": "Nine textbook rules tested over 21,669 daily closes on eight coins produced 0 of 70 results that survived correction for multiple testing. "
+  },
   "br_nothing_unusual": {
     "message": "Nothing unusual right now"
   },
@@ -2587,6 +2619,23 @@
   },
   "br_one_time": {
     "message": "1 time"
+  },
+  "br_order": {
+    "message": "Library order"
+  },
+  "br_original": {
+    "message": "Original horizons"
+  },
+  "br_path_caption": {
+    "message": "What followed, not a forecast: next 30 days · after this n=$1; any day n=$2. Solid: median; dashed: mean; shade: middle 80% of past paths. Overlapping windows, not independent trials.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
   },
   "br_pce_title": {
     "message": "US PCE · personal consumption prices"
@@ -2608,6 +2657,9 @@
   },
   "br_rsi_label": {
     "message": "RSI 14 · daily closes · 0–100"
+  },
+  "br_search": {
+    "message": "Search the library"
   },
   "br_sim_intro": {
     "message": "The $1 stretches of this coin's history whose last $2 days had the shape of the last $2 — the path, not the level or the size — each with the $3 days that followed it.",
@@ -2652,6 +2704,27 @@
   "br_sim_title": {
     "message": "The most similar past"
   },
+  "br_sort_gap": {
+    "message": "Largest gap from any day"
+  },
+  "br_sort_live": {
+    "message": "Live first"
+  },
+  "br_sort_n": {
+    "message": "Most episodes"
+  },
+  "br_tab_calendar": {
+    "message": "Calendar"
+  },
+  "br_tab_library": {
+    "message": "Library"
+  },
+  "br_tab_now": {
+    "message": "Now"
+  },
+  "br_tabs": {
+    "message": "Base rate views"
+  },
   "br_that_is": {
     "message": "That is $1.",
     "placeholders": {
@@ -2662,6 +2735,17 @@
   },
   "br_the_rest": {
     "message": "The rest, for reference"
+  },
+  "br_timeline": {
+    "message": "Past episodes · 30-day outcomes"
+  },
+  "br_timeline_n": {
+    "message": "$1 complete episodes on the daily timeline",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
   },
   "br_title": {
     "message": "$1 · has this happened before?",
@@ -2709,6 +2793,9 @@
         "content": "$1"
       }
     }
+  },
+  "br_within_chance": {
+    "message": "within what chance gives"
   },
   "ch_band": {
     "message": "Band"
@@ -4652,6 +4739,20 @@
   "mon_col_spark_title": {
     "message": "The last 30 days, low to high — sorted by where the price sits between them"
   },
+  "mon_corr_alone_head": {
+    "message": "On its own · the mean r with the rest"
+  },
+  "mon_corr_alone_note": {
+    "message": "$1 moved most on its own, $2 most with the rest.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
   "mon_corr_cell": {
     "message": "$1 and $2: $3, from $4 moves",
     "placeholders": {
@@ -4695,6 +4796,9 @@
   "mon_corr_few": {
     "message": "Too few shared moves to say"
   },
+  "mon_corr_grid": {
+    "message": "Every pair of your coins, once"
+  },
   "mon_corr_legend": {
     "message": "What the cells say"
   },
@@ -4718,6 +4822,9 @@
   "mon_corr_opposite": {
     "message": "Opposite"
   },
+  "mon_corr_pair_head": {
+    "message": "The pair"
+  },
   "mon_corr_pair_line": {
     "message": "went the same way on $1 of every 10 moves (r $2).",
     "placeholders": {
@@ -4737,8 +4844,38 @@
       }
     }
   },
+  "mon_corr_pair_text": {
+    "message": "Over these 30 days the two went the same way on $1 of every 10 moves ($2 moves).",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "mon_corr_pair_text_r": {
+    "message": "From $1 moves.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
   "mon_corr_pairs": {
     "message": "In plain words"
+  },
+  "mon_corr_scale": {
+    "message": "What the shades say"
+  },
+  "mon_corr_ten": {
+    "message": "$1 of every 10 moves the same way",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
   },
   "mon_corr_together": {
     "message": "In step"
@@ -4844,6 +4981,12 @@
   "mon_market_down": {
     "message": "Down most in 24 hours"
   },
+  "mon_market_hint": {
+    "message": "Size is market value, shade is the last 24 hours. Scroll to zoom in on the small ones, drag to move; a tile opens its card."
+  },
+  "mon_market_hint_touch": {
+    "message": "Size is market value, shade is the last 24 hours. Pinch to zoom in on the small ones; a tile opens its card."
+  },
   "mon_market_label": {
     "message": "The top $1 coins by market value, each sized by it and shaded by its last 24 hours",
     "placeholders": {
@@ -4866,6 +5009,17 @@
       }
     }
   },
+  "mon_market_share": {
+    "message": "$1% of the top $2",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
   "mon_market_up": {
     "message": "Up most in 24 hours"
   },
@@ -4876,6 +5030,18 @@
         "content": "$1"
       }
     }
+  },
+  "mon_market_zoom": {
+    "message": "Zoom the map"
+  },
+  "mon_market_zoom_in": {
+    "message": "Zoom in"
+  },
+  "mon_market_zoom_out": {
+    "message": "Zoom out"
+  },
+  "mon_market_zoom_whole": {
+    "message": "Whole map"
   },
   "mon_need_two": {
     "message": "Add a second coin to see how your coins move together."
@@ -4943,6 +5109,118 @@
   },
   "mon_title": {
     "message": "Monitor"
+  },
+  "nav_always": {
+    "message": "Always visible"
+  },
+  "nav_cancel": {
+    "message": "Cancel"
+  },
+  "nav_data_calls": {
+    "message": "All open calls, settled calls and your calls record."
+  },
+  "nav_data_chart": {
+    "message": "All saved chart drawings and notes, for every coin."
+  },
+  "nav_data_futures": {
+    "message": "The simulation account, open positions, orders, trade history and saved ticket."
+  },
+  "nav_data_news": {
+    "message": "Saved stories and the last-read marker."
+  },
+  "nav_data_portfolio": {
+    "message": "All holdings, purchases, sales and watched addresses."
+  },
+  "nav_data_targets": {
+    "message": "All price targets and their triggered records."
+  },
+  "nav_data_widgets": {
+    "message": "Widget choices, sizes, order and home-screen pins."
+  },
+  "nav_delete": {
+    "message": "Permanently delete this data: $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "nav_delete_note": {
+    "message": "This cannot be undone. The page will reload after deletion."
+  },
+  "nav_down": {
+    "message": "Move $1 down",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "nav_group_desc": {
+    "message": "Your tabs, their positions and the data you keep."
+  },
+  "nav_hide_delete": {
+    "message": "Hide and delete data"
+  },
+  "nav_hide_desc": {
+    "message": "Its tab and shortcut will be unavailable. You can show it again here at any time."
+  },
+  "nav_hide_keep": {
+    "message": "Hide and keep data"
+  },
+  "nav_hide_title": {
+    "message": "Hide $1?",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "nav_intro": {
+    "message": "Choose which tabs appear on each edge and arrange their order. Hidden tabs keep their place. Settings always stays available."
+  },
+  "nav_keep": {
+    "message": "Keep my data"
+  },
+  "nav_keywords": {
+    "message": "menu navigation tabs edges left right order arrange hide show data delete futures"
+  },
+  "nav_left": {
+    "message": "Left edge"
+  },
+  "nav_position": {
+    "message": "$1 position",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "nav_preview": {
+    "message": "Menu preview"
+  },
+  "nav_requires_monitor": {
+    "message": "Requires Monitor"
+  },
+  "nav_reset": {
+    "message": "Reset positions and order"
+  },
+  "nav_right": {
+    "message": "Right edge"
+  },
+  "nav_save_error": {
+    "message": "Could not save the change. Check the available browser storage and try again."
+  },
+  "nav_title": {
+    "message": "Menu layout"
+  },
+  "nav_up": {
+    "message": "Move $1 up",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
   },
   "news_allow_rest": {
     "message": "Allow the rest"
@@ -5093,6 +5371,21 @@
   },
   "news_day_undated": {
     "message": "No date"
+  },
+  "news_feed_24h": {
+    "message": "in the last 24h"
+  },
+  "news_feed_active_sources": {
+    "message": "active sources"
+  },
+  "news_feed_head": {
+    "message": "Feed snapshot"
+  },
+  "news_feed_multi": {
+    "message": "multi-source stories"
+  },
+  "news_feed_note": {
+    "message": "Counts only what is currently on screen: dated rows from the last 24 hours, sources that are on and carrying rows, and stories that at least two newsrooms in this feed ran."
   },
   "news_fetching": {
     "message": "Fetching headlines…"
@@ -11955,21 +12248,6 @@
       }
     }
   },
-  "pref_features_desc": {
-    "message": "Choose what this tab has. Switching one off takes away its button and its shortcut — the chart, the price and this screen are always there"
-  },
-  "pref_features_heading": {
-    "message": "Features"
-  },
-  "pref_features_keywords": {
-    "message": "features on off enable disable hide show buttons icons targets calls derivatives market futures news base rates portfolio compare widgets clutter simplify"
-  },
-  "pref_features_note": {
-    "message": "Settings is not on this list and cannot be switched off: it is the way back to this screen. Nothing is deleted by turning a feature off — your targets, calls, positions and holdings are exactly where you left them, and switching it back on finds them there. Quiet Controls is the gentler version of this: it fades the buttons rather than removing the features."
-  },
-  "pref_features_title": {
-    "message": "Features"
-  },
   "pref_gloss_contract": {
     "message": "A contract"
   },
@@ -12047,12 +12325,6 @@
   },
   "pref_group_data_desc": {
     "message": "Everything this browser keeps for PriceTab, in one file you can carry to another."
-  },
-  "pref_group_features": {
-    "message": "Features"
-  },
-  "pref_group_features_desc": {
-    "message": "What this tab has at all. Anything switched off here leaves no tab, no key and no request behind."
   },
   "pref_group_open_contract": {
     "message": "The open contract"
@@ -16060,6 +16332,17 @@
   },
   "widget_regime_now": {
     "message": "$1 · $2d",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "widget_regime_state_count": {
+    "message": "$1 of $2 days",
     "placeholders": {
       "arg1": {
         "content": "$1"

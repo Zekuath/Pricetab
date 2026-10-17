@@ -322,11 +322,10 @@ const settingSections = (panel) => {
   pageTickerPosition, onPageTickerPositionChange,
   newsTicker, onNewsTickerChange,
   newsFilter, onNewsFilterChange,
-  practiceEnabled, practiceConsent, onPracticeAccept,
+  practiceEnabled,
   practiceDock, onPracticeDockChange,
   practiceMainLines, onPracticeMainLinesChange,
   practiceConfirm, onPracticeConfirmChange,
-  features, onFeatureChange,
   } = panel.props;
 
   return {
@@ -630,149 +629,11 @@ const settingSections = (panel) => {
      * One row per feature rather than one group per feature: these are the
      * same kind of choice about the same kind of thing, and eight accordions
      * would be eight places to look for one answer. */
-    features: () =>
-      panel.section(
-        msg("pref_features_title", "Features"),
-        msg(
-          "pref_features_keywords",
-          "features on off enable disable hide show buttons icons targets calls derivatives market futures news base rates portfolio compare widgets clutter simplify",
-        ),
-        React.createElement(
-          ToggleSection,
-          null,
-          settingTitle(panel, "features", msg("pref_features_heading", "Features")),
-          React.createElement(
-            ToggleSectionDesc,
-            null,
-            msg(
-              "pref_features_desc",
-              "Choose what this tab has. Switching one off takes away its button and its shortcut — the chart, the price and this screen are always there",
-            ),
-          ),
-          settingNote(
-            panel,
-            "features",
-            msg(
-              "pref_features_note",
-              "Settings is not on this list and cannot be switched off: it is the way back to this screen. Nothing is deleted by turning a feature off — your targets, calls, positions and holdings are exactly where you left them, and switching it back on finds them there. Quiet Controls is the gentler version of this: it fades the buttons rather than removing the features.",
-            ),
-          ),
-          React.createElement(
-            FeatureList,
-            null,
-            ...FEATURE_CONTROLS.map((c) => {
-            /* **Futures reads as off until the terms have been read**, and
-               that is not a cosmetic choice: without consent the section
-               opens onto the terms and nothing else — no ticket, no balance,
-               no button that opens anything — so a switch showing "on" would
-               be describing something that is not available. It also makes
-               the first press ask, which is the whole of what this row is
-               for. Accepting is what turns it on, from either route. */
-            const on =
-              c.key === "futures"
-                ? practiceEnabled === true && practiceConsent === true
-                : (features || {})[c.key] !== false;
-            return React.createElement(
-              Fragment,
-              { key: c.key },
-              React.createElement(
-                ToggleRow,
-                null,
-                /* The feature's key drawn as every key is (KeyCap), where
-                   it was "(A)" in the label's own words. */
-                React.createElement(
-                  ToggleLabel,
-                  { style: { display: "inline-flex", alignItems: "center", gap: "0.5rem" } },
-                  c.label,
-                  c.shortcut ? keyCap(c.shortcut, { quiet: true }) : null,
-                ),
-                React.createElement(ToggleSwitch, {
-                  active: on,
-                  "aria-pressed": (on) ? "true" : "false",
-                  /* **Futures cannot be switched on without reading what it
-                     is.** Every other row here is a preference; this one adds
-                     a leveraged simulation with an imaginary balance, and the
-                     Chrome Web Store's rule for a simulation that offers no
-                     winnings is that it must *clearly* say so. So the first
-                     time it is asked for, the switch does not move — the
-                     terms open under it and the switch follows the answer.
-                     Asked again on every attempt until it is accepted, and
-                     never again once it is: this is a fact about what the
-                     thing is, and it does not change while the switch is
-                     down. */
-                  onClick: () => {
-                    if (c.key === "futures" && !on && practiceConsent !== true) {
-                      panel.setState({ practiceAsk: true });
-                      return;
-                    }
-                    if (c.key === "futures") panel.setState({ practiceAsk: false });
-                    if (onFeatureChange) onFeatureChange(c.key, !on);
-                  },
-                  "aria-label": msg("pref_features_aria", "Turn $1 on or off", c.label),
-                }),
-              ),
-              /* The terms, in the same words the panel's own screen uses —
-                 one statement of what this is, not two that can drift. */
-              c.key === "futures" && panel.state.practiceAsk && practiceConsent !== true
-                ? React.createElement(
-                    SettingNote,
-                    { "data-practice-terms": "true" },
-                    React.createElement(
-                      ToggleSectionTitle,
-                      null,
-                      msg("pos_terms_title", "Before you start"),
-                    ),
-                    React.createElement(
-                      "ul",
-                      null,
-                      ...[
-                        msg(
-                          "pos_terms_1",
-                          "This is a simulation. No order is placed, nothing is sent anywhere, and there is no exchange, broker or account behind it.",
-                        ),
-                        msg(
-                          "pos_terms_2",
-                          "The balance is imaginary and has no value. It cannot be bought, topped up, transferred, withdrawn or redeemed, and clearing your browser data ends it.",
-                        ),
-                        msg(
-                          "pos_terms_3",
-                          "Prices are real, but the result is not: a real venue has spreads, queues, slippage and outages this does not reproduce.",
-                        ),
-                        msg(
-                          "pos_terms_4",
-                          "Nothing here is financial advice, and a result here says nothing about how you would do with money. Leveraged trading with real money can lose more than you put in.",
-                        ),
-                      ].map((t, i) => React.createElement("li", { key: i }, t)),
-                    ),
-                    React.createElement(
-                      PracticeTermsRow,
-                      null,
-                      React.createElement(
-                        SettingsActionButton,
-                        {
-                          "data-practice-accept": "true",
-                          onClick: () => {
-                            panel.setState({ practiceAsk: false });
-                            if (onPracticeAccept) onPracticeAccept();
-                          },
-                        },
-                        msg("pref_practice_accept", "I have read this — turn it on"),
-                      ),
-                      React.createElement(
-                        PresetButton,
-                        {
-                          onClick: () => panel.setState({ practiceAsk: false }),
-                        },
-                        msg("pref_practice_decline", "Not now"),
-                      ),
-                    ),
-                  )
-                : null,
-              );
-            }),
-          ),
-        ),
-      ),
+    features: () => panel.section(
+      msg("nav_title", "Menu layout"),
+      msg("nav_keywords", "menu navigation tabs edges left right order arrange hide show data delete futures"),
+      renderNavigationSettings(panel),
+    ),
 
     candlesticks: () =>
         panel.section(
@@ -2780,8 +2641,8 @@ const preferenceGroups = (panel) => {
      * has at all. */
     {
       key: "features",
-      title: msg("pref_group_features", "Features"),
-      desc: msg("pref_group_features_desc", "What this tab has at all. Anything switched off here leaves no tab, no key and no request behind."),
+      title: msg("nav_title", "Menu layout"),
+      desc: msg("nav_group_desc", "Your tabs, their positions and the data you keep."),
       nodes: build(["features", "practiceGlossary", "practiceDock", "practiceMainLines", "practiceConfirm"]),
     },
     /* Not a setting: the one thing here about the settings themselves. */

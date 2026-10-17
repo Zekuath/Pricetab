@@ -995,7 +995,7 @@ const chartBoardGeometry = (chart) => ({
     viewFutureWidth: () => {
       const share = Number(chart.props.viewFuture);
       if (chart.props.predict || !(share > 0) || !(chart.width > 0)) return 0;
-      return Math.round(chart.width * Math.min(0.5, share));
+      return Math.round(chart.width * Math.min(VIEW_FUTURE_ROOM, share));
     },
 
     /* ── The grid ──

@@ -9,9 +9,31 @@ submitted, so their changes reach the store here.
 
 ### Added
 
+- Settings → Menu layout previews both edges and lets you move, reorder,
+  hide and restore tabs. Hiding asks whether to keep the feature's data or
+  permanently delete its listed records; keeping data is the default.
+  Settings stays accessible. Available in all thirteen languages.
+
+- Base rates has Now, Library and Calendar views, with keyboard navigation.
+  Select a current item to see the paths and dates of past episodes beside
+  ordinary days. Similar past stretches have individual small charts;
+  weekdays have seven counted bars. Library adds search, sorting, a live
+  filter, descriptive horizon choices, cached comparisons across your coins
+  and a local CSV export.
+- Base-rate comparisons show one bar with a 95% Wilson interval and an
+  ordinary-day reference tick. Sparse samples show counts only; intervals
+  covering the ordinary share use quiet ink. The current-items tile counts
+  the same items as the list it opens, and comparisons use neutral wording.
 - The web version is a proper app on a phone: add it to the home screen and
   it opens full screen under its own name and icon, clear of the notch and
   the home indicator. The side tabs open with a swipe from either edge.
+- The monitor's market map zooms: scroll or pinch into the small tiles, drag
+  to move around, and the names they had no room for appear. A line over the
+  map says what it shows and, under the pointer, which coin and its share.
+- The monitor's correlation is redrawn: one triangle with each pair once and
+  its strength as a shade, the pair you point at explained beside it (with
+  how many of every ten moves went the same way), and your coins ranked by
+  how much each moved on its own.
 - The monitor draws your coins' last 30 days side by side, each from its
   own start, with the coin on the chart lit and each line's change at its end.
 - The news panel's side column shows the wording tally as a bar and the last
@@ -250,6 +272,12 @@ submitted, so their changes reach the store here.
   more newsrooms, first, saying why each is there.
 
 ### Fixed
+
+- With the usual range study on, dragging the chart no longer narrows it:
+  the cone is drawn into the room the window leaves past the price.
+- Dragging the chart towards the future goes on until the latest price is
+  near the left edge; it stopped 60% across, so with Room Ahead on a single
+  pull reached the end.
 
 - With calls on, dragging the chart sideways keeps going past the "now"
   line's limits: forward into squares that were off screen, back to the

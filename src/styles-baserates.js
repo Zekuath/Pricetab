@@ -31,7 +31,8 @@ const screenPaneIn = css`
 
 const BaseOverlay = styled.div`
   position: fixed;
-  inset: var(--pt-safe-top, 0px) var(--pt-safe-right, 0px) 0 var(--pt-safe-left, 0px);
+  inset: var(--pt-safe-top, 0px) var(--pt-safe-right, 0px) 0
+    var(--pt-safe-left, 0px);
   z-index: 110;
   display: flex;
   align-items: stretch;
@@ -68,7 +69,12 @@ const BaseCard = styled.div`
   overflow: hidden;
   /* The screen's entrance — not replayed when the monitor only changes tab
      (still), where the head and the strip stay put and the content moves */
-  animation: ${({ still }) => (still ? "none" : css`${baseRatesIn} 0.2s cubic-bezier(0.22, 1, 0.36, 1)`)};
+  animation: ${({ still }) =>
+    still
+      ? "none"
+      : css`
+          ${baseRatesIn} 0.2s cubic-bezier(0.22, 1, 0.36, 1)
+        `};
 `;
 
 /* Settings' head, to the pixel: the same padding, rule and left edge. */
@@ -132,7 +138,12 @@ const BaseBody = styled.div`
   ${themedScrollbar};
 
   & > * {
-    max-width: 52rem;
+    max-width: min(100%, 92rem);
+    width: 100%;
+  }
+
+  @media (min-width: 1100px) {
+    padding-right: clamp(1.5rem, 2vw, 3rem);
   }
 
   @media (max-width: 600px) {
@@ -141,17 +152,18 @@ const BaseBody = styled.div`
 `;
 
 /* The two columns: the states and the candlestick shapes, side by side on
- * a wide window and stacked under 1100px. Wider than the body's reading
- * measure, since each column keeps its own. */
+ * a wide window and stacked under a smaller viewport. The panel now fills the
+ * space it is given instead of staying in a narrow reading column. */
 const BaseColumns = styled.div`
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: 0 2.5rem;
   align-items: start;
-  max-width: 110rem;
+  width: 100%;
+  max-width: none;
   ${screenPaneIn};
 
-  @media (min-width: 1100px) {
+  @media (min-width: 900px) {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   }
 `;
@@ -216,6 +228,46 @@ const BaseNowLabel = styled.div`
   color: ${({ theme }) => theme.color.textSecondary};
 `;
 
+const BaseNowJump = styled.button.attrs({ type: "button" })`
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.45rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  ${touchRow};
+`;
+
+const BaseSubTabs = styled.div`
+  display: flex;
+  gap: 0.4rem;
+  margin: 0 0 1rem;
+`;
+
+const BaseSubTab = styled.button.attrs({ type: "button" })`
+  flex: 1;
+  min-width: 0;
+  border: 1px solid ${({ theme }) => theme.color.border};
+  border-radius: 8px;
+  background: transparent;
+  color: ${({ theme }) => theme.color.textSecondary};
+  font: inherit;
+  font-size: 0.8rem;
+  padding: 0.6rem 0.3rem;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+  &[aria-selected="true"] {
+    color: ${({ theme }) => theme.color.text};
+    background: ${({ theme }) => theme.color.bgSecondary};
+    border-color: ${({ theme }) => theme.color.text};
+  }
+  ${touchRow};
+`;
+
 /* Marked so the panel's index can find every section it drew (11 Oct 2026).
    A head the eye can find the screen by (12 Oct 2026): the text ink, a
    weight, a rule under it — it was the quietest type on the page. */
@@ -245,7 +297,8 @@ const BaseRow = styled.div`
     live ? theme.color.bgSecondary : "transparent"};
   /* …and a strip in the text ink down its leading edge, so the rows that
      are about today can be found by eye in a column of thirty */
-  box-shadow: ${({ theme, live }) => (live ? `inset 3px 0 0 ${theme.color.text}` : "none")};
+  box-shadow: ${({ theme, live }) =>
+    live ? `inset 3px 0 0 ${theme.color.text}` : "none"};
 `;
 
 const BaseRowTitle = styled.div`
@@ -297,9 +350,8 @@ const BaseNote = styled.div`
 `;
 
 /* **Each month, each year** (7 Oct 2026): a year's label and twelve cells
-   a row, newest year first, the counts under them. A cell is tinted by its
-   change — the direction's own hue, deeper with the size — and its figure
-   stays in the text ink, so a pale cell is never a hard-to-read one. Every
+   a row, newest year first, the counts under them. A cell is tinted by the
+   size in neutral ink; its signed figure carries the direction. Every
    column shares the width (`minmax(0, 1fr)`): at 390px the grid fits and
    nothing scrolls sideways. */
 const BaseMonthGrid = styled.div`
@@ -340,12 +392,13 @@ const BaseMonthCell = styled.div`
   color: ${({ theme }) => theme.color.text};
   background: ${({ theme, change }) => {
     if (change == null) return "transparent";
-    const ink = change > 0 ? theme.color.chartLineGreen : theme.color.chartLineRed;
+    const ink = theme.color.text;
     const depth = Math.round(8 + Math.min(1, Math.abs(change) / 0.3) * 24);
     return `color-mix(in srgb, ${ink} ${depth}%, transparent)`;
   }};
   /* The month in progress: an outline, counted nowhere. */
-  outline: ${({ theme, partial }) => (partial ? `1px dashed ${theme.color.textSecondary}` : "none")};
+  outline: ${({ theme, partial }) =>
+    partial ? `1px dashed ${theme.color.textSecondary}` : "none"};
   outline-offset: -1px;
 `;
 
@@ -354,7 +407,8 @@ const BaseMonthFoot = styled.div`
   text-align: center;
   white-space: nowrap;
   overflow: hidden;
-  border-top: ${({ theme, first }) => (first ? `1px solid ${theme.color.border}` : "none")};
+  border-top: ${({ theme, first }) =>
+    first ? `1px solid ${theme.color.border}` : "none"};
   color: ${({ theme }) => theme.color.textSecondary};
 `;
 
@@ -393,9 +447,8 @@ const BaseLoad = styled.button.attrs({ type: "button" })`
 /* ── Easier to read and to move around (11 Oct 2026) ─────────────────
    The screen ran 7,881px with every row a paragraph. Now: the coins to read
    in its head, an index of its sections that stays at the top while it
-   scrolls, and each count drawn as two bars — after this state, and after
-   any day — in the text's own ink, never the direction colours: neither bar
-   is a direction. */
+   scrolls. Since 14 Oct 2026 each count is one bar, its Wilson interval,
+   and an ordinary-day reference tick, all in neutral ink. */
 const BaseCoins = styled.div`
   display: flex;
   flex-wrap: wrap;
@@ -446,8 +499,10 @@ const BaseChip = styled.button.attrs({ type: "button" })`
   border-radius: 999px;
   cursor: pointer;
   color: ${({ theme, active }) => (active ? theme.color.bg : theme.color.text)};
-  background: ${({ theme, active }) => (active ? theme.color.text : "transparent")};
-  border: 1px solid ${({ theme, active }) => (active ? theme.color.text : theme.color.border)};
+  background: ${({ theme, active }) =>
+    active ? theme.color.text : "transparent"};
+  border: 1px solid
+    ${({ theme, active }) => (active ? theme.color.text : theme.color.border)};
 
   &:hover,
   &:focus-visible {
@@ -495,9 +550,12 @@ const BaseNavChip = styled.button.attrs({ type: "button" })`
   padding: 0.32rem 0.7rem;
   border-radius: 999px;
   cursor: pointer;
-  border: 1px solid ${({ theme, active }) => (active ? theme.color.text : "transparent")};
-  background: ${({ theme, active }) => (active ? theme.color.bgSecondary : "transparent")};
-  color: ${({ theme, active }) => (active ? theme.color.text : theme.color.textSecondary)};
+  border: 1px solid
+    ${({ theme, active }) => (active ? theme.color.text : "transparent")};
+  background: ${({ theme, active }) =>
+    active ? theme.color.bgSecondary : "transparent"};
+  color: ${({ theme, active }) =>
+    active ? theme.color.text : theme.color.textSecondary};
   transition:
     color 0.15s ease,
     border-color 0.15s ease,
@@ -530,16 +588,18 @@ const BaseHorizonLabel = styled.div`
 
 const BaseBars = styled.div`
   display: grid;
-  grid-template-columns: max-content minmax(4rem, 1fr) max-content;
+  grid-template-columns: minmax(0, 1fr);
   align-items: center;
   gap: 0.25rem 0.6rem;
   font-size: 0.72rem;
   font-variant-numeric: tabular-nums;
-  color: ${({ theme }) => theme.color.text};
+  color: ${({ theme, quiet }) => quiet ? theme.color.textSecondary : theme.color.text};
+  & > span { color: inherit; }
 `;
 
 const BaseBarLabel = styled.span`
-  color: ${({ theme, base }) => (base ? theme.color.textSecondary : theme.color.text)};
+  color: ${({ theme, base }) =>
+    base ? theme.color.textSecondary : theme.color.text};
 `;
 
 const BaseBarTrack = styled.span`
@@ -548,7 +608,9 @@ const BaseBarTrack = styled.span`
   height: 0.45rem;
   border-radius: 999px;
   background: ${({ theme }) => theme.color.border};
-  overflow: hidden;
+  margin: 0.35rem 0;
+  color: ${({ theme, quiet }) =>
+    quiet ? theme.color.textSecondary : theme.color.text};
 
   > i {
     position: absolute;
@@ -556,13 +618,98 @@ const BaseBarTrack = styled.span`
     top: 0;
     bottom: 0;
     border-radius: 999px;
-    background: ${({ theme, base }) => (base ? theme.color.textSecondary : theme.color.text)};
-    opacity: ${({ base }) => (base ? 0.55 : 1)};
+    background: currentColor;
+  }
+  > b {
+    position: absolute;
+    width: 2px;
+    height: 1.1rem;
+    top: -0.325rem;
+    background: ${({ theme }) => theme.color.text};
+  }
+  > em {
+    position: absolute;
+    top: -0.18rem;
+    height: 0.8rem;
+    border: 1px solid currentColor;
+    border-top: 0;
+    border-bottom: 0;
+    &::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 50%;
+      border-top: 1px solid currentColor;
+    }
   }
 `;
 
 const BaseVerdict = styled.div`
   margin-top: 0.3rem;
   font-size: 0.72rem;
-  color: ${({ theme, weak }) => (weak ? theme.color.textSecondary : theme.color.text)};
+  color: ${({ theme, weak }) =>
+    weak ? theme.color.textSecondary : theme.color.text};
+`;
+
+const BaseHistoryBox = styled.div`
+  min-width: 0;
+  margin: 0.75rem 0;
+  color: ${({ theme }) => theme.color.text};
+  font-size: 0.75rem;
+  & > label {
+    display: block;
+  }
+`;
+
+const BaseHistorySvg = styled.svg`
+  display: block;
+  width: 100%;
+  height: auto;
+  color: ${({ theme }) => theme.color.text};
+  font-family: inherit;
+`;
+
+const BaseSimilarGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem 1rem;
+`;
+
+const BaseLibraryTools = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+  max-width: 110rem !important;
+  & > label {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.75rem;
+    ${touchRow};
+  }
+  & > label > input {
+    margin: 0;
+  }
+`;
+
+const baseHistoryField = css`
+  min-width: 0;
+  max-width: 100%;
+  padding: 0.5rem;
+  border: 1px solid ${({ theme }) => theme.color.border};
+  border-radius: 8px;
+  color: ${({ theme }) => theme.color.text};
+  background: ${({ theme }) => theme.color.bg};
+  font: inherit;
+  font-size: 0.75rem;
+  ${touchField};
+`;
+const BaseHistorySelect = styled.select`
+  ${baseHistoryField};
+`;
+const BaseHistoryInput = styled.input`
+  ${baseHistoryField};
 `;

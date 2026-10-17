@@ -113,6 +113,21 @@ for (const f of ["i18n.js", "config.js", "utils.js", "cell-odds.js", "chart-boar
 const run = (code) => vm.runInContext(code, sandbox);
 const json = (code) => JSON.parse(JSON.stringify(run(code)));
 
+// Wilson's score interval remains bounded even at zero or all successes.
+{
+  const interval = (k, n) => json(`wilsonInterval(${k}, ${n})`);
+  assert.strictEqual(interval(0, 0), null);
+  assert.strictEqual(interval(2, 1), null);
+  assert.strictEqual(interval(0.5, 1), null);
+  assert.strictEqual(interval(0, 12).lo, 0);
+  assert.strictEqual(interval(12, 12).hi, 1);
+  const one = interval(1, 1);
+  assert.ok(Math.abs(one.lo - 0.2065493) < 1e-6 && one.hi === 1);
+  const textbook = interval(60, 100);
+  assert.ok(Math.abs(textbook.lo - 0.5020026) < 1e-6);
+  assert.ok(Math.abs(textbook.hi - 0.6905987) < 1e-6);
+}
+
 /* ── nearestIndex ───────────────────────────────────────────────────────── */
 
 // Scaled points carry pixel positions in `time`; list is ascending

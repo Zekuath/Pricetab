@@ -416,6 +416,7 @@ const weekdayShares = (candles) => {
   const n = all.reduce((a, b) => a + b, 0);
   return {
     shares: up.map((u, d) => (all[d] ? (u / all[d]) * 100 : 0)),
+    counts: all,
     n,
     all: (up.reduce((a, b) => a + b, 0) / n) * 100,
   };

@@ -638,3 +638,72 @@ assert.strictEqual(run("describeElapsed(60 * 24 * 3600000)"), "a month ago", "lo
 }
 
 console.log("ALL STORAGE TESTS PASSED");
+
+/* Menu placement survives corrupt or older backups. Deletion is deliberately
+ * scoped: a feature's records must not take another feature's records with it. */
+{
+  const original = { ...store };
+  const previousStorage = sandbox.localStorage;
+  sandbox.localStorage = {
+    getItem: (key) => key in store ? store[key] : null,
+    setItem: (key, value) => { store[key] = String(value); },
+    removeItem: (key) => { delete store[key]; },
+  };
+  const clean = (code) => JSON.parse(JSON.stringify(run(code)));
+  const layout = clean('sanitizeNavLayout({ left: ["futures", "futures", "unknown"], right: ["futures", "settings"] })');
+  assert.strictEqual(layout.left[0], "futures");
+  assert.strictEqual(layout.right[0], "settings");
+  const all = layout.left.concat(layout.right);
+  assert.strictEqual(new Set(all).size, 10);
+  assert.strictEqual(all.length, 10);
+  assert.ok(!all.includes("unknown"));
+  run('saveNavLayout({ left: ["settings", "futures"], right: ["chart"] })');
+  assert.strictEqual(clean('loadNavLayout()').left[0], "settings");
+  delete store.crypto_chart_nav_layout;
+  run('savePanelOrder(["settings", "news", "portfolio", "futures", "monitor"])');
+  assert.deepStrictEqual(clean('loadNavLayout()').right, ["settings", "news", "portfolio", "futures", "monitor"]);
+
+  const scope = {
+    targets: ["crypto_chart_alerts"],
+    calls: ["crypto_chart_calls", "crypto_chart_calls_seen"],
+    futures: ["crypto_chart_practice", "crypto_chart_practice_history", "crypto_chart_practice_ticket"],
+    portfolio: ["crypto_chart_portfolio"],
+    news: ["crypto_chart_news_saved", "crypto_chart_news_seen"],
+    chart: ["crypto_chart_drawings"],
+    widgets: ["crypto_chart_widgets", "crypto_chart_hidden_widgets", "crypto_chart_widget_card_sizes", "crypto_chart_pinned_widgets", "crypto_chart_widget_order"],
+  };
+  for (const [feature, keys] of Object.entries(scope)) {
+    for (const k of Object.keys(store)) delete store[k];
+    for (const k of Object.values(scope).flat()) store[k] = '"held"';
+    store.crypto_chart_practice_consent = "true";
+    store.crypto_chart_currency = "EUR";
+    store.crypto_chart_portfolio_hidden = "true";
+    assert.strictEqual(run(`hideFeatureAndDeleteData(${JSON.stringify(feature)})`), true);
+    for (const k of keys) assert.ok(!(k in store), `${feature}: removes ${k}`);
+    for (const k of Object.values(scope).flat().filter((k) => !keys.includes(k))) {
+      assert.strictEqual(store[k], '"held"', `${feature}: keeps ${k}`);
+    }
+    assert.strictEqual(store.crypto_chart_practice_consent, "true");
+    assert.strictEqual(store.crypto_chart_currency, "EUR");
+    assert.strictEqual(store.crypto_chart_portfolio_hidden, "true", "privacy preference survives record deletion");
+    if (feature === "futures") assert.strictEqual(store.crypto_chart_practice_enabled, "false");
+    else assert.strictEqual(JSON.parse(store.crypto_chart_features)[feature], false);
+  }
+  const remove = sandbox.localStorage.removeItem;
+  store.crypto_chart_calls = "held calls";
+  store.crypto_chart_calls_seen = "123";
+  store.crypto_chart_features = '{"news":false}';
+  sandbox.localStorage.removeItem = (key) => {
+    if (key === "crypto_chart_calls_seen") throw new Error("storage refused");
+    remove(key);
+  };
+  assert.strictEqual(run('hideFeatureAndDeleteData("calls")'), false);
+  assert.strictEqual(store.crypto_chart_calls, "held calls", "failed deletion restores records already removed");
+  assert.strictEqual(store.crypto_chart_features, '{"news":false}', "failed deletion restores visibility");
+  sandbox.localStorage.removeItem = remove;
+  assert.strictEqual(run('hideFeatureAndDeleteData("settings")'), false);
+  for (const k of Object.keys(store)) delete store[k];
+  Object.assign(store, original);
+  sandbox.localStorage = previousStorage;
+  console.log("  ✔ menu placement, legacy migration, scoped deletion and storage rollback");
+}

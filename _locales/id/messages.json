@@ -1340,6 +1340,9 @@
   "br_above_200d": {
     "message": "Di atas rata-rata 200 harinya"
   },
+  "br_across": {
+    "message": "Antarkoin Anda · hanya riwayat harian tersimpan"
+  },
   "br_ah_move": {
     "message": "$1 hari berikutnya bergerak lebih dari biasanya $2 dari $3 kali; separuhnya akan begitu."
   },
@@ -1392,6 +1395,9 @@
       }
     }
   },
+  "br_cache_missing": {
+    "message": "Tidak ada riwayat harian terkini di cache"
+  },
   "br_close": {
     "message": "Tutup base rate"
   },
@@ -1431,14 +1437,17 @@
   "br_daily_closes": {
     "message": "$1 penutupan harian"
   },
-  "br_edge_better": {
-    "message": "$1 poin lebih baik dari periode biasa"
+  "br_edge_above": {
+    "message": "pergerakan tipikal $1 poin di atas periode biasa"
+  },
+  "br_edge_below": {
+    "message": "pergerakan tipikal $1 poin di bawah periode biasa"
   },
   "br_edge_none": {
     "message": "tidak berbeda dari periode biasa"
   },
-  "br_edge_worse": {
-    "message": "$1 poin lebih buruk dari periode biasa"
+  "br_export_csv": {
+    "message": "Ekspor CSV"
   },
   "br_eyebrow_in_monitor": {
     "message": "Tingkat dasar · $1 · $2 penutupan harian"
@@ -1456,10 +1465,25 @@
     "message": "Lilin hari ini: tidak ada bentuk bernama"
   },
   "br_glance_now": {
-    "message": "Kondisi yang berlaku sekarang"
+    "message": "Hal yang berlaku sekarang"
   },
   "br_glance_years": {
     "message": "Rentang data harian yang dihitung (tahun)"
+  },
+  "br_history_item": {
+    "message": "Baca satu hal yang berlaku kini"
+  },
+  "br_horizon": {
+    "message": "Horizon"
+  },
+  "br_horizon_untested": {
+    "message": "Horizon belum diuji: hanya hitungan deskriptif; pengujian asli tidak berlaku untuk pilihan ini."
+  },
+  "br_interval": {
+    "message": "Interval Wilson 95%: $1–$2%"
+  },
+  "br_live_only": {
+    "message": "Hanya yang berlaku kini"
   },
   "br_loading_body": {
     "message": "Membaca penutupan harian koin ini. Sejauh yang dipublikasikan bursa — itulah yang membuat hitungan di bawah layak ditampilkan."
@@ -1532,9 +1556,6 @@
   "br_note_1": {
     "message": "Ini menghitung apa yang terjadi setelah suatu keadaan, dibanding setelah hari biasa pada koin yang sama. Ini bukan sinyal dan tidak ada yang perlu ditindaklanjuti. "
   },
-  "br_note_2": {
-    "message": "Sembilan aturan buku teks yang diuji pada 21.669 penutupan harian dari delapan koin menghasilkan 0 dari 70 hasil yang lolos koreksi pengujian berganda, dan pada data langsung garis “overbought” diikuti bulan yang lebih baik dari biasanya pada empat dari enam koin. "
-  },
   "br_note_200d": {
     "message": "garis yang dibaca institusi sebagai rezim, bukan titik masuk"
   },
@@ -1550,6 +1571,9 @@
   "br_note_oversold": {
     "message": "garis yang biasa disebut oversold"
   },
+  "br_note_tested": {
+    "message": "Sembilan aturan buku teks pada 21.669 penutupan harian delapan koin menghasilkan 0 dari 70 hasil setelah koreksi pengujian berganda. "
+  },
   "br_nothing_unusual": {
     "message": "Tidak ada yang tidak biasa sekarang"
   },
@@ -1558,6 +1582,15 @@
   },
   "br_one_time": {
     "message": "1 kali"
+  },
+  "br_order": {
+    "message": "Urutan pustaka"
+  },
+  "br_original": {
+    "message": "Horizon asli"
+  },
+  "br_path_caption": {
+    "message": "Yang terjadi sesudahnya, bukan ramalan: 30 hari berikut · sesudah ini n=$1; hari biasa n=$2. Utuh: median; putus: rata-rata; bayangan: 80% tengah jalur masa lalu. Jendela tumpang tindih, bukan percobaan independen."
   },
   "br_pce_title": {
     "message": "PCE AS · harga konsumsi pribadi"
@@ -1580,6 +1613,9 @@
   "br_rsi_label": {
     "message": "RSI 14 · penutupan harian · 0–100"
   },
+  "br_search": {
+    "message": "Cari dalam pustaka"
+  },
   "br_sim_intro": {
     "message": "$1 rentang dalam sejarah koin ini yang $2 hari terakhirnya berbentuk seperti $2 hari terakhir — jalurnya, bukan level atau besarnya —, masing-masing dengan $3 hari sesudahnya."
   },
@@ -1595,11 +1631,38 @@
   "br_sim_title": {
     "message": "Masa lalu yang paling mirip"
   },
+  "br_sort_gap": {
+    "message": "Selisih terbesar dari hari biasa"
+  },
+  "br_sort_live": {
+    "message": "Yang berlaku kini dahulu"
+  },
+  "br_sort_n": {
+    "message": "Episode terbanyak"
+  },
+  "br_tab_calendar": {
+    "message": "Kalender"
+  },
+  "br_tab_library": {
+    "message": "Pustaka"
+  },
+  "br_tab_now": {
+    "message": "Kini"
+  },
+  "br_tabs": {
+    "message": "Tampilan frekuensi historis"
+  },
   "br_that_is": {
     "message": "Artinya $1."
   },
   "br_the_rest": {
     "message": "Sisanya, sebagai acuan"
+  },
+  "br_timeline": {
+    "message": "Episode masa lalu · hasil 30 hari"
+  },
+  "br_timeline_n": {
+    "message": "$1 episode lengkap pada garis waktu harian"
   },
   "br_title": {
     "message": "$1 · pernahkah ini terjadi?"
@@ -1624,6 +1687,9 @@
   },
   "br_wd_untested": {
     "message": "Diuji pada BTC, ETH, SOL, dan LTC: arah hari berikutnya berbeda menurut hari dalam pekan hanya pada ETH dan LTC. $1 tidak diuji."
+  },
+  "br_within_chance": {
+    "message": "dalam rentang yang dapat dijelaskan kebetulan"
   },
   "ch_band": {
     "message": "Pita"
@@ -1965,6 +2031,17 @@
   "cmp_c_few": {
     "message": "Kurang dari $1 — terlalu sedikit untuk dibandingkan."
   },
+  "cmp_c_group": {
+    "message": "$1 setup pada hari-hari ini, terbaru dulu",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "cmp_c_group_step": {
+    "message": "Klik untuk membacanya satu per satu"
+  },
   "cmp_c_hit": {
     "message": "Menembus garis leher $1; mencapai gerakan terukur $2."
   },
@@ -1994,17 +2071,6 @@
   },
   "cmp_c_pin": {
     "message": "Klik agar tetap terbuka"
-  },
-  "cmp_c_group": {
-    "message": "$1 setup pada hari-hari ini, terbaru dulu",
-    "placeholders": {
-      "arg1": {
-        "content": "$1"
-      }
-    }
-  },
-  "cmp_c_group_step": {
-    "message": "Klik untuk membacanya satu per satu"
   },
   "cmp_c_prec": {
     "message": "Pada koin ini: $1 dari $2 yang selesai mencapai gerakan terukur lebih dulu · ditemukan $3. $4"
@@ -2640,6 +2706,9 @@
   "dock_close_share": {
     "message": "Tutup $1 persen dari kontrak ini"
   },
+  "dock_closing_aria": {
+    "message": "Menutup $1 — tekan untuk menghentikan"
+  },
   "dock_count": {
     "message": "1 dari $1",
     "placeholders": {
@@ -2674,6 +2743,9 @@
   },
   "dock_size": {
     "message": "Ukuran"
+  },
+  "dock_stop": {
+    "message": "Hentikan"
   },
   "dock_to_liq": {
     "message": "ke likuidasi"
@@ -3019,6 +3091,15 @@
   "mon_coins_note3": {
     "message": "Harga dan perubahan 24 jam berasal dari ticker; jika tidak tersedia di sana, data 30 hari koin tersebut digunakan. Metrik lainnya dihitung dari deret 30 hari yang sama, yaitu deret yang digambar rentang 1M. β menunjukkan rata-rata gerak koin untuk setiap gerak 1% Bitcoin pada hari yang sama. Satu baris membuka ringkasan koin; grafik dapat dibuka dari sana dengan satu ketukan. ↑ dan ↓ berpindah antarbaris."
   },
+  "mon_col_beta": {
+    "message": "β BTC"
+  },
+  "mon_col_beta_title": {
+    "message": "Seberapa jauh koin bergerak untuk setiap 1% gerak Bitcoin, selama 30 hari yang sama — kemiringan geraknya terhadap gerak Bitcoin. Ini menggambarkan 30 hari tersebut, bukan apa yang akan terjadi"
+  },
+  "mon_col_changes_title": {
+    "message": "Seberapa jauh harga bergerak dalam sehari, seminggu, dan sebulan terakhir"
+  },
   "mon_col_coin": {
     "message": "Koin"
   },
@@ -3037,6 +3118,18 @@
   "mon_col_price": {
     "message": "Harga"
   },
+  "mon_col_spark": {
+    "message": "30 hari"
+  },
+  "mon_col_spark_title": {
+    "message": "30 hari terakhir, dari rendah ke tinggi — diurutkan menurut posisi harga di antaranya"
+  },
+  "mon_corr_alone_head": {
+    "message": "Sendiri · r rata-rata dengan lainnya"
+  },
+  "mon_corr_alone_note": {
+    "message": "$1 paling bergerak sendiri, $2 paling bersama yang lain."
+  },
   "mon_corr_cell": {
     "message": "$1 dan $2: $3, dari $4 pergerakan"
   },
@@ -3045,6 +3138,9 @@
   },
   "mon_corr_few": {
     "message": "Terlalu sedikit pergerakan bersama untuk disimpulkan"
+  },
+  "mon_corr_grid": {
+    "message": "Setiap pasangan koinmu, sekali"
   },
   "mon_corr_legend": {
     "message": "Arti sel-sel ini"
@@ -3061,14 +3157,29 @@
   "mon_corr_opposite": {
     "message": "Berlawanan"
   },
+  "mon_corr_pair_head": {
+    "message": "Pasangan"
+  },
   "mon_corr_pair_line": {
     "message": "searah pada $1 dari setiap 10 gerakan (r $2)."
   },
   "mon_corr_pair_line_r": {
     "message": "r $1."
   },
+  "mon_corr_pair_text": {
+    "message": "Selama 30 hari ini keduanya bergerak searah pada $1 dari setiap 10 gerakan ($2 gerakan)."
+  },
+  "mon_corr_pair_text_r": {
+    "message": "Dari $1 gerakan."
+  },
   "mon_corr_pairs": {
     "message": "Dengan kata sederhana"
+  },
+  "mon_corr_scale": {
+    "message": "Arti gradasi warna"
+  },
+  "mon_corr_ten": {
+    "message": "$1 dari setiap 10 gerakan searah"
   },
   "mon_corr_together": {
     "message": "Seiring"
@@ -3109,11 +3220,68 @@
   "mon_eyebrow": {
     "message": "$1 koin Anda · 30 hari terakhir"
   },
+  "mon_fact_median": {
+    "message": "Koin tengah dalam 30 hari"
+  },
+  "mon_fact_mover": {
+    "message": "Paling bergerak dalam 30 hari"
+  },
+  "mon_fact_sort": {
+    "message": "Urutkan tabel menurut ini"
+  },
+  "mon_fact_up": {
+    "message": "Naik dalam 24 jam terakhir"
+  },
+  "mon_fact_widest": {
+    "message": "Hari biasa terlebar"
+  },
+  "mon_legend": {
+    "message": "Arti kolom-kolomnya"
+  },
   "mon_loading": {
     "message": "Membaca harga 30 hari…"
   },
   "mon_market_card": {
     "message": "$1 — $2 dalam 24 jam; membuka kartunya"
+  },
+  "mon_market_down": {
+    "message": "Turun terbanyak dalam 24 jam"
+  },
+  "mon_market_hint": {
+    "message": "Ukuran = nilai pasar, warna = 24 jam terakhir. Gulir untuk memperbesar yang kecil, seret untuk menggeser; ubin membuka kartunya."
+  },
+  "mon_market_hint_touch": {
+    "message": "Ukuran = nilai pasar, warna = 24 jam terakhir. Cubit untuk memperbesar yang kecil; ubin membuka kartunya."
+  },
+  "mon_market_label": {
+    "message": "$1 koin teratas menurut nilai pasar, ukuran tiap koin menurut nilainya dan warnanya menurut 24 jam terakhir"
+  },
+  "mon_market_loading": {
+    "message": "Membaca pasar…"
+  },
+  "mon_market_note": {
+    "message": "$1 teratas Coinlore menurut nilai pasar per $2, cuplikan yang sama dengan yang dibaca bilah harga — satu permintaan per menit selama tab ini terbuka. Ukuran kotak adalah nilai pasarnya dan warnanya 24 jam terakhir. Koin yang bisa digambar grafik terbuka di sana."
+  },
+  "mon_market_share": {
+    "message": "$1% dari $2 teratas"
+  },
+  "mon_market_up": {
+    "message": "Naik terbanyak dalam 24 jam"
+  },
+  "mon_market_value": {
+    "message": "nilai pasar $1"
+  },
+  "mon_market_zoom": {
+    "message": "Perbesar peta"
+  },
+  "mon_market_zoom_in": {
+    "message": "Perbesar"
+  },
+  "mon_market_zoom_out": {
+    "message": "Perkecil"
+  },
+  "mon_market_zoom_whole": {
+    "message": "Seluruh peta"
   },
   "mon_need_two": {
     "message": "Tambahkan koin kedua untuk melihat bagaimana koin Anda bergerak bersama."
@@ -3121,8 +3289,23 @@
   "mon_open": {
     "message": "Buka $1 di grafik"
   },
+  "mon_race_aria": {
+    "message": "Perubahan persentase tiap koin selama 30 hari terakhir: $1"
+  },
+  "mon_race_head": {
+    "message": "30 hari terakhir berdampingan · dari awal masing-masing koin"
+  },
+  "mon_race_spread": {
+    "message": "$1 di depan, $2 di belakang · selisih $3 poin"
+  },
+  "mon_range_at": {
+    "message": "$1% dari jalan antara terendah dan tertinggi 30 hari"
+  },
   "mon_sort": {
     "message": "Urutkan menurut $1"
+  },
+  "mon_tab_base": {
+    "message": "Tingkat dasar"
   },
   "mon_tab_coins": {
     "message": "Koin"
@@ -3130,11 +3313,98 @@
   "mon_tab_corr": {
     "message": "Korelasi"
   },
-  "mon_tab_base": {
-    "message": "Tingkat dasar"
+  "mon_tab_market": {
+    "message": "Pasar"
   },
   "mon_title": {
     "message": "Monitor"
+  },
+  "nav_always": {
+    "message": "Selalu terlihat"
+  },
+  "nav_cancel": {
+    "message": "Batal"
+  },
+  "nav_data_calls": {
+    "message": "Semua prediksi terbuka, selesai, dan catatan prediksi Anda."
+  },
+  "nav_data_chart": {
+    "message": "Semua gambar dan catatan grafik yang disimpan untuk setiap koin."
+  },
+  "nav_data_futures": {
+    "message": "Akun simulasi, posisi terbuka, pesanan, riwayat transaksi, dan formulir pesanan tersimpan."
+  },
+  "nav_data_news": {
+    "message": "Berita tersimpan dan penanda terakhir dibaca."
+  },
+  "nav_data_portfolio": {
+    "message": "Semua aset, pembelian, penjualan, dan alamat yang dipantau."
+  },
+  "nav_data_targets": {
+    "message": "Semua target harga dan catatan pemicunya."
+  },
+  "nav_data_widgets": {
+    "message": "Pilihan, ukuran, urutan, dan widget yang disematkan ke layar utama."
+  },
+  "nav_delete": {
+    "message": "Hapus data ini secara permanen: $1"
+  },
+  "nav_delete_note": {
+    "message": "Tindakan ini tidak dapat dibatalkan. Halaman akan dimuat ulang setelah penghapusan."
+  },
+  "nav_down": {
+    "message": "Pindahkan $1 ke bawah"
+  },
+  "nav_group_desc": {
+    "message": "Tab Anda, posisinya, dan data yang Anda simpan."
+  },
+  "nav_hide_delete": {
+    "message": "Sembunyikan dan hapus data"
+  },
+  "nav_hide_desc": {
+    "message": "Tab dan pintasannya tidak tersedia. Anda dapat menampilkannya lagi di sini kapan saja."
+  },
+  "nav_hide_keep": {
+    "message": "Sembunyikan dan simpan data"
+  },
+  "nav_hide_title": {
+    "message": "Sembunyikan $1?"
+  },
+  "nav_intro": {
+    "message": "Pilih tab di setiap tepi dan atur urutannya. Tab tersembunyi tetap menyimpan posisinya. Pengaturan selalu dapat diakses."
+  },
+  "nav_keep": {
+    "message": "Simpan data saya"
+  },
+  "nav_keywords": {
+    "message": "menu navigasi tab tepi kiri kanan urutan atur sembunyikan tampilkan data hapus futures"
+  },
+  "nav_left": {
+    "message": "Tepi kiri"
+  },
+  "nav_position": {
+    "message": "Posisi $1"
+  },
+  "nav_preview": {
+    "message": "Pratinjau menu"
+  },
+  "nav_requires_monitor": {
+    "message": "Memerlukan Monitor"
+  },
+  "nav_reset": {
+    "message": "Atur ulang posisi dan urutan"
+  },
+  "nav_right": {
+    "message": "Tepi kanan"
+  },
+  "nav_save_error": {
+    "message": "Perubahan tidak dapat disimpan. Periksa ruang penyimpanan browser yang tersedia dan coba lagi."
+  },
+  "nav_title": {
+    "message": "Tata letak menu"
+  },
+  "nav_up": {
+    "message": "Pindahkan $1 ke atas"
   },
   "news_allow_rest": {
     "message": "Izinkan sisanya"
@@ -3245,6 +3515,21 @@
   "news_day_undated": {
     "message": "Tanpa tanggal"
   },
+  "news_feed_24h": {
+    "message": "dalam 24 jam terakhir"
+  },
+  "news_feed_active_sources": {
+    "message": "sumber aktif"
+  },
+  "news_feed_head": {
+    "message": "Ringkasan feed"
+  },
+  "news_feed_multi": {
+    "message": "cerita multi-sumber"
+  },
+  "news_feed_note": {
+    "message": "Menghitung hanya yang terlihat sekarang: baris bertanggal dalam 24 jam terakhir, sumber yang aktif dan menampilkan baris, serta cerita yang dimuat setidaknya oleh dua redaksi di feed ini."
+  },
   "news_fetching": {
     "message": "Mengambil berita…"
   },
@@ -3351,6 +3636,24 @@
   },
   "news_preview_saved": {
     "message": "Tersimpan"
+  },
+  "news_pulse_aria": {
+    "message": "Berita per jam selama 24 jam terakhir; jam tersibuk mulai $1 punya $2"
+  },
+  "news_pulse_bar": {
+    "message": "$1 · $2 berita"
+  },
+  "news_pulse_from": {
+    "message": "24 jam lalu"
+  },
+  "news_pulse_head": {
+    "message": "24 jam terakhir · $1 berita"
+  },
+  "news_pulse_now": {
+    "message": "sekarang"
+  },
+  "news_pulse_peak": {
+    "message": "tersibuk: $1 · $2"
   },
   "news_read_allow": {
     "message": "Izinkan $1",
@@ -3975,6 +4278,9 @@
   },
   "po_address_label": {
     "message": "Alamat untuk dipantau"
+  },
+  "po_allocation": {
+    "message": "Alokasi"
   },
   "po_allocation_prefix": {
     "message": "Alokasi: "
@@ -4973,6 +5279,9 @@
   "pos_cancel_all": {
     "message": "Batalkan semua"
   },
+  "pos_cancel_all_running": {
+    "message": "Membatalkan $1 — tekan untuk menghentikan"
+  },
   "pos_capped_loss": {
     "message": "Sesi ini sudah kehilangan $1 yang mengakhirinya. Uang dan catatan Anda tidak tersentuh — mulai sesi berikutnya untuk melanjutkan."
   },
@@ -5139,6 +5448,39 @@
       }
     }
   },
+  "pos_cn_all": {
+    "message": "Dari dibuka sampai ditutup"
+  },
+  "pos_cn_all_d": {
+    "message": "semua yang diperoleh dan dibayar kontrak ini"
+  },
+  "pos_cn_back": {
+    "message": "$1 dari margin $2 · $3 kembali · saldo $4"
+  },
+  "pos_cn_fee": {
+    "message": "Biaya untuk menutup"
+  },
+  "pos_cn_head": {
+    "message": "Jika semuanya ditutup sekarang"
+  },
+  "pos_cn_move": {
+    "message": "Pergerakan harga"
+  },
+  "pos_cn_move_d": {
+    "message": "$1 → $2, harga tempat penutupan dieksekusi"
+  },
+  "pos_cn_paid": {
+    "message": "Dibayar saat masuk"
+  },
+  "pos_cn_paid_d": {
+    "message": "biaya buka dan pendanaan sejauh ini"
+  },
+  "pos_cn_total": {
+    "message": "Penutupan ini"
+  },
+  "pos_cn_why": {
+    "message": "$1 di baris itu adalah kontrak yang dinilai pada mark, $2. Penutupan dieksekusi di $3 — harga terakhir, melintasi spread — dan membayar biaya, jadi yang masuk adalah baris di atas."
+  },
   "pos_cone": {
     "message": "Dari $1 jam berikutnya yang disampel ulang dari rentang $2: $3 menyentuh likuidasi lebih dulu, $4 stop, $5 take, $6 mencapai satu jam — yang di tengah berada di $7 (ke-5–ke-95 $8 … $9)."
   },
@@ -5147,6 +5489,15 @@
   },
   "pos_cone_thin": {
     "message": "Terlalu sedikit batang pada rentang ini untuk menyampel ulang jam berikutnya ($1 dari $2 dibutuhkan)."
+  },
+  "pos_confirm_long": {
+    "message": "Membuka long pada $1 — tekan untuk menghentikan"
+  },
+  "pos_confirm_placing": {
+    "message": "Menempatkan order — tekan untuk menghentikan"
+  },
+  "pos_confirm_short": {
+    "message": "Membuka short pada $1 — tekan untuk menghentikan"
   },
   "pos_contracts": {
     "message": "kontrak"
@@ -5171,6 +5522,12 @@
   },
   "pos_detail_trail": {
     "message": "Ikut"
+  },
+  "pos_details_less": {
+    "message": "Sembunyikan detail"
+  },
+  "pos_details_more": {
+    "message": "Detail — setup, margin, biaya, likuidasi"
   },
   "pos_edge_count": {
     "message": "$1, $2 kali. Sepekan kemudian harga lebih tinggi pada $3% di antaranya, berbanding $4% pekan biasa di sini.",
@@ -5518,6 +5875,9 @@
   "pos_kind_market": {
     "message": "Pasar"
   },
+  "pos_kind_more": {
+    "message": "Jenis order lainnya"
+  },
   "pos_kind_scale": {
     "message": "Bertingkat"
   },
@@ -5527,11 +5887,17 @@
   "pos_kind_stop_entry": {
     "message": "masuk stop"
   },
+  "pos_lev_size_cap": {
+    "message": "hingga $1x pada ukuran ini"
+  },
   "pos_level_none": {
     "message": "tidak ada"
   },
   "pos_level_pct_aria": {
     "message": "$1 pada $2 persen dari harga masuk"
+  },
+  "pos_levels_drag": {
+    "message": "Atau seret + SL dan + TP di grafik."
   },
   "pos_leverage": {
     "message": "Leverage"
@@ -5639,6 +6005,33 @@
   },
   "pos_margin_out_none": {
     "message": "Tidak ada margin bebas di belakang kontrak ini — ia sudah cukup dekat dengan likuidasinya sehingga menarik berapa pun akan membawanya ke sana."
+  },
+  "pos_means_away": {
+    "message": "$1 dari harga masuk"
+  },
+  "pos_means_liq": {
+    "message": "Dilikuidasi di"
+  },
+  "pos_means_no_stop": {
+    "message": "Tidak ada stop"
+  },
+  "pos_means_no_stop_note": {
+    "message": "pasar yang menentukan kerugian"
+  },
+  "pos_means_no_take": {
+    "message": "Tidak ada take-profit"
+  },
+  "pos_means_of_account": {
+    "message": "$1 dari akun"
+  },
+  "pos_means_rr2": {
+    "message": "risiko : keuntungan 1 : $1"
+  },
+  "pos_means_stop": {
+    "message": "Jika stop tercapai"
+  },
+  "pos_means_take": {
+    "message": "Jika take-profit tercapai"
   },
   "pos_money_done": {
     "message": "Simulasi diperbarui — $1. Tidak ada uang sungguhan yang berpindah."
@@ -6007,6 +6400,9 @@
   },
   "pos_reverse_refused": {
     "message": "Tidak dibalik — $1."
+  },
+  "pos_reverse_running": {
+    "message": "Membalik posisi — tekan untuk menghentikan"
   },
   "pos_risk_ask": {
     "message": "Ketik kerugian maksimum kontrak ini di stop; ukurannya mengikuti stop di bawah."
@@ -6435,6 +6831,18 @@
   "pos_wrong_short": {
     "message": "Pada short, stop di atas entry Anda dan take-profit di bawahnya."
   },
+  "pp_at_many": {
+    "message": "$1 kontrak"
+  },
+  "pp_at_mine": {
+    "message": "posisi Anda di sini ($1): $2"
+  },
+  "pp_at_one": {
+    "message": "kontrak"
+  },
+  "pp_at_price": {
+    "message": "Di $1 · $2 dari sekarang"
+  },
   "pp_book_asks": {
     "message": "Jual"
   },
@@ -6530,6 +6938,9 @@
   },
   "pp_close_all": {
     "message": "Tutup semua"
+  },
+  "pp_close_all_running": {
+    "message": "Menutup $1 — tekan untuk menghentikan"
   },
   "pp_code_above": {
     "message": "di atas nilai"
@@ -6741,6 +7152,44 @@
   "pp_grip_title": {
     "message": "Seret ke area lain untuk bertukar tempat — atau tombol panah"
   },
+  "pp_guide": {
+    "message": "Panduan"
+  },
+  "pp_guide_all": {
+    "message": "Asisten"
+  },
+  "pp_guide_aria": {
+    "message": "Panduan — apa yang ditandai grafik, bernomor"
+  },
+  "pp_guide_chip_title": {
+    "message": "Arahkan untuk melihatnya di grafik; tekan untuk menahannya di sana"
+  },
+  "pp_guide_close": {
+    "message": "Tutup panduan"
+  },
+  "pp_guide_drag_sl": {
+    "message": "seret + SL di grafik"
+  },
+  "pp_guide_drag_tp": {
+    "message": "seret + TP di grafik"
+  },
+  "pp_guide_in_panel": {
+    "message": "Buka di panel"
+  },
+  "pp_guide_more": {
+    "message": "+$1 · asisten"
+  },
+  "pp_guide_pop_aria": {
+    "message": "Panduan — setiap butir, bernomor seperti di grafik"
+  },
+  "pp_guide_pop_head": {
+    "message": "Panduan · $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
   "pp_h_15m": {
     "message": "15 mnt"
   },
@@ -6762,6 +7211,45 @@
   "pp_h_5m": {
     "message": "5 mnt"
   },
+  "pp_layer_book": {
+    "message": "Level terbesar di buku"
+  },
+  "pp_layer_clock": {
+    "message": "Pendanaan berikutnya"
+  },
+  "pp_layer_contracts": {
+    "message": "Kontrak dan order"
+  },
+  "pp_layer_fan": {
+    "message": "Masa depan yang diulang"
+  },
+  "pp_layer_guide": {
+    "message": "Angka panduan"
+  },
+  "pp_layer_liquidations": {
+    "message": "Likuidasi · OKX"
+  },
+  "pp_layer_location": {
+    "message": "Volume menurut harga"
+  },
+  "pp_layer_plan": {
+    "message": "Order yang sedang Anda tulis"
+  },
+  "pp_layout": {
+    "message": "Tata letak"
+  },
+  "pp_layout_simple": {
+    "message": "Sederhana"
+  },
+  "pp_layout_simple_title": {
+    "message": "Tiket di kiri, grafik di kanan, buku order sekali tekan di bawah Lainnya"
+  },
+  "pp_layout_terminal": {
+    "message": "Terminal"
+  },
+  "pp_layout_terminal_title": {
+    "message": "Grafik, buku order, dan tiket berdampingan, yang terbuka di bawah grafik dan buku"
+  },
   "pp_lean_long": {
     "message": "Condong long"
   },
@@ -6770,6 +7258,18 @@
   },
   "pp_lean_short": {
     "message": "Condong short"
+  },
+  "pp_legend_candles": {
+    "message": "lilin $1 · OKX"
+  },
+  "pp_legend_hand": {
+    "message": "klik harga untuk limit, seret garis untuk memindahkannya"
+  },
+  "pp_legend_line": {
+    "message": "penutupan $1 · OKX"
+  },
+  "pp_legend_volume": {
+    "message": "volume dalam $1 di bawah"
   },
   "pp_liq": {
     "message": "Dilikuidasi 24j"
@@ -6839,6 +7339,12 @@
   },
   "pp_oi": {
     "message": "Open interest"
+  },
+  "pp_open_moment_fill": {
+    "message": "$1 dibuka pada $2"
+  },
+  "pp_open_moment_size": {
+    "message": "$1 · margin $2"
   },
   "pp_outlook_all": {
     "message": "Disampel ulang dari semua $1 batang di layar — terlalu sedikit yang berada $2 untuk dipakai sendiri — persentil ke-5 hingga ke-95 dari tempat $3 ulangan mendarat."
@@ -6964,8 +7470,14 @@
   "pp_read_crowd": {
     "message": "Kerumunan"
   },
+  "pp_read_less": {
+    "message": "Lebih sedikit"
+  },
   "pp_read_market": {
     "message": "Pasar"
+  },
+  "pp_read_more": {
+    "message": "Lainnya"
   },
   "pp_read_news": {
     "message": "Berita utama"
@@ -7051,11 +7563,23 @@
   "pp_settings_hint": {
     "message": "Grafik, tata letak, konfirmasi order, dan alarm"
   },
+  "pp_settings_layers": {
+    "message": "Di grafik"
+  },
+  "pp_settings_main_chart": {
+    "message": "Di grafik utama"
+  },
   "pp_settings_page": {
     "message": "Halaman ini"
   },
   "pp_settings_reset": {
     "message": "Atur ulang tata letak"
+  },
+  "pp_settings_sizes": {
+    "message": "Lebar tiket $1 · tinggi panel $2"
+  },
+  "pp_settings_sizes_note": {
+    "message": "Seret sambungan di samping tiket, atau yang di bawah grafik, untuk mengubah ukurannya — atau fokuskan salah satunya dengan Tab lalu gunakan tombol panah. Klik dua kali pada sambungan mengembalikan bawaannya. Ukurannya disimpan di perangkat ini; di jendela di bawah 1280 piksel halaman menjadi satu kolom dan ukuran itu menunggu."
   },
   "pp_settings_title": {
     "message": "Pengaturan pasar derivatif"
@@ -7123,9 +7647,6 @@
   "pp_strip_funding": {
     "message": "$1 · dalam $2"
   },
-  "pp_strip_range": {
-    "message": "Rentang 24j"
-  },
   "pp_strip_hm": {
     "message": "$1j $2m"
   },
@@ -7140,6 +7661,9 @@
   },
   "pp_strip_perp": {
     "message": "Perpetual $1"
+  },
+  "pp_strip_range": {
+    "message": "Rentang 24j"
   },
   "pp_struct_fall": {
     "message": "Penurunan lebih dari $1% sampai saat itu: $2 dari $3, dibanding $4 dari $5 hari biasa."
@@ -7200,6 +7724,63 @@
   },
   "pp_tape_delta": {
     "message": "Delta, $1 cetakan terakhir"
+  },
+  "pp_trade_add_sl": {
+    "message": "+ SL"
+  },
+  "pp_trade_add_tp": {
+    "message": "+ TP"
+  },
+  "pp_trade_be": {
+    "message": "titik impas"
+  },
+  "pp_trade_buy": {
+    "message": "Beli"
+  },
+  "pp_trade_entry": {
+    "message": "$1 $2x #$3 · $4"
+  },
+  "pp_trade_fan": {
+    "message": "berikutnya $1 · $2 ulangan · 5–95%"
+  },
+  "pp_trade_first": {
+    "message": "pertama di $1"
+  },
+  "pp_trade_funding": {
+    "message": "pendanaan $1"
+  },
+  "pp_trade_liq_print": {
+    "message": "$1 dilikuidasi · $2 · OKX · $3"
+  },
+  "pp_trade_market": {
+    "message": "pasar"
+  },
+  "pp_trade_move_to": {
+    "message": "pindah ke"
+  },
+  "pp_trade_of_account": {
+    "message": "$1 dari akun"
+  },
+  "pp_trade_pdh": {
+    "message": "tertinggi kemarin"
+  },
+  "pp_trade_pdl": {
+    "message": "terendah kemarin"
+  },
+  "pp_trade_plan": {
+    "message": "Rencana · $1 $2x · $3 $4"
+  },
+  "pp_trade_plan_market": {
+    "message": "Rencana · $1 $2x · $3"
+  },
+  "pp_trade_reach": {
+    "message": "$1 dari $2 langkah sejauh ini"
+  },
+  "pp_trade_sell": {
+    "message": "Jual"
+  },
+  "pp_trade_trail": {
+    "message": "ikut"
   },
   "pp_trades_none": {
     "message": "Belum ada transaksi untuk pasar ini sekarang."
@@ -7281,6 +7862,9 @@
   },
   "pp_w_val": {
     "message": "nilai bawah"
+  },
+  "pp_zoom_reset_title": {
+    "message": "Tampilkan seluruh rentang lagi"
   },
   "pref_alert_tab_title_aria": {
     "message": "Aktifkan pengumuman target harga di judul tab"
@@ -7602,21 +8186,6 @@
       }
     }
   },
-  "pref_features_desc": {
-    "message": "Pilih apa yang ada di tab ini. Mematikan satu menghilangkan tombol dan pintasannya — grafik, harga, dan layar ini selalu ada"
-  },
-  "pref_features_heading": {
-    "message": "Fitur"
-  },
-  "pref_features_keywords": {
-    "message": "fitur aktif nonaktif sembunyikan tampilkan tombol ikon target panggilan derivatif futures berita base rate portofolio banding widget sederhanakan"
-  },
-  "pref_features_note": {
-    "message": "Pengaturan tidak ada di daftar ini dan tidak bisa dimatikan: itulah jalan kembali ke layar ini. Mematikan tidak menghapus apa pun — target, prediksi, posisi, dan kepemilikan Anda tetap seperti yang Anda tinggalkan. Kontrol Senyap adalah versi lembutnya: ia meredupkan tombol, bukan menghapus fiturnya."
-  },
-  "pref_features_title": {
-    "message": "Fitur"
-  },
   "pref_gloss_contract": {
     "message": "Sebuah kontrak"
   },
@@ -7680,6 +8249,9 @@
   "pref_group_basics_desc": {
     "message": "Bahasa, mata uang, cara angka ditulis, tema, dan ukuran semuanya — semuanya mengubah setiap layar."
   },
+  "pref_group_basics_desc_phone": {
+    "message": "Bahasa, mata uang, cara angka ditulis, dan tema — semuanya mengubah setiap layar."
+  },
   "pref_group_chart": {
     "message": "Grafik"
   },
@@ -7692,11 +8264,8 @@
   "pref_group_data_desc": {
     "message": "Semua yang disimpan browser ini untuk PriceTab, dalam satu file yang bisa Anda bawa ke tempat lain."
   },
-  "pref_group_features": {
-    "message": "Fitur"
-  },
-  "pref_group_features_desc": {
-    "message": "Apa saja yang ada di tab ini. Yang dimatikan di sini tidak meninggalkan tab, tombol, atau permintaan."
+  "pref_group_open_contract": {
+    "message": "Kontrak yang terbuka"
   },
   "pref_group_tab_tickers": {
     "message": "Tab & ticker"
@@ -7718,6 +8287,9 @@
   },
   "pref_group_webapp": {
     "message": "Ponsel ini"
+  },
+  "pref_group_webapp_desc_2": {
+    "message": "Aplikasi di ponsel: ukuran semuanya, berjalan dari layar utama, geser dari sisi, layar tetap menyala, dan tempat aplikasi dibuka."
   },
   "pref_language_aria": {
     "message": "Bahasa"
@@ -7986,6 +8558,36 @@
   "pref_phone_nav_title": {
     "message": "Navigasi"
   },
+  "pref_phone_tabs_add_aria": {
+    "message": "Taruh di bilah"
+  },
+  "pref_phone_tabs_desc": {
+    "message": "Hingga $1 tempat di bilah, sesuai urutanmu. Lainnya memuat sisanya."
+  },
+  "pref_phone_tabs_desc_off": {
+    "message": "Bilah sedang mati (Berpindah): yang diatur di sini kembali bersamanya."
+  },
+  "pref_phone_tabs_down": {
+    "message": "Geser $1 ke kanan"
+  },
+  "pref_phone_tabs_full": {
+    "message": "Bilah memuat $1 — hapus satu dulu"
+  },
+  "pref_phone_tabs_heading": {
+    "message": "Bilah tab"
+  },
+  "pref_phone_tabs_keywords": {
+    "message": "bilah tab bawah ikon urutan atur lainnya"
+  },
+  "pref_phone_tabs_remove": {
+    "message": "Hapus $1 dari bilah"
+  },
+  "pref_phone_tabs_title": {
+    "message": "Bilah tab"
+  },
+  "pref_phone_tabs_up": {
+    "message": "Geser $1 ke kiri"
+  },
   "pref_position_bottom": {
     "message": "Bawah"
   },
@@ -8016,11 +8618,32 @@
   "pref_practice_dock_heading": {
     "message": "Tampilkan Strip Kontrak Pada Grafik"
   },
+  "pref_practice_dock_note2": {
+    "message": "Level kontrak punya sakelar sendiri di bawah: ini adalah kontrol yang duduk di atasnya."
+  },
   "pref_practice_dock_title": {
     "message": "Strip kontrak"
   },
+  "pref_practice_fill_desc": {
+    "message": "Jalankan pengisian dua detik pada tombol order sebelum membuka atau menempatkan apa pun — menekan saat pengisian berjalan akan menghentikannya, seperti setiap tekanan di sini yang tidak bisa dibatalkan"
+  },
+  "pref_practice_fill_note": {
+    "message": "Aktif secara default: membuka kontrak adalah satu-satunya tekanan yang mengikat uang pada suatu harga, jadi ia menunggu dua detik yang sama seperti membalik posisi atau tutup semua, dan tidak perlu tekanan kedua. Nonaktif membuka saat ditekan, untuk menjalankan hitungan dengan cepat."
+  },
   "pref_practice_keywords": {
     "message": "pasar derivatif futures perpetual latihan strip grafik konfirmasi order kontrak simulasi"
+  },
+  "pref_practice_lines_aria": {
+    "message": "Alihkan garis kontrak pada grafik utama"
+  },
+  "pref_practice_lines_desc": {
+    "message": "Entry beserta hasilnya, stop, take-profit, dan likuidasi kontrak pada koin yang sedang Anda lihat. Grafik halaman derivatif sendiri menggambarnya bagaimanapun juga."
+  },
+  "pref_practice_lines_heading": {
+    "message": "Gambar Kontrak Terbuka Pada Grafik Utama"
+  },
+  "pref_practice_lines_title": {
+    "message": "Garis kontrak pada grafik utama"
   },
   "pref_quiet_chrome_aria": {
     "message": "Aktifkan kontrol senyap"
@@ -8198,6 +8821,9 @@
   },
   "pref_text_size_xl": {
     "message": "XL"
+  },
+  "pref_text_size_xs": {
+    "message": "XS"
   },
   "pref_theme_auto": {
     "message": "Otomatis"
@@ -10279,6 +10905,12 @@
   "tour_title_widgets": {
     "message": "Widget"
   },
+  "view_auto": {
+    "message": "Otomatis"
+  },
+  "view_auto_title": {
+    "message": "Sesuaikan lagi skala harga dengan garis (atau klik dua kali skala harga)"
+  },
   "view_label2": {
     "message": "Grafik harga. ← dan → membacanya titik demi titik, Home dan End ujung-ujungnya; Shift dengan ← dan → bergerak menembus waktu; + dan − memperbesar; klik ganda menampilkan seluruh rentang."
   },
@@ -10381,11 +11013,17 @@
   "wdesc_etf_flows": {
     "message": "Dana yang masuk dan keluar dari ETF bitcoin spot AS pada hari perdagangan terakhir, serta selama seminggu dan sebulan hari perdagangan"
   },
+  "wdesc_eth_btc": {
+    "message": "Ether dalam bitcoin, dan pergerakannya dalam 24 jam"
+  },
   "wdesc_eth_gas": {
     "message": "Harga gas sekarang dan biaya transfer ETH biasa"
   },
   "wdesc_fear_greed": {
     "message": "Skor sentimen pasar dari 0 sampai 100"
+  },
+  "wdesc_funding_board": {
+    "message": "Funding di semua perpetual yang digrafikkan app ini, di Bybit: berapa yang dibayar long atau short, nilai tengah, dan kedua ujungnya"
   },
   "wdesc_funding_rate": {
     "message": "Yang dibayar posisi long ke short di futures perpetual"
@@ -10399,6 +11037,9 @@
   "wdesc_long_short_ratio": {
     "message": "Bagaimana posisi para trader saat ini"
   },
+  "wdesc_macro_calendar": {
+    "message": "Kapan CPI berikutnya, laporan tenaga kerja, pernyataan Fed, dan PCE dirilis — rilis yang ditandai grafik"
+  },
   "wdesc_market_overview": {
     "message": "Total kapitalisasi pasar dan dominasi BTC/ETH"
   },
@@ -10408,8 +11049,14 @@
   "wdesc_model_outlook": {
     "message": "Jam selesai berikutnya BTC-USD menurut estimasi model: median, pita 80%, peluang target saat penutupan — dan seberapa sering pita bertahan saat diuji"
   },
+  "wdesc_oi_leaders": {
+    "message": "Perpetual dengan open interest terbanyak di Bybit, beserta totalnya"
+  },
   "wdesc_open_interest": {
     "message": "Nilai kontrak futures yang terbuka"
+  },
+  "wdesc_options": {
+    "message": "Dari opsi Bybit: harga eksekusi yang membuat pemegang opsi menerima paling sedikit pada jatuh tempo terdekat, rasio put terhadap call, dan volatilitas tersirat ATM"
   },
   "wdesc_outlook": {
     "message": "Ke mana langkah rentang ini sendiri mendarat pada horizon berikutnya — pita terhitung, bukan ramalan"
@@ -10419,6 +11066,9 @@
   },
   "wdesc_rsi_widget": {
     "message": "Momentum pada skala 0–100, untuk rentang yang sedang dilihat"
+  },
+  "wdesc_stablecoins": {
+    "message": "Nilai pasar gabungan stablecoin dolar dan porsinya dari seluruh pasar"
   },
   "wdesc_top_movers": {
     "message": "Kenaikan dan penurunan terbesar hari ini"
@@ -10586,6 +11236,9 @@
   "widget_etf_source": {
     "message": "via TFTC · SoSoValue, Farside"
   },
+  "widget_eth_btc": {
+    "message": "ETH / BTC"
+  },
   "widget_eth_gas": {
     "message": "Gas ETH"
   },
@@ -10603,6 +11256,15 @@
   },
   "widget_from_to": {
     "message": "$1 sampai $2"
+  },
+  "widget_funding_board": {
+    "message": "Papan Funding"
+  },
+  "widget_funding_board_mid": {
+    "message": "median"
+  },
+  "widget_funding_board_pos": {
+    "message": "$1 dari $2 positif"
   },
   "widget_funding_rate": {
     "message": "Funding rate $1"
@@ -10633,6 +11295,18 @@
   },
   "widget_long_short": {
     "message": "$1 Long / short"
+  },
+  "widget_macro_calendar": {
+    "message": "Rilis AS berikutnya"
+  },
+  "widget_macro_days": {
+    "message": "dalam $1 hari"
+  },
+  "widget_macro_hours": {
+    "message": "dalam $1 jam"
+  },
+  "widget_macro_none": {
+    "message": "Tidak ada lagi di kalender bawaan"
   },
   "widget_market_cap": {
     "message": "Kapitalisasi pasar"
@@ -10687,11 +11361,29 @@
   "widget_none": {
     "message": "Tidak ada"
   },
+  "widget_oi_leaders": {
+    "message": "Open Interest · Bybit"
+  },
   "widget_only_rose": {
     "message": "sepanjang rentang ini hanya naik"
   },
   "widget_open_interest": {
     "message": "Open interest $1"
+  },
+  "widget_options": {
+    "message": "Opsi $1"
+  },
+  "widget_options_iv": {
+    "message": "ATM IV"
+  },
+  "widget_options_other": {
+    "message": "Bybit mencatat opsi BTC, ETH, dan SOL"
+  },
+  "widget_options_pain": {
+    "message": "max pain"
+  },
+  "widget_options_pc": {
+    "message": "P/C"
   },
   "widget_outlook": {
     "message": "$1 Prospek · $2"
@@ -10731,6 +11423,17 @@
   "widget_regime_now": {
     "message": "$1 · $2 h"
   },
+  "widget_regime_state_count": {
+    "message": "$1 dari $2 hari",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
   "widget_regimes": {
     "message": "$1 Rezim · 20 h"
   },
@@ -10756,6 +11459,12 @@
   },
   "widget_size_small": {
     "message": "kecil"
+  },
+  "widget_stablecoins": {
+    "message": "Stablecoin"
+  },
+  "widget_stablecoins_share": {
+    "message": "$1% dari pasar"
   },
   "widget_top_movers": {
     "message": "Pergerakan terbesar 24 j"
@@ -10802,11 +11511,17 @@
   "wname_etf_flows": {
     "message": "Arus ETF BTC"
   },
+  "wname_eth_btc": {
+    "message": "ETH / BTC"
+  },
   "wname_eth_gas": {
     "message": "Gas ETH"
   },
   "wname_fear_greed": {
     "message": "Ketakutan & keserakahan"
+  },
+  "wname_funding_board": {
+    "message": "Papan Funding"
   },
   "wname_funding_rate": {
     "message": "Funding rate"
@@ -10820,6 +11535,9 @@
   "wname_long_short_ratio": {
     "message": "Rasio long/short"
   },
+  "wname_macro_calendar": {
+    "message": "Rilis AS berikutnya"
+  },
   "wname_market_overview": {
     "message": "Ikhtisar pasar"
   },
@@ -10829,8 +11547,14 @@
   "wname_model_outlook": {
     "message": "Jam berikutnya · model"
   },
+  "wname_oi_leaders": {
+    "message": "Pemimpin Open Interest"
+  },
   "wname_open_interest": {
     "message": "Open interest"
+  },
+  "wname_options": {
+    "message": "Opsi"
   },
   "wname_outlook": {
     "message": "Prospek"
@@ -10840,6 +11564,9 @@
   },
   "wname_rsi_widget": {
     "message": "RSI"
+  },
+  "wname_stablecoins": {
+    "message": "Stablecoin"
   },
   "wname_top_movers": {
     "message": "Pergerakan terbesar"
@@ -10861,529 +11588,5 @@
   },
   "wsize_xlarge": {
     "message": "Sangat besar"
-  },
-  "pos_confirm_placing": {
-    "message": "Menempatkan order — tekan untuk menghentikan"
-  },
-  "pos_confirm_long": {
-    "message": "Membuka long pada $1 — tekan untuk menghentikan"
-  },
-  "pos_confirm_short": {
-    "message": "Membuka short pada $1 — tekan untuk menghentikan"
-  },
-  "pos_reverse_running": {
-    "message": "Membalik posisi — tekan untuk menghentikan"
-  },
-  "pos_cancel_all_running": {
-    "message": "Membatalkan $1 — tekan untuk menghentikan"
-  },
-  "pp_close_all_running": {
-    "message": "Menutup $1 — tekan untuk menghentikan"
-  },
-  "pp_open_moment_fill": {
-    "message": "$1 dibuka pada $2"
-  },
-  "pp_open_moment_size": {
-    "message": "$1 · margin $2"
-  },
-  "dock_closing_aria": {
-    "message": "Menutup $1 — tekan untuk menghentikan"
-  },
-  "dock_stop": {
-    "message": "Hentikan"
-  },
-  "pref_practice_fill_desc": {
-    "message": "Jalankan pengisian dua detik pada tombol order sebelum membuka atau menempatkan apa pun — menekan saat pengisian berjalan akan menghentikannya, seperti setiap tekanan di sini yang tidak bisa dibatalkan"
-  },
-  "pref_practice_fill_note": {
-    "message": "Aktif secara default: membuka kontrak adalah satu-satunya tekanan yang mengikat uang pada suatu harga, jadi ia menunggu dua detik yang sama seperti membalik posisi atau tutup semua, dan tidak perlu tekanan kedua. Nonaktif membuka saat ditekan, untuk menjalankan hitungan dengan cepat."
-  },
-  "view_auto": {
-    "message": "Otomatis"
-  },
-  "view_auto_title": {
-    "message": "Sesuaikan lagi skala harga dengan garis (atau klik dua kali skala harga)"
-  },
-  "mon_col_beta": {
-    "message": "β BTC"
-  },
-  "mon_col_beta_title": {
-    "message": "Seberapa jauh koin bergerak untuk setiap 1% gerak Bitcoin, selama 30 hari yang sama — kemiringan geraknya terhadap gerak Bitcoin. Ini menggambarkan 30 hari tersebut, bukan apa yang akan terjadi"
-  },
-  "mon_col_changes_title": {
-    "message": "Seberapa jauh harga bergerak dalam sehari, seminggu, dan sebulan terakhir"
-  },
-  "mon_col_spark": {
-    "message": "30 hari"
-  },
-  "mon_col_spark_title": {
-    "message": "30 hari terakhir, dari rendah ke tinggi — diurutkan menurut posisi harga di antaranya"
-  },
-  "mon_fact_median": {
-    "message": "Koin tengah dalam 30 hari"
-  },
-  "mon_fact_mover": {
-    "message": "Paling bergerak dalam 30 hari"
-  },
-  "mon_fact_sort": {
-    "message": "Urutkan tabel menurut ini"
-  },
-  "mon_fact_up": {
-    "message": "Naik dalam 24 jam terakhir"
-  },
-  "mon_fact_widest": {
-    "message": "Hari biasa terlebar"
-  },
-  "mon_legend": {
-    "message": "Arti kolom-kolomnya"
-  },
-  "mon_market_down": {
-    "message": "Turun terbanyak dalam 24 jam"
-  },
-  "mon_market_label": {
-    "message": "$1 koin teratas menurut nilai pasar, ukuran tiap koin menurut nilainya dan warnanya menurut 24 jam terakhir"
-  },
-  "mon_market_loading": {
-    "message": "Membaca pasar…"
-  },
-  "mon_market_note": {
-    "message": "$1 teratas Coinlore menurut nilai pasar per $2, cuplikan yang sama dengan yang dibaca bilah harga — satu permintaan per menit selama tab ini terbuka. Ukuran kotak adalah nilai pasarnya dan warnanya 24 jam terakhir. Koin yang bisa digambar grafik terbuka di sana."
-  },
-  "mon_market_up": {
-    "message": "Naik terbanyak dalam 24 jam"
-  },
-  "mon_market_value": {
-    "message": "nilai pasar $1"
-  },
-  "mon_race_aria": {
-    "message": "Perubahan persentase tiap koin selama 30 hari terakhir: $1"
-  },
-  "mon_race_head": {
-    "message": "30 hari terakhir berdampingan · dari awal masing-masing koin"
-  },
-  "mon_race_spread": {
-    "message": "$1 di depan, $2 di belakang · selisih $3 poin"
-  },
-  "mon_range_at": {
-    "message": "$1% dari jalan antara terendah dan tertinggi 30 hari"
-  },
-  "mon_tab_market": {
-    "message": "Pasar"
-  },
-  "news_pulse_aria": {
-    "message": "Berita per jam selama 24 jam terakhir; jam tersibuk mulai $1 punya $2"
-  },
-  "news_pulse_bar": {
-    "message": "$1 · $2 berita"
-  },
-  "news_pulse_from": {
-    "message": "24 jam lalu"
-  },
-  "news_pulse_head": {
-    "message": "24 jam terakhir · $1 berita"
-  },
-  "news_pulse_now": {
-    "message": "sekarang"
-  },
-  "news_pulse_peak": {
-    "message": "tersibuk: $1 · $2"
-  },
-  "po_allocation": {
-    "message": "Alokasi"
-  },
-  "pos_cn_all": {
-    "message": "Dari dibuka sampai ditutup"
-  },
-  "pos_cn_all_d": {
-    "message": "semua yang diperoleh dan dibayar kontrak ini"
-  },
-  "pos_cn_back": {
-    "message": "$1 dari margin $2 · $3 kembali · saldo $4"
-  },
-  "pos_cn_fee": {
-    "message": "Biaya untuk menutup"
-  },
-  "pos_cn_head": {
-    "message": "Jika semuanya ditutup sekarang"
-  },
-  "pos_cn_move": {
-    "message": "Pergerakan harga"
-  },
-  "pos_cn_move_d": {
-    "message": "$1 → $2, harga tempat penutupan dieksekusi"
-  },
-  "pos_cn_paid": {
-    "message": "Dibayar saat masuk"
-  },
-  "pos_cn_paid_d": {
-    "message": "biaya buka dan pendanaan sejauh ini"
-  },
-  "pos_cn_total": {
-    "message": "Penutupan ini"
-  },
-  "pos_cn_why": {
-    "message": "$1 di baris itu adalah kontrak yang dinilai pada mark, $2. Penutupan dieksekusi di $3 — harga terakhir, melintasi spread — dan membayar biaya, jadi yang masuk adalah baris di atas."
-  },
-  "pp_at_many": {
-    "message": "$1 kontrak"
-  },
-  "pp_at_mine": {
-    "message": "posisi Anda di sini ($1): $2"
-  },
-  "pp_at_one": {
-    "message": "kontrak"
-  },
-  "pp_at_price": {
-    "message": "Di $1 · $2 dari sekarang"
-  },
-  "pp_zoom_reset_title": {
-    "message": "Tampilkan seluruh rentang lagi"
-  },
-  "pos_details_less": {
-    "message": "Sembunyikan detail"
-  },
-  "pos_details_more": {
-    "message": "Detail — setup, margin, biaya, likuidasi"
-  },
-  "pp_read_less": {
-    "message": "Lebih sedikit"
-  },
-  "pp_read_more": {
-    "message": "Lainnya"
-  },
-  "pos_means_away": {
-    "message": "$1 dari harga masuk"
-  },
-  "pos_means_liq": {
-    "message": "Dilikuidasi di"
-  },
-  "pos_means_no_stop": {
-    "message": "Tidak ada stop"
-  },
-  "pos_means_no_stop_note": {
-    "message": "pasar yang menentukan kerugian"
-  },
-  "pos_means_no_take": {
-    "message": "Tidak ada take-profit"
-  },
-  "pos_means_of_account": {
-    "message": "$1 dari akun"
-  },
-  "pos_means_stop": {
-    "message": "Jika stop tercapai"
-  },
-  "pos_means_take": {
-    "message": "Jika take-profit tercapai"
-  },
-  "pp_guide": {
-    "message": "Panduan"
-  },
-  "pp_guide_all": {
-    "message": "Asisten"
-  },
-  "pp_guide_aria": {
-    "message": "Panduan — apa yang ditandai grafik, bernomor"
-  },
-  "pp_guide_chip_title": {
-    "message": "Arahkan untuk melihatnya di grafik; tekan untuk menahannya di sana"
-  },
-  "pp_guide_close": {
-    "message": "Tutup panduan"
-  },
-  "pp_guide_drag_sl": {
-    "message": "seret + SL di grafik"
-  },
-  "pp_guide_drag_tp": {
-    "message": "seret + TP di grafik"
-  },
-  "pp_guide_in_panel": {
-    "message": "Buka di panel"
-  },
-  "pp_guide_more": {
-    "message": "+$1 · asisten"
-  },
-  "pp_guide_pop_aria": {
-    "message": "Panduan — setiap butir, bernomor seperti di grafik"
-  },
-  "pp_guide_pop_head": {
-    "message": "Panduan · $1",
-    "placeholders": {
-      "arg1": {
-        "content": "$1"
-      }
-    }
-  },
-  "pp_layer_book": {
-    "message": "Level terbesar di buku"
-  },
-  "pp_layer_clock": {
-    "message": "Pendanaan berikutnya"
-  },
-  "pp_layer_contracts": {
-    "message": "Kontrak dan order"
-  },
-  "pp_layer_fan": {
-    "message": "Masa depan yang diulang"
-  },
-  "pp_layer_guide": {
-    "message": "Angka panduan"
-  },
-  "pp_layer_location": {
-    "message": "Volume menurut harga"
-  },
-  "pp_layer_plan": {
-    "message": "Order yang sedang Anda tulis"
-  },
-  "pp_settings_layers": {
-    "message": "Di grafik"
-  },
-  "pp_settings_sizes": {
-    "message": "Lebar tiket $1 · tinggi panel $2"
-  },
-  "pp_settings_sizes_note": {
-    "message": "Seret sambungan di samping tiket, atau yang di bawah grafik, untuk mengubah ukurannya — atau fokuskan salah satunya dengan Tab lalu gunakan tombol panah. Klik dua kali pada sambungan mengembalikan bawaannya. Ukurannya disimpan di perangkat ini; di jendela di bawah 1280 piksel halaman menjadi satu kolom dan ukuran itu menunggu."
-  },
-  "pp_trade_add_sl": {
-    "message": "+ SL"
-  },
-  "pp_trade_add_tp": {
-    "message": "+ TP"
-  },
-  "pp_trade_be": {
-    "message": "titik impas"
-  },
-  "pp_trade_buy": {
-    "message": "Beli"
-  },
-  "pp_trade_entry": {
-    "message": "$1 $2x #$3 · $4"
-  },
-  "pp_trade_fan": {
-    "message": "berikutnya $1 · $2 ulangan · 5–95%"
-  },
-  "pp_trade_first": {
-    "message": "pertama di $1"
-  },
-  "pp_trade_funding": {
-    "message": "pendanaan $1"
-  },
-  "pp_trade_market": {
-    "message": "pasar"
-  },
-  "pp_trade_move_to": {
-    "message": "pindah ke"
-  },
-  "pp_trade_of_account": {
-    "message": "$1 dari akun"
-  },
-  "pp_trade_plan": {
-    "message": "Rencana · $1 $2x · $3 $4"
-  },
-  "pp_trade_reach": {
-    "message": "$1 dari $2 langkah sejauh ini"
-  },
-  "pp_trade_sell": {
-    "message": "Jual"
-  },
-  "pp_trade_trail": {
-    "message": "ikut"
-  },
-  "pref_practice_dock_note2": {
-    "message": "Level kontrak punya sakelar sendiri di bawah: ini adalah kontrol yang duduk di atasnya."
-  },
-  "pref_practice_lines_aria": {
-    "message": "Alihkan garis kontrak pada grafik utama"
-  },
-  "pref_practice_lines_desc": {
-    "message": "Entry beserta hasilnya, stop, take-profit, dan likuidasi kontrak pada koin yang sedang Anda lihat. Grafik halaman derivatif sendiri menggambarnya bagaimanapun juga."
-  },
-  "pref_practice_lines_heading": {
-    "message": "Gambar Kontrak Terbuka Pada Grafik Utama"
-  },
-  "pref_practice_lines_title": {
-    "message": "Garis kontrak pada grafik utama"
-  },
-  "pos_means_rr2": {
-    "message": "risiko : keuntungan 1 : $1"
-  },
-  "pp_legend_candles": {
-    "message": "lilin $1 · OKX"
-  },
-  "pp_legend_line": {
-    "message": "penutupan $1 · OKX"
-  },
-  "pp_legend_volume": {
-    "message": "volume dalam $1 di bawah"
-  },
-  "pp_layer_liquidations": {
-    "message": "Likuidasi · OKX"
-  },
-  "pp_legend_hand": {
-    "message": "klik harga untuk limit, seret garis untuk memindahkannya"
-  },
-  "pp_trade_liq_print": {
-    "message": "$1 dilikuidasi · $2 · OKX · $3"
-  },
-  "pp_trade_pdh": {
-    "message": "tertinggi kemarin"
-  },
-  "pp_trade_pdl": {
-    "message": "terendah kemarin"
-  },
-  "pp_trade_plan_market": {
-    "message": "Rencana · $1 $2x · $3"
-  },
-  "pos_kind_more": {
-    "message": "Jenis order lainnya"
-  },
-  "pos_lev_size_cap": {
-    "message": "hingga $1x pada ukuran ini"
-  },
-  "pos_levels_drag": {
-    "message": "Atau seret + SL dan + TP di grafik."
-  },
-  "pp_settings_main_chart": {
-    "message": "Di grafik utama"
-  },
-  "pref_group_open_contract": {
-    "message": "Kontrak yang terbuka"
-  },
-  "pp_layout": {
-    "message": "Tata letak"
-  },
-  "pp_layout_simple": {
-    "message": "Sederhana"
-  },
-  "pp_layout_terminal": {
-    "message": "Terminal"
-  },
-  "pp_layout_simple_title": {
-    "message": "Tiket di kiri, grafik di kanan, buku order sekali tekan di bawah Lainnya"
-  },
-  "pp_layout_terminal_title": {
-    "message": "Grafik, buku order, dan tiket berdampingan, yang terbuka di bawah grafik dan buku"
-  },
-  "pref_group_basics_desc_phone": {
-    "message": "Bahasa, mata uang, cara angka ditulis, dan tema — semuanya mengubah setiap layar."
-  },
-  "pref_group_webapp_desc_2": {
-    "message": "Aplikasi di ponsel: ukuran semuanya, berjalan dari layar utama, geser dari sisi, layar tetap menyala, dan tempat aplikasi dibuka."
-  },
-  "pref_phone_tabs_add_aria": {
-    "message": "Taruh di bilah"
-  },
-  "pref_phone_tabs_desc": {
-    "message": "Hingga $1 tempat di bilah, sesuai urutanmu. Lainnya memuat sisanya."
-  },
-  "pref_phone_tabs_desc_off": {
-    "message": "Bilah sedang mati (Berpindah): yang diatur di sini kembali bersamanya."
-  },
-  "pref_phone_tabs_down": {
-    "message": "Geser $1 ke kanan"
-  },
-  "pref_phone_tabs_full": {
-    "message": "Bilah memuat $1 — hapus satu dulu"
-  },
-  "pref_phone_tabs_heading": {
-    "message": "Bilah tab"
-  },
-  "pref_phone_tabs_keywords": {
-    "message": "bilah tab bawah ikon urutan atur lainnya"
-  },
-  "pref_phone_tabs_remove": {
-    "message": "Hapus $1 dari bilah"
-  },
-  "pref_phone_tabs_title": {
-    "message": "Bilah tab"
-  },
-  "pref_phone_tabs_up": {
-    "message": "Geser $1 ke kiri"
-  },
-  "pref_text_size_xs": {
-    "message": "XS"
-  },
-  "wdesc_eth_btc": {
-    "message": "Ether dalam bitcoin, dan pergerakannya dalam 24 jam"
-  },
-  "wdesc_funding_board": {
-    "message": "Funding di semua perpetual yang digrafikkan app ini, di Bybit: berapa yang dibayar long atau short, nilai tengah, dan kedua ujungnya"
-  },
-  "wdesc_macro_calendar": {
-    "message": "Kapan CPI berikutnya, laporan tenaga kerja, pernyataan Fed, dan PCE dirilis — rilis yang ditandai grafik"
-  },
-  "wdesc_oi_leaders": {
-    "message": "Perpetual dengan open interest terbanyak di Bybit, beserta totalnya"
-  },
-  "wdesc_options": {
-    "message": "Dari opsi Bybit: harga eksekusi yang membuat pemegang opsi menerima paling sedikit pada jatuh tempo terdekat, rasio put terhadap call, dan volatilitas tersirat ATM"
-  },
-  "wdesc_stablecoins": {
-    "message": "Nilai pasar gabungan stablecoin dolar dan porsinya dari seluruh pasar"
-  },
-  "widget_eth_btc": {
-    "message": "ETH / BTC"
-  },
-  "widget_funding_board": {
-    "message": "Papan Funding"
-  },
-  "widget_funding_board_mid": {
-    "message": "median"
-  },
-  "widget_funding_board_pos": {
-    "message": "$1 dari $2 positif"
-  },
-  "widget_macro_calendar": {
-    "message": "Rilis AS berikutnya"
-  },
-  "widget_macro_days": {
-    "message": "dalam $1 hari"
-  },
-  "widget_macro_hours": {
-    "message": "dalam $1 jam"
-  },
-  "widget_macro_none": {
-    "message": "Tidak ada lagi di kalender bawaan"
-  },
-  "widget_oi_leaders": {
-    "message": "Open Interest · Bybit"
-  },
-  "widget_options": {
-    "message": "Opsi $1"
-  },
-  "widget_options_iv": {
-    "message": "ATM IV"
-  },
-  "widget_options_other": {
-    "message": "Bybit mencatat opsi BTC, ETH, dan SOL"
-  },
-  "widget_options_pain": {
-    "message": "max pain"
-  },
-  "widget_options_pc": {
-    "message": "P/C"
-  },
-  "widget_stablecoins": {
-    "message": "Stablecoin"
-  },
-  "widget_stablecoins_share": {
-    "message": "$1% dari pasar"
-  },
-  "wname_eth_btc": {
-    "message": "ETH / BTC"
-  },
-  "wname_funding_board": {
-    "message": "Papan Funding"
-  },
-  "wname_macro_calendar": {
-    "message": "Rilis AS berikutnya"
-  },
-  "wname_oi_leaders": {
-    "message": "Pemimpin Open Interest"
-  },
-  "wname_options": {
-    "message": "Opsi"
-  },
-  "wname_stablecoins": {
-    "message": "Stablecoin"
   }
 }

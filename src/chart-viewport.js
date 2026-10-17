@@ -82,6 +82,10 @@ const VIEW_Y_MAX = 1.5;
    pointer was. The price under the pointer is the anchor now — on the line
    it is the dot, as before. */
 const VIEW_Y_ZOOM = 0.5;
+/* The main chart's zoom feels flatter at 0.5 (more time than price). Its
+  own view now asks for a slightly stronger vertical response, while other
+  chart surfaces keep the older feel. */
+const VIEW_Y_ZOOM_MAIN = 0.68;
 /* Dragging the price scale itself stretches the window around its middle,
    TradingView's other vertical gesture: a full plot's height of travel is
    e^this — down widens the window (the line flattens), up narrows it. */
@@ -100,8 +104,17 @@ const VIEW_DOUBLE_TAP_PX = 30;
    time. A window may end this share of its own span past the latest price — the
    line stops where the data does and the rest is blank time on the axis — and a
    window that ends there keeps that room as new prices arrive. Pans only: a
-   zoom still fits the range. */
-const VIEW_FUTURE_ROOM = 0.4;
+   zoom still fits the range. **0.85 since 14 Oct 2026**: at 0.4 the latest
+   price could go no further than 60% across, so with Room Ahead resting at
+   15% a single pull hit the wall — measured, 300px of drag moved the line
+   300px and the next two moved it nothing. The latest price may now go to
+   the left 15% of the window, as on TradingView. */
+const VIEW_FUTURE_ROOM = 0.85;
+/* The room a wheel zoom *in* may take past the price: the 0.4 every zoom
+   had before the pan's room grew to 0.85, or the window's own when it
+   already has more — the pan's room is for pans, and a zoom keeps the
+   behaviour it had. */
+const VIEW_ZOOM_ROOM = 0.4;
 /* The resting chart's room past the price when Settings → "Room ahead" is on
    (ROOM_AHEAD_KEY): the range's own width, moved this share into the future.
    TradingView's default right margin is a few bars; a share of the range is
@@ -172,11 +185,22 @@ const zoomView = (view, factor, anchor, lo, hi, minSpan, room = 0) => {
   if (!view || !(factor > 0)) return null;
   const span = view.t1 - view.t0;
   if (!(span > 0)) return null;
-  const at = isFinite(anchor) ? Math.max(view.t0, Math.min(view.t1, anchor)) : (view.t0 + view.t1) / 2;
+  const at = isFinite(anchor)
+    ? Math.max(view.t0, Math.min(view.t1, anchor))
+    : (view.t0 + view.t1) / 2;
   const share = (at - view.t0) / span;
   const full = hi - lo;
-  const next = Math.min(full, Math.max(Math.min(minSpan || 0, full), span * factor));
-  return clampView(at - share * next, next, lo, hi + Math.max(0, room) * next, minSpan);
+  const next = Math.min(
+    full,
+    Math.max(Math.min(minSpan || 0, full), span * factor),
+  );
+  return clampView(
+    at - share * next,
+    next,
+    lo,
+    hi + Math.max(0, room) * next,
+    minSpan,
+  );
 };
 
 /* Move by `delta` ms (positive is later), stopping at either end — or, with
@@ -193,7 +217,10 @@ const panView = (view, delta, lo, hi, room = 0) => {
    the older bars a pan brought in before its start (10 Oct 2026), which a
    window as wide as the range can do and is not the range. */
 const viewIsFull = (view, lo, hi) =>
-  !view || (view.t1 - view.t0 >= (hi - lo) * 0.999 && !(view.t1 > hi + 1) && !(view.t0 < lo - (hi - lo) * 0.001));
+  !view ||
+  (view.t1 - view.t0 >= (hi - lo) * 0.999 &&
+    !(view.t1 > hi + 1) &&
+    !(view.t0 < lo - (hi - lo) * 0.001));
 
 // The first index whose time is at or after `t`
 const viewSearch = (points, t, key = "time") => {
@@ -230,7 +257,8 @@ const sliceSeries = (points, t0, t1) => {
   let i1 = viewSearch(points, t1);
   if (i1 < n && at(i1) === t1) i1 += 1; // a point exactly on the edge is kept
   const out = [];
-  if (i0 >= n || at(i0) > t0) out.push({ price: priceAt(t0), time: new Date(t0), edge: true });
+  if (i0 >= n || at(i0) > t0)
+    out.push({ price: priceAt(t0), time: new Date(t0), edge: true });
   for (let i = i0; i < i1; i++) out.push(points[i]);
   if (!out.length || viewMs(out[out.length - 1].time) < t1) {
     out.push({ price: priceAt(t1), time: new Date(t1), edge: true });
@@ -264,7 +292,13 @@ const sliceCandles = (candles, t0, t1) => {
    on screen exactly as it was. LTTB's buckets started at the window's first
    point and re-chose its points at every step of a drag. */
 const m4 = (points, t0, t1, columns) => {
-  if (!Array.isArray(points) || points.length < 3 || !(columns > 0) || !(t1 > t0)) return points;
+  if (
+    !Array.isArray(points) ||
+    points.length < 3 ||
+    !(columns > 0) ||
+    !(t1 > t0)
+  )
+    return points;
   const bucket = (t1 - t0) / columns;
   const out = [];
   let key = null;
@@ -321,7 +355,9 @@ const lttb = (points, threshold) => {
     let best = -1;
     let pick = lo;
     for (let j = lo; j < hi; j++) {
-      const area = Math.abs((px - ax) * (y(points[j]) - py) - (px - x(points[j])) * (ay - py));
+      const area = Math.abs(
+        (px - ax) * (y(points[j]) - py) - (px - x(points[j])) * (ay - py),
+      );
       if (area > best) {
         best = area;
         pick = j;
@@ -338,14 +374,25 @@ const lttb = (points, threshold) => {
    into a different array, so each is pointed again at the point nearest its
    own time — and one outside the window is not drawn. */
 const remapMoves = (moves, line) => {
-  if (!Array.isArray(moves) || !moves.length || !Array.isArray(line) || line.length < 2) return moves;
+  if (
+    !Array.isArray(moves) ||
+    !moves.length ||
+    !Array.isArray(line) ||
+    line.length < 2
+  )
+    return moves;
   const t0 = viewMs(line[0].time);
   const t1 = viewMs(line[line.length - 1].time);
   const out = [];
   for (const m of moves) {
     if (!(m.time >= t0 && m.time <= t1)) continue;
     let i = Math.min(line.length - 1, viewSearch(line, m.time));
-    if (i > 0 && Math.abs(viewMs(line[i - 1].time) - m.time) < Math.abs(viewMs(line[i].time) - m.time)) i -= 1;
+    if (
+      i > 0 &&
+      Math.abs(viewMs(line[i - 1].time) - m.time) <
+        Math.abs(viewMs(line[i].time) - m.time)
+    )
+      i -= 1;
     if (line[i].edge) i = i === 0 ? 1 : line.length - 2;
     out.push(Object.assign({}, m, { index: i }));
   }
@@ -355,12 +402,16 @@ const remapMoves = (moves, line) => {
 /* Is `detail` usable for this window: the same coin and currency, finer than
    what the chart already has, and covering the whole window? */
 const detailCovers = (detail, coin, currency, t0, t1, coarseMs) => {
-  if (!detail || detail.coin !== coin || detail.currency !== currency) return false;
+  if (!detail || detail.coin !== coin || detail.currency !== currency)
+    return false;
   const rows = detail.candles;
   if (!Array.isArray(rows) || rows.length < 2) return false;
   const g = detail.g * 1000;
   if (!(g > 0) || (coarseMs > 0 && !(g < coarseMs * VIEW_FINER))) return false;
-  return viewMs(rows[0].time) <= t0 + g && viewMs(rows[rows.length - 1].time) + 2 * g >= t1;
+  return (
+    viewMs(rows[0].time) <= t0 + g &&
+    viewMs(rows[rows.length - 1].time) + 2 * g >= t1
+  );
 };
 
 /* The window as the screen shows it: a window at the end follows the price
@@ -370,13 +421,22 @@ const resolveView = (view, lo, hi, minSpan) => {
   const span = view.t1 - view.t0;
   /* The room past the latest price, as a share of the span: stored with a
      committed window, read off the ends of one in the hand. */
-  const given = Number.isFinite(view.ahead) ? view.ahead : span > 0 ? (view.t1 - hi) / span : 0;
+  const given = Number.isFinite(view.ahead)
+    ? view.ahead
+    : span > 0
+      ? (view.t1 - hi) / span
+      : 0;
   const ahead = Math.max(0, Math.min(VIEW_FUTURE_ROOM, given));
   const atNow = Boolean(view.atNow) || ahead > 0;
   const hiX = hi + ahead * span;
-  const out = atNow ? clampView(hiX - span, span, lo, hiX, minSpan) : clampView(view.t0, span, lo, hi, minSpan);
+  const out = atNow
+    ? clampView(hiX - span, span, lo, hiX, minSpan)
+    : clampView(view.t0, span, lo, hi, minSpan);
   if (!out || viewIsFull(out, lo, hi)) return null;
-  return Object.assign(out, { atNow: atNow || out.t1 >= hi, ahead: out.t1 > hi ? (out.t1 - hi) / (out.t1 - out.t0) : 0 });
+  return Object.assign(out, {
+    atNow: atNow || out.t1 >= hi,
+    ahead: out.t1 > hi ? (out.t1 - hi) / (out.t1 - out.t0) : 0,
+  });
 };
 
 /* "Sep 14, 09:00 – 15:30": the window's two ends, the date said once when
@@ -387,10 +447,13 @@ const viewWindowText = (t0, t1) => {
   const a = new Date(t0);
   const b = new Date(t1);
   const span = t1 - t0;
-  if (span >= 7 * 86400000) return `${localeDate(a, day)} – ${localeDate(b, day)}`;
+  if (span >= 7 * 86400000)
+    return `${localeDate(a, day)} – ${localeDate(b, day)}`;
   const same = a.toDateString() === b.toDateString();
   const left = `${localeDate(a, day)}, ${localeDate(a, clock)}`;
-  const right = same ? localeDate(b, clock) : `${localeDate(b, day)}, ${localeDate(b, clock)}`;
+  const right = same
+    ? localeDate(b, clock)
+    : `${localeDate(b, day)}, ${localeDate(b, clock)}`;
   return `${left} – ${right}`;
 };
 
@@ -400,7 +463,9 @@ const viewWindowText = (t0, t1) => {
  * the line at a glance. The stretch is the points' own first and last time,
  * so a zoomed window describes itself. Nothing about what comes next. */
 const chartSummaryText = (points, opts) => {
-  const list = (Array.isArray(points) ? points : []).filter((p) => p && !p.edge && Number(p.price) > 0);
+  const list = (Array.isArray(points) ? points : []).filter(
+    (p) => p && !p.edge && Number(p.price) > 0,
+  );
   if (list.length < 2) return "";
   const { coin, currency, fmt, when } = opts;
   const first = list[0];
@@ -411,7 +476,8 @@ const chartSummaryText = (points, opts) => {
     if (Number(p.price) > Number(hi.price)) hi = p;
     if (Number(p.price) < Number(lo.price)) lo = p;
   }
-  const change = ((Number(last.price) - Number(first.price)) / Number(first.price)) * 100;
+  const change =
+    ((Number(last.price) - Number(first.price)) / Number(first.price)) * 100;
   const size = `${localeNumber(Math.abs(change), { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`;
   const move =
     Math.abs(change) < 0.005
@@ -439,7 +505,9 @@ const chartSummaryText = (points, opts) => {
  * from Phase 2). About one point for every one and a half pixels, in a box
  * w × h, the first and last points always in. Pure. */
 const navSparkPath = (prices, w, h) => {
-  const list = (Array.isArray(prices) ? prices : []).filter((p) => p && Number(p.price) > 0);
+  const list = (Array.isArray(prices) ? prices : []).filter(
+    (p) => p && Number(p.price) > 0,
+  );
   if (list.length < 2 || !(w > 0) || !(h > 2)) return "";
   const t0 = viewMs(list[0].time);
   const t1 = viewMs(list[list.length - 1].time);
@@ -455,7 +523,8 @@ const navSparkPath = (prices, w, h) => {
   const step = Math.max(1, Math.floor(list.length / (w * 1.5)));
   const pts = [];
   for (let i = 0; i < list.length; i += step) pts.push(list[i]);
-  if (pts[pts.length - 1] !== list[list.length - 1]) pts.push(list[list.length - 1]);
+  if (pts[pts.length - 1] !== list[list.length - 1])
+    pts.push(list[list.length - 1]);
   return pts
     .map((p, i) => {
       const x = ((viewMs(p.time) - t0) / span) * w;
@@ -520,7 +589,9 @@ class ChartNavigator extends Component {
       const r = svg.getBoundingClientRect();
       const at = b.lo + ((e.clientX - r.left) / r.width) * (b.hi - b.lo);
       const inside = at >= v.t0 && at <= v.t1;
-      const from = inside ? v : panView(v, at - (v.t0 + v.t1) / 2, b.lo, b.hi) || v;
+      const from = inside
+        ? v
+        : panView(v, at - (v.t0 + v.t1) / 2, b.lo, b.hi) || v;
       if (!inside) view.show(from);
       this._drag = { x: e.clientX, w: r.width, from, last: from, b };
       this.setState({ drag: from });
@@ -531,7 +602,12 @@ class ChartNavigator extends Component {
       const d = this._drag;
       const view = this.props.viewRef && this.props.viewRef.current;
       if (!d || !view) return;
-      const next = panView(d.from, ((e.clientX - d.x) / d.w) * (d.b.hi - d.b.lo), d.b.lo, d.b.hi);
+      const next = panView(
+        d.from,
+        ((e.clientX - d.x) / d.w) * (d.b.hi - d.b.lo),
+        d.b.lo,
+        d.b.hi,
+      );
       if (!next) return;
       d.last = next;
       view.show(next);
@@ -602,7 +678,8 @@ const ViewBox = styled.div`
   touch-action: none;
   user-select: ${({ enabled }) => (enabled ? "none" : "auto")};
   ${({ panning }) => (panning ? "&, & svg { cursor: grabbing; }" : "")}
-  ${({ cursor, panning }) => (cursor && !panning ? `&, & svg { cursor: ${cursor}; }` : "")}
+  ${({ cursor, panning }) =>
+    cursor && !panning ? `&, & svg { cursor: ${cursor}; }` : ""}
   /* The keyboard is on the chart. It was the border token, 1px, inset —
      about 1.2:1 and gone under the plot; the app's focus ink instead, drawn
      over the chart rather than under it (30 Sep 2026). */
@@ -706,7 +783,14 @@ class ChartView extends Component {
     super(props);
     // `gesture`: "pan", "measure" or "tool" (moving a drawing) while a hand is down
     // `yPan`: how far a vertical drag slid the price window (`shiftDomain`); session only
-    this.state = { live: null, driven: false, panning: false, gesture: null, readText: "", yPan: 0 };
+    this.state = {
+      live: null,
+      driven: false,
+      panning: false,
+      gesture: null,
+      readText: "",
+      yPan: 0,
+    };
     // The summary's id, one per chart on the page
     this.summaryId = `chart-summary-${++viewSummarySeq}`;
     this._summaryMemo = null;
@@ -749,7 +833,13 @@ class ChartView extends Component {
         this._pastCool = false;
       }, VIEW_PAST_COOL_MS);
       // The window a zoom carries follows the price only when it reaches it (see commit)
-      return this.props.onZoomPast(span, dir, win ? { t0: win.t0, t1: win.t1, atNow: win.t1 >= b.hi } : null) !== false;
+      return (
+        this.props.onZoomPast(
+          span,
+          dir,
+          win ? { t0: win.t0, t1: win.t1, atNow: win.t1 >= b.hi } : null,
+        ) !== false
+      );
     };
     /* **In past the finer range**: a window narrowed to the next shorter
        range's length, inside the stretch that range covers (its last
@@ -786,7 +876,12 @@ class ChartView extends Component {
       /* Out, and already the whole range: the wheel keeps count, and past
          VIEW_PAST_WHEEL the chart moves to the next range, framed on this
          one's span so the zoom goes on from where it was. */
-      if (Math.abs(dy) > Math.abs(dx) && dy > 0 && (viewIsFull(v, b.lo, b.hi) || this.atRest()) && this.props.onZoomPast) {
+      if (
+        Math.abs(dy) > Math.abs(dx) &&
+        dy > 0 &&
+        (viewIsFull(v, b.lo, b.hi) || this.atRest()) &&
+        this.props.onZoomPast
+      ) {
         clearTimeout(this._pastTimer);
         this._pastTimer = setTimeout(() => {
           this._past = 0;
@@ -799,7 +894,9 @@ class ChartView extends Component {
       const zooming = Math.abs(dx) <= Math.abs(dy);
       if (zooming) {
         const log = dy * (e.ctrlKey ? 0.01 : 0.0015);
-        const notch = !e.ctrlKey && (e.deltaMode !== 0 || Math.abs(e.deltaY) >= VIEW_WHEEL_NOTCH);
+        const notch =
+          !e.ctrlKey &&
+          (e.deltaMode !== 0 || Math.abs(e.deltaY) >= VIEW_WHEEL_NOTCH);
         const still = typeof reducedMotion === "function" && reducedMotion();
         if (notch && !still) this.glideZoom(e.clientX, e.clientY, log);
         else this.wheelZoom(e.clientX, e.clientY, log);
@@ -807,13 +904,22 @@ class ChartView extends Component {
       }
       this.stopGlide();
       const r = this.reach();
-      const next = panView(v, (dx / box.w) * span, r.lo, b.hi, VIEW_FUTURE_ROOM);
+      const next = panView(
+        v,
+        (dx / box.w) * span,
+        r.lo,
+        b.hi,
+        VIEW_FUTURE_ROOM,
+      );
       if (!next) return;
       // A sideways swipe is a pan: older bars as it nears them (never a zoom)
       this.askHistory(next, r);
       this.show(next, this.holdPrice());
       clearTimeout(this._settle);
-      this._settle = setTimeout(() => this.commit(this._pending || this.state.live, false), VIEW_WHEEL_SETTLE_MS);
+      this._settle = setTimeout(
+        () => this.commit(this._pending || this.state.live, false),
+        VIEW_WHEEL_SETTLE_MS,
+      );
     };
 
     /* One zoom step of the wheel, by e^log, about the pointer at (clientX,
@@ -835,7 +941,13 @@ class ChartView extends Component {
          out keeps the share of blank time it had (or the resting room's);
          in, the window may still take the room any window may. */
       const ahead = Math.max(0, (v.t1 - b.hi) / span);
-      const room = log > 0 ? Math.min(VIEW_FUTURE_ROOM, Math.max(ahead, this.props.restRoom || 0)) : VIEW_FUTURE_ROOM;
+      const room =
+        log > 0
+          ? Math.min(
+              VIEW_FUTURE_ROOM,
+              Math.max(ahead, this.props.restRoom || 0),
+            )
+          : Math.min(VIEW_FUTURE_ROOM, Math.max(ahead, VIEW_ZOOM_ROOM));
       const next = zoomView(
         v,
         Math.exp(log),
@@ -856,13 +968,17 @@ class ChartView extends Component {
       }
       this.show(next, y);
       clearTimeout(this._settle);
-      this._settle = setTimeout(() => this.commit(this._pending || this.state.live, true), VIEW_WHEEL_SETTLE_MS);
+      this._settle = setTimeout(
+        () => this.commit(this._pending || this.state.live, true),
+        VIEW_WHEEL_SETTLE_MS,
+      );
       return next.t1 - next.t0 !== span;
     };
 
     /* A notch's zoom, spread over the next frames (VIEW_WHEEL_GLIDE_MS). */
     this.glideZoom = (clientX, clientY, log) => {
-      const g = this._glide || (this._glide = { rest: 0, x: 0, y: 0, raf: 0, at: 0 });
+      const g =
+        this._glide || (this._glide = { rest: 0, x: 0, y: 0, raf: 0, at: 0 });
       g.rest += log;
       g.x = clientX;
       g.y = clientY;
@@ -906,17 +1022,36 @@ class ChartView extends Component {
       if (e.pointerType === "touch") {
         if (!this._touches) this._touches = new Map();
         this._touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
-        if (this._touches.size === 2 && this._drag && this._drag.mode === "pan") {
+        if (
+          this._touches.size === 2 &&
+          this._drag &&
+          this._drag.mode === "pan"
+        ) {
           this.startPinch();
           return;
         }
       }
       if (e.button !== 0 || e.isPrimary === false) return;
       const target = e.target;
-      if (target && target.closest && target.closest(".pt-pan, .pt-now-grip, button, a, input, select, [data-draw-menu]")) return;
+      if (
+        target &&
+        target.closest &&
+        target.closest(
+          ".pt-pan, .pt-now-grip, button, a, input, select, [data-draw-menu]",
+        )
+      )
+        return;
       const axis = this.axisBox(e.clientX, e.clientY);
       if (axis) {
-        this._drag = { mode: "scale", x: e.clientX, y: e.clientY, id: e.pointerId, h: axis.h, domain0: this.chart.drawnDomain(), moved: false };
+        this._drag = {
+          mode: "scale",
+          x: e.clientX,
+          y: e.clientY,
+          id: e.pointerId,
+          h: axis.h,
+          domain0: this.chart.drawnDomain(),
+          moved: false,
+        };
         window.addEventListener("pointermove", this.onPointerMove);
         window.addEventListener("pointerup", this.onPointerUp);
         window.addEventListener("pointercancel", this.onPointerUp);
@@ -932,7 +1067,10 @@ class ChartView extends Component {
       /* The derivatives page's lines and handles first (chart-trade.js): a
          press on one holds it; a drawing tool in the hand takes the press
          instead, because placing is what the hand asked for. */
-      const tradeHit = chart.tradeOn && chart.tradeOn() && !this.props.tool ? chart.tradeHitAt(box.x, box.y) : null;
+      const tradeHit =
+        chart.tradeOn && chart.tradeOn() && !this.props.tool
+          ? chart.tradeHitAt(box.x, box.y)
+          : null;
       if (tradeHit) {
         mode = "trade";
         hit = tradeHit;
@@ -966,7 +1104,8 @@ class ChartView extends Component {
         /* Up and down slide the price window, on a touch screen too (the page
            does not scroll) — but not while the board owns the price scale.
            The plain grid follows the held window since 12 Oct 2026. */
-        vertical: !(chart.priceToY && chart.props.predict) && !chart.compareScaled,
+        vertical:
+          !(chart.priceToY && chart.props.predict) && !chart.compareScaled,
         // The window the slide starts from, in prices; null until it engages
         domain0: null,
         yAt: null,
@@ -977,7 +1116,8 @@ class ChartView extends Component {
          400px pull moved the chart 200px and stood still while they came.
          Not on a pointer merely passing over: a wheel zoom on 1H asks for
          nothing, and hovering must not either (polish holds it). */
-      if (mode === "pan" && this.enabled()) this.askHistory(this._drag.from, this.reach());
+      if (mode === "pan" && this.enabled())
+        this.askHistory(this._drag.from, this.reach());
       // A finger held still becomes the crosshair (VIEW_HOLD_MS)
       if (e.pointerType === "touch" && mode === "pan") {
         const d = this._drag;
@@ -990,7 +1130,14 @@ class ChartView extends Component {
           const svg = chart && chart.svgRef && chart.svgRef.current;
           if (svg && chart.handlePointerMove) {
             const r = svg.getBoundingClientRect();
-            chart.handlePointerMove({ offsetX: d.x - r.left, offsetY: d.y - r.top, clientX: d.x, clientY: d.y, pointerType: "touch", target: svg });
+            chart.handlePointerMove({
+              offsetX: d.x - r.left,
+              offsetY: d.y - r.top,
+              clientX: d.x,
+              clientY: d.y,
+              pointerType: "touch",
+              target: svg,
+            });
           }
           try {
             if (navigator.vibrate) navigator.vibrate(8);
@@ -1026,29 +1173,35 @@ class ChartView extends Component {
           this.setState({ gesture: "scale" });
         }
         const k = Math.exp((dy / d.h) * VIEW_AXIS_STRETCH);
-        const log = Boolean(this.chart.logAxis && this.chart.logAxis()) && from.lo > 0;
+        const log =
+          Boolean(this.chart.logAxis && this.chart.logAxis()) && from.lo > 0;
         let held;
         if (log) {
           const mid = Math.sqrt(from.lo * from.hi);
-          const half = Math.log(from.hi / from.lo) / 2 * k;
+          const half = (Math.log(from.hi / from.lo) / 2) * k;
           held = { lo: mid / Math.exp(half), hi: mid * Math.exp(half) };
         } else {
           const mid = (from.lo + from.hi) / 2;
           const half = ((from.hi - from.lo) / 2) * k;
-          held = { lo: Math.max(mid - half, (from.hi - from.lo) * 1e-6), hi: mid + half };
+          held = {
+            lo: Math.max(mid - half, (from.hi - from.lo) * 1e-6),
+            hi: mid + half,
+          };
         }
         this.show(null, held);
         return;
       }
       if (!d.moved) {
-        const far = d.mode === "pan" && !d.vertical ? Math.abs(dx) : Math.hypot(dx, dy);
+        const far =
+          d.mode === "pan" && !d.vertical ? Math.abs(dx) : Math.hypot(dx, dy);
         if (far < VIEW_DRAG_SLOP) return;
         d.moved = true;
         if (this.chart) this.chart.clearHover();
         this.setState({ panning: d.mode === "pan", gesture: d.mode });
       }
       if (d.mode !== "pan") {
-        const svg = this.chart && this.chart.svgRef && this.chart.svgRef.current;
+        const svg =
+          this.chart && this.chart.svgRef && this.chart.svgRef.current;
         if (!svg) return;
         const r = svg.getBoundingClientRect();
         const x = e.clientX - r.left;
@@ -1080,12 +1233,20 @@ class ChartView extends Component {
       }
       let y = null;
       if (d.yAt != null && d.domain0 && d.h > 0) {
-        const f = Math.max(-VIEW_Y_MAX, Math.min(VIEW_Y_MAX, (dy - d.yAt) / d.h));
-        const log = Boolean(this.chart.logAxis && this.chart.logAxis()) && d.domain0.lo > 0;
+        const f = Math.max(
+          -VIEW_Y_MAX,
+          Math.min(VIEW_Y_MAX, (dy - d.yAt) / d.h),
+        );
+        const log =
+          Boolean(this.chart.logAxis && this.chart.logAxis()) &&
+          d.domain0.lo > 0;
         const [lo, hi] = shiftDomain(d.domain0.lo, d.domain0.hi, f, log);
         y = { lo, hi };
       }
-      this.show(panView(d.from, want - d.from.t0, r.lo, b.hi, VIEW_FUTURE_ROOM), y);
+      this.show(
+        panView(d.from, want - d.from.t0, r.lo, b.hi, VIEW_FUTURE_ROOM),
+        y,
+      );
     };
     this.onPointerUp = (e) => {
       if (this._touches) this._touches.delete(e.pointerId);
@@ -1119,7 +1280,12 @@ class ChartView extends Component {
         const now = Date.now();
         const last = this._lastTap;
         this._lastTap = { t: now, x: e.clientX, y: e.clientY };
-        if (last && now - last.t < VIEW_DOUBLE_TAP_MS && Math.hypot(e.clientX - last.x, e.clientY - last.y) < VIEW_DOUBLE_TAP_PX) {
+        if (
+          last &&
+          now - last.t < VIEW_DOUBLE_TAP_MS &&
+          Math.hypot(e.clientX - last.x, e.clientY - last.y) <
+            VIEW_DOUBLE_TAP_PX
+        ) {
           this._lastTap = null;
           if (this.state.yPan) this.setState({ yPan: 0 });
           if (this.props.view || this.state.live) this.commit(null);
@@ -1159,16 +1325,20 @@ class ChartView extends Component {
       if (d.mode === "trade") {
         swallow();
         const out = this.chart ? this.chart.endTradeDrag() : null;
-        if (d.moved && out && this.props.onTradeDrag) this.props.onTradeDrag(out);
-        else if (!d.moved && d.hit && this.props.onTradePress) this.props.onTradePress(d.hit);
+        if (d.moved && out && this.props.onTradeDrag)
+          this.props.onTradeDrag(out);
+        else if (!d.moved && d.hit && this.props.onTradePress)
+          this.props.onTradePress(d.hit);
         if (this.state.gesture) this.setState({ gesture: null });
         return;
       }
       if (d.mode === "tool") {
         swallow();
         const out = this.chart ? this.chart.endToolDrag() : null;
-        if (d.moved && out && this.props.onDrawingChange) this.props.onDrawingChange(out.id, { a: out.a, b: out.b });
-        else if (!d.moved && d.hit && this.props.onDrawingSelect) this.props.onDrawingSelect(d.hit.id);
+        if (d.moved && out && this.props.onDrawingChange)
+          this.props.onDrawingChange(out.id, { a: out.a, b: out.b });
+        else if (!d.moved && d.hit && this.props.onDrawingSelect)
+          this.props.onDrawingSelect(d.hit.id);
         if (this.state.gesture) this.setState({ gesture: null });
         return;
       }
@@ -1226,8 +1396,15 @@ class ChartView extends Component {
   componentDidUpdate(prevProps) {
     /* The window followed a step past its edge: the step, taken in the
        window now drawn (the chart updated its points before this runs). */
-    if (this._readAfter && prevProps.view !== this.props.view && this.chart && this.chart.readAfterPan) {
-      const res = this.chart.readAfterPan(this._readAfter === "same" ? 0 : this._readAfter);
+    if (
+      this._readAfter &&
+      prevProps.view !== this.props.view &&
+      this.chart &&
+      this.chart.readAfterPan
+    ) {
+      const res = this.chart.readAfterPan(
+        this._readAfter === "same" ? 0 : this._readAfter,
+      );
       this._readAfter = 0;
       if (res && res.text) this.setState({ readText: res.text });
     }
@@ -1237,7 +1414,8 @@ class ChartView extends Component {
       prevProps.period !== this.props.period ||
       prevProps.currency !== this.props.currency ||
       (prevProps.viewEnabled && !this.props.viewEnabled);
-    if (switched && this._carryY && prevProps.period !== this.props.period) this.setState({ yPan: this._carryY });
+    if (switched && this._carryY && prevProps.period !== this.props.period)
+      this.setState({ yPan: this._carryY });
     else if (switched && this.state.yPan) this.setState({ yPan: 0 });
     if (switched) this._carryY = null;
     if (switched && (this.state.live || this._drag || this._pending)) {
@@ -1246,7 +1424,12 @@ class ChartView extends Component {
       this._raf = 0;
       clearTimeout(this._settle);
       this._pending = null;
-      this.setState({ live: null, driven: false, panning: false, gesture: null });
+      this.setState({
+        live: null,
+        driven: false,
+        panning: false,
+        gesture: null,
+      });
     }
   }
 
@@ -1256,7 +1439,11 @@ class ChartView extends Component {
     if (!svg || !this._touches || this._touches.size < 2) return null;
     const r = svg.getBoundingClientRect();
     const [a, b] = [...this._touches.values()];
-    return { mid: (a.x + b.x) / 2 - r.left, midY: (a.y + b.y) / 2 - r.top, dist: Math.hypot(a.x - b.x, a.y - b.y) };
+    return {
+      mid: (a.x + b.x) / 2 - r.left,
+      midY: (a.y + b.y) / 2 - r.top,
+      dist: Math.hypot(a.x - b.x, a.y - b.y),
+    };
   }
 
   /* **The price window for a zoom by `k` about a price**, from a window held
@@ -1267,13 +1454,35 @@ class ChartView extends Component {
      the price is not the chart's own (a lattice, a comparison). */
   priceZoom(from, at, k) {
     const chart = this.chart;
-    if (!chart || chart.priceToY || chart.compareScaled || !from || !(from.hi > from.lo) || !(k > 0) || !isFinite(at)) return null;
-    const log = Boolean(chart.logAxis && chart.logAxis()) && from.lo > 0 && at > 0;
+    if (
+      !chart ||
+      chart.priceToY ||
+      chart.compareScaled ||
+      !from ||
+      !(from.hi > from.lo) ||
+      !(k > 0) ||
+      !isFinite(at)
+    )
+      return null;
+    const log =
+      Boolean(chart.logAxis && chart.logAxis()) && from.lo > 0 && at > 0;
     const f = log ? Math.log : (v) => v;
     const share = (f(at) - f(from.lo)) / (f(from.hi) - f(from.lo));
     if (!isFinite(share)) return null;
-    const [lo, hi] = zoomDomain(from.lo, from.hi, Math.max(0, Math.min(1, share)), Math.pow(k, VIEW_Y_ZOOM), log);
+    const yPower = this.yZoomPower();
+    const [lo, hi] = zoomDomain(
+      from.lo,
+      from.hi,
+      Math.max(0, Math.min(1, share)),
+      Math.pow(k, yPower),
+      log,
+    );
     return hi > lo ? { lo, hi } : null;
+  }
+
+  yZoomPower() {
+    const p = Number(this.props.yZoomPower);
+    return isFinite(p) && p > 0 ? p : VIEW_Y_ZOOM;
   }
 
   startPinch() {
@@ -1286,8 +1495,10 @@ class ChartView extends Component {
     /* The price under the fingers when they landed, and the window it was
        read in: the pinch zooms the price about it (9 Oct 2026's rule for
        the wheel, left for the pinch in #103). */
-    const scale = this.chart && this.chart.plotScale ? this.chart.plotScale() : null;
-    const domain0 = this.chart && this.chart.drawnDomain ? this.chart.drawnDomain() : null;
+    const scale =
+      this.chart && this.chart.plotScale ? this.chart.plotScale() : null;
+    const domain0 =
+      this.chart && this.chart.drawnDomain ? this.chart.drawnDomain() : null;
     const t0 = this.current();
     // The price between the fingers, as the wheel takes the pointer's
     const price = scale ? scale.toV(at.midY) : null;
@@ -1306,11 +1517,27 @@ class ChartView extends Component {
     const { from, mid, dist } = d.pinch;
     const span = from.t1 - from.t0;
     const anchor = from.t0 + (mid / d.w) * span;
-    const zoomed = zoomView(from, dist / at.dist, anchor, b.lo, b.hi, this.minSpan(b));
+    const zoomed = zoomView(
+      from,
+      dist / at.dist,
+      anchor,
+      b.lo,
+      b.hi,
+      this.minSpan(b),
+    );
     if (!zoomed) return;
-    const moved = panView(zoomed, (-(at.mid - mid) / d.w) * (zoomed.t1 - zoomed.t0), b.lo, b.hi);
+    const moved = panView(
+      zoomed,
+      (-(at.mid - mid) / d.w) * (zoomed.t1 - zoomed.t0),
+      b.lo,
+      b.hi,
+    );
     const k = (zoomed.t1 - zoomed.t0) / span;
-    const y = viewIsFull(moved || zoomed, b.lo, b.hi) ? (this.state.yPan ? 0 : null) : this.priceZoom(d.pinch.domain0, d.pinch.price, k);
+    const y = viewIsFull(moved || zoomed, b.lo, b.hi)
+      ? this.state.yPan
+        ? 0
+        : null
+      : this.priceZoom(d.pinch.domain0, d.pinch.price, k);
     this.show(moved || zoomed, y);
   }
 
@@ -1357,7 +1584,13 @@ class ChartView extends Component {
   historyRows() {
     const p = this.props;
     const h = p.history;
-    if (!Array.isArray(h) || h.length < 2 || !Array.isArray(p.prices) || !p.prices.length) return null;
+    if (
+      !Array.isArray(h) ||
+      h.length < 2 ||
+      !Array.isArray(p.prices) ||
+      !p.prices.length
+    )
+      return null;
     const first = viewMs(p.prices[0].time);
     const m = this._histMemo;
     if (m && m.h === h && m.first === first) return m.out;
@@ -1371,7 +1604,8 @@ class ChartView extends Component {
   askHistory(view, b) {
     if (!view || !b || typeof this.props.onNeedHistory !== "function") return;
     const span = view.t1 - view.t0;
-    if (span > 0 && view.t0 < b.lo + span * VIEW_HISTORY_AHEAD) this.props.onNeedHistory(b.lo, span);
+    if (span > 0 && view.t0 < b.lo + span * VIEW_HISTORY_AHEAD)
+      this.props.onNeedHistory(b.lo, span);
   }
 
   /* The narrowest window worth drawing: a dozen of the range's own points,
@@ -1379,7 +1613,10 @@ class ChartView extends Component {
      whichever is narrower. */
   minSpan(b) {
     const p = this.props;
-    const own = p.showCandles && Array.isArray(p.candles) ? viewStep(p.candles) : viewStep(p.prices);
+    const own =
+      p.showCandles && Array.isArray(p.candles)
+        ? viewStep(p.candles)
+        : viewStep(p.prices);
     const coarse = own * VIEW_MIN_POINTS;
     const fine = VIEW_GRANULARITIES[0] * 1000 * VIEW_MIN_BARS;
     const want = p.detailSupported ? Math.min(coarse, fine) : coarse;
@@ -1387,7 +1624,11 @@ class ChartView extends Component {
   }
 
   enabled() {
-    return Boolean(this.props.viewEnabled) && Boolean(this.bounds()) && Boolean(this.chart);
+    return (
+      Boolean(this.props.viewEnabled) &&
+      Boolean(this.bounds()) &&
+      Boolean(this.chart)
+    );
   }
 
   // The window in hand: mid-gesture, set, or the whole range
@@ -1395,7 +1636,12 @@ class ChartView extends Component {
     const b = this.bounds();
     if (!b) return null;
     const r = this.reach();
-    const v = resolveView(this._pending || this.state.live || this.props.view, r.lo, r.hi, this.minSpan(b));
+    const v = resolveView(
+      this._pending || this.state.live || this.props.view,
+      r.lo,
+      r.hi,
+      this.minSpan(b),
+    );
     // The whole range is the range's own points, not the older bars behind it
     return v || this.restView(b) || { t0: b.lo, t1: b.hi, atNow: true };
   }
@@ -1409,7 +1655,12 @@ class ChartView extends Component {
     const room = this.props.restRoom;
     if (!(room > 0) || !b || !this.props.viewEnabled) return null;
     const full = b.hi - b.lo;
-    return { t0: b.lo + room * full, t1: b.hi + room * full, atNow: true, ahead: room };
+    return {
+      t0: b.lo + room * full,
+      t1: b.hi + room * full,
+      atNow: true,
+      ahead: room,
+    };
   }
 
   // Nothing in hand and no window set: the chart as it rests
@@ -1424,13 +1675,15 @@ class ChartView extends Component {
     if (!this.enabled()) return null;
     const chart = this.chart;
     const svg = chart.svgRef && chart.svgRef.current;
-    if (!svg || chart.priceToY || chart.compareScaled || !(chart.axisW > 0)) return null;
+    if (!svg || chart.priceToY || chart.compareScaled || !(chart.axisW > 0))
+      return null;
     const r = svg.getBoundingClientRect();
     const x = clientX - r.left;
     const y = clientY - r.top;
     const w = chart.width;
     const h = chart.height;
-    if (!(h > 0) || x <= w || x > w + chart.axisW || y < 0 || y > h) return null;
+    if (!(h > 0) || x <= w || x > w + chart.axisW || y < 0 || y > h)
+      return null;
     return { x, y, h };
   }
 
@@ -1456,14 +1709,33 @@ class ChartView extends Component {
      while the price is not the chart's own (a lattice, a comparison). */
   zoomedPrice(y, k, b, next) {
     const chart = this.chart;
-    if (!chart || chart.priceToY || chart.compareScaled || !(k > 0) || !chart.plotScale) return null;
-    if (viewIsFull(next, b.lo, b.hi)) return this.state.yPan || this._pendingY ? 0 : null;
+    if (
+      !chart ||
+      chart.priceToY ||
+      chart.compareScaled ||
+      !(k > 0) ||
+      !chart.plotScale
+    )
+      return null;
+    if (viewIsFull(next, b.lo, b.hi))
+      return this.state.yPan || this._pendingY ? 0 : null;
     const drawn = chart.drawnDomain();
-    const pending = this._pendingY && typeof this._pendingY === "object" ? this._pendingY : null;
+    const pending =
+      this._pendingY && typeof this._pendingY === "object"
+        ? this._pendingY
+        : null;
     const from = pending || drawn;
     const scale = chart.plotScale();
-    if (!drawn || !from || !scale || !(drawn.hi > drawn.lo) || !(from.hi > from.lo)) return null;
-    const log = Boolean(chart.logAxis && chart.logAxis()) && drawn.lo > 0 && from.lo > 0;
+    if (
+      !drawn ||
+      !from ||
+      !scale ||
+      !(drawn.hi > drawn.lo) ||
+      !(from.hi > from.lo)
+    )
+      return null;
+    const log =
+      Boolean(chart.logAxis && chart.logAxis()) && drawn.lo > 0 && from.lo > 0;
     const f = log ? Math.log : (v) => v;
     // The price under the pointer: it stays under the pointer
     const shareOf = (v) => (f(v) - f(drawn.lo)) / (f(drawn.hi) - f(drawn.lo));
@@ -1471,7 +1743,14 @@ class ChartView extends Component {
     if (!(log ? at > 0 : isFinite(at))) return null;
     // Where it is in the window: the same share of any window at that pixel
     const share = shareOf(at);
-    const [lo, hi] = zoomDomain(from.lo, from.hi, share, Math.pow(k, VIEW_Y_ZOOM), log);
+    const yPower = this.yZoomPower();
+    const [lo, hi] = zoomDomain(
+      from.lo,
+      from.hi,
+      share,
+      Math.pow(k, yPower),
+      log,
+    );
     return hi > lo ? { lo, hi } : null;
   }
 
@@ -1499,7 +1778,14 @@ class ChartView extends Component {
      window (gridGeometryFor). The board does not — a drag there walks it. */
   holdPrice() {
     const chart = this.chart;
-    if (!chart || (chart.priceToY && chart.props.predict) || chart.compareScaled || this.state.yPan || this._pendingY) return null;
+    if (
+      !chart ||
+      (chart.priceToY && chart.props.predict) ||
+      chart.compareScaled ||
+      this.state.yPan ||
+      this._pendingY
+    )
+      return null;
     return this.heldStart();
   }
 
@@ -1527,16 +1813,31 @@ class ChartView extends Component {
      own — and gives the scale back to the data. */
   renderAutoScale() {
     const chart = this.chart;
-    if (!this.state.yPan || !this.enabled() || !chart || !(chart.axisW > 0) || !(chart.height > 0)) return null;
-    if ((chart.priceToY && chart.props.predict) || chart.compareScaled) return null;
-    const title = msg("view_auto_title", "Fit the price scale to the line again (or double-click the price scale)");
+    if (
+      !this.state.yPan ||
+      !this.enabled() ||
+      !chart ||
+      !(chart.axisW > 0) ||
+      !(chart.height > 0)
+    )
+      return null;
+    if ((chart.priceToY && chart.props.predict) || chart.compareScaled)
+      return null;
+    const title = msg(
+      "view_auto_title",
+      "Fit the price scale to the line again (or double-click the price scale)",
+    );
     return React.createElement(
       ScaleAuto,
       {
         "data-scale-auto": "1",
         title,
         "aria-label": title,
-        style: { left: `${Math.round(chart.width + 4)}px`, top: `${Math.round(chart.height + 3)}px`, width: `${Math.max(28, Math.round(chart.axisW - 8))}px` },
+        style: {
+          left: `${Math.round(chart.width + 4)}px`,
+          top: `${Math.round(chart.height + 3)}px`,
+          width: `${Math.max(28, Math.round(chart.axisW - 8))}px`,
+        },
         onClick: () => this.fitScale(),
       },
       msg("view_auto", "Auto"),
@@ -1578,8 +1879,15 @@ class ChartView extends Component {
     let out = null;
     if (view && b && !viewIsFull(view, b.lo, b.hi)) {
       const span = view.t1 - view.t0;
-      const atNow = zoomed ? view.t1 >= b.hi : view.t1 >= b.hi - span * VIEW_AT_NOW;
-      out = { t0: view.t0, t1: view.t1, atNow, ahead: atNow && view.t1 > b.hi ? (view.t1 - b.hi) / span : 0 };
+      const atNow = zoomed
+        ? view.t1 >= b.hi
+        : view.t1 >= b.hi - span * VIEW_AT_NOW;
+      out = {
+        t0: view.t0,
+        t1: view.t1,
+        atNow,
+        ahead: atNow && view.t1 > b.hi ? (view.t1 - b.hi) / span : 0,
+      };
     }
     if (this.props.onViewChange) this.props.onViewChange(out);
     // The last frame of a vertical slide, which the cancelled frame was carrying
@@ -1596,7 +1904,11 @@ class ChartView extends Component {
     const b = this.bounds();
     const v = this.current();
     // − on the whole range: the next range, framed on this one's span
-    if (factor > 1 && (viewIsFull(v, b.lo, b.hi) || this.atRest()) && this.props.onZoomPast) {
+    if (
+      factor > 1 &&
+      (viewIsFull(v, b.lo, b.hi) || this.atRest()) &&
+      this.props.onZoomPast
+    ) {
       this.zoomPast(b.hi - b.lo, 1, b);
       return true;
     }
@@ -1605,12 +1917,19 @@ class ChartView extends Component {
     /* The price follows the wheel's rule about the line's price at the
        anchor — the latest price when the window follows it (#103 left the
        keys' zoom holding the scale where it was). */
-    const drawn = this.chart && this.chart.drawnDomain ? this.chart.drawnDomain() : null;
+    const drawn =
+      this.chart && this.chart.drawnDomain ? this.chart.drawnDomain() : null;
     const y = !next
       ? null
       : viewIsFull(next, b.lo, b.hi)
-        ? (this.state.yPan ? 0 : null)
-        : this.priceZoom(drawn, this.lineAt(anchor) || (drawn ? (drawn.lo + drawn.hi) / 2 : NaN), (next.t1 - next.t0) / (v.t1 - v.t0));
+        ? this.state.yPan
+          ? 0
+          : null
+        : this.priceZoom(
+            drawn,
+            this.lineAt(anchor) || (drawn ? (drawn.lo + drawn.hi) / 2 : NaN),
+            (next.t1 - next.t0) / (v.t1 - v.t0),
+          );
     // + down to the shorter range's length at now: that range
     if (factor < 1 && this.zoomInPast(next, b, y)) return true;
     if (next) {
@@ -1624,7 +1943,13 @@ class ChartView extends Component {
     if (!this.enabled()) return false;
     const r = this.reach();
     const v = this.current();
-    const next = panView(v, share * (v.t1 - v.t0), r.lo, r.hi, VIEW_FUTURE_ROOM);
+    const next = panView(
+      v,
+      share * (v.t1 - v.t0),
+      r.lo,
+      r.hi,
+      VIEW_FUTURE_ROOM,
+    );
     // The keys' pan: older bars as it nears them
     this.askHistory(next, r);
     if (next) this.commit(next);
@@ -1655,7 +1980,11 @@ class ChartView extends Component {
         this.panBy(back ? -VIEW_PAN_STEP : VIEW_PAN_STEP);
         return true;
       }
-      res = { text: back ? msg("read_first", "The first point on the chart") : msg("read_last", "The latest point") };
+      res = {
+        text: back
+          ? msg("read_first", "The first point on the chart")
+          : msg("read_last", "The latest point"),
+      };
     }
     if (res && res.text) this.setState({ readText: res.text });
     return true;
@@ -1669,7 +1998,8 @@ class ChartView extends Component {
     const v = this.current();
     if (!b || !v) return false;
     const room = share < 0 ? v.t0 > b.lo + 1 : v.t1 < b.hi - 1;
-    if (room && this.chart && this.chart.reading && this.chart.reading()) this._readAfter = "same";
+    if (room && this.chart && this.chart.reading && this.chart.reading())
+      this._readAfter = "same";
     return this.panBy(share);
   }
 
@@ -1686,13 +2016,32 @@ class ChartView extends Component {
   summary(prices) {
     const p = this.props;
     const m = this._summaryMemo;
-    if (m && m.prices === prices && m.coin === p.coin && m.currency === p.currency && m.fmt === p.formatPrice && m.period === p.period) {
+    if (
+      m &&
+      m.prices === prices &&
+      m.coin === p.coin &&
+      m.currency === p.currency &&
+      m.fmt === p.formatPrice &&
+      m.period === p.period
+    ) {
       return m.text;
     }
     const fmt = (v) => (p.formatPrice ? p.formatPrice(Number(v)) : String(v));
     const when = (t) => crosshairDate(new Date(viewMs(t)), p.period);
-    const text = chartSummaryText(prices, { coin: p.coin || "", currency: p.currency || "", fmt, when });
-    this._summaryMemo = { prices, coin: p.coin, currency: p.currency, fmt: p.formatPrice, period: p.period, text };
+    const text = chartSummaryText(prices, {
+      coin: p.coin || "",
+      currency: p.currency || "",
+      fmt,
+      when,
+    });
+    this._summaryMemo = {
+      prices,
+      coin: p.coin,
+      currency: p.currency,
+      fmt: p.formatPrice,
+      period: p.period,
+      text,
+    };
     return text;
   }
 
@@ -1703,7 +2052,11 @@ class ChartView extends Component {
     const p = this.props;
     const b = this.bounds();
     const r = this.reach();
-    const v = b && p.viewEnabled ? resolveView(this.state.live || p.view, r.lo, r.hi, this.minSpan(b)) || this.restView(b) : null;
+    const v =
+      b && p.viewEnabled
+        ? resolveView(this.state.live || p.view, r.lo, r.hi, this.minSpan(b)) ||
+          this.restView(b)
+        : null;
     const width = this.chart ? this.chart.width : 0;
     const m = this._memo;
     if (
@@ -1723,45 +2076,88 @@ class ChartView extends Component {
     }
     let out;
     if (!v) {
-      out = { prices: p.prices, candles: p.candles, ohlc: p.ohlc, moves: p.moves, lastPoint: null, atNow: true, viewWindow: null, viewFuture: 0 };
+      out = {
+        prices: p.prices,
+        candles: p.candles,
+        ohlc: p.ohlc,
+        moves: p.moves,
+        lastPoint: null,
+        atNow: true,
+        viewWindow: null,
+        viewFuture: 0,
+      };
     } else {
-      const candleMode = Boolean(p.showCandles && Array.isArray(p.candles) && p.candles.length);
+      const candleMode = Boolean(
+        p.showCandles && Array.isArray(p.candles) && p.candles.length,
+      );
       const coarseMs = candleMode ? viewStep(p.candles) : viewStep(p.prices);
-      const fine = detailCovers(p.detail, p.coin, p.currency, v.t0, v.t1, coarseMs) ? p.detail : null;
+      const fine = detailCovers(
+        p.detail,
+        p.coin,
+        p.currency,
+        v.t0,
+        v.t1,
+        coarseMs,
+      )
+        ? p.detail
+        : null;
       /* A window reaching before the range's first point draws the older
          bars the pan fetched in front of it — the same step, so the line
          keeps its shape as it passes from one to the other. */
-      const older = !fine && v.t0 < viewMs(p.prices[0].time) ? this.historyRows() : null;
-      const full = older ? older.map((c) => ({ price: c.close, time: new Date(viewMs(c.time)) })).concat(p.prices) : p.prices;
+      const older =
+        !fine && v.t0 < viewMs(p.prices[0].time) ? this.historyRows() : null;
+      const full = older
+        ? older
+            .map((c) => ({ price: c.close, time: new Date(viewMs(c.time)) }))
+            .concat(p.prices)
+        : p.prices;
       const last = full[full.length - 1];
       /* Room past the latest price: the series is cut where the data ends,
          and the chart is told what share of the width is blank time after
          it (LineBase's viewFutureWidth). */
       const lastT = viewMs(last.time);
       const t1 = Math.min(v.t1, lastT);
-      const viewFuture = v.t1 > lastT && v.t1 > v.t0 ? (v.t1 - lastT) / (v.t1 - v.t0) : 0;
+      const viewFuture =
+        v.t1 > lastT && v.t1 > v.t0 ? (v.t1 - lastT) / (v.t1 - v.t0) : 0;
       let candles = p.candles;
       let line;
       if (candleMode) {
-        candles = sliceCandles(fine ? fine.candles : older ? older.concat(p.candles) : p.candles, v.t0, t1);
+        candles = sliceCandles(
+          fine ? fine.candles : older ? older.concat(p.candles) : p.candles,
+          v.t0,
+          t1,
+        );
         line = candles.map((c) => ({ price: c.close, time: new Date(c.time) }));
         if (line.length < 2) line = sliceSeries(full, v.t0, t1);
       } else {
         let source = full;
         if (fine) {
-          source = fine.candles.map((c) => ({ price: c.close, time: new Date(c.time) }));
+          source = fine.candles.map((c) => ({
+            price: c.close,
+            time: new Date(c.time),
+          }));
           // The live end: the range's own latest price, when it is newer
-          if (viewMs(last.time) > viewMs(source[source.length - 1].time)) source = source.concat([last]);
+          if (viewMs(last.time) > viewMs(source[source.length - 1].time))
+            source = source.concat([last]);
         }
         line = sliceSeries(source, v.t0, t1);
-        if (width > 0 && line.length > width * VIEW_LTTB_OVER) line = m4(line, v.t0, v.t1, Math.round(width));
+        if (width > 0 && line.length > width * VIEW_LTTB_OVER)
+          line = m4(line, v.t0, v.t1, Math.round(width));
       }
       out = {
         prices: line,
         candles,
-        ohlc: fine ? fine.candles : older && Array.isArray(p.ohlc) ? older.concat(p.ohlc) : p.ohlc,
+        ohlc: fine
+          ? fine.candles
+          : older && Array.isArray(p.ohlc)
+            ? older.concat(p.ohlc)
+            : p.ohlc,
         moves: remapMoves(p.moves, line),
-        lastPoint: { price: Number(last.price), time: last.time, up: Number(last.price) >= Number(full[0].price) },
+        lastPoint: {
+          price: Number(last.price),
+          time: last.time,
+          up: Number(last.price) >= Number(full[0].price),
+        },
         atNow: v.atNow,
         viewWindow: { t0: v.t0, t1: v.t1, g: fine ? fine.g : 0 },
         viewFuture,
@@ -1786,7 +2182,19 @@ class ChartView extends Component {
   render() {
     // Everything but the window's own props goes on to the chart
     const rest = Object.assign({}, this.props);
-    for (const k of ["view", "onViewChange", "viewEnabled", "detail", "detailSupported", "onZoomPast", "finerSpan", "history", "onNeedHistory", "restRoom"]) delete rest[k];
+    for (const k of [
+      "view",
+      "onViewChange",
+      "viewEnabled",
+      "detail",
+      "detailSupported",
+      "onZoomPast",
+      "finerSpan",
+      "history",
+      "onNeedHistory",
+      "restRoom",
+    ])
+      delete rest[k];
     const enabled = Boolean(this.props.viewEnabled);
     const shaped = this.shape();
     const gesture = this.state.gesture;
@@ -1797,23 +2205,43 @@ class ChartView extends Component {
         innerRef: this.boxRef,
         enabled,
         panning: this.state.panning,
-        cursor: gesture === "measure" ? "crosshair" : gesture === "tool" ? "move" : gesture === "trade" || gesture === "scale" || (!gesture && this.state.overAxis) ? "ns-resize" : !gesture && this.state.overTrade ? this.state.overTrade : enabled && this.props.tool ? "crosshair" : null,
+        cursor:
+          gesture === "measure"
+            ? "crosshair"
+            : gesture === "tool"
+              ? "move"
+              : gesture === "trade" ||
+                  gesture === "scale" ||
+                  (!gesture && this.state.overAxis)
+                ? "ns-resize"
+                : !gesture && this.state.overTrade
+                  ? this.state.overTrade
+                  : enabled && this.props.tool
+                    ? "crosshair"
+                    : null,
         /* The price scale says it can be dragged, as the plot says it can be
            panned — and a line the hand can take says so before it is taken. */
         onMouseMove: enabled
           ? (e) => {
               const over = Boolean(this.axisBox(e.clientX, e.clientY));
-              if (over !== Boolean(this.state.overAxis)) this.setState({ overAxis: over });
+              if (over !== Boolean(this.state.overAxis))
+                this.setState({ overAxis: over });
               const chart = this.chart;
-              const box = chart && chart.tradeOn && chart.tradeOn() ? this.plotBox(e.clientX, e.clientY) : null;
+              const box =
+                chart && chart.tradeOn && chart.tradeOn()
+                  ? this.plotBox(e.clientX, e.clientY)
+                  : null;
               const trade = box ? chart.tradeCursor(box.x, box.y) : null;
-              if (trade !== (this.state.overTrade || null)) this.setState({ overTrade: trade });
+              if (trade !== (this.state.overTrade || null))
+                this.setState({ overTrade: trade });
             }
           : undefined,
         "data-chart-viewport": enabled ? "1" : undefined,
         // The tour's "move around it" step (onboarding.js)
         "data-tour": "chart",
-        "data-chart-window": shaped.viewWindow ? `${Math.round(shaped.viewWindow.t0)}-${Math.round(shaped.viewWindow.t1)}` : undefined,
+        "data-chart-window": shaped.viewWindow
+          ? `${Math.round(shaped.viewWindow.t0)}-${Math.round(shaped.viewWindow.t1)}`
+          : undefined,
         tabIndex: enabled ? 0 : undefined,
         role: enabled ? "group" : undefined,
         "aria-label": enabled
@@ -1840,8 +2268,16 @@ class ChartView extends Component {
       ),
       this.renderDrawMenu(),
       this.renderAutoScale(),
-      React.createElement(ReadingText, { id: this.summaryId, "data-chart-summary": "1" }, summary),
-      React.createElement(ReadingText, { "aria-live": "polite", "data-chart-reading": "1" }, this.state.readText),
+      React.createElement(
+        ReadingText,
+        { id: this.summaryId, "data-chart-summary": "1" },
+        summary,
+      ),
+      React.createElement(
+        ReadingText,
+        { "aria-live": "polite", "data-chart-reading": "1" },
+        this.state.readText,
+      ),
     );
   }
 
@@ -1852,9 +2288,13 @@ class ChartView extends Component {
   renderDrawMenu() {
     const p = this.props;
     const chart = this.chart;
-    if (!p.viewEnabled || !chart || !chart.toolsOn || !chart.toolsOn()) return null;
+    if (!p.viewEnabled || !chart || !chart.toolsOn || !chart.toolsOn())
+      return null;
     const id = p.drawingSelected;
-    const d = id && Array.isArray(p.drawings) ? p.drawings.find((x) => x.id === id) : null;
+    const d =
+      id && Array.isArray(p.drawings)
+        ? p.drawings.find((x) => x.id === id)
+        : null;
     if (!d) return null;
     const pt = chart.drawPoint(d.a);
     if (!pt) return null;
@@ -1877,10 +2317,14 @@ class ChartView extends Component {
             maxLength: DRAWING_NOTE_MAX,
             autoFocus: true,
             "aria-label": msg("tool_note_label", "A note on this drawing"),
-            placeholder: msg("tool_note_placeholder", "A note — Enter keeps it"),
+            placeholder: msg(
+              "tool_note_placeholder",
+              "A note — Enter keeps it",
+            ),
             onKeyDown: (e) => {
               if (e.key === "Enter") commit(e.target.value);
-              else if (e.key === "Escape" && p.onDrawingEdit) p.onDrawingEdit(null);
+              else if (e.key === "Escape" && p.onDrawingEdit)
+                p.onDrawingEdit(null);
             },
             onBlur: (e) => commit(e.target.value),
           }),
@@ -1889,18 +2333,31 @@ class ChartView extends Component {
           d.kind === "hline" && p.onDrawingTarget
             ? React.createElement(
                 DrawMenuButton,
-                { key: "target", onClick: () => p.onDrawingTarget(id), "data-draw-target": "1" },
+                {
+                  key: "target",
+                  onClick: () => p.onDrawingTarget(id),
+                  "data-draw-target": "1",
+                },
                 msg("tool_target_here", "Price target here"),
               )
             : null,
           React.createElement(
             DrawMenuButton,
-            { key: "note", onClick: () => p.onDrawingEdit && p.onDrawingEdit(id) },
-            d.note ? msg("tool_note_edit", "Edit note") : msg("tool_note_add", "Note"),
+            {
+              key: "note",
+              onClick: () => p.onDrawingEdit && p.onDrawingEdit(id),
+            },
+            d.note
+              ? msg("tool_note_edit", "Edit note")
+              : msg("tool_note_add", "Note"),
           ),
           React.createElement(
             DrawMenuButton,
-            { key: "del", onClick: () => p.onDrawingDelete && p.onDrawingDelete(id), "data-draw-delete": "1" },
+            {
+              key: "del",
+              onClick: () => p.onDrawingDelete && p.onDrawingDelete(id),
+              "data-draw-delete": "1",
+            },
             msg("tool_delete", "Delete"),
           ),
         ];

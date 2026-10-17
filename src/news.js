@@ -78,7 +78,10 @@ const grantedNewsSources = () => {
  * routing this through a promise chain first looks like the user declining. */
 const requestNewsPermission = () =>
   new Promise((resolve) => {
-    if (!hasPermissionsApi() || typeof chrome.permissions.request !== "function") {
+    if (
+      !hasPermissionsApi() ||
+      typeof chrome.permissions.request !== "function"
+    ) {
       return resolve(false);
     }
     try {
@@ -99,11 +102,17 @@ const requestNewsPermission = () =>
 const requestNewsOrigin = (id) =>
   new Promise((resolve) => {
     const origin = NEWS_SOURCE_ORIGINS[id];
-    if (!origin || !hasPermissionsApi() || typeof chrome.permissions.request !== "function") {
+    if (
+      !origin ||
+      !hasPermissionsApi() ||
+      typeof chrome.permissions.request !== "function"
+    ) {
       return resolve(false);
     }
     try {
-      chrome.permissions.request({ origins: [origin] }, (granted) => resolve(readGranted(granted)));
+      chrome.permissions.request({ origins: [origin] }, (granted) =>
+        resolve(readGranted(granted)),
+      );
     } catch (error) {
       resolve(false);
     }
@@ -112,11 +121,17 @@ const requestNewsOrigin = (id) =>
 const dropNewsOrigin = (id) =>
   new Promise((resolve) => {
     const origin = NEWS_SOURCE_ORIGINS[id];
-    if (!origin || !hasPermissionsApi() || typeof chrome.permissions.remove !== "function") {
+    if (
+      !origin ||
+      !hasPermissionsApi() ||
+      typeof chrome.permissions.remove !== "function"
+    ) {
       return resolve(false);
     }
     try {
-      chrome.permissions.remove({ origins: [origin] }, (done) => resolve(readGranted(done)));
+      chrome.permissions.remove({ origins: [origin] }, (done) =>
+        resolve(readGranted(done)),
+      );
     } catch (error) {
       resolve(false);
     }
@@ -124,7 +139,10 @@ const dropNewsOrigin = (id) =>
 
 const dropNewsPermission = () =>
   new Promise((resolve) => {
-    if (!hasPermissionsApi() || typeof chrome.permissions.remove !== "function") {
+    if (
+      !hasPermissionsApi() ||
+      typeof chrome.permissions.remove !== "function"
+    ) {
       return resolve(false);
     }
     try {
@@ -174,7 +192,10 @@ const NEWS_COVERED_WINDOW_MS = 3 * 86400000;
 /* How many newsrooms ran a (folded) story — distinct sources, the head's own
    included. */
 const newsroomsOf = (row) =>
-  new Set([row.source, ...(Array.isArray(row.also) ? row.also.map((a) => a.source) : [])]).size;
+  new Set([
+    row.source,
+    ...(Array.isArray(row.also) ? row.also.map((a) => a.source) : []),
+  ]).size;
 
 /* How recent an unusual move has to be to be worth a section of its own.
  *
@@ -249,7 +270,8 @@ class NewsPanel extends PureComponent {
 
   componentWillUnmount() {
     this.gone = true;
-    if (this.previewKeyOn) document.removeEventListener("keydown", this.handlePreviewKey, true);
+    if (this.previewKeyOn)
+      document.removeEventListener("keydown", this.handlePreviewKey, true);
   }
 
   refreshPermission() {
@@ -332,7 +354,10 @@ class NewsPanel extends PureComponent {
      * headed the panel with a ten-second step of −0.03% — and its "Mark it on
      * the chart" offered a mark the chart would never draw. Events come back
      * in time order, so the last is the latest. */
-    const moves = findMoveEvents(prices, { sigma: MOVE_NEWS_SIGMA, max: MOVE_NEWS_MAX_MARKS });
+    const moves = findMoveEvents(prices, {
+      sigma: MOVE_NEWS_SIGMA,
+      max: MOVE_NEWS_MAX_MARKS,
+    });
     if (!moves.length) return null;
     const move = moves[moves.length - 1];
     /* Only if it is *recent*. The visible range can be a year, and "BTC moved
@@ -367,7 +392,10 @@ class NewsPanel extends PureComponent {
     const steps = prices.length - 1;
     if (share == null || !(steps > 0)) return null;
     const span = move.time - move.startTime;
-    const stepText = span < 90000 ? `${Math.max(1, Math.round(span / 1000))}s` : spanText(span);
+    const stepText =
+      span < 90000
+        ? `${Math.max(1, Math.round(span / 1000))}s`
+        : spanText(span);
     // An event of several steps is counted against every stretch that long
     const len = Number.isInteger(move.steps) && move.steps > 1 ? move.steps : 1;
     const stretches = steps - len + 1;
@@ -457,10 +485,7 @@ class NewsPanel extends PureComponent {
                memory has nothing, which is not the same as nothing having been
                written. The chart's own mark asks an archive; this section
                deliberately does not, so it says which question it answered. */
-            msg(
-              "news_unusual_none",
-              "Nothing in the loaded feed mentions it.",
-            ),
+            msg("news_unusual_none", "Nothing in the loaded feed mentions it."),
           ),
       React.createElement(
         NewsUnusualNote,
@@ -516,7 +541,9 @@ class NewsPanel extends PureComponent {
         .filter(
           (i) =>
             !query ||
-            `${i.title} ${i.summary || ""} ${i.source || ""}`.toLowerCase().includes(query),
+            `${i.title} ${i.summary || ""} ${i.source || ""}`
+              .toLowerCase()
+              .includes(query),
         )
         .map((i) => Object.assign({}, i));
       for (const row of kept) row.toneRead = newsTone(row);
@@ -526,7 +553,10 @@ class NewsPanel extends PureComponent {
     list = list.filter((i) => enabled[i.source] !== false);
     if (scope === "coins") list = newsForCoins(list, coinOptions);
     if (scope === "portfolio") {
-      list = newsForCoins(list, (portfolio || []).map((h) => h.coin));
+      list = newsForCoins(
+        list,
+        (portfolio || []).map((h) => h.coin),
+      );
     }
     /* **The search matches what the row shows.**
      *
@@ -539,7 +569,9 @@ class NewsPanel extends PureComponent {
      * do — the same word, in the place people try first. */
     if (query) {
       list = list.filter((i) =>
-        `${i.title} ${i.summary || ""} ${i.source || ""}`.toLowerCase().includes(query),
+        `${i.title} ${i.summary || ""} ${i.source || ""}`
+          .toLowerCase()
+          .includes(query),
       );
     }
     /* Cluster **last**, on what survived the filters, and that ordering is the
@@ -557,10 +589,14 @@ class NewsPanel extends PureComponent {
     /* An exchange's notices are each their own event, written from one
        template ("Bybit to Support … Network Upgrade"), so the fold would take
        three coins' upgrades for one story. They join the list unfolded. */
-    const solo = new Set(NEWS_SOURCES.filter((src) => src.kind === "bybit").map((src) => src.name));
+    const solo = new Set(
+      NEWS_SOURCES.filter((src) => src.kind === "bybit").map((src) => src.name),
+    );
     const rows = [
       ...clusterNewsItems(list.filter((i) => !solo.has(i.source))),
-      ...list.filter((i) => solo.has(i.source)).map((i) => Object.assign({}, i)),
+      ...list
+        .filter((i) => solo.has(i.source))
+        .map((i) => Object.assign({}, i)),
     ].sort((a, b) => (Number(b.time) || 0) - (Number(a.time) || 0));
     /* The tone mark is computed once per row here rather than in the render,
        and the tally the head and the aside print is over these rows — the
@@ -608,7 +644,10 @@ class NewsPanel extends PureComponent {
       return msg("news_no_match", "Nothing matching “$1”.", this.state.query);
     }
     if (this.state.tone !== "any") {
-      return msg("news_none_tone", "Nothing worded that way on screen right now.");
+      return msg(
+        "news_none_tone",
+        "Nothing worded that way on screen right now.",
+      );
     }
     if (!(Array.isArray(this.props.items) && this.props.items.length)) {
       return this.props.blocked
@@ -661,8 +700,12 @@ class NewsPanel extends PureComponent {
        silence is a different fact from a newsroom's silence, and saying the
        wrong one of the two is exactly the mistake this panel was built to
        stop. */
-    const onBeat = NEWS_SOURCES.some((src) => src.cryptoOnly && src.name === name);
-    const carried = (Array.isArray(this.props.items) ? this.props.items : []).some((i) => i.source === name);
+    const onBeat = NEWS_SOURCES.some(
+      (src) => src.cryptoOnly && src.name === name,
+    );
+    const carried = (
+      Array.isArray(this.props.items) ? this.props.items : []
+    ).some((i) => i.source === name);
     const quiet =
       newest[name] && Date.now() - newest[name] > NEWS_STALE_MS
         ? newsAge(newest[name])
@@ -686,20 +729,30 @@ class NewsPanel extends PureComponent {
           name,
         )
       : cooling
-      ? msg("news_chip_cooling", "$1 — asked us to slow down; trying again $2", name, describeAhead(cooling))
-      : silent
-      ? onBeat
         ? msg(
-            "news_chip_off_beat",
-            "$1 — publishing, but nothing about crypto in this batch",
+            "news_chip_cooling",
+            "$1 — asked us to slow down; trying again $2",
             name,
+            describeAhead(cooling),
           )
-        : msg("news_chip_silent", "$1 — nothing came back this time", name)
-      : quiet
-        ? onBeat
-          ? msg("news_chip_quiet_beat", "$1 — nothing on this beat for $2", name, quiet)
-          : msg("news_chip_quiet", "$1 — nothing new for $2", name, quiet)
-        : msg("news_chip_toggle", "Show or hide $1", name);
+        : silent
+          ? onBeat
+            ? msg(
+                "news_chip_off_beat",
+                "$1 — publishing, but nothing about crypto in this batch",
+                name,
+              )
+            : msg("news_chip_silent", "$1 — nothing came back this time", name)
+          : quiet
+            ? onBeat
+              ? msg(
+                  "news_chip_quiet_beat",
+                  "$1 — nothing on this beat for $2",
+                  name,
+                  quiet,
+                )
+              : msg("news_chip_quiet", "$1 — nothing new for $2", name, quiet)
+            : msg("news_chip_toggle", "Show or hide $1", name);
     return { src, quiet, silent, cooling, dormant, title };
   }
 
@@ -712,7 +765,8 @@ class NewsPanel extends PureComponent {
       NewsChips,
       null,
       ...names.map((name) => {
-        const { src, quiet, silent, cooling, dormant, title } = this.sourceFacts(name, newest, cooldowns);
+        const { src, quiet, silent, cooling, dormant, title } =
+          this.sourceFacts(name, newest, cooldowns);
         return React.createElement(
           NewsChip,
           {
@@ -731,10 +785,18 @@ class NewsPanel extends PureComponent {
           dormant
             ? null
             : cooling
-            ? React.createElement(NewsChipAge, null, msg("news_chip_paused", "paused"))
-            : silent
-              ? React.createElement(NewsChipAge, null, msg("news_chip_none", "none"))
-              : quiet && React.createElement(NewsChipAge, null, quiet),
+              ? React.createElement(
+                  NewsChipAge,
+                  null,
+                  msg("news_chip_paused", "paused"),
+                )
+              : silent
+                ? React.createElement(
+                    NewsChipAge,
+                    null,
+                    msg("news_chip_none", "none"),
+                  )
+                : quiet && React.createElement(NewsChipAge, null, quiet),
         );
       }),
     );
@@ -827,7 +889,11 @@ class NewsPanel extends PureComponent {
         React.createElement(
           NewsAccessNote,
           null,
-          msg("news_more_in_settings", "$1 more newsrooms need a permission you have not granted.", total),
+          msg(
+            "news_more_in_settings",
+            "$1 more newsrooms need a permission you have not granted.",
+            total,
+          ),
         ),
         this.props.onOpenPermissions &&
           React.createElement(
@@ -886,7 +952,10 @@ class NewsPanel extends PureComponent {
               saveNewsAskSeen();
               this.setState({ askSeen: true });
             },
-            title: msg("news_not_now_hint", "Put this away. You can grant it later in Settings → Permissions"),
+            title: msg(
+              "news_not_now_hint",
+              "Put this away. You can grant it later in Settings → Permissions",
+            ),
           },
           msg("news_not_now", "Not now"),
         ),
@@ -908,7 +977,10 @@ class NewsPanel extends PureComponent {
     const peakAt = bins.lastIndexOf(peak);
     const hourOf = (i) => {
       try {
-        return new Date(end - (24 - i) * HOUR).toLocaleTimeString(intlTag(activeLocale()), { hour: "2-digit", minute: "2-digit" });
+        return new Date(end - (24 - i) * HOUR).toLocaleTimeString(
+          intlTag(activeLocale()),
+          { hour: "2-digit", minute: "2-digit" },
+        );
       } catch (error) {
         return "";
       }
@@ -916,10 +988,22 @@ class NewsPanel extends PureComponent {
     return React.createElement(
       NewsAsideSection,
       { "data-news-pulse": "true" },
-      React.createElement(NewsAsideLabel, null, msg("news_pulse_head", "The last 24 hours · $1 stories", dated)),
+      React.createElement(
+        NewsAsideLabel,
+        null,
+        msg("news_pulse_head", "The last 24 hours · $1 stories", dated),
+      ),
       React.createElement(
         NewsPulse,
-        { role: "img", "aria-label": msg("news_pulse_aria", "Stories per hour over the last 24 hours; the busiest hour from $1 had $2", hourOf(peakAt), peak) },
+        {
+          role: "img",
+          "aria-label": msg(
+            "news_pulse_aria",
+            "Stories per hour over the last 24 hours; the busiest hour from $1 had $2",
+            hourOf(peakAt),
+            peak,
+          ),
+        },
         ...bins.map((n, i) =>
           React.createElement("span", {
             key: i,
@@ -933,7 +1017,11 @@ class NewsPanel extends PureComponent {
         NewsPulseEnds,
         null,
         React.createElement("span", null, msg("news_pulse_from", "24h ago")),
-        React.createElement("span", null, msg("news_pulse_peak", "busiest: $1 · $2", hourOf(peakAt), peak)),
+        React.createElement(
+          "span",
+          null,
+          msg("news_pulse_peak", "busiest: $1 · $2", hourOf(peakAt), peak),
+        ),
         React.createElement("span", null, msg("news_pulse_now", "now")),
       ),
     );
@@ -950,21 +1038,47 @@ class NewsPanel extends PureComponent {
     const perCoin = matchers
       .map((m) => ({
         coin: m.coin,
-        n: all.filter((row) => newsMentionsCoin(row, m.coin, m.re, m.name)).length,
+        n: all.filter((row) => newsMentionsCoin(row, m.coin, m.re, m.name))
+          .length,
       }))
       .filter((c) => c.n > 0)
       .sort((a, b) => b.n - a.n);
     const names = this.askedSources();
+    const carried = new Set(
+      (this.state.savedOnly
+        ? Array.isArray(this.props.items)
+          ? this.props.items
+          : []
+        : all
+      ).map((row) => row.source),
+    );
+    const now = Date.now();
+    const { enabled } = this.props;
+    const datedRows = all.filter(
+      (row) => Number(row && row.time) > 0 && Number(row.time) <= now + 60e3,
+    );
+    const in24h = datedRows.filter(
+      (row) => now - Number(row.time) <= 24 * 3600e3,
+    ).length;
+    const activeSources = names.filter(
+      (name) => carried.has(name) && enabled[name] !== false,
+    ).length;
+    const multiSource = all.filter((row) => newsroomsOf(row) >= 2).length;
+    const themeNames = {
+      regulation: msg("news_kind_regulation", "regulation"),
+      funds: msg("news_kind_funds", "funds and ETFs"),
+      security: msg("news_kind_security", "security"),
+      macro: msg("news_kind_macro", "the economy"),
+      technology: msg("news_kind_technology", "technology"),
+      markets: msg("news_kind_markets", "markets and trading"),
+      business: msg("news_kind_business", "business"),
+      mining: msg("news_kind_mining", "mining"),
+    };
+    const themes = newsThemeSummary(all).slice(0, 4);
     /* The sources are about the feed, whichever list is on screen: in the
        saved view the rows are what was kept, and reading "carried" off them
        marked every newsroom not in it as having nothing. */
-    const carried = new Set(
-      (this.state.savedOnly ? (Array.isArray(this.props.items) ? this.props.items : []) : all).map(
-        (row) => row.source,
-      ),
-    );
     const cooldowns = hostCooldownsNow();
-    const { enabled } = this.props;
     const fact = (value, label) =>
       React.createElement(
         NewsFact,
@@ -978,7 +1092,38 @@ class NewsPanel extends PureComponent {
       React.createElement(
         NewsAsideSection,
         null,
-        React.createElement(NewsAsideLabel, null, msg("news_tone_head", "Wording · $1 stories", all.length)),
+        React.createElement(
+          NewsAsideLabel,
+          null,
+          msg("news_feed_head", "Feed snapshot"),
+        ),
+        React.createElement(
+          NewsFacts,
+          null,
+          fact(in24h, msg("news_feed_24h", "in the last 24h")),
+          fact(
+            activeSources,
+            msg("news_feed_active_sources", "active sources"),
+          ),
+          fact(multiSource, msg("news_feed_multi", "multi-source stories")),
+        ),
+        React.createElement(
+          NewsAsideNote,
+          null,
+          msg(
+            "news_feed_note",
+            "Counts only what is currently on screen: dated rows from the last 24 hours, sources that are on and carrying rows, and stories that at least two newsrooms in this feed ran.",
+          ),
+        ),
+      ),
+      React.createElement(
+        NewsAsideSection,
+        null,
+        React.createElement(
+          NewsAsideLabel,
+          null,
+          msg("news_tone_head", "Wording · $1 stories", all.length),
+        ),
         React.createElement(
           NewsFacts,
           null,
@@ -991,7 +1136,11 @@ class NewsPanel extends PureComponent {
             NewsToneBar,
             { "data-news-tone-bar": "true", "aria-hidden": "true" },
             ...["up", "down", "flat"].map((k) =>
-              React.createElement("span", { key: k, "data-tone": k, style: { width: `${(tally[k] / all.length) * 100}%` } }),
+              React.createElement("span", {
+                key: k,
+                "data-tone": k,
+                style: { width: `${(tally[k] / all.length) * 100}%` },
+              }),
             ),
           ),
         React.createElement(
@@ -1003,12 +1152,31 @@ class NewsPanel extends PureComponent {
           ),
         ),
       ),
+      themes.length > 0 &&
+        React.createElement(
+          NewsAsideSection,
+          null,
+          React.createElement(
+            NewsAsideLabel,
+            null,
+            msg("news_read_kind", "Reads as"),
+          ),
+          React.createElement(
+            NewsFacts,
+            null,
+            ...themes.map((k) => fact(k.count, themeNames[k.kind] || k.kind)),
+          ),
+        ),
       this.renderPulse(all),
       perCoin.length > 0 &&
         React.createElement(
           NewsAsideSection,
           null,
-          React.createElement(NewsAsideLabel, null, msg("news_your_coins", "Your coins in the news")),
+          React.createElement(
+            NewsAsideLabel,
+            null,
+            msg("news_your_coins", "Your coins in the news"),
+          ),
           React.createElement(
             NewsCoinRow,
             null,
@@ -1018,10 +1186,15 @@ class NewsPanel extends PureComponent {
                 {
                   key: c.coin,
                   active: this.state.query.trim().toUpperCase() === c.coin,
-                  title: msg("news_coin_narrow", "Narrow the list to stories naming $1", c.coin),
+                  title: msg(
+                    "news_coin_narrow",
+                    "Narrow the list to stories naming $1",
+                    c.coin,
+                  ),
                   onClick: () =>
                     this.setState((p) => ({
-                      query: p.query.trim().toUpperCase() === c.coin ? "" : c.coin,
+                      query:
+                        p.query.trim().toUpperCase() === c.coin ? "" : c.coin,
                     })),
                 },
                 c.coin,
@@ -1033,21 +1206,26 @@ class NewsPanel extends PureComponent {
       React.createElement(
         NewsAsideSection,
         null,
-        React.createElement(NewsAsideLabel, null, msg("news_sources_head", "Sources · $1 asked", names.length)),
+        React.createElement(
+          NewsAsideLabel,
+          null,
+          msg("news_sources_head", "Sources · $1 asked", names.length),
+        ),
         ...names.map((name) => {
           const src = NEWS_SOURCES.find((s) => s.name === name);
           const cooling = src && src.url ? cooldowns[hostOf(src.url)] : 0;
           const last = newest[name];
           const quiet = last && Date.now() - last > NEWS_STALE_MS;
-          const state = src && src.optIn && enabled[name] === false
-            ? msg("news_src_off", "off")
-            : cooling
-            ? msg("news_src_paused", "paused $1", describeAhead(cooling))
-            : !carried.has(name)
-              ? msg("news_chip_none", "none")
-              : last
-                ? newsAge(last)
-                : "";
+          const state =
+            src && src.optIn && enabled[name] === false
+              ? msg("news_src_off", "off")
+              : cooling
+                ? msg("news_src_paused", "paused $1", describeAhead(cooling))
+                : !carried.has(name)
+                  ? msg("news_chip_none", "none")
+                  : last
+                    ? newsAge(last)
+                    : "";
           /* **The line is the switch** (30 Sep 2026): from 1100px the chips
              over the list stand down — they were this list a second time —
              so a press here shows or hides the source, with the chip's own
@@ -1065,7 +1243,11 @@ class NewsPanel extends PureComponent {
             },
             React.createElement(NewsSourceDot, { off, "aria-hidden": "true" }),
             React.createElement(NewsSourceName, { off }, name),
-            React.createElement(NewsSourceState, { warn: Boolean(quiet || cooling) }, state),
+            React.createElement(
+              NewsSourceState,
+              { warn: Boolean(quiet || cooling) },
+              state,
+            ),
           );
         }),
         React.createElement(
@@ -1076,7 +1258,12 @@ class NewsPanel extends PureComponent {
             "Read from your own browser, with your own address — there is no server in between. A host that asks us to slow down is left alone for a while and says so here.",
           ),
         ),
-        staleNote && React.createElement(NewsAsideNote, { "data-news-stale": "aside" }, staleNote),
+        staleNote &&
+          React.createElement(
+            NewsAsideNote,
+            { "data-news-stale": "aside" },
+            staleNote,
+          ),
       ),
       this.renderAccess(),
     );
@@ -1123,11 +1310,16 @@ class NewsPanel extends PureComponent {
        covering it. And only over the last three days — ranked over the whole
        feed, a fortnight-old story every desk ran sat above today's news. */
     const recentFrom = Date.now() - NEWS_COVERED_WINDOW_MS;
-    const weight = (r) => ((Number(r.time) || 0) >= recentFrom ? newsroomsOf(r) : 0);
+    const weight = (r) =>
+      (Number(r.time) || 0) >= recentFrom ? newsroomsOf(r) : 0;
     const rows = covered
       ? toned
           .slice()
-          .sort((a, b) => weight(b) - weight(a) || (Number(b.time) || 0) - (Number(a.time) || 0))
+          .sort(
+            (a, b) =>
+              weight(b) - weight(a) ||
+              (Number(b.time) || 0) - (Number(a.time) || 0),
+          )
       : toned;
     /* **A heading per day** in the newest-first list, so "4h" and "31h" stop
      * being the only way to tell today from yesterday. Not in the saved view
@@ -1150,7 +1342,10 @@ class NewsPanel extends PureComponent {
       today.setHours(0, 0, 0, 0);
       const diff = Math.round((day - today) / 86400000);
       if (diff === 0 || diff === -1) {
-        return intlFormatter("relative", { numeric: "auto" }).format(diff, "day");
+        return intlFormatter("relative", { numeric: "auto" }).format(
+          diff,
+          "day",
+        );
       }
       return localeDate(n, { weekday: "long", day: "numeric", month: "long" });
     };
@@ -1168,7 +1363,9 @@ class NewsPanel extends PureComponent {
      * the newest member, so a fold cannot push a story across the line. */
     // How many stories each day's heading stands over
     const dayCount = {};
-    if (byDay) for (const r of rows) dayCount[dayOf(r.time)] = (dayCount[dayOf(r.time)] || 0) + 1;
+    if (byDay)
+      for (const r of rows)
+        dayCount[dayOf(r.time)] = (dayCount[dayOf(r.time)] || 0) + 1;
     const readFrom = Number(this.props.readFrom) || 0;
     let dividerAt = -1;
     // Kept headlines are in the order they were kept, not by when they ran
@@ -1192,26 +1389,32 @@ class NewsPanel extends PureComponent {
        printed nothing since then, and **none** means it answered this time
        and carried nothing the panel could use — which for the three general
        finance desks is an ordinary afternoon. */
-    const offOptIn = (name) => NEWS_SOURCES.some((s) => s.optIn && s.name === name) && (this.props.enabled || {})[name] === false;
+    const offOptIn = (name) =>
+      NEWS_SOURCES.some((s) => s.optIn && s.name === name) &&
+      (this.props.enabled || {})[name] === false;
     const anyNone = this.askedSources().some(
-      (name) => !offOptIn(name) && !Object.prototype.hasOwnProperty.call(newest, name),
+      (name) =>
+        !offOptIn(name) && !Object.prototype.hasOwnProperty.call(newest, name),
     );
-    const staleNote = anyQuiet || anyNone
-      ? [
-          anyQuiet
-            ? msg(
-                "news_stale_note",
-                "A source with an age beside its name has published nothing since then. That is the feed being quiet, not PriceTab failing to ask.",
-              )
-            : "",
-          anyNone
-            ? msg(
-                "news_none_note",
-                "One marked “none” answered, and had nothing on this beat this time.",
-              )
-            : "",
-        ].filter(Boolean).join(" ")
-      : "";
+    const staleNote =
+      anyQuiet || anyNone
+        ? [
+            anyQuiet
+              ? msg(
+                  "news_stale_note",
+                  "A source with an age beside its name has published nothing since then. That is the feed being quiet, not PriceTab failing to ask.",
+                )
+              : "",
+            anyNone
+              ? msg(
+                  "news_none_note",
+                  "One marked “none” answered, and had nothing on this beat this time.",
+                )
+              : "",
+          ]
+            .filter(Boolean)
+            .join(" ")
+        : "";
 
     return React.createElement(
       NewsOverlay,
@@ -1226,7 +1429,12 @@ class NewsPanel extends PureComponent {
         React.createElement(
           NewsHead,
           null,
-          React.createElement(NewsTitle, null, msg("chrome_news", "News"), keyCap("N")),
+          React.createElement(
+            NewsTitle,
+            null,
+            msg("chrome_news", "News"),
+            keyCap("N"),
+          ),
           React.createElement(
             NewsCount,
             null,
@@ -1261,7 +1469,8 @@ class NewsPanel extends PureComponent {
                     this.setState({ savedOnly: false });
                     onScopeChange(option.value);
                   },
-                  "aria-pressed": !this.state.savedOnly && scope === option.value,
+                  "aria-pressed":
+                    !this.state.savedOnly && scope === option.value,
                 },
                 option.label,
               ),
@@ -1284,24 +1493,42 @@ class NewsPanel extends PureComponent {
                     "aria-label": msg(
                       "news_saved_chip",
                       "Saved · $1",
-                      String((Array.isArray(this.props.saved) ? this.props.saved : []).length),
+                      String(
+                        (Array.isArray(this.props.saved)
+                          ? this.props.saved
+                          : []
+                        ).length,
+                      ),
                     ),
-                    onClick: () => this.setState((p) => ({ savedOnly: !p.savedOnly })),
+                    onClick: () =>
+                      this.setState((p) => ({ savedOnly: !p.savedOnly })),
                   },
-                  icon(this.state.savedOnly ? "bookmarkOn" : "bookmark", 0.8, 2),
+                  icon(
+                    this.state.savedOnly ? "bookmarkOn" : "bookmark",
+                    0.8,
+                    2,
+                  ),
                   React.createElement(
                     NewsSavedLong,
                     null,
                     msg(
                       "news_saved_chip",
                       "Saved · $1",
-                      String((Array.isArray(this.props.saved) ? this.props.saved : []).length),
+                      String(
+                        (Array.isArray(this.props.saved)
+                          ? this.props.saved
+                          : []
+                        ).length,
+                      ),
                     ),
                   ),
                   React.createElement(
                     NewsSavedShort,
                     null,
-                    String((Array.isArray(this.props.saved) ? this.props.saved : []).length),
+                    String(
+                      (Array.isArray(this.props.saved) ? this.props.saved : [])
+                        .length,
+                    ),
                   ),
                 ),
               )
@@ -1312,7 +1539,12 @@ class NewsPanel extends PureComponent {
              render, never at fetch. */
           React.createElement(
             NewsScopeRow,
-            { wide: true, "data-news-tray": "tone", role: "group", "aria-label": msg("news_tone_filter", "Narrow by wording") },
+            {
+              wide: true,
+              "data-news-tray": "tone",
+              role: "group",
+              "aria-label": msg("news_tone_filter", "Narrow by wording"),
+            },
             ...[
               ["any", msg("news_tone_any", "Any wording")],
               ["up", msg("news_tone_up", "worded up")],
@@ -1335,26 +1567,45 @@ class NewsPanel extends PureComponent {
              has nothing to choose — but it keeps its place, or pressing
              Saved would move every control on the row. */
           React.createElement(
-                NewsScopeRow,
-                { wide: true, idle: this.state.savedOnly, "aria-hidden": this.state.savedOnly ? "true" : undefined, "data-news-tray": "order" },
-                ...[
-                  ["newest", msg("news_order_newest", "Newest"), msg("news_order_newest_title", "Newest first, a heading for each day")],
-                  ["covered", msg("news_order_covered", "Most covered"), msg("news_order_covered_title", "The stories the most newsrooms ran in the last three days, first")],
-                ].map(([value, label, title]) =>
-                  React.createElement(
-                    NewsScopeBtn,
-                    {
-                      key: `order-${value}`,
-                      active: this.state.order === value,
-                      onClick: () => this.setState({ order: value }),
-                      "aria-pressed": this.state.order === value,
-                      "data-news-order": value,
-                      title,
-                    },
-                    label,
-                  ),
+            NewsScopeRow,
+            {
+              wide: true,
+              idle: this.state.savedOnly,
+              "aria-hidden": this.state.savedOnly ? "true" : undefined,
+              "data-news-tray": "order",
+            },
+            ...[
+              [
+                "newest",
+                msg("news_order_newest", "Newest"),
+                msg(
+                  "news_order_newest_title",
+                  "Newest first, a heading for each day",
                 ),
+              ],
+              [
+                "covered",
+                msg("news_order_covered", "Most covered"),
+                msg(
+                  "news_order_covered_title",
+                  "The stories the most newsrooms ran in the last three days, first",
+                ),
+              ],
+            ].map(([value, label, title]) =>
+              React.createElement(
+                NewsScopeBtn,
+                {
+                  key: `order-${value}`,
+                  active: this.state.order === value,
+                  onClick: () => this.setState({ order: value }),
+                  "aria-pressed": this.state.order === value,
+                  "data-news-order": value,
+                  title,
+                },
+                label,
               ),
+            ),
+          ),
           /* On a phone, the wording and the order as two selects. */
           React.createElement(
             NewsSelectRow,
@@ -1366,22 +1617,42 @@ class NewsPanel extends PureComponent {
                 "aria-label": msg("news_tone_filter", "Narrow by wording"),
                 onChange: (e) => this.setState({ tone: e.target.value }),
               },
-              React.createElement("option", { value: "any" }, msg("news_tone_any", "Any wording")),
-              React.createElement("option", { value: "up" }, msg("news_tone_up", "worded up")),
-              React.createElement("option", { value: "down" }, msg("news_tone_down", "worded down")),
+              React.createElement(
+                "option",
+                { value: "any" },
+                msg("news_tone_any", "Any wording"),
+              ),
+              React.createElement(
+                "option",
+                { value: "up" },
+                msg("news_tone_up", "worded up"),
+              ),
+              React.createElement(
+                "option",
+                { value: "down" },
+                msg("news_tone_down", "worded down"),
+              ),
             ),
             React.createElement(
-                  NewsSelect,
-                  {
-                    idle: this.state.savedOnly,
-                    "aria-hidden": this.state.savedOnly ? "true" : undefined,
-                    value: this.state.order,
-                    "aria-label": msg("news_order_label", "Order of the list"),
-                    onChange: (e) => this.setState({ order: e.target.value }),
-                  },
-                  React.createElement("option", { value: "newest" }, msg("news_order_newest", "Newest")),
-                  React.createElement("option", { value: "covered" }, msg("news_order_covered", "Most covered")),
-                ),
+              NewsSelect,
+              {
+                idle: this.state.savedOnly,
+                "aria-hidden": this.state.savedOnly ? "true" : undefined,
+                value: this.state.order,
+                "aria-label": msg("news_order_label", "Order of the list"),
+                onChange: (e) => this.setState({ order: e.target.value }),
+              },
+              React.createElement(
+                "option",
+                { value: "newest" },
+                msg("news_order_newest", "Newest"),
+              ),
+              React.createElement(
+                "option",
+                { value: "covered" },
+                msg("news_order_covered", "Most covered"),
+              ),
+            ),
           ),
         ),
         this.renderSourceChips(newest),
@@ -1393,263 +1664,345 @@ class NewsPanel extends PureComponent {
           React.createElement(
             NewsMain,
             null,
-        React.createElement(
-          NewsList,
-          null,
-          rows.length
-            ? rows.map((item, i) => {
-                /* Three at most. A story that names six coins is a market
-                 * round-up, and six chips under one headline is a row nobody
-                 * reads — the list stops being scannable, which is what it is
-                 * for. */
-                const coins = matchers
-                  .filter((m) => newsMentionsCoin(item, m.coin, m.re, m.name))
-                  .slice(0, 3)
-                  .map((m) => m.coin);
-                const also = Array.isArray(item.also) ? item.also : [];
-                const key = `n-${i}-${item.title.slice(0, 24)}`;
-                /* The line between what arrived since you last looked and what
-                 * was already here. Drawn once, immediately above the first row
-                 * that is not new — so it needs no count and cannot disagree
-                 * with one. Never at the very top (everything is new: there is
-                 * nothing above it to divide from) and never at the very
-                 * bottom (nothing is new, so it would be a line under the whole
-                 * list saying so). Both of those are handled by `dividerAt`,
-                 * computed once for the list rather than tested per row. */
-                const divider =
-                  i === dividerAt
-                    ? React.createElement(
-                        NewsDivider,
-                        { key: "divider" },
-                        React.createElement(
-                          NewsDividerText,
-                          null,
-                          msg("news_since_last", "New since you last looked"),
-                        ),
+            React.createElement(
+              NewsList,
+              null,
+              rows.length
+                ? rows.map((item, i) => {
+                    /* Three at most. A story that names six coins is a market
+                     * round-up, and six chips under one headline is a row nobody
+                     * reads — the list stops being scannable, which is what it is
+                     * for. */
+                    const coins = matchers
+                      .filter((m) =>
+                        newsMentionsCoin(item, m.coin, m.re, m.name),
                       )
-                    : null;
-                /* The day's heading, above the first row of each day. */
-                const dayHead =
-                  byDay && (i === 0 || dayOf(rows[i - 1].time) !== dayOf(item.time))
-                    ? React.createElement(
-                        NewsDay,
-                        { key: `day-${dayOf(item.time)}` },
-                        React.createElement("span", { "data-news-day": dayOf(item.time) }, dayLabel(item.time)),
-                        React.createElement(
-                          NewsDayCount,
-                          null,
-                          dayCount[dayOf(item.time)] === 1
-                            ? msg("news_one_story", "1 story")
-                            : msg("news_n_stories", "$1 stories", dayCount[dayOf(item.time)]),
-                        ),
-                      )
-                    : null;
-                /* A discussion board's row has no summary, and the one thing
-                   it can say instead is how big the discussion was. */
-                const points =
-                  item.source === "Hacker News" && Number(item.points) > 0 ? Number(item.points) : 0;
-                const row = React.createElement(
-                  NewsRow,
-                  {
-                    key,
-                    href: item.url || undefined,
-                    target: "_blank",
-                    rel: "noopener noreferrer",
-                    // The first press reads it beside the list (news-preview.js)
-                    onClick: (e) => this.handlePreviewPress(e, item),
-                    "aria-current": previewUrl && item.url === previewUrl ? "true" : undefined,
-                    /* The exact moment, because the row shows a relative age.
-                     * "4h" is the right thing to scan a list by and the wrong
-                     * thing to work out whether two stories are about the same
-                     * hour. */
-                    title: item.url
-                      ? previewUrl === item.url
-                        ? msg("news_row_open_title", "Press again to read it on $1 · $2 — opens in a new tab", item.source, newsExactTime(item.time).replace(/^ · /, ""))
-                        : msg("news_row_preview_title", "Read it beside the list · $1 · $2 — a second press opens it", item.source, newsExactTime(item.time).replace(/^ · /, ""))
-                      : item.title,
-                  },
-                  React.createElement(
-                    NewsRowLead,
-                    null,
-                    React.createElement(NewsRowAge, null, newsAge(item.time)),
-                    React.createElement(NewsRowSource, null, item.source),
-                  ),
-                  React.createElement(
-                    NewsRowBody,
-                    null,
-                    React.createElement(
-                      NewsRowTitle,
-                      // A stable hook, the way the chart names its own nodes
-                      // (`pt-live-dot`, `pt-moves`). The headline used to be
-                      // the row's last child and a test addressed it that
-                      // way; wrapping it in a body made that silently measure
-                      // the wrapper instead — default link blue, no
-                      // underline, and two checks failing for the wrong
-                      // reason. Position is not an identity.
-                      { className: "pt-news-title" },
-                      item.title,
-                    ),
-                    item.summary
-                      ? React.createElement(NewsRowSummary, null, item.summary)
-                      : null,
-                    coins.length || points || (item.toneRead && item.toneRead.tone)
-                      ? React.createElement(
-                          NewsRowCoins,
-                          null,
-                          points
-                            ? React.createElement(
-                                NewsRowMeta,
-                                { key: "points", "data-news-points": String(points) },
-                                msg("news_hn_points", "$1 points", localeNumber(points)),
-                              )
-                            : null,
-                          coins.map((c) =>
-                            React.createElement(NewsRowCoin, { key: c }, c),
-                          ),
-                          item.toneRead && item.toneRead.tone
-                            ? React.createElement(
-                                NewsRowTone,
-                                {
-                                  key: "tone",
-                                  "data-news-row-tone": item.toneRead.tone,
-                                  title: msg(
-                                    "news_tone_words",
-                                    "Words counted — up: $1 · down: $2",
-                                    item.toneRead.up.join(", ") || "—",
-                                    item.toneRead.down.join(", ") || "—",
+                      .slice(0, 3)
+                      .map((m) => m.coin);
+                    const also = Array.isArray(item.also) ? item.also : [];
+                    const key = `n-${i}-${item.title.slice(0, 24)}`;
+                    /* The line between what arrived since you last looked and what
+                     * was already here. Drawn once, immediately above the first row
+                     * that is not new — so it needs no count and cannot disagree
+                     * with one. Never at the very top (everything is new: there is
+                     * nothing above it to divide from) and never at the very
+                     * bottom (nothing is new, so it would be a line under the whole
+                     * list saying so). Both of those are handled by `dividerAt`,
+                     * computed once for the list rather than tested per row. */
+                    const divider =
+                      i === dividerAt
+                        ? React.createElement(
+                            NewsDivider,
+                            { key: "divider" },
+                            React.createElement(
+                              NewsDividerText,
+                              null,
+                              msg(
+                                "news_since_last",
+                                "New since you last looked",
+                              ),
+                            ),
+                          )
+                        : null;
+                    /* The day's heading, above the first row of each day. */
+                    const dayHead =
+                      byDay &&
+                      (i === 0 || dayOf(rows[i - 1].time) !== dayOf(item.time))
+                        ? React.createElement(
+                            NewsDay,
+                            { key: `day-${dayOf(item.time)}` },
+                            React.createElement(
+                              "span",
+                              { "data-news-day": dayOf(item.time) },
+                              dayLabel(item.time),
+                            ),
+                            React.createElement(
+                              NewsDayCount,
+                              null,
+                              dayCount[dayOf(item.time)] === 1
+                                ? msg("news_one_story", "1 story")
+                                : msg(
+                                    "news_n_stories",
+                                    "$1 stories",
+                                    dayCount[dayOf(item.time)],
                                   ),
-                                },
-                                React.createElement(
-                                  "span",
-                                  { "aria-hidden": "true" },
-                                  item.toneRead.tone === "up" ? "▲" : item.toneRead.tone === "down" ? "▼" : "◆",
-                                ),
-                                toneWord(item.toneRead.tone),
+                            ),
+                          )
+                        : null;
+                    /* A discussion board's row has no summary, and the one thing
+                   it can say instead is how big the discussion was. */
+                    const points =
+                      item.source === "Hacker News" && Number(item.points) > 0
+                        ? Number(item.points)
+                        : 0;
+                    const row = React.createElement(
+                      NewsRow,
+                      {
+                        key,
+                        href: item.url || undefined,
+                        target: "_blank",
+                        rel: "noopener noreferrer",
+                        // The first press reads it beside the list (news-preview.js)
+                        onClick: (e) => this.handlePreviewPress(e, item),
+                        "aria-current":
+                          previewUrl && item.url === previewUrl
+                            ? "true"
+                            : undefined,
+                        /* The exact moment, because the row shows a relative age.
+                         * "4h" is the right thing to scan a list by and the wrong
+                         * thing to work out whether two stories are about the same
+                         * hour. */
+                        title: item.url
+                          ? previewUrl === item.url
+                            ? msg(
+                                "news_row_open_title",
+                                "Press again to read it on $1 · $2 — opens in a new tab",
+                                item.source,
+                                newsExactTime(item.time).replace(/^ · /, ""),
                               )
-                            : null,
-                        )
-                      : null,
-                  ),
-                );
-                /* The bookmark, beside the row rather than in it (see
+                            : msg(
+                                "news_row_preview_title",
+                                "Read it beside the list · $1 · $2 — a second press opens it",
+                                item.source,
+                                newsExactTime(item.time).replace(/^ · /, ""),
+                              )
+                          : item.title,
+                      },
+                      React.createElement(
+                        NewsRowLead,
+                        null,
+                        React.createElement(
+                          NewsRowAge,
+                          null,
+                          newsAge(item.time),
+                        ),
+                        React.createElement(NewsRowSource, null, item.source),
+                      ),
+                      React.createElement(
+                        NewsRowBody,
+                        null,
+                        React.createElement(
+                          NewsRowTitle,
+                          // A stable hook, the way the chart names its own nodes
+                          // (`pt-live-dot`, `pt-moves`). The headline used to be
+                          // the row's last child and a test addressed it that
+                          // way; wrapping it in a body made that silently measure
+                          // the wrapper instead — default link blue, no
+                          // underline, and two checks failing for the wrong
+                          // reason. Position is not an identity.
+                          { className: "pt-news-title" },
+                          item.title,
+                        ),
+                        item.summary
+                          ? React.createElement(
+                              NewsRowSummary,
+                              null,
+                              item.summary,
+                            )
+                          : null,
+                        coins.length ||
+                          points ||
+                          (item.toneRead && item.toneRead.tone)
+                          ? React.createElement(
+                              NewsRowCoins,
+                              null,
+                              points
+                                ? React.createElement(
+                                    NewsRowMeta,
+                                    {
+                                      key: "points",
+                                      "data-news-points": String(points),
+                                    },
+                                    msg(
+                                      "news_hn_points",
+                                      "$1 points",
+                                      localeNumber(points),
+                                    ),
+                                  )
+                                : null,
+                              coins.map((c) =>
+                                React.createElement(NewsRowCoin, { key: c }, c),
+                              ),
+                              item.toneRead && item.toneRead.tone
+                                ? React.createElement(
+                                    NewsRowTone,
+                                    {
+                                      key: "tone",
+                                      "data-news-row-tone": item.toneRead.tone,
+                                      title: msg(
+                                        "news_tone_words",
+                                        "Words counted — up: $1 · down: $2",
+                                        item.toneRead.up.join(", ") || "—",
+                                        item.toneRead.down.join(", ") || "—",
+                                      ),
+                                    },
+                                    React.createElement(
+                                      "span",
+                                      { "aria-hidden": "true" },
+                                      item.toneRead.tone === "up"
+                                        ? "▲"
+                                        : item.toneRead.tone === "down"
+                                          ? "▼"
+                                          : "◆",
+                                    ),
+                                    toneWord(item.toneRead.tone),
+                                  )
+                                : null,
+                            )
+                          : null,
+                      ),
+                    );
+                    /* The bookmark, beside the row rather than in it (see
                    NewsSaveBtn). Only for a story with a link to keep. */
-                const kept = Array.isArray(this.props.saved)
-                  ? this.props.saved.some((s) => s.url === item.url)
-                  : false;
-                const saveBtn =
-                  item.url && typeof this.props.onToggleSaved === "function"
-                    ? React.createElement(
-                        NewsSaveBtn,
-                        {
-                          on: kept,
-                          "aria-pressed": kept ? "true" : "false",
-                          "data-news-save": kept ? "on" : "off",
-                          "aria-label": kept
-                            ? msg("news_unsave", "Remove from saved")
-                            : msg("news_save", "Save to read later"),
-                          title: kept
-                            ? msg("news_unsave", "Remove from saved")
-                            : msg("news_save", "Save to read later"),
-                          onClick: () => this.props.onToggleSaved(item),
-                        },
-                        icon(kept ? "bookmarkOn" : "bookmark", 0.95, 2),
-                      )
-                    : null;
-                /* A lone row is wrapped to hold its bookmark; a cluster holds
+                    const kept = Array.isArray(this.props.saved)
+                      ? this.props.saved.some((s) => s.url === item.url)
+                      : false;
+                    const saveBtn =
+                      item.url && typeof this.props.onToggleSaved === "function"
+                        ? React.createElement(
+                            NewsSaveBtn,
+                            {
+                              on: kept,
+                              "aria-pressed": kept ? "true" : "false",
+                              "data-news-save": kept ? "on" : "off",
+                              "aria-label": kept
+                                ? msg("news_unsave", "Remove from saved")
+                                : msg("news_save", "Save to read later"),
+                              title: kept
+                                ? msg("news_unsave", "Remove from saved")
+                                : msg("news_save", "Save to read later"),
+                              onClick: () => this.props.onToggleSaved(item),
+                            },
+                            icon(kept ? "bookmarkOn" : "bookmark", 0.95, 2),
+                          )
+                        : null;
+                    /* A lone row is wrapped to hold its bookmark; a cluster holds
                    it itself, so its head row stays the cluster's own child. */
-                const savable = saveBtn
-                  ? React.createElement(NewsSavable, { key }, row, saveBtn)
-                  : row;
-                const lead = [dayHead, divider].filter(Boolean);
-                if (!also.length) {
-                  return lead.length ? [...lead, savable] : savable;
-                }
-                /* Names, then a count. Four is where a line of newsroom names
-                 * stops being scannable — the same limit and the same reason
-                 * as the three coin chips above. The rest are counted rather
-                 * than dropped: the row would otherwise say four outlets ran
-                 * it while showing three, which is the kind of quiet
-                 * disagreement this panel exists to not have. */
-                /* Each other newsroom named once, and the count is of
+                    const savable = saveBtn
+                      ? React.createElement(NewsSavable, { key }, row, saveBtn)
+                      : row;
+                    const lead = [dayHead, divider].filter(Boolean);
+                    if (!also.length) {
+                      return lead.length ? [...lead, savable] : savable;
+                    }
+                    /* Names, then a count. Four is where a line of newsroom names
+                     * stops being scannable — the same limit and the same reason
+                     * as the three coin chips above. The rest are counted rather
+                     * than dropped: the row would otherwise say four outlets ran
+                     * it while showing three, which is the kind of quiet
+                     * disagreement this panel exists to not have. */
+                    /* Each other newsroom named once, and the count is of
                    newsrooms: a desk that ran the story twice is one more
                    newsroom, not two. */
-                const others = [];
-                for (const other of also) {
-                  if (other.source !== item.source && !others.some((o) => o.source === other.source)) others.push(other);
-                }
-                /* A fold that is one newsroom's several write-ups still links
+                    const others = [];
+                    for (const other of also) {
+                      if (
+                        other.source !== item.source &&
+                        !others.some((o) => o.source === other.source)
+                      )
+                        others.push(other);
+                    }
+                    /* A fold that is one newsroom's several write-ups still links
                    them, under the count of write-ups rather than newsrooms. */
-                const linkable = others.length ? others : also;
-                const named = linkable.slice(0, NEWS_ALSO_NAMED);
-                const rest = linkable.length - named.length;
-                const cluster = React.createElement(
-                  NewsCluster,
-                  { key },
-                  row,
-                  saveBtn,
-                  React.createElement(
-                    NewsAlso,
-                    null,
-                    React.createElement(
-                      NewsAlsoLine,
-                      null,
+                    const linkable = others.length ? others : also;
+                    const named = linkable.slice(0, NEWS_ALSO_NAMED);
+                    const rest = linkable.length - named.length;
+                    const cluster = React.createElement(
+                      NewsCluster,
+                      { key },
+                      row,
+                      saveBtn,
                       React.createElement(
-                        NewsAlsoCount,
-                        {
-                          /* The count is the fact, so it is what the label
-                           * says; the names beside it are how you get there. */
-                          title: others.length
-                            ? msg("news_also_title", "$1 newsrooms ran this story", String(others.length + 1))
-                            : msg("news_also_same_title", "$1 ran this story $2 times", item.source, String(also.length + 1)),
-                        },
-                        others.length
-                          ? msg("news_also_count", "+$1 more", String(others.length))
-                          : msg("news_also_same", "$1 write-ups here", String(also.length + 1)),
-                      ),
-                      ...named.map((other, j) =>
+                        NewsAlso,
+                        null,
                         React.createElement(
-                          NewsAlsoLink,
-                          {
-                            key: `a-${j}-${other.source}`,
-                            href: other.url || undefined,
-                            target: "_blank",
-                            rel: "noopener noreferrer",
-                            /* The other newsroom's own headline, because the
-                             * two write-ups are not the same words and picking
-                             * one to stand for both should not hide what the
-                             * other actually said. */
-                            title: other.title,
-                          },
-                          other.source,
+                          NewsAlsoLine,
+                          null,
+                          React.createElement(
+                            NewsAlsoCount,
+                            {
+                              /* The count is the fact, so it is what the label
+                               * says; the names beside it are how you get there. */
+                              title: others.length
+                                ? msg(
+                                    "news_also_title",
+                                    "$1 newsrooms ran this story",
+                                    String(others.length + 1),
+                                  )
+                                : msg(
+                                    "news_also_same_title",
+                                    "$1 ran this story $2 times",
+                                    item.source,
+                                    String(also.length + 1),
+                                  ),
+                            },
+                            others.length
+                              ? msg(
+                                  "news_also_count",
+                                  "+$1 more",
+                                  String(others.length),
+                                )
+                              : msg(
+                                  "news_also_same",
+                                  "$1 write-ups here",
+                                  String(also.length + 1),
+                                ),
+                          ),
+                          ...named.map((other, j) =>
+                            React.createElement(
+                              NewsAlsoLink,
+                              {
+                                key: `a-${j}-${other.source}`,
+                                href: other.url || undefined,
+                                target: "_blank",
+                                rel: "noopener noreferrer",
+                                /* The other newsroom's own headline, because the
+                                 * two write-ups are not the same words and picking
+                                 * one to stand for both should not hide what the
+                                 * other actually said. */
+                                title: other.title,
+                              },
+                              other.source,
+                            ),
+                          ),
+                          rest > 0
+                            ? React.createElement(
+                                NewsAlsoRest,
+                                null,
+                                msg(
+                                  "news_also_rest",
+                                  "and $1 more",
+                                  String(rest),
+                                ),
+                              )
+                            : null,
                         ),
                       ),
-                      rest > 0
-                        ? React.createElement(
-                            NewsAlsoRest,
-                            null,
-                            msg("news_also_rest", "and $1 more", String(rest)),
-                          )
-                        : null,
-                    ),
+                    );
+                    return lead.length ? [...lead, cluster] : cluster;
+                  })
+                : React.createElement(
+                    NewsEmpty,
+                    null,
+                    this.emptyReason(loading),
                   ),
-                );
-                return lead.length ? [...lead, cluster] : cluster;
-              })
-            : React.createElement(
-                NewsEmpty,
-                null,
-                this.emptyReason(loading),
-              ),
-          /* The one fact a ticker could never show — whether what you are
-           * reading is current — as the list's last line; from 1100px it is
-           * under the sources in the column (renderAside). */
-          staleNote && React.createElement(NewsStale, { "data-news-stale": "list" }, staleNote),
-        ),
+              /* The one fact a ticker could never show — whether what you are
+               * reading is current — as the list's last line; from 1100px it is
+               * under the sources in the column (renderAside). */
+              staleNote &&
+                React.createElement(
+                  NewsStale,
+                  { "data-news-stale": "list" },
+                  staleNote,
+                ),
+            ),
             /* Under the list only where the column is not drawn — the same
                line lives at the foot of the aside from 1100px up. */
             React.createElement(NewsFootOnly, null, this.renderAccess()),
           ),
-          previewUrl ? renderNewsPreview(this) : this.renderAside(all, matchers, newest, staleNote),
+          previewUrl
+            ? renderNewsPreview(this)
+            : this.renderAside(all, matchers, newest, staleNote),
         ),
       ),
     );

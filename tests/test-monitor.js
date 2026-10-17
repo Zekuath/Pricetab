@@ -189,6 +189,16 @@ const T = Date.UTC(2026, 9, 1);
   eq(tab({ kind: "coin", coin: "SOL" }), "sol ", "…and a coin ready for its range");
 }
 
+/* ── On its own: each coin's mean r with the rest (14 Oct 2026) ── */
+{
+  sandbox.__m = { "A|B": { r: 0.9 }, "B|A": { r: 0.9 }, "A|C": { r: 0.1 }, "C|A": { r: 0.1 }, "B|C": { r: 0.3 }, "C|B": { r: 0.3 } };
+  const avg = run(`corrAverages(["A", "B", "C"], __m)`);
+  eq(avg.map((x) => x.coin).join(), "C,A,B", "the coin that moved most on its own comes first");
+  ok(Math.abs(avg[0].r - 0.2) < 1e-9 && Math.abs(avg[2].r - 0.6) < 1e-9, "…each with its mean r over the others", JSON.stringify(avg));
+  sandbox.__m2 = { "A|B": { r: 0.5 }, "B|A": { r: 0.5 } };
+  eq(run(`corrAverages(["A", "B", "C"], __m2)`).length, 2, "a coin with no pair is not listed");
+}
+
 /* ── The month, side by side (13 Oct 2026) ── */
 {
   // __up rises 100 → 131; a falling one, and one too short to draw

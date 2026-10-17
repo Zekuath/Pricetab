@@ -33,7 +33,10 @@ class ErrorBoundary extends Component {
 const WON_CALL_TOAST_MS = 22000;
 
 const THEMES = {
-  classic: { light: { ...theme, color: lightColors }, dark: { ...theme, color: darkColors } },
+  classic: {
+    light: { ...theme, color: lightColors },
+    dark: { ...theme, color: darkColors },
+  },
   cvd: {
     light: { ...theme, color: paletteColors("light", "cvd") },
     dark: { ...theme, color: paletteColors("dark", "cvd") },
@@ -241,9 +244,15 @@ class CryptoChart extends PureComponent {
        honoured — the hash is read once and cleared, and adds nothing. */
     const openOn = (() => {
       try {
-        const m = /(?:^#|&)coin=([A-Z0-9]{1,12})(?:&|$)/.exec(window.location.hash || "");
+        const m = /(?:^#|&)coin=([A-Z0-9]{1,12})(?:&|$)/.exec(
+          window.location.hash || "",
+        );
         if (!m) return 0;
-        window.history.replaceState(null, "", window.location.pathname + window.location.search);
+        window.history.replaceState(
+          null,
+          "",
+          window.location.pathname + window.location.search,
+        );
         const at = loadCoinOptionsFromStorage().indexOf(m[1]);
         return at > 0 ? at : 0;
       } catch (error) {
@@ -432,9 +441,8 @@ class CryptoChart extends PureComponent {
          dwell, as it does under the pointer. */
       chartPullNear: false,
       screenPullNear: false,
-      /* The order the panels sit in, everywhere at once — see
-       * `PANEL_ORDER_KEY`. This one *is* a setting, so it is stored. */
-      panelOrder: loadPanelOrder(),
+      // Each edge's order, including hidden tabs so showing one restores its slot.
+      navLayout: loadNavLayout(),
       /* The tour drives the arrow keys and Esc itself, so the global shortcut
        * handler has to stand down while it is up. `tourReplay` is bumped by
        * Settings to remount (and force) the tour on demand. */
@@ -822,7 +830,8 @@ class CryptoChart extends PureComponent {
       /* A widget the user has hidden is still "enabled" — it keeps its place
        * in the panel and comes back with the eye button — but nothing shows
        * its data, so fetching it is pure waste. */
-      const wanted = (key) => (widgets[key] && !hiddenWidgets[key]) || this._widgetPreview === key;
+      const wanted = (key) =>
+        (widgets[key] && !hiddenWidgets[key]) || this._widgetPreview === key;
 
       /* One entry per widget: what to fetch and where the answer goes. The
        * requests run together rather than one after another — with every
@@ -863,7 +872,12 @@ class CryptoChart extends PureComponent {
         ["ethBtc", () => fetchEthBtc(this.state.currency), "ethBtcData", false],
         ["etfFlows", fetchEtfFlows, "etfFlowsData", false],
         // Not per coin: the model is BTC-USD's whatever the chart shows
-        ["modelOutlook", () => fetchModelOutlook(this.modelOutlookTarget()), "modelOutlookData", false],
+        [
+          "modelOutlook",
+          () => fetchModelOutlook(this.modelOutlookTarget()),
+          "modelOutlookData",
+          false,
+        ],
       ];
 
       await Promise.all(
@@ -944,7 +958,9 @@ class CryptoChart extends PureComponent {
          columns are counted with the spans off, so a span cannot count. */
       const read = () => {
         node.setAttribute("data-cols", "1");
-        const cols = getComputedStyle(node).gridTemplateColumns.split(" ").filter(Boolean).length;
+        const cols = getComputedStyle(node)
+          .gridTemplateColumns.split(" ")
+          .filter(Boolean).length;
         if (cols >= 2) node.removeAttribute("data-cols");
       };
       this._panelObserver = new ResizeObserver(read);
@@ -1414,13 +1430,20 @@ class CryptoChart extends PureComponent {
     });
 
     _defineProperty(this, "toggleSettings", () => {
-      this.setState((prevState) => ({
-        showSettings: !prevState.showSettings,
-        /* A section someone asked for is spent once; the next plain open is
-           Coins. Spent on the way *out*, so a request can ride the open —
-           including one made behind the swap's veil (openSettingsAt). */
-        settingsTab: prevState.showSettings ? null : prevState.settingsTab,
-      }));
+      this.setState((prevState) => {
+        const opening = !prevState.showSettings;
+        return {
+          showSettings: opening,
+          /* A section someone asked for is spent once; the next plain open is
+             Coins. Spent on the way *out*, so a request can ride the open —
+             including one made behind the swap's veil (openSettingsAt). */
+          settingsTab: opening ? prevState.settingsTab : null,
+          showNews: opening ? false : prevState.showNews,
+          showPortfolio: opening ? false : prevState.showPortfolio,
+          showMonitor: opening ? false : prevState.showMonitor,
+          alertsView: opening ? null : prevState.alertsView,
+        };
+      });
     });
 
     /* **Settings, open on one section** — what "?" does. Already open, it
@@ -1506,6 +1529,7 @@ class CryptoChart extends PureComponent {
     Object.assign(this, widgetArrangeHandlers(this));
     Object.assign(this, pressConfirm(this));
     _defineProperty(this, "handleKeyDown", (e) => {
+      if (e.target && e.target.closest && e.target.closest("[data-nav-confirm]")) return;
       // Ignore shortcuts with modifiers or while typing in a field
       if (e.ctrlKey || e.metaKey || e.altKey) return;
       // The onboarding tour owns the keyboard while it runs — without this,
@@ -1552,7 +1576,10 @@ class CryptoChart extends PureComponent {
         t &&
         t.hasAttribute &&
         t.hasAttribute("data-chart-viewport") &&
-        (e.key === "ArrowLeft" || e.key === "ArrowRight" || e.key === "Home" || e.key === "End")
+        (e.key === "ArrowLeft" ||
+          e.key === "ArrowRight" ||
+          e.key === "Home" ||
+          e.key === "End")
       ) {
         e.preventDefault();
         const view = this.viewRef.current;
@@ -1750,6 +1777,7 @@ class CryptoChart extends PureComponent {
       /* M opens the monitor — the same exclusions as B. */
       if (
         (e.key === "m" || e.key === "M") &&
+        this.featureOn("monitor") &&
         !this.state.showPortfolio &&
         !this.state.showSettings &&
         !this.state.alertsView &&
@@ -1757,7 +1785,11 @@ class CryptoChart extends PureComponent {
         !this.state.showQuickSwitch
       ) {
         e.preventDefault();
-        this.openMonitorTab(this.state.monitorTab === "base" ? "coins" : this.state.monitorTab || "coins");
+        this.openMonitorTab(
+          this.state.monitorTab === "base"
+            ? "coins"
+            : this.state.monitorTab || "coins",
+        );
         return;
       }
 
@@ -1886,7 +1918,12 @@ class CryptoChart extends PureComponent {
          is drawn in — the window in time stands down under the board. */
       if (
         this.state.predict &&
-        (e.key === "[" || e.key === "]" || e.key === "+" || e.key === "=" || e.key === "-" || e.key === "_")
+        (e.key === "[" ||
+          e.key === "]" ||
+          e.key === "+" ||
+          e.key === "=" ||
+          e.key === "-" ||
+          e.key === "_")
       ) {
         e.preventDefault();
         const out = e.key === "[" || e.key === "-" || e.key === "_";
@@ -1944,7 +1981,7 @@ class CryptoChart extends PureComponent {
       /* V opens the chart's own settings beside the chart. A view key, so it
        * sits below the guard with the rest: with a panel covering the chart
        * there is nothing for the drawer to show a change on. */
-      if (e.key === "v" || e.key === "V") {
+      if ((e.key === "v" || e.key === "V") && this.featureOn("chart")) {
         e.preventDefault();
         this.showLeftDrawer("chart");
         return;
@@ -2034,7 +2071,11 @@ class CryptoChart extends PureComponent {
      */
     _defineProperty(this, "setCompareCoin", (coin) => {
       const active = this.state.coinOptions[this.state.coinIndex];
-      if (!coin || coin === active || !(SUGGESTED_COINS.includes(coin) || compareMarket(coin))) {
+      if (
+        !coin ||
+        coin === active ||
+        !(SUGGESTED_COINS.includes(coin) || compareMarket(coin))
+      ) {
         this.clearCompare();
         return;
       }
@@ -2090,7 +2131,11 @@ class CryptoChart extends PureComponent {
        COMPARE_MARKETS), so on 1H it opens the chart on 1D. */
     _defineProperty(this, "handleComparePick", (id) => {
       const market = compareMarket(id);
-      if (market && market.source === "kraken" && !COMPARE_MARKET_PERIODS.includes(this.state.period)) {
+      if (
+        market &&
+        market.source === "kraken" &&
+        !COMPARE_MARKET_PERIODS.includes(this.state.period)
+      ) {
         this.setPeriod(null, "day");
       }
       this.setState({ showCompareDrawer: false });
@@ -2119,7 +2164,14 @@ class CryptoChart extends PureComponent {
         const history =
           market && market.source === "kraken"
             ? await fetchMarketSeries(compareCoin, period)
-            : await fetchValueHistory(compareCoin, period, currency, null, true, coinOptions);
+            : await fetchValueHistory(
+                compareCoin,
+                period,
+                currency,
+                null,
+                true,
+                coinOptions,
+              );
         if (stillWanted()) this.setState({ compareHistory: history });
       } catch (e) {
         // A coin whose history won't load just doesn't draw — the chart is
@@ -2158,7 +2210,8 @@ class CryptoChart extends PureComponent {
         for (const item of g.items) {
           if (item.keys.length !== 1) continue;
           const k = item.keys[0];
-          if ((i < 4 && /^[A-Z]$/.test(k)) || k === "?") out.push({ key: k, label: item.label });
+          if ((i < 4 && /^[A-Z]$/.test(k)) || k === "?")
+            out.push({ key: k, label: item.label });
         }
       });
       this._quickCommands = out;
@@ -2177,7 +2230,8 @@ class CryptoChart extends PureComponent {
         } else if (item.kind === "compare") {
           this.handleComparePick(item.coin);
         } else if (item.kind === "target") {
-          if (this.state.alertsView !== "targets") this.showLeftDrawer("targets");
+          if (this.state.alertsView !== "targets")
+            this.showLeftDrawer("targets");
           setTimeout(() => this.handlePickTargetPrice(item.price), 0);
         } else if (item.kind === "command") {
           const key = item.key === "?" ? "?" : item.key.toLowerCase();
@@ -2569,57 +2623,63 @@ class CryptoChart extends PureComponent {
      * controls follow — and the open one marked. The shortcuts tour and the
      * quick switch are not panels in this sense: one is a reference card and
      * the other is a jump box, and neither is somewhere you stay. */
-    /* **The panels this install offers, named, in one place.**
-     *
-     * Three surfaces ask for it — the folder tabs, the phone's menu, and the
-     * corner's own order — and a second copy would drift the first time a
-     * panel was added. `always` marks the two that are not features anybody
-     * can switch off: Settings, and the base rates, which has no corner
-     * control at all and is otherwise named only in the "?" list. */
-    _defineProperty(this, "panelList", () => {
-      const order = Array.isArray(this.state.panelOrder)
-        ? this.state.panelOrder
-        : DEFAULT_PANEL_ORDER;
-      const at = (k) => {
-        const i = order.indexOf(k);
-        return i === -1 ? order.length : i;
-      };
-      return [
-        {
-          key: "settings",
-          label: msg("chrome_settings", "Settings"),
-          always: true,
-        },
-        { key: "portfolio", label: msg("chrome_portfolio", "Portfolio") },
-        { key: "targets", label: msg("pt_tab_targets", "Targets") },
-        { key: "calls", label: msg("chrome_calls", "Calls") },
-        { key: "futures", label: msg("pt_tab_futures", "Futures") },
-        { key: "news", label: msg("chrome_news", "News") },
-        { key: "monitor", label: msg("mon_title", "Monitor"), always: true },
-      ]
-        .filter((t) => t.always || this.featureOn(t.key))
-        .sort((a, b) => at(a.key) - at(b.key));
+    /* Hide filters the layout without rewriting it: showing a feature later
+       must restore its chosen side and slot. Settings is always reachable. */
+    _defineProperty(this, "navigationTabs", (side) => {
+      const layout = this.state.navLayout || DEFAULT_NAV_LAYOUT;
+      const catalog = navTabCatalog();
+      return layout[side].map((key) => catalog.find((t) => t.key === key))
+        .filter((t) => t && (t.key === "settings" || this.featureOn(t.key)));
+    });
+    _defineProperty(this, "navigationIsDrawer", (key) =>
+      ["widgets", "chart", "targets", "calls", "compare"].includes(key));
+    _defineProperty(this, "pressNavigationTab", (key) => {
+      if (!this.navigationIsDrawer(key)) this.pressScreenTab(key);
+      else {
+        const open = this.openPanelKey();
+        if (open && !this.panelIsDrawer(open)) this.panelToggle(open)();
+        this.showLeftDrawer(key);
+      }
+    });
+    _defineProperty(this, "handleNavMove", (key, side, direction) => {
+      if (!["left", "right"].includes(side)) return;
+      this.setState((prev) => {
+        const layout = sanitizeNavLayout(prev.navLayout);
+        const oldSide = layout.left.includes(key) ? "left" : layout.right.includes(key) ? "right" : null;
+        if (!oldSide) return null;
+        const index = layout[oldSide].indexOf(key);
+        if (direction) {
+          const next = index + direction;
+          if (oldSide !== side || next < 0 || next >= layout[side].length) return null;
+          layout[side].splice(index, 1);
+          layout[side].splice(next, 0, key);
+        } else {
+          layout[oldSide].splice(index, 1);
+          layout[side].push(key);
+        }
+        if (!saveNavLayout(layout)) return null;
+        return { navLayout: layout };
+      });
+    });
+    _defineProperty(this, "handleNavReset", () => {
+      const layout = sanitizeNavLayout(DEFAULT_NAV_LAYOUT);
+      if (saveNavLayout(layout)) this.setState({ navLayout: layout });
     });
 
-    /* Dropping a tab on another one puts it there. The whole order is
-     * rewritten rather than the two swapped: a drag is "this one goes here",
-     * and swapping would move the tab you dropped *on* somewhere you never
-     * asked it to go. Settings is pinned at the front by the loader, so a
-     * drop in front of it lands second. */
+    /* A drop puts the tab at its neighbour's slot. The same layout is edited
+       in Settings, so a drag cannot change an obsolete second order. */
     _defineProperty(this, "movePanel", (from, to) => {
       if (!from || !to || from === to) return;
       this.setState((prev) => {
-        const order = (
-          Array.isArray(prev.panelOrder) ? prev.panelOrder : DEFAULT_PANEL_ORDER
-        ).slice();
-        const i = order.indexOf(from);
-        const j = order.indexOf(to);
-        if (i === -1 || j === -1) return null;
-        order.splice(i, 1);
-        order.splice(order.indexOf(to) + (j > i ? 1 : 0), 0, from);
-        const next = ["settings"].concat(order.filter((k) => k !== "settings"));
-        savePanelOrder(next);
-        return { panelOrder: next };
+        const layout = sanitizeNavLayout(prev.navLayout);
+        const source = layout.left.includes(from) ? "left" : layout.right.includes(from) ? "right" : null;
+        const side = layout.left.includes(to) ? "left" : layout.right.includes(to) ? "right" : null;
+        if (!source || !side) return null;
+        const down = source === side && layout[source].indexOf(from) < layout[side].indexOf(to);
+        layout[source].splice(layout[source].indexOf(from), 1);
+        layout[side].splice(layout[side].indexOf(to) + (down ? 1 : 0), 0, from);
+        if (!saveNavLayout(layout)) return null;
+        return { navLayout: layout };
       });
     });
 
@@ -2730,7 +2790,8 @@ class CryptoChart extends PureComponent {
         futures: { tour: "futures" },
         news: { tour: "news" },
       };
-      const tabs = this.panelList().filter((t) => !this.panelIsDrawer(t.key));
+      const tabs = this.navigationTabs("right");
+      if (!tabs.length) return null;
       const anyDot = tabs.some((t) => dot[t.key]);
       return React.createElement(
         Fragment,
@@ -2781,6 +2842,7 @@ class CryptoChart extends PureComponent {
           {
             key: "screens",
             id: "screen-tabs",
+            crowded: tabs.length > 5,
             side: "right",
             shown: shown,
             pinned: pinned,
@@ -2797,7 +2859,7 @@ class CryptoChart extends PureComponent {
             onBlur: spine.blur,
           },
           ...tabs.map((t) => {
-            const on = open === t.key;
+            const on = (this.leftDrawer() || open) === t.key;
             const words = say[t.key] || {
               open: t.label,
               close: t.label,
@@ -2810,11 +2872,11 @@ class CryptoChart extends PureComponent {
                 side: "right",
                 active: on,
                 "data-screen-tab": t.key,
-                "data-tour": tourOf[t.key] ? tourOf[t.key].tour : undefined,
+                "data-tour": tourOf[t.key] ? tourOf[t.key].tour : t.tour,
                 "aria-current": on ? "page" : undefined,
                 "aria-label": on ? words.close : words.open,
                 title: on ? words.close : words.title,
-                onClick: () => this.pressScreenTab(t.key),
+                onClick: () => this.pressNavigationTab(t.key),
                 /* Dragged into place, as the strip's tabs were: the column
                    is where they are seen as an order. */
                 draggable: true,
@@ -2847,18 +2909,18 @@ class CryptoChart extends PureComponent {
               React.createElement(
                 DrawerTabIcon,
                 { "aria-hidden": "true" },
-                icon(t.key, 1),
+                icon(t.icon || t.key, 1),
               ),
               React.createElement(
                 DrawerTabName,
                 { side: "right", active: on },
                 t.label,
               ),
-              keyOf[t.key]
+              (keyOf[t.key] || t.press)
                 ? React.createElement(
                     DrawerTabKey,
                     { active: on },
-                    keyCap(keyOf[t.key], { quiet: !on }),
+                    keyCap(keyOf[t.key] || t.press, { quiet: !on }),
                   )
                 : null,
               !on && dot[t.key]
@@ -2902,6 +2964,7 @@ class CryptoChart extends PureComponent {
     _defineProperty(this, "showLeftDrawer", (key) => {
       const current = this.leftDrawer();
       const next = current === key ? null : key;
+      if (next && !this.featureOn(next)) return;
       /* A coin picker that is up closes with it: it is drawn under the
          drawers, and Compare's tab sits on this spine, one press from them. */
       this.setState({
@@ -2925,65 +2988,16 @@ class CryptoChart extends PureComponent {
       }
     });
 
-    /* The tabs, in the order a person meets them: what is on the desk
-     * (widgets), how the chart is drawn, then the two that put something on
-     * it. Targets and calls are features a person can switch off, and a
-     * switched-off feature has no tab; the other two always do. */
-    _defineProperty(this, "drawerTabList", () =>
-      [
-        {
-          key: "widgets",
-          icon: "widgets",
-          label: msg("set_tab_widgets", "Widgets"),
-          press: "W",
-          tour: "widgets",
-        },
-        {
-          key: "chart",
-          icon: "sliders",
-          label: msg("cs_title", "The chart"),
-          press: "V",
-          tour: "chart-settings",
-        },
-        {
-          key: "targets",
-          icon: "target",
-          label: msg("pt_tab_targets", "Targets"),
-          press: "A",
-          tour: "alerts",
-        },
-        {
-          key: "calls",
-          icon: "calls",
-          label: msg("chrome_calls", "Calls"),
-          press: "K",
-          tour: "calls",
-        },
-        /* onboarding static check markers:
-           tour: "alerts" }
-           tour: "calls" }
-           tour: "widgets" }
-           tour: "compare" }
-           tour: "portfolio" }
-           tour: "news" }
-           tour: "settings" } */
-      ].filter((t) => t.key === "chart" || this.featureOn(t.key)),
-    );
+    // Placement and visibility come from the same layout as Settings' preview.
+    _defineProperty(this, "drawerTabList", () => this.navigationTabs("left"));
 
     _defineProperty(this, "renderDrawerTabs", (tickerTop) => {
-      /* A screen covers the chart, and these are about the chart. The
-         derivatives page shares the alerts slot, so it is named here. */
-      if (
-        this.state.showSettings ||
-        this.state.showPortfolio ||
-        this.state.showNews ||
-        this.state.showMonitor ||
-        this.state.alertsView === "futures" ||
-        this.modalUp()
-      ) {
-        return null;
-      }
-      const open = this.leftDrawer();
+      if (this.modalUp()) return null;
+      const screen = this.openPanelKey();
+      const screenUp = screen && !this.panelIsDrawer(screen);
+      const tabs = this.drawerTabList().filter((t) => !screenUp || !this.navigationIsDrawer(t.key));
+      if (!tabs.length) return null;
+      const open = this.leftDrawer() || this.openPanelKey();
       const callsOpenCount =
         this.state.calls && Array.isArray(this.state.calls.open)
           ? this.state.calls.open.length
@@ -3040,6 +3054,7 @@ class CryptoChart extends PureComponent {
           {
             key: "tabs",
             id: "drawer-tabs",
+            crowded: tabs.length > 5,
             shown: shown,
             "data-drawer-tabs": open || "none",
             "data-drawer-tabs-shown": shown ? "true" : "false",
@@ -3051,8 +3066,8 @@ class CryptoChart extends PureComponent {
             onFocus: this.chartSpine.enter,
             onBlur: this.chartSpine.blur,
           },
-          ...this.drawerTabList().map((t) =>
-            (() => {
+          ...tabs.map((t) =>
+            t.key === "compare" ? this.renderCompareTab() : (() => {
               const isCalls = t.key === "calls";
               const badge =
                 isCalls && callsOpenCount > 0
@@ -3089,7 +3104,7 @@ class CryptoChart extends PureComponent {
                   "aria-pressed": open === t.key ? "true" : "false",
                   "aria-label": isCalls ? callsAria : t.label,
                   title: callsTitle,
-                  onClick: () => this.showLeftDrawer(t.key),
+                  onClick: () => this.pressNavigationTab(t.key),
                 },
                 React.createElement(
                   DrawerTabIcon,
@@ -3136,7 +3151,6 @@ class CryptoChart extends PureComponent {
               );
             })(),
           ),
-          this.featureOn("compare") ? this.renderCompareTab() : null,
         ),
       );
     });
@@ -3150,7 +3164,11 @@ class CryptoChart extends PureComponent {
       const label = msg("drawer_tab_compare", "Compare");
       const market = compareMarket(coin);
       const says = coin
-        ? msg("chrome_compare_with", "Comparing with $1 — open Compare", market ? market.name : coin)
+        ? msg(
+            "chrome_compare_with",
+            "Comparing with $1 — open Compare",
+            market ? market.name : coin,
+          )
         : msg("sc_compare", "Compare with a second coin");
       return React.createElement(
         DrawerTab,
@@ -3162,7 +3180,7 @@ class CryptoChart extends PureComponent {
           "aria-pressed": open ? "true" : "false",
           "aria-label": says,
           title: `${says} (C)`,
-          onClick: this.toggleCompare,
+          onClick: () => this.pressNavigationTab("compare"),
         },
         React.createElement(
           DrawerTabIcon,
@@ -3187,7 +3205,7 @@ class CryptoChart extends PureComponent {
       () =>
         this.state.spineOpen === true ||
         // Beside the phone's tab bar a drawer is a sheet, and the column stays put away
-        (this.leftDrawer() !== null && !phoneBarUp()) ||
+        ((this.leftDrawer() !== null || this.navigationTabs("left").some((t) => t.key === this.openPanelKey())) && !phoneBarUp()) ||
         this.state.tourActive === true,
     );
 
@@ -3200,7 +3218,8 @@ class CryptoChart extends PureComponent {
       this,
       "screenSpineShown",
       () =>
-        this.state.screenSpineOpen === true || this.state.tourActive === true,
+        this.state.screenSpineOpen === true || this.state.tourActive === true ||
+        (this.navigationTabs("right").some((t) => t.key === this.leftDrawer()) && !phoneBarUp()),
     );
 
     /* **A card in the middle of the window is modal**: the coin picker (the
@@ -3372,19 +3391,29 @@ class CryptoChart extends PureComponent {
       const x = event.clientX;
       const w = window.innerWidth;
       const sheet =
-        w <= 600 && t && t.closest &&
-        t.closest("[data-widgets-drawer='open'], [data-chart-settings='open'], [data-compare-drawer='open'], [data-alerts-drawer], [data-phone-sheet]");
+        w <= 600 &&
+        t &&
+        t.closest &&
+        t.closest(
+          "[data-widgets-drawer='open'], [data-chart-settings='open'], [data-compare-drawer='open'], [data-alerts-drawer], [data-phone-sheet]",
+        );
       const which = sheet ? sheet.getAttribute("data-phone-sheet") : null;
       const rect = sheet ? sheet.getBoundingClientRect() : null;
       // The call's sheet hangs from the top: its grabber, and its swipe, are at its foot
-      const onHead = rect && (which === "call" ? rect.bottom - event.clientY <= SHEET_SWIPE_HEAD : event.clientY - rect.top <= SHEET_SWIPE_HEAD);
+      const onHead =
+        rect &&
+        (which === "call"
+          ? rect.bottom - event.clientY <= SHEET_SWIPE_HEAD
+          : event.clientY - rect.top <= SHEET_SWIPE_HEAD);
       if (onHead) {
         this.pullSwipe = { side: "sheet", x, y: event.clientY, which };
         return;
       }
       /* An open column is 36px wide — too narrow to swipe across — so it
          and SPINE_NEAR_X beside it are where the swipe back starts. */
-      const edge = touchFirst() ? WEBAPP_EDGES[this.state.webAppEdge] || SPINE_SWIPE_EDGE_TOUCH : SPINE_SWIPE_EDGE;
+      const edge = touchFirst()
+        ? WEBAPP_EDGES[this.state.webAppEdge] || SPINE_SWIPE_EDGE_TOUCH
+        : SPINE_SWIPE_EDGE;
       const reach = (spine, key) => {
         if (this.state[key] !== true) return edge;
         const c = document.querySelector(spine.within.split(",")[0].trim());
@@ -3392,7 +3421,8 @@ class CryptoChart extends PureComponent {
         return r && r.width ? r.width + SPINE_NEAR_X : edge;
       };
       // Safari's tab keeps its outer strip for back and forward (see SPINE_SWIPE_EDGE_TOUCH)
-      if (iosSafariTab() && (x < IOS_SYSTEM_EDGE || x > w - IOS_SYSTEM_EDGE)) return;
+      if (iosSafariTab() && (x < IOS_SYSTEM_EDGE || x > w - IOS_SYSTEM_EDGE))
+        return;
       let side = null;
       if (x <= reach(this.chartSpine, "spineOpen")) side = "chart";
       else if (x >= w - reach(this.screenSpine, "screenSpineOpen"))
@@ -3400,7 +3430,8 @@ class CryptoChart extends PureComponent {
       if (!side) return;
       this.pullSwipe = { side, x, y: event.clientY };
       const control =
-        t && t.closest &&
+        t &&
+        t.closest &&
         t.closest(
           "button, a, input, select, textarea, [role=button], [role=slider], [role=switch], [role=separator], [data-drawer-tabs], [data-screen-tabs]",
         );
@@ -3418,7 +3449,8 @@ class CryptoChart extends PureComponent {
       if (s.side === "sheet") {
         // A sheet from the top goes back up; one from the foot, down
         const away = s.which === "call" ? -dy : dy;
-        if (away < -SPINE_SWIPE_MIN || Math.abs(dx) > SHEET_SWIPE_MIN) this.pullSwipe = null;
+        if (away < -SPINE_SWIPE_MIN || Math.abs(dx) > SHEET_SWIPE_MIN)
+          this.pullSwipe = null;
         else if (away >= SHEET_SWIPE_MIN && away > Math.abs(dx) * 1.5) {
           this.pullSwipe = null;
           if (s.which === "call") this.handleCallCancel();
@@ -3454,28 +3486,69 @@ class CryptoChart extends PureComponent {
     /* Every place the phone's bar can hold, in PHONE_TAB_KEYS' order — a
        feature switched off is no place at all. */
     _defineProperty(this, "phoneTabCatalog", () => {
-      const openCalls = this.state.calls && Array.isArray(this.state.calls.open) ? this.state.calls.open.length : 0;
+      const openCalls =
+        this.state.calls && Array.isArray(this.state.calls.open)
+          ? this.state.calls.open.length
+          : 0;
       return [
         { key: "home", icon: "chartline", label: msg("ph_home", "Chart") },
-        this.featureOn("calls") && { key: "calls", icon: "calls", label: msg("chrome_calls", "Calls"), badge: openCalls || null },
-        this.featureOn("targets") && { key: "targets", icon: "target", label: msg("pt_tab_targets", "Targets") },
-        this.featureOn("portfolio") && { key: "portfolio", icon: "portfolio", label: msg("chrome_portfolio", "Portfolio") },
-        this.featureOn("widgets") && { key: "widgets", icon: "widgets", label: msg("set_tab_widgets", "Widgets") },
-        { key: "chart", icon: "sliders", label: msg("cs_title", "The chart") },
-        { key: "compare", icon: "compare", label: msg("drawer_tab_compare", "Compare") },
-        this.featureOn("news") && { key: "news", icon: "news", label: msg("chrome_news", "News") },
-        this.featureOn("futures") && { key: "futures", icon: "futures", label: msg("pt_tab_futures", "Futures") },
-        { key: "monitor", icon: "monitor", label: msg("mon_title", "Monitor") },
+        this.featureOn("calls") && {
+          key: "calls",
+          icon: "calls",
+          label: msg("chrome_calls", "Calls"),
+          badge: openCalls || null,
+        },
+        this.featureOn("targets") && {
+          key: "targets",
+          icon: "target",
+          label: msg("pt_tab_targets", "Targets"),
+        },
+        this.featureOn("portfolio") && {
+          key: "portfolio",
+          icon: "portfolio",
+          label: msg("chrome_portfolio", "Portfolio"),
+        },
+        this.featureOn("widgets") && {
+          key: "widgets",
+          icon: "widgets",
+          label: msg("set_tab_widgets", "Widgets"),
+        },
+        this.featureOn("chart") && { key: "chart", icon: "sliders", label: msg("cs_title", "The chart") },
+        this.featureOn("compare") && {
+          key: "compare",
+          icon: "compare",
+          label: msg("drawer_tab_compare", "Compare"),
+        },
+        this.featureOn("news") && {
+          key: "news",
+          icon: "news",
+          label: msg("chrome_news", "News"),
+        },
+        this.featureOn("futures") && {
+          key: "futures",
+          icon: "futures",
+          label: msg("pt_tab_futures", "Futures"),
+        },
+        this.featureOn("monitor") && { key: "monitor", icon: "monitor", label: msg("mon_title", "Monitor") },
         { key: "search", icon: "search", label: msg("ph_search", "Search") },
-        { key: "settings", icon: "settings", label: msg("chrome_settings", "Settings") },
+        {
+          key: "settings",
+          icon: "settings",
+          label: msg("chrome_settings", "Settings"),
+        },
       ].filter(Boolean);
     });
 
     // The bar as chosen (PHONE_TABS_KEY) and More; More holds the rest
     _defineProperty(this, "phoneTabs", () => {
       const all = this.phoneTabCatalog();
-      const chosen = (this.state.phoneTabs || DEFAULT_PHONE_TABS).map((k) => all.find((t) => t.key === k)).filter(Boolean);
-      const bar = [...chosen, { key: "more", icon: "more", label: msg("ph_more", "More") }];
+      const chosen = (this.state.phoneTabs || DEFAULT_PHONE_TABS)
+        .map((k) => all.find((t) => t.key === k))
+        .filter(Boolean);
+      const bar = [
+        ...chosen,
+        { key: "more", icon: "more", label: msg("ph_more", "More") },
+      ];
       const more = all.filter((t) => !chosen.includes(t));
       return { bar, more };
     });
@@ -3484,7 +3557,8 @@ class CryptoChart extends PureComponent {
     _defineProperty(this, "phoneActive", () => {
       if (this.state.phoneMore) return "more";
       const open = this.openPanelKey() || this.leftDrawer();
-      const onBar = (k) => (this.state.phoneTabs || DEFAULT_PHONE_TABS).includes(k);
+      const onBar = (k) =>
+        (this.state.phoneTabs || DEFAULT_PHONE_TABS).includes(k);
       if (!open) return onBar("home") ? "home" : null;
       return onBar(open) ? open : "more";
     });
@@ -3518,7 +3592,16 @@ class CryptoChart extends PureComponent {
         this.setState({ showQuickSwitch: true });
         return undefined;
       }
-      if (["portfolio", "futures", "news", "baserates", "monitor", "settings"].includes(key)) {
+      if (
+        [
+          "portfolio",
+          "futures",
+          "news",
+          "baserates",
+          "monitor",
+          "settings",
+        ].includes(key)
+      ) {
         this.pressScreenTab(key);
         return undefined;
       }
@@ -3542,7 +3625,8 @@ class CryptoChart extends PureComponent {
 
     _defineProperty(this, "handleCallLock", () => {
       const chart = this.boardChart();
-      if (chart && chart.lockDraft) chart.lockDraft({ confidence: this.state.callDraftConfidence });
+      if (chart && chart.lockDraft)
+        chart.lockDraft({ confidence: this.state.callDraftConfidence });
       this.setState({ callDraft: null, callDraftConfidence: null });
     });
 
@@ -3576,7 +3660,10 @@ class CryptoChart extends PureComponent {
     _defineProperty(this, "syncKeyboard", () => {
       const vv = window.visualViewport;
       if (!vv) return;
-      const kb = Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop));
+      const kb = Math.max(
+        0,
+        Math.round(window.innerHeight - vv.height - vv.offsetTop),
+      );
       const root = document.documentElement.style;
       root.setProperty("--pt-kb", `${kb}px`);
       root.setProperty("--pt-vvh", `${Math.round(vv.height)}px`);
@@ -3586,7 +3673,8 @@ class CryptoChart extends PureComponent {
        the window the keyboard leaves — once the keyboard has risen. */
     _defineProperty(this, "fieldIntoView", (e) => {
       const el = e.target;
-      if (!el || !/^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName) || !touchFirst()) return;
+      if (!el || !/^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName) || !touchFirst())
+        return;
       clearTimeout(this._fieldTimer);
       this._fieldTimer = setTimeout(() => {
         if (document.activeElement !== el || !el.scrollIntoView) return;
@@ -3609,12 +3697,19 @@ class CryptoChart extends PureComponent {
        menu closes nothing else, as on iOS. mousedown, so a selection released
        outside does not shut it. */
     _defineProperty(this, "widgetsOutside", (event) => {
-      if (this.state.showWidgetsDrawer !== true || event.ptWidgetMenuClosed) return;
+      if (this.state.showWidgetsDrawer !== true || event.ptWidgetMenuClosed)
+        return;
       const box = this.widgetsDrawerNode;
       const t = event.target;
       if (!t || (box && box.contains(t))) return;
-      if (t.closest && t.closest("[data-drawer-tabs], [data-widget-menu]")) return;
-      this.setState({ showWidgetsDrawer: false, widgetsChoosing: false, widgetsEditing: false, widgetMenu: null });
+      if (t.closest && t.closest("[data-drawer-tabs], [data-widget-menu]"))
+        return;
+      this.setState({
+        showWidgetsDrawer: false,
+        widgetsChoosing: false,
+        widgetsEditing: false,
+        widgetMenu: null,
+      });
     });
 
     /* mousedown, like the drawers' own, so a selection released outside
@@ -3627,8 +3722,8 @@ class CryptoChart extends PureComponent {
     _defineProperty(this, "openPanelKey", () => {
       if (this.state.showSettings) return "settings";
       if (this.state.showPortfolio) return "portfolio";
-      if (this.state.showNews) return "news";
       if (this.state.showMonitor) return "monitor";
+      if (this.state.showNews) return "news";
       if (this.state.alertsView) return this.state.alertsView;
       return null;
     });
@@ -3646,7 +3741,8 @@ class CryptoChart extends PureComponent {
        is up: the tab it is on closes it, another tab switches to it. */
     // A switch inside the open screen: its frame stays still, the content moves
     _defineProperty(this, "handleMonitorTab", (tab) => {
-      if (MONITOR_TABS.includes(tab)) this.setState({ monitorTab: tab, monitorStill: true });
+      if (MONITOR_TABS.includes(tab))
+        this.setState({ monitorTab: tab, monitorStill: true });
     });
     _defineProperty(this, "openMonitorTab", (tab) => {
       if (!MONITOR_TABS.includes(tab)) return;
@@ -3661,6 +3757,7 @@ class CryptoChart extends PureComponent {
 
     _defineProperty(this, "showPanel", (key) => {
       const open = this.openPanelKey();
+      if (key !== "settings" && !this.featureOn(key)) return;
       if (open === key) return;
       /* **A swap between two screens goes behind a veil** (24 Sep 2026): both
          are opaque surfaces on the same ground, so fading that ground up,
@@ -3697,21 +3794,25 @@ class CryptoChart extends PureComponent {
 
     _defineProperty(this, "featureOn", (key) => {
       if (key === "futures") return this.state.practiceEnabled === true;
+      if (key === "monitor") return this.state.features.monitor !== false;
+      if (key === "baseRates" && this.state.features.monitor === false) return false;
       return this.state.features[key] !== false;
     });
 
     _defineProperty(this, "handleFeatureChange", (key, on) => {
+      if (!FEATURE_CONTROLS.some((c) => c.key === key)) return false;
       if (key === "futures") {
-        this.setPracticeEnabled(on);
-        return;
+        if (!savePracticeEnabled(on)) return false;
+        this.setState({ practiceEnabled: on });
+        return true;
       }
-      this.setState((prev) => {
-        const next = { ...prev.features };
-        if (on) delete next[key];
-        else next[key] = false;
-        saveFeatures(next);
-        return { features: next };
-      });
+      const next = { ...this.state.features };
+      if (on) delete next[key];
+      else next[key] = false;
+      if (!saveFeatures(next)) return false;
+      this.setState({ features: next });
+      if (!on && key === "compare") this.clearCompare();
+      return true;
     });
 
     _defineProperty(this, "handleLanguageChange", (next) => {
@@ -3870,7 +3971,9 @@ class CryptoChart extends PureComponent {
       }
       if (!CHART_CHANCES.includes(id)) return;
       const have = this.state.chartChances || [];
-      const next = CHART_CHANCES.filter((k) => (k === id ? !have.includes(k) : have.includes(k)));
+      const next = CHART_CHANCES.filter((k) =>
+        k === id ? !have.includes(k) : have.includes(k),
+      );
       saveChartChances(next);
       this.setState({ chartChances: next });
     });
@@ -3879,11 +3982,16 @@ class CryptoChart extends PureComponent {
        under the price wants it and the widget has not fetched it. */
     _defineProperty(this, "ensureRegimeData", (coin) => {
       // Nothing is asked for a tab nobody is looking at
-      if (this._regimeAsked === coin || (typeof document !== "undefined" && document.hidden)) return;
+      if (
+        this._regimeAsked === coin ||
+        (typeof document !== "undefined" && document.hidden)
+      )
+        return;
       this._regimeAsked = coin;
       fetchRegimeGrid(coin)
         .then((data) => {
-          if (data && this.state.coinOptions[this.state.coinIndex] === coin) this.setState({ regimeData: data });
+          if (data && this.state.coinOptions[this.state.coinIndex] === coin)
+            this.setState({ regimeData: data });
         })
         .catch(() => {
           /* the line simply leaves the regime out */
@@ -3897,13 +4005,29 @@ class CryptoChart extends PureComponent {
       const currency = this.state.currency;
       const key = `${coin}-${currency}`;
       if (typeof document !== "undefined" && document.hidden) return;
-      if (this._tomorrowAsked === key && Date.now() - this._tomorrowAskedAt < TOMORROW_G * 1000) return;
+      if (
+        this._tomorrowAsked === key &&
+        Date.now() - this._tomorrowAskedAt < TOMORROW_G * 1000
+      )
+        return;
       this._tomorrowAsked = key;
       this._tomorrowAskedAt = Date.now();
       fetchOddsSeries(coin, currency, TOMORROW_G)
         .then((series) => {
-          if (!series || this.state.coinOptions[this.state.coinIndex] !== coin || this.state.currency !== currency) return;
-          this.setState({ tomorrowData: { coin, currency, at: series.at, range: tomorrowRange(series.closes) } });
+          if (
+            !series ||
+            this.state.coinOptions[this.state.coinIndex] !== coin ||
+            this.state.currency !== currency
+          )
+            return;
+          this.setState({
+            tomorrowData: {
+              coin,
+              currency,
+              at: series.at,
+              range: tomorrowRange(series.closes),
+            },
+          });
         })
         .catch(() => {
           /* the line leaves the next 24 hours out */
@@ -3914,13 +4038,25 @@ class CryptoChart extends PureComponent {
        in USD nearest the price — a target is the question the person already
        asked. Null without one (the card then shows the band alone). */
     _defineProperty(this, "modelOutlookTarget", () => {
-      const live = this.state.portfolioPrices && this.state.portfolioPrices.BTC ? this.state.portfolioPrices.BTC.price : NaN;
+      const live =
+        this.state.portfolioPrices && this.state.portfolioPrices.BTC
+          ? this.state.portfolioPrices.BTC.price
+          : NaN;
       const armed = (this.state.alerts || []).filter(
-        (a) => a.coin === "BTC" && a.kind !== "percent" && a.kind !== "portfolio" && a.currency === "USD" && !a.triggeredAt && !a.expiredAt && a.target > 0,
+        (a) =>
+          a.coin === "BTC" &&
+          a.kind !== "percent" &&
+          a.kind !== "portfolio" &&
+          a.currency === "USD" &&
+          !a.triggeredAt &&
+          !a.expiredAt &&
+          a.target > 0,
       );
       if (!armed.length) return null;
       if (!(live > 0)) return armed[0].target;
-      return armed.reduce((a, b) => (Math.abs(b.target - live) < Math.abs(a.target - live) ? b : a)).target;
+      return armed.reduce((a, b) =>
+        Math.abs(b.target - live) < Math.abs(a.target - live) ? b : a,
+      ).target;
     });
 
     /* The outlook's replays for a series, once per series — the widget and
@@ -3944,7 +4080,10 @@ class CryptoChart extends PureComponent {
           { label: msg("pp_h_1m", "1m"), seconds: 30 * 24 * 3600 },
         ]).slice(-2);
         const cone = horizons.length
-          ? outlookCone(series, { horizons: horizons.map((h) => h.bars), seed: 20260921 })
+          ? outlookCone(series, {
+              horizons: horizons.map((h) => h.bars),
+              seed: 20260921,
+            })
           : null;
         if (cone && cone.n) out = { horizons, cone };
       }
@@ -3957,7 +4096,9 @@ class CryptoChart extends PureComponent {
     _defineProperty(this, "handleChartStudyToggle", (id) => {
       if (!CHART_STUDIES.includes(id)) return;
       const have = this.state.chartStudies || [];
-      const next = CHART_STUDIES.filter((k) => (k === id ? !have.includes(k) : have.includes(k)));
+      const next = CHART_STUDIES.filter((k) =>
+        k === id ? !have.includes(k) : have.includes(k),
+      );
       saveChartStudies(next);
       this.setState({ chartStudies: next }, () => this.syncCompanion());
     });
@@ -3978,10 +4119,14 @@ class CryptoChart extends PureComponent {
       let next;
       if (Array.isArray(id) && typeof shown === "boolean") {
         const ids = id.filter((x) => typeof x === "string");
-        next = shown ? have.filter((x) => !ids.includes(x)) : have.concat(ids.filter((x) => !have.includes(x)));
+        next = shown
+          ? have.filter((x) => !ids.includes(x))
+          : have.concat(ids.filter((x) => !have.includes(x)));
       } else {
         if (typeof id !== "string") return;
-        next = have.includes(id) ? have.filter((x) => x !== id) : have.concat([id]);
+        next = have.includes(id)
+          ? have.filter((x) => x !== id)
+          : have.concat([id]);
       }
       saveCompanionHidden(next);
       this.setState({ companionHidden: next });
@@ -4036,7 +4181,9 @@ class CryptoChart extends PureComponent {
       const wanted =
         this.state.companion === true ||
         (this.state.indicatorOverlays || []).length > 0 ||
-        (this.state.chartStudies || []).some((k) => CHART_STUDIES_DAILY.includes(k));
+        (this.state.chartStudies || []).some((k) =>
+          CHART_STUDIES_DAILY.includes(k),
+        );
       if (!wanted || !coin) return;
       const have = this.state.companionData;
       if ((have && have.coin === coin) || this._companionAsking === coin)
@@ -4050,7 +4197,9 @@ class CryptoChart extends PureComponent {
           /* The first four patterns and the swing patterns of 1 Oct 2026
              (swing-patterns.js) — one list, oldest breakout first. */
           const episodes = candles
-            ? detectPricePatterns(candles).concat(detectSwingPatterns(candles)).sort((a, b) => a.at - b.at)
+            ? detectPricePatterns(candles)
+                .concat(detectSwingPatterns(candles))
+                .sort((a, b) => a.at - b.at)
             : [];
           const records = {};
           for (const def of COMPANION_PATTERN_DEFS)
@@ -4063,7 +4212,10 @@ class CryptoChart extends PureComponent {
           if (candles && candles.length > 200) {
             const closes = candles.map((c) => c.close);
             // The setups and the readings of 1 Oct 2026 (companion-readings.js)
-            const states = Object.assign(strategySetupStates(candles), companionReadingStates(candles));
+            const states = Object.assign(
+              strategySetupStates(candles),
+              companionReadingStates(candles),
+            );
             for (const def of COMPANION_SETUP_DEFS) {
               for (const i of strategySetupEntries(states[def.id])) {
                 setups.push({
@@ -4074,7 +4226,11 @@ class CryptoChart extends PureComponent {
               }
               setupRecords[def.id] =
                 def.kind === "move"
-                  ? moveRateFor(closes, states[def.id], def.horizon || SETUP_MOVE_HORIZON)
+                  ? moveRateFor(
+                      closes,
+                      states[def.id],
+                      def.horizon || SETUP_MOVE_HORIZON,
+                    )
                   : baseRateFor(
                       closes,
                       states[def.id],
@@ -4141,7 +4297,10 @@ class CryptoChart extends PureComponent {
         this.state.separatorFormat,
       );
       const now = new Date();
-      const theme = paletteColors(this.state.activeTheme === "light" ? "light" : "dark", this.state.directionPalette);
+      const theme = paletteColors(
+        this.state.activeTheme === "light" ? "light" : "dark",
+        this.state.directionPalette,
+      );
       /* A zoomed chart's picture names the window it shows, not the range
          it was zoomed in from (chart-viewport.js). */
       const view = this.chartViewEnabled() ? this.chartViewNow() : null;
@@ -4210,7 +4369,8 @@ class CryptoChart extends PureComponent {
     /* The tabs' key letters, on or off: written on the root, which both
        columns' DrawerTabKey read (styles-app.js). */
     _defineProperty(this, "applyTabKeys", (on) => {
-      if (on === false) document.documentElement.setAttribute("data-tab-keys", "off");
+      if (on === false)
+        document.documentElement.setAttribute("data-tab-keys", "off");
       else document.documentElement.removeAttribute("data-tab-keys");
     });
 
@@ -4384,7 +4544,8 @@ class CryptoChart extends PureComponent {
       if (!PHONE_NAV_OPTIONS.includes(v)) return;
       savePhoneNav(v);
       try {
-        if (v === "swipe") document.documentElement.setAttribute("data-phone-nav", "swipe");
+        if (v === "swipe")
+          document.documentElement.setAttribute("data-phone-nav", "swipe");
         else document.documentElement.removeAttribute("data-phone-nav");
       } catch (error) {
         /* no document */
@@ -4405,7 +4566,10 @@ class CryptoChart extends PureComponent {
      * again on the way back (handleVisibilityChange); refused or absent
      * (an older iOS) leaves the row saying so, never an error. */
     _defineProperty(this, "syncWakeLock", () => {
-      const want = this.state.webAppWake === true && typeof document !== "undefined" && !document.hidden;
+      const want =
+        this.state.webAppWake === true &&
+        typeof document !== "undefined" &&
+        !document.hidden;
       const api = typeof navigator !== "undefined" && navigator.wakeLock;
       if (!want || !api) {
         if (this._wakeLock) this._wakeLock.release().catch(() => {});
@@ -4519,8 +4683,15 @@ class CryptoChart extends PureComponent {
       if (!rateAskDue()) return;
       const s = this.state;
       const busy =
-        document.hidden || s.showSettings || s.showPortfolio || s.showNews || s.showMonitor ||
-        s.showQuickSwitch || s.tourActive || s.widgetsEditing || Boolean(this.leftDrawer());
+        document.hidden ||
+        s.showSettings ||
+        s.showPortfolio ||
+        s.showNews ||
+        s.showMonitor ||
+        s.showQuickSwitch ||
+        s.tourActive ||
+        s.widgetsEditing ||
+        Boolean(this.leftDrawer());
       if (busy) {
         this.rateTimer = setTimeout(this.tryRateAsk, RATE_PROMPT_SETTLE_MS);
         return;
@@ -4907,7 +5078,10 @@ class CryptoChart extends PureComponent {
        the moment the tab opens, only after it has been up a while, visible,
        with nothing out over the chart — and recorded the moment it is
        shown, so one ask is spent once whichever tab shows it. */
-    if (rateAskDue() && Date.now() - getOrInitFirstUse() >= RATE_PROMPT_FALLBACK_MS) {
+    if (
+      rateAskDue() &&
+      Date.now() - getOrInitFirstUse() >= RATE_PROMPT_FALLBACK_MS
+    ) {
       this.rateTimer = setTimeout(this.tryRateAsk, RATE_PROMPT_SETTLE_MS);
     }
 
@@ -4915,10 +5089,14 @@ class CryptoChart extends PureComponent {
        once, at launch, on a phone (WEBAPP_START_KEY). After the first frame,
        so the tab bar's own state is there to go through. */
     this.syncWakeLock();
-    if (touchFirst() && this.state.webAppStart && this.state.webAppStart !== "chart") {
+    if (
+      touchFirst() &&
+      this.state.webAppStart &&
+      this.state.webAppStart !== "chart"
+    ) {
       const start = this.state.webAppStart;
       this.startTimer = setTimeout(() => {
-        const feature = start === "monitor" ? null : start;
+        const feature = start;
         if (feature && !this.featureOn(feature)) return;
         this.phoneGo(start);
       }, 0);
@@ -5015,14 +5193,20 @@ class CryptoChart extends PureComponent {
       passive: true,
     });
     window.addEventListener("touchend", this.pullSwipeEnd, true);
-    document.addEventListener("gesturestart", this.stopPageZoom, { passive: false });
+    document.addEventListener("gesturestart", this.stopPageZoom, {
+      passive: false,
+    });
     /* **The phone's keyboard is a floor too** (13 Oct 2026): a sheet stood
        on the tab bar while the keyboard came up over it, so a target was
        typed into a field nobody could see. The visual viewport says how much
        of the window the keyboard takes (--pt-kb) and how tall what is left
        is (--pt-vvh); the sheets stand on whichever is higher, and a field
        that takes the focus is brought to the middle of what is left. */
-    if (typeof window !== "undefined" && window.visualViewport && (touchFirst() || isWebApp())) {
+    if (
+      typeof window !== "undefined" &&
+      window.visualViewport &&
+      (touchFirst() || isWebApp())
+    ) {
       window.visualViewport.addEventListener("resize", this.syncKeyboard);
       window.visualViewport.addEventListener("scroll", this.syncKeyboard);
       this.syncKeyboard();
@@ -5159,7 +5343,9 @@ class CryptoChart extends PureComponent {
     if (
       (this.state.companion === true ||
         (this.state.indicatorOverlays || []).length > 0 ||
-        (this.state.chartStudies || []).some((k) => CHART_STUDIES_DAILY.includes(k))) &&
+        (this.state.chartStudies || []).some((k) =>
+          CHART_STUDIES_DAILY.includes(k),
+        )) &&
       (prevState.coinIndex !== this.state.coinIndex ||
         prevState.coinOptions !== this.state.coinOptions)
     ) {
@@ -5193,7 +5379,8 @@ class CryptoChart extends PureComponent {
       const coin = this.state.coinOptions[this.state.coinIndex];
       /* Asked of the coin, because the strip is about the market you are
          looking at. */
-      if (!practiceForCoin(this.state.practice, coin).length) this.stopConfirm("dock:");
+      if (!practiceForCoin(this.state.practice, coin).length)
+        this.stopConfirm("dock:");
     }
 
     // A hit arriving, or the last banner being dismissed, is what starts and
@@ -5335,14 +5522,22 @@ class CryptoChart extends PureComponent {
     /* An event has a start and an end (findMoveEvents), and the card says
        both: "Oct 8, 2026, 3:00 PM – 3:35 PM", the date again only when it ran
        past midnight. */
-    const dateOpts = { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" };
+    const dateOpts = {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    };
     const startAt = new Date(biggest.startTime);
     const endAt = new Date(biggest.time);
     const when =
       biggest.steps > 1 && Number.isFinite(+startAt)
         ? `${startAt.toLocaleString(undefined, dateOpts)} – ${endAt.toLocaleString(
             undefined,
-            startAt.toDateString() === endAt.toDateString() ? { hour: "numeric", minute: "2-digit" } : dateOpts,
+            startAt.toDateString() === endAt.toDateString()
+              ? { hour: "numeric", minute: "2-digit" }
+              : dateOpts,
           )}`
         : endAt.toLocaleString(undefined, dateOpts);
     const headlines = this.state.moveHeadlinesFor;
@@ -5358,15 +5553,24 @@ class CryptoChart extends PureComponent {
        newsrooms, published nearer the move, on top — each saying which of
        those it was. */
     const split = headlines
-      ? rankMoveHeadlines(headlines, activeCoin, biggest, this.state.newsSources)
+      ? rankMoveHeadlines(
+          headlines,
+          activeCoin,
+          biggest,
+          this.state.newsSources,
+        )
       : null;
     // What put a headline on top, in the row's own source line
     const whyText = (why) => {
       if (!why) return "";
       const parts = [];
-      if (why.tone === "down") parts.push(msg("news_read_tone_down", "worded down"));
+      if (why.tone === "down")
+        parts.push(msg("news_read_tone_down", "worded down"));
       if (why.tone === "up") parts.push(msg("news_read_tone_up", "worded up"));
-      if (why.rooms > 1) parts.push(msg("app_move_why_rooms", "$1 newsrooms", String(why.rooms)));
+      if (why.rooms > 1)
+        parts.push(
+          msg("app_move_why_rooms", "$1 newsrooms", String(why.rooms)),
+        );
       if (Number.isFinite(why.at))
         parts.push(
           why.at === 0
@@ -5450,19 +5654,21 @@ class CryptoChart extends PureComponent {
               ? msg(
                   "app_move_rare_span",
                   "Bigger than $1% of $2 stretches on this chart",
-                  String(Math.min(99, Math.max(1, Math.round((1 - rarity) * 100)))),
+                  String(
+                    Math.min(99, Math.max(1, Math.round((1 - rarity) * 100))),
+                  ),
                   spanText(biggest.time - biggest.startTime),
                 )
               : rarity <= 0.01
-              ? msg(
-                  "app_move_rare_top",
-                  "Bigger than 99% of steps on this chart",
-                )
-              : msg(
-                  "app_move_rare",
-                  "Bigger than $1% of steps on this chart",
-                  String(Math.max(1, Math.round((1 - rarity) * 100))),
-                ),
+                ? msg(
+                    "app_move_rare_top",
+                    "Bigger than 99% of steps on this chart",
+                  )
+                : msg(
+                    "app_move_rare",
+                    "Bigger than $1% of steps on this chart",
+                    String(Math.max(1, Math.round((1 - rarity) * 100))),
+                  ),
           )
         : null,
       after
@@ -5707,9 +5913,8 @@ class CryptoChart extends PureComponent {
      * title, which touches nothing on the chart — produced five full
      * `LineBase` renders. There are only ever two palettes, so there only ever
      * need to be two objects, and switching theme still hands over a new one. */
-    const currentTheme = (THEMES[this.state.directionPalette] || THEMES.classic)[
-      activeTheme === "light" ? "light" : "dark"
-    ];
+    const currentTheme = (THEMES[this.state.directionPalette] ||
+      THEMES.classic)[activeTheme === "light" ? "light" : "dark"];
 
     return React.createElement(
       ThemeProvider,
@@ -5870,9 +6075,15 @@ class CryptoChart extends PureComponent {
                * question rather than a claim — "if you like it" — because the
                * app does not know whether they do. */
               this.state.rateMoment === "call"
-                ? msg("app_rate_ask_call", "That call came true. If PriceTab helps you read the market, a rating is how other people find it — it takes a few seconds.")
+                ? msg(
+                    "app_rate_ask_call",
+                    "That call came true. If PriceTab helps you read the market, a rating is how other people find it — it takes a few seconds.",
+                  )
                 : this.state.rateMoment === "target"
-                  ? msg("app_rate_ask_target", "Your target was reached. If PriceTab is useful to you, a rating is how other people find it — it takes a few seconds.")
+                  ? msg(
+                      "app_rate_ask_target",
+                      "Your target was reached. If PriceTab is useful to you, a rating is how other people find it — it takes a few seconds.",
+                    )
                   : msg(
                       "app_rate_ask",
                       "Liking PriceTab? A rating is how other people find it — it takes a few seconds and helps more than anything else.",
@@ -6049,21 +6260,39 @@ class CryptoChart extends PureComponent {
                          says when its line is not on this range or not in
                          this currency. */
                       const compareMkt = compareMarket(this.state.compareCoin);
-                      const krakenMkt = compareMkt && compareMkt.source === "kraken";
+                      const krakenMkt =
+                        compareMkt && compareMkt.source === "kraken";
                       const mktNote = !krakenMkt
                         ? null
                         : !COMPARE_MARKET_PERIODS.includes(this.state.period)
-                          ? msg("cmp_mkt_from_1d", "$1 is drawn from 1D up — it trades thinly by the minute", compareMkt.name)
+                          ? msg(
+                              "cmp_mkt_from_1d",
+                              "$1 is drawn from 1D up — it trades thinly by the minute",
+                              compareMkt.name,
+                            )
                           : currency !== "USD"
                             ? msg("cmp_mkt_usd", "$1 in USD", compareMkt.name)
                             : null;
-                      const together = compareSameDirection(valueHistory, this.state.compareHistory || []);
-                      const corr = compareCorrelation(valueHistory, this.state.compareHistory || []);
+                      const together = compareSameDirection(
+                        valueHistory,
+                        this.state.compareHistory || [],
+                      );
+                      const corr = compareCorrelation(
+                        valueHistory,
+                        this.state.compareHistory || [],
+                      );
                       const tile = (key, value, unit, label, title, data) =>
                         React.createElement(
                           CompareTile,
                           { key, title, ...data },
-                          React.createElement(CompareTileValue, null, value, unit ? React.createElement(CompareTileUnit, null, unit) : null),
+                          React.createElement(
+                            CompareTileValue,
+                            null,
+                            value,
+                            unit
+                              ? React.createElement(CompareTileUnit, null, unit)
+                              : null,
+                          ),
                           React.createElement(CompareNote, null, label),
                         );
                       return React.createElement(
@@ -6071,9 +6300,21 @@ class CryptoChart extends PureComponent {
                         { key: "compare", "data-compare-strip": "true" },
                         React.createElement(
                           CompareGroup,
-                          { "aria-label": msg("cmp_since", "since the start of $1", periodLabel) },
+                          {
+                            "aria-label": msg(
+                              "cmp_since",
+                              "since the start of $1",
+                              periodLabel,
+                            ),
+                          },
                           leg(activeCoin, lastA, false),
-                          leg(compareMkt ? compareMkt.name : this.state.compareCoin, lastB, true),
+                          leg(
+                            compareMkt
+                              ? compareMkt.name
+                              : this.state.compareCoin,
+                            lastB,
+                            true,
+                          ),
                         ),
                         React.createElement(
                           CompareGroup,
@@ -6081,10 +6322,20 @@ class CryptoChart extends PureComponent {
                           lastA != null && lastB != null
                             ? tile(
                                 "gap",
-                                formatSignedPercent(lastB - lastA).replace("%", ""),
+                                formatSignedPercent(lastB - lastA).replace(
+                                  "%",
+                                  "",
+                                ),
                                 msg("cmp_pts", "pts"),
-                                msg("cmp_gap_label", "gap since the start of $1", periodLabel),
-                                msg("cmp_gap_hint", "The compared coin's move minus this coin's, in percentage points"),
+                                msg(
+                                  "cmp_gap_label",
+                                  "gap since the start of $1",
+                                  periodLabel,
+                                ),
+                                msg(
+                                  "cmp_gap_hint",
+                                  "The compared coin's move minus this coin's, in percentage points",
+                                ),
                               )
                             : null,
                           /* How often they moved together, as a count — the
@@ -6095,8 +6346,13 @@ class CryptoChart extends PureComponent {
                                 `${together.same}/${together.n}`,
                                 `${Math.round((together.same / together.n) * 100)}%`,
                                 msg("cmp_together_label", "steps the same way"),
-                                msg("cmp_together_hint", "Steps of this chart where both coins moved, and how many of them went the same way. A count of what happened, not a forecast."),
-                                { "data-compare-together": `${together.same}/${together.n}` },
+                                msg(
+                                  "cmp_together_hint",
+                                  "Steps of this chart where both coins moved, and how many of them went the same way. A count of what happened, not a forecast.",
+                                ),
+                                {
+                                  "data-compare-together": `${together.same}/${together.n}`,
+                                },
                               )
                             : null,
                           /* How closely — the size of the steps as well as
@@ -6107,7 +6363,11 @@ class CryptoChart extends PureComponent {
                                 corr.r.toFixed(2),
                                 null,
                                 msg("cmp_corr_label", "correlation of steps"),
-                                msg("cmp_corr_hint", "How closely the two coins' steps moved together over the $1 steps on screen: 1 is in lockstep, 0 unrelated, −1 opposite. A description of this window, not a forecast.", String(corr.n)),
+                                msg(
+                                  "cmp_corr_hint",
+                                  "How closely the two coins' steps moved together over the $1 steps on screen: 1 is in lockstep, 0 unrelated, −1 opposite. A description of this window, not a forecast.",
+                                  String(corr.n),
+                                ),
                                 { "data-compare-corr": corr.r.toFixed(2) },
                               )
                             : null,
@@ -6122,7 +6382,10 @@ class CryptoChart extends PureComponent {
                             {
                               onClick: this.toggleCompareRatio,
                               on: this.state.compareRatio === true,
-                              "aria-pressed": this.state.compareRatio === true ? "true" : "false",
+                              "aria-pressed":
+                                this.state.compareRatio === true
+                                  ? "true"
+                                  : "false",
                               "data-compare-ratio": "1",
                               title: msg(
                                 "cmp_ratio_hint",
@@ -6131,25 +6394,46 @@ class CryptoChart extends PureComponent {
                                 this.state.compareCoin,
                               ),
                             },
-                            msg("cmp_ratio", "$1 in $2", activeCoin, this.state.compareCoin),
+                            msg(
+                              "cmp_ratio",
+                              "$1 in $2",
+                              activeCoin,
+                              this.state.compareCoin,
+                            ),
                           ),
-                          mktNote ? React.createElement(CompareNote, { "data-compare-market-note": "1" }, mktNote) : null,
+                          mktNote
+                            ? React.createElement(
+                                CompareNote,
+                                { "data-compare-market-note": "1" },
+                                mktNote,
+                              )
+                            : null,
                           krakenMkt
                             ? null
                             : React.createElement(
-                            CompareStripButton,
-                            {
-                              onClick: this.swapCompare,
-                              title: msg("cmp_swap_hint", "Put $1 on the chart and $2 over it", this.state.compareCoin, activeCoin),
-                            },
-                            msg("cmp_swap", "Swap"),
-                          ),
+                                CompareStripButton,
+                                {
+                                  onClick: this.swapCompare,
+                                  title: msg(
+                                    "cmp_swap_hint",
+                                    "Put $1 on the chart and $2 over it",
+                                    this.state.compareCoin,
+                                    activeCoin,
+                                  ),
+                                },
+                                msg("cmp_swap", "Swap"),
+                              ),
                           React.createElement(
                             CompareStripButton,
                             {
                               onClick: this.changeCompare,
                               "data-compare-change": "1",
-                              title: msg("cmp_change_hint", "Compare $1 with another coin instead of $2", activeCoin, this.state.compareCoin),
+                              title: msg(
+                                "cmp_change_hint",
+                                "Compare $1 with another coin instead of $2",
+                                activeCoin,
+                                this.state.compareCoin,
+                              ),
                             },
                             msg("cmp_change", "Change"),
                           ),
@@ -6248,36 +6532,82 @@ class CryptoChart extends PureComponent {
                    * series the app already holds — the range on screen and
                    * whatever the prefetch warmed. No request. */
                   (() => {
-                    if (!(this.state.chartStudies || []).includes("where")) return null;
+                    if (!(this.state.chartStudies || []).includes("where"))
+                      return null;
                     if (this.state.compareCoin) return null;
                     const now = Number(currentValue);
                     const rows = PERIOD_OPTIONS.map((o) => {
-                      const cached = o.value === period ? null : getCachedData(activeCoin, o.value, currency, "history");
-                      return { key: o.label, prices: o.value === period ? valueHistory : cached && cached.data };
+                      const cached =
+                        o.value === period
+                          ? null
+                          : getCachedData(
+                              activeCoin,
+                              o.value,
+                              currency,
+                              "history",
+                            );
+                      return {
+                        key: o.label,
+                        prices:
+                          o.value === period
+                            ? valueHistory
+                            : cached && cached.data,
+                      };
                     });
                     const spots = rangePositions(now, rows);
                     if (!spots.length) return null;
                     const symbol = getCurrencySymbol(currency);
-                    const money = (v) => formatNumberString(v, symbol, true, false, priceDecimals(now, decimalPlaces), separatorFormat);
+                    const money = (v) =>
+                      formatNumberString(
+                        v,
+                        symbol,
+                        true,
+                        false,
+                        priceDecimals(now, decimalPlaces),
+                        separatorFormat,
+                      );
                     return React.createElement(
                       WhereRow,
-                      { "data-where": "1", "aria-label": msg("study_where_aria", "Where the price sits inside each range's high and low") },
-                      React.createElement(WhereHead, null, msg("study_where_head", "Where it sits")),
+                      {
+                        "data-where": "1",
+                        "aria-label": msg(
+                          "study_where_aria",
+                          "Where the price sits inside each range's high and low",
+                        ),
+                      },
+                      React.createElement(
+                        WhereHead,
+                        null,
+                        msg("study_where_head", "Where it sits"),
+                      ),
                       ...spots.map((s) =>
                         React.createElement(
                           WhereItem,
                           {
                             key: s.key,
                             "data-where-range": s.key,
-                            title: msg("study_where_title", "$1: $2% of the way from the low ($3) to the high ($4)", s.key, String(Math.round(s.pos * 100)), money(s.low), money(s.high)),
+                            title: msg(
+                              "study_where_title",
+                              "$1: $2% of the way from the low ($3) to the high ($4)",
+                              s.key,
+                              String(Math.round(s.pos * 100)),
+                              money(s.low),
+                              money(s.high),
+                            ),
                           },
                           React.createElement(WhereKey, null, s.key),
                           React.createElement(
                             WhereTrack,
                             { "aria-hidden": "true" },
-                            React.createElement(WhereMark, { style: { left: `${(s.pos * 100).toFixed(1)}%` } }),
+                            React.createElement(WhereMark, {
+                              style: { left: `${(s.pos * 100).toFixed(1)}%` },
+                            }),
                           ),
-                          React.createElement(WhereValue, null, `${Math.round(s.pos * 100)}%`),
+                          React.createElement(
+                            WhereValue,
+                            null,
+                            `${Math.round(s.pos * 100)}%`,
+                          ),
                         ),
                       ),
                     );
@@ -6304,13 +6634,20 @@ class CryptoChart extends PureComponent {
                      * (tomorrow-prereg.md). Anchored on the price now. */
                     if (on.includes("tomorrow")) {
                       const t = this.state.tomorrowData;
-                      const mine = t && t.coin === activeCoin && t.currency === currency;
-                      if (!mine || Date.now() - t.at > TOMORROW_G * 1000) this.ensureTomorrow(activeCoin);
+                      const mine =
+                        t && t.coin === activeCoin && t.currency === currency;
+                      if (!mine || Date.now() - t.at > TOMORROW_G * 1000)
+                        this.ensureTomorrow(activeCoin);
                       const r = mine ? t.range : null;
                       const now = Number(currentValue);
                       if (r && now > 0) {
                         const symbol = getCurrencySymbol(currency);
-                        const money = (x) => formatWidgetPrice(now * Math.exp(x), symbol, separatorFormat);
+                        const money = (x) =>
+                          formatWidgetPrice(
+                            now * Math.exp(x),
+                            symbol,
+                            separatorFormat,
+                          );
                         items.push(
                           React.createElement(
                             ChanceParts,
@@ -6327,21 +6664,48 @@ class CryptoChart extends PureComponent {
                                 `${(TOMORROW_HELD.p50 * 100).toFixed(1)}%`,
                               ),
                             },
-                            React.createElement(ChanceBit, { quiet: true }, msg("chance_tomorrow_key", "next 24h · model")),
-                            React.createElement(ChanceBit, null, msg("chance_tomorrow_80", "80%: $1 – $2", money(r.q10), money(r.q90))),
-                            React.createElement(ChanceBit, null, `· ${msg("chance_tomorrow_50", "50%: $1 – $2", money(r.q25), money(r.q75))}`),
-                            React.createElement(ChanceBit, { quiet: true }, `· ${msg("chance_tomorrow_even", "up or down: even")}`),
+                            React.createElement(
+                              ChanceBit,
+                              { quiet: true },
+                              msg("chance_tomorrow_key", "next 24h · model"),
+                            ),
+                            React.createElement(
+                              ChanceBit,
+                              null,
+                              msg(
+                                "chance_tomorrow_80",
+                                "80%: $1 – $2",
+                                money(r.q10),
+                                money(r.q90),
+                              ),
+                            ),
+                            React.createElement(
+                              ChanceBit,
+                              null,
+                              `· ${msg("chance_tomorrow_50", "50%: $1 – $2", money(r.q25), money(r.q75))}`,
+                            ),
+                            React.createElement(
+                              ChanceBit,
+                              { quiet: true },
+                              `· ${msg("chance_tomorrow_even", "up or down: even")}`,
+                            ),
                           ),
                         );
                       }
                     }
                     if (on.includes("regime")) {
                       const data = this.state.regimeData;
-                      if (!data || data.coin !== activeCoin) this.ensureRegimeData(activeCoin);
-                      const g = data && data.coin === activeCoin ? data.grid : null;
+                      if (!data || data.coin !== activeCoin)
+                        this.ensureRegimeData(activeCoin);
+                      const g =
+                        data && data.coin === activeCoin ? data.grid : null;
                       const row = g && g.now != null ? g.rows[g.now] : null;
                       if (row && row.n >= BASE_RATE_MIN_EPISODES) {
-                        const names = [msg("regime_rising", "rising"), msg("regime_flat", "flat"), msg("regime_falling", "falling")];
+                        const names = [
+                          msg("regime_rising", "rising"),
+                          msg("regime_flat", "flat"),
+                          msg("regime_falling", "falling"),
+                        ];
                         const shares = row.cells.map((c) => c / row.n);
                         items.push(
                           React.createElement(
@@ -6354,20 +6718,45 @@ class CryptoChart extends PureComponent {
                                 "The Markov question, counted: the $1 past entries into $2 and the state 20 days later — rising $3, flat $4, falling $5. On any day: $6, $7, $8. On four coins no such cell was 10 points from any day.",
                                 String(row.n),
                                 names[g.now],
-                                pct(shares[0]), pct(shares[1]), pct(shares[2]),
-                                pct(g.base[0] || 0), pct(g.base[1] || 0), pct(g.base[2] || 0),
+                                pct(shares[0]),
+                                pct(shares[1]),
+                                pct(shares[2]),
+                                pct(g.base[0] || 0),
+                                pct(g.base[1] || 0),
+                                pct(g.base[2] || 0),
                               ),
                             },
-                            React.createElement(WhereKey, null, msg("chance_regime_key", "20d $1 · $2d", names[g.now], String(g.since))),
+                            React.createElement(
+                              WhereKey,
+                              null,
+                              msg(
+                                "chance_regime_key",
+                                "20d $1 · $2d",
+                                names[g.now],
+                                String(g.since),
+                              ),
+                            ),
                             React.createElement(
                               ChanceTrack,
                               { "aria-hidden": "true" },
-                              ...shares.map((sh, i) => React.createElement(ChanceSeg, { key: i, step: i, style: { flexGrow: Math.max(0.0001, sh) } })),
+                              ...shares.map((sh, i) =>
+                                React.createElement(ChanceSeg, {
+                                  key: i,
+                                  step: i,
+                                  style: { flexGrow: Math.max(0.0001, sh) },
+                                }),
+                              ),
                             ),
                             React.createElement(
                               WhereValue,
                               null,
-                              msg("chance_regime_value", "in 20d: rise $1 · flat $2 · fall $3", pct(shares[0]), pct(shares[1]), pct(shares[2])),
+                              msg(
+                                "chance_regime_value",
+                                "in 20d: rise $1 · flat $2 · fall $3",
+                                pct(shares[0]),
+                                pct(shares[1]),
+                                pct(shares[2]),
+                              ),
                             ),
                           ),
                         );
@@ -6379,7 +6768,8 @@ class CryptoChart extends PureComponent {
                         const i = out.horizons.length - 1;
                         const q = out.cone.horizons[i];
                         const symbol = getCurrencySymbol(currency);
-                        const money = (v) => formatWidgetPrice(v, symbol, separatorFormat);
+                        const money = (v) =>
+                          formatWidgetPrice(v, symbol, separatorFormat);
                         items.push(
                           React.createElement(
                             WhereItem,
@@ -6394,11 +6784,25 @@ class CryptoChart extends PureComponent {
                                 pct(q.up / q.n),
                               ),
                             },
-                            React.createElement(WhereKey, null, msg("chance_range_key", "next $1", out.horizons[i].label)),
+                            React.createElement(
+                              WhereKey,
+                              null,
+                              msg(
+                                "chance_range_key",
+                                "next $1",
+                                out.horizons[i].label,
+                              ),
+                            ),
                             React.createElement(
                               WhereValue,
                               null,
-                              msg("chance_range_value", "$1 – $2 · $3 above", money(q.p5), money(q.p95), pct(q.up / q.n)),
+                              msg(
+                                "chance_range_value",
+                                "$1 – $2 · $3 above",
+                                money(q.p5),
+                                money(q.p95),
+                                pct(q.up / q.n),
+                              ),
                             ),
                           ),
                         );
@@ -6407,8 +6811,18 @@ class CryptoChart extends PureComponent {
                     if (!items.length) return null;
                     return React.createElement(
                       WhereRow,
-                      { "data-chances": "1", "aria-label": msg("chance_aria", "Chances, counted from this coin's own history") },
-                      React.createElement(WhereHead, null, msg("chance_head", "Chances")),
+                      {
+                        "data-chances": "1",
+                        "aria-label": msg(
+                          "chance_aria",
+                          "Chances, counted from this coin's own history",
+                        ),
+                      },
+                      React.createElement(
+                        WhereHead,
+                        null,
+                        msg("chance_head", "Chances"),
+                      ),
                       ...items,
                     );
                   })(),
@@ -6466,7 +6880,9 @@ class CryptoChart extends PureComponent {
                     const text = macroLineText(
                       next.kind,
                       ahead,
-                      ahead ? describeAhead(at - now) : describeElapsed(now - at),
+                      ahead
+                        ? describeAhead(at - now)
+                        : describeElapsed(now - at),
                       when,
                     );
                     return React.createElement(
@@ -6785,32 +7201,43 @@ class CryptoChart extends PureComponent {
                         PracticeDockAction,
                         {
                           key: share,
-                          armed: this.confirming(`dock:${this.dockPositionId()}:${share}`),
-                          filling: this.confirming(`dock:${this.dockPositionId()}:${share}`),
-                          "aria-busy": this.confirming(`dock:${this.dockPositionId()}:${share}`) ? "true" : "false",
+                          armed: this.confirming(
+                            `dock:${this.dockPositionId()}:${share}`,
+                          ),
+                          filling: this.confirming(
+                            `dock:${this.dockPositionId()}:${share}`,
+                          ),
+                          "aria-busy": this.confirming(
+                            `dock:${this.dockPositionId()}:${share}`,
+                          )
+                            ? "true"
+                            : "false",
                           tabIndex: this.state.dockOpen ? 0 : -1,
                           onClick: () => this.dockReduce(share),
-                          "aria-label":
-                            this.confirming(`dock:${this.dockPositionId()}:${share}`)
+                          "aria-label": this.confirming(
+                            `dock:${this.dockPositionId()}:${share}`,
+                          )
+                            ? msg(
+                                "dock_closing_aria",
+                                "Closing $1 — press to stop",
+                                this.dockShareText(share),
+                              )
+                            : share === 1
                               ? msg(
-                                  "dock_closing_aria",
-                                  "Closing $1 — press to stop",
-                                  this.dockShareText(share),
+                                  "dock_close_all",
+                                  "Close all of this contract",
                                 )
-                              : share === 1
-                                ? msg(
-                                    "dock_close_all",
-                                    "Close all of this contract",
-                                  )
-                                : msg(
-                                    "dock_close_share",
-                                    "Close $1 percent of this contract",
-                                    String(share * 100),
-                                  ),
+                              : msg(
+                                  "dock_close_share",
+                                  "Close $1 percent of this contract",
+                                  String(share * 100),
+                                ),
                         },
                         ...this.confirmContent(
                           `dock:${this.dockPositionId()}:${share}`,
-                          share === 1 ? msg("dock_all", "All") : `${share * 100}%`,
+                          share === 1
+                            ? msg("dock_all", "All")
+                            : `${share * 100}%`,
                           msg("dock_stop", "Stop"),
                         ),
                       ),
@@ -6860,17 +7287,22 @@ class CryptoChart extends PureComponent {
                     view: this.chartViewNow(),
                     onViewChange: this.handleChartView,
                     onZoomPast: this.handleChartZoomPast,
+                    // Main chart only: give price scale a slightly stronger zoom response
+                    yZoomPower: VIEW_Y_ZOOM_MAIN,
                     finerSpan: this.chartFinerSpan(),
                     viewEnabled: this.chartViewEnabled(),
                     // The resting chart's room past the price (ROOM_AHEAD_KEY)
-                    restRoom: this.state.roomAhead === true ? VIEW_REST_ROOM : 0,
+                    restRoom:
+                      this.state.roomAhead === true ? VIEW_REST_ROOM : 0,
                     detailSupported: this.chartDetailSupported(),
                     detail: this.state.chartDetail,
                     // Older bars a pan into the past fetched (app-view.js)
                     history: this.chartHistoryNow(),
                     onNeedHistory: this.loadChartHistory,
                     // The counted studies (chart-studies.js)
-                    studies: this.compareRatioFor() ? [] : this.state.chartStudies,
+                    studies: this.compareRatioFor()
+                      ? []
+                      : this.state.chartStudies,
                     studyDaily: this.studyDailyFor(activeCoin),
                     // The ruler and the drawings (chart-tools.js, app-tools.js)
                     tool: this.state.chartTool,
@@ -6887,7 +7319,10 @@ class CryptoChart extends PureComponent {
                        this coin priced in the compared one, on its own axis. */
                     prices: this.compareRatioFor() || valueHistory,
                     // The figure above the chart, for the axis' last-price tag
-                    livePrice: this.compareRatioFor() || this.state.compareCoin ? null : currentValue,
+                    livePrice:
+                      this.compareRatioFor() || this.state.compareCoin
+                        ? null
+                        : currentValue,
                     // The price scale and the time axis (chart-axes.js); the
                     // portfolio's background chart has neither
                     axes: true,
@@ -6915,7 +7350,11 @@ class CryptoChart extends PureComponent {
                      * `src/chart.js`. Off during comparison for the same
                      * reason the cost level is: the axis is percent change
                      * and a price would sit at a meaningless height. */
-                    position: this.state.compareCoin || this.state.practiceMainLines === false ? null : activePractice,
+                    position:
+                      this.state.compareCoin ||
+                      this.state.practiceMainLines === false
+                        ? null
+                        : activePractice,
                     /* **The price targets you set, on the axis you set them
                      * against** (23 Sep 2026). Built fresh on every render
                      * for the reason `chartPosition` is: the chart compares
@@ -7040,7 +7479,11 @@ class CryptoChart extends PureComponent {
                        market's (1 Oct 2026, XMR — Kraken's ~$2.4M a day against
                        $108–143M across venues). The stats row's 24h figure is
                        the aggregated one (Coinlore). Same rule as fetchOhlcCandles. */
-                    volumeVenue: effectiveProvider(activeCoin) === "kraken" || period === "all" ? "Kraken" : "Coinbase",
+                    volumeVenue:
+                      effectiveProvider(activeCoin) === "kraken" ||
+                      period === "all"
+                        ? "Kraken"
+                        : "Coinbase",
                     // A ratio has no candles: the OHLC would be one coin's
                     ohlc:
                       this.state.ohlcEnabled === false || this.compareRatioFor()
@@ -7054,8 +7497,12 @@ class CryptoChart extends PureComponent {
                      * layering on top of it: candles and a volume band belong
                      * to one coin, and leaving them under two percent-change
                      * lines would put two different y-meanings on one chart. */
-                    compareCoin: this.compareRatioFor() ? null : this.state.compareCoin,
-                    comparePrices: this.compareRatioFor() ? null : this.state.compareHistory,
+                    compareCoin: this.compareRatioFor()
+                      ? null
+                      : this.state.compareCoin,
+                    comparePrices: this.compareRatioFor()
+                      ? null
+                      : this.state.compareHistory,
                     showCandles:
                       this.state.chartType === "candles" &&
                       Boolean(this.state.ohlcData) &&
@@ -7166,7 +7613,10 @@ class CryptoChart extends PureComponent {
                   msg("chrome_futures_close", "Close the derivatives market"),
                 ],
                 news: [this.toggleNews, msg("chrome_news_close", "Close news")],
-                monitor: [this.toggleMonitor, msg("mon_close", "Close the monitor")],
+                monitor: [
+                  this.toggleMonitor,
+                  msg("mon_close", "Close the monitor"),
+                ],
               }[open];
               if (!close) return null;
               return React.createElement(
@@ -7304,7 +7754,13 @@ class CryptoChart extends PureComponent {
           const chainSource = () =>
             React.createElement(
               WidgetSubtext,
-              { "data-widget-source": "blockchair", title: msg("widget_via_blockchair_hint", "mempool.space could not be reached from this browser, so this is Blockchair's figure") },
+              {
+                "data-widget-source": "blockchair",
+                title: msg(
+                  "widget_via_blockchair_hint",
+                  "mempool.space could not be reached from this browser, so this is Blockchair's figure",
+                ),
+              },
               msg("widget_via_blockchair", "via Blockchair"),
             );
           const feeSubtext = (amount, coin, when) => {
@@ -7520,12 +7976,17 @@ class CryptoChart extends PureComponent {
                         ),
                       ),
                     ),
-                    /* The progress bar has gone, and it is the third reading
-                     * of one fact that went with it: the clock said how long
-                     * is left, the date said when, and the bar said 24% of a
-                     * cycle nobody is counting in percent. The clock earns its
-                     * exception to the one-figure grammar because a countdown
-                     * genuinely needs its units; the bar did not. */
+                    React.createElement(
+                      HalvingProgress,
+                      null,
+                      React.createElement(
+                        HalvingProgressTrack,
+                        null,
+                        React.createElement(HalvingProgressFill, {
+                          pct: halvingData.progressPercent,
+                        }),
+                      ),
+                    ),
                     React.createElement(
                       HalvingEta,
                       null,
@@ -7588,22 +8049,22 @@ class CryptoChart extends PureComponent {
                     btcFeesData.source === "blockchair"
                       ? chainSource()
                       : React.createElement(
-                      WidgetSubtext,
-                      null,
-                      React.createElement(
-                        MarketStatLabel,
-                        null,
-                        msg("widget_fee_fast", "Fast"),
-                      ),
-                      btcFeesData.fastest,
-                      " · ",
-                      React.createElement(
-                        MarketStatLabel,
-                        null,
-                        msg("widget_fee_hour", "Hour"),
-                      ),
-                      btcFeesData.hour,
-                    ),
+                          WidgetSubtext,
+                          null,
+                          React.createElement(
+                            MarketStatLabel,
+                            null,
+                            msg("widget_fee_fast", "Fast"),
+                          ),
+                          btcFeesData.fastest,
+                          " · ",
+                          React.createElement(
+                            MarketStatLabel,
+                            null,
+                            msg("widget_fee_hour", "Hour"),
+                          ),
+                          btcFeesData.hour,
+                        ),
                   )
                 : widgetSkeleton(0, "btcFeesData"),
             },
@@ -7890,30 +8351,67 @@ class CryptoChart extends PureComponent {
                 const f = data.forecast || {};
                 const ev = OUTLOOK_MODEL.evaluation || {};
                 const usd = (v) => formatWidgetPrice(v, "$", separatorFormat);
-                const hhmm = (ms) => new Date(ms).toLocaleTimeString(intlTag(activeLocale()), { hour: "2-digit", minute: "2-digit", hour12: false });
-                const note = (text) => React.createElement(WidgetEmptyNote, null, text);
+                const hhmm = (ms) =>
+                  new Date(ms).toLocaleTimeString(intlTag(activeLocale()), {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    hour12: false,
+                  });
+                const note = (text) =>
+                  React.createElement(WidgetEmptyNote, null, text);
                 if (ev.status !== "passed") {
-                  return note(msg("mo_withheld", "Evaluation not passed — no estimate is shown"));
+                  return note(
+                    msg(
+                      "mo_withheld",
+                      "Evaluation not passed — no estimate is shown",
+                    ),
+                  );
                 }
                 if (f.state === "unavailable") {
-                  return note(msg("mo_unavailable", "Data unavailable: the model is tested on Coinbase BTC-USD hourly closes only"));
+                  return note(
+                    msg(
+                      "mo_unavailable",
+                      "Data unavailable: the model is tested on Coinbase BTC-USD hourly closes only",
+                    ),
+                  );
                 }
                 if (f.state === "stale") {
-                  return note(msg("mo_stale", "Stale: the latest completed hour is more than two hours old"));
+                  return note(
+                    msg(
+                      "mo_stale",
+                      "Stale: the latest completed hour is more than two hours old",
+                    ),
+                  );
                 }
                 if (f.state === "insufficient") {
-                  return note(msg("mo_insufficient", "Insufficient history: too few completed hours, or a recent gap in trading"));
+                  return note(
+                    msg(
+                      "mo_insufficient",
+                      "Insufficient history: too few completed hours, or a recent gap in trading",
+                    ),
+                  );
                 }
                 if (f.state !== "estimate") {
                   return note(msg("mo_invalid", "Data unavailable"));
                 }
-                const mins = Math.max(0, Math.round((Date.now() - f.origin) / 60000));
+                const mins = Math.max(
+                  0,
+                  Math.round((Date.now() - f.origin) / 60000),
+                );
                 const tally = data.tally || { n: 0, inside: 0 };
                 const p = OUTLOOK_MODEL.params;
-                const pct = (x) => (x < 0.01 ? "<1%" : x > 0.99 ? ">99%" : `${Math.round(x * 100)}%`);
-                const bin = f.targetPrice > 0 && Array.isArray(ev.reliability)
-                  ? ev.reliability.find((b) => f.pAbove >= b[0] && f.pAbove < b[1])
-                  : null;
+                const pct = (x) =>
+                  x < 0.01
+                    ? "<1%"
+                    : x > 0.99
+                      ? ">99%"
+                      : `${Math.round(x * 100)}%`;
+                const bin =
+                  f.targetPrice > 0 && Array.isArray(ev.reliability)
+                    ? ev.reliability.find(
+                        (b) => f.pAbove >= b[0] && f.pAbove < b[1],
+                      )
+                    : null;
                 return React.createElement(
                   Fragment,
                   null,
@@ -7921,16 +8419,29 @@ class CryptoChart extends PureComponent {
                     WidgetValue,
                     {
                       "data-model-outlook": "band",
-                      title: msg("mo_band_title", "The central 80% of the model's distribution for the close at $1 — a band, not a path", hhmm(f.target)),
+                      title: msg(
+                        "mo_band_title",
+                        "The central 80% of the model's distribution for the close at $1 — a band, not a path",
+                        hhmm(f.target),
+                      ),
                     },
                     `${usd(f.lo)} – ${usd(f.hi)}`,
                   ),
                   React.createElement(
                     WidgetSubtext,
                     { "data-model-outlook": "median" },
-                    React.createElement(MarketStatLabel, null, msg("mo_median", "median")),
+                    React.createElement(
+                      MarketStatLabel,
+                      null,
+                      msg("mo_median", "median"),
+                    ),
                     " ",
-                    msg("mo_median_line", "$1 · close at $2", usd(f.median), hhmm(f.target)),
+                    msg(
+                      "mo_median_line",
+                      "$1 · close at $2",
+                      usd(f.median),
+                      hhmm(f.target),
+                    ),
                   ),
                   f.targetPrice > 0
                     ? React.createElement(
@@ -7938,35 +8449,85 @@ class CryptoChart extends PureComponent {
                         {
                           "data-model-outlook": "target",
                           title: bin
-                            ? msg("mo_target_title", "A terminal probability — the close at $1 above the target, not touching it on the way. When tested, hours given $2–$3% closed beyond their level $4% of the time", hhmm(f.target), String(Math.round(bin[0] * 100)), String(Math.round(bin[1] * 100)), (bin[4] * 100).toFixed(1))
-                            : msg("mo_target_title_plain", "A terminal probability — the close above the target, not touching it on the way"),
+                            ? msg(
+                                "mo_target_title",
+                                "A terminal probability — the close at $1 above the target, not touching it on the way. When tested, hours given $2–$3% closed beyond their level $4% of the time",
+                                hhmm(f.target),
+                                String(Math.round(bin[0] * 100)),
+                                String(Math.round(bin[1] * 100)),
+                                (bin[4] * 100).toFixed(1),
+                              )
+                            : msg(
+                                "mo_target_title_plain",
+                                "A terminal probability — the close above the target, not touching it on the way",
+                              ),
                         },
-                        msg("mo_target_line", "close above $1: $2", usd(f.targetPrice), pct(f.pAbove)),
+                        msg(
+                          "mo_target_line",
+                          "close above $1: $2",
+                          usd(f.targetPrice),
+                          pct(f.pAbove),
+                        ),
                       )
                     : React.createElement(
                         WidgetSubtext,
                         { "data-model-outlook": "no-target" },
-                        msg("mo_no_target", "Set a BTC price target in USD to see its chance at the close"),
+                        msg(
+                          "mo_no_target",
+                          "Set a BTC price target in USD to see its chance at the close",
+                        ),
                       ),
                   React.createElement(
                     WidgetSubtext,
                     { "data-model-outlook": "origin" },
-                    msg("mo_origin_line", "from the $1 close $2 · $3", hhmm(f.origin), usd(f.s0), mins < 1 ? msg("mo_just_now", "just now") : msg("mo_minutes_ago", "$1 min ago", String(mins))),
+                    msg(
+                      "mo_origin_line",
+                      "from the $1 close $2 · $3",
+                      hhmm(f.origin),
+                      usd(f.s0),
+                      mins < 1
+                        ? msg("mo_just_now", "just now")
+                        : msg("mo_minutes_ago", "$1 min ago", String(mins)),
+                    ),
                   ),
                   React.createElement(
                     WidgetSubtext,
                     {
                       "data-model-outlook": "tested",
-                      title: msg("mo_tested_title", "Model estimate: EWMA variance (λ $1) with Student-t innovations (ν $2), fitted on Coinbase BTC-USD hourly closes up to $3. Tested on $4 hours from $5 to $6: the 80% band held $7% of the time (nominal 80%), its interval score beat a 24-hour rolling volatility (DM t $8).", p.lambda.toFixed(3), p.nu.toFixed(2), OUTLOOK_MODEL.cutoff.slice(0, 10), ev.n.toLocaleString(), ev.period[0], ev.period[1], (ev.coverage80 * 100).toFixed(1), ev.dm_t_vs_baseline.toFixed(1)),
+                      title: msg(
+                        "mo_tested_title",
+                        "Model estimate: EWMA variance (λ $1) with Student-t innovations (ν $2), fitted on Coinbase BTC-USD hourly closes up to $3. Tested on $4 hours from $5 to $6: the 80% band held $7% of the time (nominal 80%), its interval score beat a 24-hour rolling volatility (DM t $8).",
+                        p.lambda.toFixed(3),
+                        p.nu.toFixed(2),
+                        OUTLOOK_MODEL.cutoff.slice(0, 10),
+                        ev.n.toLocaleString(),
+                        ev.period[0],
+                        ev.period[1],
+                        (ev.coverage80 * 100).toFixed(1),
+                        ev.dm_t_vs_baseline.toFixed(1),
+                      ),
                     },
-                    msg("mo_tested_line", "tested: $1% of $2 hours closed inside the 80% band", (ev.coverage80 * 100).toFixed(1), ev.n.toLocaleString()),
+                    msg(
+                      "mo_tested_line",
+                      "tested: $1% of $2 hours closed inside the 80% band",
+                      (ev.coverage80 * 100).toFixed(1),
+                      ev.n.toLocaleString(),
+                    ),
                   ),
                   React.createElement(
                     WidgetSubtext,
                     { "data-model-outlook": "local" },
                     tally.n
-                      ? msg("mo_local_line", "here: $1 of $2 inside so far", String(tally.inside), String(tally.n))
-                      : msg("mo_local_empty", "here: recording — no hour settled yet"),
+                      ? msg(
+                          "mo_local_line",
+                          "here: $1 of $2 inside so far",
+                          String(tally.inside),
+                          String(tally.n),
+                        )
+                      : msg(
+                          "mo_local_empty",
+                          "here: recording — no hour settled yet",
+                        ),
                   ),
                 );
               })(),
@@ -8026,6 +8587,31 @@ class CryptoChart extends PureComponent {
                           String(g.since),
                         ),
                   ),
+                  g.now != null
+                    ? React.createElement(
+                        RegimeStateRow,
+                        null,
+                        React.createElement(
+                          RegimeStatePill,
+                          { state: g.now },
+                          names[g.now],
+                        ),
+                        React.createElement(
+                          RegimeStatePill,
+                          { state: g.now, "aria-hidden": "true" },
+                          msg(
+                            "widget_regime_state_count",
+                            "$1 of $2 days",
+                            String(
+                              g.days
+                                ? Math.round((g.base[g.now] || 0) * g.days)
+                                : 0,
+                            ),
+                            String(g.days || 0),
+                          ),
+                        ),
+                      )
+                    : null,
                   React.createElement(
                     RegimeTable,
                     { "data-widget-regimes": "true" },
@@ -8041,7 +8627,12 @@ class CryptoChart extends PureComponent {
                       .map((r, i) => [
                         React.createElement(
                           RegimeCell,
-                          { key: `r-${i}`, left: true, now: i === g.now },
+                          {
+                            key: `r-${i}`,
+                            left: true,
+                            now: i === g.now,
+                            state: i,
+                          },
                           `${short[i]} ${r.n}`,
                         ),
                         ...r.cells.map((k, j) =>
@@ -8050,6 +8641,7 @@ class CryptoChart extends PureComponent {
                             {
                               key: `c-${i}-${j}`,
                               now: i === g.now,
+                              state: j,
                               quiet: r.n < BASE_RATE_MIN_EPISODES,
                               "data-regime-cell": `${i}${j}`,
                               title: msg(
@@ -8105,7 +8697,12 @@ class CryptoChart extends PureComponent {
              * open beside a price, from hosts already declared. Each says
              * where its figure comes from; none says what to do. */
             options: {
-              label: msg("widget_options", "$1 Options", (optionsData && optionsData.base) || (OPTION_BASES.includes(activeCoin) ? activeCoin : "BTC")),
+              label: msg(
+                "widget_options",
+                "$1 Options",
+                (optionsData && optionsData.base) ||
+                  (OPTION_BASES.includes(activeCoin) ? activeCoin : "BTC"),
+              ),
               visible: widgets.options && !hidden.options,
               content: optionsData
                 ? React.createElement(
@@ -8115,25 +8712,60 @@ class CryptoChart extends PureComponent {
                       WidgetValue,
                       { style: { fontSize: "0.9em" } },
                       // A strike, in the option's own USDT — a price, so no unit
-                      optionsData.maxPain != null ? Math.round(optionsData.maxPain).toLocaleString("en-US") : "—",
+                      optionsData.maxPain != null
+                        ? Math.round(optionsData.maxPain).toLocaleString(
+                            "en-US",
+                          )
+                        : "—",
                     ),
                     React.createElement(
                       WidgetSubtext,
                       null,
-                      React.createElement(MarketStatLabel, null, msg("widget_options_pain", "max pain")), " ",
-                      optionsData.expiry ? localeDate(new Date(optionsData.expiry), { month: "short", day: "numeric" }) : "",
+                      React.createElement(
+                        MarketStatLabel,
+                        null,
+                        msg("widget_options_pain", "max pain"),
+                      ),
+                      " ",
+                      optionsData.expiry
+                        ? localeDate(new Date(optionsData.expiry), {
+                            month: "short",
+                            day: "numeric",
+                          })
+                        : "",
                     ),
                     React.createElement(
                       WidgetSubtext,
                       null,
-                      React.createElement(MarketStatLabel, null, msg("widget_options_pc", "P/C")), " ",
-                      optionsData.putCall != null ? optionsData.putCall.toFixed(2) : "—",
+                      React.createElement(
+                        MarketStatLabel,
+                        null,
+                        msg("widget_options_pc", "P/C"),
+                      ),
+                      " ",
+                      optionsData.putCall != null
+                        ? optionsData.putCall.toFixed(2)
+                        : "—",
                       " · ",
-                      React.createElement(MarketStatLabel, null, msg("widget_options_iv", "ATM IV")), " ",
-                      optionsData.atmIv != null ? `${Math.round(optionsData.atmIv * 100)}%` : "—",
+                      React.createElement(
+                        MarketStatLabel,
+                        null,
+                        msg("widget_options_iv", "ATM IV"),
+                      ),
+                      " ",
+                      optionsData.atmIv != null
+                        ? `${Math.round(optionsData.atmIv * 100)}%`
+                        : "—",
                     ),
                     optionsData.base !== activeCoin
-                      ? React.createElement(WidgetSubtext, null, msg("widget_options_other", "Bybit lists options on BTC, ETH and SOL"))
+                      ? React.createElement(
+                          WidgetSubtext,
+                          null,
+                          msg(
+                            "widget_options_other",
+                            "Bybit lists options on BTC, ETH and SOL",
+                          ),
+                        )
                       : null,
                   )
                 : widgetSkeleton(0, "optionsData"),
@@ -8144,24 +8776,41 @@ class CryptoChart extends PureComponent {
               content: (() => {
                 const b = perpBoardSummary(perpBoardData);
                 if (!b) return widgetSkeleton(0, "perpBoardData");
-                const pct = (r) => `${r >= 0 ? "+" : "−"}${Math.abs(r * 100).toFixed(4)}%`;
+                const pct = (r) =>
+                  `${r >= 0 ? "+" : "−"}${Math.abs(r * 100).toFixed(4)}%`;
                 return React.createElement(
                   Fragment,
                   null,
-                  React.createElement(WidgetValue, { style: { fontSize: "0.9em" } }, msg("widget_funding_board_pos", "$1 of $2 positive", String(b.positive), String(b.n))),
+                  React.createElement(
+                    WidgetValue,
+                    { style: { fontSize: "0.9em" } },
+                    msg(
+                      "widget_funding_board_pos",
+                      "$1 of $2 positive",
+                      String(b.positive),
+                      String(b.n),
+                    ),
+                  ),
                   React.createElement(
                     WidgetSubtext,
                     null,
-                    React.createElement(MarketStatLabel, null, msg("widget_funding_board_mid", "median")), " ",
+                    React.createElement(
+                      MarketStatLabel,
+                      null,
+                      msg("widget_funding_board_mid", "median"),
+                    ),
+                    " ",
                     pct(b.median),
                   ),
                   React.createElement(
                     WidgetSubtext,
                     null,
-                    React.createElement(MarketStatLabel, null, b.high.coin), " ",
+                    React.createElement(MarketStatLabel, null, b.high.coin),
+                    " ",
                     pct(b.high.funding),
                     " · ",
-                    React.createElement(MarketStatLabel, null, b.low.coin), " ",
+                    React.createElement(MarketStatLabel, null, b.low.coin),
+                    " ",
                     pct(b.low.funding),
                   ),
                 );
@@ -8176,12 +8825,17 @@ class CryptoChart extends PureComponent {
                 return React.createElement(
                   Fragment,
                   null,
-                  React.createElement(WidgetValue, { style: { fontSize: "0.9em" } }, formatWidgetUsd(b.totalOi)),
+                  React.createElement(
+                    WidgetValue,
+                    { style: { fontSize: "0.9em" } },
+                    formatWidgetUsd(b.totalOi),
+                  ),
                   ...b.top.map((r) =>
                     React.createElement(
                       WidgetSubtext,
                       { key: r.coin },
-                      React.createElement(MarketStatLabel, null, r.coin), " ",
+                      React.createElement(MarketStatLabel, null, r.coin),
+                      " ",
                       `${formatWidgetUsd(r.oi)} · ${Math.round((r.oi / b.totalOi) * 100)}%`,
                     ),
                   ),
@@ -8195,12 +8849,20 @@ class CryptoChart extends PureComponent {
                 ? React.createElement(
                     Fragment,
                     null,
-                    React.createElement(WidgetValue, { style: { fontSize: "0.9em" } }, formatWidgetUsd(stablecoinsData.cap)),
+                    React.createElement(
+                      WidgetValue,
+                      { style: { fontSize: "0.9em" } },
+                      formatWidgetUsd(stablecoinsData.cap),
+                    ),
                     stablecoinsData.share != null
                       ? React.createElement(
                           WidgetSubtext,
                           null,
-                          msg("widget_stablecoins_share", "$1% of the market", (stablecoinsData.share * 100).toFixed(1)),
+                          msg(
+                            "widget_stablecoins_share",
+                            "$1% of the market",
+                            (stablecoinsData.share * 100).toFixed(1),
+                          ),
                         )
                       : null,
                     React.createElement(
@@ -8211,7 +8873,8 @@ class CryptoChart extends PureComponent {
                           Fragment,
                           { key: p.coin },
                           i ? " · " : "",
-                          React.createElement(MarketStatLabel, null, p.coin), " ",
+                          React.createElement(MarketStatLabel, null, p.coin),
+                          " ",
                           `${Math.round((p.cap / stablecoinsData.cap) * 100)}%`,
                         ),
                       ),
@@ -8226,12 +8889,17 @@ class CryptoChart extends PureComponent {
                 ? React.createElement(
                     Fragment,
                     null,
-                    React.createElement(WidgetValue, { style: { fontSize: "0.9em" } }, ethBtcData.ratio.toFixed(5)),
+                    React.createElement(
+                      WidgetValue,
+                      { style: { fontSize: "0.9em" } },
+                      ethBtcData.ratio.toFixed(5),
+                    ),
                     ethBtcData.change != null
                       ? React.createElement(
                           WidgetSubtext,
                           null,
-                          React.createElement(MarketStatLabel, null, "24h"), " ",
+                          React.createElement(MarketStatLabel, null, "24h"),
+                          " ",
                           `${signedFixed(ethBtcData.change, 2)}%`,
                         )
                       : null,
@@ -8244,33 +8912,89 @@ class CryptoChart extends PureComponent {
               content: (() => {
                 const e = etfFlowsData;
                 if (!e) return widgetSkeleton(0, "etfFlowsData");
-                const usd = (v) => `${v >= 0 ? "+" : "−"}${formatWidgetUsd(Math.abs(v))}`;
-                const day = localeDate(new Date(`${e.date}T12:00:00Z`), { month: "short", day: "numeric" });
+                const usd = (v) =>
+                  `${v >= 0 ? "+" : "−"}${formatWidgetUsd(Math.abs(v))}`;
+                const day = localeDate(new Date(`${e.date}T12:00:00Z`), {
+                  month: "short",
+                  day: "numeric",
+                });
                 return React.createElement(
                   Fragment,
                   null,
-                  React.createElement(WidgetValue, { style: { fontSize: "0.9em" } }, React.createElement(WidgetSideValue, { up: e.net >= 0 }, usd(e.net))),
-                  React.createElement(WidgetSubtext, null, React.createElement(MarketStatLabel, null, day), " ", msg("widget_etf_net", "net, US spot funds")),
+                  React.createElement(
+                    WidgetValue,
+                    { style: { fontSize: "0.9em" } },
+                    React.createElement(
+                      WidgetSideValue,
+                      { up: e.net >= 0 },
+                      usd(e.net),
+                    ),
+                  ),
                   React.createElement(
                     WidgetSubtext,
                     null,
-                    React.createElement(MarketStatLabel, null, msg("widget_etf_5d", "5d")), " ",
+                    React.createElement(MarketStatLabel, null, day),
+                    " ",
+                    msg("widget_etf_net", "net, US spot funds"),
+                  ),
+                  React.createElement(
+                    WidgetSubtext,
+                    null,
+                    React.createElement(
+                      MarketStatLabel,
+                      null,
+                      msg("widget_etf_5d", "5d"),
+                    ),
+                    " ",
                     usd(e.week),
                     " · ",
-                    React.createElement(MarketStatLabel, null, msg("widget_etf_20d", "20d")), " ",
+                    React.createElement(
+                      MarketStatLabel,
+                      null,
+                      msg("widget_etf_20d", "20d"),
+                    ),
+                    " ",
                     usd(e.month),
                   ),
                   e.topIn || e.topOut
                     ? React.createElement(
                         WidgetSubtext,
                         null,
-                        e.topIn ? React.createElement(Fragment, null, React.createElement(MarketStatLabel, null, e.topIn[0]), " ", usd(e.topIn[1])) : null,
+                        e.topIn
+                          ? React.createElement(
+                              Fragment,
+                              null,
+                              React.createElement(
+                                MarketStatLabel,
+                                null,
+                                e.topIn[0],
+                              ),
+                              " ",
+                              usd(e.topIn[1]),
+                            )
+                          : null,
                         e.topIn && e.topOut ? " · " : null,
-                        e.topOut ? React.createElement(Fragment, null, React.createElement(MarketStatLabel, null, e.topOut[0]), " ", usd(e.topOut[1])) : null,
+                        e.topOut
+                          ? React.createElement(
+                              Fragment,
+                              null,
+                              React.createElement(
+                                MarketStatLabel,
+                                null,
+                                e.topOut[0],
+                              ),
+                              " ",
+                              usd(e.topOut[1]),
+                            )
+                          : null,
                       )
                     : null,
                   // CC BY 4.0: the record's maker, named
-                  React.createElement(WidgetSubtext, null, msg("widget_etf_source", "via TFTC · SoSoValue, Farside")),
+                  React.createElement(
+                    WidgetSubtext,
+                    null,
+                    msg("widget_etf_source", "via TFTC · SoSoValue, Farside"),
+                  ),
                 );
               })(),
             },
@@ -8279,22 +9003,51 @@ class CryptoChart extends PureComponent {
               visible: widgets.macroCalendar && !hidden.macroCalendar,
               content: (() => {
                 const next = nextMacroReleases(Date.now(), 3);
-                if (!next.length) return React.createElement(WidgetSubtext, null, msg("widget_macro_none", "None left in the bundled calendar"));
+                if (!next.length)
+                  return React.createElement(
+                    WidgetSubtext,
+                    null,
+                    msg(
+                      "widget_macro_none",
+                      "None left in the bundled calendar",
+                    ),
+                  );
                 const names = {
                   cpi: msg("chart_cpi_tag", "CPI"),
                   nfp: msg("chart_nfp_tag", "NFP"),
                   fomc: msg("chart_fomc_tag", "FOMC"),
                   pce: msg("chart_pce_tag", "PCE"),
                 };
-                const when = (t) => localeDate(new Date(t), { weekday: "short", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+                const when = (t) =>
+                  localeDate(new Date(t), {
+                    weekday: "short",
+                    month: "short",
+                    day: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  });
                 const left = (t) => {
                   const h = Math.max(0, (t - Date.now()) / 3600e3);
-                  return h >= 48 ? msg("widget_macro_days", "in $1 days", String(Math.round(h / 24))) : msg("widget_macro_hours", "in $1 h", String(Math.max(1, Math.round(h))));
+                  return h >= 48
+                    ? msg(
+                        "widget_macro_days",
+                        "in $1 days",
+                        String(Math.round(h / 24)),
+                      )
+                    : msg(
+                        "widget_macro_hours",
+                        "in $1 h",
+                        String(Math.max(1, Math.round(h))),
+                      );
                 };
                 return React.createElement(
                   Fragment,
                   null,
-                  React.createElement(WidgetValue, { style: { fontSize: "0.9em" } }, `${names[next[0].kind]} · ${left(next[0].t)}`),
+                  React.createElement(
+                    WidgetValue,
+                    { style: { fontSize: "0.9em" } },
+                    `${names[next[0].kind]} · ${left(next[0].t)}`,
+                  ),
                   ...next.map((r) =>
                     React.createElement(
                       WidgetSubtext,
@@ -8337,32 +9090,66 @@ class CryptoChart extends PureComponent {
               label: msg("widget_long_short", "$1 Long / Short", activeCoin),
               visible: widgets.longShortRatio && !hidden.longShortRatio,
               content: longShortData
-                ? React.createElement(
-                    Fragment,
-                    null,
-                    React.createElement(
-                      LSBarWrap,
-                      null,
-                      React.createElement(LSBarLong, {
-                        pct: parseFloat(longShortData.longPct),
-                      }),
-                      React.createElement(LSBarShort, null),
-                    ),
-                    React.createElement(
-                      LSRow,
+                ? (() => {
+                    const long = parseFloat(longShortData.longPct);
+                    const short = parseFloat(longShortData.shortPct);
+                    const longPct = isFinite(long) ? long : 0;
+                    const shortPct = isFinite(short) ? short : 0;
+                    return React.createElement(
+                      Fragment,
                       null,
                       React.createElement(
-                        WidgetSideValue,
-                        { up: true },
-                        "L " + longShortData.longPct + "%",
+                        LSStats,
+                        { "data-ls-stats": "1" },
+                        null,
+                        React.createElement(
+                          LSSide,
+                          { "data-ls-side": "1" },
+                          null,
+                          React.createElement(
+                            LSSideLabel,
+                            null,
+                            msg("pos_long", "Long"),
+                          ),
+                          React.createElement(
+                            LSSideMeter,
+                            null,
+                            React.createElement(LSSideFill, {
+                              up: true,
+                              pct: longPct,
+                            }),
+                          ),
+                          React.createElement(
+                            LSSideValue,
+                            { up: true },
+                            `${longPct.toFixed(1)}%`,
+                          ),
+                        ),
+                        React.createElement(
+                          LSSide,
+                          { right: true, "data-ls-side": "1" },
+                          React.createElement(
+                            LSSideLabel,
+                            null,
+                            msg("pos_short", "Short"),
+                          ),
+                          React.createElement(
+                            LSSideMeter,
+                            null,
+                            React.createElement(LSSideFill, {
+                              up: false,
+                              pct: shortPct,
+                            }),
+                          ),
+                          React.createElement(
+                            LSSideValue,
+                            { up: false },
+                            `${shortPct.toFixed(1)}%`,
+                          ),
+                        ),
                       ),
-                      React.createElement(
-                        WidgetSideValue,
-                        { up: false },
-                        "S " + longShortData.shortPct + "%",
-                      ),
-                    ),
-                  )
+                    );
+                  })()
                 : widgetSkeleton(0, "longShortData"),
             },
             openInterest: {
@@ -8481,7 +9268,8 @@ class CryptoChart extends PureComponent {
           ).length;
           const open = this.state.showWidgetsDrawer === true;
           const choosing = open && this.state.widgetsChoosing === true;
-          const editing = open && this.state.widgetsEditing === true && !choosing;
+          const editing =
+            open && this.state.widgetsEditing === true && !choosing;
           const widgetSize = this.state.widgetSize || DEFAULT_WIDGET_SIZE;
           const widgetsWidth = this.state.widgetsWidth;
           /* **Nothing is built until it is first opened**, the chart
@@ -8492,12 +9280,14 @@ class CryptoChart extends PureComponent {
              nobody sees. Their data is fetched either way, so the first
              open has figures in it. */
           if (open) this._widgetsOpened = true;
-          const cardSize = (key) => widgetCardSize(this.state.widgetCardSizes, key);
+          const cardSize = (key) =>
+            widgetCardSize(this.state.widgetCardSizes, key);
           const cards = this._widgetsOpened
             ? visibleOrder.map((key) => {
                 const def = widgetDefs[key];
                 const editing = this.state.widgetsEditing === true;
-                const menuOpen = this.state.widgetMenu && this.state.widgetMenu.key === key;
+                const menuOpen =
+                  this.state.widgetMenu && this.state.widgetMenu.key === key;
                 return React.createElement(
                   WidgetCard,
                   {
@@ -8512,7 +9302,12 @@ class CryptoChart extends PureComponent {
                        opens its menu (the long press, for a pointer). */
                     tabIndex: 0,
                     role: "group",
-                    "aria-label": msg("widget_card_aria", "$1 widget, $2 — Enter for size and options", def.label, widgetSizeName(cardSize(key))),
+                    "aria-label": msg(
+                      "widget_card_aria",
+                      "$1 widget, $2 — Enter for size and options",
+                      def.label,
+                      widgetSizeName(cardSize(key)),
+                    ),
                     "aria-haspopup": "menu",
                     onKeyDown: (e) => this.widgetCardKey(e, key),
                     onContextMenu: (e) => this.widgetContextMenu(e, key),
@@ -8520,7 +9315,9 @@ class CryptoChart extends PureComponent {
                     // Moved only in edit mode, as on iOS
                     dragging: dragWidget === key,
                     draggable: editing,
-                    onDragStart: editing ? () => this.onWidgetDragStart(key) : undefined,
+                    onDragStart: editing
+                      ? () => this.onWidgetDragStart(key)
+                      : undefined,
                     onDragOver: editing
                       ? (e) => {
                           e.preventDefault();
@@ -8534,8 +9331,16 @@ class CryptoChart extends PureComponent {
                         WidgetRemoveBadge,
                         {
                           onClick: () => this.removeWidget(key),
-                          "aria-label": msg("widget_remove_aria", "Remove $1", def.label),
-                          title: msg("widget_remove_aria", "Remove $1", def.label),
+                          "aria-label": msg(
+                            "widget_remove_aria",
+                            "Remove $1",
+                            def.label,
+                          ),
+                          title: msg(
+                            "widget_remove_aria",
+                            "Remove $1",
+                            def.label,
+                          ),
                           "data-widget-remove": key,
                         },
                         "−",
@@ -8549,11 +9354,19 @@ class CryptoChart extends PureComponent {
                     { title: WIDGET_DESCRIPTIONS[key] || undefined },
                     def.label,
                   ),
-                  React.createElement(WidgetBody, { "data-size": cardSize(key), "data-widget-body": "true" }, def.content),
+                  React.createElement(
+                    WidgetBody,
+                    { "data-size": cardSize(key), "data-widget-body": "true" },
+                    def.content,
+                  ),
                   /* Large has room to say what the card is — the sentence
                      the title's tooltip carries everywhere else. */
                   cardSize(key) === "l" && WIDGET_DESCRIPTIONS[key]
-                    ? React.createElement(WidgetFootnote, { "data-widget-footnote": key }, WIDGET_DESCRIPTIONS[key])
+                    ? React.createElement(
+                        WidgetFootnote,
+                        { "data-widget-footnote": key },
+                        WIDGET_DESCRIPTIONS[key],
+                      )
                     : null,
                 );
               })
@@ -8639,13 +9452,20 @@ class CryptoChart extends PureComponent {
                         this.state.widgetGalleryKey
                           ? React.createElement(
                               WidgetsDrawerAction,
-                              { "data-widgets-back": "1", onClick: () => this.setState({ widgetGalleryKey: null }) },
+                              {
+                                "data-widgets-back": "1",
+                                onClick: () =>
+                                  this.setState({ widgetGalleryKey: null }),
+                              },
                               msg("wd_all_widgets", "‹ All widgets"),
                             )
                           : null,
                         React.createElement(
                           WidgetsDrawerAction,
-                          { "data-widgets-done": "1", onClick: this.closeWidgetGallery },
+                          {
+                            "data-widgets-done": "1",
+                            onClick: this.closeWidgetGallery,
+                          },
                           msg("wd_cancel", "Cancel"),
                         ),
                       )
@@ -8658,7 +9478,10 @@ class CryptoChart extends PureComponent {
                             {
                               "data-widgets-add": "1",
                               onClick: this.openWidgetGallery,
-                              "aria-label": msg("widget_gallery_add", "Add Widget"),
+                              "aria-label": msg(
+                                "widget_gallery_add",
+                                "Add Widget",
+                              ),
                               title: msg("widget_gallery_add", "Add Widget"),
                             },
                             "+",
@@ -8678,10 +9501,18 @@ class CryptoChart extends PureComponent {
                                 {
                                   key: option.value,
                                   active: widgetSize === option.value,
-                                  "aria-pressed": widgetSize === option.value ? "true" : "false",
-                                  "aria-label": msg("wd_size_aria", "$1 cards", option.label),
+                                  "aria-pressed":
+                                    widgetSize === option.value
+                                      ? "true"
+                                      : "false",
+                                  "aria-label": msg(
+                                    "wd_size_aria",
+                                    "$1 cards",
+                                    option.label,
+                                  ),
                                   title: option.label,
-                                  onClick: () => this.handleWidgetSizeChange(option.value),
+                                  onClick: () =>
+                                    this.handleWidgetSizeChange(option.value),
                                 },
                                 option.short,
                               ),
@@ -8689,13 +9520,21 @@ class CryptoChart extends PureComponent {
                           ),
                           React.createElement(
                             WidgetsDrawerAction,
-                            { "data-widgets-edit": "on", "aria-pressed": "true", onClick: this.stopWidgetEditing },
+                            {
+                              "data-widgets-edit": "on",
+                              "aria-pressed": "true",
+                              onClick: this.stopWidgetEditing,
+                            },
                             msg("wd_done", "Done"),
                           ),
                         )
                       : React.createElement(
                           WidgetsDrawerAction,
-                          { "data-widgets-edit": "off", "aria-pressed": "false", onClick: this.startWidgetEditing },
+                          {
+                            "data-widgets-edit": "off",
+                            "aria-pressed": "false",
+                            onClick: this.startWidgetEditing,
+                          },
                           msg("wd_edit_widgets", "Edit"),
                         ),
                   React.createElement(
@@ -8720,7 +9559,11 @@ class CryptoChart extends PureComponent {
                 ChartDrawerBody,
                 { gutter: false },
                 choosing
-                  ? renderWidgetGallery(this, widgetDefs, widgetSizeScale(widgetSize))
+                  ? renderWidgetGallery(
+                      this,
+                      widgetDefs,
+                      widgetSizeScale(widgetSize),
+                    )
                   : visibleOrder.length
                     ? React.createElement(
                         WidgetPanel,
@@ -8776,12 +9619,26 @@ class CryptoChart extends PureComponent {
                 /* A finger has no right click and no W (touchFirst). */
                 touchFirst()
                   ? editing
-                    ? msg("wd_foot_editing_touch", "Drag to move, − to remove, + to add. Done when finished.")
-                    : msg("wd_foot_rest_touch", "Hold a widget for its size, to remove it or to pin it.")
+                    ? msg(
+                        "wd_foot_editing_touch",
+                        "Drag to move, − to remove, + to add. Done when finished.",
+                      )
+                    : msg(
+                        "wd_foot_rest_touch",
+                        "Hold a widget for its size, to remove it or to pin it.",
+                      )
                   : editing
-                    ? msg("wd_foot_editing", "Drag to move, − to remove, + to add. Done when finished. This drawer: ")
-                    : msg("wd_foot_rest", "Hold or right-click a widget for its size. This drawer: "),
-                touchFirst() ? null : React.createElement(ChartDrawerKey, null, "W"),
+                    ? msg(
+                        "wd_foot_editing",
+                        "Drag to move, − to remove, + to add. Done when finished. This drawer: ",
+                      )
+                    : msg(
+                        "wd_foot_rest",
+                        "Hold or right-click a widget for its size. This drawer: ",
+                      ),
+                touchFirst()
+                  ? null
+                  : React.createElement(ChartDrawerKey, null, "W"),
               ),
               /* The menu a long press opens, over the drawer (app-widgets.js). */
             ),
@@ -8793,9 +9650,17 @@ class CryptoChart extends PureComponent {
              screen with it while it is shut. */
           const cardMenu = renderWidgetMenu(
             this,
-            Object.fromEntries(Object.keys(widgetDefs).map((k) => [k, widgetDefs[k].label])),
+            Object.fromEntries(
+              Object.keys(widgetDefs).map((k) => [k, widgetDefs[k].label]),
+            ),
           );
-          return React.createElement(Fragment, { key: "widgets-and-pins" }, drawerTree, pinnedStack, cardMenu);
+          return React.createElement(
+            Fragment,
+            { key: "widgets-and-pins" },
+            drawerTree,
+            pinnedStack,
+            cardMenu,
+          );
         })(),
         // Page Ticker (two scrolling rows, collapsible with a hover chevron)
         (() => {
@@ -8882,7 +9747,8 @@ class CryptoChart extends PureComponent {
               React.createElement(CallSheet, {
                 draft: this.state.callDraft,
                 confidence: this.state.callDraftConfidence,
-                onConfidence: (level) => this.setState({ callDraftConfidence: level }),
+                onConfidence: (level) =>
+                  this.setState({ callDraftConfidence: level }),
                 onLock: this.handleCallLock,
                 onCancel: this.handleCallCancel,
                 formatPrice: this.formatChartPrice,
@@ -8898,7 +9764,9 @@ class CryptoChart extends PureComponent {
               !this.leftDrawer() &&
               !this.state.callDraft &&
               !this.state.phoneMore &&
-              React.createElement(TouchHint, { onDismiss: this.dismissTouchHint }),
+              React.createElement(TouchHint, {
+                onDismiss: this.dismissTouchHint,
+              }),
           );
         })(),
 
@@ -8949,7 +9817,9 @@ class CryptoChart extends PureComponent {
           /* The drawings, listed (app-tools.js). The list is built by the
              drawer only while it is up; the memoised array and the selection
              are what make it redraw. */
-          renderDrawings: this.chartViewEnabled() ? this.renderDrawingsList : null,
+          renderDrawings: this.chartViewEnabled()
+            ? this.renderDrawingsList
+            : null,
           drawings: this.drawingsFor(),
           drawingSelected: this.state.drawingSelected,
           chartType: this.state.chartType,
@@ -9120,6 +9990,9 @@ class CryptoChart extends PureComponent {
             practiceEnabled: this.state.practiceEnabled,
             onPracticeAccept: this.acceptPractice,
             practiceConsent: this.state.practiceConsent,
+            navLayout: this.state.navLayout,
+            onNavMove: this.handleNavMove,
+            onNavReset: this.handleNavReset,
             features: this.state.features,
             onFeatureChange: this.handleFeatureChange,
             /* Modes are recognised from the settings rather than remembered, so

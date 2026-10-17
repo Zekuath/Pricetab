@@ -2261,6 +2261,18 @@ const callPayout = (call, stake) => {
 const baseRateUp = (list) =>
   list.length ? (list.filter((x) => x > 0).length / list.length) * 100 : null;
 
+/* A display of the count's uncertainty, not a test against another sample.
+ * Unlike a normal approximation it stays inside [0, 1] at k=0 and k=n. */
+const wilsonInterval = (k, n) => {
+  if (!Number.isInteger(n) || n < 1 || !Number.isInteger(k) || k < 0 || k > n) return null;
+  const z2 = 1.959963984540054 ** 2;
+  const p = k / n;
+  const denominator = 1 + z2 / n;
+  const middle = (p + z2 / (2 * n)) / denominator;
+  const radius = Math.sqrt((p * (1 - p) + z2 / (4 * n)) / n) * Math.sqrt(z2) / denominator;
+  return { lo: k === 0 ? 0 : Math.max(0, middle - radius), hi: k === n ? 1 : Math.min(1, middle + radius) };
+};
+
 /* The baseline is the same for every state read off one series at one
  * horizon, and it is the expensive half — every close's forward return, then
  * a sort for the median. Measured 10 Oct 2026: opening the base-rate screen

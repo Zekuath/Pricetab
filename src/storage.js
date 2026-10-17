@@ -1049,6 +1049,67 @@ const savePanelOrder = (order) =>
   saveJsonSetting(PANEL_ORDER_KEY, Array.isArray(order) ? order : DEFAULT_PANEL_ORDER);
 
 
+const sanitizeNavLayout = (raw) => {
+  const known = DEFAULT_NAV_LAYOUT.left.concat(DEFAULT_NAV_LAYOUT.right);
+  const used = new Set();
+  const result = { left: [], right: [] };
+  for (const side of ["left", "right"]) {
+    for (const key of raw && Array.isArray(raw[side]) ? raw[side] : []) {
+      if (known.includes(key) && !used.has(key)) {
+        result[side].push(key);
+        used.add(key);
+      }
+    }
+  }
+  for (const side of ["left", "right"]) {
+    result[side].push(...DEFAULT_NAV_LAYOUT[side].filter((key) => !used.has(key)));
+  }
+  return result;
+};
+const loadNavLayout = () => {
+  const raw = loadJsonSetting(NAV_LAYOUT_KEY);
+  // Keep the order people already dragged on the screens' column.
+  return sanitizeNavLayout(raw || {
+    left: DEFAULT_NAV_LAYOUT.left,
+    right: loadPanelOrder().filter((key) => DEFAULT_NAV_LAYOUT.right.includes(key)),
+  });
+};
+const saveNavLayout = (layout) => saveJsonSetting(NAV_LAYOUT_KEY, sanitizeNavLayout(layout));
+
+/* Only the records named in the confirmation are removed. Preferences and
+ * simulation consent survive. Keep the previous bytes if storage refuses. */
+const featureDataKeys = (key) => ({
+  targets: [ALERTS_STORAGE_KEY],
+  calls: [CALLS_KEY, CALLS_SEEN_KEY],
+  futures: [PRACTICE_STATE_KEY, PRACTICE_HISTORY_KEY, PRACTICE_TICKET_KEY],
+  portfolio: [PORTFOLIO_STORAGE_KEY],
+  news: [NEWS_SAVED_KEY, NEWS_SEEN_KEY],
+  chart: [DRAWINGS_KEY],
+  widgets: [WIDGETS_STORAGE_KEY, HIDDEN_WIDGETS_KEY, WIDGET_CARD_SIZES_KEY, PINNED_WIDGETS_KEY, WIDGET_ORDER_KEY],
+}[key] || []);
+const hideFeatureAndDeleteData = (key) => {
+  if (!FEATURE_CONTROLS.some((c) => c.key === key)) return false;
+  const flag = key === "futures" ? PRACTICE_ENABLED_KEY : FEATURES_KEY;
+  const keys = [flag].concat(featureDataKeys(key));
+  const before = {};
+  try {
+    for (const k of keys) before[k] = localStorage.getItem(k);
+    const features = { ...loadFeatures(), [key]: false };
+    localStorage.setItem(flag, key === "futures" ? "false" : JSON.stringify(features));
+    for (const k of featureDataKeys(key)) localStorage.removeItem(k);
+    return true;
+  } catch (error) {
+    try {
+      for (const k of Object.keys(before)) {
+        if (before[k] === null) localStorage.removeItem(k);
+        else localStorage.setItem(k, before[k]);
+      }
+    } catch (rollbackError) { /* The caller reports the storage failure. */ }
+    return false;
+  }
+};
+
+
 /* The Custom mode's slot — see `CUSTOM_MODE_KEY`.
  *
  * Sanitised on the way in like every other stored shape: only the keys a mode

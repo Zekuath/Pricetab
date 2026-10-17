@@ -31,14 +31,18 @@ const WidgetsDrawer = styled.aside`
     visibility 0s linear ${({ open }) => (open ? "0s" : "0.3s")};
 
   @media (prefers-reduced-motion: reduce) {
-    transition: opacity 0.2s ease, visibility 0s;
+    transition:
+      opacity 0.2s ease,
+      visibility 0s;
     transform: none;
   }
 
   ${chartDrawerPhone};
 
   @media (max-width: 600px) {
-    transform: translateY(${({ open }) => (open ? "0" : "calc(100% + 1.5rem)")});
+    transform: translateY(
+      ${({ open }) => (open ? "0" : "calc(100% + 1.5rem)")}
+    );
   }
 `;
 
@@ -79,6 +83,8 @@ const widgetEditing = css`
 
 const WidgetPanel = styled.div`
   display: grid;
+  align-items: stretch;
+  justify-items: stretch;
   /* **The column floor rides the card size** (27 Sep 2026). It was 12.5rem
      whatever the size, so XL cards — 1.45 times the type — were poured into
      the same two medium columns and wrapped every line; the size setting
@@ -190,14 +196,19 @@ const WidgetsSizeButton = styled.button.attrs({ type: "button" })`
   min-width: 1.75rem;
   padding: 0.3rem 0.4rem;
   border: none;
-  background: ${({ active, theme }) => (active ? theme.color.bgSecondary : "transparent")};
-  color: ${({ active, theme }) => (active ? theme.color.text : theme.color.textSecondary)};
+  background: ${({ active, theme }) =>
+    active ? theme.color.bgSecondary : "transparent"};
+  color: ${({ active, theme }) =>
+    active ? theme.color.text : theme.color.textSecondary};
   font-family: ${({ theme }) => theme.font.primary};
   font-size: 0.66rem;
-  font-weight: ${({ active, theme }) => (active ? theme.fontWeight.semibold : theme.fontWeight.regular)};
+  font-weight: ${({ active, theme }) =>
+    active ? theme.fontWeight.semibold : theme.fontWeight.regular};
   line-height: 1;
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
   ${touchTarget};
   /* Four 28px letters side by side: each one's finger box overlapped the
      next, so a press off centre took the neighbour. Drawn wider on touch. */
@@ -295,34 +306,69 @@ const FundingAnnual = styled.div`
   margin-top: 0.15em;
 `;
 
-const LSBarWrap = styled.div`
+const LSStats = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  gap: 0.35em;
+  position: relative;
+
+  &::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 0.1em;
+    bottom: 0.1em;
+    width: 1px;
+    transform: translateX(-50%);
+    background: ${({ theme }) => theme.color.bgTertiary};
+    opacity: 0.85;
+  }
+`;
+
+const LSSide = styled.div`
   display: flex;
-  width: 100%;
-  height: 0.35em;
-  min-height: 4px;
+  flex-direction: column;
+  gap: 0.08em;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 0.22em 0.14em;
+  border-radius: 0.35em;
+  background: ${({ theme }) => theme.color.bgSecondary};
+`;
+
+const LSSideMeter = styled.div`
+  width: 0.68em;
+  height: 2.2em;
   border-radius: 0.2em;
   overflow: hidden;
-  margin: 0.3em 0 0.15em;
-`;
-
-const LSBarLong = styled.div`
-  height: 100%;
-  background: ${({ theme }) => theme.color.chartLineGreen};
-  width: ${({ pct }) => pct}%;
-  transition: width 0.4s ease;
-`;
-
-const LSBarShort = styled.div`
-  flex: 1;
-  height: 100%;
-  background: ${({ theme }) => theme.color.chartLineRed};
-`;
-
-const LSRow = styled.div`
   display: flex;
-  justify-content: space-between;
-  font-size: 0.68em;
+  align-items: flex-end;
+  background: ${({ theme }) => theme.color.bgTertiary};
+`;
+
+const LSSideFill = styled.div`
+  width: 100%;
+  height: ${({ pct }) => Math.max(0, Math.min(100, pct || 0))}%;
+  background: ${({ theme, up }) =>
+    up ? theme.color.chartLineGreen : theme.color.chartLineRed};
+  transition: height 0.35s ease;
+`;
+
+const LSSideLabel = styled.span`
+  font-size: 0.6em;
   color: ${({ theme }) => theme.color.textSecondary};
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+`;
+
+const LSSideValue = styled.span`
+  font-size: 0.8em;
+  font-variant-numeric: tabular-nums;
+  color: ${({ theme, up }) =>
+    up ? theme.color.chartLineGreen : theme.color.chartLineRed};
+  font-weight: ${({ theme }) => theme.fontWeight.semibold};
 `;
 
 /* The two figures under a long/short or liquidation bar, tinted to match
@@ -415,6 +461,9 @@ const widgetAppear = keyframes`
 const WidgetCard = styled.div`
   position: relative;
   flex: 0 0 auto;
+  justify-self: stretch;
+  align-self: stretch;
+  height: 100%;
   font-size: ${({ scale }) => scale || 1}rem;
   /* iOS's families on the grid: small one column, medium two, large two by
      two — and a floor so a short card is still a tile, not a strip. Read
@@ -426,9 +475,10 @@ const WidgetCard = styled.div`
   /* Each card its own height: stretched to a taller neighbour's row, a
      small card was a tall tile with its figure at the top (640px drawer,
      1 Oct 2026). Large still fills the two rows it spans. */
-  align-self: start;
+  align-self: stretch;
   &[data-size="m"] {
     grid-column: span 2;
+    min-height: 10.5em;
   }
   &[data-size="l"] {
     grid-column: span 2;
@@ -451,8 +501,13 @@ const WidgetCard = styled.div`
   /* **iOS's surface** (1 Oct 2026): a filled tile with a continuous-looking
      corner, no outline in the light theme and a hairline in the dark one
      (where a shadow says nothing), the shadow soft and wide. */
-  background: ${({ theme }) => (theme.color.bg === "#ffffff" ? "#ffffff" : "#1c1c1e")};
-  border: 1px solid ${({ theme }) => (theme.color.bg === "#ffffff" ? "transparent" : "rgba(255, 255, 255, 0.07)")};
+  background: ${({ theme }) =>
+    theme.color.bg === "#ffffff" ? "#ffffff" : "#1c1c1e"};
+  border: 1px solid
+    ${({ theme }) =>
+      theme.color.bg === "#ffffff"
+        ? "transparent"
+        : "rgba(255, 255, 255, 0.07)"};
   border-radius: 1.35em;
   padding: 0.85em 0.95em 0.9em;
   /* A ledger, not a badge. Every card was centred — title, figure, caption —
@@ -462,7 +517,9 @@ const WidgetCard = styled.div`
      the last one did. The meters and bars are full-width either way. */
   text-align: left;
   box-shadow: ${({ theme }) =>
-    theme.color.bg === "#ffffff" ? "0 1px 2px rgba(0, 0, 0, 0.06), 0 8px 24px rgba(0, 0, 0, 0.07)" : "0 8px 24px rgba(0, 0, 0, 0.35)"};
+    theme.color.bg === "#ffffff"
+      ? "0 1px 2px rgba(0, 0, 0, 0.06), 0 8px 24px rgba(0, 0, 0, 0.07)"
+      : "0 8px 24px rgba(0, 0, 0, 0.35)"};
   cursor: default;
   user-select: none;
   -webkit-touch-callout: none;
@@ -473,7 +530,6 @@ const WidgetCard = styled.div`
   animation: ${widgetAppear} 0.35s cubic-bezier(0.22, 1, 0.36, 1);
   opacity: ${({ dragging }) => (dragging ? 0.4 : 1)};
   transform: ${({ dragging }) => (dragging ? "scale(0.97)" : "scale(1)")};
-
 
   /* Focus from the keyboard: the card is what opens its menu (Enter). */
   &:focus {
@@ -489,7 +545,6 @@ const WidgetCard = styled.div`
     grid-column: auto;
     grid-row: auto;
   }
-
 
   /* Tablet */
   @media (max-width: 1024px) {
@@ -550,7 +605,8 @@ const WidgetCoinList = styled.div`
 const WidgetCoinRow = styled.div`
   display: grid;
   grid-template-columns: 2.8em 1fr auto;
-  align-items: baseline;
+  align-items: center;
+  justify-items: stretch;
   gap: 0.4em;
   padding: 0.22em 0.35em;
   border-radius: 0.3em;
@@ -609,12 +665,13 @@ const WidgetSubtext = styled.div`
  * figure went up or down. The row for today's state is the one marked. */
 const RegimeTable = styled.div`
   display: grid;
-  grid-template-columns: auto repeat(3, auto);
-  justify-content: start;
-  align-items: baseline;
-  column-gap: 0.3em;
-  row-gap: 0.1em;
-  margin-top: 0.35em;
+  grid-template-columns: minmax(4.6em, 1.1fr) repeat(3, minmax(2.9em, 1fr));
+  justify-content: stretch;
+  align-items: center;
+  width: 100%;
+  column-gap: 0.22em;
+  row-gap: 0.14em;
+  margin-top: 0.32em;
   font-size: 0.64em;
   font-variant-numeric: tabular-nums;
   line-height: 1.35;
@@ -622,18 +679,72 @@ const RegimeTable = styled.div`
 
 const RegimeHead = styled.span`
   color: ${({ theme }) => theme.color.textSecondary};
-  text-align: ${({ left }) => (left ? "left" : "right")};
+  text-align: center;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 `;
 
 const RegimeCell = styled.span`
-  text-align: ${({ left }) => (left ? "left" : "right")};
+  text-align: center;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   padding: 0.1em 0.25em;
   border-radius: 0.25em;
-  color: ${({ theme, quiet }) => (quiet ? theme.color.textSecondary : theme.color.text)};
-  font-weight: ${({ theme, now }) => (now ? theme.fontWeight.semibold : theme.fontWeight.regular)};
-  background: ${({ theme, now }) => (now ? theme.color.bgSecondary : "transparent")};
+  color: ${({ theme, quiet, state }) => {
+    if (quiet) return theme.color.textSecondary;
+    if (state === 0) return theme.color.chartLineGreen;
+    if (state === 2) return theme.color.chartLineRed;
+    return theme.color.text;
+  }};
+  font-weight: ${({ theme, now }) =>
+    now ? theme.fontWeight.semibold : theme.fontWeight.regular};
+  background: ${({ theme, now, state }) => {
+    if (!now) return "transparent";
+    if (state === 0) return "rgba(52, 211, 153, 0.12)";
+    if (state === 2) return "rgba(248, 113, 113, 0.12)";
+    return theme.color.bgSecondary;
+  }};
+`;
+
+const RegimeStateRow = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35em;
+  margin: 0.3em 0 0.2em;
+`;
+
+const RegimeStatePill = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 1.6em;
+  padding: 0.18em 0.5em;
+  max-width: 100%;
+  border-radius: 999px;
+  border: 1px solid
+    ${({ theme, state }) => {
+      if (state === 0) return "rgba(52, 211, 153, 0.45)";
+      if (state === 2) return "rgba(248, 113, 113, 0.45)";
+      return "rgba(255, 255, 255, 0.12)";
+    }};
+  background: ${({ theme, state }) => {
+    if (state === 0) return "rgba(52, 211, 153, 0.12)";
+    if (state === 2) return "rgba(248, 113, 113, 0.12)";
+    return theme.color.bgSecondary;
+  }};
+  color: ${({ theme, state }) => {
+    if (state === 0) return theme.color.chartLineGreen;
+    if (state === 2) return theme.color.chartLineRed;
+    return theme.color.textSecondary;
+  }};
+  font-size: 0.62em;
+  font-weight: ${({ theme }) => theme.fontWeight.semibold};
+  letter-spacing: 0.04em;
+  text-transform: lowercase;
 `;
 
 const MarketStatLabel = styled.span`
@@ -644,7 +755,7 @@ const MarketStatLabel = styled.span`
 
 const HalvingTimeGrid = styled.div`
   display: flex;
-  justify-content: flex-start;
+  justify-content: center;
   gap: 0.5em;
   margin-bottom: 0.35em;
 `;
@@ -683,6 +794,33 @@ const HalvingEta = styled.div`
   color: ${({ theme }) => theme.color.textSecondary};
   margin-top: 0.3em;
   letter-spacing: 0.03em;
+  text-align: center;
+`;
+
+const HalvingProgress = styled.div`
+  width: 100%;
+  margin-top: 0.25em;
+`;
+
+const HalvingProgressTrack = styled.div`
+  width: 100%;
+  height: 0.35em;
+  min-height: 4px;
+  border-radius: 0.2em;
+  background: ${({ theme }) => theme.color.bgSecondary};
+  overflow: hidden;
+`;
+
+const HalvingProgressFill = styled.div`
+  height: 100%;
+  width: ${({ pct }) => `${Math.max(0, Math.min(100, Number(pct) || 0))}%`};
+  border-radius: inherit;
+  background: linear-gradient(
+    90deg,
+    ${({ theme }) => theme.color.textSecondary} 0%,
+    ${({ theme }) => theme.color.text} 100%
+  );
+  transition: width 0.4s ease;
 `;
 
 /* A scale, drawn as one. It used to run green → amber → red, which says the
@@ -794,7 +932,6 @@ const RsiLabels = styled.div`
   color: ${({ theme }) => theme.color.textSecondary};
 `;
 
-
 /* **What a size shows** (1 Oct 2026): the card's content, cut by size. A
  * small card keeps its figure and its first line; medium four lines; large
  * everything. A list is cut by rows instead — three, six, all — so a small
@@ -803,9 +940,16 @@ const RsiLabels = styled.div`
 const WidgetBody = styled.div`
   display: flex;
   flex-direction: column;
+  /* Fill the card's vertical room so compact widgets do not bunch at one edge. */
+  justify-content: space-between;
+  align-items: stretch;
   gap: 0.2em;
   flex: 1;
   min-width: 0;
+
+  & > * {
+    min-width: 0;
+  }
 
   &[data-size="s"] > :nth-child(n + 3) {
     display: none;
@@ -817,6 +961,16 @@ const WidgetBody = styled.div`
 
   &[data-size="s"] ${WidgetCoinList} > :nth-child(n + 4) {
     display: none;
+  }
+
+  &[data-size="s"] [data-ls-stats="1"] {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.28em;
+  }
+
+  &[data-size="s"] [data-ls-side="1"] {
+    align-items: center;
+    padding: 0.2em 0.12em;
   }
 
   /* Six rows, and the movers' divider between them counted as a seventh. */
@@ -858,8 +1012,10 @@ const WidgetRemoveBadge = styled.button.attrs({ type: "button" })`
   padding: 0;
   border: none;
   border-radius: 50%;
-  background: ${({ theme }) => (theme.color.bg === "#ffffff" ? "#d1d1d6" : "#636366")};
-  color: ${({ theme }) => (theme.color.bg === "#ffffff" ? "#1c1c1e" : "#ffffff")};
+  background: ${({ theme }) =>
+    theme.color.bg === "#ffffff" ? "#d1d1d6" : "#636366"};
+  color: ${({ theme }) =>
+    theme.color.bg === "#ffffff" ? "#1c1c1e" : "#ffffff"};
   font-family: ${({ theme }) => theme.font.primary};
   font-size: 0.9em;
   font-weight: ${({ theme }) => theme.fontWeight.bold};
@@ -884,9 +1040,14 @@ const WidgetMenu = styled.div`
   width: 15.5rem;
   padding: 0.35rem;
   border-radius: 0.9rem;
-  background: ${({ theme }) => (theme.color.bg === "#ffffff" ? "rgba(255, 255, 255, 0.96)" : "rgba(44, 44, 46, 0.96)")};
+  background: ${({ theme }) =>
+    theme.color.bg === "#ffffff"
+      ? "rgba(255, 255, 255, 0.96)"
+      : "rgba(44, 44, 46, 0.96)"};
   backdrop-filter: blur(20px);
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3), 0 0 0 1px ${({ theme }) => theme.color.border};
+  box-shadow:
+    0 10px 40px rgba(0, 0, 0, 0.3),
+    0 0 0 1px ${({ theme }) => theme.color.border};
   font-family: ${({ theme }) => theme.font.primary};
   animation: ${widgetAppear} 0.18s cubic-bezier(0.22, 1, 0.36, 1);
 `;
@@ -907,7 +1068,8 @@ const WidgetMenuSize = styled.button.attrs({ type: "button" })`
   height: 2.6rem;
   border: none;
   border-radius: 0.6rem;
-  background: ${({ active, theme }) => (active ? theme.color.bgSecondary : "transparent")};
+  background: ${({ active, theme }) =>
+    active ? theme.color.bgSecondary : "transparent"};
   cursor: pointer;
 
   &:hover,
@@ -923,8 +1085,11 @@ const WidgetMenuShape = styled.span`
   width: ${({ size }) => (size === "s" ? "0.9rem" : "1.9rem")};
   height: ${({ size }) => (size === "l" ? "1.9rem" : "0.9rem")};
   border-radius: 0.28rem;
-  border: 1.6px solid ${({ active, theme }) => (active ? theme.color.text : theme.color.textSecondary)};
-  background: ${({ active, theme }) => (active ? theme.color.text : "transparent")};
+  border: 1.6px solid
+    ${({ active, theme }) =>
+      active ? theme.color.text : theme.color.textSecondary};
+  background: ${({ active, theme }) =>
+    active ? theme.color.text : "transparent"};
 `;
 
 const WidgetMenuItem = styled.button.attrs({ type: "button" })`
@@ -939,7 +1104,12 @@ const WidgetMenuItem = styled.button.attrs({ type: "button" })`
   font-family: inherit;
   font-size: 0.8rem;
   text-align: left;
-  color: ${({ destructive, theme }) => (destructive ? (theme.color.bg === "#ffffff" ? "#d70015" : "#ff6961") : theme.color.text)};
+  color: ${({ destructive, theme }) =>
+    destructive
+      ? theme.color.bg === "#ffffff"
+        ? "#d70015"
+        : "#ff6961"
+      : theme.color.text};
   cursor: pointer;
 
   &:hover,
@@ -979,7 +1149,8 @@ const WidgetGalleryGroup = styled.div`
   flex-direction: column;
   border-radius: 0.9rem;
   overflow: hidden;
-  background: ${({ theme }) => (theme.color.bg === "#ffffff" ? "#f2f2f7" : "#1c1c1e")};
+  background: ${({ theme }) =>
+    theme.color.bg === "#ffffff" ? "#f2f2f7" : "#1c1c1e"};
 `;
 
 const WidgetGalleryHead = styled.div`
@@ -1133,7 +1304,8 @@ const WidgetDot = styled.button.attrs({ type: "button" })`
     height: 0.45rem;
     margin: -0.225rem 0 0 -0.225rem;
     border-radius: 50%;
-    background: ${({ active, theme }) => (active ? theme.color.text : theme.color.border)};
+    background: ${({ active, theme }) =>
+      active ? theme.color.text : theme.color.border};
   }
 
   &:focus {
@@ -1205,12 +1377,29 @@ const PinnedCard = styled.div`
   backdrop-filter: blur(4px);
   color: ${({ theme }) => theme.color.textSecondary};
   cursor: pointer;
-  transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
   /* Transparent, and still readable where the line runs through a figure:
      a halo in the ground's colour, the way a map keeps its labels over roads
      (1 Oct 2026 — the first cut had $84,907 crossed out by the price). */
   text-shadow: ${({ theme }) =>
-    [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, -1], [1, -1], [-1, 1], [2, 0], [-2, 0], [0, 2], [0, -2]]
+    [
+      [1, 0],
+      [-1, 0],
+      [0, 1],
+      [0, -1],
+      [1, 1],
+      [-1, -1],
+      [1, -1],
+      [-1, 1],
+      [2, 0],
+      [-2, 0],
+      [0, 2],
+      [0, -2],
+    ]
       .map(([x, y]) => `${x}px ${y}px 0 ${theme.color.bg}`)
       .join(", ")};
 
@@ -1225,25 +1414,38 @@ const PinnedCard = styled.div`
     transition: color 0.2s ease;
   }
 
-  &:not(:hover):not(:focus-within):not([data-menu-open="true"]) [data-widget-body] > :nth-child(n + 2) {
+  &:not(:hover):not(:focus-within):not([data-menu-open="true"])
+    [data-widget-body]
+    > :nth-child(n + 2) {
     display: none;
   }
 
-  &:not(:hover):not(:focus-within):not([data-menu-open="true"]) ${WidgetCoinList} > :nth-child(n + 4) {
+  &:not(:hover):not(:focus-within):not([data-menu-open="true"])
+    ${WidgetCoinList}
+    > :nth-child(n + 4) {
     display: none;
   }
 
   &:hover,
   &:focus-within,
   &[data-menu-open="true"] {
-    background: ${({ theme }) => (theme.color.bg === "#ffffff" ? "#ffffff" : "#1c1c1e")};
+    background: ${({ theme }) =>
+      theme.color.bg === "#ffffff" ? "#ffffff" : "#1c1c1e"};
     color: ${({ theme }) => theme.color.text};
     border-color: transparent;
     text-shadow: none;
-    box-shadow: ${({ theme }) => (theme.color.bg === "#ffffff" ? "0 8px 24px rgba(0, 0, 0, 0.1)" : "0 8px 24px rgba(0, 0, 0, 0.45)")};
+    box-shadow: ${({ theme }) =>
+      theme.color.bg === "#ffffff"
+        ? "0 8px 24px rgba(0, 0, 0, 0.1)"
+        : "0 8px 24px rgba(0, 0, 0, 0.45)"};
   }
 
-  &:hover ${WidgetValue}, &:focus-within ${WidgetValue}, &[data-menu-open="true"] ${WidgetValue} {
+  &:hover
+    ${WidgetValue},
+    &:focus-within
+    ${WidgetValue},
+    &[data-menu-open="true"]
+    ${WidgetValue} {
     color: ${({ theme }) => theme.color.text};
   }
 
@@ -1258,4 +1460,3 @@ const PinnedCard = styled.div`
     transition: none;
   }
 `;
-

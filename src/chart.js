@@ -74,12 +74,33 @@ const WEEK = 7 * DAY;
  * range landed on five-minute squares 107px across on a 495px chart: correct,
  * held, and too big to point at. */
 const CELL_SPANS = [
-  15e3, 30e3,
-  MINUTE, 2 * MINUTE, 3 * MINUTE, 5 * MINUTE, 10 * MINUTE, 15 * MINUTE,
+  15e3,
+  30e3,
+  MINUTE,
+  2 * MINUTE,
+  3 * MINUTE,
+  5 * MINUTE,
+  10 * MINUTE,
+  15 * MINUTE,
   30 * MINUTE,
-  HOUR, 2 * HOUR, 3 * HOUR, 4 * HOUR, 6 * HOUR, 8 * HOUR, 12 * HOUR,
-  DAY, 2 * DAY, 3 * DAY, 4 * DAY,
-  WEEK, 2 * WEEK, 4 * WEEK, 8 * WEEK, 13 * WEEK, 26 * WEEK, 52 * WEEK,
+  HOUR,
+  2 * HOUR,
+  3 * HOUR,
+  4 * HOUR,
+  6 * HOUR,
+  8 * HOUR,
+  12 * HOUR,
+  DAY,
+  2 * DAY,
+  3 * DAY,
+  4 * DAY,
+  WEEK,
+  2 * WEEK,
+  4 * WEEK,
+  8 * WEEK,
+  13 * WEEK,
+  26 * WEEK,
+  52 * WEEK,
   104 * WEEK,
 ];
 /* How far the held square may drift from the comfortable one before it is
@@ -421,7 +442,11 @@ class LineBase extends PureComponent {
     _defineProperty(this, "compareLabelBRef", createRef());
     /* The percent ticks at the left edge: the top of the shared axis, its
        foot, and the zero line. See `placeCompareTicks`. */
-    _defineProperty(this, "compareTickRefs", [createRef(), createRef(), createRef()]);
+    _defineProperty(this, "compareTickRefs", [
+      createRef(),
+      createRef(),
+      createRef(),
+    ]);
     this.compareScaled = null;
     this.compareD = { a: null, b: null };
 
@@ -441,22 +466,22 @@ class LineBase extends PureComponent {
     this.rowValueRefs = CROSSHAIR_ROWS.map(() => createRef());
     this._askedForOhlc = false;
     this.scaled = null; // pixel-space points, index-aligned with props.prices
-    this.zoomAnim = null;         // { from, start } while the scale travels
-    this._zoomUi = null;          // the board's own zoom control, made once
+    this.zoomAnim = null; // { from, start } while the scale travels
+    this._zoomUi = null; // the board's own zoom control, made once
     this.zoomRaf = 0;
     this.hoverRaf = 0;
     this.hoverX = 0;
     this.hoverY = 0;
     this.hoverIndex = -1;
-    this.hoverCellKey = null;     // which square the readout is describing
-    this.nowDrag = null;          // { from, moved } while the now line is held
-    this.boardDrag = null;        // { x0, y0, axis } while the board is pulled
+    this.hoverCellKey = null; // which square the readout is describing
+    this.nowDrag = null; // { from, moved } while the now line is held
+    this.boardDrag = null; // { x0, y0, axis } while the board is pulled
     this.boardDragRaf = 0;
-    this._panDrag = null;         // fractional squares walked while the hand holds it
-    this.boardPan = 0;            // how many squares the board has been walked
-    this.panAnim = null;          // { from, start } while that walk travels
+    this._panDrag = null; // fractional squares walked while the hand holds it
+    this.boardPan = 0; // how many squares the board has been walked
+    this.panAnim = null; // { from, start } while that walk travels
     this.panRaf = 0;
-    this.suppressClick = false;   // the click that ends a drag is not a click
+    this.suppressClick = false; // the click that ends a drag is not a click
     /* Kept and rewritten rather than rebuilt — see `poolNode`.
      *
      * Two sets of them, and two layers to hold them, for the reason the
@@ -505,18 +530,18 @@ class LineBase extends PureComponent {
     this._callMarks = { list: [], at: 0 };
     this._nowLine = null;
     this._nowGrip = null;
-    this.gridX = [];              // vertical line positions, px
-    this.gridY = [];              // horizontal line positions, px
+    this.gridX = []; // vertical line positions, px
+    this.gridY = []; // horizontal line positions, px
     /* The lattice's memory, and why it is keyed rather than single-valued.
      * A square is a unit someone reads a range in, so it has to be the same
      * unit every time they come back to that range — kept per period for the
      * clock and per coin/currency/period for the price, since a step from a
      * different order of magnitude is worse than none. */
-    this._cellMs = {};            // period → ms per square
-    this._boards = {};            // coin|currency|period → { step, base }
-    this.cellMs = 0;              // the drawn lattice's own step, in ms
-    this.cellStep = 0;            // …and in price
-    this.gridOriginTime = null;   // the clock instant `gridOriginX` stands for
+    this._cellMs = {}; // period → ms per square
+    this._boards = {}; // coin|currency|period → { step, base }
+    this.cellMs = 0; // the drawn lattice's own step, in ms
+    this.cellStep = 0; // …and in price
+    this.gridOriginTime = null; // the clock instant `gridOriginX` stands for
 
     // Unique ids so the gradient/clip defs never collide in the DOM
     const uid = Math.random().toString(36).slice(2, 9);
@@ -566,11 +591,14 @@ class LineBase extends PureComponent {
      * only ten legal widths — the line goes where the geometry can put it,
      * which is also what stops a drag from producing a board with half a
      * square on the end of it. */
-    _defineProperty(this, "nowLineAt", (x) =>
-      this.props.predict &&
-      typeof this.props.onFutureShareChange === "function" &&
-      this.nowX > 0 &&
-      Math.abs(x - this.nowX) <= NOW_GRAB,
+    _defineProperty(
+      this,
+      "nowLineAt",
+      (x) =>
+        this.props.predict &&
+        typeof this.props.onFutureShareChange === "function" &&
+        this.nowX > 0 &&
+        Math.abs(x - this.nowX) <= NOW_GRAB,
     );
 
     _defineProperty(this, "handlePointerDown", (e) => {
@@ -579,7 +607,8 @@ class LineBase extends PureComponent {
       /* A press on the board's own controls — the way back, the zoom — is
        * theirs; they swallow their clicks, and this is the same rule one
        * event earlier. */
-      if (e.target && e.target.closest && e.target.closest(".pt-pan, .pt-zoom")) return;
+      if (e.target && e.target.closest && e.target.closest(".pt-pan, .pt-zoom"))
+        return;
       /* A second finger is a pinch (handleBoardTouch), not a second drag. */
       if (e.isPrimary === false || this._pinch) return;
       if (!this.nowLineAt(e.offsetX)) {
@@ -667,7 +696,8 @@ class LineBase extends PureComponent {
           }
         }
       }
-      if (!this.boardDragRaf) this.boardDragRaf = requestAnimationFrame(this.applyBoardDrag);
+      if (!this.boardDragRaf)
+        this.boardDragRaf = requestAnimationFrame(this.applyBoardDrag);
     });
 
     _defineProperty(this, "applyBoardDrag", () => {
@@ -678,7 +708,10 @@ class LineBase extends PureComponent {
         const pitch = this.cellPitch || this.boardPitch();
         if (!(pitch > 0)) return;
         // The content follows the hand: pulling down brings higher prices in
-        const rows = Math.max(-BOARD_PAN_MAX, Math.min(BOARD_PAN_MAX, d.pan0 + (d.y - d.y0) / pitch));
+        const rows = Math.max(
+          -BOARD_PAN_MAX,
+          Math.min(BOARD_PAN_MAX, d.pan0 + (d.y - d.y0) / pitch),
+        );
         if (rows !== this._panDrag) {
           this._panDrag = rows;
           this.updatePath();
@@ -692,15 +725,19 @@ class LineBase extends PureComponent {
        * beyond the right edge come in, or the history back to its start. */
       const raw = d.fw0 - (d.x - d.x0);
       const future = Math.min(most, Math.max(least, raw));
-      const slide = raw > most
-        ? Math.min(raw - most, BOARD_SLIDE_MAX_COLUMNS * pitch)
-        : raw < least
-          ? Math.max(raw - least, -least)
-          : 0;
+      const slide =
+        raw > most
+          ? Math.min(raw - most, BOARD_SLIDE_MAX_COLUMNS * pitch)
+          : raw < least
+            ? Math.max(raw - least, -least)
+            : 0;
       const share = future / this.width;
-      const slid = slide !== (this._slideDrag != null ? this._slideDrag : this.boardSlide || 0);
+      const slid =
+        slide !==
+        (this._slideDrag != null ? this._slideDrag : this.boardSlide || 0);
       this._slideDrag = slide;
-      if (share !== this.props.futureShare) this.props.onFutureShareChange(share);
+      if (share !== this.props.futureShare)
+        this.props.onFutureShareChange(share);
       else if (slid) this.updatePath();
     });
 
@@ -723,7 +760,12 @@ class LineBase extends PureComponent {
       const svg = this.svgRef.current;
       if (svg) {
         svg.style.cursor = "";
-        if (svg.releasePointerCapture && e && svg.hasPointerCapture && svg.hasPointerCapture(e.pointerId)) {
+        if (
+          svg.releasePointerCapture &&
+          e &&
+          svg.hasPointerCapture &&
+          svg.hasPointerCapture(e.pointerId)
+        ) {
           svg.releasePointerCapture(e.pointerId);
         }
       }
@@ -731,7 +773,10 @@ class LineBase extends PureComponent {
       if (this._panDrag != null) {
         const from = this._panDrag;
         this._panDrag = null;
-        this.boardPan = Math.max(-BOARD_PAN_MAX, Math.min(BOARD_PAN_MAX, Math.round(from)));
+        this.boardPan = Math.max(
+          -BOARD_PAN_MAX,
+          Math.min(BOARD_PAN_MAX, Math.round(from)),
+        );
         this._panShown = from;
         this.panAnim = { from, start: Date.now() };
         if (!this.panRaf) this.panRaf = requestAnimationFrame(this.runPanAnim);
@@ -821,7 +866,8 @@ class LineBase extends PureComponent {
       const { least, most } = this.nowLimits();
       const future = Math.min(most, Math.max(least, this.width - x));
       const share = future / this.width;
-      if (share !== this.props.futureShare) this.props.onFutureShareChange(share);
+      if (share !== this.props.futureShare)
+        this.props.onFutureShareChange(share);
     });
 
     _defineProperty(this, "applyDrag", () => {
@@ -851,10 +897,15 @@ class LineBase extends PureComponent {
       this.suppressClick = this.nowDrag.moved;
       this.nowDrag = null;
       const svg = this.svgRef.current;
-      if (svg && svg.releasePointerCapture && e && svg.hasPointerCapture(e.pointerId)) {
+      if (
+        svg &&
+        svg.releasePointerCapture &&
+        e &&
+        svg.hasPointerCapture(e.pointerId)
+      ) {
         svg.releasePointerCapture(e.pointerId);
       }
-      this.updatePath();   // one last redraw, animated again now the hand is off
+      this.updatePath(); // one last redraw, animated again now the hand is off
     });
 
     /* Pointer handling: record the position, do the work once per frame */
@@ -900,7 +951,7 @@ class LineBase extends PureComponent {
       }
       if (grabbable) return;
       this.hoverX = e.offsetX;
-      this.hoverY = e.offsetY;      // the grid needs both axes
+      this.hoverY = e.offsetY; // the grid needs both axes
       /* A companion mark under the pointer opens its card beside it (29 Sep
        * 2026; in the corner until 9 Oct). A ring shared by several setups reads the one a
        * click already stepped to, else the newest. On a mark the chart is
@@ -909,7 +960,9 @@ class LineBase extends PureComponent {
       const cmpHit = this.companionAt(e.offsetX, e.offsetY);
       const cmpKey = !cmpHit
         ? null
-        : cmpHit.keys && this._cmpPinned && cmpHit.keys.includes(this._cmpPinned)
+        : cmpHit.keys &&
+            this._cmpPinned &&
+            cmpHit.keys.includes(this._cmpPinned)
           ? this._cmpPinned
           : cmpHit.key;
       if (this._cmpHot !== cmpKey) {
@@ -1205,7 +1258,7 @@ class LineBase extends PureComponent {
      * range, so `this.priceToY` is used wherever it exists: a level placed by
      * the other scale would sit a few squares off the lattice the calls are
      * welded to. */
-/* **Where a price sits on this chart, and which way it lies when it does
+    /* **Where a price sits on this chart, and which way it lies when it does
      * not sit on it at all.** Two helpers, shared by everything that draws a
      * level: the open contract's four, and the price targets you set.
      *
@@ -1229,8 +1282,15 @@ class LineBase extends PureComponent {
      * owns the y mapping — a lattice (`priceToY`) or a comparison. */
     _defineProperty(this, "candleMap", () => {
       const sc = this.candleScale;
-      if (!this.props.showCandles || this.priceToY || this.compareScaled || !sc) return null;
-      if (!(sc.max > sc.min) || !(sc.bottom > sc.top) || !sc.bars || !sc.bars.length) return null;
+      if (!this.props.showCandles || this.priceToY || this.compareScaled || !sc)
+        return null;
+      if (
+        !(sc.max > sc.min) ||
+        !(sc.bottom > sc.top) ||
+        !sc.bars ||
+        !sc.bars.length
+      )
+        return null;
       const span = sc.max - sc.min;
       const h = sc.bottom - sc.top;
       return {
@@ -1265,7 +1325,12 @@ class LineBase extends PureComponent {
       if (candles) return { lo: candles.min, hi: candles.max };
       const [lo, hi] = extent(safePrices(this.props.prices), (d) => d.price);
       if (!(hi > lo)) return null;
-      const [a, b] = shiftDomain(lo, hi, this.yShift(), this.logAxis() && canScaleLog([lo, hi]));
+      const [a, b] = shiftDomain(
+        lo,
+        hi,
+        this.yShift(),
+        this.logAxis() && canScaleLog([lo, hi]),
+      );
       return b > a ? { lo: a, hi: b } : null;
     });
 
@@ -1321,7 +1386,12 @@ class LineBase extends PureComponent {
         if (price > hi) hi = price;
       }
       if (!isFinite(lo) || !isFinite(hi)) return null;
-      [lo, hi] = shiftDomain(lo, hi, this.yShift(), this.logAxis() && canScaleLog([lo, hi]));
+      [lo, hi] = shiftDomain(
+        lo,
+        hi,
+        this.yShift(),
+        this.logAxis() && canScaleLog([lo, hi]),
+      );
       return v > hi ? "above" : v < lo ? "below" : null;
     });
 
@@ -1362,7 +1432,8 @@ class LineBase extends PureComponent {
       /* The area between the entry and where the price actually is. Drawn
          first so every line lands on top of it. */
       if (entryY != null && nowY != null) {
-        const winning = pos.side === "short" ? pos.mark < pos.entry : pos.mark > pos.entry;
+        const winning =
+          pos.side === "short" ? pos.mark < pos.entry : pos.mark > pos.entry;
         const fill = this.poolNode(this._posFills, "rect", layer);
         fill.setAttribute("x", 0);
         fill.setAttribute("width", Math.max(0, right));
@@ -1470,7 +1541,8 @@ class LineBase extends PureComponent {
          a two-thousandth gives about two decimals in the K form — ten dollars
          of resolution on a Bitcoin price — and still four decimals on a coin
          that costs forty cents. */
-      const money = (v) => formatAxisPrice(v, v / 2000, this.props.currencySymbol);
+      const money = (v) =>
+        formatAxisPrice(v, v / 2000, this.props.currencySymbol);
       const long = pos.side !== "short";
       /* The entry carries the live result as well as the price. It is the
          line the result is measured *from*, so the two belong on one label —
@@ -1487,7 +1559,12 @@ class LineBase extends PureComponent {
               money(pos.entry),
               pos.pnlText,
             )
-          : msg("chart_pos_entry", "$1 entry $2", long ? "LONG" : "SHORT", money(pos.entry)),
+          : msg(
+              "chart_pos_entry",
+              "$1 entry $2",
+              long ? "LONG" : "SHORT",
+              money(pos.entry),
+            ),
         color.text,
         "4 3",
       );
@@ -1524,7 +1601,8 @@ class LineBase extends PureComponent {
            see, which is the whole reason the level is drawn at all. Not a
            line: it is not at that price, and pretending otherwise is the
            thing `toY` refuses to do. */
-        const off = toY(pos.liquidation) == null ? offEdge(pos.liquidation) : null;
+        const off =
+          toY(pos.liquidation) == null ? offEdge(pos.liquidation) : null;
         if (off) {
           const tag = this.poolNode(this._posTags, "text", layer);
           tag.setAttribute("x", right - 10);
@@ -1545,9 +1623,18 @@ class LineBase extends PureComponent {
              source reaches `_locales/en` as six literal characters — which is
              what an English browser then prints, since `chrome.i18n` answers
              from that file. */
-          tag.textContent = off === "above"
-            ? msg("chart_pos_liq_up", "liquidation ↑ $1", money(pos.liquidation))
-            : msg("chart_pos_liq_down", "liquidation ↓ $1", money(pos.liquidation));
+          tag.textContent =
+            off === "above"
+              ? msg(
+                  "chart_pos_liq_up",
+                  "liquidation ↑ $1",
+                  money(pos.liquidation),
+                )
+              : msg(
+                  "chart_pos_liq_down",
+                  "liquidation ↓ $1",
+                  money(pos.liquidation),
+                );
         }
       }
       this.hideRest(this._posLines);
@@ -1606,7 +1693,8 @@ class LineBase extends PureComponent {
         return;
       }
       const right = this.width;
-      const money = (v) => formatAxisPrice(v, v / 2000, this.props.currencySymbol);
+      const money = (v) =>
+        formatAxisPrice(v, v / 2000, this.props.currencySymbol);
       const ink = color.text;
 
       const tagAt = (x, y, text, fill) => {
@@ -1677,7 +1765,12 @@ class LineBase extends PureComponent {
           lane,
           11,
           above.length > 1
-            ? msg("chart_target_up_more", "target ↑ $1 +$2", money(above[0]), String(above.length - 1))
+            ? msg(
+                "chart_target_up_more",
+                "target ↑ $1 +$2",
+                money(above[0]),
+                String(above.length - 1),
+              )
             : msg("chart_target_up", "target ↑ $1", money(above[0])),
           ink,
         );
@@ -1688,7 +1781,12 @@ class LineBase extends PureComponent {
           lane,
           this.height - 4,
           below.length > 1
-            ? msg("chart_target_down_more", "target ↓ $1 +$2", money(below[0]), String(below.length - 1))
+            ? msg(
+                "chart_target_down_more",
+                "target ↓ $1 +$2",
+                money(below[0]),
+                String(below.length - 1),
+              )
             : msg("chart_target_down", "target ↓ $1", money(below[0])),
           ink,
         );
@@ -1777,7 +1875,10 @@ class LineBase extends PureComponent {
     _defineProperty(this, "moveAt", (x, y) => {
       for (const c of this._moveClusters) {
         const my = Math.max(7, c.y - 11);
-        if (Math.abs(c.x - x) <= MOVE_MARK_HIT && Math.abs(my - y) <= MOVE_MARK_HIT) {
+        if (
+          Math.abs(c.x - x) <= MOVE_MARK_HIT &&
+          Math.abs(my - y) <= MOVE_MARK_HIT
+        ) {
           return c;
         }
       }
@@ -1805,13 +1906,17 @@ class LineBase extends PureComponent {
       if (!sc || this.props.compareCoin || !this._boxLayer) return hide();
       const { color, font } = this.props.theme;
       const open = Array.isArray(this.props.calls) ? this.props.calls : [];
-      const settled = Array.isArray(this.props.settledCalls) ? this.props.settledCalls : [];
+      const settled = Array.isArray(this.props.settledCalls)
+        ? this.props.settledCalls
+        : [];
       const W = this.width;
       const H = this.height;
       this._boxLayer.setAttribute("opacity", "1");
       for (const c of open.concat(settled)) {
-        if (c.coin !== this.props.coin || c.currency !== this.props.currency) continue;
-        if (!(c.target > 0) || !(c.span > 0) || !(Number(c.hi) > Number(c.lo))) continue;
+        if (c.coin !== this.props.coin || c.currency !== this.props.currency)
+          continue;
+        if (!(c.target > 0) || !(c.span > 0) || !(Number(c.hi) > Number(c.lo)))
+          continue;
         const xa = sc.toX(c.target - c.span);
         const xb = sc.toX(c.target);
         const ya = sc.toY(Number(c.hi));
@@ -1840,7 +1945,11 @@ class LineBase extends PureComponent {
         if (!(bw > 0) || !(bh > 0)) continue;
         const hit = c.result === "hit";
         const miss = c.result === "miss";
-        const ink = hit ? color.chartLineGreen : miss ? color.chartLineRed : color.text;
+        const ink = hit
+          ? color.chartLineGreen
+          : miss
+            ? color.chartLineRed
+            : color.text;
         const box = this.poolNode(this._callBoxes, "rect", this._boxLayer);
         box.setAttribute("x", bx);
         box.setAttribute("y", by);
@@ -2066,7 +2175,10 @@ class LineBase extends PureComponent {
           const tag = this.poolNode(this._callTags, "text", this._boxLayer);
           const boxTop = Math.min(y1, y2);
           tag.setAttribute("x", Math.min(x1, x2));
-          tag.setAttribute("y", boxTop > 12 ? boxTop - 4 : Math.max(y1, y2) + 11);
+          tag.setAttribute(
+            "y",
+            boxTop > 12 ? boxTop - 4 : Math.max(y1, y2) + 11,
+          );
           tag.setAttribute("fill", colour);
           tag.setAttribute("fill-opacity", miss ? "0.75" : "1");
           tag.setAttribute("font-size", "9");
@@ -2372,7 +2484,8 @@ class LineBase extends PureComponent {
 
       for (let s = 0; s < FIREWORK_SHELLS; s++) {
         // Spread across the middle of the plot, so no shell opens in a corner
-        const cx = this.width * (0.14 + (0.72 * s) / Math.max(1, FIREWORK_SHELLS - 1));
+        const cx =
+          this.width * (0.14 + (0.72 * s) / Math.max(1, FIREWORK_SHELLS - 1));
         const cy = this.height * (0.28 + (s % 2) * 0.18);
         const delay = s * FIREWORK_GAP_MS;
 
@@ -2436,7 +2549,10 @@ class LineBase extends PureComponent {
             /* Full strength for the first half of the fall, then out: faded
                from the first frame, the shell was half gone before it had
                opened. 0.85 of the eased clock is about half of the real one. */
-            .attrTween("opacity", () => (t) => (t < 0.85 ? 1 : Math.max(0, (1 - t) / 0.15)))
+            .attrTween(
+              "opacity",
+              () => (t) => (t < 0.85 ? 1 : Math.max(0, (1 - t) / 0.15)),
+            )
             .remove();
         }
       }
@@ -2446,11 +2562,18 @@ class LineBase extends PureComponent {
        * coin mid-show interrupts every one of them — and the layer is above
        * the chart, so what is left behind is left on top of it. */
       clearTimeout(this._fireworkSweep);
-      this._fireworkSweep = setTimeout(() => {
-        for (const el of made) {
-          if (el.parentNode === layer) layer.removeChild(el);
-        }
-      }, FIREWORK_SHELLS * FIREWORK_GAP_MS + FIREWORK_RISE_MS + FIREWORK_FALL_MS + 3 * FIREWORK_STAGGER_MS + 600);
+      this._fireworkSweep = setTimeout(
+        () => {
+          for (const el of made) {
+            if (el.parentNode === layer) layer.removeChild(el);
+          }
+        },
+        FIREWORK_SHELLS * FIREWORK_GAP_MS +
+          FIREWORK_RISE_MS +
+          FIREWORK_FALL_MS +
+          3 * FIREWORK_STAGGER_MS +
+          600,
+      );
     });
 
     /* Placing a call takes two clicks.
@@ -2771,7 +2894,8 @@ class LineBase extends PureComponent {
         /* A click anywhere else abandons the gesture rather than leaving a
          * half-made call — or a half-asked question — sitting on the chart. */
         if (this.draftAt || this.unlockId) {
-          if (this.draftAt && this.props.onCallDraft) this.props.onCallDraft(null);
+          if (this.draftAt && this.props.onCallDraft)
+            this.props.onCallDraft(null);
           this.draftAt = null;
           this.unlockId = null;
           this.updateCalls();
@@ -2839,13 +2963,19 @@ class LineBase extends PureComponent {
          as a board that did not answer. The draft is drawn as before and the
          app is told, so phone.js can say what the call is and lock it from a
          button; a second tap on the square still locks it too. */
-      if (this._lastPointerType === "touch" && this.props.onCallDraft) this.props.onCallDraft(this.draftInfo(cell));
+      if (this._lastPointerType === "touch" && this.props.onCallDraft)
+        this.props.onCallDraft(this.draftInfo(cell));
     });
 
     /* What a drafted square is, in the terms the phone's sheet prints. */
     _defineProperty(this, "draftInfo", (cell) => {
       const note = this.oddsNote
-        ? this.oddsNote({ from: new Date(cell.target - cell.span), to: new Date(cell.target), lo: cell.lo, hi: cell.hi })
+        ? this.oddsNote({
+            from: new Date(cell.target - cell.span),
+            to: new Date(cell.target),
+            lo: cell.lo,
+            hi: cell.hi,
+          })
         : "";
       return {
         coin: this.props.coin,
@@ -2874,8 +3004,14 @@ class LineBase extends PureComponent {
          different, untested count. Only where the range's chances were
          calibrated, as the board only prints them there. */
       const measured = this.oddsMeasured ? this.oddsMeasured() : null;
-      const odds = measured && measured.pass !== false && this.oddsFor ? this.oddsFor(cell) : null;
-      const placed = odds && Number.isFinite(odds.p) && odds.n > 0 ? { ...cell, boardOdds: { p: odds.p, n: odds.n } } : { ...cell };
+      const odds =
+        measured && measured.pass !== false && this.oddsFor
+          ? this.oddsFor(cell)
+          : null;
+      const placed =
+        odds && Number.isFinite(odds.p) && odds.n > 0
+          ? { ...cell, boardOdds: { p: odds.p, n: odds.n } }
+          : { ...cell };
       this.props.onPlaceCall(Object.assign(placed, extra || null));
       if (this.props.onCallDraft) this.props.onCallDraft(null);
       this.updateCalls();
@@ -3059,7 +3195,8 @@ class LineBase extends PureComponent {
         /* A window's two edge points are where the line crosses the frame,
            interpolated (chart-viewport.js) — not a price anyone quoted, so
            the readout takes the real point beside one. */
-        if (raw[i] && raw[i].edge) i = i === 0 ? Math.min(1, raw.length - 1) : Math.max(0, i - 1);
+        if (raw[i] && raw[i].edge)
+          i = i === 0 ? Math.min(1, raw.length - 1) : Math.max(0, i - 1);
         px = scaled[i].time;
         py = scaled[i].price;
         source = raw[i];
@@ -3147,7 +3284,11 @@ class LineBase extends PureComponent {
        * panel's own — needs, settles — because it is the same claim. */
       const live = raw.length ? Number(raw[raw.length - 1].price) : NaN;
       let noteText = "";
-      if (cellBox && cellBox.callable) {
+      const settleMs = cellBox ? +cellBox.to - Date.now() : 0;
+      const overFutureCell = Boolean(cellBox) && this.hoverX > this.nowX;
+      const showBoardNote =
+        Boolean(cellBox) && this.props.predict && overFutureCell;
+      if (showBoardNote) {
         const inside = live >= cellBox.lo && live <= cellBox.hi;
         const edge = live < cellBox.lo ? cellBox.lo : cellBox.hi;
         const away =
@@ -3156,7 +3297,7 @@ class LineBase extends PureComponent {
             : isFinite(live)
               ? "in the band now"
               : "";
-        const when = describeAhead(+cellBox.to - Date.now());
+        const when = describeAhead(settleMs);
         noteText = away ? `${away} · settles ${when}` : `settles ${when}`;
         /* **How ordinary that is** (the chart plan's Phase 5): how many of
            the series' own stretches as long as the time left moved as far as
@@ -3164,8 +3305,12 @@ class LineBase extends PureComponent {
            a count with its denominator. Under the base-rate floor it is left
            out rather than printed thin. */
         if (!inside && isFinite(live) && live > 0) {
-          const dt = +cellBox.to - Date.now();
-          const count = measureCount(safePrices(this.props.prices), dt, Math.log(edge / live));
+          const dt = settleMs;
+          const count = measureCount(
+            safePrices(this.props.prices),
+            dt,
+            Math.log(edge / live),
+          );
           if (count && count.windows >= BASE_RATE_MIN_EPISODES) {
             noteText += ` · ${msg("board_ordinary", "as far in as long: $1 of $2", String(count.hits), String(count.windows))}`;
           }
@@ -3183,7 +3328,7 @@ class LineBase extends PureComponent {
        * one drawn, which put a crosshair through the live price while the box
        * beside it talked about a square two inches away — a line pointing at
        * something nobody asked about. */
-      const overFuture = Boolean(cellBox) && this.hoverX > this.nowX;
+      const overFuture = overFutureCell;
       this.hoverLineRef.current.setAttribute(
         "visibility",
         overFuture ? "hidden" : "inherit",
@@ -3218,7 +3363,11 @@ class LineBase extends PureComponent {
           dateText = msg(
             "ch_bar_change",
             "$1 in this candle",
-            formatSignedPercent(((Number(candle.close) - Number(candle.open)) / Number(candle.open)) * 100),
+            formatSignedPercent(
+              ((Number(candle.close) - Number(candle.open)) /
+                Number(candle.open)) *
+                100,
+            ),
           );
         } else {
           const first = raw.find((p) => p && !p.edge && Number(p.price) > 0);
@@ -3226,7 +3375,11 @@ class LineBase extends PureComponent {
             dateText = msg(
               "ch_since_first",
               "$1 since $2",
-              formatSignedPercent(((Number(source.price) - Number(first.price)) / Number(first.price)) * 100),
+              formatSignedPercent(
+                ((Number(source.price) - Number(first.price)) /
+                  Number(first.price)) *
+                  100,
+              ),
               crosshairDate(first.time, this.props.period),
             );
           }
@@ -3244,7 +3397,11 @@ class LineBase extends PureComponent {
         /* And the gap at that moment, in the strip's own terms (the compared
            coin's move minus this one's) — the figure the two lines are read
            for, which the eye otherwise has to take off the axis. */
-        labels = [this.props.coin || "", this.props.compareCoin || "", msg("ch_gap", "Gap")];
+        labels = [
+          this.props.coin || "",
+          this.props.compareCoin || "",
+          msg("ch_gap", "Gap"),
+        ];
         values = [
           formatSignedPercent(pa),
           formatSignedPercent(pb),
@@ -3256,7 +3413,9 @@ class LineBase extends PureComponent {
           msg("ch_high", "High"),
           msg("ch_low", "Low"),
           msg("ch_close", "Close"),
-          this.props.volumeVenue ? msg("ch_volume_at", "Volume · $1", this.props.volumeVenue) : msg("ch_volume", "Volume"),
+          this.props.volumeVenue
+            ? msg("ch_volume_at", "Volume · $1", this.props.volumeVenue)
+            : msg("ch_volume", "Volume"),
         ];
         values = [
           fmt(candle.open),
@@ -3325,7 +3484,8 @@ class LineBase extends PureComponent {
 
       let boxX = atX + CROSSHAIR_LABEL_GAP;
       if (boxX + boxW > this.width) {
-        boxX = atX - CROSSHAIR_LABEL_GAP - boxW - (cellBox ? this.cellPitch : 0);
+        boxX =
+          atX - CROSSHAIR_LABEL_GAP - boxW - (cellBox ? this.cellPitch : 0);
       }
       boxX = Math.max(0, boxX);
       let boxY = Math.min(
@@ -3343,7 +3503,10 @@ class LineBase extends PureComponent {
         const onLeft = leftX >= 0;
         const pref = {
           x: onLeft ? leftX : Math.max(0, Math.min(this.width - boxW, rightX)),
-          y: Math.min(Math.max(atY + CROSSHAIR_LABEL_GAP, 0), Math.max(this.height - boxH, 0)),
+          y: Math.min(
+            Math.max(atY + CROSSHAIR_LABEL_GAP, 0),
+            Math.max(this.height - boxH, 0),
+          ),
         };
         const spot = tradeSpot({
           pref,
@@ -3795,7 +3958,8 @@ class LineBase extends PureComponent {
       // With the axes on, the scale itself reads in percent (chart-axes.js)
       const axis = this.axesOn();
       const put = (node, text, y) => {
-        const clear = !axis && taken.every((t) => Math.abs(t - y) >= COMPARE_LABEL_MIN_GAP);
+        const clear =
+          !axis && taken.every((t) => Math.abs(t - y) >= COMPARE_LABEL_MIN_GAP);
         node.textContent = clear ? text : "";
         node.setAttribute("x", x);
         node.setAttribute("y", y);
@@ -3810,7 +3974,12 @@ class LineBase extends PureComponent {
      * everyone once it is a screenshot with no legend. */
     _defineProperty(this, "placeCompareLabels", (scaled) => {
       const entries = [
-        [this.compareLabelARef.current, scaled.a, this.props.coin, scaled.lastA],
+        [
+          this.compareLabelARef.current,
+          scaled.a,
+          this.props.coin,
+          scaled.lastA,
+        ],
         [
           this.compareLabelBRef.current,
           scaled.b,
@@ -3825,7 +3994,8 @@ class LineBase extends PureComponent {
       for (const [node, points, symbol, percent] of entries) {
         if (!node || !points.length) continue;
         const end = points[points.length - 1];
-        node.textContent = `${symbol || ""} ${formatSignedPercent(percent)}`.trim();
+        node.textContent =
+          `${symbol || ""} ${formatSignedPercent(percent)}`.trim();
         let y = clamp(end.price - COMPARE_LABEL_LIFT);
         /* Two coins that finish level land on the same pixel, so the second
          * label steps clear of the first — away from it by preference, but
@@ -3914,8 +4084,8 @@ class LineBase extends PureComponent {
         this.width,
         padY,
         padY,
-        -future,              // the past slides off the left edge…
-        future + room,        // …by exactly what the future takes on the right
+        -future, // the past slides off the left edge…
+        future + room, // …by exactly what the future takes on the right
         window[0],
         window[1],
         // Log stands down while a lattice is drawn — see `logAxis`
@@ -4073,7 +4243,8 @@ class LineBase extends PureComponent {
       const future = this.futureWidth();
       const cellMs = this.cellSpan();
       const pitch = this.boardPitch();
-      if (!geo || !(future > 0) || !(cellMs > 0) || !(pitch > 0)) return clear();
+      if (!geo || !(future > 0) || !(cellMs > 0) || !(pitch > 0))
+        return clear();
 
       const data = safePrices(this.props.prices);
       if (data.length < 3) return clear();
@@ -4114,13 +4285,19 @@ class LineBase extends PureComponent {
           .slice()
           .reverse()
           .map((p) => `${p.x},${geo.priceToY(p.lo)}`);
-        const d = [`M${nowX},${y0}`, `L${up.join("L")}`, `L${down.join("L")}`, "Z"].join(
-          "",
-        );
+        const d = [
+          `M${nowX},${y0}`,
+          `L${up.join("L")}`,
+          `L${down.join("L")}`,
+          "Z",
+        ].join("");
         // Every drawn attribute is a number — the polish suite asserts it, and
         // a NaN here would silently draw nothing at all
         if (/NaN|Infinity/.test(d)) return;
-        const node = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        const node = document.createElementNS(
+          "http://www.w3.org/2000/svg",
+          "path",
+        );
         node.setAttribute("d", d);
         node.setAttribute("fill", this.props.theme.color.textSecondary);
         node.setAttribute("fill-opacity", String(opacity));
@@ -4164,7 +4341,11 @@ class LineBase extends PureComponent {
        a time strip, and these wrap the crosshair, the pointer and the click so
        the axes can follow them without either body changing. */
     this.axisRef = createRef();
-    this._axis = { lines: { list: [], at: 0 }, texts: { list: [], at: 0 }, rects: { list: [], at: 0 } };
+    this._axis = {
+      lines: { list: [], at: 0 },
+      texts: { list: [], at: 0 },
+      rects: { list: [], at: 0 },
+    };
     this._axisGridPrice = [];
     this._axisGridTime = [];
     this._axisPointerX = null;
@@ -4224,7 +4405,10 @@ class LineBase extends PureComponent {
     Object.assign(this, chartStudies(this));
     /* The chance on each square of the board (chart-odds.js, cell-odds.js). */
     this.oddsLayerRef = createRef();
-    this._oddsNodes = { rects: { list: [], at: 0 }, texts: { list: [], at: 0 } };
+    this._oddsNodes = {
+      rects: { list: [], at: 0 },
+      texts: { list: [], at: 0 },
+    };
     this._oddsCols = new Map();
     Object.assign(this, chartOdds(this));
 
@@ -4451,8 +4635,10 @@ class LineBase extends PureComponent {
       }
       const labelInk = this._labelInk;
 
-      const rowsUp = Math.ceil((priceToY(levels[levels.length - 1]) - 0) / pitch) + 1;
-      const rowsDown = Math.ceil((this.height - priceToY(levels[0])) / pitch) + 1;
+      const rowsUp =
+        Math.ceil((priceToY(levels[levels.length - 1]) - 0) / pitch) + 1;
+      const rowsDown =
+        Math.ceil((this.height - priceToY(levels[0])) / pitch) + 1;
       const allLevels = [];
       for (let k = rowsDown; k > 0; k--) allLevels.push(levels[0] - step * k);
       levels.forEach((v) => allLevels.push(v));
@@ -4473,7 +4659,10 @@ class LineBase extends PureComponent {
         /* With the axes on the level is printed on the scale, level with its
            line, instead of inside the plot. */
         if (this.axesOn()) {
-          this._axisGridPrice.push({ y, text: formatAxisPrice(v, step, this.props.currencySymbol) });
+          this._axisGridPrice.push({
+            y,
+            text: formatAxisPrice(v, step, this.props.currencySymbol),
+          });
         } else if (y - 4 >= 9 && y < this.height - 15) {
           label(4, y - 4, formatAxisPrice(v, step, this.props.currencySymbol));
         }
@@ -4642,7 +4831,10 @@ class LineBase extends PureComponent {
             grip.setAttribute("class", "pt-now-grip");
             grip.setAttribute("tabindex", "0");
             grip.setAttribute("role", "slider");
-            grip.setAttribute("aria-label", msg("ch_now_label", "How far ahead you can call"));
+            grip.setAttribute(
+              "aria-label",
+              msg("ch_now_label", "How far ahead you can call"),
+            );
             const tab = document.createElementNS(ns, "rect");
             tab.setAttribute("y", 1);
             tab.setAttribute("width", 26);
@@ -4659,11 +4851,10 @@ class LineBase extends PureComponent {
               bars.push(bar);
             }
             const gripTitle = document.createElementNS(ns, "title");
-            gripTitle.textContent =
-              msg(
-                "ch_now_keys",
-                "Drag, or use ← and →, to change how far ahead you can call — ↑ and ↓ walk the board",
-              );
+            gripTitle.textContent = msg(
+              "ch_now_keys",
+              "Drag, or use ← and →, to change how far ahead you can call — ↑ and ↓ walk the board",
+            );
             grip.appendChild(gripTitle);
             grip.addEventListener("keydown", this.handleNowKey);
             this._nowGrip = grip;
@@ -4756,321 +4947,360 @@ class LineBase extends PureComponent {
             }
           }
         }
-      /* **The way back to the price** (the four arrows beside it were
-       * replaced by dragging the board on 30 Sep 2026 — see `armBoardDrag`).
-       *
-       * It exists only while it leads somewhere — the rule the zoom pill's
-       * readout follows: walked away, a chip at the top of the board says how
-       * far and takes you back; at the price it is not drawn, because a
-       * button that cannot change anything is a promise the next click
-       * breaks. While the hand is on the board it counts the squares live.
-       * The keyboard walks the board from the "now" handle (↑ / ↓). */
-      if (future > 0) {
-        if (!this._panUi) {
-          const ui = document.createElementNS(ns, "g");
-          ui.setAttribute("class", "pt-pan");
-          ui.setAttribute("pointer-events", "auto");
-          ui.addEventListener("click", (e) => e.stopPropagation());
-          const home = document.createElementNS(ns, "g");
-          home.setAttribute("class", "pt-pan-home");
-          home.setAttribute("role", "button");
-          home.setAttribute("aria-label", msg("ch_pan_home", "Bring the board back to the price"));
-          const homeBox = document.createElementNS(ns, "rect");
-          homeBox.setAttribute("height", 18);
-          homeBox.setAttribute("rx", 5);
-          home.appendChild(homeBox);
-          const homeText = document.createElementNS(ns, "text");
-          homeText.setAttribute("text-anchor", "middle");
-          homeText.setAttribute("font-size", "9");
-          homeText.setAttribute("letter-spacing", "0.06em");
-          home.appendChild(homeText);
-          const homeTitle = document.createElementNS(ns, "title");
-          homeTitle.textContent = msg("ch_pan_home", "Bring the board back to the price");
-          home.appendChild(homeTitle);
-          const goHome = () => {
-            // Back to the price, and back to now in time
-            if (this.boardSlide || this._slideDrag != null) {
-              this.boardSlide = 0;
-              this._slideDrag = null;
-              this.updatePath();
-            }
-            this.panBoard(0, true);
-          };
-          home.addEventListener("click", (e) => {
-            e.stopPropagation();
-            goHome();
-          });
-          home.addEventListener("keydown", (e) => {
-            if (e.key !== "Enter" && e.key !== " ") return;
-            e.preventDefault();
-            e.stopPropagation();
-            goHome();
-          });
-          ui.appendChild(home);
-          this._panUi = ui;
-          this._panParts = { home, homeBox, homeText };
-          g.appendChild(ui);
-        }
-        const { home, homeBox, homeText } = this._panParts;
-        const midRaw = Math.round((Math.max(0, nowX) + this.width) / 2);
-        const walked = this._panDrag != null ? Math.round(this._panDrag) : this.boardPan || 0;
-        // Squares slid in time past the now line's limits (boardSlide)
-        const slidCols = this.cellPitch > 0 ? Math.round(this.boardSlideNow() / this.cellPitch) : 0;
-        const panned = walked !== 0 || (this.boardPan || 0) !== 0 || slidCols !== 0;
-        const homeLabel = slidCols !== 0 && walked === 0
-          ? slidCols > 0
-            ? msg("ch_slide_ahead", "$1 squares ahead · back to now", String(slidCols))
-            : msg("ch_slide_back", "$1 squares back · back to now", String(-slidCols))
-          : msg("ch_pan_off", "$1 off · back", `${walked > 0 ? "+" : ""}${walked}`);
-        if (homeText.textContent !== homeLabel) homeText.textContent = homeLabel;
-        const homeW = homeLabel.length * 5.6 + 14;
-        // On the board's visible part, whole
-        const midX = Math.round(Math.max(homeW / 2 + 4, Math.min(this.width - homeW / 2 - 4, midRaw)));
-        // Under the fade, clear of the zoom pill at the strip's top right
-        const homeY = Math.round(this.fadeEnd() + 6);
-        homeBox.setAttribute("x", midX - homeW / 2);
-        homeBox.setAttribute("y", homeY);
-        homeBox.setAttribute("width", homeW);
-        homeBox.setAttribute("fill", color.bgSecondary);
-        homeBox.setAttribute("stroke", color.border);
-        homeText.setAttribute("x", midX);
-        homeText.setAttribute("y", homeY + 13);
-        homeText.setAttribute("fill", color.text);
-        homeText.setAttribute("font-family", font.primary);
-        home.setAttribute("opacity", panned ? "0.85" : "0");
-        home.setAttribute("pointer-events", panned ? "auto" : "none");
-        if (panned) home.setAttribute("tabindex", "0");
-        else home.removeAttribute("tabindex");
-        this._panUi.setAttribute("visibility", "inherit");
-      } else if (this._panUi) {
-        this._panUi.setAttribute("visibility", "hidden");
-        this._panUi.setAttribute("pointer-events", "none");
-      }
-
-      /* The board's own zoom, drawn on the board.
-       *
-       * Nothing said the scale could be changed. The wheel worked in silence,
-       * the two keys were in a list nobody has open while they are calling,
-       * and the panel's buttons are in another overlay — so the answer to "can
-       * I reach further than this?" was "only if you already knew". A control
-       * that exists is the only reliable way to say a thing is possible.
-       *
-       * It sits at the top of the strip because that is the strip it governs,
-       * and it carries what the board currently covers between its two
-       * buttons: the number that decides whether the call you have in mind has
-       * a square at all. Quiet at rest, full under the pointer — the same
-       * manners as every other control on this chart. */
-      if (future > 0 && this.props.onBoardZoomChange) {
-        if (!this._zoomUi) {
-          const ui = document.createElementNS(ns, "g");
-          ui.setAttribute("class", "pt-zoom");
-          /* The whole pill takes the pointer, not only its two buttons. The
-           * grid layer it lives in passes events through, so hovering the
-           * middle — the label — left the control at its resting weight while
-           * the pointer was on it. And a click on the body must not reach the
-           * chart underneath: pressing a control is not pointing at a square. */
-          ui.setAttribute("pointer-events", "auto");
-          ui.addEventListener("click", (e) => e.stopPropagation());
-          const parts = { buttons: [], label: null, box: null };
-          const box = document.createElementNS(ns, "rect");
-          box.setAttribute("rx", 5);
-          box.setAttribute("height", 18);
-          box.setAttribute("y", 5);
-          ui.appendChild(box);
-          parts.box = box;
-          for (const dir of [1, -1]) {
-            const b = document.createElementNS(ns, "g");
-            b.setAttribute("class", "pt-zoom-btn");
-            b.setAttribute("tabindex", "0");
-            b.setAttribute("role", "button");
-            b.setAttribute(
+        /* **The way back to the price** (the four arrows beside it were
+         * replaced by dragging the board on 30 Sep 2026 — see `armBoardDrag`).
+         *
+         * It exists only while it leads somewhere — the rule the zoom pill's
+         * readout follows: walked away, a chip at the top of the board says how
+         * far and takes you back; at the price it is not drawn, because a
+         * button that cannot change anything is a promise the next click
+         * breaks. While the hand is on the board it counts the squares live.
+         * The keyboard walks the board from the "now" handle (↑ / ↓). */
+        if (future > 0) {
+          if (!this._panUi) {
+            const ui = document.createElementNS(ns, "g");
+            ui.setAttribute("class", "pt-pan");
+            ui.setAttribute("pointer-events", "auto");
+            ui.addEventListener("click", (e) => e.stopPropagation());
+            const home = document.createElementNS(ns, "g");
+            home.setAttribute("class", "pt-pan-home");
+            home.setAttribute("role", "button");
+            home.setAttribute(
               "aria-label",
-              dir > 0
-                ? msg(
-                    "ch_zoom_out_label",
-                    "Zoom the board out — a wider band, far enough to call a big move",
-                  )
-                : msg("ch_zoom_in_label", "Zoom the board in — a tighter band"),
+              msg("ch_pan_home", "Bring the board back to the price"),
             );
-            const hit = document.createElementNS(ns, "rect");
-            hit.setAttribute("y", 5);
-            hit.setAttribute("width", 18);
-            hit.setAttribute("height", 18);
-            hit.setAttribute("fill", "transparent");
-            b.appendChild(hit);
-            const glyph = document.createElementNS(ns, "text");
-            glyph.setAttribute("y", 18);
-            glyph.setAttribute("text-anchor", "middle");
-            glyph.setAttribute("font-size", "12");
-            glyph.textContent = dir > 0 ? "+" : "−";
-            b.appendChild(glyph);
-            const title = document.createElementNS(ns, "title");
-            title.textContent =
-              (dir > 0
-                ? msg("ch_zoom_out", "Zoom out")
-                : msg("ch_zoom_in", "Zoom in")) +
-              msg("ch_zoom_hint", " — scroll over the chart, or [ and ]");
-            b.appendChild(title);
-            const go = () => this.zoomBoard(dir);
-            b.addEventListener("click", (e) => {
+            const homeBox = document.createElementNS(ns, "rect");
+            homeBox.setAttribute("height", 18);
+            homeBox.setAttribute("rx", 5);
+            home.appendChild(homeBox);
+            const homeText = document.createElementNS(ns, "text");
+            homeText.setAttribute("text-anchor", "middle");
+            homeText.setAttribute("font-size", "9");
+            homeText.setAttribute("letter-spacing", "0.06em");
+            home.appendChild(homeText);
+            const homeTitle = document.createElementNS(ns, "title");
+            homeTitle.textContent = msg(
+              "ch_pan_home",
+              "Bring the board back to the price",
+            );
+            home.appendChild(homeTitle);
+            const goHome = () => {
+              // Back to the price, and back to now in time
+              if (this.boardSlide || this._slideDrag != null) {
+                this.boardSlide = 0;
+                this._slideDrag = null;
+                this.updatePath();
+              }
+              this.panBoard(0, true);
+            };
+            home.addEventListener("click", (e) => {
               e.stopPropagation();
-              go();
+              goHome();
             });
-            b.addEventListener("keydown", (e) => {
+            home.addEventListener("keydown", (e) => {
               if (e.key !== "Enter" && e.key !== " ") return;
               e.preventDefault();
               e.stopPropagation();
-              go();
+              goHome();
             });
-            ui.appendChild(b);
-            parts.buttons.push({ node: b, hit, glyph, dir });
+            ui.appendChild(home);
+            this._panUi = ui;
+            this._panParts = { home, homeBox, homeText };
+            g.appendChild(ui);
           }
-          /* The readout between the two buttons is also the way back.
-           *
-           * The zoom is held per range and survives the tab, so it is easy to
-           * come back to an hour chart a day later, find the board reaching
-           * eight times further than you want, and have to count clicks back
-           * — with no way to know when you have arrived, because nothing on
-           * screen said which notch was the ordinary one. Pressing the number
-           * returns it. The number is where the eye already is when the
-           * question "how far does this reach?" is being asked, so it is the
-           * right thing to press, and it costs no extra furniture on a strip
-           * that is meant to be pointed at rather than operated.
-           *
-           * It is only a control while there is something to undo. At the
-           * default the group loses its cursor, its focus stop and its name,
-           * because a button that cannot change anything is a promise the
-           * next click breaks — the same rule the two ± buttons already
-           * follow at the ends of the ladder. */
-          const home = document.createElementNS(ns, "g");
-          home.setAttribute("class", "pt-zoom-home");
-          const homeHit = document.createElementNS(ns, "rect");
-          homeHit.setAttribute("y", 5);
-          homeHit.setAttribute("height", 18);
-          homeHit.setAttribute("fill", "transparent");
-          home.appendChild(homeHit);
-          const label = document.createElementNS(ns, "text");
-          label.setAttribute("y", 18);
-          label.setAttribute("text-anchor", "middle");
-          label.setAttribute("font-size", "9");
-          label.setAttribute("letter-spacing", "0.06em");
-          home.appendChild(label);
-          /* A rule under the number, drawn only when pressing it would do
-           * something. An underline is the one mark that reads as "this can be
-           * pressed" without adding a glyph the operating system draws.
-           *
-           * A `rect` one pixel tall rather than a `line`, and that is not
-           * fussiness: on this chart a `line` *is* the lattice. Anything
-           * reading geometry out of the DOM — the panel, a test, the next
-           * person — collects lines and divides consecutive ones to get the
-           * pitch, and a decorative 40px line at y=21 lands in that set and
-           * quietly halves the answer. It cost three separate assertions
-           * before the cause was found. A rect cannot be mistaken for a
-           * gridline by anybody. */
-          const homeRule = document.createElementNS(ns, "rect");
-          homeRule.setAttribute("height", "1");
-          home.appendChild(homeRule);
-          const homeTitle = document.createElementNS(ns, "title");
-          home.appendChild(homeTitle);
-          const goHome = () => {
-            if (this.props.boardZoom === DEFAULT_BOARD_ZOOM) return;
-            this.props.onBoardZoomChange(DEFAULT_BOARD_ZOOM);
-          };
-          home.addEventListener("click", (e) => {
-            e.stopPropagation();
-            goHome();
-          });
-          home.addEventListener("keydown", (e) => {
-            if (e.key !== "Enter" && e.key !== " ") return;
-            e.preventDefault();
-            e.stopPropagation();
-            goHome();
-          });
-          ui.appendChild(home);
-          parts.label = label;
-          parts.home = home;
-          parts.homeHit = homeHit;
-          parts.homeRule = homeRule;
-          parts.homeTitle = homeTitle;
-          this._zoomUi = ui;
-          this._zoomParts = parts;
-          g.appendChild(ui);
+          const { home, homeBox, homeText } = this._panParts;
+          const midRaw = Math.round((Math.max(0, nowX) + this.width) / 2);
+          const walked =
+            this._panDrag != null
+              ? Math.round(this._panDrag)
+              : this.boardPan || 0;
+          // Squares slid in time past the now line's limits (boardSlide)
+          const slidCols =
+            this.cellPitch > 0
+              ? Math.round(this.boardSlideNow() / this.cellPitch)
+              : 0;
+          const panned =
+            walked !== 0 || (this.boardPan || 0) !== 0 || slidCols !== 0;
+          const homeLabel =
+            slidCols !== 0 && walked === 0
+              ? slidCols > 0
+                ? msg(
+                    "ch_slide_ahead",
+                    "$1 squares ahead · back to now",
+                    String(slidCols),
+                  )
+                : msg(
+                    "ch_slide_back",
+                    "$1 squares back · back to now",
+                    String(-slidCols),
+                  )
+              : msg(
+                  "ch_pan_off",
+                  "$1 off · back",
+                  `${walked > 0 ? "+" : ""}${walked}`,
+                );
+          if (homeText.textContent !== homeLabel)
+            homeText.textContent = homeLabel;
+          const homeW = homeLabel.length * 5.6 + 14;
+          // On the board's visible part, whole
+          const midX = Math.round(
+            Math.max(
+              homeW / 2 + 4,
+              Math.min(this.width - homeW / 2 - 4, midRaw),
+            ),
+          );
+          // Under the fade, clear of the zoom pill at the strip's top right
+          const homeY = Math.round(this.fadeEnd() + 6);
+          homeBox.setAttribute("x", midX - homeW / 2);
+          homeBox.setAttribute("y", homeY);
+          homeBox.setAttribute("width", homeW);
+          homeBox.setAttribute("fill", color.bgSecondary);
+          homeBox.setAttribute("stroke", color.border);
+          homeText.setAttribute("x", midX);
+          homeText.setAttribute("y", homeY + 13);
+          homeText.setAttribute("fill", color.text);
+          homeText.setAttribute("font-family", font.primary);
+          home.setAttribute("opacity", panned ? "0.85" : "0");
+          home.setAttribute("pointer-events", panned ? "auto" : "none");
+          if (panned) home.setAttribute("tabindex", "0");
+          else home.removeAttribute("tabindex");
+          this._panUi.setAttribute("visibility", "inherit");
+        } else if (this._panUi) {
+          this._panUi.setAttribute("visibility", "hidden");
+          this._panUi.setAttribute("pointer-events", "none");
         }
-        const { buttons, label, box, home, homeHit, homeRule, homeTitle } =
-          this._zoomParts;
-        const rows = this.callableRows();
-        /* Where the zoom is going, from its first frame: the travelling step
+
+        /* The board's own zoom, drawn on the board.
+         *
+         * Nothing said the scale could be changed. The wheel worked in silence,
+         * the two keys were in a list nobody has open while they are calling,
+         * and the panel's buttons are in another overlay — so the answer to "can
+         * I reach further than this?" was "only if you already knew". A control
+         * that exists is the only reliable way to say a thing is possible.
+         *
+         * It sits at the top of the strip because that is the strip it governs,
+         * and it carries what the board currently covers between its two
+         * buttons: the number that decides whether the call you have in mind has
+         * a square at all. Quiet at rest, full under the pointer — the same
+         * manners as every other control on this chart. */
+        if (future > 0 && this.props.onBoardZoomChange) {
+          if (!this._zoomUi) {
+            const ui = document.createElementNS(ns, "g");
+            ui.setAttribute("class", "pt-zoom");
+            /* The whole pill takes the pointer, not only its two buttons. The
+             * grid layer it lives in passes events through, so hovering the
+             * middle — the label — left the control at its resting weight while
+             * the pointer was on it. And a click on the body must not reach the
+             * chart underneath: pressing a control is not pointing at a square. */
+            ui.setAttribute("pointer-events", "auto");
+            ui.addEventListener("click", (e) => e.stopPropagation());
+            const parts = { buttons: [], label: null, box: null };
+            const box = document.createElementNS(ns, "rect");
+            box.setAttribute("rx", 5);
+            box.setAttribute("height", 18);
+            box.setAttribute("y", 5);
+            ui.appendChild(box);
+            parts.box = box;
+            for (const dir of [1, -1]) {
+              const b = document.createElementNS(ns, "g");
+              b.setAttribute("class", "pt-zoom-btn");
+              b.setAttribute("tabindex", "0");
+              b.setAttribute("role", "button");
+              b.setAttribute(
+                "aria-label",
+                dir > 0
+                  ? msg(
+                      "ch_zoom_out_label",
+                      "Zoom the board out — a wider band, far enough to call a big move",
+                    )
+                  : msg(
+                      "ch_zoom_in_label",
+                      "Zoom the board in — a tighter band",
+                    ),
+              );
+              const hit = document.createElementNS(ns, "rect");
+              hit.setAttribute("y", 5);
+              hit.setAttribute("width", 18);
+              hit.setAttribute("height", 18);
+              hit.setAttribute("fill", "transparent");
+              b.appendChild(hit);
+              const glyph = document.createElementNS(ns, "text");
+              glyph.setAttribute("y", 18);
+              glyph.setAttribute("text-anchor", "middle");
+              glyph.setAttribute("font-size", "12");
+              glyph.textContent = dir > 0 ? "+" : "−";
+              b.appendChild(glyph);
+              const title = document.createElementNS(ns, "title");
+              title.textContent =
+                (dir > 0
+                  ? msg("ch_zoom_out", "Zoom out")
+                  : msg("ch_zoom_in", "Zoom in")) +
+                msg("ch_zoom_hint", " — scroll over the chart, or [ and ]");
+              b.appendChild(title);
+              const go = () => this.zoomBoard(dir);
+              b.addEventListener("click", (e) => {
+                e.stopPropagation();
+                go();
+              });
+              b.addEventListener("keydown", (e) => {
+                if (e.key !== "Enter" && e.key !== " ") return;
+                e.preventDefault();
+                e.stopPropagation();
+                go();
+              });
+              ui.appendChild(b);
+              parts.buttons.push({ node: b, hit, glyph, dir });
+            }
+            /* The readout between the two buttons is also the way back.
+             *
+             * The zoom is held per range and survives the tab, so it is easy to
+             * come back to an hour chart a day later, find the board reaching
+             * eight times further than you want, and have to count clicks back
+             * — with no way to know when you have arrived, because nothing on
+             * screen said which notch was the ordinary one. Pressing the number
+             * returns it. The number is where the eye already is when the
+             * question "how far does this reach?" is being asked, so it is the
+             * right thing to press, and it costs no extra furniture on a strip
+             * that is meant to be pointed at rather than operated.
+             *
+             * It is only a control while there is something to undo. At the
+             * default the group loses its cursor, its focus stop and its name,
+             * because a button that cannot change anything is a promise the
+             * next click breaks — the same rule the two ± buttons already
+             * follow at the ends of the ladder. */
+            const home = document.createElementNS(ns, "g");
+            home.setAttribute("class", "pt-zoom-home");
+            const homeHit = document.createElementNS(ns, "rect");
+            homeHit.setAttribute("y", 5);
+            homeHit.setAttribute("height", 18);
+            homeHit.setAttribute("fill", "transparent");
+            home.appendChild(homeHit);
+            const label = document.createElementNS(ns, "text");
+            label.setAttribute("y", 18);
+            label.setAttribute("text-anchor", "middle");
+            label.setAttribute("font-size", "9");
+            label.setAttribute("letter-spacing", "0.06em");
+            home.appendChild(label);
+            /* A rule under the number, drawn only when pressing it would do
+             * something. An underline is the one mark that reads as "this can be
+             * pressed" without adding a glyph the operating system draws.
+             *
+             * A `rect` one pixel tall rather than a `line`, and that is not
+             * fussiness: on this chart a `line` *is* the lattice. Anything
+             * reading geometry out of the DOM — the panel, a test, the next
+             * person — collects lines and divides consecutive ones to get the
+             * pitch, and a decorative 40px line at y=21 lands in that set and
+             * quietly halves the answer. It cost three separate assertions
+             * before the cause was found. A rect cannot be mistaken for a
+             * gridline by anybody. */
+            const homeRule = document.createElementNS(ns, "rect");
+            homeRule.setAttribute("height", "1");
+            home.appendChild(homeRule);
+            const homeTitle = document.createElementNS(ns, "title");
+            home.appendChild(homeTitle);
+            const goHome = () => {
+              if (this.props.boardZoom === DEFAULT_BOARD_ZOOM) return;
+              this.props.onBoardZoomChange(DEFAULT_BOARD_ZOOM);
+            };
+            home.addEventListener("click", (e) => {
+              e.stopPropagation();
+              goHome();
+            });
+            home.addEventListener("keydown", (e) => {
+              if (e.key !== "Enter" && e.key !== " ") return;
+              e.preventDefault();
+              e.stopPropagation();
+              goHome();
+            });
+            ui.appendChild(home);
+            parts.label = label;
+            parts.home = home;
+            parts.homeHit = homeHit;
+            parts.homeRule = homeRule;
+            parts.homeTitle = homeTitle;
+            this._zoomUi = ui;
+            this._zoomParts = parts;
+            g.appendChild(ui);
+          }
+          const { buttons, label, box, home, homeHit, homeRule, homeTitle } =
+            this._zoomParts;
+          const rows = this.callableRows();
+          /* Where the zoom is going, from its first frame: the travelling step
            printed a new figure — and a new pill width — on every frame, so
            the control shook while you used it (30 Sep 2026). */
-        const ends = this.zoomAnim ? this._zoomEnds : null;
-        const covers = (ends && ends.toStep > 0 ? ends.toStep : step) * rows;
-        /* Decimals from the number being printed, not from the square's step:
-         * with the step as the guide the same control read "±$1.0K" at one
-         * notch and "±$2K" at the next. */
-        /* Rounded to ten digits first: after a zoom's travel the product
+          const ends = this.zoomAnim ? this._zoomEnds : null;
+          const covers = (ends && ends.toStep > 0 ? ends.toStep : step) * rows;
+          /* Decimals from the number being printed, not from the square's step:
+           * with the step as the guide the same control read "±$1.0K" at one
+           * notch and "±$2K" at the next. */
+          /* Rounded to ten digits first: after a zoom's travel the product
            came back as 999.999…, under the "K" line, and the same reach read
            "±$1K" before a pinch and "±$1000" after it. */
-        const half = Number((covers / 2).toPrecision(10)); window.__dbgHalf = [half, step];
-        const text = `±${formatAxisPrice(half, half, this.props.currencySymbol)}`;
-        if (label.textContent !== text) label.textContent = text;
-        const textW = text.length * 5.6;
-        const w = 18 * 2 + textW + 8;
-        // Tucked against the right edge of the board, which is the strip it is
-        // the control for
-        const x = Math.max(nowX + 2, this.width - w - 4);
-        box.setAttribute("x", x);
-        box.setAttribute("width", w);
-        box.setAttribute("fill", color.bgSecondary);
-        box.setAttribute("stroke", color.border);
-        buttons[0].hit.setAttribute("x", x + w - 18);
-        buttons[0].glyph.setAttribute("x", x + w - 9);
-        buttons[1].hit.setAttribute("x", x);
-        buttons[1].glyph.setAttribute("x", x + 9);
-        label.setAttribute("x", x + w / 2);
-        label.setAttribute("fill", color.text);
-        label.setAttribute("font-family", font.primary);
+          const half = Number((covers / 2).toPrecision(10));
+          window.__dbgHalf = [half, step];
+          const text = `±${formatAxisPrice(half, half, this.props.currencySymbol)}`;
+          if (label.textContent !== text) label.textContent = text;
+          const textW = text.length * 5.6;
+          const w = 18 * 2 + textW + 8;
+          // Tucked against the right edge of the board, which is the strip it is
+          // the control for
+          const x = Math.max(nowX + 2, this.width - w - 4);
+          box.setAttribute("x", x);
+          box.setAttribute("width", w);
+          box.setAttribute("fill", color.bgSecondary);
+          box.setAttribute("stroke", color.border);
+          buttons[0].hit.setAttribute("x", x + w - 18);
+          buttons[0].glyph.setAttribute("x", x + w - 9);
+          buttons[1].hit.setAttribute("x", x);
+          buttons[1].glyph.setAttribute("x", x + 9);
+          label.setAttribute("x", x + w / 2);
+          label.setAttribute("fill", color.text);
+          label.setAttribute("font-family", font.primary);
 
-        /* The way back, live only when it leads somewhere. */
-        const atHome = this.props.boardZoom === DEFAULT_BOARD_ZOOM;
-        homeHit.setAttribute("x", x + 18);
-        homeHit.setAttribute("width", Math.max(0, w - 36));
-        homeRule.setAttribute("x", x + w / 2 - textW / 2);
-        homeRule.setAttribute("width", Math.max(0, textW));
-        homeRule.setAttribute("y", 21);
-        homeRule.setAttribute("fill", color.text);
-        homeRule.setAttribute("opacity", atHome ? "0" : "0.5");
-        home.setAttribute("pointer-events", atHome ? "none" : "auto");
-        if (atHome) {
-          home.removeAttribute("tabindex");
-          home.removeAttribute("role");
-          home.removeAttribute("aria-label");
-          homeTitle.textContent = msg(
-            "ch_reach_title",
-            "How far the board reaches, up and down",
-          );
-        } else {
-          home.setAttribute("tabindex", "0");
-          home.setAttribute("role", "button");
-          home.setAttribute(
-            "aria-label",
-            msg("al_zoom_reset", "Back to the default board reach"),
-          );
-          homeTitle.textContent = msg("ch_default_reach", "Back to the default reach");
+          /* The way back, live only when it leads somewhere. */
+          const atHome = this.props.boardZoom === DEFAULT_BOARD_ZOOM;
+          homeHit.setAttribute("x", x + 18);
+          homeHit.setAttribute("width", Math.max(0, w - 36));
+          homeRule.setAttribute("x", x + w / 2 - textW / 2);
+          homeRule.setAttribute("width", Math.max(0, textW));
+          homeRule.setAttribute("y", 21);
+          homeRule.setAttribute("fill", color.text);
+          homeRule.setAttribute("opacity", atHome ? "0" : "0.5");
+          home.setAttribute("pointer-events", atHome ? "none" : "auto");
+          if (atHome) {
+            home.removeAttribute("tabindex");
+            home.removeAttribute("role");
+            home.removeAttribute("aria-label");
+            homeTitle.textContent = msg(
+              "ch_reach_title",
+              "How far the board reaches, up and down",
+            );
+          } else {
+            home.setAttribute("tabindex", "0");
+            home.setAttribute("role", "button");
+            home.setAttribute(
+              "aria-label",
+              msg("al_zoom_reset", "Back to the default board reach"),
+            );
+            homeTitle.textContent = msg(
+              "ch_default_reach",
+              "Back to the default reach",
+            );
+          }
+          for (const b of buttons) {
+            const zoom = this.props.boardZoom > 0 ? this.props.boardZoom : 1;
+            const spent =
+              b.dir > 0 ? zoom >= BOARD_ZOOM_MAX : zoom <= BOARD_ZOOM_MIN;
+            b.glyph.setAttribute("fill", color.text);
+            b.glyph.setAttribute("font-family", font.primary);
+            b.node.setAttribute("opacity", spent ? "0.25" : "1");
+            b.node.setAttribute("pointer-events", spent ? "none" : "auto");
+            b.node.setAttribute("aria-disabled", spent ? "true" : "false");
+          }
+          this._zoomUi.setAttribute("visibility", "inherit");
+        } else if (this._zoomUi) {
+          this._zoomUi.setAttribute("visibility", "hidden");
         }
-        for (const b of buttons) {
-          const zoom = this.props.boardZoom > 0 ? this.props.boardZoom : 1;
-          const spent =
-            b.dir > 0 ? zoom >= BOARD_ZOOM_MAX : zoom <= BOARD_ZOOM_MIN;
-          b.glyph.setAttribute("fill", color.text);
-          b.glyph.setAttribute("font-family", font.primary);
-          b.node.setAttribute("opacity", spent ? "0.25" : "1");
-          b.node.setAttribute("pointer-events", spent ? "none" : "auto");
-          b.node.setAttribute("aria-disabled", spent ? "true" : "false");
-        }
-        this._zoomUi.setAttribute("visibility", "inherit");
-      } else if (this._zoomUi) {
-        this._zoomUi.setAttribute("visibility", "hidden");
-      }
       } else if (this._nowLine) {
         if (this._nowLabel) this._nowLabel.setAttribute("visibility", "hidden");
         if (this._zoomUi) this._zoomUi.setAttribute("visibility", "hidden");
@@ -5123,8 +5353,8 @@ class LineBase extends PureComponent {
         // `spanMs` is the lattice's own step, worked out where the lattice was
         // — recomputing it here from the scale gave the same number twice
         const next = {
-          step,                                  // price per square
-          spanMs,                                // time per square
+          step, // price per square
+          spanMs, // time per square
           /* How far the board reaches in *price*, from the live price to the
            * edge of the window. This is the number that decides whether the
            * call you have in mind has a square at all — and the one the panel
@@ -5196,7 +5426,10 @@ class LineBase extends PureComponent {
         return;
       }
       const period = Math.max(3, Math.round(data.length / 6));
-      const avg = movingAverage(data.map((d) => d.price), period);
+      const avg = movingAverage(
+        data.map((d) => d.price),
+        period,
+      );
       const [dataLo, dataHi] = extent(data, (d) => d.price);
       const domainLo = lo != null ? lo : dataLo;
       const domainHi = hi != null ? hi : dataHi;
@@ -5227,13 +5460,19 @@ class LineBase extends PureComponent {
         +data[data.length - 1].time - +data[data.length - period].time,
       );
       const last = pts[pts.length - 1];
-      label.textContent = msg("chart_avg_label", "avg $1", describeSpan(coveredMs));
+      label.textContent = msg(
+        "chart_avg_label",
+        "avg $1",
+        describeSpan(coveredMs),
+      );
       /* Ended at the line's end and kept inside the plot by its own
          measured width. It was clamped by a guessed 62px, and "avg 4.9 days"
          is 72 — the plot's clip took the last letters off, on screen and in
          the saved image (30 Sep 2026); a translation is longer still. */
       const labelW =
-        typeof label.getComputedTextLength === "function" ? label.getComputedTextLength() || 60 : 60;
+        typeof label.getComputedTextLength === "function"
+          ? label.getComputedTextLength() || 60
+          : 60;
       label.setAttribute("text-anchor", "end");
       label.setAttribute(
         "x",
@@ -5270,8 +5509,11 @@ class LineBase extends PureComponent {
       // Clearing is not conditional — see the note on `updateCalls`
       if (
         this.props.macroEvents !== true ||
-        !scaled || scaled.length < 2 || data.length < 2 ||
-        !this.width || !this.height
+        !scaled ||
+        scaled.length < 2 ||
+        data.length < 2 ||
+        !this.width ||
+        !this.height
       ) {
         done();
         return;
@@ -5282,7 +5524,10 @@ class LineBase extends PureComponent {
       const x1 = scaled[scaled.length - 1].time;
       const at =
         t1 > t0
-          ? macroMarksWithin(macroReleasesBetween(t0, t1), MACRO_EVENTS_MAX_MARKS)
+          ? macroMarksWithin(
+              macroReleasesBetween(t0, t1),
+              MACRO_EVENTS_MAX_MARKS,
+            )
           : [];
       if (!at.length) {
         done();
@@ -5372,8 +5617,13 @@ class LineBase extends PureComponent {
         this.hideRest(this._cmpDots);
         this.hideRest(this._cmpTags);
         this.hideRest(this._cmpBoxes);
-        this.edgeMark("companion", levelTags.map((n) => ({ nodes: [n], rank: 3 })));
-        const sig = gutter.map((g) => `${g.kind}:${g.price}:${g.ink}`).join("|");
+        this.edgeMark(
+          "companion",
+          levelTags.map((n) => ({ nodes: [n], rank: 3 })),
+        );
+        const sig = gutter
+          .map((g) => `${g.kind}:${g.price}:${g.ink}`)
+          .join("|");
         this._cmpLevels = gutter;
         if (sig !== this._cmpLevelsSig) {
           this._cmpLevelsSig = sig;
@@ -5385,9 +5635,13 @@ class LineBase extends PureComponent {
       const data = safePrices(this.props.prices);
       // Clearing is not conditional — see the note on `updateCalls`
       if (
-        !cmp || !Array.isArray(cmp.episodes) ||
-        !scaled || scaled.length < 2 || data.length < 2 ||
-        !this.width || !this.height
+        !cmp ||
+        !Array.isArray(cmp.episodes) ||
+        !scaled ||
+        scaled.length < 2 ||
+        data.length < 2 ||
+        !this.width ||
+        !this.height
       ) {
         /* Nothing drawn, nothing kept: a card held open across the
            companion being switched off would swallow the next click. */
@@ -5408,11 +5662,15 @@ class LineBase extends PureComponent {
       const color = this.props.theme.color;
       const font = this.props.theme.font.primary;
       const lastPrice = Number(data[data.length - 1].price);
-      const money = (v) => formatAxisPrice(v, v / 2000, this.props.currencySymbol);
-      const pctFrom = (from, to) => (from > 0 ? `${signedFixed(((to - from) / from) * 100, 1)}%` : "—");
+      const money = (v) =>
+        formatAxisPrice(v, v / 2000, this.props.currencySymbol);
+      const pctFrom = (from, to) =>
+        from > 0 ? `${signedFixed(((to - from) / from) * 100, 1)}%` : "—";
       const ago = (sec) => {
         const days = Math.max(0, Math.round((t1 - sec * 1000) / 86400000));
-        return days === 0 ? msg("cmp_today", "today") : msg("cmp_days_ago", "$1d ago", String(days));
+        return days === 0
+          ? msg("cmp_today", "today")
+          : msg("cmp_days_ago", "$1d ago", String(days));
       };
       /* **One mark at a time** (29 Sep 2026): the one the pointer is on, else
        * the one a click kept. Every other mark of the companion steps back to a
@@ -5424,12 +5682,18 @@ class LineBase extends PureComponent {
          patterns, wedges alone fire about once a month, and two of one kind
          drew their names over each other while saying nothing the newer one
          does not. The coin's record for the kind is in its card either way. */
-      const inWindow = cmp.episodes.filter((e) => e.at * 1000 >= t0 && e.at * 1000 <= t1);
+      const inWindow = cmp.episodes.filter(
+        (e) => e.at * 1000 >= t0 && e.at * 1000 <= t1,
+      );
       const newest = new Map();
       for (const e of inWindow) newest.set(e.kind, e);
-      const shown = inWindow.filter((e) => newest.get(e.kind) === e).slice(-COMPANION_MAX);
+      const shown = inWindow
+        .filter((e) => newest.get(e.kind) === e)
+        .slice(-COMPANION_MAX);
       const recentFrom = t1 - COMPANION_RECENT_DAYS * 86400000;
-      const inRange = (cmp.setups || []).filter((m) => m.t * 1000 >= t0 && m.t * 1000 <= t1);
+      const inRange = (cmp.setups || []).filter(
+        (m) => m.t * 1000 >= t0 && m.t * 1000 <= t1,
+      );
       const latest = new Map();
       for (const m of inRange) {
         if (COMPANION_RARE_SETUPS.includes(m.id)) continue;
@@ -5444,7 +5708,9 @@ class LineBase extends PureComponent {
         return d && d.recentDays ? t1 - d.recentDays * 86400000 : recentFrom;
       };
       const marks = [
-        ...Array.from(latest.values()).filter((m) => m.t * 1000 >= recentFor(m)),
+        ...Array.from(latest.values()).filter(
+          (m) => m.t * 1000 >= recentFor(m),
+        ),
         ...inRange.filter((m) => COMPANION_RARE_SETUPS.includes(m.id)),
       ]
         .sort((a, b) => b.t - a.t)
@@ -5460,12 +5726,21 @@ class LineBase extends PureComponent {
         const def = COMPANION_SETUP_DEFS.find((d) => d.id === m.id);
         if (!def) return;
         const x = Math.max(0, Math.min(this.width, xAt(m.t * 1000)));
-        laneItems.push({ m, def, key: setupKey(m), n: k + 1, x, y: this.levelY(m.price) });
+        laneItems.push({
+          m,
+          def,
+          key: setupKey(m),
+          n: k + 1,
+          x,
+          y: this.levelY(m.price),
+        });
       });
       const laneLabel = (members) => {
         const ns = members.map((it) => it.n).sort((a, b) => a - b);
         if (ns.length <= 3) return ns.join("·");
-        return ns[ns.length - 1] - ns[0] === ns.length - 1 ? `${ns[0]}–${ns[ns.length - 1]}` : String(ns.length);
+        return ns[ns.length - 1] - ns[0] === ns.length - 1
+          ? `${ns[0]}–${ns[ns.length - 1]}`
+          : String(ns.length);
       };
       const placeBadge = (g) => {
         g.label = laneLabel(g.members);
@@ -5474,7 +5749,9 @@ class LineBase extends PureComponent {
         const mid = (Math.min(...xs) + Math.max(...xs)) / 2;
         g.left = Math.max(0, Math.min(this.width - g.w, mid - g.w / 2));
       };
-      const laneGroups = [...laneItems].sort((a, b) => a.x - b.x || a.n - b.n).map((it) => ({ members: [it] }));
+      const laneGroups = [...laneItems]
+        .sort((a, b) => a.x - b.x || a.n - b.n)
+        .map((it) => ({ members: [it] }));
       laneGroups.forEach(placeBadge);
       for (let merged = true; merged; ) {
         merged = false;
@@ -5491,11 +5768,17 @@ class LineBase extends PureComponent {
       }
       for (const g of laneGroups) {
         g.members.sort((a, b) => a.n - b.n);
-        g.key = g.members.length > 1 ? `g:${g.members[0].key}` : g.members[0].key;
+        g.key =
+          g.members.length > 1 ? `g:${g.members[0].key}` : g.members[0].key;
       }
-      const known = new Set([...shown.map(patternKey), ...marks.map(setupKey), ...laneGroups.map((g) => g.key)]);
+      const known = new Set([
+        ...shown.map(patternKey),
+        ...marks.map(setupKey),
+        ...laneGroups.map((g) => g.key),
+      ]);
       // Another coin or range: a mark that is gone cannot stay kept
-      if (this._cmpPinned && !known.has(this._cmpPinned)) this._cmpPinned = null;
+      if (this._cmpPinned && !known.has(this._cmpPinned))
+        this._cmpPinned = null;
       const focus = wanted && known.has(wanted) ? wanted : null;
       const dim = (key, op) => (focus && key !== focus ? "0.25" : op);
 
@@ -5504,7 +5787,8 @@ class LineBase extends PureComponent {
          layer takes is wiped of the companion's own markers first. */
       const take = (pool, name) => {
         const el = this.poolNode(pool, name, layer);
-        for (const a of Array.from(el.attributes)) if (a.name.startsWith("data-companion")) el.removeAttribute(a.name);
+        for (const a of Array.from(el.attributes))
+          if (a.name.startsWith("data-companion")) el.removeAttribute(a.name);
         return el;
       };
       this._cmpTake = take;
@@ -5542,8 +5826,11 @@ class LineBase extends PureComponent {
          of reach), so where a pattern's name sits beside a ring the one
          nearer the pointer wins rather than whichever was drawn last. */
       const near = (px, py, r) => (x, y) =>
-        Math.abs(x - px) <= r && Math.abs(y - py) <= r ? Math.hypot(x - px, y - py) : Infinity;
-      const inBox = (bx, by, bw, bh) => (x, y) => (x >= bx && x <= bx + bw && y >= by && y <= by + bh ? 0 : Infinity);
+        Math.abs(x - px) <= r && Math.abs(y - py) <= r
+          ? Math.hypot(x - px, y - py)
+          : Infinity;
+      const inBox = (bx, by, bw, bh) => (x, y) =>
+        x >= bx && x <= bx + bw && y >= by && y <= by + bh ? 0 : Infinity;
       for (const e of shown) {
         const key = patternKey(e);
         const live = e.out === "pending";
@@ -5577,7 +5864,10 @@ class LineBase extends PureComponent {
         const ya = this.levelY(e.neck.from.price);
         const yb = this.levelY(e.neck.to.price);
         if (ya != null && yb != null) {
-          line(xa, ya, xb, yb, color.text, null, op).setAttribute("data-companion-neck", e.kind);
+          line(xa, ya, xb, yb, color.text, null, op).setAttribute(
+            "data-companion-neck",
+            e.kind,
+          );
           /* The neckline is the easiest part to find with a pointer: within
              a few pixels of the segment, measured square to it. */
           const dx = xb - xa;
@@ -5586,7 +5876,12 @@ class LineBase extends PureComponent {
           this._cmpHits.push({
             key,
             dist: (x, y) => {
-              const u = len2 ? Math.max(0, Math.min(1, ((x - xa) * dx + (y - ya) * dy) / len2)) : 0;
+              const u = len2
+                ? Math.max(
+                    0,
+                    Math.min(1, ((x - xa) * dx + (y - ya) * dy) / len2),
+                  )
+                : 0;
               const d = Math.hypot(x - (xa + u * dx), y - (ya + u * dy));
               return d <= 5 ? d : Infinity;
             },
@@ -5599,8 +5894,15 @@ class LineBase extends PureComponent {
           const ya2 = this.levelY(seg.from.price);
           const yb2 = this.levelY(seg.to.price);
           if (ya2 == null || yb2 == null) continue;
-          line(clampX(xAt(seg.from.t * 1000)), ya2, clampX(xAt(seg.to.t * 1000)), yb2, color.textSecondary, "2 2", op)
-            .setAttribute("data-companion-side", e.kind);
+          line(
+            clampX(xAt(seg.from.t * 1000)),
+            ya2,
+            clampX(xAt(seg.to.t * 1000)),
+            yb2,
+            color.textSecondary,
+            "2 2",
+            op,
+          ).setAttribute("data-companion-side", e.kind);
         }
         /* A resolved setup's levels run from its breakout to where one of
            them was reached. One still being walked has not got that far —
@@ -5629,21 +5931,50 @@ class LineBase extends PureComponent {
            stay at the end, as they were. */
         const axes = this.axesOn();
         const word = (yy, text, wordInk, kind) => {
-          const el = axes ? tag(xs + 2, yy - 3, text, wordInk, "start", op) : tag(xEnd - 2, yy - 3, text, wordInk, "end", op);
+          const el = axes
+            ? tag(xs + 2, yy - 3, text, wordInk, "start", op)
+            : tag(xEnd - 2, yy - 3, text, wordInk, "end", op);
           el.setAttribute("data-companion-word", kind);
           levelTags.push(el);
         };
         if (yT != null && xEnd - xs >= 1) {
-          line(xs, yT, xEnd, yT, ink, "4 3", op).setAttribute("data-companion-target", e.kind);
+          line(xs, yT, xEnd, yT, ink, "4 3", op).setAttribute(
+            "data-companion-target",
+            e.kind,
+          );
           /* "measured move", the pattern's own name for the level — not
              "target", which on this app would read as an order. */
-          if (live || !axes) word(yT, msg("cmp_measured", "measured move"), ink, "target");
-          if (live && axes) gutter.push({ price: e.target, text: money(e.target), ink, kind: "target", pattern: e.kind });
+          if (live || !axes)
+            word(yT, msg("cmp_measured", "measured move"), ink, "target");
+          if (live && axes)
+            gutter.push({
+              price: e.target,
+              text: money(e.target),
+              ink,
+              kind: "target",
+              pattern: e.kind,
+            });
         }
         if (yS != null && xEnd - xs >= 1) {
-          line(xs, yS, xEnd, yS, color.textSecondary, "1 3", op).setAttribute("data-companion-stop", e.kind);
-          if (live || !axes) word(yS, msg("cmp_invalid", "invalidation"), color.textSecondary, "stop");
-          if (live && axes) gutter.push({ price: e.stop, text: money(e.stop), ink: color.textSecondary, kind: "stop", pattern: e.kind });
+          line(xs, yS, xEnd, yS, color.textSecondary, "1 3", op).setAttribute(
+            "data-companion-stop",
+            e.kind,
+          );
+          if (live || !axes)
+            word(
+              yS,
+              msg("cmp_invalid", "invalidation"),
+              color.textSecondary,
+              "stop",
+            );
+          if (live && axes)
+            gutter.push({
+              price: e.stop,
+              text: money(e.stop),
+              ink: color.textSecondary,
+              kind: "stop",
+              pattern: e.kind,
+            });
         }
         /* Its name under the breakout (over it for a bullish setup, whose
            target is above). The record went into the card with the rest of
@@ -5660,21 +5991,45 @@ class LineBase extends PureComponent {
         }
         if (yb != null && def && (live || focus === key)) {
           const below = e.bear;
-          const yy = below ? Math.min(this.height - 14, yb + 14) : Math.max(22, yb - 16);
+          const yy = below
+            ? Math.min(this.height - 14, yb + 14)
+            : Math.max(22, yb - 16);
           /* Centred under the breakout when it fits, pushed in from an edge
              when it would not — measured in the label's own characters
              (nine-pixel mono with its tracking is about 5.8px each), since a
              name cut off by the edge of the plot is not a name. */
           const half = (def.title.length * 5.8) / 2;
-          const anchor = xb + half > this.width - 2 ? "end" : xb - half < 2 ? "start" : "middle";
-          const tx = anchor === "end" ? this.width - 2 : anchor === "start" ? 2 : xb;
+          const anchor =
+            xb + half > this.width - 2
+              ? "end"
+              : xb - half < 2
+                ? "start"
+                : "middle";
+          const tx =
+            anchor === "end" ? this.width - 2 : anchor === "start" ? 2 : xb;
           const name = tag(tx, yy, def.title, color.text, anchor, op);
           name.setAttribute("data-companion-name", e.kind);
           if (focus === key) name.setAttribute("font-weight", "700");
-          const left = anchor === "end" ? tx - half * 2 : anchor === "start" ? tx : tx - half;
-          this._cmpHits.push({ key, dist: inBox(left - 3, yy - 11, half * 2 + 6, 15) });
+          const left =
+            anchor === "end"
+              ? tx - half * 2
+              : anchor === "start"
+                ? tx
+                : tx - half;
+          this._cmpHits.push({
+            key,
+            dist: inBox(left - 3, yy - 11, half * 2 + 6, 15),
+          });
         }
-        if (def) cards.set(key, { type: "pattern", e, def, rec, x: anchorX, y: anchorY });
+        if (def)
+          cards.set(key, {
+            type: "pattern",
+            e,
+            def,
+            rec,
+            x: anchorX,
+            y: anchorY,
+          });
       }
 
       /* **The strategy setups, on a lane along the plot's foot** (9 Oct
@@ -5694,7 +6049,9 @@ class LineBase extends PureComponent {
        * (setups-prereg.md). */
       const laneY = this.height - COMPANION_LANE_H - 3;
       for (const g of laneGroups) {
-        const hot = Boolean(focus) && (focus === g.key || g.members.some((it) => it.key === focus));
+        const hot =
+          Boolean(focus) &&
+          (focus === g.key || g.members.some((it) => it.key === focus));
         const quiet = focus && !hot ? "0.4" : "1";
         const plate = take(this._cmpBoxes, "rect");
         plate.setAttribute("x", g.left);
@@ -5707,19 +6064,45 @@ class LineBase extends PureComponent {
         plate.setAttribute("stroke-width", "1");
         plate.setAttribute("opacity", quiet);
         plate.setAttribute("data-companion-lane", g.label);
-        const label = tag(g.left + g.w / 2, laneY + COMPANION_LANE_H - 3.5, g.label, hot ? color.text : color.textSecondary, "middle", quiet);
+        const label = tag(
+          g.left + g.w / 2,
+          laneY + COMPANION_LANE_H - 3.5,
+          g.label,
+          hot ? color.text : color.textSecondary,
+          "middle",
+          quiet,
+        );
         label.setAttribute("stroke-width", "0");
         label.setAttribute("data-companion-badge", g.label);
         const hit = inBox(g.left - 2, laneY - 2, g.w + 4, COMPANION_LANE_H + 4);
         /* One badge, several setups: pointing at it reads the list, and each
            click steps through them, newest first (see `handleChartClick`). */
         if (g.members.length > 1) {
-          this._cmpHits.push({ key: g.key, keys: g.members.map((it) => it.key), dist: hit });
-          cards.set(g.key, { type: "group", members: g.members, x: g.left + g.w / 2, y: laneY });
+          this._cmpHits.push({
+            key: g.key,
+            keys: g.members.map((it) => it.key),
+            dist: hit,
+          });
+          cards.set(g.key, {
+            type: "group",
+            members: g.members,
+            x: g.left + g.w / 2,
+            y: laneY,
+          });
         } else this._cmpHits.push({ key: g.key, dist: hit });
-        for (const it of g.members) cards.set(it.key, { type: "setup", m: it.m, def: it.def, n: String(it.n), x: it.x, y: it.y });
+        for (const it of g.members)
+          cards.set(it.key, {
+            type: "setup",
+            m: it.m,
+            def: it.def,
+            n: String(it.n),
+            x: it.x,
+            y: it.y,
+          });
         if (!hot) continue;
-        for (const it of focus === g.key ? g.members : g.members.filter((x) => x.key === focus)) {
+        for (const it of focus === g.key
+          ? g.members
+          : g.members.filter((x) => x.key === focus)) {
           if (it.y == null) continue;
           const ring = take(this._cmpDots, "circle");
           ring.setAttribute("cx", it.x);
@@ -5731,7 +6114,15 @@ class LineBase extends PureComponent {
           ring.setAttribute("opacity", "0.95");
           ring.setAttribute("data-companion-setup", it.m.id);
           if (it.y + 6 < laneY - 1) {
-            line(it.x, it.y + 6, it.x, laneY - 1, color.textSecondary, "2 3", "0.6").setAttribute("data-companion-guide", it.m.id);
+            line(
+              it.x,
+              it.y + 6,
+              it.x,
+              laneY - 1,
+              color.textSecondary,
+              "2 3",
+              "0.6",
+            ).setAttribute("data-companion-guide", it.m.id);
           }
         }
       }
@@ -5739,7 +6130,15 @@ class LineBase extends PureComponent {
       const card = focus ? cards.get(focus) : null;
       if (card) {
         this.drawCompanionCard(layer, card, {
-          marks, cards, money, pctFrom, ago, lastPrice, tag, pinned: this._cmpPinned === focus, key: focus,
+          marks,
+          cards,
+          money,
+          pctFrom,
+          ago,
+          lastPrice,
+          tag,
+          pinned: this._cmpPinned === focus,
+          key: focus,
         });
       }
       done();
@@ -5759,29 +6158,59 @@ class LineBase extends PureComponent {
       const color = this.props.theme.color;
       const lines = [];
       // `value` names what a line is about (a setup's id), for whoever reads the card's nodes
-      const add = (text, ink, attr, value) => text && lines.push({ text, ink, attr, value });
+      const add = (text, ink, attr, value) =>
+        text && lines.push({ text, ink, attr, value });
       const capital = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
       const few = (n) =>
         n < BASE_RATE_MIN_EPISODES
-          ? msg("cmp_c_few", "Fewer than $1 — too few to compare.", String(BASE_RATE_MIN_EPISODES))
+          ? msg(
+              "cmp_c_few",
+              "Fewer than $1 — too few to compare.",
+              String(BASE_RATE_MIN_EPISODES),
+            )
           : "";
       if (card.type === "group") {
         /* A badge that holds several setups reads as the index did: which
            number is which, and when — the newest first. */
-        add(msg("cmp_c_group", "$1 setups on these days, newest first", String(card.members.length)), color.text, "title");
-        for (const it of card.members) add(`${it.n}  ${it.def.title} · ${o.ago(it.m.t)}`, color.text, "row", it.m.id);
+        add(
+          msg(
+            "cmp_c_group",
+            "$1 setups on these days, newest first",
+            String(card.members.length),
+          ),
+          color.text,
+          "title",
+        );
+        for (const it of card.members)
+          add(
+            `${it.n}  ${it.def.title} · ${o.ago(it.m.t)}`,
+            color.text,
+            "row",
+            it.m.id,
+          );
       } else if (card.type === "setup") {
         const { m, def, n } = card;
         const cmp = this.props.companion;
         const r = cmp.setupRecords && cmp.setupRecords[m.id];
         add(`${n}  ${def.title}`, color.text, "title", m.id);
         add(
-          msg("cmp_c_when", "$1 · at $2 · $3 since", o.ago(m.t), o.money(m.price), o.pctFrom(m.price, o.lastPrice)),
+          msg(
+            "cmp_c_when",
+            "$1 · at $2 · $3 since",
+            o.ago(m.t),
+            o.money(m.price),
+            o.pctFrom(m.price, o.lastPrice),
+          ),
           color.textSecondary,
         );
         add(capital(def.what), color.text);
         add(capital(def.claim), color.textSecondary, "claim");
-        if (!r || !r.n) add(msg("cmp_setup_none", "nothing earlier on this coin to count"), color.text, "record");
+        if (!r || !r.n)
+          add(
+            msg("cmp_setup_none", "nothing earlier on this coin to count"),
+            color.text,
+            "record",
+          );
         else if (def.kind === "move") {
           add(
             msg(
@@ -5824,7 +6253,15 @@ class LineBase extends PureComponent {
           if (d && d.kind === "down") down += 1;
         }
         if (up + down > 1) {
-          add(msg("cmp_c_mix", "Marks on screen: $1 said to point up, $2 said to point down.", String(up), String(down)), color.textSecondary);
+          add(
+            msg(
+              "cmp_c_mix",
+              "Marks on screen: $1 said to point up, $2 said to point down.",
+              String(up),
+              String(down),
+            ),
+            color.textSecondary,
+          );
         }
         add(
           COMPANION_READINGS.includes(def)
@@ -5834,7 +6271,10 @@ class LineBase extends PureComponent {
                 String(COMPANION_READINGS_TESTED.tests),
                 String(COMPANION_READINGS.length),
               )
-            : msg("cmp_c_tested", "Tested together on this app's data, none of the twelve setups differed from an ordinary day."),
+            : msg(
+                "cmp_c_tested",
+                "Tested together on this app's data, none of the twelve setups differed from an ordinary day.",
+              ),
           color.textSecondary,
         );
       } else {
@@ -5845,24 +6285,77 @@ class LineBase extends PureComponent {
         const swing = SWING_PATTERNS.includes(def);
         const status = swing
           ? e.out === "pending"
-            ? msg("cmp_c_open_s", "Broke out $1 at $2 — neither level reached yet.", o.ago(e.at), o.money(e.breakout))
+            ? msg(
+                "cmp_c_open_s",
+                "Broke out $1 at $2 — neither level reached yet.",
+                o.ago(e.at),
+                o.money(e.breakout),
+              )
             : e.out === "target"
-              ? msg("cmp_c_hit_s", "Broke out $1; reached the measured move $2.", o.ago(e.at), o.ago(e.resolvedAt))
+              ? msg(
+                  "cmp_c_hit_s",
+                  "Broke out $1; reached the measured move $2.",
+                  o.ago(e.at),
+                  o.ago(e.resolvedAt),
+                )
               : e.out === "stop"
-                ? msg("cmp_c_stop_s", "Broke out $1; the invalidation level was reached first, $2.", o.ago(e.at), o.ago(e.resolvedAt))
-                : msg("cmp_c_neither_s", "Broke out $1; neither level was reached within $2 days.", o.ago(e.at), String(PRICE_PATTERN_WALK))
+                ? msg(
+                    "cmp_c_stop_s",
+                    "Broke out $1; the invalidation level was reached first, $2.",
+                    o.ago(e.at),
+                    o.ago(e.resolvedAt),
+                  )
+                : msg(
+                    "cmp_c_neither_s",
+                    "Broke out $1; neither level was reached within $2 days.",
+                    o.ago(e.at),
+                    String(PRICE_PATTERN_WALK),
+                  )
           : e.out === "pending"
-            ? msg("cmp_c_open", "Broke its neckline $1 at $2 — neither level reached yet.", o.ago(e.at), o.money(e.breakout))
+            ? msg(
+                "cmp_c_open",
+                "Broke its neckline $1 at $2 — neither level reached yet.",
+                o.ago(e.at),
+                o.money(e.breakout),
+              )
             : e.out === "target"
-              ? msg("cmp_c_hit", "Broke its neckline $1; reached the measured move $2.", o.ago(e.at), o.ago(e.resolvedAt))
+              ? msg(
+                  "cmp_c_hit",
+                  "Broke its neckline $1; reached the measured move $2.",
+                  o.ago(e.at),
+                  o.ago(e.resolvedAt),
+                )
               : e.out === "stop"
-                ? msg("cmp_c_stop", "Broke its neckline $1; the invalidation level was reached first, $2.", o.ago(e.at), o.ago(e.resolvedAt))
-                : msg("cmp_c_neither", "Broke its neckline $1; neither level was reached within $2 days.", o.ago(e.at), String(PRICE_PATTERN_WALK));
+                ? msg(
+                    "cmp_c_stop",
+                    "Broke its neckline $1; the invalidation level was reached first, $2.",
+                    o.ago(e.at),
+                    o.ago(e.resolvedAt),
+                  )
+                : msg(
+                    "cmp_c_neither",
+                    "Broke its neckline $1; neither level was reached within $2 days.",
+                    o.ago(e.at),
+                    String(PRICE_PATTERN_WALK),
+                  );
         add(status, color.text);
-        add(msg("cmp_c_levels", "Measured move $1 · invalidation $2", o.money(e.target), o.money(e.stop)), color.textSecondary);
+        add(
+          msg(
+            "cmp_c_levels",
+            "Measured move $1 · invalidation $2",
+            o.money(e.target),
+            o.money(e.stop),
+          ),
+          color.textSecondary,
+        );
         if (e.out === "pending") {
           add(
-            msg("cmp_c_dist", "From today's price: $1 to the measured move, $2 to the invalidation.", o.pctFrom(o.lastPrice, e.target), o.pctFrom(o.lastPrice, e.stop)),
+            msg(
+              "cmp_c_dist",
+              "From today's price: $1 to the measured move, $2 to the invalidation.",
+              o.pctFrom(o.lastPrice, e.target),
+              o.pctFrom(o.lastPrice, e.stop),
+            ),
             color.textSecondary,
           );
         }
@@ -5873,7 +6366,9 @@ class LineBase extends PureComponent {
               "On this coin: $1 of $2 that resolved reached the measured move first · found $3. $4",
               String(rec.targetFirst),
               String(rec.resolved),
-              rec.found === 1 ? msg("br_one_time", "1 time") : msg("br_n_times", "$1 times", rec.found),
+              rec.found === 1
+                ? msg("br_one_time", "1 time")
+                : msg("br_n_times", "$1 times", rec.found),
               few(rec.resolved),
             ).trim(),
             color.text,
@@ -5881,7 +6376,13 @@ class LineBase extends PureComponent {
           );
         }
         if (swing) add(swingTestedText(def.id), color.text, "tested");
-        add(msg("cmp_c_rule", "Found by a fixed rule on daily candles, set before it was tested — no score, no entry."), color.textSecondary);
+        add(
+          msg(
+            "cmp_c_rule",
+            "Found by a fixed rule on daily candles, set before it was tested — no score, no entry.",
+          ),
+          color.textSecondary,
+        );
       }
       add(
         card.type === "group"
@@ -5913,7 +6414,9 @@ class LineBase extends PureComponent {
           } else cur = cur ? `${cur} ${word}` : word;
         }
         if (cur) parts.push(cur);
-        parts.forEach((p, k) => wrapped.push({ ...l, text: p, first: k === 0 }));
+        parts.forEach((p, k) =>
+          wrapped.push({ ...l, text: p, first: k === 0 }),
+        );
       }
       const h = wrapped.length * lh + 10;
       const GAP = 12;
@@ -5950,8 +6453,10 @@ class LineBase extends PureComponent {
         const el = o.tag(x + 8, y + 14 + k * lh, l.text, l.ink, "start", "1");
         el.setAttribute("stroke-width", "0");
         el.setAttribute("font-size", "10");
-        if (l.attr === "title" && l.first) el.setAttribute("font-weight", "700");
-        if (l.attr) el.setAttribute(`data-companion-card-${l.attr}`, l.value || "true");
+        if (l.attr === "title" && l.first)
+          el.setAttribute("font-weight", "700");
+        if (l.attr)
+          el.setAttribute(`data-companion-card-${l.attr}`, l.value || "true");
       });
       // Inside the card is nearer than any mark: it is on top of them
       this._cmpHits.push({
@@ -5963,7 +6468,10 @@ class LineBase extends PureComponent {
         dist: (px, py) =>
           px >= x && px <= x + w && py >= y && py <= y + h
             ? -1
-            : px >= x - GAP && px <= x + w + GAP && py >= y - GAP && py <= y + h + GAP
+            : px >= x - GAP &&
+                px <= x + w + GAP &&
+                py >= y - GAP &&
+                py <= y + h + GAP
               ? COMPANION_HIT
               : Infinity,
       });
@@ -6007,10 +6515,21 @@ class LineBase extends PureComponent {
       };
       /* A list of overlays since 27 Sep 2026 — any number at once, each
          `{ kind, lines }` from `indicatorOverlaySeries`. */
-      const list = Array.isArray(this.props.overlay) ? this.props.overlay.filter((o) => o && Array.isArray(o.lines) && o.lines.length) : [];
+      const list = Array.isArray(this.props.overlay)
+        ? this.props.overlay.filter(
+            (o) => o && Array.isArray(o.lines) && o.lines.length,
+          )
+        : [];
       const scaled = this.scaled;
       const data = safePrices(this.props.prices);
-      if (!list.length || !scaled || scaled.length < 2 || data.length < 2 || !this.width || !this.height) {
+      if (
+        !list.length ||
+        !scaled ||
+        scaled.length < 2 ||
+        data.length < 2 ||
+        !this.width ||
+        !this.height
+      ) {
         done();
         return;
       }
@@ -6063,10 +6582,13 @@ class LineBase extends PureComponent {
           el.setAttribute("fill", "none");
           el.setAttribute(
             "stroke",
-            line.tone === "up" ? color.chartLineGreen
-              : line.tone === "down" ? color.chartLineRed
-              : line.id === "sma50" ? color.text
-              : color.textSecondary,
+            line.tone === "up"
+              ? color.chartLineGreen
+              : line.tone === "down"
+                ? color.chartLineRed
+                : line.id === "sma50"
+                  ? color.text
+                  : color.textSecondary,
           );
           el.setAttribute("stroke-width", "1");
           el.setAttribute("stroke-dasharray", line.dash || "none");
@@ -6074,7 +6596,12 @@ class LineBase extends PureComponent {
           el.setAttribute("data-overlay-line", line.id);
           el.setAttribute("data-overlay-kind", ov.kind);
         }
-        if (labelAt) labels.push({ kind: ov.kind, x: labelAt.x, y: Math.max(22, labelAt.y - 6) });
+        if (labelAt)
+          labels.push({
+            kind: ov.kind,
+            x: labelAt.x,
+            y: Math.max(22, labelAt.y - 6),
+          });
       }
       /* Two overlays usually end near each other at the right edge; their
          names are pushed apart, top to bottom, rather than printed over
@@ -6197,7 +6724,8 @@ class LineBase extends PureComponent {
            is set to the plot as it is when the reveal ends. */
         .on("end interrupt", () => {
           this._revealing = false;
-          if (this.clipRect) this.clipRect.attr("width", this.width).attr("height", this.height);
+          if (this.clipRect)
+            this.clipRect.attr("width", this.width).attr("height", this.height);
         });
 
       // Re-measure on ANY change to the chart box — window resize, but also
@@ -6242,7 +6770,7 @@ class LineBase extends PureComponent {
       if (this.props.interactive) {
         const svg = this.svgRef.current;
         svg.addEventListener("wheel", this.handleWheel, { passive: false });
-      svg.addEventListener("pointermove", this.handlePointerMove, {
+        svg.addEventListener("pointermove", this.handlePointerMove, {
           passive: true,
         });
         svg.addEventListener("pointerdown", this.handlePointerDown, {
@@ -6252,7 +6780,12 @@ class LineBase extends PureComponent {
           passive: true,
         });
         svg.addEventListener("click", this.handleChartClick);
-        for (const type of ["touchstart", "touchmove", "touchend", "touchcancel"]) {
+        for (const type of [
+          "touchstart",
+          "touchmove",
+          "touchend",
+          "touchcancel",
+        ]) {
           svg.addEventListener(type, this.handleBoardTouch, { passive: true });
         }
         svg.addEventListener("pointerleave", this.handlePointerLeave, {
@@ -6322,11 +6855,17 @@ class LineBase extends PureComponent {
      * The resize path, which redraws all of it; skipped when new prices are
      * about to redraw it below anyway. */
     // The window slid up or down by a hand: every layer, the bars with them
-    if (prevProps.yPan !== this.props.yPan && prevProps.prices === this.props.prices) {
+    if (
+      prevProps.yPan !== this.props.yPan &&
+      prevProps.prices === this.props.prices
+    ) {
       this.updatePath();
       this.updateCandles(false);
     }
-    if (prevProps.theme !== this.props.theme && prevProps.prices === this.props.prices) {
+    if (
+      prevProps.theme !== this.props.theme &&
+      prevProps.prices === this.props.prices
+    ) {
       this.updatePath();
       this.updateCandles(false);
       this.updateComparison(false);
@@ -6404,7 +6943,8 @@ class LineBase extends PureComponent {
           from: this._zoomShown || prevProps.boardZoom || 1,
           start: Date.now(),
         };
-        if (!this.zoomRaf) this.zoomRaf = requestAnimationFrame(this.runZoomAnim);
+        if (!this.zoomRaf)
+          this.zoomRaf = requestAnimationFrame(this.runZoomAnim);
       } else {
         this.zoomAnim = null;
       }
@@ -6470,7 +7010,10 @@ class LineBase extends PureComponent {
     /* The price above the chart can arrive alone (a cached spot, before its
      * series), and the axis' last-price tag reads it (chart-axes.js); without
      * this the tag kept the older figure until something else redrew. */
-    if (prevProps.livePrice !== this.props.livePrice && prevProps.prices === this.props.prices) {
+    if (
+      prevProps.livePrice !== this.props.livePrice &&
+      prevProps.prices === this.props.prices
+    ) {
       this.updateAxes();
     }
 
@@ -6512,10 +7055,7 @@ class LineBase extends PureComponent {
      * the two answer different questions — "a call came true" and "that one
      * was worth something" — and because this one has to work when the board
      * is not drawn at all, which is exactly the case `burst` cannot serve. */
-    if (
-      this.props.fireworks &&
-      prevProps.fireworks !== this.props.fireworks
-    ) {
+    if (this.props.fireworks && prevProps.fireworks !== this.props.fireworks) {
       this.fireworks();
     }
     /* The overlay is scaled against both series, so either one changing
@@ -6555,15 +7095,22 @@ class LineBase extends PureComponent {
       this._draft = null;
       this._toolHover = null;
     }
-    if (prevProps.coin !== this.props.coin || prevProps.currency !== this.props.currency) {
+    if (
+      prevProps.coin !== this.props.coin ||
+      prevProps.currency !== this.props.currency
+    ) {
       this._measure = null;
     }
     /* The studies (chart-studies.js): a study switched, the daily candles
        they read, or the bars the profile and the marks read. A change that
        gives or takes the usual range's strip moves every point, so the path
        is rebuilt; everything else is a repaint of the studies alone. */
-    const hadFuture = Array.isArray(prevProps.studies) && prevProps.studies.includes("usualRange");
-    const hasFuture = Array.isArray(this.props.studies) && this.props.studies.includes("usualRange");
+    const hadFuture =
+      Array.isArray(prevProps.studies) &&
+      prevProps.studies.includes("usualRange");
+    const hasFuture =
+      Array.isArray(this.props.studies) &&
+      this.props.studies.includes("usualRange");
     if (hadFuture !== hasFuture) {
       this.updatePath();
       this.updateCandles(false);
@@ -6670,7 +7217,12 @@ class LineBase extends PureComponent {
       svg.removeEventListener("pointerdown", this.handlePointerDown);
       svg.removeEventListener("pointerup", this.handlePointerUp);
       svg.removeEventListener("click", this.handleChartClick);
-      for (const type of ["touchstart", "touchmove", "touchend", "touchcancel"]) {
+      for (const type of [
+        "touchstart",
+        "touchmove",
+        "touchend",
+        "touchcancel",
+      ]) {
         svg.removeEventListener(type, this.handleBoardTouch);
       }
       svg.removeEventListener("pointerleave", this.handlePointerLeave);
@@ -6696,13 +7248,21 @@ class LineBase extends PureComponent {
         React.createElement(
           "clipPath",
           { id: this.toolClipId },
-          React.createElement("rect", { ref: this.toolClipRef, x: "0", y: "0" }),
+          React.createElement("rect", {
+            ref: this.toolClipRef,
+            x: "0",
+            y: "0",
+          }),
         ),
         // …and so are the studies' words and levels (chart-studies.js)
         React.createElement(
           "clipPath",
           { id: this.studyClipId },
-          React.createElement("rect", { ref: this.studyClipRef, x: "0", y: "0" }),
+          React.createElement("rect", {
+            ref: this.studyClipRef,
+            x: "0",
+            y: "0",
+          }),
         ),
         React.createElement(
           "linearGradient",
@@ -6807,7 +7367,11 @@ class LineBase extends PureComponent {
           { id: this.clipId },
           // width/height are set imperatively (reveal animation + resize),
           // so they are intentionally omitted here to avoid React clobbering them
-          React.createElement("rect", { ref: this.clipRectRef, x: "0", y: "0" }),
+          React.createElement("rect", {
+            ref: this.clipRectRef,
+            x: "0",
+            y: "0",
+          }),
         ),
       ),
       React.createElement(
@@ -6916,7 +7480,11 @@ class LineBase extends PureComponent {
           "aria-hidden": "true",
           pointerEvents: "none",
         }),
-        React.createElement("g", { ref: this.eventLayerRef, "data-events": "1", pointerEvents: "none" }),
+        React.createElement("g", {
+          ref: this.eventLayerRef,
+          "data-events": "1",
+          pointerEvents: "none",
+        }),
         React.createElement(
           "g",
           { ref: this.lineGroupRef, "data-line": "1", pointerEvents: "none" },
@@ -7005,7 +7573,11 @@ class LineBase extends PureComponent {
            bars so the tag is never drawn under one. */
         React.createElement(
           "g",
-          { ref: this.lastPriceRef, visibility: "hidden", "data-last-price": "1" },
+          {
+            ref: this.lastPriceRef,
+            visibility: "hidden",
+            "data-last-price": "1",
+          },
           React.createElement("line", {
             ref: this.lastLineRef,
             strokeWidth: "1",

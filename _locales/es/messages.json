@@ -1340,6 +1340,9 @@
   "br_above_200d": {
     "message": "Por encima de su media de 200 días"
   },
+  "br_across": {
+    "message": "Tus monedas · solo historial diario en caché"
+  },
   "br_ah_move": {
     "message": "los $1 días siguientes se movieron más de lo habitual $2 de $3 veces; la mitad lo haría."
   },
@@ -1392,6 +1395,9 @@
       }
     }
   },
+  "br_cache_missing": {
+    "message": "Sin historial diario reciente en caché"
+  },
   "br_close": {
     "message": "Cerrar tasas base"
   },
@@ -1431,14 +1437,17 @@
   "br_daily_closes": {
     "message": "$1 cierres diarios"
   },
-  "br_edge_better": {
-    "message": "$1 puntos mejor que un tramo corriente"
+  "br_edge_above": {
+    "message": "movimiento típico $1 puntos por encima de un tramo corriente"
+  },
+  "br_edge_below": {
+    "message": "movimiento típico $1 puntos por debajo de un tramo corriente"
   },
   "br_edge_none": {
     "message": "igual que un tramo corriente"
   },
-  "br_edge_worse": {
-    "message": "$1 puntos peor que un tramo corriente"
+  "br_export_csv": {
+    "message": "Exportar CSV"
   },
   "br_eyebrow_in_monitor": {
     "message": "Tasas base · $1 · $2 cierres diarios"
@@ -1456,10 +1465,25 @@
     "message": "Vela de hoy: ninguna forma con nombre"
   },
   "br_glance_now": {
-    "message": "Condiciones que se cumplen ahora"
+    "message": "Elementos presentes ahora"
   },
   "br_glance_years": {
     "message": "Años de cierres diarios analizados"
+  },
+  "br_history_item": {
+    "message": "Leer un elemento actual"
+  },
+  "br_horizon": {
+    "message": "Horizonte"
+  },
+  "br_horizon_untested": {
+    "message": "Horizonte no probado: solo recuentos descriptivos; las pruebas originales no se aplican a esta selección."
+  },
+  "br_interval": {
+    "message": "Intervalo de Wilson del 95%: $1–$2%"
+  },
+  "br_live_only": {
+    "message": "Solo actuales"
   },
   "br_loading_body": {
     "message": "Leyendo los cierres diarios de esta moneda. Llega tan atrás como publique el exchange, y eso es lo que hace que valga la pena imprimir los recuentos de abajo."
@@ -1532,9 +1556,6 @@
   "br_note_1": {
     "message": "Esto cuenta lo que pasó después de un estado, frente a lo que pasó después de un día corriente en la misma moneda. No es una señal y no hay nada que hacer con ello. "
   },
-  "br_note_2": {
-    "message": "Nueve reglas de manual probadas sobre 21.669 cierres diarios de ocho monedas dieron 0 de 70 resultados que sobrevivieran a la corrección por pruebas múltiples, y con datos en vivo la línea de “sobrecompra” fue seguida por un mes mejor de lo corriente en cuatro monedas de seis. "
-  },
   "br_note_200d": {
     "message": "la línea que las instituciones leen como régimen, no como entrada"
   },
@@ -1550,6 +1571,9 @@
   "br_note_oversold": {
     "message": "la línea que suele llamarse sobreventa"
   },
+  "br_note_tested": {
+    "message": "Nueve reglas de manual probadas sobre 21.669 cierres diarios de ocho monedas dieron 0 de 70 resultados tras corregir las pruebas múltiples. "
+  },
   "br_nothing_unusual": {
     "message": "Nada inusual ahora mismo"
   },
@@ -1558,6 +1582,15 @@
   },
   "br_one_time": {
     "message": "1 vez"
+  },
+  "br_order": {
+    "message": "Orden de la biblioteca"
+  },
+  "br_original": {
+    "message": "Horizontes originales"
+  },
+  "br_path_caption": {
+    "message": "Lo que siguió, no un pronóstico: próximos 30 días · tras esto n=$1; cualquier día n=$2. Continua: mediana; discontinua: media; sombra: 80% central de trayectorias pasadas. Ventanas solapadas, no ensayos independientes."
   },
   "br_pce_title": {
     "message": "PCE de EE. UU. · precios del consumo personal"
@@ -1580,6 +1613,9 @@
   "br_rsi_label": {
     "message": "RSI 14 · cierres diarios · 0–100"
   },
+  "br_search": {
+    "message": "Buscar en la biblioteca"
+  },
   "br_sim_intro": {
     "message": "Los $1 tramos de la historia de esta moneda cuyos últimos $2 días tuvieron la forma de los últimos $2 — el recorrido, no el nivel ni el tamaño —, cada uno con los $3 días que lo siguieron."
   },
@@ -1595,11 +1631,38 @@
   "br_sim_title": {
     "message": "El pasado más parecido"
   },
+  "br_sort_gap": {
+    "message": "Mayor diferencia con cualquier día"
+  },
+  "br_sort_live": {
+    "message": "Actuales primero"
+  },
+  "br_sort_n": {
+    "message": "Más episodios"
+  },
+  "br_tab_calendar": {
+    "message": "Calendario"
+  },
+  "br_tab_library": {
+    "message": "Biblioteca"
+  },
+  "br_tab_now": {
+    "message": "Ahora"
+  },
+  "br_tabs": {
+    "message": "Vistas de frecuencias históricas"
+  },
   "br_that_is": {
     "message": "Eso es $1."
   },
   "br_the_rest": {
     "message": "El resto, como referencia"
+  },
+  "br_timeline": {
+    "message": "Episodios pasados · resultados a 30 días"
+  },
+  "br_timeline_n": {
+    "message": "$1 episodios completos en la cronología diaria"
   },
   "br_title": {
     "message": "$1 · ¿esto ha pasado antes?"
@@ -1624,6 +1687,9 @@
   },
   "br_wd_untested": {
     "message": "Probado en BTC, ETH, SOL y LTC: la dirección del día siguiente difirió por día de la semana solo en ETH y LTC. $1 no se probó."
+  },
+  "br_within_chance": {
+    "message": "dentro de lo atribuible al azar"
   },
   "ch_band": {
     "message": "Banda"
@@ -1965,6 +2031,17 @@
   "cmp_c_few": {
     "message": "Menos de $1: demasiado pocas para comparar."
   },
+  "cmp_c_group": {
+    "message": "$1 configuraciones en estos días, las más recientes primero",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "cmp_c_group_step": {
+    "message": "Haz clic para leerlas una a una"
+  },
   "cmp_c_hit": {
     "message": "Rompió su línea de cuello $1; alcanzó el movimiento medido $2."
   },
@@ -1994,17 +2071,6 @@
   },
   "cmp_c_pin": {
     "message": "Haz clic para dejarla abierta"
-  },
-  "cmp_c_group": {
-    "message": "$1 configuraciones en estos días, las más recientes primero",
-    "placeholders": {
-      "arg1": {
-        "content": "$1"
-      }
-    }
-  },
-  "cmp_c_group_step": {
-    "message": "Haz clic para leerlas una a una"
   },
   "cmp_c_prec": {
     "message": "En esta moneda: $1 de $2 resueltas alcanzaron primero el movimiento medido · encontrada $3. $4"
@@ -2640,6 +2706,9 @@
   "dock_close_share": {
     "message": "Cerrar el $1 por ciento de este contrato"
   },
+  "dock_closing_aria": {
+    "message": "Cerrando $1 — pulsa para detener"
+  },
   "dock_count": {
     "message": "1 de $1",
     "placeholders": {
@@ -2674,6 +2743,9 @@
   },
   "dock_size": {
     "message": "Tamaño"
+  },
+  "dock_stop": {
+    "message": "Detener"
   },
   "dock_to_liq": {
     "message": "a la liq."
@@ -3019,6 +3091,15 @@
   "mon_coins_note3": {
     "message": "El precio y la variación de 24 h vienen del ticker; si faltan allí, se usan los 30 días de la moneda. El resto de las métricas se calcula con esa misma serie de 30 días, la que dibuja el rango 1M. β indica cuánto se movió la moneda, en promedio, por cada 1 % de movimiento de Bitcoin en los mismos días. Una fila abre la ficha de la moneda y desde ella se llega al gráfico con un toque; ↑ y ↓ recorren las filas."
   },
+  "mon_col_beta": {
+    "message": "β BTC"
+  },
+  "mon_col_beta_title": {
+    "message": "Cuánto se movió por cada 1 % que se movió Bitcoin, en los mismos 30 días: la pendiente de sus movimientos sobre los de Bitcoin. Describe estos 30 días, nunca lo que viene"
+  },
+  "mon_col_changes_title": {
+    "message": "Cuánto se movió el precio en el último día, semana y mes"
+  },
   "mon_col_coin": {
     "message": "Moneda"
   },
@@ -3037,6 +3118,18 @@
   "mon_col_price": {
     "message": "Precio"
   },
+  "mon_col_spark": {
+    "message": "30 días"
+  },
+  "mon_col_spark_title": {
+    "message": "Los últimos 30 días, de menor a mayor: ordenados por dónde queda el precio entre ellos"
+  },
+  "mon_corr_alone_head": {
+    "message": "Por su cuenta · r medio con el resto"
+  },
+  "mon_corr_alone_note": {
+    "message": "$1 se movió más por su cuenta; $2, más con el resto."
+  },
   "mon_corr_cell": {
     "message": "$1 y $2: $3, de $4 movimientos"
   },
@@ -3045,6 +3138,9 @@
   },
   "mon_corr_few": {
     "message": "Muy pocos movimientos compartidos para decirlo"
+  },
+  "mon_corr_grid": {
+    "message": "Cada par de tus monedas, una vez"
   },
   "mon_corr_legend": {
     "message": "Qué dicen las celdas"
@@ -3061,14 +3157,29 @@
   "mon_corr_opposite": {
     "message": "Opuestas"
   },
+  "mon_corr_pair_head": {
+    "message": "El par"
+  },
   "mon_corr_pair_line": {
     "message": "fueron en el mismo sentido en $1 de cada 10 movimientos (r $2)."
   },
   "mon_corr_pair_line_r": {
     "message": "r $1."
   },
+  "mon_corr_pair_text": {
+    "message": "En estos 30 días los dos fueron en el mismo sentido en $1 de cada 10 movimientos ($2 movimientos)."
+  },
+  "mon_corr_pair_text_r": {
+    "message": "A partir de $1 movimientos."
+  },
   "mon_corr_pairs": {
     "message": "En palabras simples"
+  },
+  "mon_corr_scale": {
+    "message": "Qué dicen los tonos"
+  },
+  "mon_corr_ten": {
+    "message": "$1 de cada 10 movimientos en el mismo sentido"
   },
   "mon_corr_together": {
     "message": "Al compás"
@@ -3109,11 +3220,68 @@
   "mon_eyebrow": {
     "message": "Tus $1 monedas · los últimos 30 días"
   },
+  "mon_fact_median": {
+    "message": "La moneda mediana en 30 días"
+  },
+  "mon_fact_mover": {
+    "message": "Más se movió en 30 días"
+  },
+  "mon_fact_sort": {
+    "message": "Ordenar la tabla por esto"
+  },
+  "mon_fact_up": {
+    "message": "Al alza en las últimas 24 horas"
+  },
+  "mon_fact_widest": {
+    "message": "Día típico más amplio"
+  },
+  "mon_legend": {
+    "message": "Qué significan las columnas"
+  },
   "mon_loading": {
     "message": "Leyendo 30 días de precios…"
   },
   "mon_market_card": {
     "message": "$1 — $2 en 24 horas; abre su ficha"
+  },
+  "mon_market_down": {
+    "message": "Más a la baja en 24 horas"
+  },
+  "mon_market_hint": {
+    "message": "El tamaño es el valor de mercado y el tono las últimas 24 horas. Desplaza para acercarte a las pequeñas, arrastra para moverte; una casilla abre su ficha."
+  },
+  "mon_market_hint_touch": {
+    "message": "El tamaño es el valor de mercado y el tono las últimas 24 horas. Pellizca para acercarte a las pequeñas; una casilla abre su ficha."
+  },
+  "mon_market_label": {
+    "message": "Las $1 primeras monedas por valor de mercado, cada una con tamaño según él y sombreada según sus últimas 24 horas"
+  },
+  "mon_market_loading": {
+    "message": "Leyendo el mercado…"
+  },
+  "mon_market_note": {
+    "message": "Las $1 primeras de Coinlore por valor de mercado a $2, la misma instantánea que lee la barra de precios: una petición por minuto mientras esta pestaña está abierta. El tamaño de una casilla es su valor de mercado y su sombreado, sus últimas 24 horas. Una moneda que el gráfico puede dibujar se abre en él."
+  },
+  "mon_market_share": {
+    "message": "$1 % del top $2"
+  },
+  "mon_market_up": {
+    "message": "Más al alza en 24 horas"
+  },
+  "mon_market_value": {
+    "message": "valor de mercado $1"
+  },
+  "mon_market_zoom": {
+    "message": "Zoom del mapa"
+  },
+  "mon_market_zoom_in": {
+    "message": "Acercar"
+  },
+  "mon_market_zoom_out": {
+    "message": "Alejar"
+  },
+  "mon_market_zoom_whole": {
+    "message": "Mapa completo"
   },
   "mon_need_two": {
     "message": "Añade una segunda moneda para ver cómo se mueven juntas."
@@ -3121,8 +3289,23 @@
   "mon_open": {
     "message": "Abrir $1 en el gráfico"
   },
+  "mon_race_aria": {
+    "message": "El cambio porcentual de cada moneda en los últimos 30 días: $1"
+  },
+  "mon_race_head": {
+    "message": "Los últimos 30 días, uno junto a otro · desde el inicio de cada moneda"
+  },
+  "mon_race_spread": {
+    "message": "$1 delante, $2 detrás · $3 puntos de diferencia"
+  },
+  "mon_range_at": {
+    "message": "$1 % del camino del mínimo de 30 días al máximo"
+  },
   "mon_sort": {
     "message": "Ordenar por $1"
+  },
+  "mon_tab_base": {
+    "message": "Tasas base"
   },
   "mon_tab_coins": {
     "message": "Monedas"
@@ -3130,11 +3313,98 @@
   "mon_tab_corr": {
     "message": "Correlación"
   },
-  "mon_tab_base": {
-    "message": "Tasas base"
+  "mon_tab_market": {
+    "message": "Mercado"
   },
   "mon_title": {
     "message": "Monitor"
+  },
+  "nav_always": {
+    "message": "Siempre visible"
+  },
+  "nav_cancel": {
+    "message": "Cancelar"
+  },
+  "nav_data_calls": {
+    "message": "Todas las predicciones abiertas, resueltas y tu registro de predicciones."
+  },
+  "nav_data_chart": {
+    "message": "Todos los dibujos y notas guardados en los gráficos, de todas las monedas."
+  },
+  "nav_data_futures": {
+    "message": "La cuenta de simulación, posiciones abiertas, órdenes, historial de operaciones y formulario de orden guardado."
+  },
+  "nav_data_news": {
+    "message": "Noticias guardadas y la marca de última lectura."
+  },
+  "nav_data_portfolio": {
+    "message": "Todas las tenencias, compras, ventas y direcciones vigiladas."
+  },
+  "nav_data_targets": {
+    "message": "Todos los objetivos de precio y sus registros de activación."
+  },
+  "nav_data_widgets": {
+    "message": "Selección, tamaños, orden y widgets fijados en la pantalla principal."
+  },
+  "nav_delete": {
+    "message": "Eliminar permanentemente estos datos: $1"
+  },
+  "nav_delete_note": {
+    "message": "Esta acción no se puede deshacer. La página se recargará tras la eliminación."
+  },
+  "nav_down": {
+    "message": "Mover $1 hacia abajo"
+  },
+  "nav_group_desc": {
+    "message": "Tus pestañas, sus posiciones y los datos que conservas."
+  },
+  "nav_hide_delete": {
+    "message": "Ocultar y eliminar datos"
+  },
+  "nav_hide_desc": {
+    "message": "Su pestaña y atajo dejarán de estar disponibles. Puedes volver a mostrarla aquí en cualquier momento."
+  },
+  "nav_hide_keep": {
+    "message": "Ocultar y conservar datos"
+  },
+  "nav_hide_title": {
+    "message": "¿Ocultar $1?"
+  },
+  "nav_intro": {
+    "message": "Elige qué pestañas aparecen en cada borde y su orden. Las pestañas ocultas conservan su lugar. Ajustes siempre permanece accesible."
+  },
+  "nav_keep": {
+    "message": "Conservar mis datos"
+  },
+  "nav_keywords": {
+    "message": "menú navegación pestañas bordes izquierda derecha orden organizar ocultar mostrar datos eliminar futuros"
+  },
+  "nav_left": {
+    "message": "Borde izquierdo"
+  },
+  "nav_position": {
+    "message": "Posición de $1"
+  },
+  "nav_preview": {
+    "message": "Vista previa del menú"
+  },
+  "nav_requires_monitor": {
+    "message": "Requiere Monitor"
+  },
+  "nav_reset": {
+    "message": "Restablecer posiciones y orden"
+  },
+  "nav_right": {
+    "message": "Borde derecho"
+  },
+  "nav_save_error": {
+    "message": "No se pudo guardar el cambio. Comprueba el almacenamiento disponible del navegador e inténtalo de nuevo."
+  },
+  "nav_title": {
+    "message": "Distribución del menú"
+  },
+  "nav_up": {
+    "message": "Mover $1 hacia arriba"
   },
   "news_allow_rest": {
     "message": "Permitir el resto"
@@ -3245,6 +3515,21 @@
   "news_day_undated": {
     "message": "Sin fecha"
   },
+  "news_feed_24h": {
+    "message": "en las últimas 24 h"
+  },
+  "news_feed_active_sources": {
+    "message": "fuentes activas"
+  },
+  "news_feed_head": {
+    "message": "Resumen del feed"
+  },
+  "news_feed_multi": {
+    "message": "historias con varias fuentes"
+  },
+  "news_feed_note": {
+    "message": "Cuenta solo lo que está visible ahora: filas con fecha de las últimas 24 horas, fuentes activas con filas visibles e historias publicadas por al menos dos redacciones en este feed."
+  },
   "news_fetching": {
     "message": "Buscando titulares…"
   },
@@ -3351,6 +3636,24 @@
   },
   "news_preview_saved": {
     "message": "Guardada"
+  },
+  "news_pulse_aria": {
+    "message": "Noticias por hora en las últimas 24 horas; la hora más activa, desde las $1, tuvo $2"
+  },
+  "news_pulse_bar": {
+    "message": "$1 · $2 noticias"
+  },
+  "news_pulse_from": {
+    "message": "hace 24 h"
+  },
+  "news_pulse_head": {
+    "message": "Las últimas 24 horas · $1 noticias"
+  },
+  "news_pulse_now": {
+    "message": "ahora"
+  },
+  "news_pulse_peak": {
+    "message": "más activa: $1 · $2"
   },
   "news_read_allow": {
     "message": "Permitir $1",
@@ -3975,6 +4278,9 @@
   },
   "po_address_label": {
     "message": "Dirección a vigilar"
+  },
+  "po_allocation": {
+    "message": "Distribución"
   },
   "po_allocation_prefix": {
     "message": "Distribución: "
@@ -4973,6 +5279,9 @@
   "pos_cancel_all": {
     "message": "Cancelar todas"
   },
+  "pos_cancel_all_running": {
+    "message": "Cancelando $1 — pulsa para detener"
+  },
   "pos_capped_loss": {
     "message": "Esta sesión ha perdido los $1 que la terminan. Tu dinero y tu historial siguen intactos: empieza la siguiente sesión para continuar."
   },
@@ -5139,6 +5448,39 @@
       }
     }
   },
+  "pos_cn_all": {
+    "message": "De la apertura al cierre"
+  },
+  "pos_cn_all_d": {
+    "message": "todo lo que este contrato ganó y pagó"
+  },
+  "pos_cn_back": {
+    "message": "$1 de los $2 de margen · vuelven $3 · saldo $4"
+  },
+  "pos_cn_fee": {
+    "message": "Comisión por cerrar"
+  },
+  "pos_cn_head": {
+    "message": "Si lo cierras todo ahora"
+  },
+  "pos_cn_move": {
+    "message": "Movimiento del precio"
+  },
+  "pos_cn_move_d": {
+    "message": "$1 → $2, el precio al que se ejecuta un cierre"
+  },
+  "pos_cn_paid": {
+    "message": "Pagado al entrar"
+  },
+  "pos_cn_paid_d": {
+    "message": "la comisión de apertura y la financiación hasta ahora"
+  },
+  "pos_cn_total": {
+    "message": "Este cierre"
+  },
+  "pos_cn_why": {
+    "message": "El $1 de la fila es el contrato valorado a la marca, $2. Un cierre se ejecuta a $3 —el último precio, cruzando el diferencial— y paga la comisión, así que lo que ingresa es la línea de arriba."
+  },
   "pos_cone": {
     "message": "De $1 próximas horas remuestreadas del rango $2: $3 tocaron primero la liquidación, $4 el stop, $5 el take, $6 llegaron a la hora — la del medio quedó en $7 (5.º–95.º $8 … $9)."
   },
@@ -5147,6 +5489,15 @@
   },
   "pos_cone_thin": {
     "message": "Muy pocas velas en este rango para remuestrear la próxima hora ($1 de $2 necesarias)."
+  },
+  "pos_confirm_long": {
+    "message": "Abriendo largo en $1 — pulsa para detener"
+  },
+  "pos_confirm_placing": {
+    "message": "Colocando — pulsa para detener"
+  },
+  "pos_confirm_short": {
+    "message": "Abriendo corto en $1 — pulsa para detener"
   },
   "pos_contracts": {
     "message": "contratos"
@@ -5171,6 +5522,12 @@
   },
   "pos_detail_trail": {
     "message": "Dinámico"
+  },
+  "pos_details_less": {
+    "message": "Menos detalles"
+  },
+  "pos_details_more": {
+    "message": "Detalles: configuración, margen, comisiones, liquidación"
   },
   "pos_edge_count": {
     "message": "$1, $2 veces. Una semana después el precio estaba más alto en el $3 % de ellas, frente al $4 % de las semanas corrientes aquí.",
@@ -5518,6 +5875,9 @@
   "pos_kind_market": {
     "message": "Mercado"
   },
+  "pos_kind_more": {
+    "message": "Otros tipos de orden"
+  },
   "pos_kind_scale": {
     "message": "Escalonada"
   },
@@ -5527,11 +5887,17 @@
   "pos_kind_stop_entry": {
     "message": "entrada stop"
   },
+  "pos_lev_size_cap": {
+    "message": "hasta $1x con este tamaño"
+  },
   "pos_level_none": {
     "message": "ninguno"
   },
   "pos_level_pct_aria": {
     "message": "$1 al $2 por ciento desde la entrada"
+  },
+  "pos_levels_drag": {
+    "message": "O arrastra + SL y + TP en el gráfico."
   },
   "pos_leverage": {
     "message": "Apalancamiento"
@@ -5639,6 +6005,33 @@
   },
   "pos_margin_out_none": {
     "message": "No hay margen libre detrás de este contrato: ya está lo bastante cerca de su liquidación como para que retirar algo lo lleve hasta ella."
+  },
+  "pos_means_away": {
+    "message": "$1 desde la entrada"
+  },
+  "pos_means_liq": {
+    "message": "Liquidada en"
+  },
+  "pos_means_no_stop": {
+    "message": "Sin stop"
+  },
+  "pos_means_no_stop_note": {
+    "message": "el mercado decide la pérdida"
+  },
+  "pos_means_no_take": {
+    "message": "Sin take-profit"
+  },
+  "pos_means_of_account": {
+    "message": "$1 de la cuenta"
+  },
+  "pos_means_rr2": {
+    "message": "riesgo : ganancia 1 : $1"
+  },
+  "pos_means_stop": {
+    "message": "Si se activa el stop"
+  },
+  "pos_means_take": {
+    "message": "Si se activa el take-profit"
   },
   "pos_money_done": {
     "message": "Simulación actualizada: $1. No se movió dinero real."
@@ -6007,6 +6400,9 @@
   },
   "pos_reverse_refused": {
     "message": "No invertido: $1."
+  },
+  "pos_reverse_running": {
+    "message": "Invirtiendo — pulsa para detener"
   },
   "pos_risk_ask": {
     "message": "Escribe lo máximo que puede perder este contrato en el stop; el tamaño sale del stop de abajo."
@@ -6435,6 +6831,18 @@
   "pos_wrong_short": {
     "message": "En un corto el stop va por encima de tu entrada y el take-profit por debajo."
   },
+  "pp_at_many": {
+    "message": "$1 contratos"
+  },
+  "pp_at_mine": {
+    "message": "tu posición aquí ($1): $2"
+  },
+  "pp_at_one": {
+    "message": "contrato"
+  },
+  "pp_at_price": {
+    "message": "En $1 · $2 desde ahora"
+  },
   "pp_book_asks": {
     "message": "Ventas"
   },
@@ -6530,6 +6938,9 @@
   },
   "pp_close_all": {
     "message": "Cerrar todo"
+  },
+  "pp_close_all_running": {
+    "message": "Cerrando $1 — pulsa para detener"
   },
   "pp_code_above": {
     "message": "sobre el valor"
@@ -6741,6 +7152,44 @@
   "pp_grip_title": {
     "message": "Arrastra sobre otra área para intercambiarlas — o usa las flechas"
   },
+  "pp_guide": {
+    "message": "Guía"
+  },
+  "pp_guide_all": {
+    "message": "El asistente"
+  },
+  "pp_guide_aria": {
+    "message": "La guía — lo que marca el gráfico, numerado"
+  },
+  "pp_guide_chip_title": {
+    "message": "Apunta para verlo en el gráfico; pulsa para mantenerlo ahí"
+  },
+  "pp_guide_close": {
+    "message": "Cerrar la guía"
+  },
+  "pp_guide_drag_sl": {
+    "message": "arrastra + SL en el gráfico"
+  },
+  "pp_guide_drag_tp": {
+    "message": "arrastra + TP en el gráfico"
+  },
+  "pp_guide_in_panel": {
+    "message": "Abrir en el panel"
+  },
+  "pp_guide_more": {
+    "message": "+$1 · el asistente"
+  },
+  "pp_guide_pop_aria": {
+    "message": "La guía — cada punto, numerado como en el gráfico"
+  },
+  "pp_guide_pop_head": {
+    "message": "Guía · $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
   "pp_h_15m": {
     "message": "15 min"
   },
@@ -6762,6 +7211,45 @@
   "pp_h_5m": {
     "message": "5 min"
   },
+  "pp_layer_book": {
+    "message": "Los mayores niveles del libro"
+  },
+  "pp_layer_clock": {
+    "message": "Próxima financiación"
+  },
+  "pp_layer_contracts": {
+    "message": "Contratos y órdenes"
+  },
+  "pp_layer_fan": {
+    "message": "Futuros repetidos"
+  },
+  "pp_layer_guide": {
+    "message": "Los números de la guía"
+  },
+  "pp_layer_liquidations": {
+    "message": "Liquidaciones · OKX"
+  },
+  "pp_layer_location": {
+    "message": "Volumen por precio"
+  },
+  "pp_layer_plan": {
+    "message": "La orden que estás escribiendo"
+  },
+  "pp_layout": {
+    "message": "Disposición"
+  },
+  "pp_layout_simple": {
+    "message": "Simple"
+  },
+  "pp_layout_simple_title": {
+    "message": "El ticket a la izquierda, el gráfico a la derecha, el libro a un clic en Más"
+  },
+  "pp_layout_terminal": {
+    "message": "Terminal"
+  },
+  "pp_layout_terminal_title": {
+    "message": "El gráfico, el libro y el ticket lado a lado, lo abierto bajo el gráfico y el libro"
+  },
   "pp_lean_long": {
     "message": "Se inclina a largo"
   },
@@ -6770,6 +7258,18 @@
   },
   "pp_lean_short": {
     "message": "Se inclina a corto"
+  },
+  "pp_legend_candles": {
+    "message": "velas de $1 · OKX"
+  },
+  "pp_legend_hand": {
+    "message": "haz clic en un precio para un límite, arrastra una línea para moverla"
+  },
+  "pp_legend_line": {
+    "message": "cierres de $1 · OKX"
+  },
+  "pp_legend_volume": {
+    "message": "volumen en $1 abajo"
   },
   "pp_liq": {
     "message": "Liquidado 24h"
@@ -6839,6 +7339,12 @@
   },
   "pp_oi": {
     "message": "Interés abierto"
+  },
+  "pp_open_moment_fill": {
+    "message": "$1 abierto a $2"
+  },
+  "pp_open_moment_size": {
+    "message": "$1 · margen $2"
   },
   "pp_outlook_all": {
     "message": "Remuestreado de las $1 velas en pantalla — muy pocas estaban $2 para usar solo esas — del 5.º al 95.º de donde aterrizaron $3 repeticiones."
@@ -6964,8 +7470,14 @@
   "pp_read_crowd": {
     "message": "Multitud"
   },
+  "pp_read_less": {
+    "message": "Menos"
+  },
   "pp_read_market": {
     "message": "Mercado"
+  },
+  "pp_read_more": {
+    "message": "Más"
   },
   "pp_read_news": {
     "message": "Titulares"
@@ -7051,11 +7563,23 @@
   "pp_settings_hint": {
     "message": "El gráfico, la disposición, la confirmación de órdenes y la alarma"
   },
+  "pp_settings_layers": {
+    "message": "En el gráfico"
+  },
+  "pp_settings_main_chart": {
+    "message": "En el gráfico principal"
+  },
   "pp_settings_page": {
     "message": "Esta página"
   },
   "pp_settings_reset": {
     "message": "Restablecer disposición"
+  },
+  "pp_settings_sizes": {
+    "message": "Ancho del ticket $1 · altura del panel $2"
+  },
+  "pp_settings_sizes_note": {
+    "message": "Arrastra la unión junto al ticket, o la de debajo del gráfico, para cambiar su tamaño, o enfoca una con Tab y usa las flechas. Un doble clic en una unión devuelve el valor predeterminado. Los tamaños se guardan en este dispositivo; en una ventana de menos de 1280 píxeles la página tiene una sola columna y los tamaños esperan."
   },
   "pp_settings_title": {
     "message": "Ajustes del mercado de derivados"
@@ -7123,9 +7647,6 @@
   "pp_strip_funding": {
     "message": "$1 · en $2"
   },
-  "pp_strip_range": {
-    "message": "Rango 24h"
-  },
   "pp_strip_hm": {
     "message": "$1 h $2 min"
   },
@@ -7140,6 +7661,9 @@
   },
   "pp_strip_perp": {
     "message": "Perpetuo de $1"
+  },
+  "pp_strip_range": {
+    "message": "Rango 24h"
   },
   "pp_struct_fall": {
     "message": "Una caída de más del $1 % para entonces: $2 de $3, frente a $4 de $5 días ordinarios."
@@ -7200,6 +7724,63 @@
   },
   "pp_tape_delta": {
     "message": "Delta, últimas $1 operaciones"
+  },
+  "pp_trade_add_sl": {
+    "message": "+ SL"
+  },
+  "pp_trade_add_tp": {
+    "message": "+ TP"
+  },
+  "pp_trade_be": {
+    "message": "equilibrio"
+  },
+  "pp_trade_buy": {
+    "message": "Compra"
+  },
+  "pp_trade_entry": {
+    "message": "$1 $2x #$3 · $4"
+  },
+  "pp_trade_fan": {
+    "message": "próximos $1 · $2 repeticiones · 5–95%"
+  },
+  "pp_trade_first": {
+    "message": "primero en $1"
+  },
+  "pp_trade_funding": {
+    "message": "financiación $1"
+  },
+  "pp_trade_liq_print": {
+    "message": "$1 liquidado · $2 · OKX · $3"
+  },
+  "pp_trade_market": {
+    "message": "mercado"
+  },
+  "pp_trade_move_to": {
+    "message": "mover a"
+  },
+  "pp_trade_of_account": {
+    "message": "$1 de la cuenta"
+  },
+  "pp_trade_pdh": {
+    "message": "máx. de ayer"
+  },
+  "pp_trade_pdl": {
+    "message": "mín. de ayer"
+  },
+  "pp_trade_plan": {
+    "message": "Plan · $1 $2x · $3 $4"
+  },
+  "pp_trade_plan_market": {
+    "message": "Plan · $1 $2x · $3"
+  },
+  "pp_trade_reach": {
+    "message": "$1 de $2 pasos llegaron tan lejos"
+  },
+  "pp_trade_sell": {
+    "message": "Venta"
+  },
+  "pp_trade_trail": {
+    "message": "dinámico"
   },
   "pp_trades_none": {
     "message": "No hay operaciones para este mercado ahora."
@@ -7281,6 +7862,9 @@
   },
   "pp_w_val": {
     "message": "valor bajo"
+  },
+  "pp_zoom_reset_title": {
+    "message": "Mostrar de nuevo todo el rango"
   },
   "pref_alert_tab_title_aria": {
     "message": "Activar el aviso de objetivos de precio en el título de la pestaña"
@@ -7602,21 +8186,6 @@
       }
     }
   },
-  "pref_features_desc": {
-    "message": "Elige qué tiene esta pestaña. Apagar una quita su botón y su atajo — el gráfico, el precio y esta pantalla siempre están"
-  },
-  "pref_features_heading": {
-    "message": "Funciones"
-  },
-  "pref_features_keywords": {
-    "message": "funciones activar desactivar ocultar mostrar botones iconos objetivos llamadas derivados futuros noticias tasas base cartera comparar widgets simplificar"
-  },
-  "pref_features_note": {
-    "message": "Ajustes no está en esta lista y no puede apagarse: es el camino de vuelta a esta pantalla. Apagar algo no borra nada — tus objetivos, llamadas, posiciones y tenencias quedan tal como los dejaste. Controles Discretos es la versión suave de esto: atenúa los botones en vez de quitar las funciones."
-  },
-  "pref_features_title": {
-    "message": "Funciones"
-  },
   "pref_gloss_contract": {
     "message": "Un contrato"
   },
@@ -7680,6 +8249,9 @@
   "pref_group_basics_desc": {
     "message": "Idioma, moneda, cómo se escriben los números, el tema y el tamaño de todo: cambian todas las pantallas."
   },
+  "pref_group_basics_desc_phone": {
+    "message": "Idioma, moneda, cómo se escriben los números y el tema: cambian todas las pantallas."
+  },
   "pref_group_chart": {
     "message": "Gráfico"
   },
@@ -7692,11 +8264,8 @@
   "pref_group_data_desc": {
     "message": "Todo lo que este navegador guarda para PriceTab, en un archivo que puedes llevar a otro."
   },
-  "pref_group_features": {
-    "message": "Funciones"
-  },
-  "pref_group_features_desc": {
-    "message": "Lo que tiene esta pestaña. Lo que se apaga aquí no deja pestaña, tecla ni petición."
+  "pref_group_open_contract": {
+    "message": "El contrato abierto"
   },
   "pref_group_tab_tickers": {
     "message": "Pestaña y barras"
@@ -7718,6 +8287,9 @@
   },
   "pref_group_webapp": {
     "message": "Este teléfono"
+  },
+  "pref_group_webapp_desc_2": {
+    "message": "La app en el teléfono: el tamaño de todo, abrirla desde la pantalla de inicio, deslizar desde los lados, la pantalla encendida y dónde se abre."
   },
   "pref_language_aria": {
     "message": "Idioma"
@@ -7986,6 +8558,36 @@
   "pref_phone_nav_title": {
     "message": "Navegación"
   },
+  "pref_phone_tabs_add_aria": {
+    "message": "Poner en la barra"
+  },
+  "pref_phone_tabs_desc": {
+    "message": "Hasta $1 lugares en la barra, en tu orden. Más contiene todo lo demás."
+  },
+  "pref_phone_tabs_desc_off": {
+    "message": "La barra está desactivada (Moverse): lo que se ajuste aquí vuelve con ella."
+  },
+  "pref_phone_tabs_down": {
+    "message": "Mover $1 a la derecha"
+  },
+  "pref_phone_tabs_full": {
+    "message": "La barra admite $1: quita uno primero"
+  },
+  "pref_phone_tabs_heading": {
+    "message": "Barra de pestañas"
+  },
+  "pref_phone_tabs_keywords": {
+    "message": "barra pestañas abajo iconos orden ordenar más"
+  },
+  "pref_phone_tabs_remove": {
+    "message": "Quitar $1 de la barra"
+  },
+  "pref_phone_tabs_title": {
+    "message": "Barra de pestañas"
+  },
+  "pref_phone_tabs_up": {
+    "message": "Mover $1 a la izquierda"
+  },
   "pref_position_bottom": {
     "message": "Abajo"
   },
@@ -8016,11 +8618,32 @@
   "pref_practice_dock_heading": {
     "message": "Mostrar La Franja Del Contrato En El Gráfico"
   },
+  "pref_practice_dock_note2": {
+    "message": "Los niveles del contrato tienen su propio interruptor, más abajo: esto es el control que va encima."
+  },
   "pref_practice_dock_title": {
     "message": "Franja del contrato"
   },
+  "pref_practice_fill_desc": {
+    "message": "Recorre el botón de la orden con una barra de dos segundos antes de abrir o colocar nada — pulsar durante ese tiempo la detiene, como en cada pulsación de aquí que no se puede deshacer"
+  },
+  "pref_practice_fill_note": {
+    "message": "Activado por defecto: abrir un contrato es la única pulsación que compromete dinero a un precio, así que espera los mismos dos segundos que invertir o cerrar todo, y no necesita una segunda pulsación. Desactivado abre al pulsar, para repasar la aritmética con rapidez."
+  },
   "pref_practice_keywords": {
     "message": "mercado de derivados futuros perpetuos práctica barra gráfico confirmar orden contrato simulación"
+  },
+  "pref_practice_lines_aria": {
+    "message": "Alternar las líneas del contrato en el gráfico principal"
+  },
+  "pref_practice_lines_desc": {
+    "message": "La entrada con su resultado, el stop, el take-profit y la liquidación del contrato de la moneda que estás viendo. El gráfico de la propia página de derivados los dibuja en cualquier caso."
+  },
+  "pref_practice_lines_heading": {
+    "message": "Dibujar El Contrato Abierto En El Gráfico Principal"
+  },
+  "pref_practice_lines_title": {
+    "message": "Líneas del contrato en el gráfico principal"
   },
   "pref_quiet_chrome_aria": {
     "message": "Activar los controles discretos"
@@ -8198,6 +8821,9 @@
   },
   "pref_text_size_xl": {
     "message": "XL"
+  },
+  "pref_text_size_xs": {
+    "message": "XS"
   },
   "pref_theme_auto": {
     "message": "Automático"
@@ -10279,6 +10905,12 @@
   "tour_title_widgets": {
     "message": "Widgets"
   },
+  "view_auto": {
+    "message": "Auto"
+  },
+  "view_auto_title": {
+    "message": "Ajustar de nuevo la escala de precios a la línea (o haz doble clic en la escala de precios)"
+  },
   "view_label2": {
     "message": "Gráfico de precios. ← y → lo leen punto a punto, Inicio y Fin sus extremos; Mayús con ← y → se mueve en el tiempo; + y − hacen zoom; un doble clic muestra todo el rango."
   },
@@ -10381,11 +11013,17 @@
   "wdesc_etf_flows": {
     "message": "Lo que entró y salió de los ETF de bitcoin al contado de EE. UU. el último día hábil, y en una semana y un mes de días hábiles"
   },
+  "wdesc_eth_btc": {
+    "message": "Ether en bitcoin y cómo se movió en 24 horas"
+  },
   "wdesc_eth_gas": {
     "message": "Precio del gas ahora y lo que cuesta un envío simple de ETH"
   },
   "wdesc_fear_greed": {
     "message": "Puntuación del sentimiento del mercado, de 0 a 100"
+  },
+  "wdesc_funding_board": {
+    "message": "La financiación de todos los perpetuos que esta app grafica, en Bybit: cuántos pagan los largos o los cortos, el valor medio y los dos extremos"
   },
   "wdesc_funding_rate": {
     "message": "Lo que los largos pagan a los cortos en futuros perpetuos"
@@ -10399,6 +11037,9 @@
   "wdesc_long_short_ratio": {
     "message": "Cómo están posicionados los operadores ahora mismo"
   },
+  "wdesc_macro_calendar": {
+    "message": "Cuándo salen el próximo CPI, el informe de empleo, el comunicado de la Fed y el PCE: las publicaciones que marca el gráfico"
+  },
   "wdesc_market_overview": {
     "message": "Capitalización total y dominancia de BTC/ETH"
   },
@@ -10408,8 +11049,14 @@
   "wdesc_model_outlook": {
     "message": "La próxima hora completa de BTC-USD según un modelo: mediana, banda del 80 %, la probabilidad de un objetivo al cierre — y con qué frecuencia la banda acertó en la prueba"
   },
+  "wdesc_oi_leaders": {
+    "message": "Los perpetuos con más contratos abiertos en Bybit y el total"
+  },
   "wdesc_open_interest": {
     "message": "Valor de los contratos de futuros abiertos"
+  },
+  "wdesc_options": {
+    "message": "De las opciones de Bybit: el precio de ejercicio donde los titulares cobrarían menos en el próximo vencimiento, puts frente a calls y la volatilidad implícita ATM"
   },
   "wdesc_outlook": {
     "message": "Dónde aterrizan los propios pasos de este rango en los próximos horizontes — una banda contada, no una predicción"
@@ -10419,6 +11066,9 @@
   },
   "wdesc_rsi_widget": {
     "message": "Impulso en una escala de 0 a 100, sobre el rango que estás viendo"
+  },
+  "wdesc_stablecoins": {
+    "message": "El valor de mercado conjunto de las stablecoins en dólares y su peso en el mercado total"
   },
   "wdesc_top_movers": {
     "message": "Las mayores subidas y bajadas de hoy"
@@ -10586,6 +11236,9 @@
   "widget_etf_source": {
     "message": "vía TFTC · SoSoValue, Farside"
   },
+  "widget_eth_btc": {
+    "message": "ETH / BTC"
+  },
   "widget_eth_gas": {
     "message": "Gas de ETH"
   },
@@ -10603,6 +11256,15 @@
   },
   "widget_from_to": {
     "message": "de $1 a $2"
+  },
+  "widget_funding_board": {
+    "message": "Tablero de financiación"
+  },
+  "widget_funding_board_mid": {
+    "message": "mediana"
+  },
+  "widget_funding_board_pos": {
+    "message": "$1 de $2 positivas"
   },
   "widget_funding_rate": {
     "message": "Tasa de financiación $1"
@@ -10633,6 +11295,18 @@
   },
   "widget_long_short": {
     "message": "$1 Largos / cortos"
+  },
+  "widget_macro_calendar": {
+    "message": "Próximos datos de EE. UU."
+  },
+  "widget_macro_days": {
+    "message": "en $1 días"
+  },
+  "widget_macro_hours": {
+    "message": "en $1 h"
+  },
+  "widget_macro_none": {
+    "message": "No quedan en el calendario"
   },
   "widget_market_cap": {
     "message": "Capitalización"
@@ -10687,11 +11361,29 @@
   "widget_none": {
     "message": "Ninguna"
   },
+  "widget_oi_leaders": {
+    "message": "Interés abierto · Bybit"
+  },
   "widget_only_rose": {
     "message": "solo subió en este rango"
   },
   "widget_open_interest": {
     "message": "Interés abierto $1"
+  },
+  "widget_options": {
+    "message": "Opciones de $1"
+  },
+  "widget_options_iv": {
+    "message": "IV ATM"
+  },
+  "widget_options_other": {
+    "message": "Bybit lista opciones de BTC, ETH y SOL"
+  },
+  "widget_options_pain": {
+    "message": "max pain"
+  },
+  "widget_options_pc": {
+    "message": "P/C"
   },
   "widget_outlook": {
     "message": "$1 Perspectiva · $2"
@@ -10731,6 +11423,17 @@
   "widget_regime_now": {
     "message": "$1 · $2 d"
   },
+  "widget_regime_state_count": {
+    "message": "$1 de $2 días",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
   "widget_regimes": {
     "message": "$1 Regímenes · 20 d"
   },
@@ -10756,6 +11459,12 @@
   },
   "widget_size_small": {
     "message": "pequeño"
+  },
+  "widget_stablecoins": {
+    "message": "Stablecoins"
+  },
+  "widget_stablecoins_share": {
+    "message": "$1% del mercado"
   },
   "widget_top_movers": {
     "message": "Mayores movimientos 24 h"
@@ -10802,11 +11511,17 @@
   "wname_etf_flows": {
     "message": "Flujos ETF de BTC"
   },
+  "wname_eth_btc": {
+    "message": "ETH / BTC"
+  },
   "wname_eth_gas": {
     "message": "Gas de ETH"
   },
   "wname_fear_greed": {
     "message": "Miedo y codicia"
+  },
+  "wname_funding_board": {
+    "message": "Tablero de financiación"
   },
   "wname_funding_rate": {
     "message": "Tasa de financiación"
@@ -10820,6 +11535,9 @@
   "wname_long_short_ratio": {
     "message": "Ratio largos/cortos"
   },
+  "wname_macro_calendar": {
+    "message": "Próximos datos de EE. UU."
+  },
   "wname_market_overview": {
     "message": "Resumen del mercado"
   },
@@ -10829,8 +11547,14 @@
   "wname_model_outlook": {
     "message": "Próxima hora · modelo"
   },
+  "wname_oi_leaders": {
+    "message": "Líderes de interés abierto"
+  },
   "wname_open_interest": {
     "message": "Interés abierto"
+  },
+  "wname_options": {
+    "message": "Opciones"
   },
   "wname_outlook": {
     "message": "Perspectiva"
@@ -10840,6 +11564,9 @@
   },
   "wname_rsi_widget": {
     "message": "RSI"
+  },
+  "wname_stablecoins": {
+    "message": "Stablecoins"
   },
   "wname_top_movers": {
     "message": "Mayores movimientos"
@@ -10861,529 +11588,5 @@
   },
   "wsize_xlarge": {
     "message": "Muy grande"
-  },
-  "pos_confirm_placing": {
-    "message": "Colocando — pulsa para detener"
-  },
-  "pos_confirm_long": {
-    "message": "Abriendo largo en $1 — pulsa para detener"
-  },
-  "pos_confirm_short": {
-    "message": "Abriendo corto en $1 — pulsa para detener"
-  },
-  "pos_reverse_running": {
-    "message": "Invirtiendo — pulsa para detener"
-  },
-  "pos_cancel_all_running": {
-    "message": "Cancelando $1 — pulsa para detener"
-  },
-  "pp_close_all_running": {
-    "message": "Cerrando $1 — pulsa para detener"
-  },
-  "pp_open_moment_fill": {
-    "message": "$1 abierto a $2"
-  },
-  "pp_open_moment_size": {
-    "message": "$1 · margen $2"
-  },
-  "dock_closing_aria": {
-    "message": "Cerrando $1 — pulsa para detener"
-  },
-  "dock_stop": {
-    "message": "Detener"
-  },
-  "pref_practice_fill_desc": {
-    "message": "Recorre el botón de la orden con una barra de dos segundos antes de abrir o colocar nada — pulsar durante ese tiempo la detiene, como en cada pulsación de aquí que no se puede deshacer"
-  },
-  "pref_practice_fill_note": {
-    "message": "Activado por defecto: abrir un contrato es la única pulsación que compromete dinero a un precio, así que espera los mismos dos segundos que invertir o cerrar todo, y no necesita una segunda pulsación. Desactivado abre al pulsar, para repasar la aritmética con rapidez."
-  },
-  "view_auto": {
-    "message": "Auto"
-  },
-  "view_auto_title": {
-    "message": "Ajustar de nuevo la escala de precios a la línea (o haz doble clic en la escala de precios)"
-  },
-  "mon_col_beta": {
-    "message": "β BTC"
-  },
-  "mon_col_beta_title": {
-    "message": "Cuánto se movió por cada 1 % que se movió Bitcoin, en los mismos 30 días: la pendiente de sus movimientos sobre los de Bitcoin. Describe estos 30 días, nunca lo que viene"
-  },
-  "mon_col_changes_title": {
-    "message": "Cuánto se movió el precio en el último día, semana y mes"
-  },
-  "mon_col_spark": {
-    "message": "30 días"
-  },
-  "mon_col_spark_title": {
-    "message": "Los últimos 30 días, de menor a mayor: ordenados por dónde queda el precio entre ellos"
-  },
-  "mon_fact_median": {
-    "message": "La moneda mediana en 30 días"
-  },
-  "mon_fact_mover": {
-    "message": "Más se movió en 30 días"
-  },
-  "mon_fact_sort": {
-    "message": "Ordenar la tabla por esto"
-  },
-  "mon_fact_up": {
-    "message": "Al alza en las últimas 24 horas"
-  },
-  "mon_fact_widest": {
-    "message": "Día típico más amplio"
-  },
-  "mon_legend": {
-    "message": "Qué significan las columnas"
-  },
-  "mon_market_down": {
-    "message": "Más a la baja en 24 horas"
-  },
-  "mon_market_label": {
-    "message": "Las $1 primeras monedas por valor de mercado, cada una con tamaño según él y sombreada según sus últimas 24 horas"
-  },
-  "mon_market_loading": {
-    "message": "Leyendo el mercado…"
-  },
-  "mon_market_note": {
-    "message": "Las $1 primeras de Coinlore por valor de mercado a $2, la misma instantánea que lee la barra de precios: una petición por minuto mientras esta pestaña está abierta. El tamaño de una casilla es su valor de mercado y su sombreado, sus últimas 24 horas. Una moneda que el gráfico puede dibujar se abre en él."
-  },
-  "mon_market_up": {
-    "message": "Más al alza en 24 horas"
-  },
-  "mon_market_value": {
-    "message": "valor de mercado $1"
-  },
-  "mon_race_aria": {
-    "message": "El cambio porcentual de cada moneda en los últimos 30 días: $1"
-  },
-  "mon_race_head": {
-    "message": "Los últimos 30 días, uno junto a otro · desde el inicio de cada moneda"
-  },
-  "mon_race_spread": {
-    "message": "$1 delante, $2 detrás · $3 puntos de diferencia"
-  },
-  "mon_range_at": {
-    "message": "$1 % del camino del mínimo de 30 días al máximo"
-  },
-  "mon_tab_market": {
-    "message": "Mercado"
-  },
-  "news_pulse_aria": {
-    "message": "Noticias por hora en las últimas 24 horas; la hora más activa, desde las $1, tuvo $2"
-  },
-  "news_pulse_bar": {
-    "message": "$1 · $2 noticias"
-  },
-  "news_pulse_from": {
-    "message": "hace 24 h"
-  },
-  "news_pulse_head": {
-    "message": "Las últimas 24 horas · $1 noticias"
-  },
-  "news_pulse_now": {
-    "message": "ahora"
-  },
-  "news_pulse_peak": {
-    "message": "más activa: $1 · $2"
-  },
-  "po_allocation": {
-    "message": "Distribución"
-  },
-  "pos_cn_all": {
-    "message": "De la apertura al cierre"
-  },
-  "pos_cn_all_d": {
-    "message": "todo lo que este contrato ganó y pagó"
-  },
-  "pos_cn_back": {
-    "message": "$1 de los $2 de margen · vuelven $3 · saldo $4"
-  },
-  "pos_cn_fee": {
-    "message": "Comisión por cerrar"
-  },
-  "pos_cn_head": {
-    "message": "Si lo cierras todo ahora"
-  },
-  "pos_cn_move": {
-    "message": "Movimiento del precio"
-  },
-  "pos_cn_move_d": {
-    "message": "$1 → $2, el precio al que se ejecuta un cierre"
-  },
-  "pos_cn_paid": {
-    "message": "Pagado al entrar"
-  },
-  "pos_cn_paid_d": {
-    "message": "la comisión de apertura y la financiación hasta ahora"
-  },
-  "pos_cn_total": {
-    "message": "Este cierre"
-  },
-  "pos_cn_why": {
-    "message": "El $1 de la fila es el contrato valorado a la marca, $2. Un cierre se ejecuta a $3 —el último precio, cruzando el diferencial— y paga la comisión, así que lo que ingresa es la línea de arriba."
-  },
-  "pp_at_many": {
-    "message": "$1 contratos"
-  },
-  "pp_at_mine": {
-    "message": "tu posición aquí ($1): $2"
-  },
-  "pp_at_one": {
-    "message": "contrato"
-  },
-  "pp_at_price": {
-    "message": "En $1 · $2 desde ahora"
-  },
-  "pp_zoom_reset_title": {
-    "message": "Mostrar de nuevo todo el rango"
-  },
-  "pos_details_less": {
-    "message": "Menos detalles"
-  },
-  "pos_details_more": {
-    "message": "Detalles: configuración, margen, comisiones, liquidación"
-  },
-  "pp_read_less": {
-    "message": "Menos"
-  },
-  "pp_read_more": {
-    "message": "Más"
-  },
-  "pos_means_away": {
-    "message": "$1 desde la entrada"
-  },
-  "pos_means_liq": {
-    "message": "Liquidada en"
-  },
-  "pos_means_no_stop": {
-    "message": "Sin stop"
-  },
-  "pos_means_no_stop_note": {
-    "message": "el mercado decide la pérdida"
-  },
-  "pos_means_no_take": {
-    "message": "Sin take-profit"
-  },
-  "pos_means_of_account": {
-    "message": "$1 de la cuenta"
-  },
-  "pos_means_stop": {
-    "message": "Si se activa el stop"
-  },
-  "pos_means_take": {
-    "message": "Si se activa el take-profit"
-  },
-  "pp_guide": {
-    "message": "Guía"
-  },
-  "pp_guide_all": {
-    "message": "El asistente"
-  },
-  "pp_guide_aria": {
-    "message": "La guía — lo que marca el gráfico, numerado"
-  },
-  "pp_guide_chip_title": {
-    "message": "Apunta para verlo en el gráfico; pulsa para mantenerlo ahí"
-  },
-  "pp_guide_close": {
-    "message": "Cerrar la guía"
-  },
-  "pp_guide_drag_sl": {
-    "message": "arrastra + SL en el gráfico"
-  },
-  "pp_guide_drag_tp": {
-    "message": "arrastra + TP en el gráfico"
-  },
-  "pp_guide_in_panel": {
-    "message": "Abrir en el panel"
-  },
-  "pp_guide_more": {
-    "message": "+$1 · el asistente"
-  },
-  "pp_guide_pop_aria": {
-    "message": "La guía — cada punto, numerado como en el gráfico"
-  },
-  "pp_guide_pop_head": {
-    "message": "Guía · $1",
-    "placeholders": {
-      "arg1": {
-        "content": "$1"
-      }
-    }
-  },
-  "pp_layer_book": {
-    "message": "Los mayores niveles del libro"
-  },
-  "pp_layer_clock": {
-    "message": "Próxima financiación"
-  },
-  "pp_layer_contracts": {
-    "message": "Contratos y órdenes"
-  },
-  "pp_layer_fan": {
-    "message": "Futuros repetidos"
-  },
-  "pp_layer_guide": {
-    "message": "Los números de la guía"
-  },
-  "pp_layer_location": {
-    "message": "Volumen por precio"
-  },
-  "pp_layer_plan": {
-    "message": "La orden que estás escribiendo"
-  },
-  "pp_settings_layers": {
-    "message": "En el gráfico"
-  },
-  "pp_settings_sizes": {
-    "message": "Ancho del ticket $1 · altura del panel $2"
-  },
-  "pp_settings_sizes_note": {
-    "message": "Arrastra la unión junto al ticket, o la de debajo del gráfico, para cambiar su tamaño, o enfoca una con Tab y usa las flechas. Un doble clic en una unión devuelve el valor predeterminado. Los tamaños se guardan en este dispositivo; en una ventana de menos de 1280 píxeles la página tiene una sola columna y los tamaños esperan."
-  },
-  "pp_trade_add_sl": {
-    "message": "+ SL"
-  },
-  "pp_trade_add_tp": {
-    "message": "+ TP"
-  },
-  "pp_trade_be": {
-    "message": "equilibrio"
-  },
-  "pp_trade_buy": {
-    "message": "Compra"
-  },
-  "pp_trade_entry": {
-    "message": "$1 $2x #$3 · $4"
-  },
-  "pp_trade_fan": {
-    "message": "próximos $1 · $2 repeticiones · 5–95%"
-  },
-  "pp_trade_first": {
-    "message": "primero en $1"
-  },
-  "pp_trade_funding": {
-    "message": "financiación $1"
-  },
-  "pp_trade_market": {
-    "message": "mercado"
-  },
-  "pp_trade_move_to": {
-    "message": "mover a"
-  },
-  "pp_trade_of_account": {
-    "message": "$1 de la cuenta"
-  },
-  "pp_trade_plan": {
-    "message": "Plan · $1 $2x · $3 $4"
-  },
-  "pp_trade_reach": {
-    "message": "$1 de $2 pasos llegaron tan lejos"
-  },
-  "pp_trade_sell": {
-    "message": "Venta"
-  },
-  "pp_trade_trail": {
-    "message": "dinámico"
-  },
-  "pref_practice_dock_note2": {
-    "message": "Los niveles del contrato tienen su propio interruptor, más abajo: esto es el control que va encima."
-  },
-  "pref_practice_lines_aria": {
-    "message": "Alternar las líneas del contrato en el gráfico principal"
-  },
-  "pref_practice_lines_desc": {
-    "message": "La entrada con su resultado, el stop, el take-profit y la liquidación del contrato de la moneda que estás viendo. El gráfico de la propia página de derivados los dibuja en cualquier caso."
-  },
-  "pref_practice_lines_heading": {
-    "message": "Dibujar El Contrato Abierto En El Gráfico Principal"
-  },
-  "pref_practice_lines_title": {
-    "message": "Líneas del contrato en el gráfico principal"
-  },
-  "pos_means_rr2": {
-    "message": "riesgo : ganancia 1 : $1"
-  },
-  "pp_legend_candles": {
-    "message": "velas de $1 · OKX"
-  },
-  "pp_legend_line": {
-    "message": "cierres de $1 · OKX"
-  },
-  "pp_legend_volume": {
-    "message": "volumen en $1 abajo"
-  },
-  "pp_layer_liquidations": {
-    "message": "Liquidaciones · OKX"
-  },
-  "pp_legend_hand": {
-    "message": "haz clic en un precio para un límite, arrastra una línea para moverla"
-  },
-  "pp_trade_liq_print": {
-    "message": "$1 liquidado · $2 · OKX · $3"
-  },
-  "pp_trade_pdh": {
-    "message": "máx. de ayer"
-  },
-  "pp_trade_pdl": {
-    "message": "mín. de ayer"
-  },
-  "pp_trade_plan_market": {
-    "message": "Plan · $1 $2x · $3"
-  },
-  "pos_kind_more": {
-    "message": "Otros tipos de orden"
-  },
-  "pos_lev_size_cap": {
-    "message": "hasta $1x con este tamaño"
-  },
-  "pos_levels_drag": {
-    "message": "O arrastra + SL y + TP en el gráfico."
-  },
-  "pp_settings_main_chart": {
-    "message": "En el gráfico principal"
-  },
-  "pref_group_open_contract": {
-    "message": "El contrato abierto"
-  },
-  "pp_layout": {
-    "message": "Disposición"
-  },
-  "pp_layout_simple": {
-    "message": "Simple"
-  },
-  "pp_layout_terminal": {
-    "message": "Terminal"
-  },
-  "pp_layout_simple_title": {
-    "message": "El ticket a la izquierda, el gráfico a la derecha, el libro a un clic en Más"
-  },
-  "pp_layout_terminal_title": {
-    "message": "El gráfico, el libro y el ticket lado a lado, lo abierto bajo el gráfico y el libro"
-  },
-  "pref_group_basics_desc_phone": {
-    "message": "Idioma, moneda, cómo se escriben los números y el tema: cambian todas las pantallas."
-  },
-  "pref_group_webapp_desc_2": {
-    "message": "La app en el teléfono: el tamaño de todo, abrirla desde la pantalla de inicio, deslizar desde los lados, la pantalla encendida y dónde se abre."
-  },
-  "pref_phone_tabs_add_aria": {
-    "message": "Poner en la barra"
-  },
-  "pref_phone_tabs_desc": {
-    "message": "Hasta $1 lugares en la barra, en tu orden. Más contiene todo lo demás."
-  },
-  "pref_phone_tabs_desc_off": {
-    "message": "La barra está desactivada (Moverse): lo que se ajuste aquí vuelve con ella."
-  },
-  "pref_phone_tabs_down": {
-    "message": "Mover $1 a la derecha"
-  },
-  "pref_phone_tabs_full": {
-    "message": "La barra admite $1: quita uno primero"
-  },
-  "pref_phone_tabs_heading": {
-    "message": "Barra de pestañas"
-  },
-  "pref_phone_tabs_keywords": {
-    "message": "barra pestañas abajo iconos orden ordenar más"
-  },
-  "pref_phone_tabs_remove": {
-    "message": "Quitar $1 de la barra"
-  },
-  "pref_phone_tabs_title": {
-    "message": "Barra de pestañas"
-  },
-  "pref_phone_tabs_up": {
-    "message": "Mover $1 a la izquierda"
-  },
-  "pref_text_size_xs": {
-    "message": "XS"
-  },
-  "wdesc_eth_btc": {
-    "message": "Ether en bitcoin y cómo se movió en 24 horas"
-  },
-  "wdesc_funding_board": {
-    "message": "La financiación de todos los perpetuos que esta app grafica, en Bybit: cuántos pagan los largos o los cortos, el valor medio y los dos extremos"
-  },
-  "wdesc_macro_calendar": {
-    "message": "Cuándo salen el próximo CPI, el informe de empleo, el comunicado de la Fed y el PCE: las publicaciones que marca el gráfico"
-  },
-  "wdesc_oi_leaders": {
-    "message": "Los perpetuos con más contratos abiertos en Bybit y el total"
-  },
-  "wdesc_options": {
-    "message": "De las opciones de Bybit: el precio de ejercicio donde los titulares cobrarían menos en el próximo vencimiento, puts frente a calls y la volatilidad implícita ATM"
-  },
-  "wdesc_stablecoins": {
-    "message": "El valor de mercado conjunto de las stablecoins en dólares y su peso en el mercado total"
-  },
-  "widget_eth_btc": {
-    "message": "ETH / BTC"
-  },
-  "widget_funding_board": {
-    "message": "Tablero de financiación"
-  },
-  "widget_funding_board_mid": {
-    "message": "mediana"
-  },
-  "widget_funding_board_pos": {
-    "message": "$1 de $2 positivas"
-  },
-  "widget_macro_calendar": {
-    "message": "Próximos datos de EE. UU."
-  },
-  "widget_macro_days": {
-    "message": "en $1 días"
-  },
-  "widget_macro_hours": {
-    "message": "en $1 h"
-  },
-  "widget_macro_none": {
-    "message": "No quedan en el calendario"
-  },
-  "widget_oi_leaders": {
-    "message": "Interés abierto · Bybit"
-  },
-  "widget_options": {
-    "message": "Opciones de $1"
-  },
-  "widget_options_iv": {
-    "message": "IV ATM"
-  },
-  "widget_options_other": {
-    "message": "Bybit lista opciones de BTC, ETH y SOL"
-  },
-  "widget_options_pain": {
-    "message": "max pain"
-  },
-  "widget_options_pc": {
-    "message": "P/C"
-  },
-  "widget_stablecoins": {
-    "message": "Stablecoins"
-  },
-  "widget_stablecoins_share": {
-    "message": "$1% del mercado"
-  },
-  "wname_eth_btc": {
-    "message": "ETH / BTC"
-  },
-  "wname_funding_board": {
-    "message": "Tablero de financiación"
-  },
-  "wname_macro_calendar": {
-    "message": "Próximos datos de EE. UU."
-  },
-  "wname_oi_leaders": {
-    "message": "Líderes de interés abierto"
-  },
-  "wname_options": {
-    "message": "Opciones"
-  },
-  "wname_stablecoins": {
-    "message": "Stablecoins"
   }
 }

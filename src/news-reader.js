@@ -70,7 +70,9 @@ const newsReadAccess = (url, granted) => {
   const source = NEWS_SOURCES.find((s) => s.id === rule.source);
   if (!source) return { state: "no" };
   if (!source.optional) return { state: "free", rule, source };
-  return (granted || []).includes(source.id) ? { state: "granted", rule, source } : { state: "ask", rule, source };
+  return (granted || []).includes(source.id)
+    ? { state: "granted", rule, source }
+    : { state: "ask", rule, source };
 };
 
 /* ── extraction ── */
@@ -83,26 +85,43 @@ const NEWS_READ_DROP =
   "[aria-hidden='true'], [hidden]";
 
 // Lines that are the page talking about itself, not the story
-const NEWS_READ_BOILER = /^(read more|related|also read|subscribe|sign up|follow us|disclaimer|this article|editor'?s note|image:|photo:|source:|share this|advertisement|sponsored)\b/i;
+const NEWS_READ_BOILER =
+  /^(read more|related|also read|subscribe|sign up|follow us|disclaimer|this article|editor'?s note|image:|photo:|source:|share this|advertisement|sponsored)\b/i;
 
 // A teaser's own timestamp — "… 4 hours ago" — ends a link to another story
 const NEWS_READ_AGO = /\d+\s?(?:minutes?|hours?|days?)\s+ago$/i;
 
-const newsReadClean = (s) => String(s || "").replace(/\s+/g, " ").trim();
+const newsReadClean = (s) =>
+  String(s || "")
+    .replace(/\s+/g, " ")
+    .trim();
 
 /* The article's body as paragraphs, from an HTML string. JSON-LD's
    `articleBody` first where a page carries one; otherwise the container with
    the most paragraph text, stripped of everything that is not the story. */
 const newsReadParagraphs = (html) => {
-  if (typeof DOMParser === "undefined" || typeof html !== "string" || !html) return [];
+  if (typeof DOMParser === "undefined" || typeof html !== "string" || !html)
+    return [];
   const doc = new DOMParser().parseFromString(html, "text/html");
-  for (const node of doc.querySelectorAll("script[type='application/ld+json']")) {
+  for (const node of doc.querySelectorAll(
+    "script[type='application/ld+json']",
+  )) {
     try {
       const data = JSON.parse(node.textContent || "");
-      const list = Array.isArray(data) ? data : data && Array.isArray(data["@graph"]) ? data["@graph"] : [data];
-      const art = list.find((d) => d && typeof d.articleBody === "string" && d.articleBody.length > 200);
+      const list = Array.isArray(data)
+        ? data
+        : data && Array.isArray(data["@graph"])
+          ? data["@graph"]
+          : [data];
+      const art = list.find(
+        (d) =>
+          d && typeof d.articleBody === "string" && d.articleBody.length > 200,
+      );
       if (art) {
-        const parts = art.articleBody.split(/\n+/).map(newsReadClean).filter((p) => p.length >= NEWS_READ_MIN_PARAGRAPH);
+        const parts = art.articleBody
+          .split(/\n+/)
+          .map(newsReadClean)
+          .filter((p) => p.length >= NEWS_READ_MIN_PARAGRAPH);
         if (parts.length) return parts;
       }
     } catch (e) {
@@ -110,8 +129,16 @@ const newsReadParagraphs = (html) => {
     }
   }
   doc.querySelectorAll(NEWS_READ_DROP).forEach((n) => n.remove());
-  const textOf = (root) => [...root.querySelectorAll("p")].reduce((s, p) => s + newsReadClean(p.textContent).length, 0);
-  const candidates = [...doc.querySelectorAll("article, [itemprop='articleBody'], main, [class*='article'], [class*='post-content'], [class*='entry-content']")];
+  const textOf = (root) =>
+    [...root.querySelectorAll("p")].reduce(
+      (s, p) => s + newsReadClean(p.textContent).length,
+      0,
+    );
+  const candidates = [
+    ...doc.querySelectorAll(
+      "article, [itemprop='articleBody'], main, [class*='article'], [class*='post-content'], [class*='entry-content']",
+    ),
+  ];
   let root = doc.body;
   let best = 0;
   for (const c of candidates) {
@@ -128,17 +155,23 @@ const newsReadParagraphs = (html) => {
     if (p.tagName === "LI" && p.querySelector("p")) continue;
     const text = newsReadClean(p.textContent);
     const isHead = p.tagName === "H2" || p.tagName === "H3";
-    if (isHead ? text.length < 12 : text.length < NEWS_READ_MIN_PARAGRAPH) continue;
+    if (isHead ? text.length < 12 : text.length < NEWS_READ_MIN_PARAGRAPH)
+      continue;
     if (NEWS_READ_BOILER.test(text) || NEWS_READ_AGO.test(text)) continue;
     // Mostly link text is a list of other stories (measured: CoinDesk's
     // trending column, Cointelegraph's "Magazine:" teaser at the foot)
-    const linked = [...p.querySelectorAll("a")].reduce((n, a) => n + newsReadClean(a.textContent).length, 0);
+    const linked = [...p.querySelectorAll("a")].reduce(
+      (n, a) => n + newsReadClean(a.textContent).length,
+      0,
+    );
     if (linked > text.length * 0.5) continue;
     if (out.length && out[out.length - 1].text === text) continue;
     out.push({ text, head: isHead });
   }
   // A heading with no paragraph after it is page furniture
-  return out.filter((p, i) => !p.head || (out[i + 1] && !out[i + 1].head)).map((p) => (p.head ? `§ ${p.text}` : p.text));
+  return out
+    .filter((p, i) => !p.head || (out[i + 1] && !out[i + 1].head))
+    .map((p) => (p.head ? `§ ${p.text}` : p.text));
 };
 
 /* What is shown: the opening paragraphs up to a measure, and the whole
@@ -147,7 +180,11 @@ const newsReadExcerpt = (paragraphs) => {
   const shown = [];
   let chars = 0;
   for (const p of paragraphs) {
-    if (shown.length >= NEWS_READ_PARAGRAPHS || (shown.length && chars + p.length > NEWS_READ_CHARS)) break;
+    if (
+      shown.length >= NEWS_READ_PARAGRAPHS ||
+      (shown.length && chars + p.length > NEWS_READ_CHARS)
+    )
+      break;
     shown.push(p);
     chars += p.length;
   }
@@ -160,22 +197,36 @@ const newsReadExcerpt = (paragraphs) => {
 const newsReadCache = new Map();
 
 const newsReadFetch = async (url, rule) => {
-  const ctrl = typeof AbortController !== "undefined" ? new AbortController() : null;
-  const timer = ctrl ? setTimeout(() => ctrl.abort(), NEWS_READ_TIMEOUT_MS) : null;
+  const ctrl =
+    typeof AbortController !== "undefined" ? new AbortController() : null;
+  const timer = ctrl
+    ? setTimeout(() => ctrl.abort(), NEWS_READ_TIMEOUT_MS)
+    : null;
   try {
     if (rule.via === "wp") {
       const u = new URL(url);
       const slug = u.pathname.split("/").filter(Boolean).pop() || "";
       if (!/^[a-z0-9%-]+$/i.test(slug)) return null;
       const api = `https://${u.host}/wp-json/wp/v2/posts?slug=${encodeURIComponent(slug)}&_fields=content${rule.lang ? `&lang=${rule.lang}` : ""}`;
-      const res = await politeFetch(api, ctrl ? { signal: ctrl.signal } : undefined);
+      const res = await politeFetch(
+        api,
+        ctrl ? { signal: ctrl.signal } : undefined,
+      );
       if (!res.ok) return null;
       const posts = await res.json();
       const post = Array.isArray(posts) ? posts[0] : null;
-      const html = post && post.content && typeof post.content.rendered === "string" ? post.content.rendered : "";
+      const html =
+        post && post.content && typeof post.content.rendered === "string"
+          ? post.content.rendered
+          : "";
       return html ? `<article>${html}</article>` : null;
     }
-    const res = await politeFetch(url, ctrl ? { signal: ctrl.signal, credentials: "omit" } : { credentials: "omit" });
+    const res = await politeFetch(
+      url,
+      ctrl
+        ? { signal: ctrl.signal, credentials: "omit" }
+        : { credentials: "omit" },
+    );
     if (!res.ok) return null;
     return await res.text();
   } finally {
@@ -196,14 +247,17 @@ const fetchNewsArticle = async (item, granted) => {
   try {
     const html = await newsReadFetch(url, access.rule);
     const paragraphs = newsReadParagraphs(html);
-    answer = paragraphs.length ? { state: "read", paragraphs, ...newsReadExcerpt(paragraphs) } : { state: "failed" };
+    answer = paragraphs.length
+      ? { state: "read", paragraphs, ...newsReadExcerpt(paragraphs) }
+      : { state: "failed" };
   } catch (e) {
     answer = { state: "failed", cooling: e && e.cooling };
   }
   // A failure is not kept: the next click may well succeed
   if (answer.state === "read") {
     newsReadCache.set(url, answer);
-    while (newsReadCache.size > NEWS_READ_KEEP) newsReadCache.delete(newsReadCache.keys().next().value);
+    while (newsReadCache.size > NEWS_READ_KEEP)
+      newsReadCache.delete(newsReadCache.keys().next().value);
   }
   return answer;
 };
@@ -213,14 +267,158 @@ const fetchNewsArticle = async (item, granted) => {
 /* What a story is about, by its own vocabulary. Each kind names the words
    that put it there, so the label can be checked against the text. */
 const NEWS_READ_KINDS = [
-  ["regulation", ["sec", "cftc", "regulator", "regulators", "regulatory", "regulation", "law", "lawmakers", "bill", "senate", "congress", "court", "judge", "lawsuit", "compliance", "license", "licence", "mica", "treasury", "legislation", "ban", "enforcement"]],
-  ["funds", ["etf", "etfs", "inflows", "outflows", "spot etf", "blackrock", "fidelity", "grayscale", "aum", "treasury company"]],
-  ["security", ["hack", "hacked", "exploit", "exploited", "stolen", "breach", "drained", "attacker", "attackers", "phishing", "scam", "vulnerability", "malware", "theft"]],
-  ["macro", ["fed", "rates", "rate cut", "inflation", "cpi", "dollar", "yields", "jobs", "recession", "tariff", "tariffs", "powell", "economy", "gdp"]],
-  ["technology", ["upgrade", "fork", "mainnet", "testnet", "protocol", "developers", "layer", "rollup", "validator", "validators", "smart contract", "node", "nodes", "client", "eip"]],
-  ["markets", ["price", "rally", "traders", "trading", "futures", "liquidations", "open interest", "funding rate", "volatility", "resistance", "support level", "sell-off", "selloff", "options", "leverage"]],
-  ["business", ["partnership", "acquires", "acquisition", "launch", "launches", "payments", "bank", "banks", "company", "firm", "startup", "raises", "funding round", "valuation", "listing"]],
-  ["mining", ["miners", "mining", "hashrate", "hash rate", "difficulty", "halving", "block reward"]],
+  [
+    "regulation",
+    [
+      "sec",
+      "cftc",
+      "regulator",
+      "regulators",
+      "regulatory",
+      "regulation",
+      "law",
+      "lawmakers",
+      "bill",
+      "senate",
+      "congress",
+      "court",
+      "judge",
+      "lawsuit",
+      "compliance",
+      "license",
+      "licence",
+      "mica",
+      "treasury",
+      "legislation",
+      "ban",
+      "enforcement",
+    ],
+  ],
+  [
+    "funds",
+    [
+      "etf",
+      "etfs",
+      "inflows",
+      "outflows",
+      "spot etf",
+      "blackrock",
+      "fidelity",
+      "grayscale",
+      "aum",
+      "treasury company",
+    ],
+  ],
+  [
+    "security",
+    [
+      "hack",
+      "hacked",
+      "exploit",
+      "exploited",
+      "stolen",
+      "breach",
+      "drained",
+      "attacker",
+      "attackers",
+      "phishing",
+      "scam",
+      "vulnerability",
+      "malware",
+      "theft",
+    ],
+  ],
+  [
+    "macro",
+    [
+      "fed",
+      "rates",
+      "rate cut",
+      "inflation",
+      "cpi",
+      "dollar",
+      "yields",
+      "jobs",
+      "recession",
+      "tariff",
+      "tariffs",
+      "powell",
+      "economy",
+      "gdp",
+    ],
+  ],
+  [
+    "technology",
+    [
+      "upgrade",
+      "fork",
+      "mainnet",
+      "testnet",
+      "protocol",
+      "developers",
+      "layer",
+      "rollup",
+      "validator",
+      "validators",
+      "smart contract",
+      "node",
+      "nodes",
+      "client",
+      "eip",
+    ],
+  ],
+  [
+    "markets",
+    [
+      "price",
+      "rally",
+      "traders",
+      "trading",
+      "futures",
+      "liquidations",
+      "open interest",
+      "funding rate",
+      "volatility",
+      "resistance",
+      "support level",
+      "sell-off",
+      "selloff",
+      "options",
+      "leverage",
+    ],
+  ],
+  [
+    "business",
+    [
+      "partnership",
+      "acquires",
+      "acquisition",
+      "launch",
+      "launches",
+      "payments",
+      "bank",
+      "banks",
+      "company",
+      "firm",
+      "startup",
+      "raises",
+      "funding round",
+      "valuation",
+      "listing",
+    ],
+  ],
+  [
+    "mining",
+    [
+      "miners",
+      "mining",
+      "hashrate",
+      "hash rate",
+      "difficulty",
+      "halving",
+      "block reward",
+    ],
+  ],
 ];
 
 const NEWS_READ_STOP = new Set(
@@ -238,7 +436,10 @@ const newsReadWords = (text) =>
     .filter(Boolean);
 
 const newsReadCount = (text, phrase) => {
-  const re = new RegExp(`(^|[^a-z0-9])${phrase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?=[^a-z0-9]|$)`, "g");
+  const re = new RegExp(
+    `(^|[^a-z0-9])${phrase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?=[^a-z0-9]|$)`,
+    "g",
+  );
   return (String(text).toLowerCase().match(re) || []).length;
 };
 
@@ -247,19 +448,52 @@ const newsReadCount = (text, phrase) => {
 const newsReadKinds = (text, full) => {
   const lower = String(text || "").toLowerCase();
   const scored = NEWS_READ_KINDS.map(([kind, words]) => {
-    const hits = words.map((w) => [w, newsReadCount(lower, w)]).filter(([, n]) => n > 0);
-    return { kind, n: hits.reduce((s, [, k]) => s + k, 0), words: hits.sort((a, b) => b[1] - a[1]).slice(0, 4).map(([w]) => w) };
+    const hits = words
+      .map((w) => [w, newsReadCount(lower, w)])
+      .filter(([, n]) => n > 0);
+    return {
+      kind,
+      n: hits.reduce((s, [, k]) => s + k, 0),
+      words: hits
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 4)
+        .map(([w]) => w),
+    };
   }).filter((k) => k.n >= (full ? 3 : 2));
   scored.sort((a, b) => b.n - a.n);
   return scored.slice(0, 2);
 };
+
+/* A feed-level summary: the count of distinct themes across the rows shown,
+   based on the same words used above, so the panel can say what a feed is
+   mostly about without turning it into a claim about the price. */
+const newsThemeSummary = (items) => {
+  const tally = new Map();
+  for (const item of Array.isArray(items) ? items : []) {
+    const text =
+      `${item && item.title ? item.title : ""} ${item && item.summary ? item.summary : ""}`.trim();
+    if (!text) continue;
+    const kinds = newsReadKinds(text, false);
+    for (const kind of kinds) {
+      tally.set(kind.kind, (tally.get(kind.kind) || 0) + 1);
+    }
+  }
+  return [...tally.entries()]
+    .map(([kind, count]) => ({ kind, count }))
+    .sort((a, b) => b.count - a.count || a.kind.localeCompare(b.kind));
+};
+
+if (typeof globalThis !== "undefined")
+  globalThis.newsThemeSummary = newsThemeSummary;
 
 // The coins it names, counted the way a row decides "about BTC"
 const newsReadCoins = (text, coins) => {
   const out = [];
   const lower = String(text || "").toLowerCase();
   for (const coin of coins || []) {
-    const name = String((typeof COIN_NAMES !== "undefined" && COIN_NAMES[coin]) || "").toLowerCase();
+    const name = String(
+      (typeof COIN_NAMES !== "undefined" && COIN_NAMES[coin]) || "",
+    ).toLowerCase();
     let n = (String(text).match(new RegExp(`\\b${coin}\\b`, "g")) || []).length;
     if (name.length > 2) n += newsReadCount(lower, name);
     if (n > 0) out.push({ coin, n });
@@ -269,7 +503,8 @@ const newsReadCoins = (text, coins) => {
 
 // The figures it cites, in the order it cites them: money, percentages, sizes
 const newsReadFigures = (text) => {
-  const re = /(?:[$€£]\s?\d[\d,.]*(?:\s?(?:billion|million|trillion|thousand|bn|m|k|b)\b)?|\b\d[\d,.]*\s?%|\b\d[\d,.]*\s(?:billion|million|trillion)\b)/gi;
+  const re =
+    /(?:[$€£]\s?\d[\d,.]*(?:\s?(?:billion|million|trillion|thousand|bn|m|k|b)\b)?|\b\d[\d,.]*\s?%|\b\d[\d,.]*\s(?:billion|million|trillion)\b)/gi;
   const seen = [];
   for (const m of String(text || "").match(re) || []) {
     const f = m.replace(/\s+/g, " ").replace(/[.,]$/, "").trim();
@@ -282,11 +517,13 @@ const newsReadFigures = (text) => {
 /* A paragraph's sentences: an end mark, a space, then a capital or a quote —
    so "$3.8 million" and "Sept. 24" stay whole — with a piece ending in an
    abbreviation joined to the next ("U.S. Treasury"). */
-const NEWS_READ_ABBR = /(?:^|\s)(?:[A-Z]|U\.S|U\.K|Mr|Ms|Mrs|Dr|St|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sept?|Oct|Nov|Dec|Inc|Corp|Co|Ltd|vs|No|Gov|Sen|Rep)\.$/;
+const NEWS_READ_ABBR =
+  /(?:^|\s)(?:[A-Z]|U\.S|U\.K|Mr|Ms|Mrs|Dr|St|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sept?|Oct|Nov|Dec|Inc|Corp|Co|Ltd|vs|No|Gov|Sen|Rep)\.$/;
 const newsReadSentences = (p) => {
   const out = [];
   for (const piece of String(p).split(/(?<=[.!?]["”’)]?)\s+(?=[A-Z“"‘(])/)) {
-    if (out.length && NEWS_READ_ABBR.test(out[out.length - 1])) out[out.length - 1] += ` ${piece}`;
+    if (out.length && NEWS_READ_ABBR.test(out[out.length - 1]))
+      out[out.length - 1] += ` ${piece}`;
     else out.push(piece);
   }
   return out;
@@ -309,14 +546,20 @@ const newsReadKeySentences = (paragraphs, title) => {
   const tf = new Map();
   for (const s of sentences) {
     for (const w of new Set(newsReadWords(s))) {
-      if (w.length > 2 && !NEWS_READ_STOP.has(w)) tf.set(w, (tf.get(w) || 0) + 1);
+      if (w.length > 2 && !NEWS_READ_STOP.has(w))
+        tf.set(w, (tf.get(w) || 0) + 1);
     }
   }
-  const inTitle = new Set(newsReadWords(title).filter((w) => !NEWS_READ_STOP.has(w)));
+  const inTitle = new Set(
+    newsReadWords(title).filter((w) => !NEWS_READ_STOP.has(w)),
+  );
   const scored = sentences.map((s, i) => {
-    const words = new Set(newsReadWords(s).filter((w) => w.length > 2 && !NEWS_READ_STOP.has(w)));
+    const words = new Set(
+      newsReadWords(s).filter((w) => w.length > 2 && !NEWS_READ_STOP.has(w)),
+    );
     let score = 0;
-    for (const w of words) score += (tf.get(w) || 0) - 1 + (inTitle.has(w) ? 1 : 0);
+    for (const w of words)
+      score += (tf.get(w) || 0) - 1 + (inTitle.has(w) ? 1 : 0);
     return { s, i, score: score / Math.sqrt(Math.max(words.size, 1)) };
   });
   return scored
@@ -330,7 +573,12 @@ const newsReadKeySentences = (paragraphs, title) => {
    screen: `{ change, ms }` or null when the series does not reach back. */
 const newsReadSince = (prices, time, now) => {
   if (!Array.isArray(prices) || prices.length < 2 || !(time > 0)) return null;
-  const at = (p) => (p.time instanceof Date ? p.time.getTime() : Number(p.time) < 1e12 ? Number(p.time) * 1000 : Number(p.time));
+  const at = (p) =>
+    p.time instanceof Date
+      ? p.time.getTime()
+      : Number(p.time) < 1e12
+        ? Number(p.time) * 1000
+        : Number(p.time);
   const first = at(prices[0]);
   if (!(first <= time)) return null;
   let from = null;
@@ -342,21 +590,36 @@ const newsReadSince = (prices, time, now) => {
   const a = Number(from && from.price);
   const b = Number(last && last.price);
   if (!(a > 0) || !(b > 0)) return null;
-  return { change: (b / a - 1) * 100, ms: Math.max(0, (now || Date.now()) - time) };
+  return {
+    change: (b / a - 1) * 100,
+    ms: Math.max(0, (now || Date.now()) - time),
+  };
 };
 
 /* The whole reading of one story. `text` is the article when it was read,
    or the headline and summary when it was not — `full` says which, and the
    preview says so above the reading. */
 const newsReading = (item, article, ctx) => {
-  const paragraphs = article && article.state === "read" ? article.paragraphs : [];
+  const paragraphs =
+    article && article.state === "read" ? article.paragraphs : [];
   const full = paragraphs.length > 0;
-  const text = full ? `${item.title}. ${paragraphs.join(" ")}` : `${item.title}. ${item.summary || ""}`;
-  const tone = newsTone({ title: item.title, summary: full ? paragraphs.join(" ") : item.summary });
+  const text = full
+    ? `${item.title}. ${paragraphs.join(" ")}`
+    : `${item.title}. ${item.summary || ""}`;
+  const tone = newsTone({
+    title: item.title,
+    summary: full ? paragraphs.join(" ") : item.summary,
+  });
   const coins = newsReadCoins(text, ctx && ctx.coins);
   const chartCoin = ctx && ctx.coin;
-  const since = chartCoin && coins.some((c) => c.coin === chartCoin) ? newsReadSince(ctx.prices, item.time, ctx.now) : null;
-  const others = Array.isArray(item.also) ? new Set(item.also.map((a) => a.source).filter((s) => s !== item.source)).size : 0;
+  const since =
+    chartCoin && coins.some((c) => c.coin === chartCoin)
+      ? newsReadSince(ctx.prices, item.time, ctx.now)
+      : null;
+  const others = Array.isArray(item.also)
+    ? new Set(item.also.map((a) => a.source).filter((s) => s !== item.source))
+        .size
+    : 0;
   return {
     full,
     words: full ? article.words : 0,

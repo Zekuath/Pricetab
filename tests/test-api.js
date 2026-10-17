@@ -1798,6 +1798,10 @@ const json = (c) => JSON.parse(JSON.stringify(run(c)));
      quote the pair. */
   {
     const realFetch = sandbox.fetch;
+    const realDate = sandbox.Date;
+    // The last second of a bar used to cross into a new cache key mid-case.
+    const fixedNow = Math.floor(Date.now() / 60000) * 60000 + 59999;
+    sandbox.Date = class extends Date { static now() { return fixedNow; } };
     const asked = [];
     sandbox.fetch = async (url) => {
       if (!url.includes("/candles?granularity=") || !url.includes("start=")) return realFetch(url);
@@ -1806,14 +1810,14 @@ const json = (c) => JSON.parse(JSON.stringify(run(c)));
       const start = Date.parse(decodeURIComponent(url.match(/start=([^&]+)/)[1]));
       const end = Date.parse(decodeURIComponent(url.match(/end=([^&]+)/)[1]));
       const rows = [];
-      for (let t = start; t <= Math.min(end, Date.now()); t += g) rows.push([t / 1000, 99, 101, 100, 100.5, 2]);
+      for (let t = start; t <= Math.min(end, fixedNow); t += g) rows.push([t / 1000, 99, 101, 100, 100.5, 2]);
       rows.push(["junk", 1, 2, 3, 4, 5], [start / 1000 + 1, -1, 2, 3, 0, 5]);
       return { ok: true, status: 200, json: async () => rows.reverse() };
     };
     const ajson = async (c) => JSON.parse(JSON.stringify(await run(c)));
     const g = 300;
     const size = 300 * g * 1000;
-    const k = Math.floor(Date.now() / size) - 5; // a page well in the past
+    const k = Math.floor(fixedNow / size) - 5; // a page well in the past
     const from = k * size + 10 * g * 1000;
     const to = from + 400 * g * 1000;
     const got = await ajson(`fetchViewCandles("BTC", "USD", ${g}, ${from}, ${to})`);
@@ -1830,7 +1834,7 @@ const json = (c) => JSON.parse(JSON.stringify(run(c)));
     const stored = JSON.parse(lsStore.crypto_chart_view_candles || "[]");
     assert.strictEqual(stored.length, 2, "…and kept for the next tab");
 
-    const now = Date.now();
+    const now = fixedNow;
     await ajson(`fetchViewCandles("BTC", "USD", 60, ${now - 50 * 60000}, ${now})`);
     const live = asked.length;
     await ajson(`fetchViewCandles("BTC", "USD", 60, ${now - 50 * 60000}, ${now})`);
@@ -1852,6 +1856,7 @@ const json = (c) => JSON.parse(JSON.stringify(run(c)));
     assert.deepStrictEqual(json("Array.from(viewCandleCache.keys())"), ["BTC-USD-60-1"], "a stored page older than a week is dropped on the way in");
     assert.strictEqual(json('viewCandleCache.get("BTC-USD-60-1").rows').length, 1, "…and a row with a zero or a NaN in it");
     sandbox.fetch = realFetch;
+    sandbox.Date = realDate;
     console.log("  ✔ the chart's window: pages, a cache, the page holding now, and no asks where there are no candles");
   }
 

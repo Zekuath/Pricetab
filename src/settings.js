@@ -6,11 +6,36 @@
  * search works on intent rather than on our exact labels.
  */
 const matchesSetting = (query, title, keywords) => {
-  const q = String(query || "").trim().toLowerCase();
+  const q = String(query || "")
+    .trim()
+    .toLowerCase();
   if (!q) return true;
   const haystack = `${title || ""} ${keywords || ""}`.toLowerCase();
   // Every word must appear somewhere, so "chart col" finds Chart Color
   return q.split(/\s+/).every((word) => haystack.includes(word));
+};
+
+/* Quick-add recommendations should surface tradeable majors rather than
+ * dollar pegs; stablecoins still remain searchable and addable manually. */
+const STABLE_RECOMMEND_EXCLUDE = new Set([
+  "USDT",
+  "USDC",
+  "DAI",
+  "USDE",
+  "PYUSD",
+  "FDUSD",
+  "TUSD",
+  "RLUSD",
+  "BFUSD",
+  "USDG",
+  "USDD",
+  "STABLE",
+]);
+
+const isStableRecommendCoin = (coin) => {
+  if (STABLE_RECOMMEND_EXCLUDE.has(coin)) return true;
+  const name = String(COIN_NAMES[coin] || "").toLowerCase();
+  return /\bstable\b|\busd\b|\bdollar\b|\btether\b|\bdai\b/.test(name);
 };
 
 class SettingsPanel extends PureComponent {
@@ -112,7 +137,8 @@ class SettingsPanel extends PureComponent {
      * closes Settings, as every other panel's key closes its panel. */
     _defineProperty(this, "currentSection", () => {
       if ((this.state.query || "").trim()) return "search";
-      if (this.state.activeTab === "preferences") return this.state.prefGroup || "modes";
+      if (this.state.activeTab === "preferences")
+        return this.state.prefGroup || "modes";
       return this.state.activeTab;
     });
 
@@ -120,10 +146,12 @@ class SettingsPanel extends PureComponent {
        and whether notifications are granted. Read from the same helpers the
        news panel and the alarm switch use, so the three cannot disagree. */
     _defineProperty(this, "refreshPermissions", () => {
-      Promise.all([grantedNewsSources(), notifyPermissionHeld()]).then(([permNews, permNotify]) => {
-        if (this.unmounted) return;
-        this.setState({ permNews, permNotify });
-      });
+      Promise.all([grantedNewsSources(), notifyPermissionHeld()]).then(
+        ([permNews, permNotify]) => {
+          if (this.unmounted) return;
+          this.setState({ permNews, permNotify });
+        },
+      );
     });
 
     /* Renders a setting unless the search has filtered it out. The tally
@@ -141,11 +169,15 @@ class SettingsPanel extends PureComponent {
      * tabs, which are built from some of the same pieces. Wrapping the node
      * rather than restyling those pieces is the difference between this and a
      * first attempt that collapsed the widget list into one line. */
-    _defineProperty(this, "section", (title, keywords, node, applies = true) => {
-      if (!matchesSetting(this.state.query, title, keywords)) return null;
-      if (applies) this._matched += 1;
-      return node ? React.createElement(PrefRow, null, node) : node;
-    });
+    _defineProperty(
+      this,
+      "section",
+      (title, keywords, node, applies = true) => {
+        if (!matchesSetting(this.state.query, title, keywords)) return null;
+        if (applies) this._matched += 1;
+        return node ? React.createElement(PrefRow, null, node) : node;
+      },
+    );
 
     _defineProperty(this, "handleRatePromptDismiss", () => {
       saveRatePromptDismissed();
@@ -157,6 +189,14 @@ class SettingsPanel extends PureComponent {
     });
 
     _defineProperty(this, "handleKeyDown", (event) => {
+      // The inline confirmation already handled Escape in React's listener.
+      if (
+        event.defaultPrevented ||
+        (event.target &&
+          event.target.closest &&
+          event.target.closest("[data-nav-confirm]"))
+      )
+        return;
       if (event.key === "Escape" && typeof this.props.onClose === "function") {
         this.props.onClose();
       }
@@ -183,7 +223,10 @@ class SettingsPanel extends PureComponent {
       const count = Object.keys(backup.keys).length;
       if (!count) {
         this.setState({
-          backupNote: msg("set_backup_empty", "There is nothing saved to back up yet."),
+          backupNote: msg(
+            "set_backup_empty",
+            "There is nothing saved to back up yet.",
+          ),
         });
         return;
       }
@@ -194,7 +237,11 @@ class SettingsPanel extends PureComponent {
       );
       this.setState({
         backupFound: null,
-        backupNote: msg("set_backup_saved", "Saved $1 settings to a file.", count),
+        backupNote: msg(
+          "set_backup_saved",
+          "Saved $1 settings to a file.",
+          count,
+        ),
       });
     });
 
@@ -358,7 +405,10 @@ class SettingsPanel extends PureComponent {
       if (activeCoins.includes(normalized)) {
         if (activeCoins.length <= 1) {
           this.setState({
-            feedback: msg("set_keep_one_coin", "Keep at least one coin in the rotation"),
+            feedback: msg(
+              "set_keep_one_coin",
+              "Keep at least one coin in the rotation",
+            ),
             status: "error",
           });
           return;
@@ -375,7 +425,11 @@ class SettingsPanel extends PureComponent {
 
       if (!SUGGESTED_COINS.includes(normalized)) {
         this.setState({
-          feedback: msg("set_not_recognized", "$1 not recognized", normalized || msg("set_symbol", "Symbol")),
+          feedback: msg(
+            "set_not_recognized",
+            "$1 not recognized",
+            normalized || msg("set_symbol", "Symbol"),
+          ),
           status: "error",
         });
         return;
@@ -426,7 +480,11 @@ class SettingsPanel extends PureComponent {
 
       if (!SUGGESTED_COINS.includes(normalized)) {
         this.setState({
-          feedback: msg("set_not_recognized", "$1 not recognized", normalized || msg("set_symbol", "Symbol")),
+          feedback: msg(
+            "set_not_recognized",
+            "$1 not recognized",
+            normalized || msg("set_symbol", "Symbol"),
+          ),
           status: "error",
         });
         return;
@@ -651,12 +709,7 @@ class SettingsPanel extends PureComponent {
     // renderPreferencesTab() destructures them from `panel.props` itself. They
     // were listed here too until the preferences tab was split out; do not add
     // them back unless this method starts using them.
-    const {
-      coins,
-      onClose,
-      visible,
-      coinStats,
-    } = this.props;
+    const { coins, onClose, visible, coinStats } = this.props;
     const {
       feedback,
       status,
@@ -675,6 +728,19 @@ class SettingsPanel extends PureComponent {
     // Sorting by a figure needs the figures; until the sweep lands we say so
     // on the buttons rather than offering an order we can't produce
     const hasStats = activeCoins.some((c) => stats[c]);
+    // Quick-add recommendations: highest market-cap coins not already tracked.
+    const capRecommendations = SUGGESTED_COINS.filter(
+      (coin) => !activeCoins.includes(coin) && !isStableRecommendCoin(coin),
+    )
+      .map((coin) => {
+        const stat = stats[coin];
+        const cap = stat ? Number(stat.marketCap) : NaN;
+        return { coin, cap: isFinite(cap) ? cap : null };
+      })
+      .filter((x) => x.cap != null)
+      .sort((a, b) => b.cap - a.cap)
+      .slice(0, 20)
+      .map((x) => x.coin);
 
     /* The preferences, grouped once for the menu and the pane together —
        see preferenceGroups. Built before anything is drawn, so the search's
@@ -701,27 +767,40 @@ class SettingsPanel extends PureComponent {
       return i < 0 || i > 9 ? null : i === 9 ? "0" : String(i + 1);
     };
     const head = hunting
-      ? { title: msg("set_search_for", "Settings matching “$1”", this.state.query.trim()), desc: null }
+      ? {
+          title: msg(
+            "set_search_for",
+            "Settings matching “$1”",
+            this.state.query.trim(),
+          ),
+          desc: null,
+        }
       : activeTab === "coins"
         ? {
             title: msg("set_tab_coins", "Coins"),
             /* The wording follows the layout. They were chips; they are rows
              * now, and a hint that names a shape the screen no longer has is
              * worse than no hint. */
-            desc: msg("set_coins_help", "Search to add a coin. Drag a row to reorder, hit × to remove."),
+            desc: msg(
+              "set_coins_help",
+              "Search to add a coin. Drag a row to reorder, hit × to remove.",
+            ),
           }
         : activeTab === "permissions"
           ? { title: msg("set_tab_permissions", "Permissions"), desc: null }
           : activeTab === "shortcuts"
             ? {
                 title: msg("sc_title", "Keyboard shortcuts"),
-                desc: msg("sc_section_desc", "Every key this tab answers to, by where it works."),
+                desc: msg(
+                  "sc_section_desc",
+                  "Every key this tab answers to, by where it works.",
+                ),
               }
-          : pick === "modes" || !group
-            /* No line under the name: the row's own sentence, under its
+            : pick === "modes" || !group
+              ? /* No line under the name: the row's own sentence, under its
                pills, says what a mode does and which one you are in. */
-            ? { title: msg("pref_modes", "Modes"), desc: null }
-            : { title: group.title, desc: group.desc };
+                { title: msg("pref_modes", "Modes"), desc: null }
+              : { title: group.title, desc: group.desc };
     const navItem = (key, label, count, active, onClick, attrs) =>
       React.createElement(
         SettingsNavItem,
@@ -739,10 +818,14 @@ class SettingsPanel extends PureComponent {
         React.createElement(
           SettingsNavLabel,
           null,
-          keyFor(key) ? keyCap(keyFor(key), { quiet: !active, "aria-hidden": "true" }) : null,
+          keyFor(key)
+            ? keyCap(keyFor(key), { quiet: !active, "aria-hidden": "true" })
+            : null,
           React.createElement("span", null, label),
         ),
-        count == null ? null : React.createElement(SettingsNavCount, null, String(count)),
+        count == null
+          ? null
+          : React.createElement(SettingsNavCount, null, String(count)),
       );
 
     return React.createElement(
@@ -761,7 +844,12 @@ class SettingsPanel extends PureComponent {
         React.createElement(
           SettingsHead,
           null,
-          React.createElement(SettingsTitle, null, msg("chrome_settings", "Settings"), keyCap("S")),
+          React.createElement(
+            SettingsTitle,
+            null,
+            msg("chrome_settings", "Settings"),
+            keyCap("S"),
+          ),
         ),
 
         // One-time rating reminder (dismiss or rate hides it forever)
@@ -821,25 +909,63 @@ class SettingsPanel extends PureComponent {
               "aria-label": msg("pref_search_label", "Search settings"),
               onChange: (e) => this.setState({ query: e.target.value }),
             }),
-            navItem("coins", msg("set_tab_coins", "Coins"), activeCoins.length,
-              !hunting && activeTab === "coins", () => go("coins"), { "data-tab": "coins" }),
-            React.createElement(SettingsNavCaption, { key: "cap-prefs" }, msg("set_tab_preferences", "Preferences")),
-            navItem("modes", msg("pref_modes", "Modes"), null,
-              !hunting && onPrefs && pick === "modes", () => go("preferences", "modes"),
-              { "data-tab": "preferences", "data-pref-group": "modes" }),
-            ...groups.map((g) =>
-              navItem(g.key, g.title, g.nodes.length,
-                !hunting && onPrefs && pick === g.key, () => go("preferences", g.key),
-                { "data-pref-group": g.key }),
+            navItem(
+              "coins",
+              msg("set_tab_coins", "Coins"),
+              activeCoins.length,
+              !hunting && activeTab === "coins",
+              () => go("coins"),
+              { "data-tab": "coins" },
             ),
-            React.createElement(SettingsNavCaption, { key: "cap-access" }, msg("set_nav_access", "Access")),
-            navItem("permissions", msg("set_tab_permissions", "Permissions"), null,
-              !hunting && activeTab === "permissions", () => go("permissions"),
-              { "data-tab": "permissions" }),
-            React.createElement(SettingsNavCaption, { key: "cap-help" }, msg("set_nav_help", "Help")),
-            navItem("shortcuts", msg("sc_title", "Keyboard shortcuts"), null,
-              !hunting && activeTab === "shortcuts", () => go("shortcuts"),
-              { "data-tab": "shortcuts" }),
+            React.createElement(
+              SettingsNavCaption,
+              { key: "cap-prefs" },
+              msg("set_tab_preferences", "Preferences"),
+            ),
+            navItem(
+              "modes",
+              msg("pref_modes", "Modes"),
+              null,
+              !hunting && onPrefs && pick === "modes",
+              () => go("preferences", "modes"),
+              { "data-tab": "preferences", "data-pref-group": "modes" },
+            ),
+            ...groups.map((g) =>
+              navItem(
+                g.key,
+                g.title,
+                g.nodes.length,
+                !hunting && onPrefs && pick === g.key,
+                () => go("preferences", g.key),
+                { "data-pref-group": g.key },
+              ),
+            ),
+            React.createElement(
+              SettingsNavCaption,
+              { key: "cap-access" },
+              msg("set_nav_access", "Access"),
+            ),
+            navItem(
+              "permissions",
+              msg("set_tab_permissions", "Permissions"),
+              null,
+              !hunting && activeTab === "permissions",
+              () => go("permissions"),
+              { "data-tab": "permissions" },
+            ),
+            React.createElement(
+              SettingsNavCaption,
+              { key: "cap-help" },
+              msg("set_nav_help", "Help"),
+            ),
+            navItem(
+              "shortcuts",
+              msg("sc_title", "Keyboard shortcuts"),
+              null,
+              !hunting && activeTab === "shortcuts",
+              () => go("shortcuts"),
+              { "data-tab": "shortcuts" },
+            ),
             /* The tour only ever shows itself once, and the store link is
                the door the rating ask leaves open. Not settings, and not
                pages either — each one leaves Settings — so under the menu
@@ -850,8 +976,12 @@ class SettingsPanel extends PureComponent {
               React.createElement(
                 FootHint,
                 {
-                  onClick: () => this.props.onReplayTour && this.props.onReplayTour(),
-                  title: msg("pref_replay_hint", "Run the first-run tour again"),
+                  onClick: () =>
+                    this.props.onReplayTour && this.props.onReplayTour(),
+                  title: msg(
+                    "pref_replay_hint",
+                    "Run the first-run tour again",
+                  ),
                 },
                 msg("pref_replay_tour", "Replay tour"),
               ),
@@ -861,7 +991,10 @@ class SettingsPanel extends PureComponent {
                   href: STORE_REVIEWS_URL,
                   target: "_blank",
                   rel: "noreferrer",
-                  title: msg("pref_rate_hint", "Open the Chrome Web Store listing in a new tab"),
+                  title: msg(
+                    "pref_rate_hint",
+                    "Open the Chrome Web Store listing in a new tab",
+                  ),
                 },
                 msg("pref_rate", "Rate PriceTab"),
               ),
@@ -869,12 +1002,20 @@ class SettingsPanel extends PureComponent {
           ),
           React.createElement(
             SettingsPane,
-            { "data-settings-section": hunting ? "search" : onPrefs ? pick : activeTab },
+            {
+              "data-settings-section": hunting
+                ? "search"
+                : onPrefs
+                  ? pick
+                  : activeTab,
+            },
             React.createElement(
               SettingsSectionHead,
               null,
               React.createElement(SettingsSectionTitle, null, head.title),
-              head.desc ? React.createElement(SettingsSectionDesc, null, head.desc) : null,
+              head.desc
+                ? React.createElement(SettingsSectionDesc, null, head.desc)
+                : null,
             ),
             hunting || onPrefs
               ? renderPreferencesSection(this, groups, pick, hunting)
@@ -882,209 +1023,282 @@ class SettingsPanel extends PureComponent {
                 ? renderPermissionsTab(this)
                 : activeTab === "shortcuts"
                   ? renderShortcutsSection()
-                : React.createElement(
-                    TabContent,
-                    { key: "coins-tab" },
-
+                  : React.createElement(
+                      TabContent,
+                      { key: "coins-tab" },
 
                       React.createElement(
                         CoinColumns,
                         { two: true },
-                      React.createElement(
-                        CoinPane,
-                        { "data-coin-pane": "list" },
-                      React.createElement(
-                        CoinSectionHeader,
-                        null,
                         React.createElement(
-                          CoinSectionTitle,
-                          { style: { margin: 0 } },
-                          msg("set_selected", "Selected"),
-                        ),
-                        React.createElement(
-                          CoinCounter,
-                          null,
-                          activeCoins.length + " / " + MAX_COINS,
-                        ),
-                      ),
-                      activeCoins.length > 1 &&
-                        React.createElement(
-                          CoinSortRow,
-                          null,
-                          React.createElement(CoinSortLabel, null, msg("set_sort", "Sort")),
+                          CoinPane,
+                          { "data-coin-pane": "list" },
                           React.createElement(
-                            CoinSortButton,
-                            {
-                              onClick: () => this.handleSort("alpha"),
-                              title: msg("set_sort_az_hint", "Order the list alphabetically"),
-                            },
-                            "A–Z",
-                          ),
-                          React.createElement(
-                            CoinSortButton,
-                            {
-                              onClick: () => this.handleSort("change"),
-                              disabled: !hasStats,
-                              title: hasStats
-                                ? msg("set_sort_move_hint", "Biggest 24h move first")
-                                : msg("set_sort_move_wait", "Waiting for today's prices"),
-                            },
-                            msg("set_sort_move", "24h move"),
-                          ),
-                          React.createElement(
-                            CoinSortButton,
-                            {
-                              onClick: () => this.handleSort("cap"),
-                              disabled: !hasStats,
-                              title: hasStats
-                                ? msg("set_sort_cap_hint", "Largest market cap first")
-                                : msg("set_sort_cap_wait", "Waiting for market data"),
-                            },
-                            msg("set_sort_cap", "Market cap"),
-                          ),
-                        ),
-                      React.createElement(
-                        CoinList,
-                        { count: activeCoins.length },
-                        activeCoins.length
-                          ? activeCoins.map((coin) =>
-                              /* Not a button. The × inside it is the only action here,
-                               * and a button inside a button is invalid — so the chip is
-                               * the drag handle and the frame, and the × is the control.
-                               * It was the other way round: the chip was a `<button>`
-                               * with no `onClick`, so Tab landed on something that did
-                               * nothing and never reached the × at all — there was no
-                               * way to remove a coin without a pointer. */
-                              React.createElement(
-                                CoinChipStatic,
-                                {
-                                  key: coin,
-                                  selected: true,
-                                  "data-symbol": coin,
-                                  draggable: true,
-                                  onDragStart: (e) => this.handleDragStart(coin, e),
-                                  onDragEnd: this.handleDragEnd,
-                                  onDragOver: (e) => this.handleDragOver(coin, e),
-                                  onDrop: (e) => this.handleDrop(coin, e),
-                                },
-                                coin,
-                                /* The name, which a pill had no room for and a row does.
-                                 * It costs nothing — `COIN_NAMES` is a plain map in
-                                 * `config.js` — and it is the difference between a list
-                                 * of three-letter codes and a list you can read. */
-                                React.createElement(
-                                  CoinRowName,
-                                  null,
-                                  COIN_NAMES[coin] || "",
-                                ),
-                                // Free — the ticker snapshot is already in memory
-                                this.renderChipChange(coin),
-                                React.createElement(
-                                  CoinChipRemove,
-                                  {
-                                    onClick: (e) => {
-                                      e.stopPropagation();
-                                      this.handleChipClick(coin);
-                                    },
-                                    title: msg("set_remove_coin", "Remove $1", coin),
-                                    "aria-label": msg("set_remove_coin", "Remove $1", coin),
-                                  },
-                                  "×",
-                                ),
-                              ),
-                            )
-                          : React.createElement(CoinChip, {
-                              disabled: true,
-                              children: msg("set_no_coins", "No coins yet"),
-                            }),
-                      ),
-                      ),
-                      /* The hint at the top of the tab already says the chips drag and the
-                       * × removes. Saying it again under them was the same sentence
-                       * twice on one short screen. */
-                      React.createElement(
-                        CoinPane,
-                        { "data-coin-pane": "add" },
-                      React.createElement(CoinSectionTitle, null, msg("set_quick_add", "Quick add")),
-                      React.createElement(
-                        SettingsForm,
-                        { onSubmit: this.handleSubmit },
-                        React.createElement(SettingsInput, {
-                          maxLength: 24,
-                          onChange: this.handleInputChange,
-                          placeholder: msg("set_search_placeholder", "Search name or symbol"),
-                          autoComplete: "off",
-                          value: pendingCoin,
-                        }),
-                        React.createElement(
-                          SuggestionsArea,
-                          { open: suggestionsOpen },
-                          React.createElement(
-                            SuggestionsAreaInner,
+                            CoinSectionHeader,
                             null,
                             React.createElement(
-                              SuggestionList,
+                              CoinSectionTitle,
+                              { style: { margin: 0 } },
+                              msg("set_selected", "Selected"),
+                            ),
+                            React.createElement(
+                              CoinCounter,
                               null,
-                              suggestions.length
-                                ? suggestions.map((coin) =>
+                              activeCoins.length + " / " + MAX_COINS,
+                            ),
+                          ),
+                          activeCoins.length > 1 &&
+                            React.createElement(
+                              CoinSortRow,
+                              null,
+                              React.createElement(
+                                CoinSortLabel,
+                                null,
+                                msg("set_sort", "Sort"),
+                              ),
+                              React.createElement(
+                                CoinSortButton,
+                                {
+                                  onClick: () => this.handleSort("alpha"),
+                                  title: msg(
+                                    "set_sort_az_hint",
+                                    "Order the list alphabetically",
+                                  ),
+                                },
+                                "A–Z",
+                              ),
+                              React.createElement(
+                                CoinSortButton,
+                                {
+                                  onClick: () => this.handleSort("change"),
+                                  disabled: !hasStats,
+                                  title: hasStats
+                                    ? msg(
+                                        "set_sort_move_hint",
+                                        "Biggest 24h move first",
+                                      )
+                                    : msg(
+                                        "set_sort_move_wait",
+                                        "Waiting for today's prices",
+                                      ),
+                                },
+                                msg("set_sort_move", "24h move"),
+                              ),
+                              React.createElement(
+                                CoinSortButton,
+                                {
+                                  onClick: () => this.handleSort("cap"),
+                                  disabled: !hasStats,
+                                  title: hasStats
+                                    ? msg(
+                                        "set_sort_cap_hint",
+                                        "Largest market cap first",
+                                      )
+                                    : msg(
+                                        "set_sort_cap_wait",
+                                        "Waiting for market data",
+                                      ),
+                                },
+                                msg("set_sort_cap", "Market cap"),
+                              ),
+                            ),
+                          React.createElement(
+                            CoinList,
+                            { count: activeCoins.length },
+                            activeCoins.length
+                              ? activeCoins.map((coin) =>
+                                  /* Not a button. The × inside it is the only action here,
+                                   * and a button inside a button is invalid — so the chip is
+                                   * the drag handle and the frame, and the × is the control.
+                                   * It was the other way round: the chip was a `<button>`
+                                   * with no `onClick`, so Tab landed on something that did
+                                   * nothing and never reached the × at all — there was no
+                                   * way to remove a coin without a pointer. */
+                                  React.createElement(
+                                    CoinChipStatic,
+                                    {
+                                      key: coin,
+                                      selected: true,
+                                      "data-symbol": coin,
+                                      draggable: true,
+                                      onDragStart: (e) =>
+                                        this.handleDragStart(coin, e),
+                                      onDragEnd: this.handleDragEnd,
+                                      onDragOver: (e) =>
+                                        this.handleDragOver(coin, e),
+                                      onDrop: (e) => this.handleDrop(coin, e),
+                                    },
+                                    coin,
+                                    /* The name, which a pill had no room for and a row does.
+                                     * It costs nothing — `COIN_NAMES` is a plain map in
+                                     * `config.js` — and it is the difference between a list
+                                     * of three-letter codes and a list you can read. */
                                     React.createElement(
-                                      CoinChip,
+                                      CoinRowName,
+                                      null,
+                                      COIN_NAMES[coin] || "",
+                                    ),
+                                    // Free — the ticker snapshot is already in memory
+                                    this.renderChipChange(coin),
+                                    React.createElement(
+                                      CoinChipRemove,
                                       {
-                                        key: coin,
+                                        onClick: (e) => {
+                                          e.stopPropagation();
+                                          this.handleChipClick(coin);
+                                        },
+                                        title: msg(
+                                          "set_remove_coin",
+                                          "Remove $1",
+                                          coin,
+                                        ),
+                                        "aria-label": msg(
+                                          "set_remove_coin",
+                                          "Remove $1",
+                                          coin,
+                                        ),
+                                      },
+                                      "×",
+                                    ),
+                                  ),
+                                )
+                              : React.createElement(CoinChip, {
+                                  disabled: true,
+                                  children: msg("set_no_coins", "No coins yet"),
+                                }),
+                          ),
+                        ),
+                        /* The hint at the top of the tab already says the chips drag and the
+                         * × removes. Saying it again under them was the same sentence
+                         * twice on one short screen. */
+                        React.createElement(
+                          CoinPane,
+                          { "data-coin-pane": "add" },
+                          React.createElement(
+                            CoinSectionTitle,
+                            null,
+                            msg("set_quick_add", "Quick add"),
+                          ),
+                          React.createElement(
+                            SettingsForm,
+                            { onSubmit: this.handleSubmit },
+                            React.createElement(SettingsInput, {
+                              maxLength: 24,
+                              onChange: this.handleInputChange,
+                              placeholder: msg(
+                                "set_search_placeholder",
+                                "Search name or symbol",
+                              ),
+                              autoComplete: "off",
+                              value: pendingCoin,
+                            }),
+                            React.createElement(
+                              SuggestionsArea,
+                              { open: suggestionsOpen },
+                              React.createElement(
+                                SuggestionsAreaInner,
+                                null,
+                                React.createElement(
+                                  SuggestionList,
+                                  null,
+                                  suggestions.length
+                                    ? suggestions.map((coin) =>
+                                        React.createElement(
+                                          CoinChip,
+                                          {
+                                            key: coin,
+                                            "data-symbol": coin,
+                                            onClick: () =>
+                                              this.handleSuggestionClick(coin),
+                                          },
+                                          coin,
+                                          COIN_NAMES[coin] &&
+                                            React.createElement(
+                                              CoinChipName,
+                                              null,
+                                              COIN_NAMES[coin],
+                                            ),
+                                        ),
+                                      )
+                                    : pendingCoin.trim() && !searching
+                                      ? React.createElement(
+                                          SuggestionHint,
+                                          null,
+                                          'No match — try "Bitcoin" or "BTC"',
+                                        )
+                                      : null,
+                                ),
+                              ),
+                            ),
+                            React.createElement(
+                              SettingsActionButton,
+                              { type: "submit" },
+                              msg("set_add_coin", "Add coin"),
+                            ),
+                          ),
+                          feedback
+                            ? React.createElement(
+                                SettingsFeedback,
+                                { error: status === "error" },
+                                feedback,
+                              )
+                            : null,
+                          React.createElement(
+                            CoinRecommendBox,
+                            null,
+                            capRecommendations.length
+                              ? React.createElement(
+                                  CoinRecommendList,
+                                  null,
+                                  capRecommendations.map((coin) =>
+                                    React.createElement(
+                                      CoinRecommendChip,
+                                      {
+                                        key: `rec-${coin}`,
                                         "data-symbol": coin,
-                                        onClick: () => this.handleSuggestionClick(coin),
+                                        onClick: () =>
+                                          this.handleSuggestionClick(coin),
                                       },
                                       coin,
-                                      COIN_NAMES[coin] &&
-                                        React.createElement(
-                                          CoinChipName,
-                                          null,
-                                          COIN_NAMES[coin],
-                                        ),
+                                      React.createElement(
+                                        CoinRecommendName,
+                                        null,
+                                        COIN_NAMES[coin] || "",
+                                      ),
                                     ),
-                                  )
-                                : pendingCoin.trim() && !searching
-                                  ? React.createElement(
-                                      SuggestionHint,
-                                      null,
-                                      'No match — try "Bitcoin" or "BTC"',
-                                    )
-                                  : null,
+                                  ),
+                                )
+                              : React.createElement(
+                                  SuggestionHint,
+                                  null,
+                                  msg(
+                                    "set_sort_cap_wait",
+                                    "Waiting for market data",
+                                  ),
+                                ),
+                          ),
+                          React.createElement(
+                            ResetRow,
+                            { compact: suggestionsOpen },
+                            React.createElement(
+                              ResetButton,
+                              {
+                                onClick: undoCoins
+                                  ? this.handleUndoReset
+                                  : this.handleResetClick,
+                              },
+                              // Covers a reset and a sort, both of which replace the order
+                              undoCoins
+                                ? msg("set_undo", "Undo")
+                                : msg(
+                                    "set_reset_defaults",
+                                    "Reset to defaults",
+                                  ),
                             ),
                           ),
                         ),
-                        React.createElement(
-                          SettingsActionButton,
-                          { type: "submit" },
-                          msg("set_add_coin", "Add coin"),
-                        ),
                       ),
-                      feedback
-                        ? React.createElement(
-                            SettingsFeedback,
-                            { error: status === "error" },
-                            feedback,
-                          )
-                        : null,
-                      React.createElement(
-                        ResetRow,
-                        { compact: suggestionsOpen },
-                        React.createElement(
-                          ResetButton,
-                          {
-                            onClick: undoCoins
-                              ? this.handleUndoReset
-                              : this.handleResetClick,
-                          },
-                          // Covers a reset and a sort, both of which replace the order
-                          undoCoins
-                              ? msg("set_undo", "Undo")
-                              : msg("set_reset_defaults", "Reset to defaults"),
-                        ),
-                      ),
-                      ),
-                      ),
-                  ),
+                    ),
           ),
         ),
 
@@ -1124,4 +1338,3 @@ SettingsPanel.defaultProps = {
   visible: false,
   coinStats: null, // { COIN: { price, change, marketCap } }, from the app
 };
-

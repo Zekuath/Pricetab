@@ -100,7 +100,8 @@ const DAY = 86400000;
   ok(held && held.t1 === 1050 && held.t0 === 850 && held.atNow && held.ahead === 0.25, "a stored window keeps its room past the price", JSON.stringify(held));
   const grown = run(`resolveView({ t0: 850, t1: 1050, atNow: true, ahead: 0.25 }, 0, 1300, 10)`);
   ok(grown.t1 === 1350 && grown.t0 === 1150, "…and carries it along as new prices arrive", JSON.stringify(grown));
-  const capped = run(`resolveView({ t0: 950, t1: 1150 }, 0, 1000, 10)`);
+  // A window further past the end than any room allows (ahead 1.25)
+  const capped = run(`resolveView({ t0: 1050, t1: 1250 }, 0, 1000, 10)`);
   ok(Math.abs(capped.t1 - (1000 + 200 * room)) < 1e-9, "a window in the hand is held to the room", JSON.stringify(capped));
 }
 
