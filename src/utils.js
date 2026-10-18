@@ -2137,6 +2137,31 @@ const travelBand = (prices, steps, lo, hi) => {
  * It is a count of what happened, never a recommendation: it says a square is
  * unlikely, and never which square to name.
  */
+/* **Calibration, binned** (18 Oct 2026, TODAY T6 A1). Settled forecasts as
+ * `{ p, hit }` — the chance given and whether it came true — into tenths of
+ * the chance: each bin's count, hits, mean chance given, and the share that
+ * came true (null under `min`, so a bin of two never reads as a rate). What
+ * a reliability diagram draws; a count, not a new claim. */
+const reliabilityBins = (pairs, min = RECORD_MIN_FOR_STATS, bins = 10) => {
+  const out = Array.from({ length: bins }, (_, i) => ({ lo: i / bins, hi: (i + 1) / bins, n: 0, hits: 0, sumP: 0 }));
+  for (const x of Array.isArray(pairs) ? pairs : []) {
+    // Number.isFinite first: null >= 0 is true, and a missing chance is not 0%
+    if (!x || !Number.isFinite(x.p) || x.p < 0 || x.p > 1) continue;
+    const b = out[Math.min(bins - 1, Math.floor(x.p * bins))];
+    b.n += 1;
+    b.sumP += x.p;
+    if (x.hit) b.hits += 1;
+  }
+  return out.map((b) => ({
+    lo: b.lo,
+    hi: b.hi,
+    n: b.n,
+    hits: b.hits,
+    meanP: b.n ? b.sumP / b.n : null,
+    rate: b.n >= min ? b.hits / b.n : null,
+  }));
+};
+
 /* **How often chance alone does at least this well** (3 Oct 2026). Each
  * settled call came true with its own chance p_i, so the number of hits
  * chance would give is Poisson-binomial — a sum of unequal coin flips, not a
@@ -2308,6 +2333,81 @@ const baseRateUp = (list) =>
 
 /* A display of the count's uncertainty, not a test against another sample.
  * Unlike a normal approximation it stays inside [0, 1] at k=0 and k=n. */
+/* **How many independent looks a set of overlapping windows is worth**
+ * (18 Oct 2026, TODAY T6 A2). Episodes that start a few days apart share
+ * most of their `h`-day windows, so n of them say less than n separate
+ * ones. With each pair weighted by the share of the window they have in
+ * common (Bartlett's triangle), n_eff = n² / Σᵢ Σⱼ max(0, 1 − |tᵢ − tⱼ| / h):
+ * n when no two overlap, about n / h for every consecutive day, 1 for the
+ * same start counted n times. Starts sorted, so the inner sum stops at h. */
+const effectiveN = (starts, h) => {
+  const t = (Array.isArray(starts) ? starts : []).filter(Number.isFinite).slice().sort((a, b) => a - b);
+  const n = t.length;
+  if (!n) return 0;
+  if (!(h > 1)) return n;
+  let sum = n; // i = j
+  for (let i = 0; i < n; i++) {
+    for (let j = i + 1; j < n && t[j] - t[i] < h; j++) sum += 2 * (1 - (t[j] - t[i]) / h);
+  }
+  return (n * n) / sum;
+};
+
+/* **A rate pulled towards an ordinary day** (18 Oct 2026, TODAY T6 A3).
+ * From twelve episodes a share is mostly noise. Empirical Bayes with a beta
+ * prior whose mean is each item's own ordinary-day rate: its strength κ
+ * (prior "episodes") is fitted by the method of moments across one coin's
+ * items at one horizon — how far their rates spread from their bases beyond
+ * what binomial noise alone gives. Spread no wider than noise: κ at its cap,
+ * so a rate is pulled almost all the way home. Null under five items. */
+const BETA_SHRINK_MAX = 500;
+const betaBinomialStrength = (items) => {
+  const use = (Array.isArray(items) ? items : []).filter((x) => x && x.n >= 1 && x.base > 0 && x.base < 1 && x.k >= 0 && x.k <= x.n);
+  if (use.length < 5) return null;
+  let spread = 0;
+  let noise = 0;
+  let width = 0;
+  for (const x of use) {
+    const p = x.k / x.n;
+    spread += (p - x.base) ** 2;
+    noise += (x.base * (1 - x.base)) / x.n;
+    width += x.base * (1 - x.base);
+  }
+  const tau2 = (spread - noise) / use.length;
+  if (!(tau2 > 0)) return BETA_SHRINK_MAX;
+  return Math.min(BETA_SHRINK_MAX, Math.max(0, width / use.length / tau2 - 1));
+};
+
+// p̃ = (k + κ·base) / (n + κ): k / n as n grows, the base at n = 0
+const shrunkRate = (k, n, base, kappa) =>
+  Number.isFinite(kappa) && n + kappa > 0 ? (k + kappa * base) / (n + kappa) : null;
+
+// One strength per horizon, from every row of a coin's readings
+const shrinkStrengths = (rows) => {
+  const byDays = new Map();
+  for (const row of Array.isArray(rows) ? rows : []) {
+    for (const h of row.byHorizon || []) {
+      const r = h.result;
+      if (!r || !(r.n >= BASE_RATE_MIN_EPISODES) || !Number.isFinite(r.baseUp) || !Number.isFinite(r.up)) continue;
+      if (!byDays.has(h.days)) byDays.set(h.days, []);
+      byDays.get(h.days).push({ k: Math.round((r.up * r.n) / 100), n: r.n, base: r.baseUp / 100 });
+    }
+  }
+  const out = {};
+  for (const [days, items] of byDays) out[days] = betaBinomialStrength(items);
+  return out;
+};
+
+/* The Wilson interval for a share seen over an effective count that need
+ * not be whole — the same formula, n allowed to be any number from 1. */
+const wilsonShare = (p, n) => {
+  if (!(n >= 1) || !(p >= 0 && p <= 1)) return null;
+  const z2 = 1.959963984540054 ** 2;
+  const denominator = 1 + z2 / n;
+  const middle = (p + z2 / (2 * n)) / denominator;
+  const radius = Math.sqrt((p * (1 - p) + z2 / (4 * n)) / n) * Math.sqrt(z2) / denominator;
+  return { lo: p === 0 ? 0 : Math.max(0, middle - radius), hi: p === 1 ? 1 : Math.min(1, middle + radius) };
+};
+
 const wilsonInterval = (k, n) => {
   if (!Number.isInteger(n) || n < 1 || !Number.isInteger(k) || k < 0 || k > n) return null;
   const z2 = 1.959963984540054 ** 2;
@@ -2352,12 +2452,16 @@ const baseRateBaseline = (closes, horizon) => {
 const baseRateFor = (closes, values, test, horizon) => {
   if (!Array.isArray(closes) || closes.length <= horizon + 1) return null;
   const episodes = [];
+  const starts = [];
   let inside = false;
   for (let i = 0; i < values.length; i++) {
     const now = test(values[i]);
     if (now && !inside) {
       const f = forwardReturn(closes, i, horizon);
-      if (f !== null) episodes.push(f);
+      if (f !== null) {
+        episodes.push(f);
+        starts.push(i);
+      }
     }
     inside = now;
   }
@@ -2366,6 +2470,8 @@ const baseRateFor = (closes, values, test, horizon) => {
   const median = medianOf(episodes);
   return {
     n: episodes.length,
+    // What the episodes are worth once their shared days are counted once
+    nEff: effectiveN(starts, horizon),
     median,
     up: baseRateUp(episodes),
     baseN: base.n,

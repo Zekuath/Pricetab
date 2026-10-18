@@ -2384,6 +2384,41 @@ class AlertsPanel extends PureComponent {
           );
         })(),
 
+      /* **The board's chances against what happened** (18 Oct 2026, TODAY
+       * T6 A1). The studies measured the board's calibration before it was
+       * allowed on; this draws the same thing from your own settled calls:
+       * across, the chance the board printed on the square; up, the share of
+       * those squares that came true; the diagonal is "said 30%, happened
+       * 30%". A tenth holding fewer than RECORD_MIN_FOR_STATS calls is an
+       * outline at the chance it was given, never a rate. */
+      (() => {
+        const pairs = done
+          .filter((c) => c && c.odds && c.odds.src === "board" && Number.isFinite(c.odds.p) && (c.result === "hit" || c.result === "miss"))
+          .map((c) => ({ p: c.odds.p, hit: c.result === "hit" }));
+        if (pairs.length < RECORD_MIN_FOR_STATS) return null;
+        const bins = reliabilityBins(pairs);
+        return React.createElement(
+          AlertRecordReliability,
+          { "data-record-reliability": String(pairs.length) },
+          React.createElement(
+            AlertsSectionLabelTight,
+            { style: { margin: 0 } },
+            msg("al_reliability", "The board's chances, kept"),
+          ),
+          kitReliabilityBlock(bins, { h: 5 }),
+          React.createElement(
+            AlertRecordNote,
+            null,
+            msg(
+              "al_reliability_note",
+              "Across: the chance the board gave the square, by tenths. Up: how many of them came true; the dashed line is where the two agree. $1 calls; a tenth with fewer than $2 is an outline, not a rate.",
+              String(pairs.length),
+              String(RECORD_MIN_FOR_STATS),
+            ),
+          ),
+        );
+      })(),
+
       /* **What chance would have given.** A percentage on its own cannot tell
        * a careful caller from someone who only ever names the square the price
        * is already in: both read 60%. Each settled call carries the odds of

@@ -579,6 +579,20 @@
   "al_record_trail": {
     "message": "最近 $1 次，按时间先后：实心方块为猜中"
   },
+  "al_reliability": {
+    "message": "棋盘概率的记录"
+  },
+  "al_reliability_note": {
+    "message": "横轴：棋盘给该格的概率，按十分位。纵轴：其中成真的比例；虚线表示两者一致。共 $1 次预测；少于 $2 次的区间只画轮廓，不算比例。",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
   "al_remove_aria": {
     "message": "移除 $1 目标"
   },
@@ -1552,6 +1566,20 @@
   "br_interval": {
     "message": "威尔逊95%区间：$1–$2%"
   },
+  "br_interval_eff": {
+    "message": "Wilson 95% 区间：$1–$2%，基于 $3 个有效样本——它们的窗口有重叠的天数",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      }
+    }
+  },
   "br_live_only": {
     "message": "仅当前项目"
   },
@@ -1685,6 +1713,14 @@
   },
   "br_search": {
     "message": "搜索资料库"
+  },
+  "br_shrunk": {
+    "message": "向普通日收缩后：$1%——结合该币种其他行加权后的数值",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
   },
   "br_sim_intro": {
     "message": "该币历史中最后 $2 天形状与最近 $2 天相似的 $1 段——是路径，而非水平或幅度——每段附其后的 $3 天。"
@@ -3007,6 +3043,14 @@
   },
   "mo_band_title": {
     "message": "模型分布在 $1 收盘时的中间 80% — 是一个区间，而不是路径",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "mo_calibration": {
+    "message": "高于目标的概率记录：此处 $1 小时",
     "placeholders": {
       "arg1": {
         "content": "$1"

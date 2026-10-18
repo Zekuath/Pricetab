@@ -176,6 +176,81 @@ const KitSvg = styled.svg`
   }
 `;
 
+/* **A reliability diagram** (18 Oct 2026): chance given across, share that
+ * came true up, the diagonal where the two agree. A bin with a rate is a
+ * filled bar to it; a bin under the floor is an outline the height of the
+ * chance it was given, so it is seen without being read as a result. The
+ * count sits under each bin. From `reliabilityBins`. */
+const kitReliability = (bins, { h = 6 } = {}) => {
+  const W = 100;
+  const H = 60;
+  const y = (v) => H - v * H;
+  const n = bins.length;
+  const w = W / n;
+  return React.createElement(
+    KitSvg,
+    { viewBox: `0 0 ${W} ${H}`, preserveAspectRatio: "none", h, "data-reliability": "true", role: "img" },
+    React.createElement("line", { className: "kit-rule", x1: 0, x2: W, y1: H, y2: H, vectorEffect: "non-scaling-stroke" }),
+    React.createElement("line", { className: "kit-rule", x1: 0, x2: W, y1: H, y2: 0, vectorEffect: "non-scaling-stroke", strokeDasharray: "3 3" }),
+    ...bins.map((b, i) =>
+      b.n === 0
+        ? null
+        : b.rate == null
+          ? React.createElement("rect", {
+              key: `o${i}`,
+              className: "kit-rule",
+              x: i * w + w * 0.18,
+              y: y(b.meanP),
+              width: w * 0.64,
+              height: Math.max(0.5, H - y(b.meanP)),
+              vectorEffect: "non-scaling-stroke",
+              strokeDasharray: "2 2",
+              "data-bin": `${i}:${b.hits}/${b.n}`,
+            })
+          : React.createElement("rect", {
+              key: `r${i}`,
+              x: i * w + w * 0.18,
+              y: y(b.rate),
+              width: w * 0.64,
+              height: Math.max(0.5, H - y(b.rate)),
+              fill: "currentColor",
+              opacity: 0.75,
+              "data-bin": `${i}:${b.hits}/${b.n}`,
+            }),
+    ),
+  );
+};
+
+// The counts under a reliability diagram's bins, as text that does not stretch
+const KitBinCounts = styled.div`
+  display: grid;
+  grid-template-columns: repeat(${({ n }) => n || 10}, 1fr);
+  margin-top: 0.2em;
+  font-size: 0.6em;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  color: ${({ theme }) => theme.color.textSecondary};
+`;
+
+const kitReliabilityBlock = (bins, opts) =>
+  React.createElement(
+    Fragment,
+    null,
+    kitReliability(bins, opts),
+    React.createElement(
+      KitBinCounts,
+      { n: bins.length },
+      ...bins.map((b, i) => React.createElement("span", { key: i }, b.n ? String(b.n) : "")),
+    ),
+    React.createElement(
+      KitScale,
+      null,
+      React.createElement("span", null, "0%"),
+      React.createElement("span", null, "50%"),
+      React.createElement("span", null, "100%"),
+    ),
+  );
+
 /* A labelled scale under a picture: its two ends, or its dates. */
 const KitScale = styled.div`
   display: flex;

@@ -1461,6 +1461,7 @@ const fetchModelOutlook = async (targetPrice) => {
   return {
     forecast,
     tally: modelOutlookTally(records, outcomes),
+    calibration: modelOutlookPairs(records, outcomes),
     lastBar: bars.length ? bars[bars.length - 1].time : null,
     at: now,
   };

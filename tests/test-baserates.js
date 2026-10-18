@@ -30,8 +30,34 @@ const csv = run(`baseHistoryCsv("BTC", [{title: '=SUM(1,2)"', records: [
   { days: 30, result: { n: 20, up: 60, baseUp: 50, baseN: 100 } }
 ]}])`);
 assert.ok(csv.includes('"\'=SUM(1,2)"""'));
-assert.ok(csv.includes('"7","10","9","","100","","",""'), "CSV refuses sparse comparisons");
-assert.ok(csv.includes('"30","20","12","0.6","100","0.5"'));
+assert.ok(csv.includes('"7","10","10","9","","100","","",""'), "CSV refuses sparse comparisons");
+assert.ok(csv.includes('"30","20","20","12","0.6","100","0.5"'), "…and carries n_eff (n when nothing overlaps)");
+
+/* ── effective n for overlapping windows (18 Oct 2026, TODAY T6 A2) ──── */
+assert.strictEqual(run("effectiveN([0, 10, 20, 30], 10)"), 4, "windows that do not overlap are worth their count");
+assert.strictEqual(run("effectiveN([5, 5, 5, 5], 10)"), 1, "the same start counted four times is one look");
+{
+  const consecutive = run("effectiveN(Array.from({ length: 400 }, (_, i) => i), 10)");
+  assert.ok(Math.abs(consecutive - 40) < 1.5, `every consecutive day at h = 10 is worth about n / h (${consecutive.toFixed(2)})`);
+}
+assert.strictEqual(run("effectiveN([0, 1, 2], 1)"), 3, "a one-day horizon shares nothing");
+assert.strictEqual(run("effectiveN([], 10)"), 0);
+{
+  const narrow = json("wilsonShare(0.6, 100)");
+  const wide = json("wilsonShare(0.6, 25)");
+  assert.ok(wide.hi - wide.lo > narrow.hi - narrow.lo, "fewer effective looks, a wider interval");
+  const same = json("wilsonInterval(60, 100)");
+  assert.ok(Math.abs(same.lo - narrow.lo) < 1e-12 && Math.abs(same.hi - narrow.hi) < 1e-12, "on a whole n it is the Wilson interval");
+  assert.strictEqual(run("wilsonShare(0.5, 0.5)"), null, "under one look, no interval");
+}
+{
+  // A state true every other day for a stretch: its entries are two days apart
+  run(`this.cl = Array.from({ length: 300 }, (_, i) => 100 + i);
+  this.vals = Array.from({ length: 300 }, (_, i) => i < 120 && i % 2 === 0);`);
+  const r = json("baseRateFor(cl, vals, (v) => v, 10)");
+  assert.strictEqual(r.n, 60, "sixty entries");
+  assert.ok(r.nEff < r.n / 3 && r.nEff > 1, `…worth far fewer than sixty once their shared days are counted once (${r.nEff.toFixed(1)})`);
+}
 
 run(`this.panel = new BaseRatesPanel({ coin: "BTC" });
 this.deep = Array.from({ length: 900 }, (_, i) => ({t: (18000 + i) * 86400, open: 100 + Math.sin(i / 9) * 10, high: 112, low: 88, close: 100 + Math.sin(i / 9) * 10}));
@@ -79,3 +105,20 @@ assert.ok(!/NaN|Infinity/.test(geometry));
     "the count is kept from load and not repeated by the render");
   console.log("BASE RATES TESTS OK");
 })().catch((error) => { console.error(error); process.exitCode = 1; });
+
+/* ── a rate pulled towards an ordinary day (18 Oct 2026, TODAY T6 A3) ── */
+{
+  assert.strictEqual(run("shrunkRate(0, 0, 0.55, 40)"), 0.55, "with no episodes it is the ordinary day");
+  assert.ok(Math.abs(run("shrunkRate(700000, 1000000, 0.55, 40)") - 0.7) < 1e-4, "with a great many it is the count");
+  assert.strictEqual(run("shrunkRate(9, 12, 0.5, 0)"), 0.75, "κ = 0 leaves the count alone");
+  assert.strictEqual(run("betaBinomialStrength([{ k: 6, n: 12, base: 0.5 }])"), null, "under five items, nothing is fitted");
+  // Rates spread no wider than binomial noise: pulled home
+  const tight = run("betaBinomialStrength(Array.from({ length: 8 }, () => ({ k: 6, n: 12, base: 0.5 })))");
+  assert.strictEqual(tight, run("BETA_SHRINK_MAX"), "rates no further from their bases than noise are pulled all the way");
+  // Rates far apart: a weak pull
+  const wide = run("betaBinomialStrength([0, 12, 1, 11, 0, 12, 2, 10].map((k) => ({ k, n: 12, base: 0.5 })))");
+  assert.ok(wide >= 0 && wide < 2, `rates spread far beyond noise are pulled little (κ ${wide.toFixed(2)})`);
+  const s = json(`shrinkStrengths([{ byHorizon: [{ days: 10, result: { n: 4, up: 50, baseUp: 50 } }] }])`);
+  assert.deepStrictEqual(s, {}, "a row under the floor does not enter the fit");
+}
+console.log("  ✔ effective n, Wilson on a share, and rates pulled towards an ordinary day");

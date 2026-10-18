@@ -20146,6 +20146,31 @@ await page.evaluate(`(() => { const m = document.querySelector("[data-practice-r
     await ctx.close();
   }
 
+  /* §136 — the board's chances, kept (18 Oct 2026, TODAY T6 A1): settled
+   * calls carrying the board's chance are binned by tenths and drawn against
+   * what happened; a tenth under the record's floor is an outline, not a
+   * rate, and fewer than the floor in all draws nothing. */
+  {
+    const T = Date.now() - 3600e3;
+    const mk = (i, p, hit) => ({ id: `r${i}`, coin: "BTC", currency: "USD", period: "hour", target: T - i * 600e3, span: 180e3, lo: 43000 + i * 100, hi: 43100 + i * 100, placed: T - i * 600e3 - 900e3, placedPrice: 43000, result: hit ? "hit" : "miss", settledPrice: 43050, settledAt: T, odds: { p, n: 2900, src: "board" } });
+    const done = [
+      ...[0.12, 0.14, 0.15, 0.11, 0.18, 0.16].map((p, i) => mk(i, p, i === 0)),
+      ...[0.62, 0.65, 0.61, 0.68, 0.66, 0.63].map((p, i) => mk(10 + i, p, i < 4)),
+      mk(20, 0.85, true), mk(21, 0.88, false),
+    ];
+    const { ctx, page } = await newCtx(browser, `(() => { localStorage.setItem("crypto_chart_onboarding_seen", "1"); localStorage.setItem("crypto_chart_predict", "true"); localStorage.setItem("crypto_chart_calls", ${JSON.stringify(JSON.stringify({ record: { hits: 6, total: 14 }, open: [], done }))}); })()`);
+    const errs = [];
+    page.on("pageerror", (e) => errs.push(e.message));
+    await page.keyboard.press("k");
+    await page.waitForTimeout(900);
+    const diagram = await page.evaluate(`(() => { const box = document.querySelector("[data-alerts-card] [data-record-reliability]"); if (!box) return null; return { n: box.getAttribute("data-record-reliability"), bins: [...box.querySelectorAll("[data-bin]")].map((r) => r.getAttribute("data-bin") + (r.getAttribute("class") === "kit-rule" ? ":outline" : ":rate")), text: box.innerText }; })()`);
+    check(diagram && diagram.n === "14" && diagram.bins.join(" ") === "1:1/6:rate 6:4/6:rate 8:1/2:outline",
+      "§136 the calls record draws the board's chances by tenths: two rates, and a tenth of two as an outline", JSON.stringify(diagram));
+    check(diagram && /dashed line/.test(diagram.text), "§136 …and says how to read it");
+    check(errs.length === 0, "§136 nothing threw", errs.join(" | "));
+    await ctx.close();
+  }
+
   await browser.close();
   if (failed) {
     console.error(`\n✘ ${failed} POLISH CHECK(S) FAILED`);

@@ -563,6 +563,20 @@
   "al_record_trail": {
     "message": "Son $1 tahmin, eskiden yeniye: dolu kare tuttu"
   },
+  "al_reliability": {
+    "message": "Tahtanın olasılıkları, kayıtlı"
+  },
+  "al_reliability_note": {
+    "message": "Yatay: tahtanın kareye verdiği olasılık, onda birlik dilimlerle. Dikey: bunların kaçının gerçekleştiği; kesikli çizgi ikisinin örtüştüğü yer. $1 tahmin; $2'den azı olan dilim bir oran değil, yalnızca bir çerçevedir.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
   "al_remove_aria": {
     "message": "$1 hedefini kaldır"
   },
@@ -1536,6 +1550,20 @@
   "br_interval": {
     "message": "Wilson %95 aralığı: %$1–$2"
   },
+  "br_interval_eff": {
+    "message": "Wilson %95 aralığı: %$1–$2, $3 etkin bölüm üzerinden — pencereleri günleri paylaşıyor",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      }
+    }
+  },
   "br_live_only": {
     "message": "Yalnızca şu an görülenler"
   },
@@ -1669,6 +1697,14 @@
   },
   "br_search": {
     "message": "Kitaplıkta ara"
+  },
+  "br_shrunk": {
+    "message": "sıradan güne çekilmiş: %$1 — sayım bu coinin diğer satırlarıyla tartıldı",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
   },
   "br_sim_intro": {
     "message": "Bu coinin geçmişinde son $2 günü, son $2 günle aynı şekli taşıyan $1 dönem — seviyesi ya da büyüklüğü değil, yolu — her biri ardından gelen $3 günle."
@@ -2991,6 +3027,14 @@
   },
   "mo_band_title": {
     "message": "$1 kapanışı için modelin dağılımının ortadaki %80'i — bir bant, bir yol değil",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "mo_calibration": {
+    "message": "hedefin üstü olasılıkları, kayıtlı: burada $1 saat",
     "placeholders": {
       "arg1": {
         "content": "$1"

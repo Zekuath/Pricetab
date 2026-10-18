@@ -54,13 +54,15 @@ const baseHistoryItems = (panel, readings) => {
 };
 
 const baseHistoryCsv = (coin, items) => {
-  const rows = [["coin", "item", "outcome", "horizon_days", "n", "k", "rate", "base_n", "base_rate", "wilson95_lo", "wilson95_hi"]];
+  const rows = [["coin", "item", "outcome", "horizon_days", "n", "n_eff", "k", "rate", "base_n", "base_rate", "wilson95_lo", "wilson95_hi"]];
   for (const item of items) for (const { days, result: r } of item.records) {
     if (!r) continue;
     const k = r.k == null ? Math.round((r.up || 0) * r.n / 100) : r.k;
     const enough = r.n >= BASE_RATE_MIN_EPISODES;
-    const interval = enough ? wilsonInterval(k, r.n) : null;
-    rows.push([coin, item.title, item.shape ? "target_first" : item.move ? "larger_move" : "up", days, r.n, k, enough ? k / r.n : "", r.baseN, enough && r.baseUp != null ? r.baseUp / 100 : "", interval && interval.lo, interval && interval.hi]);
+    // The interval on what overlapping episodes are worth, as the screen draws it
+    const nEff = Number.isFinite(r.nEff) ? r.nEff : r.n;
+    const interval = enough ? (nEff < r.n - 0.5 ? wilsonShare(k / r.n, Math.max(1, nEff)) : wilsonInterval(k, r.n)) : null;
+    rows.push([coin, item.title, item.shape ? "target_first" : item.move ? "larger_move" : "up", days, r.n, Number(nEff.toFixed(2)), k, enough ? k / r.n : "", r.baseN, enough && r.baseUp != null ? r.baseUp / 100 : "", interval && interval.lo, interval && interval.hi]);
   }
   // Formula prefixes in translated or user-supplied labels stay plain text.
   const cell = (v) => '"' + String(v == null ? "" : v).replace(/^[=+@-]/, "'$&").replace(/"/g, '""') + '"';

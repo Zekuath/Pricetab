@@ -124,6 +124,13 @@ ok(JSON.stringify(list) === before, "settling writes beside the forecast and nev
 const notYet = JSON.parse(JSON.stringify(run(`modelOutlookSettle(${before}, {}, __settleBars, ${fx.origin + HOUR - 1})`)));
 ok(!notYet[rec.id], "an hour not yet ended settles nothing");
 const tally = JSON.parse(JSON.stringify(run(`modelOutlookTally(${before}, ${JSON.stringify(outcomes)})`)));
+// The chances a target was given, beside whether the hour closed above it
+{
+  const recs = [{ id: "a", pAbove: 0.3 }, { id: "b", pAbove: 0.7 }, { id: "c" }, { id: "d", pAbove: 0.5 }];
+  const outs = { a: { above: true, inside: true }, b: { above: false, inside: true }, c: { inside: false }, d: { none: true } };
+  const pairs = JSON.parse(JSON.stringify(run(`modelOutlookPairs(${JSON.stringify(recs)}, ${JSON.stringify(outs)})`)));
+  assert.deepStrictEqual(pairs, [{ p: 0.3, hit: true }, { p: 0.7, hit: false }], "only settled records that carried a target");
+}
 ok(tally.n === 1 && tally.inside === 0, "the tally counts scored forecasts and the ones inside");
 ok(run(`modelOutlookAppend(Array.from({ length: MODEL_OUTLOOK_RECORDS_MAX }, (_, i) => ({ id: "r" + i })), { id: "new" }).length`) === run("MODEL_OUTLOOK_RECORDS_MAX"), "the record is bounded");
 

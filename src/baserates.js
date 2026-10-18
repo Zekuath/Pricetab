@@ -229,19 +229,36 @@ class BaseRatesPanel extends PureComponent {
 
   /* One counted bar, its uncertainty, and the ordinary share as a tick.
      The reference used to take a second bar for every comparison. */
-  renderBars(self, base) {
-    const [, up, , n] = self;
+  renderBars(self, base, days) {
+    const [, up, , n, nEff] = self;
     if (n < BASE_RATE_MIN_EPISODES) return React.createElement(BaseVerdict, { weak: true },
       msg("br_too_few", "$1 episodes is too few to compare — the difference is not printed.", String(n)));
-    const interval = n >= BASE_RATE_MIN_EPISODES ? wilsonInterval(Math.round(up * n / 100), n) : null;
+    /* Episodes whose windows share days count for less (effectiveN, 18 Oct
+       2026): the whisker is drawn on what they are worth, and says so. */
+    const shared = Number.isFinite(nEff) && nEff < n - 0.5;
+    const interval = n >= BASE_RATE_MIN_EPISODES
+      ? shared ? wilsonShare(up / 100, Math.max(1, nEff)) : wilsonInterval(Math.round(up * n / 100), n)
+      : null;
     const quiet = !interval || (base[1] >= interval.lo * 100 && base[1] <= interval.hi * 100);
+    /* On the Library, a quiet second figure: the rate pulled towards the
+       ordinary day by how much this coin's rows spread (shrunkRate). The
+       count stays the number; this never replaces it. */
+    const kept = this._readings && this._readings.out;
+    const kappa = this.state.tab === "library" && days != null && kept && kept.shrink ? kept.shrink[days] : null;
+    const pulled = Number.isFinite(kappa) && Number.isFinite(base[1])
+      ? shrunkRate(Math.round((up * n) / 100), n, base[1] / 100, kappa) * 100
+      : null;
     const describe = ([label, share, median, count]) => `${label}: ` + (median == null
       ? msg("br_bar_up", "up $1% · $2×", share.toFixed(0), String(count))
       : msg("br_bar_value", "up $1% · $2 typically · $3×", share.toFixed(0), formatSigned(median), String(count)));
     const chance = interval && quiet ? msg("br_within_chance", "within what chance gives") : "";
-    const uncertainty = interval ? msg("br_interval", "Wilson 95% interval: $1–$2%", (interval.lo * 100).toFixed(1), (interval.hi * 100).toFixed(1)) : "";
+    const uncertainty = !interval
+      ? ""
+      : shared
+        ? msg("br_interval_eff", "Wilson 95% interval: $1–$2%, on $3 effective episodes — their windows share days", (interval.lo * 100).toFixed(1), (interval.hi * 100).toFixed(1), nEff.toFixed(1))
+        : msg("br_interval", "Wilson 95% interval: $1–$2%", (interval.lo * 100).toFixed(1), (interval.hi * 100).toFixed(1));
     const name = [describe(self), describe(base), uncertainty, chance].filter(Boolean).join("; ");
-    return React.createElement(BaseBars, { quiet, "data-base-bars": "1", "data-base-n": n, "data-base-quiet": String(quiet), role: "img", "aria-label": name, title: name },
+    return React.createElement(BaseBars, { quiet, "data-base-bars": "1", "data-base-n": n, "data-base-n-eff": shared ? nEff.toFixed(2) : undefined, "data-base-quiet": String(quiet), role: "img", "aria-label": name, title: name },
       React.createElement(BaseBarLabel, null, describe(self)),
       React.createElement(BaseBarTrack, { "aria-hidden": "true", quiet },
         React.createElement("i", { "data-base-fill": "1", style: { width: `${up}%` } }),
@@ -250,6 +267,8 @@ class BaseRatesPanel extends PureComponent {
       ),
       React.createElement(BaseBarLabel, { base: true }, describe(base)),
       chance && React.createElement(BaseBarLabel, { base: true }, chance),
+      pulled != null && React.createElement(BaseBarLabel, { base: true, "data-base-shrunk": pulled.toFixed(1) },
+        msg("br_shrunk", "pulled towards any day: $1% — the count weighed against this coin's other rows", pulled.toFixed(0))),
     );
   }
 
@@ -561,6 +580,8 @@ class BaseRatesPanel extends PureComponent {
       }),
     );
     return {
+      // How strongly a rate is pulled towards an ordinary day, per horizon (T6 A3)
+      shrink: shrinkStrengths(rows.concat(patterns)),
       rsiNow: rsi[last],
       priceNow: closes[last],
       ma200Now: ma200[last],
@@ -917,8 +938,9 @@ class BaseRatesPanel extends PureComponent {
         { "data-base-horizon": String(days) },
         React.createElement(BaseHorizonLabel, null, msg("cp_next_days", "next $1 days", String(days))),
         this.renderBars(
-          [msg("br_bar_this", "After this"), r.up, null, r.n],
+          [msg("br_bar_this", "After this"), r.up, null, r.n, r.nEff],
           [msg("br_bar_base", "Any day"), r.baseUp, null, r.baseN],
+          days,
         ),
       );
     })();
@@ -1049,8 +1071,9 @@ class BaseRatesPanel extends PureComponent {
           { key: h.days, "data-base-horizon": String(h.days) },
           React.createElement(BaseHorizonLabel, null, h.label),
           this.renderBars(
-            [msg("br_bar_this", "After this"), r.up, r.median, r.n],
+            [msg("br_bar_this", "After this"), r.up, r.median, r.n, r.nEff],
             [msg("br_bar_base", "Any day"), r.baseUp, r.baseMedian, r.baseN],
+            h.days,
           ),
           React.createElement(
             BaseVerdict,

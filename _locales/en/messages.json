@@ -967,6 +967,20 @@
       }
     }
   },
+  "al_reliability": {
+    "message": "The board's chances, kept"
+  },
+  "al_reliability_note": {
+    "message": "Across: the chance the board gave the square, by tenths. Up: how many of them came true; the dashed line is where the two agree. $1 calls; a tenth with fewer than $2 is an outline, not a rate.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
   "al_remove_aria": {
     "message": "Remove $1 target",
     "placeholders": {
@@ -2636,6 +2650,20 @@
       }
     }
   },
+  "br_interval_eff": {
+    "message": "Wilson 95% interval: $1–$2%, on $3 effective episodes — their windows share days",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      }
+    }
+  },
   "br_live_only": {
     "message": "Live only"
   },
@@ -2787,6 +2815,14 @@
   },
   "br_search": {
     "message": "Search the library"
+  },
+  "br_shrunk": {
+    "message": "pulled towards any day: $1% — the count weighed against this coin's other rows",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
   },
   "br_sim_intro": {
     "message": "The $1 stretches of this coin's history whose last $2 days had the shape of the last $2 — the path, not the level or the size — each with the $3 days that followed it.",
@@ -4679,6 +4715,14 @@
   },
   "mo_band_title": {
     "message": "The central 80% of the model's distribution for the close at $1 — a band, not a path",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "mo_calibration": {
+    "message": "its chances above the target, kept: $1 hours here",
     "placeholders": {
       "arg1": {
         "content": "$1"

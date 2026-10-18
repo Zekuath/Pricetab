@@ -563,6 +563,20 @@
   "al_record_trail": {
     "message": "Las últimas $1 predicciones, de la más antigua: un cuadro relleno fue acertada"
   },
+  "al_reliability": {
+    "message": "Las probabilidades del tablero, registradas"
+  },
+  "al_reliability_note": {
+    "message": "En horizontal: la probabilidad que el tablero dio a la casilla, por décimas. En vertical: cuántas se cumplieron; la línea discontinua es donde coinciden. $1 predicciones; una décima con menos de $2 es un contorno, no una tasa.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
   "al_remove_aria": {
     "message": "Quitar el objetivo de $1"
   },
@@ -1536,6 +1550,20 @@
   "br_interval": {
     "message": "Intervalo de Wilson del 95%: $1–$2%"
   },
+  "br_interval_eff": {
+    "message": "Intervalo de Wilson al 95 %: $1–$2 %, sobre $3 episodios efectivos — sus ventanas comparten días",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      }
+    }
+  },
   "br_live_only": {
     "message": "Solo actuales"
   },
@@ -1669,6 +1697,14 @@
   },
   "br_search": {
     "message": "Buscar en la biblioteca"
+  },
+  "br_shrunk": {
+    "message": "acercado a cualquier día: $1 % — el recuento ponderado con las otras filas de esta moneda",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
   },
   "br_sim_intro": {
     "message": "Los $1 tramos de la historia de esta moneda cuyos últimos $2 días tuvieron la forma de los últimos $2 — el recorrido, no el nivel ni el tamaño —, cada uno con los $3 días que lo siguieron."
@@ -2991,6 +3027,14 @@
   },
   "mo_band_title": {
     "message": "El 80 % central de la distribución del modelo para el cierre de las $1 — una banda, no una trayectoria",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "mo_calibration": {
+    "message": "sus probabilidades sobre el objetivo, registradas: $1 horas aquí",
     "placeholders": {
       "arg1": {
         "content": "$1"

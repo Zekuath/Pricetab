@@ -563,6 +563,20 @@
   "al_record_trail": {
     "message": "Die letzten $1 Calls, älteste zuerst: ein gefülltes Quadrat war richtig"
   },
+  "al_reliability": {
+    "message": "Die Chancen des Bretts, festgehalten"
+  },
+  "al_reliability_note": {
+    "message": "Quer: die Chance, die das Brett dem Feld gab, in Zehnteln. Hoch: wie viele davon eintrafen; die gestrichelte Linie ist, wo beides übereinstimmt. $1 Calls; ein Zehntel mit weniger als $2 ist ein Umriss, keine Quote.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
   "al_remove_aria": {
     "message": "Ziel für $1 entfernen"
   },
@@ -1536,6 +1550,20 @@
   "br_interval": {
     "message": "Wilson-95%-Intervall: $1–$2%"
   },
+  "br_interval_eff": {
+    "message": "Wilson-95-%-Intervall: $1–$2 %, auf $3 effektiven Episoden — ihre Fenster teilen sich Tage",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      }
+    }
+  },
   "br_live_only": {
     "message": "Nur aktuelle"
   },
@@ -1669,6 +1697,14 @@
   },
   "br_search": {
     "message": "Katalog durchsuchen"
+  },
+  "br_shrunk": {
+    "message": "zum gewöhnlichen Tag gezogen: $1 % — die Zählung gegen die anderen Zeilen dieses Coins gewichtet",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
   },
   "br_sim_intro": {
     "message": "Die $1 Abschnitte der Geschichte dieses Coins, deren letzte $2 Tage die Form der letzten $2 hatten — der Verlauf, nicht das Niveau oder die Größe —, jeweils mit den $3 Tagen danach."
@@ -2991,6 +3027,14 @@
   },
   "mo_band_title": {
     "message": "Die mittleren 80 % der Modellverteilung für den Schlusskurs um $1 — ein Band, kein Verlauf",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "mo_calibration": {
+    "message": "seine Chancen über dem Ziel, festgehalten: $1 Stunden hier",
     "placeholders": {
       "arg1": {
         "content": "$1"

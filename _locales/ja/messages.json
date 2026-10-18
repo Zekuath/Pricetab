@@ -579,6 +579,20 @@
   "al_record_trail": {
     "message": "直近 $1 件（古い順）：塗りつぶしは的中"
   },
+  "al_reliability": {
+    "message": "ボードの確率、その記録"
+  },
+  "al_reliability_note": {
+    "message": "横軸：ボードがマスに付けた確率（10%刻み）。縦軸：そのうち当たった割合。破線は両者が一致する線です。コール $1 件。$2 件未満の区間は割合ではなく枠だけです。",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
   "al_remove_aria": {
     "message": "$1 のターゲットを削除"
   },
@@ -1552,6 +1566,20 @@
   "br_interval": {
     "message": "Wilson 95%区間：$1–$2%"
   },
+  "br_interval_eff": {
+    "message": "Wilson 95% 区間：$1–$2%、実効 $3 エピソード — 期間が日を共有しているため",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      }
+    }
+  },
   "br_live_only": {
     "message": "現在の項目のみ"
   },
@@ -1685,6 +1713,14 @@
   },
   "br_search": {
     "message": "一覧を検索"
+  },
+  "br_shrunk": {
+    "message": "ふつうの日に寄せた値：$1% — このコインの他の行と照らし合わせた数",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
   },
   "br_sim_intro": {
     "message": "このコインの過去のうち、最後の $2 日の形が直近 $2 日と似ていた $1 の期間 — 水準や大きさではなく道筋 — と、それぞれの後の $3 日間。"
@@ -3007,6 +3043,14 @@
   },
   "mo_band_title": {
     "message": "$1 の終値に対するモデル分布の中央 80% — 帯であり、経路ではありません",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "mo_calibration": {
+    "message": "目標を上回る確率の記録：ここで $1 時間",
     "placeholders": {
       "arg1": {
         "content": "$1"

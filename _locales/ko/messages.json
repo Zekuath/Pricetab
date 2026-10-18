@@ -579,6 +579,20 @@
   "al_record_trail": {
     "message": "최근 $1개 콜, 오래된 순: 채워진 칸은 맞힌 것"
   },
+  "al_reliability": {
+    "message": "보드의 확률, 기록"
+  },
+  "al_reliability_note": {
+    "message": "가로: 보드가 칸에 준 확률(10% 단위). 세로: 그중 맞은 비율. 점선은 둘이 일치하는 곳입니다. 콜 $1개, $2개 미만인 구간은 비율이 아닌 윤곽선입니다.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
   "al_remove_aria": {
     "message": "$1 목표 제거"
   },
@@ -1552,6 +1566,20 @@
   "br_interval": {
     "message": "윌슨 95% 구간: $1–$2%"
   },
+  "br_interval_eff": {
+    "message": "Wilson 95% 구간: $1–$2%, 유효 에피소드 $3개 기준 — 기간이 날을 공유합니다",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      }
+    }
+  },
   "br_live_only": {
     "message": "현재 항목만"
   },
@@ -1685,6 +1713,14 @@
   },
   "br_search": {
     "message": "목록 검색"
+  },
+  "br_shrunk": {
+    "message": "평범한 날 쪽으로 당긴 값: $1% — 이 코인의 다른 행과 견준 수치",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
   },
   "br_sim_intro": {
     "message": "이 코인의 역사에서 마지막 $2일의 모양이 최근 $2일과 닮았던 $1개 구간 — 수준이나 크기가 아니라 경로 — 과 각각의 뒤 $3일."
@@ -3007,6 +3043,14 @@
   },
   "mo_band_title": {
     "message": "$1 종가에 대한 모델 분포의 가운데 80% — 경로가 아니라 범위입니다",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "mo_calibration": {
+    "message": "목표 위 확률 기록: 여기서 $1시간",
     "placeholders": {
       "arg1": {
         "content": "$1"

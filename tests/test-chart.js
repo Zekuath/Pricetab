@@ -1282,16 +1282,21 @@ for (const [name, node] of [["A", labelA], ["B", labelB]]) {
   const counted = (c, v, test, h) => {
     if (c.length <= h + 1) return null;
     const ep = [];
+    const at = [];
     let inside = false;
     for (let i = 0; i < v.length; i++) {
       const now = test(v[i]);
-      if (now && !inside) { const f = fwd(c, i, h); if (f !== null) ep.push(f); }
+      if (now && !inside) { const f = fwd(c, i, h); if (f !== null) { ep.push(f); at.push(i); } }
       inside = now;
     }
     const base = [];
     for (let i = 0; i < c.length; i++) { const f = fwd(c, i, h); if (f !== null) base.push(f); }
     if (!base.length) return null;
-    return { n: ep.length, median: med(ep), up: up(ep), baseN: base.length, baseMedian: med(base), baseUp: up(base),
+    // Every pair, the plain way: n² over the summed shared share of the window
+    let shared = 0;
+    for (const a of at) for (const b of at) shared += h > 1 ? Math.max(0, 1 - Math.abs(a - b) / h) : a === b ? 1 : 0;
+    const nEff = !at.length ? 0 : h > 1 ? (at.length * at.length) / shared : at.length;
+    return { n: ep.length, nEff, median: med(ep), up: up(ep), baseN: base.length, baseMedian: med(base), baseUp: up(base),
       edge: ep.length >= run("BASE_RATE_MIN_EPISODES") ? med(ep) - med(base) : null };
   };
   let seed = 7;
@@ -1302,9 +1307,11 @@ for (const [name, node] of [["A", labelA], ["B", labelB]]) {
   sandbox.__bf = series.map(() => rnd() < 0.1);
   const compare = (when) => {
     for (const h of [1, 5, 10, 30]) {
-      const want = JSON.stringify(counted(sandbox.__bs, sandbox.__bf, (v) => v === true, h));
+      // nEff is a float sum in another order: equal to nine places, not to the last bit
+      const fix = (r) => (r && Number.isFinite(r.nEff) ? { ...r, nEff: Number(r.nEff.toFixed(9)) } : r);
+      const want = JSON.stringify(fix(counted(sandbox.__bs, sandbox.__bf, (v) => v === true, h)));
       for (const pass of [1, 2]) {
-        const got = JSON.stringify(json(`baseRateFor(__bs, __bf, (v) => v === true, ${h})`));
+        const got = JSON.stringify(fix(json(`baseRateFor(__bs, __bf, (v) => v === true, ${h})`)));
         assert.strictEqual(got, want, `baseRateFor at ${h} days, ask ${pass}, ${when}: kept equals counted`);
       }
     }

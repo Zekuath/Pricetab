@@ -290,3 +290,20 @@ const isLeadingCall = vm.runInContext("isLeadingCall", sandbox);
 }
 
 console.log("ALL CALLS TESTS PASSED");
+
+/* ── reliabilityBins (18 Oct 2026, TODAY T6 A1) ─────────────────────────── */
+{
+  const bins = JSON.parse(JSON.stringify(vm.runInContext(`reliabilityBins(${JSON.stringify([
+    { p: 0.05, hit: false }, { p: 0.12, hit: true }, { p: 0.19, hit: false },
+    { p: 0.11, hit: false }, { p: 0.13, hit: false }, { p: 0.15, hit: true },
+    { p: 1, hit: true }, { p: 1.2, hit: true }, { p: null, hit: true },
+  ])}, 5)`, sandbox)));
+  assert.strictEqual(bins.length, 10, "ten tenths");
+  assert.deepStrictEqual([bins[0].n, bins[0].rate], [1, null], "a tenth of one has a count and no rate");
+  assert.strictEqual(bins[1].n, 5, "0.11–0.19 land in the second tenth");
+  assert.strictEqual(bins[1].rate, 0.4, "…two of five came true");
+  assert.ok(Math.abs(bins[1].meanP - 0.14) < 1e-9, "…their mean chance");
+  assert.strictEqual(bins[9].n, 1, "a chance of exactly 1 is in the last tenth");
+  assert.strictEqual(bins.reduce((a, b) => a + b.n, 0), 7, "a chance outside 0..1, or none, is left out");
+  console.log("  ✔ reliabilityBins: tenths, counts, a rate only from the floor");
+}

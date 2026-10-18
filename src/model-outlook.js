@@ -335,6 +335,19 @@ const modelOutlookSettle = (records, outcomes, bars, now) => {
   return changed ? settled : outcomes || {};
 };
 
+/* The chances this browser's record gave a target, beside whether the hour
+   closed above it: `{ p, hit }` for reliabilityBins (18 Oct 2026). Only
+   records that carried a target and settled on a traded hour. */
+const modelOutlookPairs = (records, outcomes) => {
+  const out = [];
+  for (const rec of Array.isArray(records) ? records : []) {
+    const o = outcomes && outcomes[rec.id];
+    if (!o || o.none || typeof o.above !== "boolean" || !Number.isFinite(rec.pAbove) || rec.pAbove < 0 || rec.pAbove > 1) continue;
+    out.push({ p: rec.pAbove, hit: o.above });
+  }
+  return out;
+};
+
 // How the local record has done: scored forecasts and how many fell inside
 const modelOutlookTally = (records, outcomes) => {
   let n = 0;

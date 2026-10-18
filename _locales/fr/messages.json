@@ -563,6 +563,20 @@
   "al_record_trail": {
     "message": "Les $1 derniers calls, du plus ancien : un carré plein était juste"
   },
+  "al_reliability": {
+    "message": "Les chances du plateau, relevées"
+  },
+  "al_reliability_note": {
+    "message": "En travers : la chance donnée par le plateau à la case, par dixièmes. En hauteur : combien se sont réalisées ; la ligne pointillée marque l'accord des deux. $1 paris ; un dixième de moins de $2 est un contour, pas un taux.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
   "al_remove_aria": {
     "message": "Retirer l'objectif $1"
   },
@@ -1536,6 +1550,20 @@
   "br_interval": {
     "message": "Intervalle de Wilson à 95 % : $1–$2 %"
   },
+  "br_interval_eff": {
+    "message": "Intervalle de Wilson à 95 % : $1–$2 %, sur $3 épisodes effectifs — leurs fenêtres partagent des jours",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      }
+    }
+  },
   "br_live_only": {
     "message": "Actuels seulement"
   },
@@ -1669,6 +1697,14 @@
   },
   "br_search": {
     "message": "Chercher dans la bibliothèque"
+  },
+  "br_shrunk": {
+    "message": "ramené vers un jour ordinaire : $1 % — le décompte pesé contre les autres lignes de cette monnaie",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
   },
   "br_sim_intro": {
     "message": "Les $1 périodes de l'histoire de cette crypto dont les $2 derniers jours avaient la forme des $2 derniers — le parcours, pas le niveau ni la taille —, chacune avec les $3 jours qui l'ont suivie."
@@ -2991,6 +3027,14 @@
   },
   "mo_band_title": {
     "message": "Les 80 % centraux de la distribution du modèle pour la clôture de $1 — une bande, pas une trajectoire",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "mo_calibration": {
+    "message": "ses chances au-dessus de l'objectif, relevées : $1 heures ici",
     "placeholders": {
       "arg1": {
         "content": "$1"

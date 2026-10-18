@@ -8637,6 +8637,21 @@ class CryptoChart extends PureComponent {
                           "here: recording — no hour settled yet",
                         ),
                   ),
+                  /* The chances it gave a target, against what happened, from
+                     this browser's own settled hours (18 Oct 2026, T6 A1) —
+                     drawn only once there are enough to read. */
+                  Array.isArray(data.calibration) && data.calibration.length >= RECORD_MIN_FOR_STATS
+                    ? React.createElement(
+                        "div",
+                        { "data-model-outlook": "calibration", style: { marginTop: "0.4em" } },
+                        kitReliabilityBlock(reliabilityBins(data.calibration), { h: 2.4 }),
+                        React.createElement(
+                          WidgetSubtext,
+                          null,
+                          msg("mo_calibration", "its chances above the target, kept: $1 hours here", String(data.calibration.length)),
+                        ),
+                      )
+                    : null,
                 );
               })(),
             },

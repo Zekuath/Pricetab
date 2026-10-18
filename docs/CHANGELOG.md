@@ -9,6 +9,15 @@ submitted, so their changes reach the store here.
 
 ### Added
 
+- The calls record shows the board's chances against what came true, in
+  tenths, beside the diagonal where the two would agree. The model outlook
+  card shows the same for the hours this browser has recorded.
+- Base rates:
+  - The uncertainty around a rate counts overlapping episodes once, so an
+    interval drawn from episodes that share days is honestly wider.
+  - The Library shows each rate pulled towards an ordinary day, as a second
+    figure beside the count.
+
 - Settings:
   - New sections: Targets & alarm (the notification and sound switches),
     Widgets (text size and a bundle to start from), Portfolio (cost basis

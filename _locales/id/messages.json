@@ -563,6 +563,20 @@
   "al_record_trail": {
     "message": "$1 call terakhir, dari yang terlama: kotak terisi berarti tepat"
   },
+  "al_reliability": {
+    "message": "Peluang papan, tercatat"
+  },
+  "al_reliability_note": {
+    "message": "Mendatar: peluang yang diberikan papan pada kotak, per sepersepuluh. Tegak: berapa yang terbukti; garis putus-putus adalah titik keduanya sama. $1 prediksi; sepersepuluh dengan kurang dari $2 hanya garis tepi, bukan tingkat.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
   "al_remove_aria": {
     "message": "Hapus target $1"
   },
@@ -1536,6 +1550,20 @@
   "br_interval": {
     "message": "Interval Wilson 95%: $1–$2%"
   },
+  "br_interval_eff": {
+    "message": "Interval Wilson 95%: $1–$2%, pada $3 episode efektif — jendelanya berbagi hari",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      }
+    }
+  },
   "br_live_only": {
     "message": "Hanya yang berlaku kini"
   },
@@ -1669,6 +1697,14 @@
   },
   "br_search": {
     "message": "Cari dalam pustaka"
+  },
+  "br_shrunk": {
+    "message": "ditarik ke hari biasa: $1% — hitungan ditimbang terhadap baris lain koin ini",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
   },
   "br_sim_intro": {
     "message": "$1 rentang dalam sejarah koin ini yang $2 hari terakhirnya berbentuk seperti $2 hari terakhir — jalurnya, bukan level atau besarnya —, masing-masing dengan $3 hari sesudahnya."
@@ -2991,6 +3027,14 @@
   },
   "mo_band_title": {
     "message": "80% tengah distribusi model untuk penutupan pukul $1 — sebuah pita, bukan jalur",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "mo_calibration": {
+    "message": "peluangnya di atas target, tercatat: $1 jam di sini",
     "placeholders": {
       "arg1": {
         "content": "$1"

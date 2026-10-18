@@ -563,6 +563,20 @@
   "al_record_trail": {
     "message": "Os últimos $1 palpites, do mais antigo: quadrado cheio foi acerto"
   },
+  "al_reliability": {
+    "message": "As chances do tabuleiro, registradas"
+  },
+  "al_reliability_note": {
+    "message": "Na horizontal: a chance que o tabuleiro deu à casa, por décimos. Na vertical: quantas se confirmaram; a linha tracejada é onde as duas coincidem. $1 palpites; um décimo com menos de $2 é um contorno, não uma taxa.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
   "al_remove_aria": {
     "message": "Remover o alvo de $1"
   },
@@ -1536,6 +1550,20 @@
   "br_interval": {
     "message": "Intervalo de Wilson de 95%: $1–$2%"
   },
+  "br_interval_eff": {
+    "message": "Intervalo de Wilson 95%: $1–$2%, sobre $3 episódios efetivos — suas janelas compartilham dias",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      }
+    }
+  },
   "br_live_only": {
     "message": "Só atuais"
   },
@@ -1669,6 +1697,14 @@
   },
   "br_search": {
     "message": "Buscar na biblioteca"
+  },
+  "br_shrunk": {
+    "message": "puxado para um dia qualquer: $1% — a contagem pesada contra as outras linhas desta moeda",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
   },
   "br_sim_intro": {
     "message": "Os $1 trechos da história desta moeda cujos últimos $2 dias tiveram a forma dos últimos $2 — o caminho, não o nível nem o tamanho —, cada um com os $3 dias que o seguiram."
@@ -2991,6 +3027,14 @@
   },
   "mo_band_title": {
     "message": "Os 80% centrais da distribuição do modelo para o fechamento das $1 — uma faixa, não uma trajetória",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "mo_calibration": {
+    "message": "suas chances acima do alvo, registradas: $1 horas aqui",
     "placeholders": {
       "arg1": {
         "content": "$1"

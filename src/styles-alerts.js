@@ -1288,6 +1288,27 @@ const AlertRecordBar = styled.div`
   color: ${({ theme }) => theme.color.textSecondary};
 `;
 
+/* The reliability diagram's block: its label, the picture at the drawer's
+ * small type, the sentence that says how to read it. */
+const AlertRecordReliability = styled.div`
+  margin: 0.7rem 0.1rem 0;
+  font-size: ${posType.micro};
+  color: ${({ theme }) => theme.color.textSecondary};
+  & > svg {
+    margin-top: 0.4rem;
+    max-width: 24rem;
+  }
+  & > div {
+    max-width: 24rem;
+  }
+`;
+
+const AlertRecordNote = styled.p`
+  margin: 0.35rem 0 0;
+  max-width: 34rem;
+  line-height: 1.45;
+`;
+
 const AlertRecordFigure = styled.span`
   color: ${({ theme }) => theme.color.text};
   font-variant-numeric: tabular-nums;
