@@ -70,7 +70,13 @@ const sandbox = {
       return { ok: true, status: 200, json: async () => ({ jsonrpc: "2.0", id: 1, result: {
         oldestBlock: "0x1",
         baseFeePerGas: ["0x70fe2a2", "0x787448f", "0x7793a70", "0x75ded4d", "0x7e255a7", "0x864dcbe"],
-        reward: [["0x8f0d180"], ["0x8f0d180"], ["0x8f0d180"], ["0xbebc200"], ["0xbebc200"]],
+        // One column per asked percentile (10th, 50th, 90th): the usual tip is
+        // the middle one; the slow and fast columns must not leak into it
+        reward: [
+          ["0x0", "0x8f0d180", "0x1dcd6500"], ["0x0", "0x8f0d180", "0x1dcd6500"],
+          ["0x0", "0x8f0d180", "0x1dcd6500"], ["0x0", "0xbebc200", "0x1dcd6500"],
+          ["0x0", "0xbebc200", "0x1dcd6500"],
+        ],
         gasUsedRatio: [0.5, 0.5, 0.5, 0.5, 0.5],
       } }) };
     }
@@ -1172,6 +1178,9 @@ const json = (c) => JSON.parse(JSON.stringify(run(c)));
       "the base fee is the LAST entry — the next block's, not the newest mined one",
     );
     assert.strictEqual(gas.tipGwei, 0.15, "the tip is the median of the window, not the mean (0.17) or the last (0.2)");
+    assert.strictEqual(Math.round(gas.slowGwei * 1e4) / 1e4, 0.1408, "the slow tier is base + the 10th-percentile tip");
+    assert.strictEqual(Math.round(gas.fastGwei * 1e4) / 1e4, 0.6408, "the fast tier is base + the 90th-percentile tip");
+    assert.strictEqual(gas.history.length, 6, "the base fee over the window, oldest first");
     assert.strictEqual(Math.round(gas.gwei * 1e4) / 1e4, 0.2908, "the quoted price is base + tip");
     // 21,000 gas is the protocol's own floor for a plain transfer, not a guess
     assert.strictEqual(

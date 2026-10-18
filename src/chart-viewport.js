@@ -1129,7 +1129,7 @@ class ChartView extends Component {
           const chart = this.chart;
           const svg = chart && chart.svgRef && chart.svgRef.current;
           if (svg && chart.handlePointerMove) {
-            const r = svg.getBoundingClientRect();
+            const r = this.svgRect(svg);
             chart.handlePointerMove({
               offsetX: d.x - r.left,
               offsetY: d.y - r.top,
@@ -1203,7 +1203,7 @@ class ChartView extends Component {
         const svg =
           this.chart && this.chart.svgRef && this.chart.svgRef.current;
         if (!svg) return;
-        const r = svg.getBoundingClientRect();
+        const r = this.svgRect(svg);
         const x = e.clientX - r.left;
         const y = e.clientY - r.top;
         if (d.mode === "measure") this.chart.moveMeasure(x, y);
@@ -1437,7 +1437,7 @@ class ChartView extends Component {
   pinchPoints() {
     const svg = this.chart && this.chart.svgRef && this.chart.svgRef.current;
     if (!svg || !this._touches || this._touches.size < 2) return null;
-    const r = svg.getBoundingClientRect();
+    const r = this.svgRect(svg);
     const [a, b] = [...this._touches.values()];
     return {
       mid: (a.x + b.x) / 2 - r.left,
@@ -1677,7 +1677,7 @@ class ChartView extends Component {
     const svg = chart.svgRef && chart.svgRef.current;
     if (!svg || chart.priceToY || chart.compareScaled || !(chart.axisW > 0))
       return null;
-    const r = svg.getBoundingClientRect();
+    const r = this.svgRect(svg);
     const x = clientX - r.left;
     const y = clientY - r.top;
     const w = chart.width;
@@ -1687,13 +1687,39 @@ class ChartView extends Component {
     return { x, y, h };
   }
 
+  /* The chart's box on the page, read once for a burst of events (17 Oct
+     2026). Every wheel notch and pointer move asked the browser for it right
+     after the last frame had written the chart, which forced a layout of the
+     whole page each time — 207 ms of a profile at CPU ×4. The page does not
+     scroll and nothing moves the chart during a gesture, so a box read in
+     the last 250 ms (and under a second old) is still the box; a new window
+     size is read again at once. */
+  svgRect(svg) {
+    const now = performance.now();
+    const k = this._svgRect;
+    if (
+      k &&
+      k.svg === svg &&
+      now - k.used < 250 &&
+      now - k.at < 1000 &&
+      k.w === window.innerWidth &&
+      k.h === window.innerHeight
+    ) {
+      k.used = now;
+      return k.r;
+    }
+    const r = svg.getBoundingClientRect();
+    this._svgRect = { svg, r, at: now, used: now, w: window.innerWidth, h: window.innerHeight };
+    return r;
+  }
+
   /* Where the plot is on the page, if (x, y) is inside it — the axes and the
      gutter are not the plot, and nothing there starts a gesture. */
   plotBox(clientX, clientY) {
     if (!this.enabled()) return null;
     const svg = this.chart.svgRef && this.chart.svgRef.current;
     if (!svg) return null;
-    const r = svg.getBoundingClientRect();
+    const r = this.svgRect(svg);
     const w = this.chart.width;
     const h = this.chart.height;
     const x = clientX - r.left;

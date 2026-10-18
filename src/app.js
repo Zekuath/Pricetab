@@ -488,6 +488,8 @@ class CryptoChart extends PureComponent {
       phoneMore: false,
       callDraft: null,
       callDraftConfidence: null,
+      // Your own chance on the call sheet (CALL_MINE_CHOICES), until it locks
+      callDraftMine: null,
       touchHintSeen: loadBoolSetting(TOUCH_HINT_SEEN_KEY, false),
       /* Futures, drawn inside the Calls panel — see `renderPositions` in
          `src/alerts.js`. Marked against the same live price the chart is
@@ -856,12 +858,17 @@ class CryptoChart extends PureComponent {
         ["halvingCountdown", fetchHalvingData, "halvingData", false],
         ["ethGas", fetchEthGas, "ethGasData", false],
         ["btcFees", fetchBtcFees, "btcFeesData", false],
+        ["btcFees", fetchBtcFeeDay, "btcFeeDayData", false, "l"],
         ["mempool", fetchMempool, "mempoolData", false],
         ["difficulty", fetchDifficulty, "difficultyData", false],
         ["altcoinSeason", fetchAltcoinSeason, "altcoinSeasonData", false],
         ["fundingRate", fetchFundingRate, "fundingRateData", true],
+        // The month the medium and large cards draw; a small card asks nothing
+        ["fundingRate", fetchFundingRecent, "fundingRecentData", true, "m"],
         ["longShortRatio", fetchLongShortRatio, "longShortData", true],
+        ["longShortRatio", fetchLongShortMonth, "longShortMonthData", true, "m"],
         ["openInterest", fetchOpenInterest, "openInterestData", true],
+        ["openInterest", fetchOpenInterestMonth, "oiMonthData", true, "m"],
         ["liquidations", fetchLiquidations, "liquidationsData", true],
         ["regimes", fetchRegimeGrid, "regimeData", true],
         ["options", fetchOptionsSummary, "optionsData", true],
@@ -870,6 +877,7 @@ class CryptoChart extends PureComponent {
         ["oiLeaders", fetchPerpBoard, "perpBoardData", false],
         ["stablecoins", fetchStablecoins, "stablecoinsData", false],
         ["ethBtc", () => fetchEthBtc(this.state.currency), "ethBtcData", false],
+        ["ethBtc", fetchEthBtcMonth, "ethBtcMonthData", false, "m"],
         ["etfFlows", fetchEtfFlows, "etfFlowsData", false],
         // Not per coin: the model is BTC-USD's whatever the chart shows
         [
@@ -881,8 +889,13 @@ class CryptoChart extends PureComponent {
       ];
 
       await Promise.all(
-        jobs.map(async ([key, fetcher, field, perCoin]) => {
+        jobs.map(async ([key, fetcher, field, perCoin, from]) => {
           if (!wanted(key)) return;
+          // A job for the larger designs only: skipped while the card is small
+          if (from && this._widgetPreview !== key) {
+            const size = widgetCardSize(this.state.widgetCardSizes, key);
+            if (size === "s" || (from === "l" && size !== "l")) return;
+          }
           try {
             const data = await (perCoin ? fetcher(coin) : fetcher());
             // Coin-specific answers are dropped if the coin moved on. That is
@@ -3206,7 +3219,8 @@ class CryptoChart extends PureComponent {
         this.state.spineOpen === true ||
         // Beside the phone's tab bar a drawer is a sheet, and the column stays put away
         ((this.leftDrawer() !== null || this.navigationTabs("left").some((t) => t.key === this.openPanelKey())) && !phoneBarUp()) ||
-        this.state.tourActive === true,
+        // The tour points at the phone's tab bar, so the columns stay put away there
+        (this.state.tourActive === true && !phoneBarUp()),
     );
 
     /* **And the screens' column, on the right.** Asked for, or the tour. An
@@ -3218,7 +3232,7 @@ class CryptoChart extends PureComponent {
       this,
       "screenSpineShown",
       () =>
-        this.state.screenSpineOpen === true || this.state.tourActive === true ||
+        this.state.screenSpineOpen === true || (this.state.tourActive === true && !phoneBarUp()) ||
         (this.navigationTabs("right").some((t) => t.key === this.leftDrawer()) && !phoneBarUp()),
     );
 
@@ -3615,7 +3629,7 @@ class CryptoChart extends PureComponent {
     /* A call drafted by touch (chart.js asks; phone.js's CallSheet answers).
        null when the draft was let go on the chart itself. */
     _defineProperty(this, "handleCallDraft", (draft) => {
-      this.setState({ callDraft: draft || null, callDraftConfidence: null });
+      this.setState({ callDraft: draft || null, callDraftConfidence: null, callDraftMine: null });
     });
 
     _defineProperty(this, "boardChart", () => {
@@ -3626,15 +3640,15 @@ class CryptoChart extends PureComponent {
     _defineProperty(this, "handleCallLock", () => {
       const chart = this.boardChart();
       if (chart && chart.lockDraft)
-        chart.lockDraft({ confidence: this.state.callDraftConfidence });
-      this.setState({ callDraft: null, callDraftConfidence: null });
+        chart.lockDraft({ confidence: this.state.callDraftConfidence, mine: this.state.callDraftMine });
+      this.setState({ callDraft: null, callDraftConfidence: null, callDraftMine: null });
     });
 
     _defineProperty(this, "handleCallCancel", () => {
       if (!this.state.callDraft) return;
       const chart = this.boardChart();
       if (chart && chart.clearDraft) chart.clearDraft();
-      this.setState({ callDraft: null, callDraftConfidence: null });
+      this.setState({ callDraft: null, callDraftConfidence: null, callDraftMine: null });
     });
 
     _defineProperty(this, "dismissTouchHint", () => {
@@ -3740,6 +3754,9 @@ class CryptoChart extends PureComponent {
     /* The monitor on one of its tabs (B is its Base rates). Pressed while it
        is up: the tab it is on closes it, another tab switches to it. */
     // A switch inside the open screen: its frame stays still, the content moves
+    _defineProperty(this, "pickBaseCoin", (coin) =>
+      this.handleQuickSwitchPick(coin, true),
+    );
     _defineProperty(this, "handleMonitorTab", (tab) => {
       if (MONITOR_TABS.includes(tab))
         this.setState({ monitorTab: tab, monitorStill: true });
@@ -4690,6 +4707,8 @@ class CryptoChart extends PureComponent {
         s.showMonitor ||
         s.showQuickSwitch ||
         s.tourActive ||
+        // The phone's one-time touch hint is its own sheet at the foot
+        (!s.touchHintSeen && touchFirst()) ||
         s.widgetsEditing ||
         Boolean(this.leftDrawer());
       if (busy) {
@@ -4697,7 +4716,7 @@ class CryptoChart extends PureComponent {
         return;
       }
       recordRateAsk();
-      this.setState({ showRateAsk: true });
+      this.setState({ showRateAsk: true, rateStep: "ask" });
     });
 
     /* A good moment (RATE_PROMPT_MOMENT_MS): a call came true or a target was
@@ -4708,6 +4727,110 @@ class CryptoChart extends PureComponent {
       clearTimeout(this.rateTimer);
       this.setState({ rateMoment: kind });
       this.rateTimer = setTimeout(this.tryRateAsk, RATE_PROMPT_MOMENT_MS);
+    });
+
+    /* **The rating card, in two steps** (18 Oct 2026; see RATE_PROMPT_* in
+       config.js). A question first; then, for "good", the store; for
+       "could be better", a way to say what — and the store all the same. */
+    _defineProperty(this, "renderRateAsk", (tickerBottom) => {
+      const step = this.state.rateStep || "ask";
+      const moment = this.state.rateMoment;
+      const close = React.createElement(
+        RatePromptClose,
+        {
+          onClick: this.handleRateAskLater,
+          "aria-label": msg("rate_later", "Not now — ask again later"),
+          title: msg("rate_later", "Not now — ask again later"),
+        },
+        "×",
+      );
+      const head = (text) =>
+        React.createElement(
+          RateAskHead,
+          null,
+          React.createElement(RateAskText, null, text),
+          close,
+        );
+      const rate = (label) =>
+        React.createElement(
+          RateAskButton,
+          {
+            primary: true,
+            "data-rate-go": "store",
+            onClick: () => {
+              window.open(STORE_REVIEWS_URL, "_blank", "noopener");
+              this.handleRateAskDismiss();
+            },
+          },
+          label,
+        );
+      let body;
+      if (step === "good") {
+        body = [
+          head(msg("rate_good", "Glad it helps. A rating on the Chrome Web Store is how other people find PriceTab — it takes a few seconds.")),
+          React.createElement(
+            RateAskActions,
+            { key: "a" },
+            rate(msg("rate_store", "Rate on the Web Store")),
+            React.createElement(RateAskButton, { onClick: this.handleRateAskLater }, msg("rate_not_now", "Not now")),
+          ),
+        ];
+      } else if (step === "better") {
+        body = [
+          head(msg("rate_better", "Thank you for saying so. What would you change? Tell us opens a form on GitHub — nothing is sent from this page.")),
+          React.createElement(
+            RateAskActions,
+            { key: "a" },
+            React.createElement(
+              RateAskButton,
+              {
+                primary: true,
+                "data-rate-go": "feedback",
+                onClick: () => {
+                  window.open(FEEDBACK_URL, "_blank", "noopener");
+                  this.handleRateAskLater();
+                },
+              },
+              msg("rate_tell", "Tell us"),
+            ),
+            rate(msg("rate_anyway", "Rate anyway")),
+          ),
+        ];
+      } else {
+        body = [
+          head(
+            moment === "call"
+              ? msg("rate_ask_call", "That call came true. How is PriceTab working for you?")
+              : moment === "target"
+                ? msg("rate_ask_target", "Your target was reached. How is PriceTab working for you?")
+                : msg("rate_ask", "How is PriceTab working for you?"),
+          ),
+          React.createElement(
+            RateAskActions,
+            { key: "a" },
+            React.createElement(
+              RateAskButton,
+              { primary: true, "data-rate-choice": "good", onClick: () => this.setState({ rateStep: "good" }) },
+              msg("rate_choice_good", "Good"),
+            ),
+            React.createElement(
+              RateAskButton,
+              { "data-rate-choice": "better", onClick: () => this.setState({ rateStep: "better" }) },
+              msg("rate_choice_better", "Could be better"),
+            ),
+            React.createElement(
+              RatePromptNever,
+              { onClick: this.handleRateAskDismiss, "data-rate-never": "1" },
+              msg("rate_never", "Don't ask again"),
+            ),
+          ),
+        ];
+      }
+      return React.createElement(
+        RateAskCard,
+        { tickerBottom, role: "dialog", "aria-label": msg("rate_aria", "Rate PriceTab"), "data-rate-step": step },
+        ...body,
+      );
     });
 
     // × is "not now": the schedule already holds the next ask
@@ -5078,6 +5201,7 @@ class CryptoChart extends PureComponent {
        the moment the tab opens, only after it has been up a while, visible,
        with nothing out over the chart — and recorded the moment it is
        shown, so one ask is spent once whichever tab shows it. */
+    noteActiveDay();
     if (
       rateAskDue() &&
       Date.now() - getOrInitFirstUse() >= RATE_PROMPT_FALLBACK_MS
@@ -6025,10 +6149,15 @@ class CryptoChart extends PureComponent {
           React.createElement(BaseRatesPanel, {
             coin: activeCoin,
             coins: coinOptions,
-            // The screen stays; the chart's coin, which it reads, changes under it
-            onPickCoin: (coin) => this.handleQuickSwitchPick(coin, true),
+            /* The screen stays; the chart's coin, which it reads, changes
+               under it. Both props are made once: the panel is a
+               PureComponent, and a fresh arrow or strip on every root
+               render redrew it on every price tick. */
+            onPickCoin: this.pickBaseCoin,
             onClose: this.toggleMonitor,
-            tabs: monitorTabStrip("base", this.handleMonitorTab),
+            tabs:
+              this._baseTabs ||
+              (this._baseTabs = monitorTabStrip("base", this.handleMonitorTab)),
             still: this.state.monitorStill === true,
           }),
 
@@ -6061,59 +6190,7 @@ class CryptoChart extends PureComponent {
 
         // One-time rating ask (hidden behind full-screen views; the settings
         // overlay stacks above it)
-        showRateAsk &&
-          !showPortfolio &&
-          React.createElement(
-            RateAskCard,
-            { tickerBottom },
-            React.createElement(
-              RateAskText,
-              null,
-              /* Asks for the rating on the one honest ground there is: the
-               * store's ranking is how anybody else finds this, and a rating
-               * is the only thing a user can give that helps. It stays a
-               * question rather than a claim — "if you like it" — because the
-               * app does not know whether they do. */
-              this.state.rateMoment === "call"
-                ? msg(
-                    "app_rate_ask_call",
-                    "That call came true. If PriceTab helps you read the market, a rating is how other people find it — it takes a few seconds.",
-                  )
-                : this.state.rateMoment === "target"
-                  ? msg(
-                      "app_rate_ask_target",
-                      "Your target was reached. If PriceTab is useful to you, a rating is how other people find it — it takes a few seconds.",
-                    )
-                  : msg(
-                      "app_rate_ask",
-                      "Liking PriceTab? A rating is how other people find it — it takes a few seconds and helps more than anything else.",
-                    ),
-            ),
-            React.createElement(
-              RatePromptLink,
-              {
-                href: STORE_REVIEWS_URL,
-                target: "_blank",
-                rel: "noreferrer",
-                onClick: this.handleRateAskDismiss,
-              },
-              msg("set_rate", "Rate"),
-            ),
-            React.createElement(
-              RatePromptNever,
-              { onClick: this.handleRateAskDismiss, "data-rate-never": "1" },
-              msg("rate_never", "Don't ask again"),
-            ),
-            React.createElement(
-              RatePromptClose,
-              {
-                onClick: this.handleRateAskLater,
-                "aria-label": msg("rate_later", "Not now — ask again later"),
-                title: msg("rate_later", "Not now — ask again later"),
-              },
-              "×",
-            ),
-          ),
+        showRateAsk && !showPortfolio && this.renderRateAsk(tickerBottom),
         /* The ground, raised over the swap and lowered again. */
         this.state.panelSwap === true &&
           React.createElement(PanelVeil, {
@@ -7813,6 +7890,7 @@ class CryptoChart extends PureComponent {
             watchlist: {
               label: msg("widget_watchlist", "Watchlist"),
               visible: widgets.watchlist && !hidden.watchlist,
+              render: watchlistData && watchlistData.length ? (size) => widgetDesigns.watchlist(watchlistData, size, { price: (v) => formatWidgetPrice(v, getCurrencySymbol(currency), separatorFormat) }) : undefined,
               content:
                 watchlistData && watchlistData.length
                   ? React.createElement(
@@ -7828,6 +7906,7 @@ class CryptoChart extends PureComponent {
             topMovers: {
               label: msg("widget_top_movers", "Top Movers 24h"),
               visible: widgets.topMovers && !hidden.topMovers,
+              render: topMoversData ? (size) => widgetDesigns.topMovers(topMoversData, size, { price: (v) => formatWidgetPrice(v, getCurrencySymbol(currency), separatorFormat) }) : undefined,
               content: topMoversData
                 ? React.createElement(
                     WidgetCoinList,
@@ -7842,6 +7921,7 @@ class CryptoChart extends PureComponent {
             fearGreed: {
               label: msg("widget_fear_greed", "Fear & Greed"),
               visible: widgets.fearGreed && !hidden.fearGreed,
+              render: fearGreedData ? (size) => widgetDesigns.fearGreed(fearGreedData, size) : undefined,
               content: fearGreedData
                 ? React.createElement(
                     Fragment,
@@ -7883,6 +7963,7 @@ class CryptoChart extends PureComponent {
                * and a label doing the job twice. */
               label: msg("widget_market_cap", "Market Cap"),
               visible: widgets.marketOverview && !hidden.marketOverview,
+              render: marketOverviewData ? (size) => widgetDesigns.marketOverview(marketOverviewData, size) : undefined,
               content: marketOverviewData
                 ? React.createElement(
                     Fragment,
@@ -7909,6 +7990,7 @@ class CryptoChart extends PureComponent {
             halvingCountdown: {
               label: msg("widget_btc_halving", "BTC Halving"),
               visible: widgets.halvingCountdown && !hidden.halvingCountdown,
+              render: halvingData ? (size) => widgetDesigns.halvingCountdown(halvingData, size) : undefined,
               content: halvingData
                 ? React.createElement(
                     Fragment,
@@ -8001,6 +8083,7 @@ class CryptoChart extends PureComponent {
             ethGas: {
               label: msg("widget_eth_gas", "ETH Gas"),
               visible: widgets.ethGas && !hidden.ethGas,
+              render: ethGasData ? (size) => widgetDesigns.ethGas(ethGasData, size, { feeMoney }) : undefined,
               content: ethGasData
                 ? React.createElement(
                     Fragment,
@@ -8025,6 +8108,7 @@ class CryptoChart extends PureComponent {
             btcFees: {
               label: msg("widget_btc_fees", "BTC Fees"),
               visible: widgets.btcFees && !hidden.btcFees,
+              render: btcFeesData ? (size) => widgetDesigns.btcFees(btcFeesData, size, { feeMoney, day: this.state.btcFeeDayData }) : undefined,
               content: btcFeesData
                 ? React.createElement(
                     Fragment,
@@ -8081,6 +8165,7 @@ class CryptoChart extends PureComponent {
             mempool: {
               label: msg("widget_mempool", "BTC Mempool"),
               visible: widgets.mempool && !hidden.mempool,
+              render: mempoolData ? (size) => widgetDesigns.mempool(mempoolData, size) : undefined,
               content: mempoolData
                 ? React.createElement(
                     Fragment,
@@ -8128,6 +8213,7 @@ class CryptoChart extends PureComponent {
             difficulty: {
               label: msg("widget_difficulty", "BTC Difficulty"),
               visible: widgets.difficulty && !hidden.difficulty,
+              render: difficultyData ? (size) => widgetDesigns.difficulty(difficultyData, size) : undefined,
               content: difficultyData
                 ? React.createElement(
                     Fragment,
@@ -8180,6 +8266,7 @@ class CryptoChart extends PureComponent {
                 periodLabel,
               ),
               visible: widgets.worstFall && !hidden.worstFall,
+              render: valueHistory.length && fall ? (size) => widgetDesigns.worstFall(fall, size, { series: valueHistory, when: fallWhen(fall.from, fall.to), price: (v) => formatWidgetPrice(v, getCurrencySymbol(currency), separatorFormat) }) : undefined,
               content: !valueHistory.length
                 ? widgetSkeleton()
                 : fall
@@ -8224,6 +8311,7 @@ class CryptoChart extends PureComponent {
               // both belong in the label, like the other coin-specific widgets
               label: msg("widget_rsi", "$1 RSI · $2", activeCoin, periodLabel),
               visible: widgets.rsiWidget && !hidden.rsiWidget,
+              render: rsiValue !== null ? (size) => widgetDesigns.rsiWidget(rsiValue, size, { series: valueHistory }) : undefined,
               content:
                 rsiValue !== null
                   ? React.createElement(
@@ -8284,6 +8372,13 @@ class CryptoChart extends PureComponent {
                 periodLabel,
               ),
               visible: widgets.outlook && !hidden.outlook,
+              render: (() => {
+                const out = this.outlookOf(this.state.valueHistory);
+                const last = valueHistory.length ? Number(valueHistory[valueHistory.length - 1].price) : null;
+                return out && last > 0
+                  ? (size) => widgetDesigns.outlook(out, size, { last, price: (v) => formatWidgetPrice(v, getCurrencySymbol(currency), separatorFormat) })
+                  : undefined;
+              })(),
               content: (() => {
                 const out = this.outlookOf(this.state.valueHistory);
                 if (!out) {
@@ -8345,6 +8440,19 @@ class CryptoChart extends PureComponent {
             modelOutlook: {
               label: msg("widget_model_outlook", "BTC 1h · model"),
               visible: widgets.modelOutlook && !hidden.modelOutlook,
+              render: (() => {
+                const data = this.state.modelOutlookData;
+                const f = data && data.forecast;
+                const ev = OUTLOOK_MODEL.evaluation || {};
+                if (!f || f.state !== "estimate" || ev.status !== "passed") return undefined;
+                const usd = (v) => formatWidgetPrice(v, "$", separatorFormat);
+                const hhmm = (ms) => new Date(ms).toLocaleTimeString(intlTag(activeLocale()), { hour: "2-digit", minute: "2-digit", hour12: false });
+                const pct = (x) => (x < 0.01 ? "<1%" : x > 0.99 ? ">99%" : `${Math.round(x * 100)}%`);
+                // Large keeps every line of the card's own content
+                return function (size) {
+                  return size === "l" ? this.content : widgetDesigns.modelOutlook(f, size, { usd, hhmm, pct, ev });
+                };
+              })(),
               content: (() => {
                 const data = this.state.modelOutlookData;
                 if (!data) return widgetSkeleton(4, "modelOutlookData");
@@ -8542,6 +8650,16 @@ class CryptoChart extends PureComponent {
             regimes: {
               label: msg("widget_regimes", "$1 Regimes · 20d", activeCoin),
               visible: widgets.regimes && !hidden.regimes,
+              render: (() => {
+                const data = this.state.regimeData;
+                if (!data || data.coin !== activeCoin) return undefined;
+                const names = [msg("regime_rising", "rising"), msg("regime_flat", "flat"), msg("regime_falling", "falling")];
+                // Large is the card's own 3×3; small and medium are designed
+                return function (size) {
+                  const short = [msg("regime_rise_short", "rise"), msg("regime_flat_short", "flat"), msg("regime_fall_short", "fall")];
+                  return size === "l" ? this.content : widgetDesigns.regimes(data.grid, size, { names, short });
+                };
+              })(),
               content: (() => {
                 const data = this.state.regimeData;
                 if (!data || data.coin !== activeCoin)
@@ -8704,6 +8822,7 @@ class CryptoChart extends PureComponent {
                   (OPTION_BASES.includes(activeCoin) ? activeCoin : "BTC"),
               ),
               visible: widgets.options && !hidden.options,
+              render: optionsData ? (size) => widgetDesigns.options(optionsData, size, { coin: activeCoin }) : undefined,
               content: optionsData
                 ? React.createElement(
                     Fragment,
@@ -8773,6 +8892,7 @@ class CryptoChart extends PureComponent {
             fundingBoard: {
               label: msg("widget_funding_board", "Funding Board"),
               visible: widgets.fundingBoard && !hidden.fundingBoard,
+              render: perpBoardSummary(perpBoardData) ? (size) => widgetDesigns.fundingBoard(perpBoardSummary(perpBoardData), size) : undefined,
               content: (() => {
                 const b = perpBoardSummary(perpBoardData);
                 if (!b) return widgetSkeleton(0, "perpBoardData");
@@ -8819,6 +8939,7 @@ class CryptoChart extends PureComponent {
             oiLeaders: {
               label: msg("widget_oi_leaders", "Open Interest · Bybit"),
               visible: widgets.oiLeaders && !hidden.oiLeaders,
+              render: perpBoardSummary(perpBoardData) ? (size) => widgetDesigns.oiLeaders(perpBoardSummary(perpBoardData), size) : undefined,
               content: (() => {
                 const b = perpBoardSummary(perpBoardData);
                 if (!b) return widgetSkeleton(0, "perpBoardData");
@@ -8845,6 +8966,7 @@ class CryptoChart extends PureComponent {
             stablecoins: {
               label: msg("widget_stablecoins", "Stablecoins"),
               visible: widgets.stablecoins && !hidden.stablecoins,
+              render: stablecoinsData ? (size) => widgetDesigns.stablecoins(stablecoinsData, size) : undefined,
               content: stablecoinsData
                 ? React.createElement(
                     Fragment,
@@ -8885,6 +9007,7 @@ class CryptoChart extends PureComponent {
             ethBtc: {
               label: msg("widget_eth_btc", "ETH / BTC"),
               visible: widgets.ethBtc && !hidden.ethBtc,
+              render: ethBtcData ? (size) => widgetDesigns.ethBtc(ethBtcData, size, { month: this.state.ethBtcMonthData }) : undefined,
               content: ethBtcData
                 ? React.createElement(
                     Fragment,
@@ -8909,6 +9032,7 @@ class CryptoChart extends PureComponent {
             etfFlows: {
               label: msg("widget_etf_flows", "BTC ETF Flows"),
               visible: widgets.etfFlows && !hidden.etfFlows,
+              render: etfFlowsData ? (size) => widgetDesigns.etfFlows(etfFlowsData, size) : undefined,
               content: (() => {
                 const e = etfFlowsData;
                 if (!e) return widgetSkeleton(0, "etfFlowsData");
@@ -9001,6 +9125,15 @@ class CryptoChart extends PureComponent {
             macroCalendar: {
               label: msg("widget_macro_calendar", "Next US releases"),
               visible: widgets.macroCalendar && !hidden.macroCalendar,
+              render: (() => {
+                if (!nextMacroReleases(Date.now(), 1).length) return undefined;
+                const names = { cpi: msg("chart_cpi_tag", "CPI"), nfp: msg("chart_nfp_tag", "NFP"), fomc: msg("chart_fomc_tag", "FOMC"), pce: msg("chart_pce_tag", "PCE") };
+                return (size) =>
+                  widgetDesigns.macroCalendar(size === "l" ? wdMacroNext(Date.now(), 2).slice(0, 8) : nextMacroReleases(Date.now(), 3), size, {
+                    names,
+                    note: msg("wd_macro_note", "When the next US CPI, jobs report, Fed statement and PCE come out — the releases the chart marks, from the agencies' own calendars."),
+                  });
+              })(),
               content: (() => {
                 const next = nextMacroReleases(Date.now(), 3);
                 if (!next.length)
@@ -9062,6 +9195,9 @@ class CryptoChart extends PureComponent {
             fundingRate: {
               label: msg("widget_funding_rate", "$1 Funding Rate", activeCoin),
               visible: widgets.fundingRate && !hidden.fundingRate,
+              render: fundingRateData
+                ? (size) => widgetDesigns.fundingRate(fundingRateData, size, { recent: this.state.fundingRecentData })
+                : undefined,
               content: fundingRateData
                 ? React.createElement(
                     Fragment,
@@ -9089,6 +9225,7 @@ class CryptoChart extends PureComponent {
             longShortRatio: {
               label: msg("widget_long_short", "$1 Long / Short", activeCoin),
               visible: widgets.longShortRatio && !hidden.longShortRatio,
+              render: longShortData ? (size) => widgetDesigns.longShortRatio(longShortData, size, { month: this.state.longShortMonthData, coin: activeCoin }) : undefined,
               content: longShortData
                 ? (() => {
                     const long = parseFloat(longShortData.longPct);
@@ -9101,11 +9238,9 @@ class CryptoChart extends PureComponent {
                       React.createElement(
                         LSStats,
                         { "data-ls-stats": "1" },
-                        null,
                         React.createElement(
                           LSSide,
                           { "data-ls-side": "1" },
-                          null,
                           React.createElement(
                             LSSideLabel,
                             null,
@@ -9159,6 +9294,7 @@ class CryptoChart extends PureComponent {
                 activeCoin,
               ),
               visible: widgets.openInterest && !hidden.openInterest,
+              render: openInterestData ? (size) => widgetDesigns.openInterest(openInterestData, size, { month: this.state.oiMonthData, coin: activeCoin }) : undefined,
               content: openInterestData
                 ? React.createElement(
                     Fragment,
@@ -9183,6 +9319,7 @@ class CryptoChart extends PureComponent {
                 activeCoin,
               ),
               visible: widgets.liquidations && !hidden.liquidations,
+              render: liquidationsData ? (size) => widgetDesigns.liquidations(liquidationsData, size, { price: (v) => formatWidgetPrice(v, "$", separatorFormat) }) : undefined,
               content: liquidationsData
                 ? React.createElement(
                     Fragment,
@@ -9222,6 +9359,7 @@ class CryptoChart extends PureComponent {
             altcoinSeason: {
               label: msg("widget_altcoin_season", "Altcoin Season"),
               visible: widgets.altcoinSeason && !hidden.altcoinSeason,
+              render: altcoinSeasonData ? (size) => widgetDesigns.altcoinSeason(altcoinSeasonData, size) : undefined,
               content: altcoinSeasonData
                 ? React.createElement(
                     Fragment,
@@ -9354,14 +9492,22 @@ class CryptoChart extends PureComponent {
                     { title: WIDGET_DESCRIPTIONS[key] || undefined },
                     def.label,
                   ),
-                  React.createElement(
-                    WidgetBody,
-                    { "data-size": cardSize(key), "data-widget-body": "true" },
-                    def.content,
-                  ),
+                  (() => {
+                    const shown = widgetSized(def, cardSize(key));
+                    return React.createElement(
+                      WidgetBody,
+                      {
+                        "data-size": cardSize(key),
+                        "data-widget-body": "true",
+                        "data-designed": shown.designed ? "true" : undefined,
+                      },
+                      shown.node,
+                    );
+                  })(),
                   /* Large has room to say what the card is — the sentence
-                     the title's tooltip carries everywhere else. */
-                  cardSize(key) === "l" && WIDGET_DESCRIPTIONS[key]
+                     the title's tooltip carries everywhere else. A card with
+                     its own large design writes its own. */
+                  cardSize(key) === "l" && !def.render && WIDGET_DESCRIPTIONS[key]
                     ? React.createElement(
                         WidgetFootnote,
                         { "data-widget-footnote": key },
@@ -9749,6 +9895,8 @@ class CryptoChart extends PureComponent {
                 confidence: this.state.callDraftConfidence,
                 onConfidence: (level) =>
                   this.setState({ callDraftConfidence: level }),
+                mine: this.state.callDraftMine,
+                onMine: (pct) => this.setState({ callDraftMine: pct }),
                 onLock: this.handleCallLock,
                 onCancel: this.handleCallCancel,
                 formatPrice: this.formatChartPrice,
@@ -9886,6 +10034,24 @@ class CryptoChart extends PureComponent {
             onAlarmNotifyChange: this.handleAlarmNotifyChange,
             onAlarmDrop: this.handleAlarmDrop,
             onNewsSourcesChange: this.refreshNewsSources,
+            // Targets & alarm, Widgets, Portfolio (18 Oct 2026): the switches
+            // that had no row outside their own drawer or screen
+            alarmNotify: this.state.alarmNotify,
+            alarmGranted: this.state.alarmGranted,
+            alarmSound: this.state.alarmSound,
+            onAlarmSoundChange: this.handleAlarmSoundChange,
+            widgetSize: this.state.widgetSize,
+            onWidgetSizeChange: this.handleWidgetSizeChange,
+            widgets: this.state.widgets,
+            onWidgetPreset: this.handleWidgetPreset,
+            onOpenWidgets: () => {
+              if (this.state.showSettings) this.toggleSettings();
+              this.showLeftDrawer("widgets");
+            },
+            costMethod: this.state.costMethod,
+            onCostMethodChange: this.handleCostMethodChange,
+            portfolioHidden: this.state.portfolioHidden,
+            onTogglePortfolioHidden: this.togglePortfolioHidden,
             onClose: this.toggleSettings,
             themePreference: themePreference,
             activeTheme: activeTheme,
@@ -10322,6 +10488,7 @@ class CryptoChart extends PureComponent {
             onBoardZoomChange: this.handleBoardZoomChange,
             onWithdrawCall: this.handleWithdrawCall,
             onCallConfidence: this.handleCallConfidence,
+            onCallMine: this.handleCallMine,
             onResetCalls: this.handleResetCalls,
             // The panel names a call's range when it is not the one on
             // screen; without this it had nothing to compare against
@@ -10497,6 +10664,8 @@ class CryptoChart extends PureComponent {
             replay: this.state.tourReplay > 0,
             onActiveChange: (active) => this.setState({ tourActive: active }),
             onFinish: () => this.setState({ tourReplay: 0 }),
+            // The last step's starting point: the mode, as Settings sets it
+            onAppMode: this.handleAppMode,
           }),
       ),
     );

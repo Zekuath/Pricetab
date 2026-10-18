@@ -20,6 +20,11 @@
 #      larger is a build product, a recording or an archive.
 #   3. No more than 400 files added in one commit, unless asked for with
 #      PRICETAB_LARGE_COMMIT=1 (a first commit of the whole tree, say).
+#   3b. Every local file the staged index.html / popup.html loads, and every
+#      suite the staged tests/run-all.js runs, is in the index too. The
+#      working tree has them either way, so the invariants below cannot tell;
+#      a commit that names a new src/ file without adding it pushes a blank
+#      new tab and a red CI.
 #   4. gitleaks on the staged diff when it is installed, then
 #      tests/test-invariants.js — no permission, no remote code, no new host.
 #
@@ -77,6 +82,21 @@ if [ "$added" -gt 400 ] && [ "${PRICETAB_LARGE_COMMIT:-0}" != "1" ]; then
   fail "$added files are being added in one commit."
   echo "  Check 'git status --short' for a build folder or a copy of the tree."
   echo "  If this is meant (a first commit, say): PRICETAB_LARGE_COMMIT=1 git commit …"
+  exit 1
+fi
+
+missing="$( {
+  for page in index.html popup.html; do
+    git show ":$page" 2>/dev/null | sed -n 's/.*<script[^>]*src="\.\/\([^"]*\)".*/\1/p'
+  done
+  git show ":tests/run-all.js" 2>/dev/null | sed -n 's/^[[:space:]]*"\(test-[A-Za-z0-9_-]*\.js\)",.*/tests\/\1/p'
+} | sort -u | while IFS= read -r f; do
+  git cat-file -e ":$f" 2>/dev/null || echo "$f"
+done )"
+if [ -n "$missing" ]; then
+  fail "the staged pages or test runner name files that are not staged:"
+  printf '%s\n' "$missing" | sed 's/^/    /'
+  echo "  Add them (git add -- <path>), or the pushed tree cannot load."
   exit 1
 fi
 

@@ -9,6 +9,43 @@ submitted, so their changes reach the store here.
 
 ### Added
 
+- Settings:
+  - New sections: Targets & alarm (the notification and sound switches),
+    Widgets (text size and a bundle to start from), Portfolio (cost basis
+    method and hiding figures), and Futures, which used to sit under Menu
+    layout.
+  - Your data shows how much this browser keeps and can clear the cache.
+  - Modes are cards that say what each one does.
+  - Quick add lists suggested coins as rows with the day's move and market
+    value, sorted by size or by today's move. Wrapped coins are left out.
+- The first-run tour is eleven short steps, each on the thing it describes.
+  On a phone it uses touch wording and points at the tab bar. It ends with
+  a choice of starting mode and an optional set of further tips.
+- Rating requests:
+  - The ask asks how PriceTab is working before asking for a rating.
+    Either answer still offers the rating, and "could be better" also
+    offers a feedback form on GitHub.
+  - It waits for five days of use.
+  - The extra bar in Settings is gone; Settings keeps "Rate PriceTab" and
+    a new "Send feedback" link.
+
+- Every widget was redrawn with a separate layout for each size. Small
+  shows the figure. Medium adds a picture of it, such as a dial, a stack,
+  bars or a month's line. Large shows more: the month behind the figure,
+  ranked lists, a fee curve, an options strike book, ETF days, the
+  halving eras and a note on where the data comes from. Five widgets now
+  have history: funding by day, BTC fees through the day, long share and
+  open interest over the month, and ETH/BTC over three months. That
+  history is fetched only for cards big enough to show it, and it adds no
+  new hosts. Fear & Greed and RSI no longer colour a reading as good or
+  bad. Altcoin Season says it is bitcoin's share of the market, rescaled.
+
+- Calls can carry your own chance for the square — a chip from 5% to 95%
+  on the phone's call sheet, or on the open call for its first two minutes,
+  final once given. The record then scores your chances and the board's on
+  the same squares (Brier, lower is better) and only says one did better
+  when the gap's 95% interval clears zero.
+
 - Settings → Menu layout previews both edges and lets you move, reorder,
   hide and restore tabs. Hiding asks whether to keep the feature's data or
   permanently delete its listed records; keeping data is the default.
@@ -272,6 +309,19 @@ submitted, so their changes reach the store here.
   more newsrooms, first, saying why each is there.
 
 ### Fixed
+
+- Smoother on slower machines and phones: zooming and dragging the chart no
+  longer makes the browser re-measure the page on every movement, the price
+  and time axes only touch what changed, and opening Base rates or News no
+  longer freezes the page in one long step.
+
+- The calls board's square readout, its CALL IT / LOCKED hint and every
+  "in 3h" / "tomorrow" across the app now follow the chosen language; they
+  were English in every locale. The column the current time sits in shows
+  its distance and time but no longer a chance, which was only ever
+  measured on whole squares.
+- Base rates no longer recounts your other coins each time it redraws, and
+  the news panel's feed summary is worked out once per headline.
 
 - With the usual range study on, dragging the chart no longer narrows it:
   the cone is drawn into the room the window leaves past the price.

@@ -1212,17 +1212,18 @@ const pricesAgeText = (ms) => {
 /* The mirror of `describeElapsed`, for something that has not happened yet.
  * Same thresholds, so "3h ago" and "in 3h" read as the same scale — and it
  * degrades to "now" rather than "0 min" when the moment has arrived. */
+// Read inside msg() sentences across the app, so it is in the reader's language.
 const describeAhead = (ms) => {
-  if (!isFinite(ms) || ms <= 0) return "now";
+  if (!isFinite(ms) || ms <= 0) return msg("ahead_now", "now");
   const mins = Math.round(ms / 60000);
-  if (mins < 1) return "now";
-  if (mins < 60) return `in ${mins} min`;
+  if (mins < 1) return msg("ahead_now", "now");
+  if (mins < 60) return msg("ahead_minutes", "in $1 min", String(mins));
   const hours = Math.round(mins / 60);
-  if (hours < 24) return `in ${hours}h`;
+  if (hours < 24) return msg("ahead_hours", "in $1h", String(hours));
   const days = Math.round(hours / 24);
-  if (days === 1) return "tomorrow";
-  if (days < 30) return `in ${days} days`;
-  return "in over a month";
+  if (days === 1) return msg("ahead_tomorrow", "tomorrow");
+  if (days < 30) return msg("ahead_days", "in $1 days", String(days));
+  return msg("ahead_month", "in over a month");
 };
 
 /* ── US releases: CPI, the jobs report, the Fed, PCE ─────────────────────
@@ -2197,6 +2198,50 @@ const callOdds = (prices, steps, loPrice, hiPrice, nowPrice) => {
     if (d >= lo && d <= hi) inside += 1;
   }
   return { p: inside / rs.length, n: rs.length };
+};
+
+/* **Your chance against the board's, on the same squares** (17 Oct 2026).
+ * Each settled call that carries both — the caller's own chance (`mine`,
+ * given inside CALL_MINE_WINDOW_MS) and the board's calibrated one
+ * (`odds.src === "board"`) — is scored by both forecasts with the Brier
+ * score, (p − outcome)², lower being better. Expired calls are not outcomes
+ * and are left out. The gap is paired, call by call, and its 95% interval is
+ * only given from BASE_RATE_MIN_EPISODES calls; below that the two numbers
+ * stand side by side and nothing is said to differ. The interval treats calls
+ * as independent, which overlapping squares on one coin are not quite — it is
+ * a floor on the uncertainty, and the wording does not go past it. */
+const callScoreCompare = (calls) => {
+  const rows = (Array.isArray(calls) ? calls : []).filter(
+    (c) =>
+      c &&
+      c.mine &&
+      Number.isFinite(c.mine.p) &&
+      c.odds &&
+      c.odds.src === "board" &&
+      Number.isFinite(c.odds.p) &&
+      (c.result === "hit" || c.result === "miss"),
+  );
+  const n = rows.length;
+  if (!n) return null;
+  const sq = (p, y) => (p - y) * (p - y);
+  const gaps = rows.map((c) => {
+    const y = c.result === "hit" ? 1 : 0;
+    return { mine: sq(c.mine.p, y), model: sq(c.odds.p, y) };
+  });
+  const mean = (xs) => xs.reduce((a, b) => a + b, 0) / xs.length;
+  const mine = mean(gaps.map((g) => g.mine));
+  const model = mean(gaps.map((g) => g.model));
+  const diffs = gaps.map((g) => g.mine - g.model);
+  const gap = mean(diffs);
+  let lo = null;
+  let hi = null;
+  if (n >= BASE_RATE_MIN_EPISODES) {
+    const sd = Math.sqrt(diffs.reduce((a, d) => a + (d - gap) * (d - gap), 0) / (n - 1));
+    const half = (1.96 * sd) / Math.sqrt(n);
+    lo = gap - half;
+    hi = gap + half;
+  }
+  return { n, mine, model, gap, lo, hi };
 };
 
 /* **What a call would have paid, if it had been played at fair odds.**

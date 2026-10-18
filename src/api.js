@@ -4,7 +4,8 @@ const API_HISTORY = "historic?period=";
 const API_SPOT = "spot";
 
 /* WIDGET API ENDPOINTS */
-const FEAR_GREED_API = "https://api.alternative.me/fng/?limit=1";
+// A month: the large card draws it; the figure is still the first row
+const FEAR_GREED_API = "https://api.alternative.me/fng/?limit=31";
 // Coinlore global market data — CORS-enabled (sends Access-Control-Allow-Origin: *),
 // unlike CoinGecko which rate-limits browser/extension origins and then fails CORS.
 const COINLORE_GLOBAL_API = "https://api.coinlore.com/api/global/";
@@ -48,6 +49,15 @@ const WIDGET_CACHE_TTL = {
   // Two more daily series from the same host, for the market-structure
   // readings: funding folded to days and open interest at the day's close.
   fundingHistory: 21600000, // 6 hours
+  // The funding card's month (fetchFundingRecent): a settlement every 8h
+  fundingRecent: 3600000, // 1 hour
+  // The fee card's last day of blocks (fetchBtcFeeDay)
+  btcFeeDay: 1800000, // 30 minutes
+  // Bybit's month of account ratios and open interest, for the larger cards
+  longShortMonth: 3600000, // 1 hour
+  oiMonth: 3600000, // 1 hour
+  // ETH-BTC by day for three months (fetchEthBtcMonth)
+  ethBtcMonth: 3600000, // 1 hour
   oiHistory: 21600000, // 6 hours
   // Which coins have a perpetual: a listing changes a few times a month.
   perpCoins: 86400000, // 24 hours
@@ -562,6 +572,11 @@ const fetchFearGreedIndex = async () => {
       value: parseInt(json.data[0].value, 10),
       classification: json.data[0].value_classification,
       timestamp: json.data[0].timestamp,
+      // Oldest first; the API sends newest first, a day a row
+      history: json.data
+        .map((d) => ({ t: Number(d.timestamp) * 1000, value: parseInt(d.value, 10) }))
+        .filter((d) => Number.isFinite(d.t) && Number.isFinite(d.value))
+        .reverse(),
     };
 
     setWidgetCache("fearGreed", data);

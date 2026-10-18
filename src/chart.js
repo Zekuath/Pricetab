@@ -3122,7 +3122,9 @@ class LineBase extends PureComponent {
           hint.setAttribute("y", y1 + 13);
           hint.setAttribute("fill", this.props.theme.color.textSecondary);
           hint.setAttribute("opacity", taken ? "0.55" : "1");
-          hint.textContent = taken ? "LOCKED" : "CALL IT";
+          hint.textContent = taken
+            ? msg("board_locked", "LOCKED")
+            : msg("board_call_it", "CALL IT");
           hint.setAttribute("visibility", "visible");
         } else {
           hint.setAttribute("visibility", "hidden");
@@ -3278,10 +3280,17 @@ class LineBase extends PureComponent {
        * has to travel to be in there, and how long it has to do it in. Both
        * are a subtraction away from numbers already on screen, and neither is
        * one anybody wants to do in their head while pointing at a box. It is
-       * written only under a square that can be called: over history there is
+       * written under any square still to come: over history there is
        * nothing to decide, and "needs +0.4%" about a box the price has
        * already been through would be nonsense. The words are the targets
-       * panel's own — needs, settles — because it is the same claim. */
+       * panel's own — needs, settles — because it is the same claim.
+       *
+       * The chance, though, only under a square that can be called (17 Oct
+       * 2026). The column "now" stands in and the part-column at the edge
+       * show distance and time — useful to read — but the board's chances
+       * and their measured bins were checked on whole columns, and half of
+       * this one is spent: printing a measured chance there would claim a
+       * check that was never run. */
       const live = raw.length ? Number(raw[raw.length - 1].price) : NaN;
       let noteText = "";
       const settleMs = cellBox ? +cellBox.to - Date.now() : 0;
@@ -3293,12 +3302,16 @@ class LineBase extends PureComponent {
         const edge = live < cellBox.lo ? cellBox.lo : cellBox.hi;
         const away =
           isFinite(live) && live > 0 && !inside
-            ? `needs ${formatSignedPercent(((edge - live) / live) * 100)}`
+            ? msg(
+                "board_needs",
+                "needs $1",
+                formatSignedPercent(((edge - live) / live) * 100),
+              )
             : isFinite(live)
-              ? "in the band now"
+              ? msg("board_in_band", "in the band now")
               : "";
-        const when = describeAhead(settleMs);
-        noteText = away ? `${away} · settles ${when}` : `settles ${when}`;
+        const settles = msg("board_settles", "settles $1", describeAhead(settleMs));
+        noteText = away ? `${away} · ${settles}` : settles;
         /* **How ordinary that is** (the chart plan's Phase 5): how many of
            the series' own stretches as long as the time left moved as far as
            the square needs, up or down — the ruler's count (`measureCount`),
@@ -3315,7 +3328,7 @@ class LineBase extends PureComponent {
             noteText += ` · ${msg("board_ordinary", "as far in as long: $1 of $2", String(count.hits), String(count.windows))}`;
           }
         }
-        noteText += this.oddsNote(cellBox);
+        if (cellBox.callable) noteText += this.oddsNote(cellBox);
       }
       const note = this.hoverNoteRef.current;
       if (note) {
@@ -7381,6 +7394,7 @@ class LineBase extends PureComponent {
          * the paper the series is drawn on, not something competing with it. */
         React.createElement("rect", {
           ref: this.gridCellRef,
+          "data-grid-cell": "1",
           fill: tint,
           fillOpacity: "0.1",
           stroke: tint,
@@ -7393,6 +7407,7 @@ class LineBase extends PureComponent {
           "text",
           {
             ref: this.cellHintRef,
+            "data-cell-hint": "1",
             fontSize: "9",
             fontFamily: this.props.theme.font.primary,
             letterSpacing: "0.08em",
@@ -7784,6 +7799,7 @@ class LineBase extends PureComponent {
           }),
           React.createElement("text", {
             ref: this.hoverNoteRef,
+            "data-hover-note": "1",
             visibility: "hidden",
             fill: color.text,
             fontSize: "10",

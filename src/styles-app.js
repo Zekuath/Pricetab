@@ -526,14 +526,14 @@ const RateAskCard = styled.div`
   right: ${({ theme }) => theme.spacing.medium}rem;
   bottom: ${({ tickerBottom, theme }) =>
     tickerBottom
-      ? `calc(${theme.spacing.medium}rem + 3rem)`
-      : `${theme.spacing.medium}rem`};
+      ? `calc(${theme.spacing.medium}rem + 3rem + var(--pt-dock-lift, 0px))`
+      : `calc(${theme.spacing.medium}rem + var(--pt-dock-lift, 0px))`};
   display: flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing.small}rem;
-  max-width: 22rem;
-  padding: ${({ theme }) => theme.spacing.small}rem
-    ${({ theme }) => theme.spacing.medium}rem;
+  flex-direction: column;
+  gap: 0.7rem;
+  width: min(22rem, calc(100vw - 2rem));
+  box-sizing: border-box;
+  padding: 0.85rem ${({ theme }) => theme.spacing.medium}rem 0.9rem;
   background: ${({ theme }) => theme.color.bgSecondary};
   border: 1px solid ${({ theme }) => theme.color.border};
   border-radius: ${({ theme }) => theme.scale * 4}rem;
@@ -548,6 +548,41 @@ const RateAskCard = styled.div`
 
 const RateAskText = styled.span`
   flex: 1;
+  line-height: 1.45;
+  color: ${({ theme }) => theme.color.text};
+`;
+
+// The question and its ×, then a row of answers
+const RateAskHead = styled.div`
+  display: flex;
+  align-items: flex-start;
+  gap: ${({ theme }) => theme.spacing.small}rem;
+`;
+
+const RateAskActions = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+`;
+
+const RateAskButton = styled.button.attrs({ type: "button" })`
+  padding: 0.38rem 0.75rem;
+  border: 1px solid
+    ${({ primary, theme }) => (primary ? theme.color.text : theme.color.border)};
+  border-radius: 8px;
+  background: ${({ primary, theme }) => (primary ? theme.color.text : "transparent")};
+  color: ${({ primary, theme }) => (primary ? theme.color.bg : theme.color.text)};
+  font-family: ${({ theme }) => theme.font.primary};
+  font-size: 0.75rem;
+  font-weight: ${({ theme }) => theme.fontWeight.semibold};
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+
+  &:hover {
+    border-color: ${({ theme }) => theme.color.borderHover};
+  }
+  ${touchRow};
 `;
 
 const ApiErrorMessage = styled.div`

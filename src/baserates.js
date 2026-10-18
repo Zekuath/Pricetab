@@ -455,6 +455,24 @@ class BaseRatesPanel extends PureComponent {
     // Guard the coin as well as the mount: a switch mid-fetch must not put one
     // coin's history under another coin's name
     if (this.props.coin !== coin) return;
+    /* Counted in a task of its own, then drawn in the next (17 Oct 2026).
+       From the cache the history arrives inside the press that opened the
+       screen, and counting and drawing it there was one 338 ms long task at
+       CPU ×4 (`readings` alone 157 ms). `readings()` keeps what is counted
+       here against these candles, so the render reuses it; if counting
+       throws here, the render counts as it did before. */
+    if (candles) {
+      const settle = () => new Promise((done) => setTimeout(done, 0));
+      await settle();
+      if (this._gone || this.props.coin !== coin) return;
+      try {
+        this._readings = { candles, out: this.countReadings(candles), horizon: this.state.horizon };
+      } catch (error) {
+        this._readings = null;
+      }
+      await settle();
+      if (this._gone || this.props.coin !== coin) return;
+    }
     this.setState({
       candles,
       loading: false,

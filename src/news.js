@@ -225,6 +225,9 @@ const newsPulseBins = (items, now) => {
   return { bins, dated, end };
 };
 
+// How many rows the panel's first draw carries; the rest arrive a task later
+const NEWS_FIRST_ROWS = 30;
+
 class NewsPanel extends PureComponent {
   constructor(props) {
     super(props);
@@ -249,6 +252,11 @@ class NewsPanel extends PureComponent {
          the one record this panel must not keep. */
       preview: null,
       article: null,
+      /* The first draw shows the top of the list and the rest follows in
+         the next task (17 Oct 2026): every row at once was a 110–133 ms
+         long task at CPU ×4 on opening. Only the opening is cut; after it
+         the list is whole, for every filter and search. */
+      rowLimit: NEWS_FIRST_ROWS,
     };
     Object.assign(this, newsPreviewHandlers(this));
     this.searchRef = createRef();
@@ -266,10 +274,14 @@ class NewsPanel extends PureComponent {
 
   componentDidMount() {
     this.refreshPermission();
+    this.restTimer = setTimeout(() => {
+      if (!this.gone) this.setState({ rowLimit: Infinity });
+    }, 0);
   }
 
   componentWillUnmount() {
     this.gone = true;
+    clearTimeout(this.restTimer);
     if (this.previewKeyOn)
       document.removeEventListener("keydown", this.handlePreviewKey, true);
   }
@@ -1668,7 +1680,7 @@ class NewsPanel extends PureComponent {
               NewsList,
               null,
               rows.length
-                ? rows.map((item, i) => {
+                ? rows.slice(0, this.state.rowLimit).map((item, i) => {
                     /* Three at most. A story that names six coins is a market
                      * round-up, and six chips under one headline is a row nobody
                      * reads — the list stops being scannable, which is what it is

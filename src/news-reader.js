@@ -467,13 +467,20 @@ const newsReadKinds = (text, full) => {
 /* A feed-level summary: the count of distinct themes across the rows shown,
    based on the same words used above, so the panel can say what a feed is
    mostly about without turning it into a claim about the price. */
+/* A row's kinds are kept on the row object: the aside is drawn again on every
+   change to the panel, and reading 150 rows' words took ~9 ms each time
+   (Node, 17 Oct 2026). Rows are replaced, never edited, when the feed moves. */
+const newsThemeKinds = new WeakMap();
 const newsThemeSummary = (items) => {
   const tally = new Map();
   for (const item of Array.isArray(items) ? items : []) {
-    const text =
-      `${item && item.title ? item.title : ""} ${item && item.summary ? item.summary : ""}`.trim();
-    if (!text) continue;
-    const kinds = newsReadKinds(text, false);
+    if (!item || typeof item !== "object") continue;
+    let kinds = newsThemeKinds.get(item);
+    if (!kinds) {
+      const text = `${item.title || ""} ${item.summary || ""}`.trim();
+      kinds = text ? newsReadKinds(text, false) : [];
+      newsThemeKinds.set(item, kinds);
+    }
     for (const kind of kinds) {
       tally.set(kind.kind, (tally.get(kind.kind) || 0) + 1);
     }

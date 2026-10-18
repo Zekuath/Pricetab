@@ -2861,37 +2861,18 @@ const perpFromCoinbase = (handler) => async (r) => {
     await ctx.close();
   }
 
-  /* §15 — how often this extension asks for a rating.
+  /* §15 — how this extension asks for a rating.
    *
-   * The main-screen card was genuinely once. The Settings bar was gated on
-   * "has it been dismissed" alone, so it appeared on a brand-new install the
-   * first time Settings was ever opened, and again on every open after that —
-   * while the comment beside it called it a one-time reminder. Asking before
-   * anybody has used the thing is the worst moment to ask; asking every visit
-   * is nagging; and the two prompts were the only routes to the listing, so
-   * dismissing them left no way to rate at all. */
+   * Rebuilt 18 Oct 2026: one surface (the card over the chart — the bar at
+   * the head of Settings is gone, the quiet links at the foot of its menu
+   * stay), a question before the ask, a feedback path that keeps the rating
+   * on offer, and an ask that waits for days of use. The schedule itself —
+   * days counted once, snooze, cap, the end — is held by test-storage.js;
+   * this holds what a person sees. */
   {
     const DAY = 86400000;
     const WHATS_NEW_ID = (require("fs").readFileSync(path.join(__dirname, "..", "src", "onboarding.js"), "utf8").match(/const WHATS_NEW_ID = "([^"]+)"/) || [])[1];
-    const openSettings = async (page) => {
-      await page.keyboard.press("s");
-      await page.waitForTimeout(700);
-      /* The whole card: the bar sits under its head and the permanent link
-         at the foot of its menu, on every section, since 26 Sep 2026. */
-      const seen = await page.evaluate(`(() => {
-        const card = document.querySelector("[data-settings-card]");
-        const txt = card ? card.innerText : "";
-        /* Matched on what the thing *is* — a request for a rating — not on
-           the sentence it currently uses. Rewording the copy broke this once
-           already, which is a test failing for a reason unrelated to the rule
-           it protects. The permanent link says "Rate PriceTab" and never
-           "rating", so the two cannot be confused. */
-        return { bar: /rating/i.test(txt), link: /Rate PriceTab/i.test(txt) };
-      })()`);
-      await page.keyboard.press("Escape");
-      await page.waitForTimeout(300);
-      return seen;
-    };
+    const settle = Number((require("fs").readFileSync(path.join(__dirname, "..", "src", "config.js"), "utf8").match(/const RATE_PROMPT_SETTLE_MS = (\d+);/) || [])[1]);
     const profile = async (ageDays, seed = "") => {
       const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
       await ctx.route("**/*", (r) => {
@@ -2912,58 +2893,54 @@ const perpFromCoinbase = (handler) => async (r) => {
       const page = await ctx.newPage();
       await page.goto(INDEX, { waitUntil: "load" });
       await page.waitForSelector("svg path", { timeout: 20000 });
-      await page.waitForTimeout(1500);
-      const card = await page.evaluate(`/rating/i.test(document.body.innerText)`);
-      const opens = [];
-      for (let i = 0; i < 3; i++) opens.push(await openSettings(page));
-      await ctx.close();
-      return { card, opens };
+      return { ctx, page };
+    };
+    const settings = async (page) => {
+      await page.keyboard.press("s");
+      await page.waitForTimeout(700);
+      const seen = await page.evaluate(`(() => {
+        const card = document.querySelector("[data-settings-card]");
+        const txt = card ? card.innerText : "";
+        return { bar: /rating|working for you/i.test(txt), link: /Rate PriceTab/i.test(txt), feedback: Boolean(card && card.querySelector("[data-feedback-link]")) };
+      })()`);
+      await page.keyboard.press("Escape");
+      await page.waitForTimeout(300);
+      return seen;
     };
 
+    // A new install is not asked, here or in Settings; the doors are there
     const fresh = await profile(0);
-    check(!fresh.card, "a brand-new install is not asked to rate");
-    check(
-      fresh.opens.every((o) => !o.bar),
-      "…and is not asked on any visit to Settings either",
-      JSON.stringify(fresh.opens),
-    );
-    check(
-      fresh.opens.every((o) => o.link),
-      "…but the way to the listing is there from the start",
-    );
+    await fresh.page.waitForTimeout(1500);
+    check(!(await fresh.page.$("[data-rate-step]")), "a brand-new install is not asked to rate");
+    const fs1 = await settings(fresh.page);
+    check(!fs1.bar && fs1.link && fs1.feedback, "…Settings never asks, and carries Rate PriceTab and Send feedback", JSON.stringify(fs1));
+    await fresh.ctx.close();
 
-    /* Two days old, whatever `RATE_PROMPT_DELAY_MS` currently is — read from
-     * the source rather than restated, so shortening the delay cannot leave
-     * this test asserting the old one. */
-    const delay = Number(
-      (require("fs").readFileSync(path.join(__dirname, "..", "src", "config.js"), "utf8")
-        .match(/const RATE_PROMPT_DELAY_MS = ([^;]+);/) || [])[1]
-        .split("*")
-        .reduce((a, b) => a * Number(b.trim()), 1),
-    );
-    check(delay > 0 && delay <= 2 * DAY, `the ask waits a day or two (${delay}ms)`);
-    const used = await profile(delay / DAY + 1);
-    const asks = (used.card ? 1 : 0) + used.opens.filter((o) => o.bar).length;
-    check(asks === 1, `past the delay it asks exactly once, not ${asks} times`);
-    check(
-      used.opens.every((o) => o.link),
-      "…and the permanent link survives the ask",
-    );
+    // Due: past the delay, enough days of use, never asked
+    const day = (t) => { const d = new Date(t); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`; };
+    const due = await profile(10, `localStorage.setItem("crypto_chart_active_days", JSON.stringify({ day: "${day(Date.now() - DAY)}", n: 9 }));`);
+    await due.page.waitForSelector("[data-rate-step]", { timeout: settle + 8000 });
+    const ask = await due.page.evaluate(`(() => { const c = document.querySelector("[data-rate-step]"); return { step: c.getAttribute("data-rate-step"), text: c.innerText, choices: [...c.querySelectorAll("[data-rate-choice]")].map((b) => b.getAttribute("data-rate-choice")), store: c.querySelector("[data-rate-go]") != null }; })()`);
+    check(ask.step === "ask" && /working for you/i.test(ask.text) && ask.choices.join() === "good,better" && !ask.store,
+      "§15 a due ask is a question first — Good or Could be better — and no store link yet", JSON.stringify(ask));
+    await due.page.click("[data-rate-choice='better']");
+    await due.page.waitForTimeout(200);
+    const better = await due.page.evaluate(`[...document.querySelectorAll("[data-rate-step='better'] [data-rate-go]")].map((b) => b.getAttribute("data-rate-go"))`);
+    check(better.join() === "feedback,store", "§15 …could be better offers Tell us and the rating all the same — no gating", JSON.stringify(better));
+    const counted = await due.page.evaluate(`JSON.parse(localStorage.getItem("crypto_chart_rate_prompt_asks") || "null")`);
+    check(counted && counted.n === 1 && counted.next > Date.now(), "§15 …the ask is counted once and the next one snoozed", JSON.stringify(counted));
+    await due.page.click("[data-rate-step] button[aria-label]");
+    await due.page.waitForTimeout(200);
+    check(!(await due.page.$("[data-rate-step]")), "§15 × puts it away");
+    const ds = await settings(due.page);
+    check(!ds.bar && ds.link, "§15 …and Settings does not ask a second time", JSON.stringify(ds));
+    await due.ctx.close();
 
-    /* **The schedule** (1 Oct 2026): × is "not now" — the next ask comes
-       after 3, then 7, then 30 days, four in all — and "Rate" or "Don't ask
-       again" end it. Seeded as the counter a past ask would have left. */
-    const asksSeed = (n, nextDays) =>
-      `localStorage.setItem("crypto_chart_rate_prompt_asks", JSON.stringify({ n: ${n}, next: Date.now() + ${nextDays} * ${DAY} }));`;
-    const due = await profile(10, asksSeed(1, -1));
-    check(due.opens[0].bar && !due.opens[1].bar, "once its snooze has passed, the next ask comes — once", JSON.stringify(due.opens));
-    const waiting = await profile(10, asksSeed(1, 2));
-    check(waiting.opens.every((o) => !o.bar), "…and not while the snooze is still running", JSON.stringify(waiting.opens));
-    const spent = await profile(90, asksSeed(4, -1));
-    check(spent.opens.every((o) => !o.bar) && !spent.card, "…and never after the fourth", JSON.stringify(spent.opens));
-    const ended = await profile(10, asksSeed(1, -1) + 'localStorage.setItem("crypto_chart_rate_prompt_dismissed", "true");');
-    check(ended.opens.every((o) => !o.bar), "\"Rate\" or \"Don't ask again\" ends it for good", JSON.stringify(ended.opens));
-    check(ended.opens.every((o) => o.link), "…with the permanent link still there");
+    // Enough calendar, too little use: no ask
+    const idle = await profile(30, `localStorage.setItem("crypto_chart_active_days", JSON.stringify({ day: "${day(Date.now() - DAY)}", n: 1 }));`);
+    await idle.page.waitForTimeout(settle + 2500);
+    check(!(await idle.page.$("[data-rate-step]")), "§15 a month installed but used on two days is not asked");
+    await idle.ctx.close();
   }
 
   /* §16 — nothing is drawn on top of an open panel.
@@ -9621,6 +9598,8 @@ await page.evaluate(`(() => { const m = document.querySelector("[data-practice-r
     const { ctx, page, errors } = await newCtx(browser, () => {
       localStorage.setItem("crypto_chart_onboarding_seen", "1");
       localStorage.setItem("crypto_chart_widgets", JSON.stringify({ outlook: true }));
+      // The rows and the sentence are the large card's (17 Oct 2026: each size its own design)
+      localStorage.setItem("crypto_chart_widget_card_sizes", JSON.stringify({ outlook: "l" }));
     }, long);
     await openWidgets(page);
     await page.waitForTimeout(1200);
@@ -9640,6 +9619,8 @@ await page.evaluate(`(() => { const m = document.querySelector("[data-practice-r
     const hour = await newCtx(browser, () => {
       localStorage.setItem("crypto_chart_onboarding_seen", "1");
       localStorage.setItem("crypto_chart_widgets", JSON.stringify({ outlook: true }));
+      // The rows and the sentence are the large card's (17 Oct 2026: each size its own design)
+      localStorage.setItem("crypto_chart_widget_card_sizes", JSON.stringify({ outlook: "l" }));
     });
     await openWidgets(hour.page);
     await hour.page.waitForTimeout(1200);
@@ -10350,8 +10331,15 @@ await page.evaluate(`(() => { const m = document.querySelector("[data-practice-r
          is the height. One line of 0.85rem type is under 20px. */
       check(geo.title && geo.title.w >= 100 && geo.title.h < 24,
         "a switch row's title keeps its words on one line at 420px", JSON.stringify(geo.title));
-      check(geo.long && geo.long.h < 60,
-        "…and the longest title takes at most two lines", JSON.stringify(geo.long));
+      /* The longest title moved with the alarm to Targets & alarm (18 Oct
+         2026); measured there. */
+      await page.click("[data-pref-group='alerts']");
+      await page.waitForTimeout(500);
+      const long = await page.evaluate(`(() => { const byText = ${BY_TEXT}; const rect = ${RECT}; return rect(byText("Notification When A Target Is Hit")); })()`);
+      check(long && long.h < 60,
+        "…and the longest title takes at most two lines", JSON.stringify(long));
+      await page.click("[data-pref-group='tabTickers']");
+      await page.waitForTimeout(500);
       check(geo.newsSwitch && geo.tickerSwitch && Math.abs(geo.newsSwitch.r - geo.tickerSwitch.r) <= 2,
         "the dependent switch is still in the lane on the phone", JSON.stringify({ news: geo.newsSwitch, ticker: geo.tickerSwitch }));
       check(geo.position && geo.position.w >= 130 && geo.position.r <= geo.card.r,
@@ -12083,14 +12071,16 @@ await page.evaluate(`(() => { const m = document.querySelector("[data-practice-r
       await page.waitForTimeout(250);
       walked.push(`${k}:${(await where()).section}`);
     }
-    check(walked.join(" ") === "3:basics 1:coins 0:permissions 2:modes 9:data",
+    /* Fifteen items since 18 Oct 2026: the first ten carry 1–9 and 0, the
+       rest are reached by the pointer, Tab or the search. */
+    check(walked.join(" ") === "3:basics 1:coins 0:portfolio 2:modes 9:widgets",
       "the number keys walk Settings' menu, top to bottom", walked.join(" "));
     const titles = await page.evaluate(`[...document.querySelectorAll("[data-settings-card] nav button")]
       .filter((b) => b.getAttribute("title") !== null && (b.hasAttribute("data-tab") || b.hasAttribute("data-pref-group")))
       .map((b) => b.getAttribute("title"))`);
     const numbered = titles.map((t) => (t.match(/\((.)\)$/) || [])[1] || "none");
-    check(numbered.join("") === "1234567890?",
-      "…and every item in the menu names its key", titles.join(" · "));
+    check(/^1234567890(none)+\?$/.test(numbered.join("")),
+      "…and every item with a key names it, the first ten in order", titles.join(" · "));
     await page.focus("[data-settings-card] nav input");
     await page.keyboard.type("3");
     await page.waitForTimeout(300);
@@ -13456,7 +13446,7 @@ await page.evaluate(`(() => { const m = document.querySelector("[data-practice-r
     }
     check(seen > 150 && Object.keys(report).length === 0,
       "in every section of Settings, no control is drawn over another", `${seen} seen · ${JSON.stringify(report)}`);
-    await page.keyboard.press("8");
+    await page.click("[data-settings-card] [data-pref-group='futures']");
     await page.waitForTimeout(500);
     const strips = await page.evaluate(`(() => {
       const on = (label) => { const b = document.querySelector("[aria-label='" + label + "']"); return b ? b.getBoundingClientRect() : null; };
@@ -15869,6 +15859,69 @@ await page.evaluate(`(() => { const m = document.querySelector("[data-practice-r
     await page.goto(INDEX, { waitUntil: "load" });
     await page.waitForSelector("svg path", { timeout: 20000 });
     await page.waitForTimeout(4000);
+    /* The readout over a square still to come (17 Oct 2026): every one reads
+       its distance and time; only a square a click would take adds its
+       chance, which was measured on whole columns. The column "now" stands
+       in is half spent and is not callable. */
+    {
+      const box = await page.evaluate(`(() => { const s = document.querySelector("[data-axes]").ownerSVGElement; const r = s.getBoundingClientRect(); const n = s.querySelector(".pt-now-line"); return { x: r.x, y: r.y, h: r.height, nowX: n ? +n.getAttribute("x1") : null }; })()`);
+      const plotW = await page.evaluate(`${PLOT_BOX}(document.querySelector("[data-axes]").ownerSVGElement).w`);
+      const read = async (x) => {
+        await page.mouse.move(box.x + x, box.y + box.h * 0.35);
+        await page.waitForTimeout(350);
+        return page.evaluate(`(() => { const h = document.querySelector("[data-cell-hint]"); const n = document.querySelector("[data-hover-note]");
+          const c = document.querySelector("[data-grid-cell]");
+          return { callable: !!h && h.getAttribute("visibility") === "visible" && h.textContent === "CALL IT",
+            cellX: c && c.getAttribute("visibility") !== "hidden" ? +c.getAttribute("x") : null,
+            note: n && n.getAttribute("visibility") !== "hidden" ? n.textContent : "" }; })()`);
+      };
+      // The "now" line's own handle takes NOW_GRAB (12px) either side of it;
+      // step right until the readout answers inside the column the line
+      // stands in. When that column ends inside the handle's reach — a phase
+      // of the clock at launch, fixed for the run — none of it can be pointed
+      // at, and the first square that answers is the next, callable one.
+      let spent = null;
+      let first = null;
+      for (let x = box.nowX + 2; x < box.nowX + 60 && !spent; x += 3) {
+        const r = await read(x);
+        if (r.note && !first) first = r;
+        if (r.note && r.cellX != null && r.cellX < box.nowX) spent = r;
+      }
+      let open = null;
+      for (let x = box.nowX + 12; x < plotW - 4 && !open; x += 12) {
+        const r = await read(x);
+        if (r.callable) open = r;
+      }
+      const covered = !spent && first && first.callable && first.cellX != null && first.cellX <= box.nowX + 13;
+      check(covered || (spent && !spent.callable && /settles/.test(spent.note) && !/chance/.test(spent.note)),
+        "§84 the column now stands in reads its distance and time, and no chance (or lies wholly under the line's handle)",
+        JSON.stringify(spent || { covered, first, nowX: box.nowX }));
+      check(open && /settles/.test(open.note) && /chance/.test(open.note),
+        "§84 …while a callable square adds its chance", JSON.stringify(open));
+    }
+    /* …and in the reader's language: the note and the CALL IT hint were
+       English literals in every locale until 17 Oct 2026. */
+    {
+      const fs = require("fs");
+      const shift = Math.floor(Date.now() / 1000) - NOW_S;
+      const fresh = PRICES.map((p) => ({ price: p.price, time: p.time + shift }));
+      const tr = await newCtx(browser, `localStorage.setItem("crypto_chart_onboarding_seen", "1"); localStorage.setItem("crypto_chart_predict", "true");
+        localStorage.setItem("crypto_chart_language", "tr");
+        localStorage.setItem("crypto_chart_language_cache", JSON.stringify({ locale: "tr", version: "", messages: ${fs.readFileSync(path.join(__dirname, "..", "_locales", "tr", "messages.json"), "utf8")} }));`, fresh);
+      const b = await tr.page.evaluate(`(() => { const s = document.querySelector("[data-axes]").ownerSVGElement; const r = s.getBoundingClientRect(); const n = s.querySelector(".pt-now-line"); return { x: r.x, y: r.y, h: r.height, nowX: n ? +n.getAttribute("x1") : null }; })()`);
+      const w = await tr.page.evaluate(`${PLOT_BOX}(document.querySelector("[data-axes]").ownerSVGElement).w`);
+      let said = null;
+      for (let x = b.nowX + 12; x < w - 4 && !said; x += 12) {
+        await tr.page.mouse.move(b.x + x, b.y + b.h * 0.35);
+        await tr.page.waitForTimeout(300);
+        said = await tr.page.evaluate(`(() => { const h = document.querySelector("[data-cell-hint]"); const n = document.querySelector("[data-hover-note]");
+          return h && h.getAttribute("visibility") === "visible" && n && n.getAttribute("visibility") !== "hidden" ? { hint: h.textContent, note: n.textContent } : null; })()`);
+      }
+      check(said && said.hint === "TAHMİN ET" && /sonuçlanır/.test(said.note) && !/settles|needs|in the band/.test(said.note),
+        "§84 in Turkish the square's hint and readout are Turkish", JSON.stringify(said));
+      check(tr.errors.length === 0, "§84 …nothing threw", tr.errors.join(" | "));
+      await tr.ctx.close();
+    }
     await page.evaluate(`(() => {
       window.__odds = [];
       const sample = () => {
@@ -16207,7 +16260,11 @@ await page.evaluate(`(() => { const m = document.querySelector("[data-practice-r
     await page.keyboard.press("Tab");
     await page.click("[data-widget-menu] [data-widget-menu-size='s']");
     await page.waitForTimeout(400);
-    check((await cards()).watchlist.rows === 3, "§88 a small watchlist shows three of its four coins", JSON.stringify((await cards()).watchlist));
+    /* Each size is its own design (17 Oct 2026): small is the coins and
+       their day — every coin that fits, no price, which medium adds. */
+    const smallList = await page.evaluate(`(() => { const c = document.querySelector("[data-widgets-drawer='open'] [data-widget='watchlist']"); return c ? { size: c.getAttribute("data-size"), designed: c.querySelector("[data-designed]") != null, text: c.querySelector("[data-widget-body]").innerText } : null; })()`);
+    check(smallList && smallList.size === "s" && smallList.designed && /BTC/.test(smallList.text) && /%/.test(smallList.text) && !/\$/.test(smallList.text),
+      "§88 a small watchlist is its own design: the coins and their day, no prices", JSON.stringify(smallList));
     // Remove Widget is asked twice
     await page.click("[data-widget='marketOverview']", { button: "right" });
     await page.click("[data-widget-menu-remove='ask']");
@@ -16859,9 +16916,15 @@ await page.evaluate(`(() => { const m = document.querySelector("[data-practice-r
     await page.waitForTimeout(700);
     const sheetTop = await page.evaluate(`(() => { const n = document.querySelector("[data-phone-sheet='call']"); return n ? Math.round(n.getBoundingClientRect().top) : null; })()`);
     check(sheetTop === 0, "§99 a tapped square is asked about on a sheet from the top, clear of the board", String(sheetTop));
+    const mineFit = await page.evaluate(`(() => { const sheet = document.querySelector("[data-phone-sheet='call']"); const row = sheet && sheet.querySelector("[data-call-mine]"); if (!row) return null; const s = sheet.getBoundingClientRect();
+      return [...row.querySelectorAll("button")].map((b) => { const r = b.getBoundingClientRect(); return { t: b.textContent, inside: r.left >= s.left - 0.5 && r.right <= s.right + 0.5, clipped: b.scrollWidth > b.clientWidth + 1 }; }); })()`);
+    check(mineFit && mineFit.length === 8 && mineFit.every((c) => c.inside && !c.clipped), "§99 the sheet's eight chances fit the phone, none cut", JSON.stringify(mineFit));
     await tapOn("[data-phone-sheet='call'] [role='group'] button:nth-of-type(3)");
+    await tapOn("[data-call-mine] button:nth-of-type(3)");
     await tapOn("[data-call-lock]");
     const call = await page.evaluate(`(() => { const c = JSON.parse(localStorage.getItem("crypto_chart_calls") || "null"); return c && c.open[0] ? c.open[0].confidence : null; })()`);
+    const mineAt = await page.evaluate(`(() => { const c = JSON.parse(localStorage.getItem("crypto_chart_calls") || "null"); return c && c.open[0] ? c.open[0].mine : null; })()`);
+    check(mineAt && mineAt.p === 0.2, "§99 …and the chance chosen on the sheet is locked with it", JSON.stringify(mineAt));
     check(call === "sure" && !(await has("[data-phone-sheet='call']")), "§99 …Lock places it, with the confidence chosen", String(call));
     await page.keyboard.press("l");
     await page.waitForTimeout(1200);
@@ -19454,6 +19517,8 @@ await page.evaluate(`(() => { const m = document.querySelector("[data-practice-r
         localStorage.setItem("crypto_chart_first_use", String(Date.now() - 2 * ${DAY}));
         localStorage.setItem("crypto_chart_whats_new_seen", "${WHATS_NEW_ID}");
         localStorage.setItem("crypto_chart_macro_events", "false");
+        // Used on enough days that an ask may come (RATE_PROMPT_MIN_DAYS)
+        localStorage.setItem("crypto_chart_active_days", JSON.stringify({ day: "", n: 9 }));
         ${alerts ? `localStorage.setItem("crypto_chart_alerts", JSON.stringify(${JSON.stringify(alerts)}));` : ""}
       `);
       const page = await ctx.newPage();
@@ -19461,7 +19526,7 @@ await page.evaluate(`(() => { const m = document.querySelector("[data-practice-r
       await page.waitForSelector("svg path", { timeout: 20000 });
       return { ctx, page };
     };
-    const card = (page) => page.evaluate(`(() => { const n = [...document.querySelectorAll("a")].find((a) => /\\/reviews$/.test(a.href) && a.closest("[data-rate-ask], div") && /rating/i.test(a.parentElement.innerText)); return n ? { text: n.parentElement.innerText, href: n.href } : null; })()`);
+    const card = (page) => page.evaluate(`(() => { const n = document.querySelector("[data-rate-step]"); return n ? { text: n.innerText } : null; })()`);
     // Two days in, nothing reached: the tab opens and nothing asks, even after the old 20s settle
     const quiet = await make(null);
     await quiet.page.waitForTimeout(22000);
@@ -19475,7 +19540,13 @@ await page.evaluate(`(() => { const m = document.querySelector("[data-practice-r
       asked = await card(hit.page);
     }
     check(asked && /target was reached/i.test(asked.text), "§128 a reached target brings the ask, worded for that moment", JSON.stringify(asked));
-    check(asked && /\/reviews$/.test(asked.href), "§128 …and its Rate goes to the listing's reviews tab", asked && asked.href);
+    // Good, then Rate: the store opens on its reviews tab (window.open, recorded)
+    await hit.page.evaluate(`window.__opened = []; window.open = (u) => { window.__opened.push(u); return null; };`);
+    await hit.page.click("[data-rate-choice='good']");
+    await hit.page.waitForTimeout(200);
+    await hit.page.click("[data-rate-go='store']");
+    const opened = await hit.page.evaluate(`window.__opened`);
+    check(opened.length === 1 && /\/reviews$/.test(opened[0]), "§128 …and its Rate goes to the listing's reviews tab", JSON.stringify(opened));
     await hit.page.keyboard.press("s");
     await hit.page.waitForTimeout(700);
     const settingsLink = await hit.page.evaluate(`[...document.querySelectorAll("[data-settings-card] a")].filter((a) => /Rate PriceTab/i.test(a.innerText)).map((a) => a.href)`);
@@ -20043,6 +20114,35 @@ await page.evaluate(`(() => { const m = document.querySelector("[data-practice-r
       }
     }
     check(errors.length === 0, "§134 nothing threw", errors.join(" | "));
+    await ctx.close();
+  }
+
+  /* §135 — your chance beside the board's (17 Oct 2026): settled calls that
+   * carry both are scored by Brier on the same squares, and a gap is only
+   * named past the record's floor; a fresh open call offers chips for its
+   * first minutes, an older one does not, and a chip once pressed is final. */
+  {
+    const T = Date.now() - 3600e3;
+    const mk = (i, p, mine, hit) => ({ id: `d${i}`, coin: "BTC", currency: "USD", period: "hour", target: T - i * 600e3, span: 180e3, lo: 43000 + i * 100, hi: 43100 + i * 100, placed: T - i * 600e3 - 900e3, placedPrice: 43000, result: hit ? "hit" : "miss", settledPrice: 43050, settledAt: T, odds: { p, n: 2900, src: "board" }, mine: { p: mine, at: T - i * 600e3 - 900e3 + 30e3 } });
+    const done = [mk(1, 0.2, 0.5, true), mk(2, 0.1, 0.2, false), mk(3, 0.3, 0.35, true), mk(4, 0.15, 0.1, false), mk(5, 0.2, 0.5, false), mk(6, 0.25, 0.65, true)];
+    const now = Date.now();
+    const open = (id, placed, lo) => ({ id, coin: "BTC", currency: "USD", period: "hour", target: now + 3600e3, span: 180e3, lo, hi: lo + 1, placed, placedPrice: 43000 });
+    const { ctx, page } = await newCtx(browser, `(() => { localStorage.setItem("crypto_chart_onboarding_seen", "1"); localStorage.setItem("crypto_chart_predict", "true"); localStorage.setItem("crypto_chart_calls", ${JSON.stringify(JSON.stringify({ record: { hits: 3, total: 6 }, open: [open("fresh", now, 10), open("older", now - 600e3, 20)], done }))}); })()`);
+    const errs = [];
+    page.on("pageerror", (e) => errs.push(e.message));
+    await page.keyboard.press("k");
+    await page.waitForTimeout(900);
+    const line = await page.evaluate(`([...document.querySelectorAll("[data-alerts-card] [data-record-line]")].find((n) => /Brier/.test(n.innerText)) || {}).innerText || ""`);
+    check(/you 0\.\d{3} · board 0\.\d{3} · 6 squares/.test(line.replace(/\s+/g, " ")) && /too few to tell apart/.test(line),
+      "§135 the record scores your chances and the board's on the same six squares, and calls no difference", line);
+    const chips = await page.evaluate(`({ fresh: document.querySelectorAll("[data-call-mine='fresh'] button").length, older: document.querySelectorAll("[data-call-mine='older'] button").length })`);
+    check(chips.fresh > 0 && chips.older === 0, "§135 a fresh call offers your chance, one locked ten minutes ago does not", JSON.stringify(chips));
+    await page.evaluate(`[...document.querySelectorAll("[data-call-mine='fresh'] button")].find((b) => b.textContent === "20%").click()`);
+    await page.waitForTimeout(400);
+    const after = await page.evaluate(`({ set: (document.querySelector("[data-call-mine-set='fresh']") || {}).textContent || "", chips: document.querySelectorAll("[data-call-mine='fresh'] button").length, stored: JSON.parse(localStorage.getItem("crypto_chart_calls")).open.find((c) => c.id === "fresh").mine })`);
+    check(/20%/.test(after.set) && after.chips === 0 && after.stored && after.stored.p === 0.2,
+      "§135 a chip pressed is kept, shown, and offered no more", JSON.stringify(after));
+    check(errs.length === 0, "§135 nothing threw", errs.join(" | "));
     await ctx.close();
   }
 

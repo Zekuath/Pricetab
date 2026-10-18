@@ -106,6 +106,15 @@ const WidgetPanel = styled.div`
     grid-column: auto;
     grid-row: auto;
   }
+  /* **One row height** (17 Oct 2026): small and medium are one row, large
+     two, as on iOS. Rows sized by content made every card its own height and
+     a large card a medium one with space under it; each size now has a
+     design that fits its box (widget-kit.js). One column lets rows size
+     themselves, and each card keeps its size's floor. */
+  grid-auto-rows: ${({ scale }) => 9.5 * (scale || 1)}rem;
+  &&[data-cols="1"] {
+    grid-auto-rows: auto;
+  }
   grid-auto-flow: row dense;
 
   &[data-editing="true"] {
@@ -471,19 +480,18 @@ const WidgetCard = styled.div`
      rule. */
   grid-column: span 1;
   grid-row: span 1;
-  min-height: 8.25em;
+  min-height: 9.5em;
   /* Each card its own height: stretched to a taller neighbour's row, a
      small card was a tall tile with its figure at the top (640px drawer,
      1 Oct 2026). Large still fills the two rows it spans. */
   align-self: stretch;
   &[data-size="m"] {
     grid-column: span 2;
-    min-height: 10.5em;
   }
   &[data-size="l"] {
     grid-column: span 2;
     grid-row: span 2;
-    min-height: 17em;
+    min-height: 19.7em;
     align-self: stretch;
   }
   /* The card a menu is open for stands forward, like iOS's lifted widget. */
@@ -946,16 +954,20 @@ const WidgetBody = styled.div`
   gap: 0.2em;
   flex: 1;
   min-width: 0;
+  /* The card's box is the row's now; the body is what clips, so the edit
+     mode's "−" on the card's corner is never cut. */
+  min-height: 0;
+  overflow: hidden;
 
   & > * {
     min-width: 0;
   }
 
-  &[data-size="s"] > :nth-child(n + 3) {
+  &[data-size="s"]:not([data-designed]) > :nth-child(n + 3) {
     display: none;
   }
 
-  &[data-size="m"] > :nth-child(n + 5) {
+  &[data-size="m"]:not([data-designed]) > :nth-child(n + 5) {
     display: none;
   }
 

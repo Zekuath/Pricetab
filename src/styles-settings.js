@@ -302,35 +302,6 @@ const SettingsTitle = styled.h2`
   gap: 0.6rem;
 `;
 
-const RatePromptBar = styled.div`
-  flex: 0 0 auto;
-  display: flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing.small}rem;
-  margin-bottom: ${({ theme }) => theme.spacing.medium}rem;
-  padding: ${({ theme }) => theme.spacing.small}rem
-    ${({ theme }) => theme.spacing.medium}rem;
-  border: 1px solid ${({ theme }) => theme.color.border};
-  border-radius: ${({ theme }) => theme.scale * 4}rem;
-  font-size: 0.8125rem;
-  color: ${({ theme }) => theme.color.textSecondary};
-  text-align: left;
-`;
-
-const RatePromptText = styled.span`
-  flex: 1;
-`;
-
-const RatePromptLink = styled.a`
-  flex: 0 0 auto;
-  color: ${({ theme }) => theme.color.text};
-  font-weight: ${({ theme }) => theme.fontWeight.medium};
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  text-decoration: underline;
-  cursor: pointer;
-`;
-
 // "Don't ask again": quieter than "Rate", a word rather than a mark
 const RatePromptNever = styled.button.attrs({ type: "button" })`
   flex: 0 0 auto;
@@ -1311,6 +1282,11 @@ const CoinSortButton = styled.button.attrs({ type: "button" })`
     opacity: 0.4;
     cursor: default;
   }
+  /* The order in force, for a group that has one (Quick add's two) */
+  ${({ active, theme }) =>
+    active
+      ? `border-color: ${theme.color.text}; color: ${theme.color.text};`
+      : ""}
   ${touchTarget};
 `;
 
@@ -1399,68 +1375,113 @@ const SuggestionList = styled.div`
   padding: 0.25rem 0;
 `;
 
-const CoinRecommendBox = styled.div`
-  margin-top: 0.85rem;
-  padding: 0.7rem;
-  border: 1px solid ${({ theme }) => theme.color.border};
-  border-radius: 0.7rem;
-  background: ${({ theme }) => theme.color.bgSecondary};
+/* Quick add, as rows (18 Oct 2026): the same grid as a row of your own
+ * list — symbol, name, the day's move, market value — and a + where the ×
+ * is there, so the two panes read as one table seen from two sides. */
+const QuickAddBox = styled.div`
+  margin-top: 1rem;
 `;
 
-const CoinRecommendList = styled.div`
+const QuickAddList = styled.div`
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid ${({ theme }) => theme.color.border};
+`;
+
+const QuickAddRow = styled.button.attrs({ type: "button" })`
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.2rem 0.6rem;
-  margin-top: 0;
-
-  @media (max-width: 1180px) {
-    grid-template-columns: 1fr;
-  }
-`;
-
-const CoinRecommendChip = styled.button.attrs({ type: "button" })`
-  display: inline-grid;
-  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-columns: 3.6rem minmax(0, 1fr) 4rem 4.6rem 1.4rem;
   align-items: center;
-  justify-content: flex-start;
-  column-gap: 0.38rem;
+  gap: 0.6rem;
   width: 100%;
-  min-height: 1.9rem;
-  padding: 0.2rem 0.15rem;
+  padding: 0.5rem 0.25rem;
   border: none;
-  border-bottom: 1px dashed ${({ theme }) => theme.color.border}aa;
-  border-radius: 0;
+  border-bottom: 1px solid ${({ theme }) => theme.color.border}55;
   background: transparent;
   color: ${({ theme }) => theme.color.text};
   font-family: ${({ theme }) => theme.font.primary};
-  font-size: 0.68rem;
+  font-size: 0.82rem;
   letter-spacing: 0.04em;
-  text-transform: uppercase;
-  font-weight: ${({ theme }) => theme.fontWeight.bold};
+  text-align: left;
   cursor: pointer;
+  transition: background 0.15s ease;
+
+  &:hover:not(:disabled),
+  &:focus-visible {
+    background: ${({ theme }) => theme.color.bgSecondary};
+    outline: none;
+  }
+  &:hover:not(:disabled) > span:last-child,
+  &:focus-visible > span:last-child {
+    border-color: ${({ theme }) => theme.color.text};
+    color: ${({ theme }) => theme.color.text};
+  }
+  &:disabled {
+    cursor: default;
+    opacity: 0.45;
+  }
+  @media (max-width: 600px) {
+    grid-template-columns: 3.2rem minmax(0, 1fr) 3.6rem 1.4rem;
+    & > span:nth-child(4) {
+      display: none;
+    }
+  }
+  ${touchRow};
+`;
+
+const QuickAddSymbol = styled.span`
+  font-weight: ${({ theme }) => theme.fontWeight.semibold};
+`;
+
+const QuickAddChange = styled.span`
+  justify-self: end;
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+  color: ${({ dir, theme }) =>
+    dir === "up" ? theme.color.chartLineGreen : dir === "down" ? theme.color.chartLineRed : theme.color.textSecondary};
+`;
+
+const QuickAddCap = styled.span`
+  justify-self: end;
+  font-size: 0.7rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+  color: ${({ theme }) => theme.color.textSecondary};
+`;
+
+const QuickAddPlus = styled.span`
+  justify-self: end;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.3rem;
+  height: 1.3rem;
+  border: 1px solid ${({ theme }) => theme.color.border};
+  border-radius: 50%;
+  font-size: 0.85rem;
+  line-height: 1;
+  color: ${({ theme }) => theme.color.textSecondary};
   transition:
-    color 0.15s ease,
-    background 0.15s ease;
+    border-color 0.15s ease,
+    color 0.15s ease;
+`;
+
+const QuickAddMore = styled.button.attrs({ type: "button" })`
+  margin-top: 0.5rem;
+  padding: 0.3rem 0;
+  border: none;
+  background: transparent;
+  color: ${({ theme }) => theme.color.textSecondary};
+  font-family: ${({ theme }) => theme.font.primary};
+  font-size: 0.68rem;
+  cursor: pointer;
+  ${hoverUnderline};
 
   &:hover {
     color: ${({ theme }) => theme.color.text};
-    background: ${({ theme }) => theme.color.bg};
   }
-
-  &:last-child:nth-child(odd) {
-    grid-column: 1 / -1;
-  }
-`;
-
-const CoinRecommendName = styled.span`
-  min-width: 0;
-  font-size: 0.62rem;
-  letter-spacing: 0.02em;
-  text-transform: none;
-  color: ${({ theme }) => theme.color.textSecondary};
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  ${touchRow};
 `;
 
 /* The two answers to the futures terms, side by side and sized to their own
@@ -1612,7 +1633,7 @@ const ThemeButton = styled.button.attrs({ type: "button" })`
   letter-spacing: 0.06em;
   /* Lower case. Shouting three one-word options in capitals gave the smallest
      control on the tab the loudest type on it. */
-  text-transform: lowercase;
+  text-transform: ${({ keepCase }) => (keepCase ? "none" : "lowercase")};
   cursor: pointer;
   transition: all 0.2s ease;
   min-width: max-content;
@@ -2068,27 +2089,6 @@ const ModeDesc = styled.div`
   opacity: ${({ dim }) => (dim ? 0.8 : 1)};
 `;
 
-/* "MODES" on the left, Save on the right. Save was inside the chip row and
- * wrapped onto a line of its own once Custom made five chips — alone,
- * right-aligned, under the row it belongs to. It is an action *about* the row,
- * so it belongs on the row's own label line, where it competes with nothing. */
-const ModeHeader = styled.div`
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 1rem;
-`;
-
-const PresetRow = styled.div`
-  display: flex;
-  gap: 6px;
-  margin: 4px 0 10px;
-  flex-wrap: wrap;
-  /* Four size letters across a 1,080px full-screen tab were four 260px
-     buttons with one letter each. A segmented control is a hand's width. */
-  max-width: 36rem;
-`;
-
 /* Save, and deliberately **not** a `PresetButton`.
  *
  * It was one, and the result is why this component exists: `PresetButton`
@@ -2098,6 +2098,90 @@ const PresetRow = styled.div`
  * you do to one chip. It does not grow, it does not take a chip's border, and
  * it is quieter than the things it sits beside, because it is an action on a
  * mode rather than another mode. */
+/* The modes as cards: name, sentence, and a foot that says which is in use
+ * (Custom's foot holds Save). The name's button stretches its hit area over
+ * the card with ::after, so the whole card presses and only one control is
+ * focusable; Save sits above it. */
+const ModeGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(12.5rem, 1fr));
+  gap: 0.6rem;
+  margin: 0.2rem 0 0.8rem;
+  max-width: 44rem;
+`;
+
+const ModeCard = styled.div`
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.7rem 0.8rem 0.6rem;
+  border: 1px solid
+    ${({ active, theme }) => (active ? theme.color.text : theme.color.border)};
+  border-radius: 10px;
+  transition: border-color 0.15s ease;
+
+  &:hover {
+    border-color: ${({ active, theme }) => (active ? theme.color.text : theme.color.borderHover)};
+  }
+
+  /* The name: a title at rest, filled in the ink when it is the mode in
+     use — the one mark that says so at a glance. */
+  & > button:first-child {
+    flex: 0 0 auto;
+    align-self: flex-start;
+    min-width: 0;
+    margin-left: -0.45rem;
+    padding: 0.2rem 0.45rem;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.82rem;
+    font-weight: ${({ theme }) => theme.fontWeight.semibold};
+    text-align: left;
+    background: ${({ active, theme }) => (active ? theme.color.text : "transparent")};
+    color: ${({ active, theme }) => (active ? theme.color.bg : theme.color.text)};
+  }
+  & > button:first-child:hover {
+    background: ${({ active, theme }) => (active ? theme.color.text : "transparent")};
+  }
+  & > button:first-child::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 10px;
+  }
+  & > button:first-child:disabled {
+    cursor: default;
+    opacity: 0.55;
+  }
+`;
+
+const ModeCardDesc = styled.p`
+  margin: 0;
+  font-size: 0.68rem;
+  line-height: 1.45;
+  color: ${({ theme }) => theme.color.textSecondary};
+`;
+
+const ModeCardFoot = styled.div`
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 1.2rem;
+  font-size: 0.62rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: ${({ theme }) => theme.color.text};
+
+  & > button {
+    position: relative;
+    z-index: 1;
+    text-transform: none;
+    letter-spacing: 0.02em;
+  }
+`;
+
 const ModeSaveButton = styled.button.attrs({ type: "button" })`
   flex: 0 0 auto;
   padding: 0 2px;

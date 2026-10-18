@@ -940,7 +940,19 @@ const AUTO_ROTATE_OPTIONS = [
   { value: 900000, label: msg("every_15m", "Every 15 minutes") },
 ];
 const RATE_PROMPT_DISMISSED_KEY = "crypto_chart_rate_prompt_dismissed";
-/* The rating ask: a day after first use, and then **at most three more
+/* **The ask, rebuilt** (18 Oct 2026). One surface — the card over the
+ * chart; the bar at the head of Settings repeated it and is gone, the quiet
+ * "Rate PriceTab" link at the foot of Settings' menu stays. It asks a
+ * question first ("how is it working for you?") and only then for a rating,
+ * and both answers keep the rating on offer: "could be better" leads to
+ * Tell us (GitHub's issue form, `FEEDBACK_URL`, opened in a new tab) *and*
+ * Rate anyway, because offering the store only to the pleased is review
+ * gating. It waits for use rather than for the calendar alone: at least
+ * `RATE_PROMPT_MIN_DAYS` distinct days on which a tab was opened
+ * (`ACTIVE_DAYS_KEY`, counted on this device and nowhere else), then at most
+ * `RATE_PROMPT_MAX_ASKS` asks, `RATE_PROMPT_SNOOZE_DAYS` apart.
+ *
+ * Earlier: the rating ask: a day after first use, and then **at most three more
  * times, further apart each time** (1 Oct 2026, a
  * capped schedule chosen over asking once): × is "not now" and the next ask waits
  * `RATE_PROMPT_SNOOZE_DAYS` — 3, then 7, then 30 days — until
@@ -967,8 +979,11 @@ const FIRST_USE_KEY = "crypto_chart_first_use";
 const RATE_PROMPT_SHOWN_KEY = "crypto_chart_rate_prompt_shown";
 const RATE_PROMPT_DELAY_MS = 24 * 60 * 60 * 1000;
 const RATE_PROMPT_ASKS_KEY = "crypto_chart_rate_prompt_asks";
-const RATE_PROMPT_SNOOZE_DAYS = [3, 7, 30];
-const RATE_PROMPT_MAX_ASKS = 4;
+const RATE_PROMPT_SNOOZE_DAYS = [7, 30];
+const RATE_PROMPT_MAX_ASKS = 3;
+const RATE_PROMPT_MIN_DAYS = 5;
+const ACTIVE_DAYS_KEY = "crypto_chart_active_days";
+const FEEDBACK_URL = "https://github.com/Zekuath/Pricetab/issues/new";
 const RATE_PROMPT_SETTLE_MS = 20000;
 /* **Asked at a good moment** (12 Oct 2026). A call that came true and a target that was reached are the
  * moments somebody is pleased with the thing, so a due ask waits for one and
@@ -1219,6 +1234,15 @@ const ALERT_NOTE_MAX = 60;
  * Nobody types "70%" on a chart; three buckets are what a calibration table
  * can be honest about at this sample size (`RECORD_MIN_FOR_STATS`). */
 const CALL_CONFIDENCE_LEVELS = ["hunch", "likely", "sure"];
+
+/* **Your own chance for a square** (17 Oct 2026), beside the board's: one
+ * press on a chip, never a typed number, and only within the first minutes of
+ * the call — a forecast has to be issued before the price has moved under it,
+ * or comparing it with the board's chance (frozen at the lock) is comparing a
+ * forecast with hindsight. Once given it is final. The record scores both on
+ * the same squares (`callScoreCompare`). */
+const CALL_MINE_CHOICES = [5, 10, 20, 35, 50, 65, 80, 95];
+const CALL_MINE_WINDOW_MS = 2 * 60 * 1000;
 
 const percentWindowLabel = (ms) => {
   const found = PERCENT_WINDOW_OPTIONS.find((o) => o.value === ms);

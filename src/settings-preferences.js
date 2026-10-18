@@ -103,94 +103,96 @@ const CUSTOM_MODE = {
   desc: "Your own arrangement, saved. Press Save to keep what is on screen now; press Custom to bring it back.",
 };
 
+/* The modes' names and sentences, in the reader's language. APP_MODES in
+ * config.js keeps the values a mode sets; the words live here, read at
+ * render through literal keys. */
+const modeWords = (value) => {
+  switch (value) {
+    case "minimal":
+      return [msg("mode_minimal_name", "Minimal"), msg("mode_minimal_desc", "The price and the chart, nothing else. The edge tabs fade until you point at them; the keys still work.")];
+    case "fast":
+      return [msg("mode_fast_name", "Fast"), msg("mode_fast_desc", "The freshest price: every ten seconds, and nothing that costs a request of its own — no widgets, news row or scrolling bar.")];
+    case "trader":
+      return [msg("mode_trader_name", "Trader"), msg("mode_trader_desc", "Everything to read a move with: candles, volume, the grid, open/high/low/close on the crosshair, and the derivatives widgets.")];
+    case "holder":
+      return [msg("mode_holder_name", "Holder"), msg("mode_holder_desc", "For checking in, not watching: a calm chart, the market around it and the headlines, every five minutes.")];
+    default:
+      return [msg("pref_mode_custom", "Custom"), ""];
+  }
+};
+
+/* **Modes as cards** (18 Oct 2026). They were five pills whose meaning
+ * appeared only under the pointer — on a phone, never. Each card now says
+ * what it does; the button inside carries the name alone, and its hit area
+ * is stretched over the card. Custom's card holds Save. */
 const renderModeRow = (panel) => {
   const { appMode, onAppMode, customSaved, customActive, onSaveCustomMode } =
     panel.props;
-  /* An empty slot is offered but does nothing, and says so — the alternative
-   * is hiding it until something is saved, which leaves nowhere to discover
-   * that saving is possible. */
   const modes = APP_MODES.concat([CUSTOM_MODE]);
-  const hovered = modes.find((m) => m.value === panel.state.modeHover);
-  const active = customActive
-    ? CUSTOM_MODE
-    : modes.find((m) => m.value === appMode);
-  const shown = hovered || active;
+  const inUse = msg("pref_mode_in_use", "In use");
   return React.createElement(
     ModeSection,
     { key: "modes" },
     React.createElement(
-      ModeHeader,
+      ModeGrid,
       null,
-      /* No label: the row has its own section of Settings since 26 Sep
-         2026, whose head says "Modes" — the two were one word twice. The
-         empty cell keeps Save at the line's far end. */
-      React.createElement("span"),
-      /* Save, on the label's line — see `ModeSaveButton`. */
-      React.createElement(
-        ModeSaveButton,
-        {
-          onClick: () => onSaveCustomMode && onSaveCustomMode(),
-          onMouseEnter: () => panel.setState({ modeHover: "custom" }),
-          onFocus: () => panel.setState({ modeHover: "custom" }),
-          title: msg(
-            "pref_mode_custom_save_title",
-            "Keep what is on screen now as Custom, replacing anything saved before",
-          ),
-        },
-        customSaved
-          ? msg("pref_mode_custom_resave", "Save again")
-          : msg("pref_mode_custom_save", "Save"),
-      ),
-    ),
-    React.createElement(
-      PresetRow,
-      { onMouseLeave: () => panel.setState({ modeHover: null }) },
       ...modes.map((mode) => {
         const isCustom = mode.value === "custom";
+        const active = isCustom ? customActive : appMode === mode.value;
+        const [name, desc] = modeWords(mode.value);
+        const text = isCustom
+          ? customSaved
+            ? msg("pref_mode_custom_desc", "Your own arrangement, saved. Press Custom to bring it back; Save again replaces it with what is on screen now.")
+            : msg("pref_mode_custom_desc_empty", "Nothing saved yet. Set the app up how you like it, then press Save — pressing another mode will not lose it after that.")
+          : desc;
         return React.createElement(
-          PresetButton,
-          {
-            key: mode.value,
-            type: "button",
-            active: isCustom ? customActive : appMode === mode.value,
-            /* An empty Custom is inert rather than absent: pressing it must not
-             * write a set of defaults nobody chose, and hiding it would leave
-             * nowhere to find out that saving exists. */
-            disabled: isCustom && !customSaved,
-            onClick: () => onAppMode && onAppMode(mode.value),
-            onMouseEnter: () => panel.setState({ modeHover: mode.value }),
-            onFocus: () => panel.setState({ modeHover: mode.value }),
-            title:
-              isCustom && !customSaved
-                ? msg(
-                    "pref_mode_custom_empty",
-                    "Nothing saved yet — press Save to keep the arrangement you have now",
-                  )
-                : mode.desc,
-          },
-          isCustom ? msg("pref_mode_custom", "Custom") : mode.label,
+          ModeCard,
+          { key: mode.value, active, "data-mode-card": mode.value },
+          React.createElement(
+            PresetButton,
+            {
+              type: "button",
+              active,
+              "aria-pressed": active ? "true" : "false",
+              /* An empty Custom is inert rather than absent: pressing it must
+               * not write a set of defaults nobody chose. */
+              disabled: isCustom && !customSaved,
+              onClick: () => onAppMode && onAppMode(mode.value),
+            },
+            name,
+          ),
+          React.createElement(ModeCardDesc, null, text),
+          React.createElement(
+            ModeCardFoot,
+            null,
+            active ? React.createElement("span", { "data-mode-in-use": "true" }, inUse) : React.createElement("span"),
+            isCustom &&
+              React.createElement(
+                ModeSaveButton,
+                {
+                  onClick: () => onSaveCustomMode && onSaveCustomMode(),
+                  title: msg(
+                    "pref_mode_custom_save_title",
+                    "Keep what is on screen now as Custom, replacing anything saved before",
+                  ),
+                },
+                customSaved
+                  ? msg("pref_mode_custom_resave", "Save again")
+                  : msg("pref_mode_custom_save", "Save"),
+              ),
+          ),
         );
       }),
     ),
     React.createElement(
       ModeDesc,
-      { dim: !shown },
-      shown
-        ? shown.value === "custom"
-          ? customSaved
-            ? msg(
-                "pref_mode_custom_desc",
-                "Your own arrangement, saved. Press Custom to bring it back; Save again replaces it with what is on screen now.",
-              )
-            : msg(
-                "pref_mode_custom_desc_empty",
-                "Nothing saved yet. Set the app up how you like it, then press Save — pressing another mode will not lose it after that.",
-              )
-          : shown.desc
+      { dim: true },
+      appMode || customActive
+        ? msg("pref_modes_keep", "A mode sets a dozen settings in the other sections at once; currency, number format and theme stay as you have them.")
         : msg(
-          "pref_modes_own_sections",
-          "Not one of these. A mode sets a dozen of the settings in the other sections at once; currency, number format and theme are always left as you have them.",
-        ),
+            "pref_modes_own_sections",
+            "Not one of these. A mode sets a dozen of the settings in the other sections at once; currency, number format and theme are always left as you have them.",
+          ),
     ),
   );
 };
@@ -283,6 +285,91 @@ const withChartHeads = (rows) => {
   return out;
 };
 
+/* Two shapes cover most rows: a switch, and a short set of choices. The
+ * rows added on 18 Oct 2026 — the alarm, the widgets, the portfolio, what
+ * this browser keeps — are written through them, so a new row is its words
+ * and its two props rather than forty lines of the same nesting. */
+const switchRow = (panel, o) =>
+  panel.section(
+    o.title,
+    o.keywords,
+    React.createElement(
+      ToggleSection,
+      o.attrs || null,
+      settingTitle(panel, o.key, o.title),
+      React.createElement(ToggleSectionDesc, null, o.desc),
+      o.note ? settingNote(panel, o.key, o.note) : null,
+      React.createElement(
+        ToggleRow,
+        null,
+        React.createElement(ToggleLabel, null, o.on ? msg("toggle_on", "On") : msg("toggle_off", "Off")),
+        React.createElement(ToggleSwitch, {
+          active: o.on,
+          "aria-pressed": o.on ? "true" : "false",
+          onClick: () => o.onToggle && o.onToggle(!o.on),
+          "aria-label": o.title,
+        }),
+      ),
+      o.after || null,
+    ),
+  );
+
+const choiceRow = (panel, o) =>
+  panel.section(
+    o.title,
+    o.keywords,
+    React.createElement(
+      ThemeSection,
+      o.attrs || null,
+      React.createElement(ThemeSectionTitle, null, o.title),
+      React.createElement(
+        ThemeButtonGroup,
+        null,
+        ...o.options.map(([value, label, tip]) =>
+          React.createElement(
+            ThemeButton,
+            {
+              key: value,
+              active: o.value === value,
+              "aria-pressed": o.value === value ? "true" : "false",
+              title: tip || undefined,
+              "data-choice": value,
+              /* FIFO and XL are names, not words to soften */
+              keepCase: true,
+              onClick: () => o.onPick && o.onPick(value),
+            },
+            label,
+          ),
+        ),
+      ),
+      o.desc ? React.createElement(ThemeDescription, null, o.desc) : null,
+    ),
+  );
+
+/* What this browser keeps for PriceTab, split the way `writeStorage` splits
+ * it under pressure: what a person typed or chose, and the caches that come
+ * back from the network by themselves. Read on every draw of the section —
+ * a handful of keys, no request. */
+const storageUse = () => {
+  const out = { mine: 0, cache: 0, keys: 0 };
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (!k || k.indexOf("crypto_chart_") !== 0) continue;
+      const bytes = (k.length + (localStorage.getItem(k) || "").length) * 2;
+      out.keys += 1;
+      if (EPHEMERAL_CACHE_KEYS.includes(k)) out.cache += bytes;
+      else out.mine += bytes;
+    }
+  } catch (e) {
+    return null;
+  }
+  return out;
+};
+
+const kib = (bytes) =>
+  bytes >= 1048576 ? `${(bytes / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`;
+
 const settingSections = (panel) => {
   const {
   themePreference, activeTheme, onThemeChange,
@@ -326,6 +413,11 @@ const settingSections = (panel) => {
   practiceDock, onPracticeDockChange,
   practiceMainLines, onPracticeMainLinesChange,
   practiceConfirm, onPracticeConfirmChange,
+  alarmNotify, alarmGranted, onAlarmNotifyChange, onAlarmDrop,
+  alarmSound, onAlarmSoundChange,
+  widgetSize, onWidgetSizeChange, widgets, onWidgetPreset, onOpenWidgets,
+  costMethod, onCostMethodChange,
+  portfolioHidden, onTogglePortfolioHidden,
   } = panel.props;
 
   return {
@@ -2409,6 +2501,174 @@ const settingSections = (panel) => {
             ),
           ),
 
+    /* The alarm's two switches, which until 18 Oct 2026 lived only inside
+       the targets drawer — the one place you go when a target already
+       exists. The permission is still asked for straight out of the press. */
+    alarmNotify: () =>
+      switchRow(panel, {
+        key: "alarmNotify",
+        title: msg("pref_alarm_notify_title", "Notification When A Target Is Hit"),
+        keywords: msg("pref_alarm_keywords", "alarm notification notify banner sound tone beep target hit liquidated stopped alert"),
+        desc: alarmNotify && !alarmGranted
+          ? msg("pref_alarm_notify_pending", "Switched on, but Chrome has not allowed notifications — press again to be asked")
+          : msg("pref_alarm_notify_desc", "A system notification for a target that is hit and a contract that is stopped or liquidated, while a PriceTab tab is open"),
+        note: msg("pref_alarm_notify_note", "Chrome asks for the notifications permission the first time this is switched on, and never at install. Off mutes it and keeps the permission, so an afternoon of quiet does not cost asking again; Withdraw gives the permission back."),
+        on: Boolean(alarmNotify && alarmGranted),
+        onToggle: (on) => onAlarmNotifyChange && onAlarmNotifyChange(on),
+        attrs: { "data-pref-row": "alarmNotify" },
+        after: alarmGranted
+          ? React.createElement(
+              BackupRow,
+              null,
+              React.createElement(
+                BackupBtn,
+                { onClick: () => onAlarmDrop && onAlarmDrop() },
+                msg("pref_alarm_withdraw", "Withdraw the permission"),
+              ),
+            )
+          : null,
+      }),
+
+    alarmSound: () =>
+      switchRow(panel, {
+        key: "alarmSound",
+        title: msg("pref_alarm_sound_title", "Sound When A Target Is Hit"),
+        keywords: msg("pref_alarm_keywords", "alarm notification notify banner sound tone beep target hit liquidated stopped alert"),
+        desc: msg("pref_alarm_sound_desc", "A short tone, made on this device — it plays once when switched on so you know what to listen for"),
+        on: alarmSound === true,
+        onToggle: (on) => onAlarmSoundChange && onAlarmSoundChange(on),
+        attrs: { "data-pref-row": "alarmSound" },
+      }),
+
+    /* The widgets' two settings that are not one card's: the size of them
+       all, and a bundle to start from. Arranging stays in the drawer. */
+    widgetScale: () =>
+      choiceRow(panel, {
+        title: msg("pref_widget_scale_title", "Widget Text Size"),
+        keywords: msg("pref_widget_keywords", "widgets cards size scale bundle preset holder trader minimal drawer"),
+        value: widgetSize || "medium",
+        options: WIDGET_SIZE_OPTIONS.map((o) => [o.value, o.short, o.label]),
+        onPick: (v) => onWidgetSizeChange && onWidgetSizeChange(v),
+        desc: msg("pref_widget_scale_desc", "Everything on every card, at once. Each card's own shape — small, medium, large — is chosen on the card: hold it or right-click it."),
+        attrs: { "data-pref-row": "widgetScale" },
+      }),
+
+    widgetBundle: () => {
+      const on = widgets ? Object.keys(widgets).filter((k) => widgets[k]).length : 0;
+      const active = ["holder", "trader", "minimal"].find((k) => widgets && isPresetActive(widgets, k));
+      return panel.section(
+        msg("pref_widget_bundle_title", "Start From A Bundle"),
+        msg("pref_widget_keywords", "widgets cards size scale bundle preset holder trader minimal drawer"),
+        React.createElement(
+          ThemeSection,
+          { "data-pref-row": "widgetBundle" },
+          React.createElement(ThemeSectionTitle, null, msg("pref_widget_bundle_title", "Start From A Bundle")),
+          React.createElement(
+            ThemeButtonGroup,
+            null,
+            ...[
+              ["holder", modeWords("holder")[0]],
+              ["trader", modeWords("trader")[0]],
+              ["minimal", modeWords("minimal")[0]],
+            ].map(([value, label]) =>
+              React.createElement(
+                ThemeButton,
+                {
+                  key: value,
+                  active: active === value,
+                  "aria-pressed": active === value ? "true" : "false",
+                  "data-choice": value,
+                  keepCase: true,
+                  onClick: () => onWidgetPreset && onWidgetPreset(value),
+                },
+                label,
+              ),
+            ),
+          ),
+          React.createElement(
+            ThemeDescription,
+            null,
+            msg("pref_widget_bundle_desc", "$1 widgets on now. A bundle replaces which are on; their sizes and order stay as you left them.", String(on)),
+          ),
+          onOpenWidgets &&
+            React.createElement(
+              BackupRow,
+              null,
+              React.createElement(
+                BackupBtn,
+                { onClick: () => onOpenWidgets(), "data-pref-open-widgets": "true" },
+                msg("pref_widget_open", "Arrange the widgets"),
+              ),
+            ),
+        ),
+      );
+    },
+
+    /* The portfolio's two preferences, which had no place outside it. */
+    costMethod: () =>
+      choiceRow(panel, {
+        title: msg("pref_cost_title", "Cost Basis Method"),
+        keywords: msg("pref_portfolio_keywords", "portfolio cost basis fifo lifo hifo method profit tax hide mask privacy figures"),
+        value: costMethod || DEFAULT_COST_METHOD,
+        options: COST_METHODS.map((m) => [m.value, m.label, m.title]),
+        onPick: (v) => onCostMethodChange && onCostMethodChange(v),
+        desc: msg("pref_cost_desc", "Which purchase a sale is matched to, for the profit the portfolio prints. It is stamped on each sale as it is recorded, so changing it never re-decides a sale already made."),
+        attrs: { "data-pref-row": "costMethod" },
+      }),
+
+    portfolioHidden: () =>
+      switchRow(panel, {
+        key: "portfolioHidden",
+        title: msg("pref_hidden_title", "Hide Portfolio Figures"),
+        keywords: msg("pref_portfolio_keywords", "portfolio cost basis fifo lifo hifo method profit tax hide mask privacy figures"),
+        desc: msg("pref_hidden_desc", "Money and amounts read ••• for anyone looking over your shoulder; percentages and prices stay. H does the same from anywhere"),
+        on: portfolioHidden === true,
+        onToggle: () => onTogglePortfolioHidden && onTogglePortfolioHidden(),
+        attrs: { "data-pref-row": "portfolioHidden" },
+      }),
+
+    /* How much this browser holds, and the caches let go of on request. */
+    storage: () => {
+      const use = storageUse();
+      return panel.section(
+        msg("pref_storage_title", "Kept On This Device"),
+        msg("pref_storage_keywords", "storage space size cache clear memory kept device local data"),
+        React.createElement(
+          ToggleSection,
+          { "data-pref-row": "storage" },
+          settingTitle(panel, "storage", msg("pref_storage_title", "Kept On This Device")),
+          React.createElement(
+            ToggleSectionDesc,
+            { "data-storage-use": use ? `${use.mine}:${use.cache}` : "" },
+            use
+              ? msg("pref_storage_desc", "$1 of your own — coins, targets, calls, portfolio, settings — and $2 of cached prices and headlines.", kib(use.mine), kib(use.cache))
+              : msg("pref_storage_blocked", "This browser does not let PriceTab read its storage."),
+          ),
+          settingNote(panel, "storage", msg("pref_storage_note", "Everything stays in this browser's local storage; nothing is kept anywhere else. Clearing the cache drops only what the network gives back — the next tab fetches it again — and reloads the page.")),
+          React.createElement(
+            BackupRow,
+            null,
+            React.createElement(
+              BackupBtn,
+              {
+                "data-pref-clear-cache": "true",
+                disabled: !use || use.cache === 0,
+                onClick: () => {
+                  try {
+                    EPHEMERAL_CACHE_KEYS.forEach((k) => localStorage.removeItem(k));
+                  } catch (e) {
+                    /* storage refused — the reload still shows what is there */
+                  }
+                  window.location.reload();
+                },
+              },
+              msg("pref_storage_clear", "Clear the cache and reload"),
+            ),
+          ),
+        ),
+      );
+    },
+
     alertTabTitle: () =>
         /* The one setting that also governs work done while you are
          * elsewhere, so the description says so rather than describing
@@ -2577,7 +2837,16 @@ const settingSections = (panel) => {
  * together; Chart Colour and Quiet Controls joined the chart they are about.
  * Inside a section, the setting that changes the most on screen comes first,
  * and a dependent one sits directly under its parent. */
+/* The menu's order, by caption: preferences, then the features' own
+ * sections, then the app and its data. */
+const PREFERENCE_GROUP_ORDER = ["basics", "chart", "underPrice", "tabTickers", "updating", "webApp", "alerts", "widgets", "portfolio", "futures", "features", "data"];
+
 const preferenceGroups = (panel) => {
+  const groups = preferenceGroupList(panel);
+  return PREFERENCE_GROUP_ORDER.map((key) => groups.find((g) => g.key === key)).filter(Boolean);
+};
+
+const preferenceGroupList = (panel) => {
   const sections = settingSections(panel);
   const build = (keys) => keys.map((name) => sections[name]()).filter(Boolean);
   // The same, keeping each row's key — for the chart's headings
@@ -2615,7 +2884,29 @@ const preferenceGroups = (panel) => {
       key: "tabTickers",
       title: msg("pref_group_tab_tickers", "Tab & tickers"),
       desc: msg("pref_group_tab_tickers_desc", "The scrolling bar of prices, and what the browser tab says."),
-      nodes: build(["pageTicker", "tabTicker", "alertTabTitle"]),
+      nodes: build(["pageTicker", "tabTicker"]),
+    },
+    /* Being told: the two alarm switches and the tab title's announcement,
+       together since 18 Oct 2026 — they were one drawer and one other
+       section apart. */
+    {
+      key: "alerts",
+      caption: msg("set_nav_features", "Features"),
+      title: msg("pref_group_alerts", "Targets & alarm"),
+      desc: msg("pref_group_alerts_desc", "How a hit target, or a contract that is stopped, gets your attention."),
+      nodes: build(["alarmNotify", "alarmSound", "alertTabTitle"]),
+    },
+    {
+      key: "widgets",
+      title: msg("pref_group_widgets", "Widgets"),
+      desc: msg("pref_group_widgets_desc", "The cards in the drawer on the left: how big they read, and a set to start from."),
+      nodes: build(["widgetScale", "widgetBundle"]),
+    },
+    {
+      key: "portfolio",
+      title: msg("pref_group_portfolio", "Portfolio"),
+      desc: msg("pref_group_portfolio_desc", "How the portfolio counts profit, and whether its money shows."),
+      nodes: build(["costMethod", "portfolioHidden"]),
     },
     {
       key: "updating",
@@ -2641,16 +2932,25 @@ const preferenceGroups = (panel) => {
      * has at all. */
     {
       key: "features",
+      caption: msg("set_nav_app", "App & data"),
       title: msg("nav_title", "Menu layout"),
       desc: msg("nav_group_desc", "Your tabs, their positions and the data you keep."),
-      nodes: build(["features", "practiceGlossary", "practiceDock", "practiceMainLines", "practiceConfirm"]),
+      nodes: build(["features"]),
     },
+    /* The derivatives market's own rows: they sat under Menu layout, which
+       is about tabs. Only there while the market is on. */
+    ...(panel.props.practiceEnabled === true ? [{
+      key: "futures",
+      title: msg("pref_group_futures", "Futures"),
+      desc: msg("pref_group_futures_desc", "The derivatives market: its words, its strip and lines on the main chart, and asking before a contract opens."),
+      nodes: build(["practiceGlossary", "practiceDock", "practiceMainLines", "practiceConfirm"]),
+    }] : []),
     /* Not a setting: the one thing here about the settings themselves. */
     {
       key: "data",
       title: msg("pref_group_data", "Your data"),
       desc: msg("pref_group_data_desc", "Everything this browser keeps for PriceTab, in one file you can carry to another."),
-      nodes: build(["backup"]),
+      nodes: build(["backup", "storage"]),
     },
   ];
 };

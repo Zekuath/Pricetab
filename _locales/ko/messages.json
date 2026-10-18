@@ -1,4 +1,22 @@
 {
+  "ahead_days": {
+    "message": "$1일 후"
+  },
+  "ahead_hours": {
+    "message": "$1시간 후"
+  },
+  "ahead_minutes": {
+    "message": "$1분 후"
+  },
+  "ahead_month": {
+    "message": "한 달 이상 후"
+  },
+  "ahead_now": {
+    "message": "지금"
+  },
+  "ahead_tomorrow": {
+    "message": "내일"
+  },
   "al_7d_hit_rate": {
     "message": "적중률"
   },
@@ -379,6 +397,36 @@
   "al_luck_title": {
     "message": "각 예측은 확정할 때 해당 칸에 표시된 확률로 적중했습니다. 이 확률을 각각 독립된 동전 던지기로 합산했을 때, 이번만큼 많이 적중할 빈도가 이 값입니다."
   },
+  "al_mine_better": {
+    "message": " · 내 확률의 점수가 더 좋음(차이 $1~$2)"
+  },
+  "al_mine_brier": {
+    "message": "Brier(낮을수록 좋음): 나 $1 · 보드 $2 · $3칸"
+  },
+  "al_mine_few": {
+    "message": "내 확률 $1개 결정 — $2개부터 채점"
+  },
+  "al_mine_hint": {
+    "message": "선택 사항이며, 한 번 정하면 바꿀 수 없고 처음 2분 동안만 가능합니다. 기록은 같은 칸에서 보드의 확률과 비교합니다."
+  },
+  "al_mine_label": {
+    "message": "이 칸에 대한 내 확률"
+  },
+  "al_mine_same": {
+    "message": " · 구별되지 않음(차이 $1~$2)"
+  },
+  "al_mine_set": {
+    "message": "내 확률 $1%"
+  },
+  "al_mine_too_few": {
+    "message": " · 너무 적어 구별할 수 없음"
+  },
+  "al_mine_vs": {
+    "message": "나와 보드"
+  },
+  "al_mine_worse": {
+    "message": " · 보드 확률의 점수가 더 좋음(차이 $1~$2)"
+  },
   "al_missed": {
     "message": "빗나감"
   },
@@ -583,7 +631,7 @@
     "message": "판정됨 · $1"
   },
   "al_settles_in": {
-    "message": "$1 후 판정"
+    "message": "$1 판정"
   },
   "al_show": {
     "message": "표시"
@@ -1014,15 +1062,6 @@
       }
     }
   },
-  "app_rate_ask": {
-    "message": "PriceTab이 마음에 드시나요? 평가는 다른 사람들이 이 확장을 찾는 방법입니다. 몇 초면 되고, 무엇보다 큰 도움이 됩니다."
-  },
-  "app_rate_ask_call": {
-    "message": "그 예측이 맞았습니다. PriceTab이 시장을 읽는 데 도움이 된다면, 평점이 다른 사람들이 찾게 해 줍니다. 몇 초면 됩니다."
-  },
-  "app_rate_ask_target": {
-    "message": "목표에 도달했습니다. PriceTab이 유용하다면, 평점이 다른 사람들이 찾게 해 줍니다. 몇 초면 됩니다."
-  },
   "app_read_on": {
     "message": "출처에서 읽기: "
   },
@@ -1350,8 +1389,23 @@
   "as_wed": {
     "message": "수요일"
   },
+  "board_call_it": {
+    "message": "예측하기"
+  },
+  "board_in_band": {
+    "message": "현재 범위 안"
+  },
+  "board_locked": {
+    "message": "잠김"
+  },
+  "board_needs": {
+    "message": "$1 필요"
+  },
   "board_ordinary": {
     "message": "이 시간에 이만큼: $2 중 $1"
+  },
+  "board_settles": {
+    "message": "$1 확정"
   },
   "br_above_200d": {
     "message": "200일 평균 위"
@@ -3100,6 +3154,30 @@
   },
   "mo_withheld": {
     "message": "평가를 통과하지 못함 — 추정치를 표시하지 않습니다"
+  },
+  "mode_fast_desc": {
+    "message": "가장 신선한 가격: 10초마다, 별도 요청이 드는 것은 모두 끔 — 위젯, 뉴스 줄, 흐르는 바 없음."
+  },
+  "mode_fast_name": {
+    "message": "빠름"
+  },
+  "mode_holder_desc": {
+    "message": "지켜보기보다 가끔 확인용: 차분한 차트, 주변 시장, 헤드라인을 5분마다."
+  },
+  "mode_holder_name": {
+    "message": "홀더"
+  },
+  "mode_minimal_desc": {
+    "message": "가격과 차트만. 가장자리 탭은 가리킬 때까지 흐려지고, 키는 그대로 작동합니다."
+  },
+  "mode_minimal_name": {
+    "message": "미니멀"
+  },
+  "mode_trader_desc": {
+    "message": "움직임을 읽기 위한 모든 것: 캔들, 거래량, 그리드, 십자선의 시가/고가/저가/종가, 파생상품 위젯."
+  },
+  "mode_trader_name": {
+    "message": "트레이더"
   },
   "mon_close": {
     "message": "모니터 닫기"
@@ -7882,6 +7960,30 @@
   "pp_zoom_reset_title": {
     "message": "전체 기간 다시 보기"
   },
+  "pref_alarm_keywords": {
+    "message": "알람 알림 소리 톤 목표 도달 청산 정지 경고 alert notification sound"
+  },
+  "pref_alarm_notify_desc": {
+    "message": "PriceTab 탭이 열려 있는 동안 목표 도달, 계약 정지·청산을 시스템 알림으로 알려 줍니다"
+  },
+  "pref_alarm_notify_note": {
+    "message": "알림 권한은 이것을 처음 켤 때 Chrome이 묻고, 설치 때는 묻지 않습니다. 끄면 소리만 끄고 권한은 남아 조용한 오후 뒤에 다시 허용할 필요가 없습니다. '권한 철회'로 권한을 돌려줍니다."
+  },
+  "pref_alarm_notify_pending": {
+    "message": "켜졌지만 Chrome이 알림을 허용하지 않았습니다 — 다시 누르면 묻습니다"
+  },
+  "pref_alarm_notify_title": {
+    "message": "목표 도달 시 알림"
+  },
+  "pref_alarm_sound_desc": {
+    "message": "이 기기에서 만드는 짧은 소리 — 켤 때 한 번 울려서 어떤 소리인지 알 수 있습니다"
+  },
+  "pref_alarm_sound_title": {
+    "message": "목표 도달 시 소리"
+  },
+  "pref_alarm_withdraw": {
+    "message": "권한 철회"
+  },
   "pref_alert_tab_title_aria": {
     "message": "탭 제목의 목표 가격 알림 켜기/끄기"
   },
@@ -8155,6 +8257,12 @@
   "pref_companion_title": {
     "message": "차트 도우미"
   },
+  "pref_cost_desc": {
+    "message": "포트폴리오가 보여 주는 이익을 위해 매도를 어느 매수와 짝지을지. 매도를 기록할 때마다 새겨지므로, 바꿔도 이미 한 매도를 다시 정하지 않습니다."
+  },
+  "pref_cost_title": {
+    "message": "원가 방식"
+  },
   "pref_currency_about": {
     "message": "통화 안내"
   },
@@ -8201,6 +8309,12 @@
         "content": "$1"
       }
     }
+  },
+  "pref_feedback": {
+    "message": "의견 보내기"
+  },
+  "pref_feedback_hint": {
+    "message": "GitHub 이슈 양식을 새 탭에서 엽니다 — 여기서는 아무것도 보내지 않습니다"
   },
   "pref_gloss_contract": {
     "message": "계약이란"
@@ -8259,6 +8373,12 @@
   "pref_glossary_title": {
     "message": "선물 계약이란 무엇인가"
   },
+  "pref_group_alerts": {
+    "message": "목표와 알람"
+  },
+  "pref_group_alerts_desc": {
+    "message": "목표 도달이나 계약 정지를 어떻게 알려 줄지."
+  },
   "pref_group_basics": {
     "message": "기본"
   },
@@ -8280,8 +8400,20 @@
   "pref_group_data_desc": {
     "message": "이 브라우저가 PriceTab을 위해 보관하는 모든 것을 다른 곳으로 옮길 수 있는 파일 하나로."
   },
+  "pref_group_futures": {
+    "message": "선물"
+  },
+  "pref_group_futures_desc": {
+    "message": "파생상품 시장: 용어 설명, 메인 차트의 띠와 선, 계약을 열기 전 확인."
+  },
   "pref_group_open_contract": {
     "message": "보유 중인 계약"
+  },
+  "pref_group_portfolio": {
+    "message": "포트폴리오"
+  },
+  "pref_group_portfolio_desc": {
+    "message": "포트폴리오가 이익을 세는 방식과 금액 표시 여부."
   },
   "pref_group_tab_tickers": {
     "message": "탭과 티커"
@@ -8306,6 +8438,18 @@
   },
   "pref_group_webapp_desc_2": {
     "message": "휴대폰의 앱: 모든 것의 크기, 홈 화면에서 실행, 양옆에서 스와이프, 화면 켜두기, 열리는 위치."
+  },
+  "pref_group_widgets": {
+    "message": "위젯"
+  },
+  "pref_group_widgets_desc": {
+    "message": "왼쪽 서랍의 카드: 읽히는 크기와 시작할 묶음."
+  },
+  "pref_hidden_desc": {
+    "message": "금액과 수량은 어깨 너머로 보는 사람에게 •••로 보이고, 비율과 가격은 남습니다. H로 어디서든 같은 동작"
+  },
+  "pref_hidden_title": {
+    "message": "포트폴리오 숫자 숨기기"
   },
   "pref_language_aria": {
     "message": "언어"
@@ -8409,9 +8553,6 @@
   "pref_mode_custom_desc_empty": {
     "message": "아직 저장된 것이 없습니다. 원하는 대로 설정한 뒤 저장을 누르세요 — 그다음부터는 다른 모드를 눌러도 사라지지 않습니다."
   },
-  "pref_mode_custom_empty": {
-    "message": "아직 저장된 것이 없습니다 — 지금 설정을 남기려면 저장을 누르세요"
-  },
   "pref_mode_custom_resave": {
     "message": "다시 저장"
   },
@@ -8421,8 +8562,14 @@
   "pref_mode_custom_save_title": {
     "message": "지금 화면 상태를 내 설정으로 저장하고 이전 저장을 대체합니다"
   },
+  "pref_mode_in_use": {
+    "message": "사용 중"
+  },
   "pref_modes": {
     "message": "모드"
+  },
+  "pref_modes_keep": {
+    "message": "모드는 다른 섹션의 설정 십여 개를 한 번에 바꿉니다. 통화, 숫자 형식, 테마는 그대로 둡니다."
   },
   "pref_modes_own_sections": {
     "message": "이 중 어느 것도 아닙니다. 모드는 다른 섹션의 설정 열몇 개를 한 번에 바꿉니다. 통화·숫자 형식·테마는 항상 그대로 둡니다."
@@ -8604,6 +8751,9 @@
   "pref_phone_tabs_up": {
     "message": "$1 왼쪽으로"
   },
+  "pref_portfolio_keywords": {
+    "message": "포트폴리오 원가 fifo lifo hifo 방식 이익 세금 숨기기 개인정보 숫자 portfolio cost basis hide"
+  },
   "pref_position_bottom": {
     "message": "아래"
   },
@@ -8738,6 +8888,32 @@
   },
   "pref_show": {
     "message": "표시"
+  },
+  "pref_storage_blocked": {
+    "message": "이 브라우저는 PriceTab이 저장소를 읽도록 허용하지 않습니다."
+  },
+  "pref_storage_clear": {
+    "message": "캐시 지우고 새로고침"
+  },
+  "pref_storage_desc": {
+    "message": "직접 입력한 것 $1(코인, 목표, 콜, 포트폴리오, 설정)과 캐시된 가격·헤드라인 $2.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "pref_storage_keywords": {
+    "message": "저장소 공간 크기 캐시 지우기 기기 로컬 데이터 storage cache clear"
+  },
+  "pref_storage_note": {
+    "message": "모든 것은 이 브라우저의 로컬 저장소에만 있고 다른 곳에는 없습니다. 캐시 지우기는 네트워크에서 다시 받을 수 있는 것만 지우고(다음 탭에서 다시 받음) 페이지를 새로고침합니다."
+  },
+  "pref_storage_title": {
+    "message": "이 기기에 보관"
   },
   "pref_studies_aria": {
     "message": "그릴 스터디"
@@ -8973,6 +9149,29 @@
   "pref_webapp_wake_title": {
     "message": "화면 켜두기"
   },
+  "pref_widget_bundle_desc": {
+    "message": "지금 켜진 위젯 $1개. 묶음은 켜진 것을 바꾸며, 크기와 순서는 그대로 둡니다.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "pref_widget_bundle_title": {
+    "message": "묶음으로 시작"
+  },
+  "pref_widget_keywords": {
+    "message": "위젯 카드 크기 배율 묶음 프리셋 홀더 트레이더 미니멀 서랍 widgets cards size bundle"
+  },
+  "pref_widget_open": {
+    "message": "위젯 정리하기"
+  },
+  "pref_widget_scale_desc": {
+    "message": "모든 카드의 모든 것을 한 번에. 카드별 모양(작게·중간·크게)은 카드에서 고릅니다: 길게 누르거나 오른쪽 클릭."
+  },
+  "pref_widget_scale_title": {
+    "message": "위젯 글자 크기"
+  },
   "pt_tab_baserates": {
     "message": "기준 비율"
   },
@@ -9054,11 +9253,47 @@
   "qs_word_target": {
     "message": "목표"
   },
+  "rate_anyway": {
+    "message": "그래도 평가하기"
+  },
+  "rate_aria": {
+    "message": "PriceTab 평가하기"
+  },
+  "rate_ask": {
+    "message": "PriceTab은 잘 쓰고 계신가요?"
+  },
+  "rate_ask_call": {
+    "message": "그 콜이 맞았습니다. PriceTab은 잘 쓰고 계신가요?"
+  },
+  "rate_ask_target": {
+    "message": "목표에 도달했습니다. PriceTab은 잘 쓰고 계신가요?"
+  },
+  "rate_better": {
+    "message": "말씀해 주셔서 고맙습니다. 무엇을 바꾸고 싶으신가요? '알려 주기'는 GitHub 양식을 엽니다 — 이 페이지에서는 아무것도 보내지 않습니다."
+  },
+  "rate_choice_better": {
+    "message": "더 좋아질 수 있어요"
+  },
+  "rate_choice_good": {
+    "message": "좋아요"
+  },
+  "rate_good": {
+    "message": "도움이 된다니 기쁩니다. Chrome 웹 스토어의 평가는 다른 사람들이 PriceTab을 찾는 길입니다 — 몇 초면 됩니다."
+  },
   "rate_later": {
     "message": "나중에 — 다시 물어보기"
   },
   "rate_never": {
     "message": "다시 묻지 않기"
+  },
+  "rate_not_now": {
+    "message": "나중에"
+  },
+  "rate_store": {
+    "message": "웹 스토어에서 평가"
+  },
+  "rate_tell": {
+    "message": "알려 주기"
   },
   "read_candle": {
     "message": "$1 — 시가 $2, 고가 $3, 저가 $4, 종가 $5"
@@ -9331,6 +9566,42 @@
   "set_add_failed": {
     "message": "코인을 추가할 수 없습니다"
   },
+  "set_add_fewer": {
+    "message": "적게 보기"
+  },
+  "set_add_full": {
+    "message": "목록이 최대인 코인 $1개입니다. 하나를 빼야 다른 것을 더할 수 있습니다.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "set_add_largest": {
+    "message": "큰 순서"
+  },
+  "set_add_more": {
+    "message": "$1개 더 보기",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "set_add_moving": {
+    "message": "많이 움직인"
+  },
+  "set_add_one": {
+    "message": "$1 추가",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "set_add_suggested": {
+    "message": "추천"
+  },
   "set_already_listed": {
     "message": "이미 목록에 있는 심볼입니다"
   },
@@ -9376,20 +9647,26 @@
   "set_nav_access": {
     "message": "접근"
   },
+  "set_nav_app": {
+    "message": "앱과 데이터"
+  },
+  "set_nav_features": {
+    "message": "기능"
+  },
   "set_nav_help": {
     "message": "도움말"
   },
   "set_no_coins": {
     "message": "아직 코인이 없습니다"
   },
+  "set_no_match": {
+    "message": "일치 없음 — \"Bitcoin\" 또는 \"BTC\"를 입력해 보세요"
+  },
   "set_not_recognized": {
     "message": "$1 을(를) 인식할 수 없습니다"
   },
   "set_quick_add": {
     "message": "빠른 추가"
-  },
-  "set_rate": {
-    "message": "평가하기"
   },
   "set_remove_coin": {
     "message": "$1 제거"
@@ -10762,11 +11039,14 @@
   "tour_back": {
     "message": "뒤로"
   },
-  "tour_chapter_calling_a_square": {
-    "message": "칸을 예측하기"
+  "tour_chapter_calls_targets": {
+    "message": "콜과 목표"
   },
   "tour_chapter_making_it_yours": {
     "message": "내 것으로 만들기"
+  },
+  "tour_chapter_more": {
+    "message": "더 보기"
   },
   "tour_chapter_reading_the_market": {
     "message": "시장 읽기"
@@ -10786,11 +11066,28 @@
   "tour_done": {
     "message": "완료"
   },
+  "tour_keep": {
+    "message": "그대로 두기"
+  },
+  "tour_key_refresh": {
+    "message": "지금 새로고침"
+  },
   "tour_key_rotate": {
     "message": "코인 순환"
   },
+  "tour_key_theme": {
+    "message": "라이트 또는 다크"
+  },
   "tour_keys_intro": {
     "message": "전체 목록은 언제든 ? 키로 볼 수 있습니다. 지금 알아두면 좋은 몇 가지:"
+  },
+  "tour_more_tips": {
+    "message": "팁 $1개 더 →",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
   },
   "tour_next": {
     "message": "다음"
@@ -10798,68 +11095,88 @@
   "tour_skip": {
     "message": "투어 건너뛰기"
   },
-  "tour_text_01c": {
-    "message": "새 탭마다 실시간 암호화폐 차트, 아무것도 요구하지 않습니다 — 계정 없음, 설치 시 권한 없음, 사용자에 관한 어떤 정보도 이 기기를 떠나지 않습니다. 이 투어는 다섯 장의 짧은 단계입니다. 언제든 건너뛸 수 있고 설정에서 다시 볼 수 있습니다."
+  "tour_step_of": {
+    "message": "$2단계 중 $1단계",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
   },
-  "tour_text_02": {
-    "message": "현재 코인과 실시간 가격입니다. 탭이 열려 있는 동안 갱신되고, 아니면 멈춥니다. 클릭하거나 화살표 키로 코인 목록을 이동하세요."
+  "tour_text_calls_2": {
+    "message": "콜을 켜면 지금 이후로 칸 보드가 생기고 칸마다 확률이 붙습니다. 칸을 두 번 클릭하면 콜이 확정되고, 스스로 정산되어 나만 보는 기록에 남습니다."
   },
-  "tour_text_03": {
-    "message": "화면에 보이는 구간 동안 가격이 어떻게 움직였는지 — 고정된 24시간이 아닙니다. 클릭하면 퍼센트와 금액이 전환됩니다."
+  "tour_text_calls_phone": {
+    "message": "콜을 켜면 지금 이후로 칸 보드가 생기고 칸마다 확률이 붙습니다. 칸을 탭해 초안을 만들고 시트에서 확정하세요. 스스로 정산되어 나만 보는 기록에 남습니다."
   },
-  "tour_text_04": {
-    "message": "최근 1시간부터 전체 기간까지. 각 구간은 자체 설정을 유지합니다 — 1H에서 만든 보드는 돌아와도 그대로입니다."
+  "tour_text_companion_2": {
+    "message": "차트 설정에서 동반자를 켜면 찾은 패턴과 셋업에 이름을 붙이고, 이 코인에서 그 뒤에 무슨 일이 있었는지 함께 보여 줍니다. 대부분은 평범한 날보다 낫지 않았고, 그 사실도 말해 줍니다."
   },
-  "tour_text_05": {
-    "message": "심볼이나 이름을 입력하세요. 내 코인이 먼저 정렬되고, 아직 담지 않은 코인을 고르면 목록에 추가됩니다. 같은 검색으로 목표 가격의 코인도 고릅니다."
+  "tour_text_compare_2": {
+    "message": "다른 코인이나 S&P 500, 나스닥 100, 금을 차트에 겹칩니다 — 둘 다 한 축의 변화율로, 두 개의 축은 쓰지 않습니다."
   },
-  "tour_text_06_drawer": {
-    "message": "차트 위에 올릴 것을 고르는 서랍: 내 코인, 아무 코인, 그리고 시장 — S&P 500, Nasdaq 100, 금. 두 선 모두 구간 시작부터의 변동률이며 하나의 공통 축 위에 그립니다 — 두 개의 축은 절대 쓰지 않습니다(어떤 두 선이든 관련 있어 보이게 하는 속임수). 중지는 서랍과 가격 아래에 있습니다."
+  "tour_text_drag_2": {
+    "message": "시간과 가격을 따라 드래그하세요. 휠은 가리킨 곳을 확대하고, 더블클릭하면 모두 되돌립니다."
   },
-  "tour_text_07": {
-    "message": "T는 선을 캔들로 바꿉니다. G는 차트 뒤에 가격·시간 격자를 깔아 수준을 읽을 수 있게 합니다. 가격 아래에는 구간 고가와 저가가 있고, 캔들 데이터가 이미 로드된 경우 거래량 가중 평균가도 함께 나옵니다 — 그것만을 위해 가져오지는 않습니다."
+  "tour_text_drag_phone": {
+    "message": "시간과 가격을 따라 드래그하고, 핀치로 확대, 두 번 탭해 되돌립니다. 손가락을 멈추고 누르면 그 지점을 읽습니다."
   },
-  "tour_text_09": {
-    "message": "예측은 주장입니다. 이 코인이, 이 가격 구간에, 이 시각에. 나중에 연 탭에서 스스로 판정되어 당신이 보관하는 기록에 남습니다. 값이 매겨지는 점수도 없고, 아무 가치도 없으며, 기기 밖으로 나가지도 않습니다 — 당신이 정말 잘 맞히는지 알아보는 방법입니다."
+  "tour_text_jump_2": {
+    "message": "심볼이나 이름을 입력하세요. 추적하지 않는 코인을 고르면 추가됩니다. 명령도 받습니다 — \"eth 1w\"나 \"compare spx\"를 입력해 보세요."
   },
-  "tour_text_10b": {
-    "message": "예측을 켜면 현재의 오른쪽에 칸으로 된 판이 생기고, 각 칸에는 그 열이 끝날 때 가격이 그 안에 있을 확률이 붙습니다 — 이 코인 자체의 봉으로 세고, 허용하기 전에 수년치 칸으로 검증했습니다. 칸을 한 번 클릭하면 초안, 다시 클릭하면 확정: 실수로 한 번 누른 것이 예측을 확정하지 않도록 두 번입니다. 판을 위아래로 끌면 다른 가격을, 옆으로 끌면 기록과 판의 비율을 바꾸고, 오른쪽 위 알약으로 한 칸의 가치를 바꿉니다."
+  "tour_text_market_2": {
+    "message": "출처와 경과 시간이 붙은 뉴스(광고 제외). 모니터(M)는 코인을 나란히 놓고 시장을 지도로 보여 주며, 오늘 같은 날 뒤에 무슨 일이 있었는지 셉니다."
   },
-  "tour_text_12": {
-    "message": "금액은 직접 입력합니다. 취득가와 손익이 필요하면 매수와 매도도 기록하세요. FIFO, LIFO, HIFO는 보고 방식이지 세금 계산이 아니며, 보고서는 줄마다 사용한 방식을 밝힙니다. 모든 것은 이 기기에 저장되고 연결할 지갑도 없습니다."
+  "tour_text_market_phone": {
+    "message": "더 보기 안에: 출처와 경과 시간이 붙은 뉴스, 그리고 모니터 — 코인 나란히 보기, 시장 지도, 오늘 같은 날 뒤에 일어난 일."
   },
-  "tour_text_13": {
-    "message": "Bitcoin, Ethereum, Litecoin, Dogecoin, Bitcoin Cash 또는 Zcash 공개 주소를 붙여 넣으면 잔액을 읽어 옵니다 — 이더리움 주소가 보유한 ERC-20 토큰까지, 요청 한 번으로. 주소는 잔액 서비스에만 전송되며, 읽을 수 없는 체인이면 어떤 체인인지 알려 줍니다. 멀쩡한 주소를 확인하라고 미루지 않습니다."
+  "tour_text_pick_setup": {
+    "message": "모드는 설정 십여 개를 한 번에 바꿉니다. 나중에 무엇이든 바꿀 수 있습니다. 그대로 둬도 됩니다."
   },
-  "tour_text_14b": {
-    "message": "BTC가 어떤 숫자를 넘거나, 하루에 5% 움직이거나, 보유한 전부가 X보다 적어지면 알려 줘. 목표는 차트 위의 선이고, 차트를 클릭하면 그 가격이 선택됩니다. 다음 새 탭에서 알려 드리고 — 알람을 켜면 알림과 소리로도; 그 권한은 그때만 요청합니다."
+  "tour_text_portfolio_2": {
+    "message": "보유한 것과, 매수를 넣으면 원가와 이익까지 — 또는 공개 주소를 대신 읽어 줍니다. 이 기기에 저장되며 연결할 지갑은 없습니다."
   },
-  "tour_text_15c": {
-    "message": "모든 헤드라인을 출처와 경과 시간과 함께, 코인·출처·검색으로 좁히고 광고는 뺍니다. 헤드라인을 한 번 누르면 목록 옆에 열립니다 — 언론사가 허용하면 기사 자체의 본문과 센 판독을. 한 번 더 누르면 페이지가 열립니다."
+  "tour_text_price_2": {
+    "message": "코인의 실시간 가격. 클릭하거나 ← →를 눌러 코인을 넘겨 보세요."
   },
-  "tour_text_16b": {
-    "message": "이 코인의 수년 치 일봉과, 어떤 상태였을 때마다 그 뒤에 일어난 일을 평범한 날과 나란히 — 각 숫자가 몇 번에 기반하는지와 함께. 지금 해당하는 모든 것의 그 다음으로 시작합니다. 사라거나 팔라고 하지 않습니다: 검증해 보니 다음 며칠을 아무 날과 구별한 것은 거의 없었고, 그렇게 말하는 편이 화살표보다 유용합니다."
+  "tour_text_price_phone": {
+    "message": "코인의 실시간 가격. 탭하면 목록의 다음 코인으로 넘어갑니다."
   },
-  "tour_text_17_pin": {
-    "message": "관심 목록, 공포·탐욕, 펀딩, 수수료 등이 왼쪽 가장자리 서랍에 휴대폰 위젯처럼 놓입니다. 편집을 누른 뒤 +로 넘겨서 고른 크기로 추가하고, 카드를 길게 누르거나 오른쪽 클릭하면 크기 변경, 제거, 홈 화면 고정을 할 수 있습니다."
+  "tour_text_range_2": {
+    "message": "최근 1시간부터 전체 기간까지. 기간마다 자신의 보기와 보드를 기억합니다."
   },
-  "tour_text_19": {
-    "message": "코인, 통화, 테마, 위젯, 티커가 있고 환경설정 맨 위에 검색창이 있습니다. 모드 줄은 이 중 열두어 개를 한 번에 설정합니다 — 최소, 빠름, 트레이더, 보유자 — 그러나 통화, 숫자 형식, 테마는 절대 건드리지 않습니다."
+  "tour_text_settings_2": {
+    "message": "코인, 통화, 테마, 알람 등, 검색 상자와 함께. 거기서 ?를 누르면 모든 키를 봅니다."
   },
-  "tour_text_companion": {
-    "message": "차트 설정(V)에서 차트 동반자를 켜면 찾아낸 패턴, 셋업, 판독 — 삼각형, 교차, 다이버전스, 일목 구름 — 을 일어난 자리에서 짚어 주고, 각각 이 코인에서 그 뒤에 일어난 일과 네 개의 코인에서 검증한 결과를 함께 보여 줍니다. 대부분은 평범한 날보다 낫지 않았고, 그렇게 말해 줍니다."
+  "tour_text_settings_phone": {
+    "message": "코인, 통화, 테마, 알람 등, 검색 상자와 함께 — 더 보기 안에."
   },
-  "tour_text_drag": {
-    "message": "차트를 어느 방향으로든 끄세요: 옆으로는 시간, 위아래로는 가격. 휠이나 두 손가락은 가리킨 곳을 확대하고, 가장 오래된 지점 너머로 끌면 더 긴 범위가 열리며, 더블클릭하면 모두 원래대로 돌아갑니다. 차트에 포커스가 있을 때 ←와 →로 한 점씩 읽습니다."
+  "tour_text_targets_2": {
+    "message": "가격에 도달하거나 코인이 하루에 5% 움직이면 알려 줍니다. 차트를 클릭하면 가격이 정해지고, 알람으로 알림과 소리를 더할 수 있습니다."
   },
-  "tour_text_tools": {
-    "message": "범위 줄 끝의 +를 누르면 도구가 열립니다: 그만한 크기의 움직임이 얼마나 자주 있었는지 알려 주는 자와, 코인과 함께 남는 선, 반직선, 상자, 메모. Shift를 누른 채 끌면 어디서든 재고, 수평선은 가격 목표가 될 수 있습니다."
+  "tour_text_targets_phone": {
+    "message": "가격에 도달하거나 코인이 하루에 5% 움직이면 알려 줍니다. 알람으로 알림과 소리를 더할 수 있습니다."
+  },
+  "tour_text_tools_2": {
+    "message": "기간 줄 끝의 +를 누르면 도구가 열립니다: 그만한 움직임이 몇 번 있었는지 세는 자, 그리고 코인에 남는 선·상자·메모."
+  },
+  "tour_text_two_ways_2": {
+    "message": "T는 선을 캔들로 바꾸고, G는 차트 뒤에 가격·시간 격자를 깝니다. 둘 다 차트 설정(V)에도 있습니다."
+  },
+  "tour_text_welcome_2": {
+    "message": "새 탭마다 실시간 암호화폐 가격. 계정도, 설치 때 권한도 없고, 당신에 관한 어떤 것도 이 기기를 떠나지 않습니다. 짧은 몇 단계 — 언제든 건너뛰세요."
   },
   "tour_text_whats_new": {
     "message": "지난 버전 이후 무엇이 바뀌었는지 짧은 몇 단계로 알려 드립니다. 언제든 건너뛸 수 있고, 설정에서 전체 투어를 다시 볼 수 있습니다."
   },
-  "tour_title_change": {
-    "message": "변동"
+  "tour_text_widgets_2": {
+    "message": "Fear & Greed, 펀딩, 수수료 등을 카드로. 카드마다 세 가지 크기로 서로 다른 것을 보여 줍니다. 길게 누르거나 오른쪽 클릭으로 바꾸세요."
+  },
+  "tour_text_widgets_phone": {
+    "message": "Fear & Greed, 펀딩, 수수료 등을 카드로. 카드마다 세 가지 크기로 서로 다른 것을 보여 줍니다 — 더 보기 안에. 길게 눌러 바꾸세요."
   },
   "tour_title_companion": {
     "message": "세는 동반자"
@@ -10873,9 +11190,6 @@
   "tour_title_everything_else_lives_here": {
     "message": "나머지는 모두 여기에"
   },
-  "tour_title_has_this_happened_before": {
-    "message": "전에도 이런 적이 있었나요?"
-  },
   "tour_title_it_is_faster_from_the_keyboard": {
     "message": "키보드가 더 빠릅니다"
   },
@@ -10888,11 +11202,8 @@
   "tour_title_move_around": {
     "message": "차트 안을 움직이기"
   },
-  "tour_title_news": {
-    "message": "뉴스"
-  },
-  "tour_title_or_watch_an_address": {
-    "message": "또는 주소를 지켜보기"
+  "tour_title_pick_setup": {
+    "message": "시작점 고르기"
   },
   "tour_title_portfolio": {
     "message": "포트폴리오"
@@ -10900,11 +11211,11 @@
   "tour_title_price_targets": {
     "message": "목표 가격"
   },
+  "tour_title_read_market": {
+    "message": "뉴스와 모니터"
+  },
   "tour_title_say_where_you_think_it_goes": {
     "message": "어디로 갈지 말해보세요"
-  },
-  "tour_title_the_board": {
-    "message": "보드"
   },
   "tour_title_time_range": {
     "message": "기간"
@@ -10942,11 +11253,98 @@
   "view_zoomed_short": {
     "message": "확대됨"
   },
+  "wd_accounts": {
+    "message": "계정 기준, 금액 기준 아님"
+  },
+  "wd_accounts_short": {
+    "message": "계정"
+  },
   "wd_all_hidden": {
     "message": "모든 위젯이 숨겨져 있습니다."
   },
   "wd_all_widgets": {
     "message": "‹ 모든 위젯"
+  },
+  "wd_alt_alt_end": {
+    "message": "BTC 40%−"
+  },
+  "wd_alt_btc_end": {
+    "message": "BTC 65%+"
+  },
+  "wd_alt_from_dom": {
+    "message": "BTC가 시장의 $1% 차지",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_alt_note": {
+    "message": "별도의 측정이 아닙니다: 전체 시장에서 비트코인의 비중(Coinlore)을 65% 이상이 0, 40% 이하가 100이 되는 척도에 놓은 것입니다. 시즌 이름은 25와 75에 있습니다."
+  },
+  "wd_avg_day": {
+    "message": "평균적인 날"
+  },
+  "wd_base_tip": {
+    "message": "기본 $1 · 팁 $2",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "wd_block_each": {
+    "message": "블록당 한 칸"
+  },
+  "wd_blocks_ago": {
+    "message": "$1 블록 전",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_blocks_left": {
+    "message": "$1 블록 남음",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_blocks_to_go": {
+    "message": "남은 블록"
+  },
+  "wd_board_note": {
+    "message": "이 앱이 Bybit에서 보여 주는 모든 무기한 계약을 가장 낮은 비율부터 높은 순으로 정렬 — 0 위에서는 롱이 숏에게 지급합니다."
+  },
+  "wd_btc_dom_short": {
+    "message": "BTC $1%",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_btc_per_eth": {
+    "message": "ETH 1개당 BTC"
+  },
+  "wd_btc_share": {
+    "message": "BTC 비중"
+  },
+  "wd_by_fee": {
+    "message": "대기 중, 수수료율별 (sat/vB)"
+  },
+  "wd_calls_pct": {
+    "message": "콜 $1%",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
   },
   "wd_cancel": {
     "message": "취소"
@@ -10954,14 +11352,118 @@
   "wd_card_size": {
     "message": "카드 크기"
   },
+  "wd_clear_in": {
+    "message": "해소까지 약 $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
   "wd_close": {
     "message": "위젯 닫기"
+  },
+  "wd_day_ago": {
+    "message": "하루 전"
+  },
+  "wd_days_longs_paid": {
+    "message": "롱이 지급한 날"
+  },
+  "wd_difficulty_note": {
+    "message": "네트워크는 2,016블록마다 블록 찾기 난이도를 재설정해 약 10분마다 블록이 나오게 합니다. mempool.space 제공."
   },
   "wd_done": {
     "message": "완료"
   },
   "wd_edit_widgets": {
     "message": "편집"
+  },
+  "wd_epoch_done": {
+    "message": "2,016블록 중 $1%",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_era_done": {
+    "message": "이번 시기 $1% 채굴됨",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_estimated": {
+    "message": "다음 변경, 추정"
+  },
+  "wd_etf_day": {
+    "message": "$1 · 순액, 미국 현물 펀드",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_etf_day_short": {
+    "message": "$1, 순액",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_etf_note": {
+    "message": "미국 현물 비트코인 ETF에 거래일마다 들어오고 나간 금액 — SoSoValue와 Farside를 바탕으로 한 TFTC의 기록."
+  },
+  "wd_ethbtc_note": {
+    "message": "이더 1개로 살 수 있는 비트코인 — 하루는 가격 스냅샷에서, 월별은 Coinbase Exchange의 ETH-BTC 호가에서."
+  },
+  "wd_fall_note": {
+    "message": "화면 구간 안에서 고점에서 이후 저점까지의 가장 깊은 하락 — 얼마나 나빴는지이지, 얼마나 나빠질 수 있는지가 아닙니다."
+  },
+  "wd_fall_took": {
+    "message": "하락에 걸린 시간"
+  },
+  "wd_fee_day": {
+    "message": "블록별 수수료 중앙값, 최근 24시간"
+  },
+  "wd_fee_economy": {
+    "message": "절약"
+  },
+  "wd_fee_fast_line": {
+    "message": "~10분에 $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_fee_half": {
+    "message": "~30분"
+  },
+  "wd_fee_hour": {
+    "message": "~1시간"
+  },
+  "wd_fee_next": {
+    "message": "~10분"
+  },
+  "wd_fee_note": {
+    "message": "각 기한 내 확인에 필요한 가상 바이트당 사토시(mempool.space)와 일반적인 141 vB 송금 비용."
+  },
+  "wd_fees_waiting_line": {
+    "message": "수수료 $1 BTC",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_fg_note": {
+    "message": "Alternative.me의 심리 지수, 0~100, 하루 한 번 — 그들의 숫자와 그들의 단어."
+  },
+  "wd_five_days": {
+    "message": "5일"
   },
   "wd_foot_editing": {
     "message": "드래그하여 이동, −로 제거, +로 추가. 끝나면 완료. 이 서랍: "
@@ -10978,11 +11480,294 @@
   "wd_fri": {
     "message": "금"
   },
+  "wd_funding_every": {
+    "message": "$1시간마다",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_funding_month_wait": {
+    "message": "이번 달 정산은 Bybit에서 가져옵니다."
+  },
+  "wd_funding_note": {
+    "message": "정산 때마다 무기한 계약의 한쪽이 다른 쪽에 지급하는 금액 — OKX의 현재 비율, Bybit의 한 달 일별 비율."
+  },
+  "wd_funding_year": {
+    "message": "연 $1%",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_gainers": {
+    "message": "가장 많이 오름"
+  },
+  "wd_gas_note": {
+    "message": "최근 20블록 동안 모든 송금이 내는 기본 수수료와 그 위의 느림·보통·빠름 팁 — 단순 ETH 전송 기준."
+  },
+  "wd_halving_eta": {
+    "message": "약 $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_halving_note": {
+    "message": "210,000블록마다 블록 보상이 절반이 됩니다. 날짜는 블록당 10분을 가정합니다."
+  },
+  "wd_height_now": {
+    "message": "현재 높이"
+  },
+  "wd_highest": {
+    "message": "최고"
+  },
+  "wd_in_24h": {
+    "message": "24시간 동안"
+  },
+  "wd_in_month": {
+    "message": "한 달 동안"
+  },
+  "wd_in_month_coins": {
+    "message": "한 달 동안, $1 기준",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_in_span": {
+    "message": "$1 동안",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_largest_prints": {
+    "message": "가장 큰 강제 청산 · 규모 · 가격"
+  },
+  "wd_last_change": {
+    "message": "지난 변경"
+  },
+  "wd_liq_day": {
+    "message": "강제 청산, 24시간 · OKX"
+  },
+  "wd_liq_day_short": {
+    "message": "24시간 · OKX"
+  },
+  "wd_liq_note": {
+    "message": "증거금이 바닥나 거래소가 닫은 포지션, OKX 최근 24시간: 롱 청산은 시장에 대한 매도, 숏 청산은 매수입니다."
+  },
+  "wd_long_pct": {
+    "message": "롱 $1%",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_long_share_line": {
+    "message": "롱 비중, 일별"
+  },
+  "wd_long_word": {
+    "message": "롱"
+  },
+  "wd_longs_closed": {
+    "message": "롱 $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_longs_pay": {
+    "message": "롱이 숏에게 지급"
+  },
+  "wd_longs_paying": {
+    "message": "롱 지급"
+  },
+  "wd_losers": {
+    "message": "가장 많이 내림"
+  },
+  "wd_lowest": {
+    "message": "최저"
+  },
+  "wd_ls_note": {
+    "message": "$1 무기한 계약을 보유한 Bybit 계정 중 롱과 숏의 비중 — 규모가 아닌 계정 수로 셈.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_macro_note": {
+    "message": "다음 미국 CPI, 고용 보고서, 연준 성명, PCE 발표 시점 — 차트가 표시하는 발표를 각 기관의 공식 일정에서."
+  },
+  "wd_market_note": {
+    "message": "모든 코인의 시가총액 합계(Coinlore)와 그중 비트코인과 이더의 비중."
+  },
+  "wd_max_pain_on": {
+    "message": "맥스 페인 · $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_mempool_note": {
+    "message": "블록을 기다리는 거래(mempool.space), 블록당 약 10분으로 측정."
+  },
+  "wd_mo_band": {
+    "message": "80% 범위, $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_mo_tested": {
+    "message": "검증 시 $2시간 중 $1% 적중",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
   "wd_mon": {
     "message": "월"
   },
+  "wd_month_ago": {
+    "message": "한 달 전"
+  },
+  "wd_month_avg": {
+    "message": "월 평균"
+  },
+  "wd_month_high": {
+    "message": "월 최고"
+  },
+  "wd_month_low": {
+    "message": "월 최저"
+  },
+  "wd_month_range": {
+    "message": "월 범위"
+  },
+  "wd_most_in": {
+    "message": "최대 유입"
+  },
+  "wd_most_out": {
+    "message": "최대 유출"
+  },
+  "wd_movers_note": {
+    "message": "시가총액 상위 100개 코인의 24시간 변동(Coinlore) — 목록의 양 끝."
+  },
+  "wd_next_change": {
+    "message": "다음, 추정"
+  },
+  "wd_nobody_pays": {
+    "message": "어느 쪽도 지급 안 함"
+  },
   "wd_none_on": {
     "message": "켜진 위젯이 없습니다."
+  },
+  "wd_now": {
+    "message": "지금"
+  },
+  "wd_of_market_short": {
+    "message": "전체의 $1%",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_of_top_100": {
+    "message": "상위 100 · 24시간"
+  },
+  "wd_oi_leaders_note": {
+    "message": "Bybit 미결제 무기한 계약의 가치, 상위 8개와 전체 대비 비중."
+  },
+  "wd_oi_note": {
+    "message": "아직 열려 있는 무기한 계약의 가치 — 방향이 아닌 규모. 현재는 OKX, 한 달은 Bybit의 코인 기준 일별 수치."
+  },
+  "wd_oi_okx": {
+    "message": "OKX 무기한, 달러 기준"
+  },
+  "wd_oi_okx_short": {
+    "message": "OKX 무기한"
+  },
+  "wd_oi_total": {
+    "message": "무기한 $1개",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_open_bybit": {
+    "message": "Bybit 미결제"
+  },
+  "wd_options_note": {
+    "message": "Bybit 옵션 기준: 맥스 페인은 가장 가까운 만기에 보유자가 가장 적게 받는 행사가입니다. 풋 대 콜과 등가격 변동성은 현재 미결제 기준입니다."
+  },
+  "wd_others": {
+    "message": "기타"
+  },
+  "wd_outlook_band": {
+    "message": "재현의 5~95번째"
+  },
+  "wd_outlook_band_short": {
+    "message": "5–95% 범위"
+  },
+  "wd_over_span": {
+    "message": "$1 동안",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_peak": {
+    "message": "고점"
+  },
+  "wd_positive_word": {
+    "message": "양수"
+  },
+  "wd_puts_pct": {
+    "message": "풋 $1%",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_range_word": {
+    "message": "범위"
+  },
+  "wd_regime_after_short": {
+    "message": "20일 뒤 · 아무 날"
+  },
+  "wd_regime_count": {
+    "message": "$1회 진입",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_regime_since": {
+    "message": "$1일째",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
   },
   "wd_resize": {
     "message": "서랍 너비"
@@ -10996,26 +11781,150 @@
   "wd_resize_title": {
     "message": "끌어서 넓히거나 좁히기 · 두 번 클릭하면 기본 너비"
   },
+  "wd_rest_share": {
+    "message": "나머지 전부"
+  },
+  "wd_reward_per_block": {
+    "message": "반감기 · 블록당 보상, BTC"
+  },
+  "wd_rsi_above_half": {
+    "message": "50 초과 시간"
+  },
+  "wd_rsi_note": {
+    "message": "화면 구간의 모멘텀을 0~100 척도로(RSI 14, 와일더). 일간 종가로 검증한 결과 높은 값과 낮은 값 모두 이후를 알려 주지 못했습니다."
+  },
+  "wd_rsi_points": {
+    "message": "측정값"
+  },
+  "wd_rsi_scale": {
+    "message": "100 중"
+  },
   "wd_sat": {
     "message": "토"
+  },
+  "wd_send_plain": {
+    "message": "송금 $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_short_pct": {
+    "message": "숏 $1%",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_shorts_closed": {
+    "message": "숏 $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_shorts_pay": {
+    "message": "숏이 롱에게 지급"
+  },
+  "wd_shorts_paying": {
+    "message": "숏 지급"
   },
   "wd_show_n_hidden": {
     "message": "숨긴 $1개 표시"
   },
+  "wd_since_trough": {
+    "message": "저점 이후"
+  },
   "wd_size_aria": {
     "message": "$1 카드"
+  },
+  "wd_stable_note": {
+    "message": "시가총액 상위 100 중 달러 스테이블코인(Coinlore) — 합계, 시장 비중, 가장 큰 것들."
+  },
+  "wd_strikes_line": {
+    "message": "콜 진하게 · 풋 연하게"
   },
   "wd_sun": {
     "message": "일"
   },
+  "wd_three_months": {
+    "message": "3개월"
+  },
   "wd_thu": {
     "message": "목"
+  },
+  "wd_tier_fast": {
+    "message": "빠름"
+  },
+  "wd_tier_slow": {
+    "message": "느림"
+  },
+  "wd_tier_usual": {
+    "message": "보통"
+  },
+  "wd_time_left": {
+    "message": "남은 시간"
+  },
+  "wd_to_send": {
+    "message": "송금 ~$1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_today": {
+    "message": "오늘"
+  },
+  "wd_trading_days": {
+    "message": "거래일 $1일",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_trough": {
+    "message": "저점"
   },
   "wd_tue": {
     "message": "화"
   },
+  "wd_turnover": {
+    "message": "거래량 / 시가"
+  },
+  "wd_twenty_days": {
+    "message": "20일"
+  },
+  "wd_unit_blocks": {
+    "message": "블록"
+  },
+  "wd_unit_days": {
+    "message": "일"
+  },
+  "wd_up_today": {
+    "message": "24시간 상승"
+  },
+  "wd_volume": {
+    "message": "거래량"
+  },
+  "wd_volume_24h": {
+    "message": "24시간 거래량"
+  },
   "wd_wed": {
     "message": "수"
+  },
+  "wd_week_ago": {
+    "message": "일주일 전"
+  },
+  "wd_worst_mover": {
+    "message": "최악"
+  },
+  "wd_yesterday": {
+    "message": "어제"
   },
   "wdesc_altcoin_season": {
     "message": "알트코인이 비트코인을 앞서고 있나요?"

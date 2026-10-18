@@ -83,7 +83,9 @@ const callHandlers = (app) => ({
      * player should be able to answer all of them. What must not stack is two
      * answers to the *same* question, so placing again on a square replaces
      * whatever was on it. */
-    handlePlaceCall: ({ target, span, lo, hi, boardOdds, confidence }) => {
+    /* `minePct`, not `mine`: the updater below has its own `mine` (a filter),
+       which shadowed the argument and dropped the chance on every lock. */
+    handlePlaceCall: ({ target, span, lo, hi, boardOdds, confidence, mine: minePct }) => {
       const coin = app.state.coinOptions[app.state.coinIndex];
       const period = app.state.period;
       const currency = app.state.currency;
@@ -137,6 +139,8 @@ const callHandlers = (app) => ({
           placed: Date.now(),
           // Chosen on the phone's call sheet as it was locked; null otherwise
           confidence: CALL_CONFIDENCE_LEVELS.includes(confidence) ? confidence : null,
+          // Your own chance, from the same sheet (CALL_MINE_CHOICES)
+          mine: CALL_MINE_CHOICES.includes(minePct) ? { p: minePct / 100, at: Date.now() } : null,
           /* The live price is `currentValue`, a plain number. This read
            * `prev.spot.amount` — a field this component has never had — so
            * every call was stored with a null placedPrice. It is what the
@@ -1686,6 +1690,25 @@ const callHandlers = (app) => ({
       app.setState((prev) => {
         const open = prev.calls.open.map((c) =>
           c.id === id ? { ...c, confidence: next } : c,
+        );
+        const calls = { record: prev.calls.record, done: prev.calls.done, open };
+        saveCalls(calls);
+        return { calls };
+      });
+    },
+
+    /* Your own chance for an open call — once, and only inside the window
+     * after the lock (CALL_MINE_WINDOW_MS). Not a correction: a chance given
+     * after the price has moved is a different forecast, and the record
+     * compares it with a board chance frozen at the lock. */
+    handleCallMine: (id, pct) => {
+      if (!CALL_MINE_CHOICES.includes(pct)) return;
+      const at = Date.now();
+      app.setState((prev) => {
+        const call = prev.calls.open.find((c) => c.id === id);
+        if (!call || call.mine || !(at - call.placed <= CALL_MINE_WINDOW_MS)) return null;
+        const open = prev.calls.open.map((c) =>
+          c.id === id ? { ...c, mine: { p: pct / 100, at } } : c,
         );
         const calls = { record: prev.calls.record, done: prev.calls.done, open };
         saveCalls(calls);

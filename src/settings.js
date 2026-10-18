@@ -32,8 +32,12 @@ const STABLE_RECOMMEND_EXCLUDE = new Set([
   "STABLE",
 ]);
 
+/* A wrapped coin is the coin it wraps, on another chain: WBTC beside BTC
+ * in a list of suggestions is the same line twice. */
+const WRAPPED_RECOMMEND_EXCLUDE = new Set(["WBTC", "WETH", "WBETH", "STETH", "WSTETH", "CBBTC", "CBETH"]);
+
 const isStableRecommendCoin = (coin) => {
-  if (STABLE_RECOMMEND_EXCLUDE.has(coin)) return true;
+  if (STABLE_RECOMMEND_EXCLUDE.has(coin) || WRAPPED_RECOMMEND_EXCLUDE.has(coin)) return true;
   const name = String(COIN_NAMES[coin] || "").toLowerCase();
   return /\bstable\b|\busd\b|\bdollar\b|\btether\b|\bdai\b/.test(name);
 };
@@ -74,7 +78,6 @@ class SettingsPanel extends PureComponent {
        * asked. Whichever is reached first is the one ask there is. The way to
        * the listing when it is gone is the permanent link in Preferences. */
       // The same schedule as the main screen's card (RATE_PROMPT_SNOOZE_DAYS)
-      showRatePrompt: rateAskDue(),
       undoCoins: null,
       /* The backup section's three transient things: what a file was found to
        * hold (read but not written), a sentence about what just happened, and
@@ -178,15 +181,6 @@ class SettingsPanel extends PureComponent {
         return node ? React.createElement(PrefRow, null, node) : node;
       },
     );
-
-    _defineProperty(this, "handleRatePromptDismiss", () => {
-      saveRatePromptDismissed();
-      this.setState({ showRatePrompt: false });
-    });
-    // × on the bar is "not now", like the card's
-    _defineProperty(this, "handleRatePromptLater", () => {
-      this.setState({ showRatePrompt: false });
-    });
 
     _defineProperty(this, "handleKeyDown", (event) => {
       // The inline confirmation already handled Escape in React's listener.
@@ -376,6 +370,109 @@ class SettingsPanel extends PureComponent {
     /* The 24h move on a selected coin chip, or nothing. Reads the snapshot the
      * app already holds — a chip never triggers a request, so a coin we have
      * no figure for simply shows its symbol as before. */
+    /* **Quick add, as rows** (18 Oct 2026). It was a grey box of twenty
+     * symbol-and-name cells with the name centred in its column and nothing
+     * to choose by. Now each suggestion reads like a row of your own list —
+     * symbol, name, the day's move, the market value — with a + at the end,
+     * in two orders: the largest, and what is moving most today. Ten first;
+     * the rest a press away. All of it from the ticker snapshot the app
+     * already holds, so it asks for nothing. */
+    _defineProperty(this, "renderQuickAdd", (activeCoins, stats) => {
+      const order = this.state.addOrder === "moving" ? "moving" : "largest";
+      const all = SUGGESTED_COINS.filter(
+        (coin) => !activeCoins.includes(coin) && !isStableRecommendCoin(coin),
+      )
+        .map((coin) => {
+          const stat = stats[coin] || {};
+          const cap = Number(stat.marketCap);
+          const change = Number(stat.change);
+          return { coin, cap: isFinite(cap) && cap > 0 ? cap : null, change: isFinite(change) ? change : null };
+        })
+        .filter((x) => x.cap != null);
+      all.sort((a, b) =>
+        order === "moving"
+          ? Math.abs(b.change || 0) - Math.abs(a.change || 0)
+          : b.cap - a.cap,
+      );
+      const shown = all.slice(0, this.state.addMore ? 30 : 10);
+      const full = activeCoins.length >= MAX_COINS;
+      const symbol = getCurrencySymbol(this.props.currency || DEFAULT_CURRENCY);
+      const tab = (value, label) =>
+        React.createElement(
+          CoinSortButton,
+          {
+            key: value,
+            active: order === value,
+            "aria-pressed": order === value ? "true" : "false",
+            "data-add-order": value,
+            onClick: () => this.setState({ addOrder: value }),
+          },
+          label,
+        );
+      return React.createElement(
+        QuickAddBox,
+        { "data-quick-add": "true" },
+        React.createElement(
+          CoinSortRow,
+          null,
+          React.createElement(CoinSortLabel, null, msg("set_add_suggested", "Suggested")),
+          tab("largest", msg("set_add_largest", "Largest")),
+          tab("moving", msg("set_add_moving", "Moving most")),
+        ),
+        full
+          ? React.createElement(
+              SuggestionHint,
+              { "data-quick-add-full": "true" },
+              msg("set_add_full", "Your list holds $1 coins, the most it can. Remove one to add another.", String(MAX_COINS)),
+            )
+          : null,
+        shown.length
+          ? React.createElement(
+              QuickAddList,
+              null,
+              ...shown.map((x) =>
+                React.createElement(
+                  QuickAddRow,
+                  {
+                    key: `rec-${x.coin}`,
+                    "data-symbol": x.coin,
+                    disabled: full,
+                    title: msg("set_add_one", "Add $1", x.coin),
+                    "aria-label": msg("set_add_one", "Add $1", x.coin),
+                    onClick: () => this.handleSuggestionClick(x.coin),
+                  },
+                  React.createElement(QuickAddSymbol, null, x.coin),
+                  React.createElement(CoinRowName, null, COIN_NAMES[x.coin] || ""),
+                  React.createElement(
+                    QuickAddChange,
+                    { dir: x.change == null ? null : x.change >= 0 ? "up" : "down" },
+                    x.change == null ? "" : `${signedFixed(x.change, 1)}%`,
+                  ),
+                  React.createElement(QuickAddCap, null, formatCompactAmount(x.cap, symbol) || ""),
+                  React.createElement(QuickAddPlus, { "aria-hidden": "true" }, "+"),
+                ),
+              ),
+            )
+          : React.createElement(
+              SuggestionHint,
+              null,
+              msg("set_sort_cap_wait", "Waiting for market data"),
+            ),
+        all.length > 10
+          ? React.createElement(
+              QuickAddMore,
+              {
+                "data-quick-add-more": "true",
+                onClick: () => this.setState((prev) => ({ addMore: !prev.addMore })),
+              },
+              this.state.addMore
+                ? msg("set_add_fewer", "Show fewer")
+                : msg("set_add_more", "Show $1 more", String(Math.min(30, all.length) - 10)),
+            )
+          : null,
+      );
+    });
+
     _defineProperty(this, "renderChipChange", (coin) => {
       const stat = this.props.coinStats && this.props.coinStats[coin];
       const change = stat ? Number(stat.change) : NaN;
@@ -685,12 +782,6 @@ class SettingsPanel extends PureComponent {
 
   componentDidMount() {
     document.addEventListener("keydown", this.handleKeyDown);
-    /* The panel is only mounted when it is opened (app.js renders it behind
-     * `showSettings`), so mounting *is* being seen. Stamped here rather than
-     * in the constructor, where a side effect does not belong, and stamped at
-     * all so the two surfaces share one ask: whichever is reached first is the
-     * only time this extension asks for a rating. */
-    if (this.state.showRatePrompt) recordRateAsk();
     // Opened straight onto Permissions (the news panel's line does this)
     if (this.state.activeTab === "permissions") this.refreshPermissions();
   }
@@ -717,7 +808,6 @@ class SettingsPanel extends PureComponent {
       suggestions,
       searching,
       activeTab,
-      showRatePrompt,
       undoCoins,
     } = this.state;
     const activeCoins = Array.isArray(coins) ? coins : [];
@@ -728,19 +818,6 @@ class SettingsPanel extends PureComponent {
     // Sorting by a figure needs the figures; until the sweep lands we say so
     // on the buttons rather than offering an order we can't produce
     const hasStats = activeCoins.some((c) => stats[c]);
-    // Quick-add recommendations: highest market-cap coins not already tracked.
-    const capRecommendations = SUGGESTED_COINS.filter(
-      (coin) => !activeCoins.includes(coin) && !isStableRecommendCoin(coin),
-    )
-      .map((coin) => {
-        const stat = stats[coin];
-        const cap = stat ? Number(stat.marketCap) : NaN;
-        return { coin, cap: isFinite(cap) ? cap : null };
-      })
-      .filter((x) => x.cap != null)
-      .sort((a, b) => b.cap - a.cap)
-      .slice(0, 20)
-      .map((x) => x.coin);
 
     /* The preferences, grouped once for the menu and the pane together —
        see preferenceGroups. Built before anything is drawn, so the search's
@@ -852,50 +929,6 @@ class SettingsPanel extends PureComponent {
           ),
         ),
 
-        // One-time rating reminder (dismiss or rate hides it forever)
-        showRatePrompt &&
-          React.createElement(
-            RatePromptBar,
-            null,
-            React.createElement(
-              RatePromptText,
-              null,
-              /* Asks for the rating on the one honest ground there is: the
-               * store's ranking is how anybody else finds this, and a rating
-               * is the only thing a user can give that helps. It stays a
-               * question rather than a claim — "if you like it" — because the
-               * app does not know whether they do. */
-              msg(
-                "app_rate_ask",
-                "Liking PriceTab? A rating is how other people find it — it takes a few seconds and helps more than anything else.",
-              ),
-            ),
-            React.createElement(
-              RatePromptLink,
-              {
-                href: STORE_REVIEWS_URL,
-                target: "_blank",
-                rel: "noreferrer",
-                onClick: this.handleRatePromptDismiss,
-              },
-              msg("set_rate", "Rate"),
-            ),
-            React.createElement(
-              RatePromptNever,
-              { onClick: this.handleRatePromptDismiss, "data-rate-never": "1" },
-              msg("rate_never", "Don't ask again"),
-            ),
-            React.createElement(
-              RatePromptClose,
-              {
-                onClick: this.handleRatePromptLater,
-                "aria-label": msg("rate_later", "Not now — ask again later"),
-                title: msg("rate_later", "Not now — ask again later"),
-              },
-              "×",
-            ),
-          ),
-
         React.createElement(
           SettingsLayout,
           null,
@@ -930,7 +963,10 @@ class SettingsPanel extends PureComponent {
               () => go("preferences", "modes"),
               { "data-tab": "preferences", "data-pref-group": "modes" },
             ),
-            ...groups.map((g) =>
+            ...[].concat(...groups.map((g) => [
+              g.caption
+                ? React.createElement(SettingsNavCaption, { key: `cap-${g.key}` }, g.caption)
+                : null,
               navItem(
                 g.key,
                 g.title,
@@ -939,7 +975,7 @@ class SettingsPanel extends PureComponent {
                 () => go("preferences", g.key),
                 { "data-pref-group": g.key },
               ),
-            ),
+            ])).filter(Boolean),
             React.createElement(
               SettingsNavCaption,
               { key: "cap-access" },
@@ -997,6 +1033,20 @@ class SettingsPanel extends PureComponent {
                   ),
                 },
                 msg("pref_rate", "Rate PriceTab"),
+              ),
+              React.createElement(
+                RateHint,
+                {
+                  href: FEEDBACK_URL,
+                  target: "_blank",
+                  rel: "noreferrer",
+                  "data-feedback-link": "true",
+                  title: msg(
+                    "pref_feedback_hint",
+                    "Open the issue form on GitHub in a new tab — nothing is sent from here",
+                  ),
+                },
+                msg("pref_feedback", "Send feedback"),
               ),
             ),
           ),
@@ -1224,7 +1274,7 @@ class SettingsPanel extends PureComponent {
                                       ? React.createElement(
                                           SuggestionHint,
                                           null,
-                                          'No match — try "Bitcoin" or "BTC"',
+                                          msg("set_no_match", 'No match — try "Bitcoin" or "BTC"'),
                                         )
                                       : null,
                                 ),
@@ -1243,40 +1293,7 @@ class SettingsPanel extends PureComponent {
                                 feedback,
                               )
                             : null,
-                          React.createElement(
-                            CoinRecommendBox,
-                            null,
-                            capRecommendations.length
-                              ? React.createElement(
-                                  CoinRecommendList,
-                                  null,
-                                  capRecommendations.map((coin) =>
-                                    React.createElement(
-                                      CoinRecommendChip,
-                                      {
-                                        key: `rec-${coin}`,
-                                        "data-symbol": coin,
-                                        onClick: () =>
-                                          this.handleSuggestionClick(coin),
-                                      },
-                                      coin,
-                                      React.createElement(
-                                        CoinRecommendName,
-                                        null,
-                                        COIN_NAMES[coin] || "",
-                                      ),
-                                    ),
-                                  ),
-                                )
-                              : React.createElement(
-                                  SuggestionHint,
-                                  null,
-                                  msg(
-                                    "set_sort_cap_wait",
-                                    "Waiting for market data",
-                                  ),
-                                ),
-                          ),
+                          this.renderQuickAdd(activeCoins, stats),
                           React.createElement(
                             ResetRow,
                             { compact: suggestionsOpen },

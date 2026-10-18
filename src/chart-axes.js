@@ -36,6 +36,19 @@
  * tests can reach them without a DOM. Loads before `chart.js`.
  */
 
+/* Written only when the value changes (17 Oct 2026). The axis is rebuilt on
+ * every frame of a drag or a zoom, and most of what it writes — the font,
+ * the anchor, a stroke width — is what the node already holds; a set of the
+ * same value still invalidates style. axisText and axisLine were 157 ms of a
+ * CPU ×4 profile. */
+const svgSet = (el, name, value) => {
+  const v = String(value);
+  if (el.getAttribute(name) !== v) el.setAttribute(name, v);
+};
+const svgUnset = (el, name) => {
+  if (el.hasAttribute(name)) el.removeAttribute(name);
+};
+
 const AXIS_FONT = 10;
 /* Roboto Mono advances 0.6em, and the axis adds 0.02em of tracking: 6.2px a
    character at 10px — counted, never measured, for the reason
@@ -399,50 +412,50 @@ const chartAxes = (chart) => ({
   axisText: (x, y, text, anchor, ink, opacity) => {
     const { font } = chart.props.theme;
     const el = chart.poolNode(chart._axis.texts, "text", chart.axisGroup("texts"));
-    el.setAttribute("x", x);
-    el.setAttribute("y", y);
-    el.setAttribute("text-anchor", anchor);
-    el.setAttribute("fill", ink);
-    el.setAttribute("font-size", String(AXIS_FONT));
-    el.setAttribute("font-family", font.primary);
-    el.setAttribute("font-weight", "400");
-    el.setAttribute("letter-spacing", "0.02em");
-    el.setAttribute("opacity", opacity == null ? "1" : String(opacity));
-    el.removeAttribute("data-axis-tick");
-    el.removeAttribute("data-axis-time");
-    el.removeAttribute("data-axis-last");
-    el.removeAttribute("data-axis-level");
-    el.removeAttribute("data-companion-level");
+    svgSet(el, "x", x);
+    svgSet(el, "y", y);
+    svgSet(el, "text-anchor", anchor);
+    svgSet(el, "fill", ink);
+    svgSet(el, "font-size", String(AXIS_FONT));
+    svgSet(el, "font-family", font.primary);
+    svgSet(el, "font-weight", "400");
+    svgSet(el, "letter-spacing", "0.02em");
+    svgSet(el, "opacity", opacity == null ? "1" : String(opacity));
+    svgUnset(el, "data-axis-tick");
+    svgUnset(el, "data-axis-time");
+    svgUnset(el, "data-axis-last");
+    svgUnset(el, "data-axis-level");
+    svgUnset(el, "data-companion-level");
     if (el.textContent !== text) el.textContent = text;
     return el;
   },
 
   axisLine: (x1, y1, x2, y2, ink, opacity) => {
     const el = chart.poolNode(chart._axis.lines, "line", chart.axisGroup("lines"));
-    el.setAttribute("x1", x1);
-    el.setAttribute("y1", y1);
-    el.setAttribute("x2", x2);
-    el.setAttribute("y2", y2);
-    el.setAttribute("stroke", ink);
-    el.setAttribute("stroke-width", "1");
-    el.setAttribute("stroke-dasharray", "none");
-    el.setAttribute("opacity", String(opacity == null ? 1 : opacity));
-    el.removeAttribute("data-axis-last");
+    svgSet(el, "x1", x1);
+    svgSet(el, "y1", y1);
+    svgSet(el, "x2", x2);
+    svgSet(el, "y2", y2);
+    svgSet(el, "stroke", ink);
+    svgSet(el, "stroke-width", "1");
+    svgSet(el, "stroke-dasharray", "none");
+    svgSet(el, "opacity", String(opacity == null ? 1 : opacity));
+    svgUnset(el, "data-axis-last");
     return el;
   },
 
   axisRect: (x, y, w, h, fill) => {
     const el = chart.poolNode(chart._axis.rects, "rect", chart.axisGroup("rects"));
-    el.setAttribute("x", x);
-    el.setAttribute("y", y);
-    el.setAttribute("width", Math.max(0, w));
-    el.setAttribute("height", Math.max(0, h));
-    el.setAttribute("rx", "2");
-    el.setAttribute("fill", fill);
+    svgSet(el, "x", x);
+    svgSet(el, "y", y);
+    svgSet(el, "width", Math.max(0, w));
+    svgSet(el, "height", Math.max(0, h));
+    svgSet(el, "rx", "2");
+    svgSet(el, "fill", fill);
     // A pooled tag may have been a companion level's outline last time
-    el.setAttribute("stroke", "none");
-    el.removeAttribute("data-axis-last");
-    el.removeAttribute("data-axis-level");
+    svgSet(el, "stroke", "none");
+    svgUnset(el, "data-axis-last");
+    svgUnset(el, "data-axis-level");
     return el;
   },
 

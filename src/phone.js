@@ -265,6 +265,15 @@ const CallSheetChips = styled.div`
   margin: 1rem 0;
 `;
 
+/* Eight chances do not fit one row at 390px (measured: every label cut), so
+   they are two rows of four. */
+const CallSheetMine = styled.div`
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.4rem;
+  margin: 0 0 1rem;
+`;
+
 const CallSheetChip = styled.button.attrs({ type: "button" })`
   flex: 1 1 0;
   min-height: 2.5rem;
@@ -368,7 +377,7 @@ const PhoneMoreSheet = ({ items, active, onGo, onClose }) =>
   );
 
 /* A drafted call, said in words, with its confidence and Lock. */
-const CallSheet = ({ draft, confidence, onConfidence, onLock, onCancel, formatPrice }) => {
+const CallSheet = ({ draft, confidence, onConfidence, mine, onMine, onLock, onCancel, formatPrice }) => {
   const words = {
     hunch: msg("al_conf_hunch", "hunch"),
     likely: msg("al_conf_likely", "likely"),
@@ -399,6 +408,21 @@ const CallSheet = ({ draft, confidence, onConfidence, onLock, onCancel, formatPr
         ),
       ),
     ),
+    /* Your own chance, optional and final once locked — the record scores
+       it against the board's on the same squares. */
+    onMine
+      ? React.createElement(
+          CallSheetMine,
+          { role: "group", "aria-label": msg("al_mine_label", "Your chance for this square"), "data-call-mine": "true" },
+          ...CALL_MINE_CHOICES.map((pct) =>
+            React.createElement(
+              CallSheetChip,
+              { key: pct, on: mine === pct, "aria-pressed": mine === pct ? "true" : "false", onClick: () => onMine(mine === pct ? null : pct) },
+              `${pct}%`,
+            ),
+          ),
+        )
+      : null,
     React.createElement(
       CallSheetActions,
       null,

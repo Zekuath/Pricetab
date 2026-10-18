@@ -262,8 +262,10 @@ const REM_ALLOWED_OUTSIDE_CARD = new Set([
   "WidgetsResize",
 ]);
 check("no rem units inside widget-card components", () => {
-  const lines = read("src/styles-widgets.js").split("\n");
   const out = [];
+  // widget-kit.js (17 Oct 2026) holds the sized designs' parts: all inside a card
+  for (const file of ["src/styles-widgets.js", "src/widget-kit.js"]) {
+  const lines = read(file).split("\n");
   let current = null;
   lines.forEach((line, i) => {
     const m = /^const ([A-Za-z0-9_]+) = styled/.exec(line);
@@ -272,11 +274,12 @@ check("no rem units inside widget-card components", () => {
     if (!current || REM_ALLOWED_OUTSIDE_CARD.has(current)) return;
     if (/[0-9.]rem\b/.test(line)) {
       out.push(
-        `src/styles-widgets.js:${i + 1} ${current} uses rem — the card sets one ` +
+        `${file}:${i + 1} ${current} uses rem — the card sets one ` +
           `font-size and everything inside must scale off it (use em)`,
       );
     }
   });
+  }
   return out;
 });
 
@@ -391,6 +394,9 @@ const ALLOWED_HOSTS = new Set([
   "api.exchange.coinbase.com",
   "api.kraken.com",
   "chromewebstore.google.com",
+  /* A link, not an endpoint (18 Oct 2026): the rating card's "Tell us"
+     opens the repository's issue form in a new tab; nothing is fetched. */
+  "github.com",
   "ethereum-rpc.publicnode.com",
   "hn.algolia.com",
   "mempool.space",

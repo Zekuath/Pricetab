@@ -1064,7 +1064,11 @@ const chartBoardGeometry = (chart) => ({
         parent.appendChild(el);
       }
       pool.at++;
-      el.setAttribute("visibility", "inherit");
+      /* Written only when it changes (17 Oct 2026): an attribute set to the
+         value it already holds still invalidates style, and every draw did
+         it to every pooled node — 123 ms of a CPU ×4 profile in hideRest. */
+      if (el.getAttribute("visibility") !== "inherit")
+        el.setAttribute("visibility", "inherit");
       return el;
     },
 
@@ -1105,7 +1109,9 @@ const chartBoardGeometry = (chart) => ({
 
     hideRest: (pool) => {
       for (let i = pool.at; i < pool.list.length; i++) {
-        pool.list[i].setAttribute("visibility", "hidden");
+        const el = pool.list[i];
+        if (el.getAttribute("visibility") !== "hidden")
+          el.setAttribute("visibility", "hidden");
       }
     },
 

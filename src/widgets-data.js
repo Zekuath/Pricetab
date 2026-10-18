@@ -70,18 +70,22 @@ const WIDGET_CARD_SIZES = ["s", "m", "l"];
 const WIDGET_CARD_MEDIUM = [
   "watchlist",
   "topMovers",
-  "regimes",
   "outlook",
   "modelOutlook",
   "halvingCountdown",
 ];
+/* Large by default (17 Oct 2026): the regimes' 3×3 needs two rows — at one
+   row's fixed height it was cut after its second line. */
+const WIDGET_CARD_LARGE = ["regimes"];
 
 const widgetCardSize = (sizes, key) =>
   sizes && WIDGET_CARD_SIZES.includes(sizes[key])
     ? sizes[key]
-    : WIDGET_CARD_MEDIUM.includes(key)
-      ? "m"
-      : "s";
+    : WIDGET_CARD_LARGE.includes(key)
+      ? "l"
+      : WIDGET_CARD_MEDIUM.includes(key)
+        ? "m"
+        : "s";
 
 // Only widgets that exist and sizes that do — a stored file is not trusted
 const sanitizeWidgetCardSizes = (raw) => {
@@ -658,9 +662,30 @@ const optionsSummary = (rows, now) => {
     const ivs = at.filter((r) => r.strike === strike).map((r) => r.iv);
     if (ivs.length) atmIv = ivs.reduce((a, b) => a + b, 0) / ivs.length;
   }
+  /* The nearest expiry's open interest by strike, calls and puts — the
+     strikes around the price, for the large card's picture. */
+  let book = null;
+  if (near) {
+    const at = list.filter((r) => r.expiry === near && r.oi > 0);
+    const by = new Map();
+    for (const r of at) {
+      const e = by.get(r.strike) || { strike: r.strike, calls: 0, puts: 0 };
+      if (r.type === "C") e.calls += r.oi;
+      else e.puts += r.oi;
+      by.set(r.strike, e);
+    }
+    const all = Array.from(by.values()).sort((a, b) => a.strike - b.strike);
+    const centre = under > 0 ? under : maxPain;
+    const mid = all.findIndex((e) => e.strike >= centre);
+    const from = Math.max(0, (mid < 0 ? all.length : mid) - 6);
+    book = all.slice(from, from + 12);
+  }
   return {
     expiry: near || null,
     maxPain,
+    book,
+    calls,
+    puts,
     putCall: calls > 0 ? puts / calls : null,
     atmIv,
     ivExpiry: ivExpiry || null,
@@ -769,6 +794,9 @@ const perpBoardSummary = (board) => {
     low: byRate[0],
     totalOi: rows.reduce((a, r) => a + r.oi, 0),
     top: byOi.slice(0, 3),
+    // The larger cards: eight by size, and every rate (low to high)
+    topEight: byOi.slice(0, 8),
+    rates: byRate.map((r) => r.funding),
   };
 };
 
@@ -812,6 +840,8 @@ const fetchStablecoins = async () => {
       cap,
       share: total ? cap / total : null,
       top: parts.slice(0, 2),
+      // Each by size, for the larger cards' split
+      parts: parts.slice(0, 6),
       count: parts.length,
     };
   } catch (e) {
@@ -822,6 +852,29 @@ const fetchStablecoins = async () => {
 /* **ETH in BTC** from the same snapshot, in the display currency (the
    ratio is the same in any): the price now and its 24-hour change, the two
    coins' own changes compounded. */
+/* ETH priced in BTC by day for three months (17 Oct 2026): Coinbase
+ * Exchange's ETH-BTC candles, the larger cards' line. One request on a host
+ * the zoomed chart already asks; oldest first. */
+const fetchEthBtcMonth = async () => {
+  const cached = getWidgetCache("ethBtcMonth");
+  if (cached) return cached;
+  try {
+    const res = await politeFetch(`${CANDLES_API}ETH-BTC/candles?granularity=86400`);
+    if (!res.ok) return null;
+    const json = await res.json();
+    const rows = (Array.isArray(json) ? json : [])
+      .map((c) => ({ t: Number(c[0]) * 1000, value: Number(c[4]) }))
+      .filter((r) => isFinite(r.t) && r.value > 0)
+      .sort((a, b) => a.t - b.t)
+      .slice(-90);
+    if (rows.length < 14) return null;
+    setWidgetCache("ethBtcMonth", rows);
+    return rows;
+  } catch (e) {
+    return null;
+  }
+};
+
 const fetchEthBtc = async (currency) => {
   try {
     try {
@@ -872,6 +925,8 @@ const etfFlowsSummary = (days) => {
     aum: isFinite(Number(last.totalNetAssetsUsd))
       ? Number(last.totalNetAssetsUsd)
       : null,
+    // The last twenty trading days, oldest first, for the larger cards
+    daily: rows.slice(-20).map((d) => ({ date: d.date, net: Number(d.netFlowUsd) })),
     topIn: funds.length && funds[0][1] > 0 ? funds[0] : null,
     topOut:
       funds.length && funds[funds.length - 1][1] < 0
@@ -1153,6 +1208,83 @@ const fetchCrowdHistory = async (coin) => {
 const STRUCTURE_HISTORY_DAYS = CROWD_HISTORY_DAYS;
 const STRUCTURE_PAGE = 200;
 const STRUCTURE_DAY_MS = 86400000;
+/* The funding card's month (17 Oct 2026): one page of Bybit's settlements
+ * (200, about two months at 8h), averaged by UTC day — the medium and large
+ * cards draw it. `fetchFundingHistory` pages back 531 days for the page's
+ * structure reading; a card needs one request. Same host, same 30-minute
+ * widget cache; null on a short answer. */
+const fetchFundingRecent = async (coin) => {
+  const key = coinWidgetKey("fundingRecent", coin);
+  const cached = getWidgetCache(key);
+  if (cached) return cached;
+  try {
+    const res = await politeFetch(
+      `${BYBIT_API}/v5/market/funding/history?category=linear&symbol=${coin}USDT&limit=${STRUCTURE_PAGE}`,
+    );
+    if (!res.ok) return null;
+    const json = await res.json();
+    const list = json && json.result && Array.isArray(json.result.list) ? json.result.list : [];
+    const byDay = new Map();
+    for (const r of list) {
+      const t = Number(r && r.fundingRateTimestamp);
+      const f = parseFloat(r && r.fundingRate);
+      if (!isFinite(t) || !isFinite(f)) continue;
+      const day = Math.floor(t / STRUCTURE_DAY_MS) * STRUCTURE_DAY_MS;
+      const e = byDay.get(day) || { sum: 0, n: 0 };
+      e.sum += f;
+      e.n += 1;
+      byDay.set(day, e);
+    }
+    const rows = Array.from(byDay, ([t, e]) => ({ t, value: e.sum / e.n }))
+      .sort((a, b) => a.t - b.t)
+      .slice(-30);
+    if (rows.length < 7) return null;
+    setWidgetCache(key, rows);
+    return rows;
+  } catch (e) {
+    return null;
+  }
+};
+
+/* A month of two Bybit dailies for the cards' larger sizes (17 Oct 2026),
+ * one request each: the long share of accounts, and open interest in the
+ * coin. Oldest first; null on a short answer. The page's 500-day readings
+ * (fetchCrowdHistory, fetchOpenInterestHistory) stay as they are. */
+const bybitMonth = async (name, coin, url, read) => {
+  const key = coinWidgetKey(name, coin);
+  const cached = getWidgetCache(key);
+  if (cached) return cached;
+  try {
+    const res = await politeFetch(url);
+    if (!res.ok) return null;
+    const json = await res.json();
+    const list = json && json.result && Array.isArray(json.result.list) ? json.result.list : [];
+    const rows = list
+      .map((r) => ({ t: Number(r && r.timestamp), value: read(r) }))
+      .filter((r) => isFinite(r.t) && isFinite(r.value))
+      .sort((a, b) => a.t - b.t);
+    if (rows.length < 7) return null;
+    setWidgetCache(key, rows);
+    return rows;
+  } catch (e) {
+    return null;
+  }
+};
+const fetchLongShortMonth = (coin) =>
+  bybitMonth(
+    "longShortMonth",
+    coin,
+    `${BYBIT_API}/v5/market/account-ratio?category=linear&symbol=${coin}USDT&period=1d&limit=30`,
+    (r) => parseFloat(r && r.buyRatio) * 100,
+  );
+const fetchOpenInterestMonth = (coin) =>
+  bybitMonth(
+    "oiMonth",
+    coin,
+    `${BYBIT_API}/v5/market/open-interest?category=linear&symbol=${coin}USDT&intervalTime=1d&limit=30`,
+    (r) => parseFloat(r && r.openInterest),
+  );
+
 const fetchFundingHistory = async (coin) => {
   const key = coinWidgetKey("fundingHistory", coin);
   const cached = getWidgetCache(key);
@@ -1425,7 +1557,10 @@ const fetchEthGas = async () => {
         jsonrpc: "2.0",
         id: 1,
         method: "eth_feeHistory",
-        params: ["0x5", "latest", [50]],
+        /* Twenty blocks and three tips (17 Oct 2026): the card's larger sizes
+           draw the base fee over them and price a slow, a usual and a fast
+           send. The usual tip is the median 50th percentile, as before. */
+        params: ["0x14", "latest", [10, 50, 90]],
       }),
     });
     if (!res.ok) return null;
@@ -1435,17 +1570,22 @@ const fetchEthGas = async () => {
     if (!Array.isArray(bases) || !bases.length) return null;
     const base = Number(bases[bases.length - 1]);
     if (!isFinite(base) || base < 0) return null;
-    const tip =
+    const tipAt = (col) =>
       medianWei(
         (Array.isArray(result.reward) ? result.reward : [])
-          .map((row) => (Array.isArray(row) ? row[0] : null))
+          .map((row) => (Array.isArray(row) ? row[col] : null))
           .filter((v) => v != null),
       ) || 0;
+    const tip = tipAt(1);
     const gwei = (base + tip) / 1e9;
     const data = {
       gwei,
       baseGwei: base / 1e9,
       tipGwei: tip / 1e9,
+      slowGwei: (base + tipAt(0)) / 1e9,
+      fastGwei: (base + tipAt(2)) / 1e9,
+      // The base fee over the last twenty blocks, oldest first, in gwei
+      history: bases.map((b) => Number(b) / 1e9).filter((v) => isFinite(v)),
       // What it costs to send, in ETH. Turning that into money needs a price,
       // which belongs to the app, not to a fetcher.
       transferEth: ((base + tip) * ETH_TRANSFER_GAS) / 1e18,
@@ -1591,6 +1731,9 @@ const fetchBtcFees = async () => {
       rate,
       fastest: Number(json.fastestFee) || rate,
       hour: Number(json.hourFee) || rate,
+      // The same answer's two slower tiers; null when the venue left them out
+      economy: Number(json.economyFee) > 0 ? Number(json.economyFee) : null,
+      minimum: Number(json.minimumFee) > 0 ? Number(json.minimumFee) : null,
       transferBtc: (rate * BTC_TYPICAL_VBYTES) / 1e8,
     };
     setWidgetCache("btcFees", data);
@@ -1615,6 +1758,29 @@ const fetchBtcFees = async () => {
  * transactions — "3.1 blocks" is a wait, where "82,268" is a number.
  */
 const MEMPOOL_BLOCK_VBYTES = 1000000;
+
+const MEMPOOL_BANDS = [
+  { from: 20, label: "20+" },
+  { from: 10, label: "10–20" },
+  { from: 5, label: "5–10" },
+  { from: 2, label: "2–5" },
+  { from: 0, label: "<2" },
+];
+const mempoolBands = (hist) => {
+  if (!Array.isArray(hist) || !hist.length) return null;
+  const sums = MEMPOOL_BANDS.map(() => 0);
+  let total = 0;
+  for (const row of hist) {
+    const rate = Number(row && row[0]);
+    const size = Number(row && row[1]);
+    if (!isFinite(rate) || !isFinite(size) || size <= 0) continue;
+    sums[MEMPOOL_BANDS.findIndex((b) => rate >= b.from)] += size;
+    total += size;
+  }
+  return total > 0
+    ? MEMPOOL_BANDS.map((b, i) => ({ label: b.label, share: sums[i] / total }))
+    : null;
+};
 
 const fetchMempool = async () => {
   const cached = getWidgetCache("mempool");
@@ -1643,6 +1809,9 @@ const fetchMempool = async () => {
       feesBtc: isFinite(Number(json.total_fee))
         ? Number(json.total_fee) / 1e8
         : null,
+      /* What the queue offers, by fee rate (17 Oct 2026): the same answer's
+         histogram folded into five bands, each the share of waiting vbytes. */
+      bands: mempoolBands(json.fee_histogram),
     };
     setWidgetCache("mempool", data);
     return data;
@@ -1664,6 +1833,28 @@ const fetchMempool = async () => {
  * it, and what it *means* — mining got harder or easier — is exactly what this
  * card says in a form that carries its own units.
  */
+/* The last day's blocks, each with its median fee rate (17 Oct 2026): the
+ * large fee card's line. mempool.space, the fees' own host; null when it
+ * cannot be reached — the card then draws its tiers alone. */
+const fetchBtcFeeDay = async () => {
+  const cached = getWidgetCache("btcFeeDay");
+  if (cached) return cached;
+  try {
+    const res = await mempoolFetch("https://mempool.space/api/v1/mining/blocks/fee-rates/24h");
+    const json = res && res.ok ? await res.json() : null;
+    if (!Array.isArray(json)) return null;
+    const rows = json
+      .map((b) => ({ t: Number(b.timestamp) * 1000, value: Number(b.avgFee_50) }))
+      .filter((r) => isFinite(r.t) && isFinite(r.value) && r.value >= 0)
+      .sort((a, b) => a.t - b.t);
+    if (rows.length < 12) return null;
+    setWidgetCache("btcFeeDay", rows);
+    return rows;
+  } catch (e) {
+    return null;
+  }
+};
+
 const fetchDifficulty = async () => {
   const cached = getWidgetCache("difficulty");
   if (cached) return cached;

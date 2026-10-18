@@ -707,3 +707,43 @@ console.log("ALL STORAGE TESTS PASSED");
   sandbox.localStorage = previousStorage;
   console.log("  ✔ menu placement, legacy migration, scoped deletion and storage rollback");
 }
+
+/* ── The rating ask waits for use (18 Oct 2026) ───────────────────────────
+ * Days the tab was opened are counted once a day; an ask is due only past
+ * the first delay, at `RATE_PROMPT_MIN_DAYS` of them, under the cap and past
+ * the snooze; "Rate" or "Don't ask again" ends it. Its own storage: this file
+ * swaps localStorage between blocks. */
+{
+  const store = {};
+  const previousStorage = sandbox.localStorage;
+  sandbox.localStorage = {
+    getItem: (key) => (key in store ? store[key] : null),
+    setItem: (key, value) => { store[key] = String(value); },
+    removeItem: (key) => { delete store[key]; },
+    key: (i) => Object.keys(store)[i] || null,
+    get length() { return Object.keys(store).length; },
+  };
+  const DAY = 86400000;
+  const t0 = Date.UTC(2026, 9, 1, 12);
+  store.crypto_chart_first_use = String(t0 - 30 * DAY);
+  const minDays = run("RATE_PROMPT_MIN_DAYS");
+  for (let d = 0; d < minDays - 1; d++) {
+    run(`noteActiveDay(${t0 + d * DAY})`);
+    run(`noteActiveDay(${t0 + d * DAY + 3600000})`); // a second tab the same day counts once
+  }
+  assert.strictEqual(JSON.parse(store.crypto_chart_active_days).n, minDays - 1, "a day is counted once, however many tabs");
+  assert.strictEqual(run(`rateAskDue(${t0 + minDays * DAY})`), false, "below the days of use, no ask — whatever the calendar says");
+  run(`noteActiveDay(${t0 + (minDays - 1) * DAY})`);
+  assert.strictEqual(run(`rateAskDue(${t0 + minDays * DAY})`), true, "…at them, the ask is due");
+  run(`recordRateAsk(${t0 + minDays * DAY})`);
+  assert.strictEqual(run(`rateAskDue(${t0 + minDays * DAY + DAY})`), false, "…then snoozed");
+  const snooze = run("RATE_PROMPT_SNOOZE_DAYS[0]");
+  assert.strictEqual(run(`rateAskDue(${t0 + (minDays + snooze) * DAY + 1})`), true, "…and due again after the snooze");
+  store.crypto_chart_rate_prompt_asks = JSON.stringify({ n: run("RATE_PROMPT_MAX_ASKS"), next: 0 });
+  assert.strictEqual(run(`rateAskDue(${t0 + 90 * DAY})`), false, "never past the cap");
+  store.crypto_chart_rate_prompt_asks = JSON.stringify({ n: 1, next: 0 });
+  store.crypto_chart_rate_prompt_dismissed = "true";
+  assert.strictEqual(run(`rateAskDue(${t0 + 90 * DAY})`), false, "ended for good by Rate or Don't ask again");
+  sandbox.localStorage = previousStorage;
+  console.log("  ✔ the rating ask waits for days of use, a snooze and a cap");
+}

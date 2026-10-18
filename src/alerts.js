@@ -2324,6 +2324,27 @@ class AlertsPanel extends PureComponent {
                 .join(" · "),
             ]);
           }
+          /* **You and the board, on the same squares** (17 Oct 2026): both
+             chances scored by Brier where a call carries both. Two numbers
+             until RECORD_MIN_FOR_STATS; a difference is only said when its
+             95% interval leaves zero (callScoreCompare). */
+          const versus = callScoreCompare(done);
+          if (versus) {
+            const f = (v) => v.toFixed(3);
+            const gap = versus.lo == null
+              ? msg("al_mine_too_few", " · too few to tell apart")
+              : versus.hi < 0
+                ? msg("al_mine_better", " · your chances scored better (gap $1 to $2)", f(versus.lo), f(versus.hi))
+                : versus.lo > 0
+                  ? msg("al_mine_worse", " · the board's chances scored better (gap $1 to $2)", f(versus.lo), f(versus.hi))
+                  : msg("al_mine_same", " · not told apart (gap $1 to $2)", f(versus.lo), f(versus.hi));
+            lines.push([
+              msg("al_mine_vs", "You and the board"),
+              versus.n < RECORD_MIN_FOR_STATS
+                ? msg("al_mine_few", "$1 of your chances settled — scored from $2", String(versus.n), String(RECORD_MIN_FOR_STATS))
+                : msg("al_mine_brier", "Brier, lower is better: you $1 · board $2 · $3 squares", f(versus.mine), f(versus.model), String(versus.n)) + gap,
+            ]);
+          }
           const coins = tally(done, (c) => c.coin);
           if (coins.length > 1) {
             lines.push([
@@ -2693,6 +2714,38 @@ class AlertsPanel extends PureComponent {
                         ),
                       ),
                     ),
+                  /* Your own chance — chips for the first minutes after the
+                   * lock, then the figure, final either way. Chips past the
+                   * window would invite a forecast made with the price
+                   * already moving under it (CALL_MINE_WINDOW_MS). */
+                  c.mine
+                    ? React.createElement(
+                        AlertConfRow,
+                        { "data-call-mine-set": c.id },
+                        msg("al_mine_set", "your chance $1%", String(Math.round(c.mine.p * 100))),
+                      )
+                    : this.props.onCallMine && now - c.placed <= CALL_MINE_WINDOW_MS
+                      ? React.createElement(
+                          AlertConfRow,
+                          {
+                            role: "group",
+                            "aria-label": msg("al_mine_label", "Your chance for this square"),
+                            title: msg("al_mine_hint", "Optional, final once given, and only in the first two minutes — the record scores it against the board's chance on the same squares."),
+                            "data-call-mine": c.id,
+                          },
+                          ...CALL_MINE_CHOICES.map((pct) =>
+                            React.createElement(
+                              AlertStateChip,
+                              {
+                                key: pct,
+                                "aria-pressed": false,
+                                onClick: () => this.props.onCallMine(c.id, pct),
+                              },
+                              `${pct}%`,
+                            ),
+                          ),
+                        )
+                      : null,
                 ),
                 this.renderFigure(
                   fig,

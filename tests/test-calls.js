@@ -256,4 +256,37 @@ const isLeadingCall = vm.runInContext("isLeadingCall", sandbox);
   assert.strictEqual(by.none, null, "…and none is null, not undefined");
 }
 
+// --- your own chance: kept only inside the window, then scored -----------
+{
+  const W = vm.runInContext("CALL_MINE_WINDOW_MS", sandbox);
+  r = load([
+    { ...call("early", 2, 1, 43000, 43100, 0), mine: { p: 0.2, at: T + 60e3 } },
+    { ...call("late", 3, 1, 43200, 43300, 0), mine: { p: 0.2, at: T + W + 1 } },
+    { ...call("before", 4, 1, 43400, 43500, 0), mine: { p: 0.2, at: T - 1 } },
+    { ...call("certain", 5, 1, 43600, 43700, 0), mine: { p: 1, at: T } },
+  ]);
+  const by = Object.fromEntries([...r.open].map((c) => [c.id, c.mine]));
+  assert.strictEqual(by.early.p, 0.2, "a chance given inside the window is kept");
+  assert.strictEqual(by.late, null, "…one given after it is not a forecast and is dropped");
+  assert.strictEqual(by.before, null, "…nor one stamped before the lock");
+  assert.strictEqual(by.certain, null, "…nor a certainty, which Brier cannot tell from luck");
+
+  const run = (calls) => JSON.parse(JSON.stringify(vm.runInContext(`callScoreCompare(${JSON.stringify(calls)})`, sandbox)));
+  const settled = (mine, model, result) => ({ mine: { p: mine, at: 1 }, odds: { p: model, n: 100, src: "board" }, result });
+  assert.strictEqual(run([]), null, "nothing to compare is null, not zero");
+  // Squares without both chances, or expired, are not scored
+  assert.strictEqual(run([{ ...settled(0.5, 0.5, "hit"), odds: { p: 0.5, n: 9 } }, { ...settled(0.5, 0.5, "expired") }]), null,
+    "an unmarked count or an expired call is not compared");
+  const two = run([settled(0.9, 0.5, "hit"), settled(0.1, 0.5, "miss")]);
+  assert.ok(Math.abs(two.mine - 0.01) < 1e-12 && Math.abs(two.model - 0.25) < 1e-12, "Brier is (p − outcome)² averaged");
+  assert.strictEqual(two.lo, null, "below the floor no interval is given");
+  const many = run(Array.from({ length: 12 }, (_, i) => settled(0.8, 0.3, i < 11 ? "hit" : "miss")));
+  assert.ok(many.n === 12 && many.lo != null && many.hi < 0, "from the floor, a gap whose interval leaves zero is said");
+  // 9 of 12 hits: the gap's interval still crosses zero, and nothing is said
+  const thin = run(Array.from({ length: 12 }, (_, i) => settled(0.8, 0.3, i < 9 ? "hit" : "miss")));
+  assert.ok(thin.lo < 0 && thin.hi > 0, "a gap inside its own noise is not called a difference");
+  const tied = run(Array.from({ length: 12 }, (_, i) => settled(0.3, 0.3, i % 3 ? "miss" : "hit")));
+  assert.ok(tied.gap === 0 && tied.lo === 0 && tied.hi === 0, "the same chances score the same");
+}
+
 console.log("ALL CALLS TESTS PASSED");

@@ -1,4 +1,22 @@
 {
+  "ahead_days": {
+    "message": "$1 天后"
+  },
+  "ahead_hours": {
+    "message": "$1 小时后"
+  },
+  "ahead_minutes": {
+    "message": "$1 分钟后"
+  },
+  "ahead_month": {
+    "message": "一个多月后"
+  },
+  "ahead_now": {
+    "message": "现在"
+  },
+  "ahead_tomorrow": {
+    "message": "明天"
+  },
   "al_7d_hit_rate": {
     "message": "命中率"
   },
@@ -387,6 +405,36 @@
   "al_luck_title": {
     "message": "每次预测都以你选定时该方格的概率实现。把这些概率当作独立的抛硬币相加,这就是它们给出至少与你一样多命中的频率。"
   },
+  "al_mine_better": {
+    "message": " · 你的概率得分更好（差距 $1 至 $2）"
+  },
+  "al_mine_brier": {
+    "message": "Brier（越低越好）：你 $1 · 预测板 $2 · $3 格"
+  },
+  "al_mine_few": {
+    "message": "你的概率已结算 $1 个——满 $2 个开始评分"
+  },
+  "al_mine_hint": {
+    "message": "可选，一经填写不可更改，且仅限锁定后的前两分钟——记录会在相同的格子上将其与预测板的概率比较。"
+  },
+  "al_mine_label": {
+    "message": "你对这一格的概率"
+  },
+  "al_mine_same": {
+    "message": " · 无法区分（差距 $1 至 $2）"
+  },
+  "al_mine_set": {
+    "message": "你的概率 $1%"
+  },
+  "al_mine_too_few": {
+    "message": " · 数量太少，无法区分"
+  },
+  "al_mine_vs": {
+    "message": "你与预测板"
+  },
+  "al_mine_worse": {
+    "message": " · 预测板的概率得分更好（差距 $1 至 $2）"
+  },
   "al_missed": {
     "message": "没猜中"
   },
@@ -583,7 +631,7 @@
     "message": "已结算 · $1"
   },
   "al_settles_in": {
-    "message": "$1 后结算"
+    "message": "$1结算"
   },
   "al_show": {
     "message": "显示"
@@ -1014,15 +1062,6 @@
       }
     }
   },
-  "app_rate_ask": {
-    "message": "喜欢 PriceTab 吗？评分是其他人发现它的方式——只要几秒钟，比什么都有帮助。"
-  },
-  "app_rate_ask_call": {
-    "message": "这次预测应验了。如果 PriceTab 帮助你解读市场，评分是让其他人找到它的方式——只需几秒钟。"
-  },
-  "app_rate_ask_target": {
-    "message": "你的目标价已达到。如果 PriceTab 对你有用，评分是让其他人找到它的方式——只需几秒钟。"
-  },
   "app_read_on": {
     "message": "阅读于 "
   },
@@ -1350,8 +1389,23 @@
   "as_wed": {
     "message": "周三"
   },
+  "board_call_it": {
+    "message": "预测"
+  },
+  "board_in_band": {
+    "message": "当前在区间内"
+  },
+  "board_locked": {
+    "message": "已锁定"
+  },
+  "board_needs": {
+    "message": "还需 $1"
+  },
   "board_ordinary": {
     "message": "同样时长同样幅度：$2 次中 $1 次"
+  },
+  "board_settles": {
+    "message": "$1结算"
   },
   "br_above_200d": {
     "message": "高于其 200 日均线"
@@ -3100,6 +3154,30 @@
   },
   "mo_withheld": {
     "message": "未通过评估 — 不显示估计"
+  },
+  "mode_fast_desc": {
+    "message": "最新的价格：每十秒一次，去掉一切需要单独请求的东西——没有小组件、新闻行或滚动条。"
+  },
+  "mode_fast_name": {
+    "message": "快速"
+  },
+  "mode_holder_desc": {
+    "message": "用来看一眼而不是盯盘：安静的图表、周围的市场和头条，每五分钟一次。"
+  },
+  "mode_holder_name": {
+    "message": "持有者"
+  },
+  "mode_minimal_desc": {
+    "message": "只有价格和图表。边缘标签在指针移上去之前会变淡；按键照常可用。"
+  },
+  "mode_minimal_name": {
+    "message": "极简"
+  },
+  "mode_trader_desc": {
+    "message": "读懂行情所需的一切：K线、成交量、网格、十字线上的开高低收，以及衍生品小组件。"
+  },
+  "mode_trader_name": {
+    "message": "交易者"
   },
   "mon_close": {
     "message": "关闭监视器"
@@ -7882,6 +7960,30 @@
   "pp_zoom_reset_title": {
     "message": "重新显示整个区间"
   },
+  "pref_alarm_keywords": {
+    "message": "警报 通知 声音 提示音 目标 到达 强平 止损 提醒 alert notification sound"
+  },
+  "pref_alarm_notify_desc": {
+    "message": "只要有 PriceTab 标签页打开，目标到达或合约止损、强平时都会弹出系统通知"
+  },
+  "pref_alarm_notify_note": {
+    "message": "第一次打开时 Chrome 才会请求通知权限，安装时从不请求。关闭只是静音并保留权限，安静一下午不用再申请；“撤回权限”会交还权限。"
+  },
+  "pref_alarm_notify_pending": {
+    "message": "已打开，但 Chrome 尚未允许通知——再按一次以请求"
+  },
+  "pref_alarm_notify_title": {
+    "message": "目标到达时通知"
+  },
+  "pref_alarm_sound_desc": {
+    "message": "在本设备上生成的短提示音——打开时播放一次，让你知道该听什么"
+  },
+  "pref_alarm_sound_title": {
+    "message": "目标到达时提示音"
+  },
+  "pref_alarm_withdraw": {
+    "message": "撤回权限"
+  },
   "pref_alert_tab_title_aria": {
     "message": "开关标签页标题中的价格目标提示"
   },
@@ -8155,6 +8257,12 @@
   "pref_companion_title": {
     "message": "图表助手"
   },
+  "pref_cost_desc": {
+    "message": "卖出与哪笔买入对应，用于投资组合显示的盈亏。它在每笔卖出记录时就写定，因此更改不会重新判定已有的卖出。"
+  },
+  "pref_cost_title": {
+    "message": "成本计算方法"
+  },
   "pref_currency_about": {
     "message": "关于货币"
   },
@@ -8201,6 +8309,12 @@
         "content": "$1"
       }
     }
+  },
+  "pref_feedback": {
+    "message": "发送反馈"
+  },
+  "pref_feedback_hint": {
+    "message": "在新标签页打开 GitHub 的问题表单——不会从这里发送任何内容"
   },
   "pref_gloss_contract": {
     "message": "一份合约"
@@ -8259,6 +8373,12 @@
   "pref_glossary_title": {
     "message": "合约到底是什么"
   },
+  "pref_group_alerts": {
+    "message": "目标与警报"
+  },
+  "pref_group_alerts_desc": {
+    "message": "目标到达或合约止损时如何提醒你。"
+  },
   "pref_group_basics": {
     "message": "基础"
   },
@@ -8280,8 +8400,20 @@
   "pref_group_data_desc": {
     "message": "这个浏览器为 PriceTab 保存的全部内容，装进一个可以带到别处的文件。"
   },
+  "pref_group_futures": {
+    "message": "期货"
+  },
+  "pref_group_futures_desc": {
+    "message": "衍生品市场：术语说明、主图上的条带和线条，以及开仓前的确认。"
+  },
   "pref_group_open_contract": {
     "message": "持仓合约"
+  },
+  "pref_group_portfolio": {
+    "message": "投资组合"
+  },
+  "pref_group_portfolio_desc": {
+    "message": "投资组合如何计算盈亏，以及是否显示金额。"
   },
   "pref_group_tab_tickers": {
     "message": "标签页与行情条"
@@ -8306,6 +8438,18 @@
   },
   "pref_group_webapp_desc_2": {
     "message": "手机上的应用：整体大小、从主屏幕运行、从两侧滑动、保持屏幕常亮，以及打开时的页面。"
+  },
+  "pref_group_widgets": {
+    "message": "小组件"
+  },
+  "pref_group_widgets_desc": {
+    "message": "左侧抽屉里的卡片：显示大小，以及一套起步组合。"
+  },
+  "pref_hidden_desc": {
+    "message": "金额和数量对旁观者显示为 •••；百分比和价格保留。在任何地方按 H 效果相同"
+  },
+  "pref_hidden_title": {
+    "message": "隐藏投资组合数字"
   },
   "pref_language_aria": {
     "message": "语言"
@@ -8409,9 +8553,6 @@
   "pref_mode_custom_desc_empty": {
     "message": "尚未保存。把应用调成你喜欢的样子，然后按“保存”——此后再按其他模式也不会丢失它。"
   },
-  "pref_mode_custom_empty": {
-    "message": "尚未保存 — 按“保存”即可留住当前的设置"
-  },
   "pref_mode_custom_resave": {
     "message": "重新保存"
   },
@@ -8421,8 +8562,14 @@
   "pref_mode_custom_save_title": {
     "message": "把当前状态存为自定义，替换之前保存的内容"
   },
+  "pref_mode_in_use": {
+    "message": "使用中"
+  },
   "pref_modes": {
     "message": "模式"
+  },
+  "pref_modes_keep": {
+    "message": "模式会一次性更改其他部分的十几项设置；货币、数字格式和主题保持不变。"
   },
   "pref_modes_own_sections": {
     "message": "都不是。一个模式会同时设定其他分区里的十几项设置；货币、数字格式和主题始终保持你的选择。"
@@ -8604,6 +8751,9 @@
   "pref_phone_tabs_up": {
     "message": "将 $1 左移"
   },
+  "pref_portfolio_keywords": {
+    "message": "投资组合 成本 fifo lifo hifo 方法 盈亏 税 隐藏 隐私 数字 portfolio cost basis hide"
+  },
   "pref_position_bottom": {
     "message": "底部"
   },
@@ -8738,6 +8888,32 @@
   },
   "pref_show": {
     "message": "显示"
+  },
+  "pref_storage_blocked": {
+    "message": "此浏览器不允许 PriceTab 读取其存储。"
+  },
+  "pref_storage_clear": {
+    "message": "清除缓存并重新加载"
+  },
+  "pref_storage_desc": {
+    "message": "你自己的数据 $1（币种、目标、预测、投资组合、设置），以及缓存的价格和头条 $2。",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "pref_storage_keywords": {
+    "message": "存储 空间 大小 缓存 清除 设备 本地 数据 storage cache clear"
+  },
+  "pref_storage_note": {
+    "message": "所有内容都留在本浏览器的本地存储中，不会保存在别处。清除缓存只删除可从网络重新获取的内容（下一个标签页会重新获取），并重新加载页面。"
+  },
+  "pref_storage_title": {
+    "message": "保存在此设备上"
   },
   "pref_studies_aria": {
     "message": "要绘制的研究"
@@ -8973,6 +9149,29 @@
   "pref_webapp_wake_title": {
     "message": "保持屏幕常亮"
   },
+  "pref_widget_bundle_desc": {
+    "message": "当前打开了 $1 个小组件。组合会替换哪些打开，大小和顺序保持原样。",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "pref_widget_bundle_title": {
+    "message": "从一套组合开始"
+  },
+  "pref_widget_keywords": {
+    "message": "小组件 卡片 大小 缩放 组合 预设 持有者 交易者 极简 抽屉 widgets cards size bundle"
+  },
+  "pref_widget_open": {
+    "message": "整理小组件"
+  },
+  "pref_widget_scale_desc": {
+    "message": "一次调整所有卡片上的所有内容。每张卡片自己的形状（小、中、大）在卡片上选择：长按或右键。"
+  },
+  "pref_widget_scale_title": {
+    "message": "小组件文字大小"
+  },
   "pt_tab_baserates": {
     "message": "基准频率"
   },
@@ -9054,11 +9253,47 @@
   "qs_word_target": {
     "message": "目标"
   },
+  "rate_anyway": {
+    "message": "仍然评分"
+  },
+  "rate_aria": {
+    "message": "为 PriceTab 评分"
+  },
+  "rate_ask": {
+    "message": "PriceTab 用起来怎么样？"
+  },
+  "rate_ask_call": {
+    "message": "这次预测成真了。PriceTab 用起来怎么样？"
+  },
+  "rate_ask_target": {
+    "message": "你的目标已到达。PriceTab 用起来怎么样？"
+  },
+  "rate_better": {
+    "message": "谢谢你告诉我们。你想改变什么？“告诉我们”会打开 GitHub 上的表单——本页面不会发送任何内容。"
+  },
+  "rate_choice_better": {
+    "message": "还可以更好"
+  },
+  "rate_choice_good": {
+    "message": "不错"
+  },
+  "rate_good": {
+    "message": "很高兴它有用。在 Chrome 应用商店评分是其他人找到 PriceTab 的方式——只需几秒钟。"
+  },
   "rate_later": {
     "message": "以后再说 — 稍后再问"
   },
   "rate_never": {
     "message": "不再询问"
+  },
+  "rate_not_now": {
+    "message": "以后再说"
+  },
+  "rate_store": {
+    "message": "在应用商店评分"
+  },
+  "rate_tell": {
+    "message": "告诉我们"
   },
   "read_candle": {
     "message": "$1 — 开盘 $2，最高 $3，最低 $4，收盘 $5"
@@ -9331,6 +9566,42 @@
   "set_add_failed": {
     "message": "无法添加该币种"
   },
+  "set_add_fewer": {
+    "message": "收起"
+  },
+  "set_add_full": {
+    "message": "你的列表已有 $1 个币种，达到上限。移除一个才能再添加。",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "set_add_largest": {
+    "message": "最大"
+  },
+  "set_add_more": {
+    "message": "再显示 $1 个",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "set_add_moving": {
+    "message": "波动最大"
+  },
+  "set_add_one": {
+    "message": "添加 $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "set_add_suggested": {
+    "message": "推荐"
+  },
   "set_already_listed": {
     "message": "该代号已在列表中"
   },
@@ -9376,20 +9647,26 @@
   "set_nav_access": {
     "message": "访问"
   },
+  "set_nav_app": {
+    "message": "应用与数据"
+  },
+  "set_nav_features": {
+    "message": "功能"
+  },
   "set_nav_help": {
     "message": "帮助"
   },
   "set_no_coins": {
     "message": "还没有币种"
   },
+  "set_no_match": {
+    "message": "没有匹配——试试“Bitcoin”或“BTC”"
+  },
   "set_not_recognized": {
     "message": "无法识别 $1"
   },
   "set_quick_add": {
     "message": "快速添加"
-  },
-  "set_rate": {
-    "message": "评分"
   },
   "set_remove_coin": {
     "message": "移除 $1"
@@ -10762,11 +11039,14 @@
   "tour_back": {
     "message": "上一步"
   },
-  "tour_chapter_calling_a_square": {
-    "message": "预测一个方格"
+  "tour_chapter_calls_targets": {
+    "message": "预测与目标"
   },
   "tour_chapter_making_it_yours": {
     "message": "让它属于你"
+  },
+  "tour_chapter_more": {
+    "message": "更多"
   },
   "tour_chapter_reading_the_market": {
     "message": "读懂市场"
@@ -10786,11 +11066,28 @@
   "tour_done": {
     "message": "完成"
   },
+  "tour_keep": {
+    "message": "保持现状"
+  },
+  "tour_key_refresh": {
+    "message": "立即刷新"
+  },
   "tour_key_rotate": {
     "message": "轮播你的币种"
   },
+  "tour_key_theme": {
+    "message": "浅色或深色"
+  },
   "tour_keys_intro": {
     "message": "随时按 ? 查看完整列表。先记住这几个："
+  },
+  "tour_more_tips": {
+    "message": "还有 $1 条提示 →",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
   },
   "tour_next": {
     "message": "下一步"
@@ -10798,68 +11095,88 @@
   "tour_skip": {
     "message": "跳过导览"
   },
-  "tour_text_01c": {
-    "message": "每个新标签页都有实时加密货币图表，不索取任何东西——无需账户，安装时不要任何权限，你的任何信息都不会离开这台设备。本导览分五章，只有几个简短步骤。随时可以跳过；设置中可以重看。"
+  "tour_step_of": {
+    "message": "第 $1 步，共 $2 步",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
   },
-  "tour_text_02": {
-    "message": "当前币种及其实时价格，标签页打开时刷新，关闭时暂停。点击它，或使用方向键，在你的币种列表中切换。"
+  "tour_text_calls_2": {
+    "message": "打开预测后，“现在”之后会出现一块方格棋盘，每格都有概率。点击某格两次即可锁定预测；它会自行结算，并计入只有你保存的记录。"
   },
-  "tour_text_03": {
-    "message": "价格在当前显示区间内的变化——不是固定的 24 小时。点击可在百分比和金额之间切换。"
+  "tour_text_calls_phone": {
+    "message": "打开预测后，“现在”之后会出现一块方格棋盘，每格都有概率。轻点某格起草预测，再在面板中锁定；它会自行结算，并计入只有你保存的记录。"
   },
-  "tour_text_04": {
-    "message": "从最近一小时到全部历史。每个区间各自保留设置——你在 1H 上摆好的棋盘，回来时依然在。"
+  "tour_text_companion_2": {
+    "message": "在图表设置中打开助手，它会为找到的形态和信号命名，并附上这枚币之后的走势——大多数并不比普通日子好，它也会如实说明。"
   },
-  "tour_text_05": {
-    "message": "输入代号或名称。你自己的币种排在前面，选中尚未跟踪的币会自动加入。同一个搜索也用于为价格目标选币。"
+  "tour_text_compare_2": {
+    "message": "在图表上叠加另一个币种，或标普 500、纳斯达克 100、黄金——两者都以百分比变化显示在同一刻度上，从不用双轴。"
   },
-  "tour_text_06_drawer": {
-    "message": "一个选择叠加到图表上内容的抽屉：你的币种、任意币种，以及市场 — 标普 500、纳斯达克 100、黄金。两条线都是自区间开始以来的百分比变化，在同一个共享刻度上 — 绝不用两个坐标轴，那是让任意两条线看起来相关的把戏。停止在抽屉里和价格下方。"
+  "tour_text_drag_2": {
+    "message": "沿时间和价格拖动。滚轮在指针处缩放，双击即可复原。"
   },
-  "tour_text_07": {
-    "message": "T 把折线换成 K 线。G 在图表后面铺上价格与时间网格，便于读取价位。价格下方是该区间的最高价和最低价，若 K 线数据恰好已加载，还会显示成交量加权均价——绝不会仅为此发起请求。"
+  "tour_text_drag_phone": {
+    "message": "沿时间和价格拖动，双指缩放，双击复原。按住一根手指不动即可读取某个点。"
   },
-  "tour_text_09": {
-    "message": "一次预测就是一个断言：这个币，在这个价格区间，在这个时刻。它会在你之后打开的标签页里自动结算，并进入只属于你的战绩。没有可兑换的分数，它一文不值，也不会离开这台设备——它只是让你看清自己到底行不行。"
+  "tour_text_jump_2": {
+    "message": "输入代码或名称；选择未关注的币种会把它加入。它也接受命令——试试“eth 1w”或“compare spx”。"
   },
-  "tour_text_10b": {
-    "message": "打开预测后，现在线右侧会长出一块方格棋盘，每格写着其所在列结束时价格落在其中的概率 — 用该币种自己的K线统计，并在允许上盘之前用多年的方格检验过。点击方格一次为草稿，再点一次锁定：两次点击，是因为一次误点不应确定一个预测。上下拖动棋盘查看其他价格，左右拖动在历史和棋盘之间调配，右上角的药丸按钮可以改变一格的价值。"
+  "tour_text_market_2": {
+    "message": "带来源和时效的新闻，过滤掉广告。监视器（M）把你的币种并排显示，绘制市场地图，并统计类似今天的日子之后发生了什么。"
   },
-  "tour_text_12": {
-    "message": "金额由你手动录入；如果需要成本和盈亏，还可以录入买入与卖出。FIFO、LIFO 或 HIFO 是一种申报方法，而不是税额计算，报告会逐行标明所用方法。所有内容都存在这台设备上，也没有钱包需要连接。"
+  "tour_text_market_phone": {
+    "message": "在“更多”中：带来源和时效的新闻，以及监视器——币种并排对比、市场地图，以及类似今天的日子之后发生了什么。"
   },
-  "tour_text_13": {
-    "message": "粘贴一个公开的 Bitcoin、Ethereum、Litecoin、Dogecoin、Bitcoin Cash 或 Zcash 地址，余额就会替你读取——包括以太坊地址持有的 ERC-20 代币，只需一次请求。地址只会发送给余额服务；若某条链读不了，PriceTab 会告诉你那是哪条链，而不是让你去检查一个完全正确的地址。"
+  "tour_text_pick_setup": {
+    "message": "模式会一次性更改十几项设置，之后可以随时修改。也可以保持现状。"
   },
-  "tour_text_14b": {
-    "message": "当 BTC 升破某个数字、一天波动 5%，或我持有的一切价值低于 X 时提醒我。目标是图上的一条线，点击图表即可选定价格。你会在下一个新标签页得知——如果打开了提醒，还会收到通知和提示音；该权限只在那时才请求。"
+  "tour_text_portfolio_2": {
+    "message": "你持有的资产，添加买入后显示成本和盈亏——也可读取公开地址。保存在此设备上，无需连接钱包。"
   },
-  "tour_text_15c": {
-    "message": "每条标题都附来源和时间，可按币种、来源或搜索筛选，并去除广告。点一次标题，它会在列表旁打开——在媒体允许时显示新闻原文，以及计数后的解读；再点一次打开页面。"
+  "tour_text_price_2": {
+    "message": "你当前币种的实时价格。点击它或按 ← → 来切换币种。"
   },
-  "tour_text_16b": {
-    "message": "该币多年的日K线，以及每次处于某种状态之后发生了什么，与普通的一天并列——并标明每个数字基于多少次。它从对当下成立的一切之后发生了什么开始。它从不说买或卖：检验中几乎没有什么能把接下来几天与任意几天区分开，说出这一点比一个箭头更有用。"
+  "tour_text_price_phone": {
+    "message": "你当前币种的实时价格。轻点即可切换到列表中的下一个币种。"
   },
-  "tour_text_17_pin": {
-    "message": "自选列表、恐惧与贪婪、资金费率、手续费等，放在左边缘的抽屉里，像手机排列小组件一样。点编辑，再用 + 按滑动选定的尺寸添加；长按或右键卡片可调整尺寸、移除或固定到主屏幕。"
+  "tour_text_range_2": {
+    "message": "从最近一小时到全部历史。每个区间都保留自己的视图和棋盘。"
   },
-  "tour_text_19": {
-    "message": "币种、货币、主题、小组件和行情条，偏好设置顶部还有搜索框。模式行可一次设定其中十几项——极简、快速、交易者、持币者——但从不改动你的货币、数字格式和主题。"
+  "tour_text_settings_2": {
+    "message": "币种、货币、主题、警报等，并带搜索框。在那里按 ? 查看所有按键。"
   },
-  "tour_text_companion": {
-    "message": "在图表设置（V）中打开图表助手，它会在发生的位置点出找到的形态、策略形态和读数——三角形、交叉、背离、一目云层——每个都附上该币之后发生了什么，以及在四个币上检验的结果。大多数并不比普通的一天更好，它也会这样说。"
+  "tour_text_settings_phone": {
+    "message": "币种、货币、主题、警报等，并带搜索框——在“更多”中。"
   },
-  "tour_text_drag": {
-    "message": "朝任意方向拖动图表：左右是时间，上下是价格。滚轮或双指在指向处缩放，拖过最早的点会打开更长的时间范围，双击可全部复原。图表获得焦点时，用 ← 和 → 逐点读取。"
+  "tour_text_targets_2": {
+    "message": "当价格到达或币种一天内波动 5% 时提醒你。在图表上点击即可选定价格；警报可加上通知和提示音。"
   },
-  "tour_text_tools": {
-    "message": "时间范围行末端的 + 打开工具：一把标尺，告诉你这样幅度的走势出现过多少次；还有随币种保存的直线、射线、方框和备注。按住 Shift 拖动可随处测量；水平线可以变成价格目标。"
+  "tour_text_targets_phone": {
+    "message": "当价格到达或币种一天内波动 5% 时提醒你；警报可加上通知和提示音。"
+  },
+  "tour_text_tools_2": {
+    "message": "区间行末尾的 + 可打开工具：一把统计同等幅度波动出现次数的尺子，以及随币种保存的线条、方框和备注。"
+  },
+  "tour_text_two_ways_2": {
+    "message": "T 将折线换成 K 线；G 在图表后加上价格和时间网格。两者也都在图表设置（V）中。"
+  },
+  "tour_text_welcome_2": {
+    "message": "每个新标签页上都有实时加密货币价格。无需账户，安装时不要任何权限，你的信息不会离开此设备。几个简短步骤——随时可以跳过。"
   },
   "tour_text_whats_new": {
     "message": "用几个简短步骤介绍自上个版本以来的变化。随时可以跳过；在设置中可以重看完整导览。"
   },
-  "tour_title_change": {
-    "message": "涨跌"
+  "tour_text_widgets_2": {
+    "message": "恐惧与贪婪、资金费率、手续费等以卡片呈现，每张卡片有三种尺寸，显示不同内容。长按或右键卡片即可更改。"
+  },
+  "tour_text_widgets_phone": {
+    "message": "恐惧与贪婪、资金费率、手续费等以卡片呈现，每张卡片有三种尺寸，显示不同内容——在“更多”中。长按卡片即可更改。"
   },
   "tour_title_companion": {
     "message": "会计数的助手"
@@ -10873,9 +11190,6 @@
   "tour_title_everything_else_lives_here": {
     "message": "其余的一切都在这里"
   },
-  "tour_title_has_this_happened_before": {
-    "message": "这种情况以前发生过吗？"
-  },
   "tour_title_it_is_faster_from_the_keyboard": {
     "message": "用键盘更快"
   },
@@ -10888,11 +11202,8 @@
   "tour_title_move_around": {
     "message": "在图上移动"
   },
-  "tour_title_news": {
-    "message": "新闻"
-  },
-  "tour_title_or_watch_an_address": {
-    "message": "或者监视一个地址"
+  "tour_title_pick_setup": {
+    "message": "选择一个起点"
   },
   "tour_title_portfolio": {
     "message": "投资组合"
@@ -10900,11 +11211,11 @@
   "tour_title_price_targets": {
     "message": "价格目标"
   },
+  "tour_title_read_market": {
+    "message": "新闻与监视器"
+  },
   "tour_title_say_where_you_think_it_goes": {
     "message": "说出你认为它会走到哪"
-  },
-  "tour_title_the_board": {
-    "message": "棋盘"
   },
   "tour_title_time_range": {
     "message": "时间区间"
@@ -10942,11 +11253,98 @@
   "view_zoomed_short": {
     "message": "已放大"
   },
+  "wd_accounts": {
+    "message": "按账户数，而非金额"
+  },
+  "wd_accounts_short": {
+    "message": "账户"
+  },
   "wd_all_hidden": {
     "message": "所有小组件都已隐藏。"
   },
   "wd_all_widgets": {
     "message": "‹ 所有小组件"
+  },
+  "wd_alt_alt_end": {
+    "message": "BTC 40%−"
+  },
+  "wd_alt_btc_end": {
+    "message": "BTC 65%+"
+  },
+  "wd_alt_from_dom": {
+    "message": "BTC 占市场 $1%",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_alt_note": {
+    "message": "并非独立测量：比特币在整个市场中的占比（Coinlore），放在 65% 及以上为 0、40% 及以下为 100 的刻度上。季节词标在 25 和 75。"
+  },
+  "wd_avg_day": {
+    "message": "平均日"
+  },
+  "wd_base_tip": {
+    "message": "基础 $1 · 小费 $2",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "wd_block_each": {
+    "message": "每块一格"
+  },
+  "wd_blocks_ago": {
+    "message": "$1 个区块前",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_blocks_left": {
+    "message": "剩余 $1 个区块",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_blocks_to_go": {
+    "message": "剩余区块"
+  },
+  "wd_board_note": {
+    "message": "本应用在 Bybit 上绘制的所有永续合约，按费率从低到高排列——高于零时多头向空头支付。"
+  },
+  "wd_btc_dom_short": {
+    "message": "BTC $1%",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_btc_per_eth": {
+    "message": "一个 ETH 换 BTC"
+  },
+  "wd_btc_share": {
+    "message": "BTC 占比"
+  },
+  "wd_by_fee": {
+    "message": "等待中，按费率（sat/vB）"
+  },
+  "wd_calls_pct": {
+    "message": "看涨 $1%",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
   },
   "wd_cancel": {
     "message": "取消"
@@ -10954,14 +11352,118 @@
   "wd_card_size": {
     "message": "卡片大小"
   },
+  "wd_clear_in": {
+    "message": "约 $1 清空",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
   "wd_close": {
     "message": "关闭小组件"
+  },
+  "wd_day_ago": {
+    "message": "一天前"
+  },
+  "wd_days_longs_paid": {
+    "message": "多头付费天数"
+  },
+  "wd_difficulty_note": {
+    "message": "网络每 2,016 个区块重新调整找到区块的难度，使区块大约每十分钟出现一个。数据来自 mempool.space。"
   },
   "wd_done": {
     "message": "完成"
   },
   "wd_edit_widgets": {
     "message": "编辑"
+  },
+  "wd_epoch_done": {
+    "message": "2,016 个区块的 $1%",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_era_done": {
+    "message": "本期已挖出 $1%",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_estimated": {
+    "message": "下次调整，估计"
+  },
+  "wd_etf_day": {
+    "message": "$1 · 净额，美国现货基金",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_etf_day_short": {
+    "message": "$1，净额",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_etf_note": {
+    "message": "每个交易日流入和流出美国现货比特币 ETF 的金额——TFTC 依据 SoSoValue 与 Farside 的记录。"
+  },
+  "wd_ethbtc_note": {
+    "message": "一个以太能买多少比特币——当天来自价格快照，月份来自 Coinbase Exchange 的 ETH-BTC 订单簿。"
+  },
+  "wd_fall_note": {
+    "message": "屏幕区间内从高点到之后低点的最深跌幅——是跌到了哪里，而不是可能跌到哪里。"
+  },
+  "wd_fall_took": {
+    "message": "下跌历时"
+  },
+  "wd_fee_day": {
+    "message": "每个区块的手续费中位数，过去 24 小时"
+  },
+  "wd_fee_economy": {
+    "message": "经济"
+  },
+  "wd_fee_fast_line": {
+    "message": "约10分钟 $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_fee_half": {
+    "message": "约30分钟"
+  },
+  "wd_fee_hour": {
+    "message": "约1小时"
+  },
+  "wd_fee_next": {
+    "message": "约10分钟"
+  },
+  "wd_fee_note": {
+    "message": "在各期限内确认所需的每虚拟字节聪数（来自 mempool.space），以及一笔典型 141 vB 转账的费用。"
+  },
+  "wd_fees_waiting_line": {
+    "message": "手续费 $1 BTC",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_fg_note": {
+    "message": "Alternative.me 的情绪指数，0 到 100，每天一个读数——是他们的数字和他们的说法。"
+  },
+  "wd_five_days": {
+    "message": "五天"
   },
   "wd_foot_editing": {
     "message": "拖动以移动，− 移除，+ 添加。完成后点完成。此抽屉："
@@ -10978,11 +11480,294 @@
   "wd_fri": {
     "message": "周五"
   },
+  "wd_funding_every": {
+    "message": "每 $1 小时",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_funding_month_wait": {
+    "message": "本月结算来自 Bybit。"
+  },
+  "wd_funding_note": {
+    "message": "永续合约一方在每次结算时付给另一方的费用——OKX 的当前费率，Bybit 本月的逐日费率。"
+  },
+  "wd_funding_year": {
+    "message": "年化 $1%",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_gainers": {
+    "message": "涨幅最大"
+  },
+  "wd_gas_note": {
+    "message": "过去二十个区块中每笔转账支付的基础费，以及其上的慢速、常规和快速小费——按一笔普通 ETH 转账计价。"
+  },
+  "wd_halving_eta": {
+    "message": "约 $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_halving_note": {
+    "message": "每 210,000 个区块，区块奖励减半。日期按每个区块十分钟估算。"
+  },
+  "wd_height_now": {
+    "message": "当前高度"
+  },
+  "wd_highest": {
+    "message": "最高"
+  },
+  "wd_in_24h": {
+    "message": "24 小时内"
+  },
+  "wd_in_month": {
+    "message": "一个月内"
+  },
+  "wd_in_month_coins": {
+    "message": "一个月内，以 $1 计",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_in_span": {
+    "message": "$1 内",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_largest_prints": {
+    "message": "最大强制平仓 · 规模 · 价格"
+  },
+  "wd_last_change": {
+    "message": "上次调整"
+  },
+  "wd_liq_day": {
+    "message": "强制平仓，24 小时 · OKX"
+  },
+  "wd_liq_day_short": {
+    "message": "24 小时 · OKX"
+  },
+  "wd_liq_note": {
+    "message": "因保证金耗尽被交易所平掉的仓位，OKX 过去 24 小时：被平的多头是向市场卖出，被平的空头是买入。"
+  },
+  "wd_long_pct": {
+    "message": "多头 $1%",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_long_share_line": {
+    "message": "多头占比，每日"
+  },
+  "wd_long_word": {
+    "message": "多头"
+  },
+  "wd_longs_closed": {
+    "message": "多头 $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_longs_pay": {
+    "message": "多头付给空头"
+  },
+  "wd_longs_paying": {
+    "message": "多头支付"
+  },
+  "wd_losers": {
+    "message": "跌幅最大"
+  },
+  "wd_lowest": {
+    "message": "最低"
+  },
+  "wd_ls_note": {
+    "message": "持有 $1 永续合约的 Bybit 账户中，多头与空头的占比——按账户数计，而非按规模。",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_macro_note": {
+    "message": "下一次美国 CPI、就业报告、美联储声明和 PCE 何时发布——图表标出的发布，取自各机构自己的日程。"
+  },
+  "wd_market_note": {
+    "message": "所有币种市值之和（来自 Coinlore），以及比特币和以太的占比。"
+  },
+  "wd_max_pain_on": {
+    "message": "最大痛点 · $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_mempool_note": {
+    "message": "等待进入区块的交易（来自 mempool.space），以每块约十分钟计量。"
+  },
+  "wd_mo_band": {
+    "message": "80% 区间，$1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_mo_tested": {
+    "message": "检验时在 $2 小时中命中 $1%",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
   "wd_mon": {
     "message": "周一"
   },
+  "wd_month_ago": {
+    "message": "一个月前"
+  },
+  "wd_month_avg": {
+    "message": "月均值"
+  },
+  "wd_month_high": {
+    "message": "月最高"
+  },
+  "wd_month_low": {
+    "message": "月最低"
+  },
+  "wd_month_range": {
+    "message": "月区间"
+  },
+  "wd_most_in": {
+    "message": "最大流入"
+  },
+  "wd_most_out": {
+    "message": "最大流出"
+  },
+  "wd_movers_note": {
+    "message": "按市值排名前 100 币种的 24 小时变化（来自 Coinlore）——列表的两端。"
+  },
+  "wd_next_change": {
+    "message": "下次，估计"
+  },
+  "wd_nobody_pays": {
+    "message": "双方都不支付"
+  },
   "wd_none_on": {
     "message": "没有开启的小组件。"
+  },
+  "wd_now": {
+    "message": "现在"
+  },
+  "wd_of_market_short": {
+    "message": "占全部 $1%",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_of_top_100": {
+    "message": "前 100 · 24 小时"
+  },
+  "wd_oi_leaders_note": {
+    "message": "Bybit 上未平仓永续合约的价值，最大的八个及其占总额的比例。"
+  },
+  "wd_oi_note": {
+    "message": "仍未平仓的永续合约价值——是规模，不是方向。当前为 OKX；本月为 Bybit 以币计的每日数据。"
+  },
+  "wd_oi_okx": {
+    "message": "OKX 永续，以美元计"
+  },
+  "wd_oi_okx_short": {
+    "message": "OKX 永续"
+  },
+  "wd_oi_total": {
+    "message": "$1 个永续",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_open_bybit": {
+    "message": "Bybit 未平仓"
+  },
+  "wd_options_note": {
+    "message": "来自 Bybit 期权：最大痛点是最近到期日持有人获得最少的行权价；看跌对看涨以及平值波动率均为当前未平仓数据。"
+  },
+  "wd_others": {
+    "message": "其他"
+  },
+  "wd_outlook_band": {
+    "message": "重演的第 5–95 百分位"
+  },
+  "wd_outlook_band_short": {
+    "message": "5–95% 区间"
+  },
+  "wd_over_span": {
+    "message": "在 $1 内",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_peak": {
+    "message": "高点"
+  },
+  "wd_positive_word": {
+    "message": "为正"
+  },
+  "wd_puts_pct": {
+    "message": "看跌 $1%",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_range_word": {
+    "message": "区间"
+  },
+  "wd_regime_after_short": {
+    "message": "20 天后 · 任意日"
+  },
+  "wd_regime_count": {
+    "message": "$1 次进入",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_regime_since": {
+    "message": "已 $1 天",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
   },
   "wd_resize": {
     "message": "抽屉宽度"
@@ -10996,26 +11781,150 @@
   "wd_resize_title": {
     "message": "拖动以加宽或变窄 · 双击恢复默认宽度"
   },
+  "wd_rest_share": {
+    "message": "其余全部"
+  },
+  "wd_reward_per_block": {
+    "message": "减半 · 每块奖励，BTC"
+  },
+  "wd_rsi_above_half": {
+    "message": "高于 50 的时间"
+  },
+  "wd_rsi_note": {
+    "message": "屏幕区间内的动量，0–100 刻度（RSI 14，Wilder）。在日收盘价上检验，高低读数都没有说明之后的走势。"
+  },
+  "wd_rsi_points": {
+    "message": "读数"
+  },
+  "wd_rsi_scale": {
+    "message": "满分 100"
+  },
   "wd_sat": {
     "message": "周六"
+  },
+  "wd_send_plain": {
+    "message": "发送 $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_short_pct": {
+    "message": "空头 $1%",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_shorts_closed": {
+    "message": "空头 $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_shorts_pay": {
+    "message": "空头付给多头"
+  },
+  "wd_shorts_paying": {
+    "message": "空头支付"
   },
   "wd_show_n_hidden": {
     "message": "显示 $1 个隐藏的"
   },
+  "wd_since_trough": {
+    "message": "自低点以来"
+  },
   "wd_size_aria": {
     "message": "$1卡片"
+  },
+  "wd_stable_note": {
+    "message": "市值前 100 中的美元稳定币（来自 Coinlore）——总额、占市场比例以及最大的几个。"
+  },
+  "wd_strikes_line": {
+    "message": "看涨深色 · 看跌浅色"
   },
   "wd_sun": {
     "message": "周日"
   },
+  "wd_three_months": {
+    "message": "3 个月"
+  },
   "wd_thu": {
     "message": "周四"
+  },
+  "wd_tier_fast": {
+    "message": "快速"
+  },
+  "wd_tier_slow": {
+    "message": "慢速"
+  },
+  "wd_tier_usual": {
+    "message": "常规"
+  },
+  "wd_time_left": {
+    "message": "剩余时间"
+  },
+  "wd_to_send": {
+    "message": "发送约 $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_today": {
+    "message": "今天"
+  },
+  "wd_trading_days": {
+    "message": "$1 个交易日",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_trough": {
+    "message": "低点"
   },
   "wd_tue": {
     "message": "周二"
   },
+  "wd_turnover": {
+    "message": "成交量 / 市值"
+  },
+  "wd_twenty_days": {
+    "message": "二十天"
+  },
+  "wd_unit_blocks": {
+    "message": "个区块"
+  },
+  "wd_unit_days": {
+    "message": "天"
+  },
+  "wd_up_today": {
+    "message": "24 小时上涨"
+  },
+  "wd_volume": {
+    "message": "成交量"
+  },
+  "wd_volume_24h": {
+    "message": "24 小时成交量"
+  },
   "wd_wed": {
     "message": "周三"
+  },
+  "wd_week_ago": {
+    "message": "一周前"
+  },
+  "wd_worst_mover": {
+    "message": "最差"
+  },
+  "wd_yesterday": {
+    "message": "昨天"
   },
   "wdesc_altcoin_season": {
     "message": "山寨币是否跑赢比特币？"

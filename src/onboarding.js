@@ -31,219 +31,145 @@ const TOUR = {
     chapter: msg("tour_chapter_start_here", "Start here"),
     title: msg("tour_title_welcome_to_pricetab", "Welcome to PriceTab"),
     text: msg(
-      "tour_text_01c",
-      "Live crypto charts on every new tab, asking for nothing — no account, no permissions at install, and nothing about you leaving this device. This tour is a few short steps in five chapters. Skip it whenever you like; Settings can replay it.",
+      "tour_text_welcome_2",
+      "Live crypto prices on every new tab. No account, no permissions at install, and nothing about you leaves this device. A few short steps — skip whenever you like.",
     ),
   },
   price: {
     selector: '[data-tour="price"]',
     chapter: msg("tour_chapter_the_chart", "The chart"),
     title: msg("tour_title_live_price", "Live price"),
-    text: msg(
-      "tour_text_02",
-      "Your active coin and its live price, refreshed while the tab is open and paused while it is not. Click it, or use the arrow keys, to move through your coin list.",
-    ),
+    text: msg("tour_text_price_2", "Your coin's live price. Click it, or press ← →, to step through your coins."),
+    phoneText: msg("tour_text_price_phone", "Your coin's live price. Tap it to step to the next coin in your list."),
     keys: ["\u2190", "\u2192"],
-  },
-  change: {
-    selector: '[data-tour="change"]',
-    chapter: msg("tour_chapter_the_chart", "The chart"),
-    title: msg("tour_title_change", "Change"),
-    text: msg(
-      "tour_text_03",
-      "How the price moved across the range on screen — not a fixed 24 hours. Click it to flip between a percentage and an amount.",
-    ),
-    keys: ["X"],
   },
   range: {
     selector: '[data-tour="period"]',
     chapter: msg("tour_chapter_the_chart", "The chart"),
     title: msg("tour_title_time_range", "Time range"),
-    text: msg(
-      "tour_text_04",
-      "The last hour through all time. Each range keeps its own settings — the board you set up on 1H is still there when you come back to it.",
-    ),
+    text: msg("tour_text_range_2", "From the last hour to all time. Each range keeps its own view and its own board."),
     keys: ["1", "\u2013", "6"],
   },
   drag: {
     selector: '[data-tour="chart"]',
     chapter: msg("tour_chapter_the_chart", "The chart"),
     title: msg("tour_title_move_around", "Move around it"),
-    text: msg(
-      "tour_text_drag",
-      "Drag the chart any way: sideways through time, up and down through prices. The wheel or two fingers zoom where you point, a drag past the oldest point opens the longer range, and a double-click puts it all back. With the chart focused, ← and → read it point by point.",
-    ),
+    text: msg("tour_text_drag_2", "Drag through time and price. The wheel zooms where you point; a double-click puts it all back."),
+    phoneText: msg("tour_text_drag_phone", "Drag through time and price, pinch to zoom, and double-tap to put it back. Hold a finger still to read a point."),
     keys: ["+", "\u2212"],
   },
-  jump: {
-    selector: null,
-    chapter: msg("tour_chapter_the_chart", "The chart"),
-    title: msg("tour_title_jump_to_any_coin", "Jump to any coin"),
-    text: msg(
-      "tour_text_05",
-      "Type a symbol or a name. Your own coins rank first, and picking one you do not track yet adds it. The same search chooses a coin for a price target.",
-    ),
-    keys: ["/"],
+  calls: {
+    selector: '[data-tour="calls"]',
+    phoneSelector: '[data-phone-tab="calls"]',
+    chapter: msg("tour_chapter_calls_targets", "Calls & targets"),
+    title: msg("tour_title_say_where_you_think_it_goes", "Say where you think it goes"),
+    text: msg("tour_text_calls_2", "Turn calls on and a board of squares grows past now, each with its chance. Click a square twice to lock a call; it settles itself and goes on a record only you keep."),
+    phoneText: msg("tour_text_calls_phone", "Turn calls on and a board of squares grows past now, each with its chance. Tap a square to draft a call and lock it from the sheet; it settles itself and goes on a record only you keep."),
+    keys: ["K"],
   },
+  targets: {
+    selector: '[data-tour="alerts"]',
+    phoneSelector: '[data-phone-tab="targets"]',
+    chapter: msg("tour_chapter_calls_targets", "Calls & targets"),
+    title: msg("tour_title_price_targets", "Price targets"),
+    text: msg("tour_text_targets_2", "Be told when a price is reached or a coin moves 5% in a day. A click on the chart picks the price; the alarm can add a notification and a tone."),
+    phoneText: msg("tour_text_targets_phone", "Be told when a price is reached or a coin moves 5% in a day; the alarm can add a notification and a tone."),
+    keys: ["A"],
+  },
+  portfolio: {
+    selector: '[data-tour="portfolio"]',
+    phoneSelector: '[data-phone-tab="portfolio"]',
+    chapter: msg("tour_chapter_your_money", "Your money"),
+    title: msg("tour_title_portfolio", "Portfolio"),
+    text: msg("tour_text_portfolio_2", "What you hold, with cost and profit when you add purchases — or a public address, read for you. Stored on this device; no wallet to connect."),
+    keys: ["P"],
+  },
+  market: {
+    selector: '[data-tour="news"]',
+    phoneSelector: '[data-phone-tab="more"]',
+    chapter: msg("tour_chapter_reading_the_market", "Reading the market"),
+    title: msg("tour_title_read_market", "News and the monitor"),
+    text: msg("tour_text_market_2", "News with its source and age, advertising dropped. The monitor (M) lays your coins side by side, maps the market, and counts what followed days like today."),
+    phoneText: msg("tour_text_market_phone", "Under More: news with its source and age, and the monitor — your coins side by side, the market map, and what followed days like today."),
+    keys: ["N", "M"],
+  },
+  widgets: {
+    selector: '[data-tour="widgets"]',
+    phoneSelector: '[data-phone-tab="more"]',
+    optional: true,
+    chapter: msg("tour_chapter_reading_the_market", "Reading the market"),
+    title: msg("tour_title_widgets", "Widgets"),
+    text: msg("tour_text_widgets_2", "Fear & Greed, funding, fees and more as cards, each in three sizes that show different things. Hold or right-click a card to change it."),
+    phoneText: msg("tour_text_widgets_phone", "Fear & Greed, funding, fees and more as cards, each in three sizes that show different things — under More. Hold a card to change it."),
+    keys: ["W"],
+  },
+  settings: {
+    selector: '[data-tour="settings"]',
+    phoneSelector: '[data-phone-tab="more"]',
+    chapter: msg("tour_chapter_making_it_yours", "Making it yours"),
+    title: msg("tour_title_everything_else_lives_here", "Everything else lives here"),
+    text: msg("tour_text_settings_2", "Coins, currency, theme, the alarm and the rest, with a search box. Press ? there for every key."),
+    phoneText: msg("tour_text_settings_phone", "Coins, currency, theme, the alarm and the rest, with a search box — under More."),
+    keys: ["S"],
+  },
+  /* The last step offers a starting setup — a mode, applied through the
+     same handler as Settings' Modes — and the deeper tour. */
+  finale: {
+    selector: null,
+    finale: true,
+    chapter: msg("tour_chapter_making_it_yours", "Making it yours"),
+    title: msg("tour_title_pick_setup", "Pick a starting point"),
+    text: msg("tour_text_pick_setup", "A mode sets a dozen settings at once; change any of them later. Or keep it as it is."),
+  },
+
+  /* The deeper tour, offered from the last step: the tools a first run does
+     not need. */
   compare: {
     selector: '[data-tour="compare"]',
-    chapter: msg("tour_chapter_the_chart", "The chart"),
+    chapter: msg("tour_chapter_more", "More"),
     title: msg("tour_title_compare_two_coins", "Compare two coins"),
-    text: msg(
-      "tour_text_06_drawer",
-      "A drawer of what to lay over the chart: your coins, any coin, and markets — the S&P 500, the Nasdaq 100, gold. Both lines are percent change from the start of the range, on one shared scale — never two axes, which is the trick that makes any two lines look related. Stop is in the drawer and under the price.",
-    ),
+    text: msg("tour_text_compare_2", "Lay another coin, or the S&P 500, the Nasdaq 100 or gold, over the chart — both as percent change on one scale, never two axes."),
     keys: ["C"],
   },
   tools: {
     selector: '[data-tour="tools"]',
     optional: true,
-    chapter: msg("tour_chapter_the_chart", "The chart"),
+    chapter: msg("tour_chapter_more", "More"),
     title: msg("tour_title_draw_measure", "Draw and measure"),
-    text: msg(
-      "tour_text_tools",
-      "The + at the end of the range row opens the tools: a ruler that says how often a move that size has happened, and lines, rays, boxes and notes that stay with the coin. Shift and a drag measure anywhere; a horizontal line can become a price target.",
-    ),
+    text: msg("tour_text_tools_2", "The + at the end of the range row opens the tools: a ruler that counts how often a move that size happened, and lines, boxes and notes that stay with the coin."),
   },
   twoWays: {
     selector: null,
-    chapter: msg("tour_chapter_the_chart", "The chart"),
-    title: msg(
-      "tour_title_two_more_ways_to_read_it",
-      "Two more ways to read it",
-    ),
-    text: msg(
-      "tour_text_07",
-      "T swaps the line for candlesticks. G puts a price and time mesh behind the chart so you can read a level off it. Under the price sits the range high and low, and the volume-weighted average price when the candle data happens to be loaded — it is never fetched just for that.",
-    ),
-    keys: ["T", "G"],
+    desktopOnly: true,
+    chapter: msg("tour_chapter_more", "More"),
+    title: msg("tour_title_two_more_ways_to_read_it", "Two more ways to read it"),
+    text: msg("tour_text_two_ways_2", "T swaps the line for candlesticks; G puts a price and time mesh behind the chart. Both are in the chart's settings too (V)."),
+    keys: ["T", "G", "V"],
   },
   companion: {
     selector: null,
-    chapter: msg("tour_chapter_the_chart", "The chart"),
+    chapter: msg("tour_chapter_more", "More"),
     title: msg("tour_title_companion", "A companion that counts"),
-    text: msg(
-      "tour_text_companion",
-      "Switch on the chart companion in the chart's settings (V) and it names the patterns, setups and readings it finds — triangles, crosses, divergences, the Ichimoku cloud — where they happened, each with what followed it on this coin and how it did when tested on four coins. Most did no better than an ordinary day, and it says so.",
-    ),
-    keys: ["V"],
+    text: msg("tour_text_companion_2", "Switch on the companion in the chart's settings and it names the patterns and setups it finds, each with what followed on this coin — most did no better than an ordinary day, and it says so."),
   },
-  calls: {
-    selector: '[data-tour="calls"]',
-    chapter: msg("tour_chapter_calling_a_square", "Calling a square"),
-    title: msg(
-      "tour_title_say_where_you_think_it_goes",
-      "Say where you think it goes",
-    ),
-    text: msg(
-      "tour_text_09",
-      "A call is a claim: this coin, in this price band, at this time. It settles itself on a later tab and goes on a record you keep. Nothing is scored, nothing is worth anything, and nothing leaves the device — it is a way to find out whether you are actually any good.",
-    ),
-    keys: ["K"],
-  },
-  board: {
+  jump: {
     selector: null,
-    chapter: msg("tour_chapter_calling_a_square", "Calling a square"),
-    title: msg("tour_title_the_board", "The board"),
-    text: msg(
-      "tour_text_10b",
-      "Turn calls on and the chart grows a board of squares to the right of now, each with the chance the price is in it when its column ends — counted from this coin's own bars and checked against years of squares before it was allowed on. Click a square once to draft it and again to lock it: two clicks, because one stray click should not commit a prediction. Drag the board up or down to look at other prices, sideways to trade history for board, and use the pill at its top right to change what one square is worth.",
-    ),
-    keys: ["L", "[", "\u2013", "]"],
-  },
-  portfolio: {
-    selector: '[data-tour="portfolio"]',
-    chapter: msg("tour_chapter_your_money", "Your money"),
-    title: msg("tour_title_portfolio", "Portfolio"),
-    text: msg(
-      "tour_text_12",
-      "Amounts you type in, with purchases and sales if you want cost basis and profit. FIFO, LIFO or HIFO — a reporting method, not a tax calculation, and the report says which method every line used. Everything is stored on this device and there is no wallet to connect.",
-    ),
-    keys: ["P"],
-  },
-  address: {
-    selector: null,
-    chapter: msg("tour_chapter_your_money", "Your money"),
-    title: msg("tour_title_or_watch_an_address", "Or watch an address"),
-    text: msg(
-      "tour_text_13",
-      "Paste a public Bitcoin, Ethereum, Litecoin, Dogecoin, Bitcoin Cash or Zcash address and the balance is read for you — including the ERC-20 tokens an Ethereum address holds, in one request. The address is only ever sent to the balance service, and if a chain cannot be read PriceTab says which chain it is rather than telling you to check a perfectly good address.",
-    ),
-  },
-  targets: {
-    selector: '[data-tour="alerts"]',
-    chapter: msg("tour_chapter_your_money", "Your money"),
-    title: msg("tour_title_price_targets", "Price targets"),
-    text: msg(
-      "tour_text_14b",
-      "Tell me when BTC rises above a number, or moves 5% in a day, or when everything I hold is worth less than X. A target is a line on the chart, and a click on the chart picks its price. You are told on your next new tab — or, if you switch the alarm on, by a notification and a tone; that permission is asked for only then.",
-    ),
-    keys: ["A"],
-  },
-  news: {
-    selector: '[data-tour="news"]',
-    chapter: msg("tour_chapter_reading_the_market", "Reading the market"),
-    title: msg("tour_title_news", "News"),
-    text: msg(
-      "tour_text_15c",
-      "Every headline with its source and its age, narrowed by coin, source or search, with advertising dropped. Press a headline once and it opens beside the list — the story's own text where the newsroom allows it, and a counted reading of it; press again to open the page.",
-    ),
-    keys: ["N"],
-  },
-  baseRates: {
-    selector: null,
-    chapter: msg("tour_chapter_reading_the_market", "Reading the market"),
-    title: msg("tour_title_has_this_happened_before", "Has this happened before?"),
-    text: msg(
-      "tour_text_16b",
-      "Years of this coin's daily candles, and what followed each time it was in a state, beside an ordinary day — with how many times every figure is based on. It opens on what came after everything true right now. It never says buy or sell: tested, almost none of it told the next days apart from any days, and saying so is more useful than an arrow.",
-    ),
-    keys: ["B"],
-  },
-  widgets: {
-    selector: '[data-tour="widgets"]',
-    // The Widgets tab on the left edge, which is always there; optional all
-    // the same, so a tour replayed with the feature off still says its piece
-    optional: true,
-    chapter: msg("tour_chapter_reading_the_market", "Reading the market"),
-    title: msg("tour_title_widgets", "Widgets"),
-    text: msg(
-      "tour_text_17_pin",
-      "Watchlist, Fear & Greed, funding, fees and more, in a drawer on the left edge, arranged the way a phone arranges widgets. Edit, then + adds one at the size you swipe to; hold or right-click a card for its size, to remove it, or to pin it to the home screen.",
-    ),
-    keys: ["W"],
-  },
-  settings: {
-    selector: '[data-tour="settings"]',
-    chapter: msg("tour_chapter_making_it_yours", "Making it yours"),
-    title: msg(
-      "tour_title_everything_else_lives_here",
-      "Everything else lives here",
-    ),
-    text: msg(
-      "tour_text_19",
-      "Coins, currency, theme, widgets and the tickers, with a search box at the top of Preferences. The modes row sets a dozen of them at once — Minimal, Fast, Trader, Holder — and never touches your currency, number format or theme.",
-    ),
-    keys: ["S"],
+    desktopOnly: true,
+    chapter: msg("tour_chapter_more", "More"),
+    title: msg("tour_title_jump_to_any_coin", "Jump to any coin"),
+    text: msg("tour_text_jump_2", "Type a symbol or a name; picking a coin you do not track adds it. It also takes commands — try “eth 1w” or “compare spx”."),
+    keys: ["/"],
   },
   keyboard: {
     selector: null,
-    chapter: msg("tour_chapter_making_it_yours", "Making it yours"),
-    title: msg(
-      "tour_title_it_is_faster_from_the_keyboard",
-      "It is faster from the keyboard",
-    ),
-    text: msg(
-      "tour_keys_intro",
-      "Press ? at any time for the full list. A few worth knowing now:",
-    ),
+    desktopOnly: true,
+    chapter: msg("tour_chapter_more", "More"),
+    title: msg("tour_title_it_is_faster_from_the_keyboard", "It is faster from the keyboard"),
+    text: msg("tour_keys_intro", "Press ? at any time for the full list. A few worth knowing now:"),
     keyGrid: [
-      { keys: ["D"], label: "Light or dark" },
-      {
-        keys: ["Space"],
-        label: msg("tour_key_rotate", "Rotate through your coins"),
-      },
-      { keys: ["R"], label: "Refresh now" },
+      { keys: ["D"], label: msg("tour_key_theme", "Light or dark") },
+      { keys: ["Space"], label: msg("tour_key_rotate", "Rotate through your coins") },
+      { keys: ["R"], label: msg("tour_key_refresh", "Refresh now") },
       { keys: ["Esc"], label: msg("sc_close_open", "Close whatever is open") },
     ],
   },
@@ -258,27 +184,32 @@ const TOUR = {
   },
 };
 
-// The first-run tour, in the order the eye goes down the page
+/* **The first-run tour, short** (18 Oct 2026). It was twenty steps, some
+ * ninety words long, eight of them pointing at nothing; on a phone it showed
+ * key caps and pulled both side columns over the chart. Now: ten steps, one
+ * idea each, every one but the first and last on the thing it names — on a
+ * phone, the tab bar's own items — and the rest offered at the end. */
 const ONBOARDING_STEPS = [
   TOUR.welcome,
   TOUR.price,
-  TOUR.change,
   TOUR.range,
   TOUR.drag,
-  TOUR.jump,
+  TOUR.calls,
+  TOUR.targets,
+  TOUR.portfolio,
+  TOUR.market,
+  TOUR.widgets,
+  TOUR.settings,
+  TOUR.finale,
+];
+
+// The deeper tour, from the last step's "More tips"
+const TOUR_MORE_STEPS = [
   TOUR.compare,
   TOUR.tools,
   TOUR.twoWays,
   TOUR.companion,
-  TOUR.calls,
-  TOUR.board,
-  TOUR.portfolio,
-  TOUR.address,
-  TOUR.targets,
-  TOUR.news,
-  TOUR.baseRates,
-  TOUR.widgets,
-  TOUR.settings,
+  TOUR.jump,
   TOUR.keyboard,
 ];
 
@@ -293,10 +224,28 @@ const WHATS_NEW_STEPS = [
   TOUR.compare,
   TOUR.tools,
   TOUR.companion,
-  TOUR.news,
+  TOUR.market,
   TOUR.widgets,
-  TOUR.baseRates,
 ];
+
+/* A touch device reads the tour in its own words: no key caps, the steps
+ * about keys left out, and a step whose control lives in the phone's tab
+ * bar pointed at the bar. */
+const tourTouch = () => typeof touchFirst === "function" && touchFirst();
+const tourForDevice = (list) =>
+  tourTouch()
+    ? list
+        .filter((st) => !st.desktopOnly)
+        .map((st) =>
+          Object.assign({}, st, {
+            text: st.phoneText || st.text,
+            keys: undefined,
+            keyGrid: undefined,
+            selector: (st.phoneSelector && document.querySelector(st.phoneSelector) ? st.phoneSelector : st.selector),
+            optional: st.optional || Boolean(st.phoneSelector),
+          }),
+        )
+    : list;
 
 const SPOTLIGHT_PADDING = 8; // px of breathing room around the highlighted element
 const TIP_WIDTH = 300; // px, tooltip max width
@@ -510,6 +459,30 @@ const OnbBtn = styled.button.attrs({ type: "button" })`
   }
 `;
 
+// The last step's starting points, a row of small choices
+const OnbChoices = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: -0.3rem 0 0.7rem;
+`;
+
+const OnbChoice = styled.button.attrs({ type: "button" })`
+  cursor: pointer;
+  font-family: ${({ theme }) => theme.font.primary};
+  font-size: 0.74rem;
+  padding: 0.35rem 0.65rem;
+  border-radius: 8px;
+  border: 1px solid
+    ${({ theme, active }) => (active ? theme.color.text : theme.color.border)};
+  background: ${({ theme, active }) => (active ? theme.color.bg : "transparent")};
+  color: ${({ theme }) => theme.color.text};
+  font-weight: ${({ theme, active }) => (active ? theme.fontWeight.semibold : theme.fontWeight.regular)};
+  &:hover {
+    border-color: ${({ theme }) => theme.color.borderHover};
+  }
+`;
+
 class OnboardingTour extends React.Component {
   constructor(props) {
     super(props);
@@ -522,7 +495,23 @@ class OnboardingTour extends React.Component {
 
   // The list this tour walks: the whole tour, or an update's "what's new"
   steps() {
-    return this._steps || ONBOARDING_STEPS;
+    if (!this._deviceSteps || this._deviceFor !== (this._steps || ONBOARDING_STEPS)) {
+      this._deviceFor = this._steps || ONBOARDING_STEPS;
+      this._deviceSteps = tourForDevice(this._deviceFor);
+    }
+    return this._deviceSteps;
+  }
+
+  // "More tips" on the last step: the deeper tour, from its first step
+  goMore() {
+    this._steps = TOUR_MORE_STEPS;
+    this.setState({ step: 0, rect: null }, () => this.measure());
+  }
+
+  // A starting point from the last step: a mode, or nothing
+  pickMode(value) {
+    if (value && this.props.onAppMode) this.props.onAppMode(value);
+    this.setState({ picked: value || "keep" });
   }
 
   componentDidMount() {
@@ -555,6 +544,12 @@ class OnboardingTour extends React.Component {
       },
       this.props.replay ? 120 : 600,
     );
+  }
+
+  componentDidUpdate() {
+    if (!this.state.active || !this.cardNode) return;
+    const h = this.cardNode.offsetHeight;
+    if (h > 0 && Math.abs(h - (this.state.cardH || 0)) > 2) this.setState({ cardH: h });
   }
 
   componentWillUnmount() {
@@ -669,7 +664,10 @@ class OnboardingTour extends React.Component {
     // Rough card height. The steps vary a lot now — two lines of text or
     // six, with or without key chips — and a fixed guess would place a tall
     // card off the bottom of the screen, so estimate from the content.
-    const estHeight =
+    /* The card as drawn, once it has been: the estimate below placed tall
+       cards over the thing they pointed at. */
+    const measured = this.state.cardH || 0;
+    const estHeight = measured > 0 ? measured :
       100 +
       Math.ceil((step.text || "").length / CHARS_PER_LINE) * LINE_HEIGHT +
       (step.keys ? 28 : 0) +
@@ -729,7 +727,16 @@ class OnboardingTour extends React.Component {
     children.push(
       React.createElement(
         OnbCard,
-        { key: "card", style: this.cardStyle() },
+        {
+          key: "card",
+          style: this.cardStyle(),
+          role: "dialog",
+          "aria-label": current.title,
+          "data-tour-step": String(step + 1),
+          innerRef: (n) => {
+            this.cardNode = n;
+          },
+        },
         current.chapter
           ? React.createElement(OnbChapter, null, current.chapter)
           : null,
@@ -746,6 +753,36 @@ class OnboardingTour extends React.Component {
             ),
           ),
         React.createElement(OnbText, null, current.text),
+        current.finale &&
+          React.createElement(
+            OnbChoices,
+            { "data-tour-modes": "true" },
+            ...[
+              ["minimal", msg("mode_minimal_name", "Minimal")],
+              ["holder", msg("mode_holder_name", "Holder")],
+              ["trader", msg("mode_trader_name", "Trader")],
+              [null, msg("tour_keep", "Keep as it is")],
+            ].map(([value, label]) =>
+              React.createElement(
+                OnbChoice,
+                {
+                  key: value || "keep",
+                  type: "button",
+                  active: this.state.picked === (value || "keep"),
+                  "aria-pressed": this.state.picked === (value || "keep") ? "true" : "false",
+                  "data-tour-mode": value || "keep",
+                  onClick: () => this.pickMode(value),
+                },
+                label,
+              ),
+            ),
+          ),
+        current.finale &&
+          React.createElement(
+            OnbSkip,
+            { type: "button", "data-tour-more": "true", onClick: () => this.goMore() },
+            msg("tour_more_tips", "$1 more tips →", String(tourForDevice(TOUR_MORE_STEPS).length)),
+          ),
         current.keyGrid &&
           React.createElement(
             OnbGrid,
@@ -777,7 +814,7 @@ class OnboardingTour extends React.Component {
             ),
           React.createElement(
             OnbCount,
-            { "aria-label": `Step ${step + 1} of ${this.steps().length}` },
+            { "aria-label": msg("tour_step_of", "Step $1 of $2", String(step + 1), String(this.steps().length)) },
             `${step + 1} / ${this.steps().length}`,
           ),
           React.createElement(

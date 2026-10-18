@@ -81,7 +81,9 @@ const widgetArrangeHandlers = (app) => ({
     if (!WIDGET_CARD_SIZES.includes(size)) return;
     const sizes = { ...(app.state.widgetCardSizes || {}), [key]: size };
     saveWidgetCardSizes(sizes);
-    app.setState({ widgetCardSizes: sizes });
+    /* A larger design may read more (a month of funding): asked for at once,
+       from the widget cache when it is fresh. */
+    app.setState({ widgetCardSizes: sizes }, () => app.fetchWidgets());
   },
 
   /* Removed is switched off — the gallery is where it comes back from. The
@@ -381,8 +383,8 @@ const renderWidgetGallery = (app, defs, scale) => {
               WidgetCard,
               { "data-widget": key, "data-size": s, scale, "data-preview": "true" },
               React.createElement(WidgetLabel, null, def.label),
-              React.createElement(WidgetBody, { "data-size": s }, def.content),
-              s === "l" && WIDGET_DESCRIPTIONS[key] ? React.createElement(WidgetFootnote, null, WIDGET_DESCRIPTIONS[key]) : null,
+              React.createElement(WidgetBody, { "data-size": s, "data-designed": def.render ? "true" : undefined }, widgetSized(def, s).node),
+              s === "l" && !def.render && WIDGET_DESCRIPTIONS[key] ? React.createElement(WidgetFootnote, null, WIDGET_DESCRIPTIONS[key]) : null,
             ),
           ),
         ),
@@ -530,7 +532,11 @@ const renderPinnedStack = (app, defs, scale, liftForTicker) => {
           },
         },
         React.createElement(WidgetLabel, null, defs[key].label),
-        React.createElement(WidgetBody, { "data-size": widgetCardSize(app.state.widgetCardSizes, key), "data-widget-body": "true" }, defs[key].content),
+        (() => {
+          const size = widgetCardSize(app.state.widgetCardSizes, key);
+          const shown = widgetSized(defs[key], size);
+          return React.createElement(WidgetBody, { "data-size": size, "data-widget-body": "true", "data-designed": shown.designed ? "true" : undefined }, shown.node);
+        })(),
       ),
     ),
   );

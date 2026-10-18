@@ -209,10 +209,38 @@ const loadRateAsks = () => {
   }
 };
 
-// Is an ask due now: past the first delay, not ended, under the cap, past the snooze
+/* The days this browser opened PriceTab, counted once a day: `{ day, n }`,
+ * the local calendar day last seen and how many there have been. What the
+ * rating ask waits for — use, not only time since install. */
+const localDay = (now) => {
+  const d = new Date(now);
+  return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+};
+
+const loadActiveDays = () => {
+  try {
+    const v = JSON.parse(localStorage.getItem(ACTIVE_DAYS_KEY));
+    if (v && typeof v.day === "string" && Number.isFinite(v.n) && v.n >= 0)
+      return { day: v.day, n: Math.floor(v.n) };
+  } catch (error) {
+    /* unreadable — counted from here */
+  }
+  return { day: "", n: 0 };
+};
+
+const noteActiveDay = (now = Date.now()) => {
+  const a = loadActiveDays();
+  const day = localDay(now);
+  if (a.day === day) return a.n;
+  saveJsonSetting(ACTIVE_DAYS_KEY, { day, n: a.n + 1 });
+  return a.n + 1;
+};
+
+// Is an ask due now: past the first delay and enough days of use, not ended, under the cap, past the snooze
 const rateAskDue = (now = Date.now()) => {
   if (loadRatePromptDismissed()) return false;
   if (now - getOrInitFirstUse() < RATE_PROMPT_DELAY_MS) return false;
+  if (loadActiveDays().n < RATE_PROMPT_MIN_DAYS) return false;
   const a = loadRateAsks();
   return a.n < RATE_PROMPT_MAX_ASKS && now >= a.next;
 };
@@ -1251,6 +1279,21 @@ const sanitizeCalls = (raw) => {
        * scoreboard is built from settled calls, and a field this shape does
        * not name is gone at the next reload. */
       confidence: CALL_CONFIDENCE_LEVELS.includes(c.confidence) ? c.confidence : null,
+      /* The caller's own chance — kept only when it was given inside the
+       * window after the lock (CALL_MINE_WINDOW_MS); a later one would be a
+       * forecast made with the answer half in view. */
+      mine:
+        c.mine &&
+        typeof c.mine === "object" &&
+        Number.isFinite(c.mine.p) &&
+        c.mine.p > 0 &&
+        c.mine.p < 1 &&
+        Number.isFinite(c.mine.at) &&
+        Number.isFinite(c.placed) &&
+        c.mine.at >= c.placed &&
+        c.mine.at - c.placed <= CALL_MINE_WINDOW_MS
+          ? { p: c.mine.p, at: c.mine.at }
+          : null,
       odds:
         c.odds &&
         typeof c.odds === "object" &&

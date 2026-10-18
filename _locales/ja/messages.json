@@ -1,4 +1,22 @@
 {
+  "ahead_days": {
+    "message": "$1日後"
+  },
+  "ahead_hours": {
+    "message": "$1時間後"
+  },
+  "ahead_minutes": {
+    "message": "$1分後"
+  },
+  "ahead_month": {
+    "message": "1か月以上先"
+  },
+  "ahead_now": {
+    "message": "今"
+  },
+  "ahead_tomorrow": {
+    "message": "明日"
+  },
   "al_7d_hit_rate": {
     "message": "的中率"
   },
@@ -379,6 +397,36 @@
   "al_luck_title": {
     "message": "各予想は、確定時にそのマスが示した確率で的中しました。それぞれを独立したコイン投げとして合計したとき、今回以上の的中数になる頻度がこの値です。"
   },
+  "al_mine_better": {
+    "message": " · あなたの確率の方が良い得点（差 $1〜$2）"
+  },
+  "al_mine_brier": {
+    "message": "Brier（低いほど良い）: あなた $1 · ボード $2 · $3 マス"
+  },
+  "al_mine_few": {
+    "message": "あなたの確率のうち $1 件が確定 — 採点は $2 件から"
+  },
+  "al_mine_hint": {
+    "message": "任意・一度入れたら変更不可・最初の2分間のみ。記録は同じマスでボードの確率と比較します。"
+  },
+  "al_mine_label": {
+    "message": "このマスに対するあなたの確率"
+  },
+  "al_mine_same": {
+    "message": " · 区別できません（差 $1〜$2）"
+  },
+  "al_mine_set": {
+    "message": "あなたの確率 $1%"
+  },
+  "al_mine_too_few": {
+    "message": " · 少なすぎて区別できません"
+  },
+  "al_mine_vs": {
+    "message": "あなたとボード"
+  },
+  "al_mine_worse": {
+    "message": " · ボードの確率の方が良い得点（差 $1〜$2）"
+  },
   "al_missed": {
     "message": "はずれ"
   },
@@ -583,7 +631,7 @@
     "message": "判定済み · $1"
   },
   "al_settles_in": {
-    "message": "$1 後に判定"
+    "message": "$1に判定"
   },
   "al_show": {
     "message": "表示"
@@ -1014,15 +1062,6 @@
       }
     }
   },
-  "app_rate_ask": {
-    "message": "PriceTab は気に入りましたか。評価は他の人が見つけるきっかけになります。数秒で終わり、何よりも助けになります。"
-  },
-  "app_rate_ask_call": {
-    "message": "その予想が当たりました。PriceTab が相場を読む助けになっているなら、評価が他の人に見つけてもらう手段になります。数秒で済みます。"
-  },
-  "app_rate_ask_target": {
-    "message": "目標価格に到達しました。PriceTab が役に立っているなら、評価が他の人に見つけてもらう手段になります。数秒で済みます。"
-  },
   "app_read_on": {
     "message": "記事を読む: "
   },
@@ -1350,8 +1389,23 @@
   "as_wed": {
     "message": "水曜日"
   },
+  "board_call_it": {
+    "message": "予想する"
+  },
+  "board_in_band": {
+    "message": "現在バンド内"
+  },
+  "board_locked": {
+    "message": "ロック済み"
+  },
+  "board_needs": {
+    "message": "あと$1必要"
+  },
   "board_ordinary": {
     "message": "この時間でこの幅: $2 中 $1"
+  },
+  "board_settles": {
+    "message": "$1に確定"
   },
   "br_above_200d": {
     "message": "200日平均を上回る"
@@ -3100,6 +3154,30 @@
   },
   "mo_withheld": {
     "message": "評価に合格していません — 推定は表示されません"
+  },
+  "mode_fast_desc": {
+    "message": "最新の価格：10秒ごと。個別のリクエストが要るもの（ウィジェット、ニュース行、流れるバー）は外します。"
+  },
+  "mode_fast_name": {
+    "message": "高速"
+  },
+  "mode_holder_desc": {
+    "message": "見張るのではなく様子を見るために：落ち着いたチャート、周りの市場、見出しを5分ごとに。"
+  },
+  "mode_holder_name": {
+    "message": "ホルダー"
+  },
+  "mode_minimal_desc": {
+    "message": "価格とチャートだけ。端のタブはポインターを向けるまで薄くなり、キーはそのまま使えます。"
+  },
+  "mode_minimal_name": {
+    "message": "ミニマル"
+  },
+  "mode_trader_desc": {
+    "message": "値動きを読むためのすべて：ローソク足、出来高、グリッド、十字線の始値/高値/安値/終値、デリバティブのウィジェット。"
+  },
+  "mode_trader_name": {
+    "message": "トレーダー"
   },
   "mon_close": {
     "message": "モニターを閉じる"
@@ -7882,6 +7960,30 @@
   "pp_zoom_reset_title": {
     "message": "全期間をもう一度表示"
   },
+  "pref_alarm_keywords": {
+    "message": "アラーム 通知 音 トーン 目標 到達 清算 ストップ 警告 alert notification sound"
+  },
+  "pref_alarm_notify_desc": {
+    "message": "PriceTab のタブが開いている間、目標到達や契約のストップ・清算をシステム通知で知らせます"
+  },
+  "pref_alarm_notify_note": {
+    "message": "通知の許可は、これを初めてオンにしたときに Chrome が尋ねます（インストール時には尋ねません）。オフは消音するだけで許可は残るので、静かな午後のあとに再び許可する必要はありません。「許可を取り消す」で許可を返します。"
+  },
+  "pref_alarm_notify_pending": {
+    "message": "オンですが Chrome が通知を許可していません — もう一度押すと尋ねられます"
+  },
+  "pref_alarm_notify_title": {
+    "message": "目標到達時の通知"
+  },
+  "pref_alarm_sound_desc": {
+    "message": "この端末で作る短い音 — オンにしたときに一度鳴るので、どんな音か分かります"
+  },
+  "pref_alarm_sound_title": {
+    "message": "目標到達時の音"
+  },
+  "pref_alarm_withdraw": {
+    "message": "許可を取り消す"
+  },
   "pref_alert_tab_title_aria": {
     "message": "タブのタイトルでの価格ターゲット通知の切り替え"
   },
@@ -8155,6 +8257,12 @@
   "pref_companion_title": {
     "message": "チャートの相棒"
   },
+  "pref_cost_desc": {
+    "message": "ポートフォリオが表示する損益のために、売却をどの購入と対応させるか。売却ごとに記録時に刻まれるので、変更しても過去の売却を決め直すことはありません。"
+  },
+  "pref_cost_title": {
+    "message": "取得原価の方法"
+  },
   "pref_currency_about": {
     "message": "通貨について"
   },
@@ -8201,6 +8309,12 @@
         "content": "$1"
       }
     }
+  },
+  "pref_feedback": {
+    "message": "フィードバックを送る"
+  },
+  "pref_feedback_hint": {
+    "message": "GitHub の Issue フォームを新しいタブで開きます — ここからは何も送信されません"
   },
   "pref_gloss_contract": {
     "message": "契約とは"
@@ -8259,6 +8373,12 @@
   "pref_glossary_title": {
     "message": "先物契約とは何か"
   },
+  "pref_group_alerts": {
+    "message": "目標とアラーム"
+  },
+  "pref_group_alerts_desc": {
+    "message": "目標到達や契約のストップをどう知らせるか。"
+  },
   "pref_group_basics": {
     "message": "基本"
   },
@@ -8280,8 +8400,20 @@
   "pref_group_data_desc": {
     "message": "このブラウザが PriceTab のために保存しているすべてを、別の環境へ持ち出せる1つのファイルに。"
   },
+  "pref_group_futures": {
+    "message": "先物"
+  },
+  "pref_group_futures_desc": {
+    "message": "デリバティブ市場：用語の説明、メインチャート上の帯と線、契約を開く前の確認。"
+  },
   "pref_group_open_contract": {
     "message": "保有中の契約"
+  },
+  "pref_group_portfolio": {
+    "message": "ポートフォリオ"
+  },
+  "pref_group_portfolio_desc": {
+    "message": "ポートフォリオの損益の数え方と、金額を表示するかどうか。"
   },
   "pref_group_tab_tickers": {
     "message": "タブとティッカー"
@@ -8306,6 +8438,18 @@
   },
   "pref_group_webapp_desc_2": {
     "message": "電話上のアプリ: 全体のサイズ、ホーム画面からの起動、左右からのスワイプ、画面を点けたまま、開く画面。"
+  },
+  "pref_group_widgets": {
+    "message": "ウィジェット"
+  },
+  "pref_group_widgets_desc": {
+    "message": "左の引き出しのカード：読みやすい大きさと、始めるためのセット。"
+  },
+  "pref_hidden_desc": {
+    "message": "金額と数量は肩越しに覗く人には ••• と表示されます。割合と価格はそのまま。H でどこからでも同じことができます"
+  },
+  "pref_hidden_title": {
+    "message": "ポートフォリオの数字を隠す"
   },
   "pref_language_aria": {
     "message": "言語"
@@ -8409,9 +8553,6 @@
   "pref_mode_custom_desc_empty": {
     "message": "まだ保存されていません。好みの状態にしてから「保存」を押してください。以後は別のモードを押しても失われません。"
   },
-  "pref_mode_custom_empty": {
-    "message": "まだ保存されていません — 今の設定を残すには「保存」を押してください"
-  },
   "pref_mode_custom_resave": {
     "message": "上書き保存"
   },
@@ -8421,8 +8562,14 @@
   "pref_mode_custom_save_title": {
     "message": "現在の状態をカスタムとして保存し、以前の保存を置き換えます"
   },
+  "pref_mode_in_use": {
+    "message": "使用中"
+  },
   "pref_modes": {
     "message": "モード"
+  },
+  "pref_modes_keep": {
+    "message": "モードは他のセクションの設定を十数個まとめて変えます。通貨、数値形式、テーマはそのままです。"
   },
   "pref_modes_own_sections": {
     "message": "どれでもありません。モードは他のセクションの設定を十数個まとめて変更します。通貨・数値形式・テーマは常にそのままです。"
@@ -8604,6 +8751,9 @@
   "pref_phone_tabs_up": {
     "message": "$1 を左へ"
   },
+  "pref_portfolio_keywords": {
+    "message": "ポートフォリオ 取得原価 fifo lifo hifo 方法 損益 税 隠す プライバシー 数字 portfolio cost basis hide"
+  },
   "pref_position_bottom": {
     "message": "下"
   },
@@ -8738,6 +8888,32 @@
   },
   "pref_show": {
     "message": "表示"
+  },
+  "pref_storage_blocked": {
+    "message": "このブラウザーは PriceTab に保存領域を読ませません。"
+  },
+  "pref_storage_clear": {
+    "message": "キャッシュを消して再読み込み"
+  },
+  "pref_storage_desc": {
+    "message": "あなたのデータ $1（コイン、目標、コール、ポートフォリオ、設定）と、キャッシュされた価格と見出し $2。",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "pref_storage_keywords": {
+    "message": "保存 容量 サイズ キャッシュ 消去 端末 ローカル データ storage cache clear"
+  },
+  "pref_storage_note": {
+    "message": "すべてこのブラウザーのローカル保存領域にあり、ほかには何も保存されません。キャッシュの消去はネットワークから取り直せるものだけを消し（次のタブで再取得されます）、ページを再読み込みします。"
+  },
+  "pref_storage_title": {
+    "message": "この端末に保存"
   },
   "pref_studies_aria": {
     "message": "描画するスタディ"
@@ -8973,6 +9149,29 @@
   "pref_webapp_wake_title": {
     "message": "画面を点けたままにする"
   },
+  "pref_widget_bundle_desc": {
+    "message": "いまオンのウィジェットは $1 個。セットはどれをオンにするかを入れ替え、大きさと並びはそのままです。",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "pref_widget_bundle_title": {
+    "message": "セットから始める"
+  },
+  "pref_widget_keywords": {
+    "message": "ウィジェット カード サイズ 倍率 セット プリセット ホルダー トレーダー ミニマル 引き出し widgets cards size bundle"
+  },
+  "pref_widget_open": {
+    "message": "ウィジェットを並べる"
+  },
+  "pref_widget_scale_desc": {
+    "message": "全カードの全要素をまとめて。各カードの形（小・中・大）はカード上で選びます：長押しか右クリック。"
+  },
+  "pref_widget_scale_title": {
+    "message": "ウィジェットの文字サイズ"
+  },
   "pt_tab_baserates": {
     "message": "基準率"
   },
@@ -9054,11 +9253,47 @@
   "qs_word_target": {
     "message": "目標"
   },
+  "rate_anyway": {
+    "message": "それでも評価する"
+  },
+  "rate_aria": {
+    "message": "PriceTab を評価"
+  },
+  "rate_ask": {
+    "message": "PriceTab の使い心地はいかがですか？"
+  },
+  "rate_ask_call": {
+    "message": "そのコールが当たりました。PriceTab の使い心地はいかがですか？"
+  },
+  "rate_ask_target": {
+    "message": "目標に到達しました。PriceTab の使い心地はいかがですか？"
+  },
+  "rate_better": {
+    "message": "教えてくださりありがとうございます。何を変えたいですか？「伝える」は GitHub のフォームを開きます — このページからは何も送信されません。"
+  },
+  "rate_choice_better": {
+    "message": "もう少し"
+  },
+  "rate_choice_good": {
+    "message": "良い"
+  },
+  "rate_good": {
+    "message": "お役に立ててうれしいです。Chrome ウェブストアでの評価が、ほかの人が PriceTab を見つける手がかりになります — 数秒で済みます。"
+  },
   "rate_later": {
     "message": "今はしない — 後でもう一度"
   },
   "rate_never": {
     "message": "今後表示しない"
+  },
+  "rate_not_now": {
+    "message": "今はしない"
+  },
+  "rate_store": {
+    "message": "ウェブストアで評価"
+  },
+  "rate_tell": {
+    "message": "伝える"
   },
   "read_candle": {
     "message": "$1 — 始値 $2、高値 $3、安値 $4、終値 $5"
@@ -9331,6 +9566,42 @@
   "set_add_failed": {
     "message": "コインを追加できませんでした"
   },
+  "set_add_fewer": {
+    "message": "少なく表示"
+  },
+  "set_add_full": {
+    "message": "リストは上限の $1 コインです。追加するには 1 つ外してください。",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "set_add_largest": {
+    "message": "大きい順"
+  },
+  "set_add_more": {
+    "message": "さらに $1 件表示",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "set_add_moving": {
+    "message": "値動きが大きい"
+  },
+  "set_add_one": {
+    "message": "$1 を追加",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "set_add_suggested": {
+    "message": "おすすめ"
+  },
   "set_already_listed": {
     "message": "そのシンボルはすでにあります"
   },
@@ -9376,20 +9647,26 @@
   "set_nav_access": {
     "message": "アクセス"
   },
+  "set_nav_app": {
+    "message": "アプリとデータ"
+  },
+  "set_nav_features": {
+    "message": "機能"
+  },
   "set_nav_help": {
     "message": "ヘルプ"
   },
   "set_no_coins": {
     "message": "コインがまだありません"
   },
+  "set_no_match": {
+    "message": "一致なし — 「Bitcoin」か「BTC」を試してください"
+  },
   "set_not_recognized": {
     "message": "$1 は認識できません"
   },
   "set_quick_add": {
     "message": "クイック追加"
-  },
-  "set_rate": {
-    "message": "評価する"
   },
   "set_remove_coin": {
     "message": "$1 を削除"
@@ -10762,11 +11039,14 @@
   "tour_back": {
     "message": "戻る"
   },
-  "tour_chapter_calling_a_square": {
-    "message": "マスを予想する"
+  "tour_chapter_calls_targets": {
+    "message": "コールと目標"
   },
   "tour_chapter_making_it_yours": {
     "message": "自分好みに"
+  },
+  "tour_chapter_more": {
+    "message": "さらに"
   },
   "tour_chapter_reading_the_market": {
     "message": "市場を読む"
@@ -10786,11 +11066,28 @@
   "tour_done": {
     "message": "完了"
   },
+  "tour_keep": {
+    "message": "このままにする"
+  },
+  "tour_key_refresh": {
+    "message": "今すぐ更新"
+  },
   "tour_key_rotate": {
     "message": "コインを順に切り替え"
   },
+  "tour_key_theme": {
+    "message": "ライトかダーク"
+  },
   "tour_keys_intro": {
     "message": "いつでも ? を押すと全一覧が出ます。まず知っておくと便利なもの:"
+  },
+  "tour_more_tips": {
+    "message": "さらに $1 つのヒント →",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
   },
   "tour_next": {
     "message": "次へ"
@@ -10798,68 +11095,88 @@
   "tour_skip": {
     "message": "ツアーをスキップ"
   },
-  "tour_text_01c": {
-    "message": "新しいタブを開くたびにライブの暗号資産チャート。何も求めません — アカウント不要、インストール時の権限なし、あなたに関する情報はこの端末から出ません。このツアーは5章の短いステップです。いつでもスキップでき、設定からもう一度見られます。"
+  "tour_step_of": {
+    "message": "ステップ $1 / $2",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
   },
-  "tour_text_02": {
-    "message": "選択中のコインとそのライブ価格。タブが開いている間は更新され、閉じている間は停止します。クリックするか矢印キーで、コインリストを移動できます。"
+  "tour_text_calls_2": {
+    "message": "コールをオンにすると、現在の先にマス目のボードが現れ、各マスに確率が付きます。マスを2回クリックするとコールが確定し、自動で決着して自分だけの記録に残ります。"
   },
-  "tour_text_03": {
-    "message": "表示中の期間で価格がどう動いたか — 固定の24時間ではありません。クリックすると割合と金額を切り替えられます。"
+  "tour_text_calls_phone": {
+    "message": "コールをオンにすると、現在の先にマス目のボードが現れ、各マスに確率が付きます。マスをタップして下書きし、シートから確定します。自動で決着し、自分だけの記録に残ります。"
   },
-  "tour_text_04": {
-    "message": "直近1時間から全期間まで。各期間は独自の設定を保持します — 1H で組んだボードは、戻ってきてもそのままです。"
+  "tour_text_companion_2": {
+    "message": "チャート設定でコンパニオンをオンにすると、見つけたパターンやセットアップに名前を付け、このコインでその後どうなったかを添えます。多くはふつうの日と変わらず、そのこともはっきり伝えます。"
   },
-  "tour_text_05": {
-    "message": "シンボルか名前を入力します。自分のコインが上位に並び、まだ追っていないコインを選ぶと追加されます。同じ検索で価格ターゲットのコインも選べます。"
+  "tour_text_compare_2": {
+    "message": "別のコインや S&P 500、Nasdaq 100、金をチャートに重ねます — どちらも1つの目盛りの変化率で、2軸にはしません。"
   },
-  "tour_text_06_drawer": {
-    "message": "チャートに重ねるものを選ぶドロワー: あなたのコイン、任意のコイン、そして市場 — S&P 500、Nasdaq 100、金。2本の線はどちらも期間の始まりからの変化率で、共通の1つの目盛り — 2軸は決して使いません（どんな2本の線も関連して見せるトリックだからです）。停止はドロワーと価格の下にあります。"
+  "tour_text_drag_2": {
+    "message": "時間と価格の方向にドラッグ。ホイールで指した場所をズーム、ダブルクリックで元に戻ります。"
   },
-  "tour_text_07": {
-    "message": "T でラインをローソク足に切り替えます。G はチャートの背後に価格と時間のメッシュを敷き、水準を読み取れるようにします。価格の下には期間の高値と安値、そしてローソク足データが既に読み込まれている場合は出来高加重平均価格が並びます — そのためだけに取得することはありません。"
+  "tour_text_drag_phone": {
+    "message": "時間と価格の方向にドラッグ、ピンチでズーム、ダブルタップで元に戻ります。指を止めて押さえると、その点を読めます。"
   },
-  "tour_text_09": {
-    "message": "予想とは主張です。このコインが、この価格帯に、この時刻に。後で開いたタブで自動的に判定され、あなたの記録に残ります。価値のあるスコアはなく、何の価値もなく、端末の外に出るものもありません — 自分が本当に当てられるのかを知るための仕組みです。"
+  "tour_text_jump_2": {
+    "message": "シンボルか名前を入力。追跡していないコインを選ぶと追加されます。コマンドも使えます — 「eth 1w」や「compare spx」を試してみてください。"
   },
-  "tour_text_10b": {
-    "message": "予想をオンにすると、現在の右側にマスの盤が現れ、各マスにはその列の終わりに価格がそこにある確率が付きます — このコイン自身の足から数え、載せる前に何年分ものマスで検証したものです。マスを一度クリックで下書き、もう一度でロック：うっかりの一回のクリックで予想を確定させないための二回です。盤を上下にドラッグすると別の価格を、横にドラッグすると履歴と盤の配分を変えられ、右上のピルで1マスの値幅を変えられます。"
+  "tour_text_market_2": {
+    "message": "出典と経過時間付きのニュース（広告は除外）。モニター（M）はコインを並べ、市場を地図にし、今日のような日のあとに何が起きたかを数えます。"
   },
-  "tour_text_12": {
-    "message": "金額は自分で入力します。取得原価と損益が必要なら購入と売却も記録できます。FIFO・LIFO・HIFO は報告方法であって税額計算ではなく、レポートには行ごとに使った方法が書かれます。すべてこの端末に保存され、接続するウォレットはありません。"
+  "tour_text_market_phone": {
+    "message": "「その他」に：出典と経過時間付きのニュースと、モニター — コインの比較、市場マップ、今日のような日のあとに起きたこと。"
   },
-  "tour_text_13": {
-    "message": "Bitcoin、Ethereum、Litecoin、Dogecoin、Bitcoin Cash、Zcash の公開アドレスを貼り付ければ残高を読み取ります — Ethereum アドレスが保有する ERC-20 トークンも、1回のリクエストで含めて。アドレスは残高サービスにのみ送られ、読み取れないチェーンの場合は「どのチェーンか」を伝えます。正しいアドレスを疑わせることはしません。"
+  "tour_text_pick_setup": {
+    "message": "モードは十数個の設定をまとめて変えます。どれもあとで変えられます。このままでもかまいません。"
   },
-  "tour_text_14b": {
-    "message": "BTC がある値を超えたら、1日で5%動いたら、保有資産全体が X を下回ったら知らせて。目標はチャート上の線で、チャートをクリックすると価格を選べます。次の新しいタブで知らされます — アラームをオンにすれば通知と音でも。その権限はそのときだけ求められます。"
+  "tour_text_portfolio_2": {
+    "message": "保有しているもの。購入を入れれば原価と損益も — 公開アドレスを読み取ることもできます。この端末に保存され、接続するウォレットはありません。"
   },
-  "tour_text_15c": {
-    "message": "すべての見出しに出所と経過時間を付け、コイン、ソース、検索で絞り込み、広告は除外します。見出しを1回押すと一覧の横に開きます — 発行元が許す場合は記事そのものの本文と、数えた読み取りを。もう一度押すとページが開きます。"
+  "tour_text_price_2": {
+    "message": "コインのリアルタイム価格。クリックするか ← → で、コインを順に切り替えます。"
   },
-  "tour_text_16b": {
-    "message": "このコインの何年分もの日足と、ある状態になるたびにその後どうなったかを、普通の日と並べて — 各数字の根拠となる回数とともに。いま当てはまるすべてのものの、その後から始まります。売買を勧めることはありません。検証では、次の数日を任意の日と区別できたものはほとんどなく、そう伝えるほうが矢印より役に立ちます。"
+  "tour_text_price_phone": {
+    "message": "コインのリアルタイム価格。タップするとリストの次のコインに移ります。"
   },
-  "tour_text_17_pin": {
-    "message": "ウォッチリスト、Fear & Greed、資金調達率、手数料など、左端の引き出しに、スマートフォンのウィジェットのように並びます。編集から + を押すと、スワイプで選んだサイズで追加。カードを長押しまたは右クリックすると、サイズ変更、削除、ホーム画面へのピン留めができます。"
+  "tour_text_range_2": {
+    "message": "直近1時間から全期間まで。期間ごとに表示とボードを覚えています。"
   },
-  "tour_text_19": {
-    "message": "コイン、通貨、テーマ、ウィジェット、ティッカー。環境設定の上部には検索があります。モードの行はそれらを十数個まとめて設定します（ミニマル／高速／トレーダー／ホルダー）が、通貨・数値の形式・テーマには決して触れません。"
+  "tour_text_settings_2": {
+    "message": "コイン、通貨、テーマ、アラームなど、検索ボックス付き。そこで ? を押すと全キーが見られます。"
   },
-  "tour_text_companion": {
-    "message": "チャート設定（V）でチャート・コンパニオンをオンにすると、見つけたパターン、セットアップ、読み取り — 三角形、クロス、ダイバージェンス、一目の雲 — を起きた場所で示し、それぞれこのコインでその後に起きたことと、4つのコインで検証した結果を添えます。ほとんどは普通の日より良くはなく、そうはっきり言います。"
+  "tour_text_settings_phone": {
+    "message": "コイン、通貨、テーマ、アラームなど、検索ボックス付き — 「その他」にあります。"
   },
-  "tour_text_drag": {
-    "message": "チャートはどの方向にもドラッグできます。横は時間、縦は価格。ホイールや2本指で指した場所を拡大し、最も古い点の先までドラッグすると長い期間が開き、ダブルクリックで元に戻ります。チャートにフォーカスがあるとき、← と → で1点ずつ読み上げます。"
+  "tour_text_targets_2": {
+    "message": "価格に到達したとき、またはコインが1日で5%動いたときに知らせます。チャートをクリックすると価格を選べ、アラームで通知と音を追加できます。"
   },
-  "tour_text_tools": {
-    "message": "期間の行の端にある + でツールが開きます。その大きさの動きがどれくらいの頻度で起きたかを示す定規と、コインごとに残る線・レイ・ボックス・メモ。Shift を押しながらドラッグすればどこでも測れ、水平線は価格目標にできます。"
+  "tour_text_targets_phone": {
+    "message": "価格に到達したとき、またはコインが1日で5%動いたときに知らせます。アラームで通知と音を追加できます。"
+  },
+  "tour_text_tools_2": {
+    "message": "期間の行の末尾にある + でツールが開きます。その大きさの動きが何回あったかを数える定規と、コインに残る線・ボックス・メモ。"
+  },
+  "tour_text_two_ways_2": {
+    "message": "T で線をローソク足に、G でチャートの背後に価格と時間のグリッドを。どちらもチャート設定（V）にもあります。"
+  },
+  "tour_text_welcome_2": {
+    "message": "新しいタブごとに暗号資産のリアルタイム価格。アカウント不要、インストール時の許可なし、あなたの情報はこの端末から出ません。短いステップをいくつか — いつでもスキップできます。"
   },
   "tour_text_whats_new": {
     "message": "前のバージョンから変わった点を短いステップでご紹介します。いつでもスキップでき、設定からツアー全体をもう一度見られます。"
   },
-  "tour_title_change": {
-    "message": "変化"
+  "tour_text_widgets_2": {
+    "message": "Fear & Greed、資金調達率、手数料などをカードで。各カードは3つのサイズで違うものを見せます。長押しか右クリックで変更できます。"
+  },
+  "tour_text_widgets_phone": {
+    "message": "Fear & Greed、資金調達率、手数料などをカードで。各カードは3つのサイズで違うものを見せます — 「その他」に。長押しで変更できます。"
   },
   "tour_title_companion": {
     "message": "数えるコンパニオン"
@@ -10873,9 +11190,6 @@
   "tour_title_everything_else_lives_here": {
     "message": "その他はすべてここに"
   },
-  "tour_title_has_this_happened_before": {
-    "message": "これは過去にもあったか"
-  },
   "tour_title_it_is_faster_from_the_keyboard": {
     "message": "キーボードのほうが速い"
   },
@@ -10888,11 +11202,8 @@
   "tour_title_move_around": {
     "message": "チャートの中を動く"
   },
-  "tour_title_news": {
-    "message": "ニュース"
-  },
-  "tour_title_or_watch_an_address": {
-    "message": "またはアドレスを見張る"
+  "tour_title_pick_setup": {
+    "message": "出発点を選ぶ"
   },
   "tour_title_portfolio": {
     "message": "ポートフォリオ"
@@ -10900,11 +11211,11 @@
   "tour_title_price_targets": {
     "message": "価格ターゲット"
   },
+  "tour_title_read_market": {
+    "message": "ニュースとモニター"
+  },
   "tour_title_say_where_you_think_it_goes": {
     "message": "どこへ行くと思うか言う"
-  },
-  "tour_title_the_board": {
-    "message": "ボード"
   },
   "tour_title_time_range": {
     "message": "期間"
@@ -10942,11 +11253,98 @@
   "view_zoomed_short": {
     "message": "拡大中"
   },
+  "wd_accounts": {
+    "message": "口座数で、金額ではない"
+  },
+  "wd_accounts_short": {
+    "message": "口座"
+  },
   "wd_all_hidden": {
     "message": "すべてのウィジェットが非表示です。"
   },
   "wd_all_widgets": {
     "message": "‹ すべてのウィジェット"
+  },
+  "wd_alt_alt_end": {
+    "message": "BTC 40%−"
+  },
+  "wd_alt_btc_end": {
+    "message": "BTC 65%+"
+  },
+  "wd_alt_from_dom": {
+    "message": "BTCが市場の$1%を占める",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_alt_note": {
+    "message": "独自の測定ではありません。市場全体に占めるビットコインの比率（Coinlore）を、65%以上が0、40%以下が100となる尺度に置いたものです。シーズンの呼び名は25と75にあります。"
+  },
+  "wd_avg_day": {
+    "message": "平均的な日"
+  },
+  "wd_base_tip": {
+    "message": "基本 $1 · チップ $2",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "wd_block_each": {
+    "message": "1ブロックに1マス"
+  },
+  "wd_blocks_ago": {
+    "message": "$1 ブロック前",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_blocks_left": {
+    "message": "残り $1 ブロック",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_blocks_to_go": {
+    "message": "残りブロック"
+  },
+  "wd_board_note": {
+    "message": "このアプリが Bybit で扱う全パーペチュアルを、レートの低い順に並べたもの。ゼロより上ではロングがショートに支払います。"
+  },
+  "wd_btc_dom_short": {
+    "message": "BTC $1%",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_btc_per_eth": {
+    "message": "1 ETH あたりの BTC"
+  },
+  "wd_btc_share": {
+    "message": "BTC の比率"
+  },
+  "wd_by_fee": {
+    "message": "待機中、手数料率別（sat/vB）"
+  },
+  "wd_calls_pct": {
+    "message": "コール $1%",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
   },
   "wd_cancel": {
     "message": "キャンセル"
@@ -10954,14 +11352,118 @@
   "wd_card_size": {
     "message": "カードサイズ"
   },
+  "wd_clear_in": {
+    "message": "解消まで約 $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
   "wd_close": {
     "message": "ウィジェットを閉じる"
+  },
+  "wd_day_ago": {
+    "message": "1日前"
+  },
+  "wd_days_longs_paid": {
+    "message": "ロングが払った日数"
+  },
+  "wd_difficulty_note": {
+    "message": "2,016 ブロックごとにネットワークがブロック発見の難しさを調整し、約10分ごとにブロックが出るようにします。mempool.space より。"
   },
   "wd_done": {
     "message": "完了"
   },
   "wd_edit_widgets": {
     "message": "編集"
+  },
+  "wd_epoch_done": {
+    "message": "2,016 ブロックの $1%",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_era_done": {
+    "message": "この期間の $1% を採掘済み",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_estimated": {
+    "message": "次の変更（推定）"
+  },
+  "wd_etf_day": {
+    "message": "$1 · 純額、米国現物ファンド",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_etf_day_short": {
+    "message": "$1、純額",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_etf_note": {
+    "message": "米国の現物ビットコイン ETF に毎取引日に出入りした額 — SoSoValue と Farside に基づく TFTC の記録。"
+  },
+  "wd_ethbtc_note": {
+    "message": "1 イーサで買えるビットコインの量 — 当日は価格スナップショット、月ごとは Coinbase Exchange の ETH-BTC 板から。"
+  },
+  "wd_fall_note": {
+    "message": "表示中の期間で、高値からその後の安値までの最大の下落 — どれだけ悪化したかであり、どこまで悪化しうるかではありません。"
+  },
+  "wd_fall_took": {
+    "message": "下落にかかった期間"
+  },
+  "wd_fee_day": {
+    "message": "各ブロックの手数料中央値（24時間）"
+  },
+  "wd_fee_economy": {
+    "message": "エコノミー"
+  },
+  "wd_fee_fast_line": {
+    "message": "~10分で $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_fee_half": {
+    "message": "~30分"
+  },
+  "wd_fee_hour": {
+    "message": "~1時間"
+  },
+  "wd_fee_next": {
+    "message": "~10分"
+  },
+  "wd_fee_note": {
+    "message": "各期限までに承認されるための仮想バイトあたりの sat（mempool.space）と、一般的な 141 vB の送金の費用。"
+  },
+  "wd_fees_waiting_line": {
+    "message": "手数料 $1 BTC",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_fg_note": {
+    "message": "Alternative.me のセンチメント指数。0〜100、1日1回 — 彼らの数値と言葉です。"
+  },
+  "wd_five_days": {
+    "message": "5日"
   },
   "wd_foot_editing": {
     "message": "ドラッグで移動、−で削除、+で追加。終わったら完了。このドロワー: "
@@ -10978,11 +11480,294 @@
   "wd_fri": {
     "message": "金"
   },
+  "wd_funding_every": {
+    "message": "$1 時間ごと",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_funding_month_wait": {
+    "message": "今月の精算は Bybit から取得します。"
+  },
+  "wd_funding_note": {
+    "message": "各精算でパーペチュアルの一方が他方に払う額 — OKX の現在のレートと、Bybit の月間の日別レート。"
+  },
+  "wd_funding_year": {
+    "message": "年 $1%",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_gainers": {
+    "message": "上昇上位"
+  },
+  "wd_gas_note": {
+    "message": "直近20ブロックで各送金が支払う基本手数料と、その上に乗る遅い・通常・速いチップ — 単純な ETH 送金の場合。"
+  },
+  "wd_halving_eta": {
+    "message": "$1 頃",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_halving_note": {
+    "message": "210,000 ブロックごとに1ブロックの報酬が半分になります。日付は1ブロック10分として計算しています。"
+  },
+  "wd_height_now": {
+    "message": "現在の高さ"
+  },
+  "wd_highest": {
+    "message": "最高"
+  },
+  "wd_in_24h": {
+    "message": "24時間で"
+  },
+  "wd_in_month": {
+    "message": "1か月で"
+  },
+  "wd_in_month_coins": {
+    "message": "1か月で（$1 建て）",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_in_span": {
+    "message": "$1 で",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_largest_prints": {
+    "message": "最大の強制決済 · 規模 · 価格"
+  },
+  "wd_last_change": {
+    "message": "前回の変更"
+  },
+  "wd_liq_day": {
+    "message": "強制決済、24時間 · OKX"
+  },
+  "wd_liq_day_short": {
+    "message": "24時間 · OKX"
+  },
+  "wd_liq_note": {
+    "message": "証拠金が尽きて取引所が決済したポジション（OKX、直近24時間）。ロングの決済は市場への売り、ショートの決済は買いです。"
+  },
+  "wd_long_pct": {
+    "message": "ロング $1%",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_long_share_line": {
+    "message": "ロング比率（日次）"
+  },
+  "wd_long_word": {
+    "message": "ロング"
+  },
+  "wd_longs_closed": {
+    "message": "ロング $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_longs_pay": {
+    "message": "ロングがショートに支払う"
+  },
+  "wd_longs_paying": {
+    "message": "ロングが支払い"
+  },
+  "wd_losers": {
+    "message": "下落上位"
+  },
+  "wd_lowest": {
+    "message": "最低"
+  },
+  "wd_ls_note": {
+    "message": "$1 のパーペチュアルを持つ Bybit の口座のうち、ロングとショートの比率 — 規模ではなく口座数で数えたもの。",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_macro_note": {
+    "message": "次の米 CPI、雇用統計、FRB 声明、PCE の発表時期 — チャートが示す発表を、各機関の公式カレンダーから。"
+  },
+  "wd_market_note": {
+    "message": "全コインの時価総額の合計（Coinlore）と、そのうちビットコインとイーサの比率。"
+  },
+  "wd_max_pain_on": {
+    "message": "マックスペイン · $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_mempool_note": {
+    "message": "ブロック待ちの取引（mempool.space）。1ブロック約10分として測っています。"
+  },
+  "wd_mo_band": {
+    "message": "80% 帯、$1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_mo_tested": {
+    "message": "検証時に $2 時間の $1% で収まった",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
   "wd_mon": {
     "message": "月"
   },
+  "wd_month_ago": {
+    "message": "1か月前"
+  },
+  "wd_month_avg": {
+    "message": "月平均"
+  },
+  "wd_month_high": {
+    "message": "月高値"
+  },
+  "wd_month_low": {
+    "message": "月安値"
+  },
+  "wd_month_range": {
+    "message": "月レンジ"
+  },
+  "wd_most_in": {
+    "message": "最大流入"
+  },
+  "wd_most_out": {
+    "message": "最大流出"
+  },
+  "wd_movers_note": {
+    "message": "時価総額上位100コインの24時間の変化（Coinlore） — その両端。"
+  },
+  "wd_next_change": {
+    "message": "次回（推定）"
+  },
+  "wd_nobody_pays": {
+    "message": "どちらも支払わない"
+  },
   "wd_none_on": {
     "message": "オンのウィジェットはありません。"
+  },
+  "wd_now": {
+    "message": "現在"
+  },
+  "wd_of_market_short": {
+    "message": "全体の $1%",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_of_top_100": {
+    "message": "上位100 · 24時間"
+  },
+  "wd_oi_leaders_note": {
+    "message": "Bybit の未決済パーペチュアル契約の価値。上位8つと全体に占める比率。"
+  },
+  "wd_oi_note": {
+    "message": "まだ未決済のパーペチュアル契約の価値 — 方向ではなく規模。現在は OKX、月間は Bybit のコイン建て日次値。"
+  },
+  "wd_oi_okx": {
+    "message": "OKX パーペチュアル（ドル建て）"
+  },
+  "wd_oi_okx_short": {
+    "message": "OKX パーペチュアル"
+  },
+  "wd_oi_total": {
+    "message": "$1 件のパーペチュアル",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_open_bybit": {
+    "message": "Bybit の未決済"
+  },
+  "wd_options_note": {
+    "message": "Bybit のオプションから。マックスペインは最も近い満期で保有者の受け取りが最も少なくなる権利行使価格。プット対コールと ATM ボラティリティは現在の建玉です。"
+  },
+  "wd_others": {
+    "message": "その他"
+  },
+  "wd_outlook_band": {
+    "message": "再現の5〜95パーセンタイル"
+  },
+  "wd_outlook_band_short": {
+    "message": "5〜95% 帯"
+  },
+  "wd_over_span": {
+    "message": "$1 にわたり",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_peak": {
+    "message": "高値"
+  },
+  "wd_positive_word": {
+    "message": "プラス"
+  },
+  "wd_puts_pct": {
+    "message": "プット $1%",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_range_word": {
+    "message": "レンジ"
+  },
+  "wd_regime_after_short": {
+    "message": "20日後 · 任意の日"
+  },
+  "wd_regime_count": {
+    "message": "$1 回の突入",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_regime_since": {
+    "message": "$1 日間",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
   },
   "wd_resize": {
     "message": "ドロワーの幅"
@@ -10996,26 +11781,150 @@
   "wd_resize_title": {
     "message": "ドラッグで幅を広げる・狭める · ダブルクリックで既定の幅"
   },
+  "wd_rest_share": {
+    "message": "その他すべて"
+  },
+  "wd_reward_per_block": {
+    "message": "半減期 · ブロック報酬（BTC）"
+  },
+  "wd_rsi_above_half": {
+    "message": "50 超の時間"
+  },
+  "wd_rsi_note": {
+    "message": "表示中の期間のモメンタムを 0〜100 で（RSI 14、ワイルダー）。日足終値で検証したところ、高い値も低い値もその後を示しませんでした。"
+  },
+  "wd_rsi_points": {
+    "message": "読み取り"
+  },
+  "wd_rsi_scale": {
+    "message": "100 中"
+  },
   "wd_sat": {
     "message": "土"
+  },
+  "wd_send_plain": {
+    "message": "送金 $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_short_pct": {
+    "message": "ショート $1%",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_shorts_closed": {
+    "message": "ショート $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_shorts_pay": {
+    "message": "ショートがロングに支払う"
+  },
+  "wd_shorts_paying": {
+    "message": "ショートが支払い"
   },
   "wd_show_n_hidden": {
     "message": "非表示の $1 件を表示"
   },
+  "wd_since_trough": {
+    "message": "安値から"
+  },
   "wd_size_aria": {
     "message": "$1のカード"
+  },
+  "wd_stable_note": {
+    "message": "時価総額上位100のうちドル建てステーブルコイン（Coinlore） — その合計、市場に占める比率、最大のもの。"
+  },
+  "wd_strikes_line": {
+    "message": "コール濃 · プット淡"
   },
   "wd_sun": {
     "message": "日"
   },
+  "wd_three_months": {
+    "message": "3か月"
+  },
   "wd_thu": {
     "message": "木"
+  },
+  "wd_tier_fast": {
+    "message": "速い"
+  },
+  "wd_tier_slow": {
+    "message": "遅い"
+  },
+  "wd_tier_usual": {
+    "message": "通常"
+  },
+  "wd_time_left": {
+    "message": "残り時間"
+  },
+  "wd_to_send": {
+    "message": "送金 ~$1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_today": {
+    "message": "今日"
+  },
+  "wd_trading_days": {
+    "message": "$1 取引日",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_trough": {
+    "message": "安値"
   },
   "wd_tue": {
     "message": "火"
   },
+  "wd_turnover": {
+    "message": "出来高 / 時価"
+  },
+  "wd_twenty_days": {
+    "message": "20日"
+  },
+  "wd_unit_blocks": {
+    "message": "ブロック"
+  },
+  "wd_unit_days": {
+    "message": "日"
+  },
+  "wd_up_today": {
+    "message": "24時間で上昇"
+  },
+  "wd_volume": {
+    "message": "出来高"
+  },
+  "wd_volume_24h": {
+    "message": "24時間出来高"
+  },
   "wd_wed": {
     "message": "水"
+  },
+  "wd_week_ago": {
+    "message": "1週間前"
+  },
+  "wd_worst_mover": {
+    "message": "最悪"
+  },
+  "wd_yesterday": {
+    "message": "昨日"
   },
   "wdesc_altcoin_season": {
     "message": "アルトコインはビットコインを上回っているか"

@@ -1,4 +1,37 @@
 {
+  "ahead_days": {
+    "message": "in $1 days",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "ahead_hours": {
+    "message": "in $1h",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "ahead_minutes": {
+    "message": "in $1 min",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "ahead_month": {
+    "message": "in over a month"
+  },
+  "ahead_now": {
+    "message": "now"
+  },
+  "ahead_tomorrow": {
+    "message": "tomorrow"
+  },
   "al_7d_hit_rate": {
     "message": "hit rate"
   },
@@ -553,6 +586,84 @@
   },
   "al_luck_title": {
     "message": "Each call came true with the chance its square had when you named it. Adding those chances up as separate coin flips, this is how often they give at least as many hits as you got."
+  },
+  "al_mine_better": {
+    "message": " · your chances scored better (gap $1 to $2)",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "al_mine_brier": {
+    "message": "Brier, lower is better: you $1 · board $2 · $3 squares",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      }
+    }
+  },
+  "al_mine_few": {
+    "message": "$1 of your chances settled — scored from $2",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "al_mine_hint": {
+    "message": "Optional, final once given, and only in the first two minutes — the record scores it against the board's chance on the same squares."
+  },
+  "al_mine_label": {
+    "message": "Your chance for this square"
+  },
+  "al_mine_same": {
+    "message": " · not told apart (gap $1 to $2)",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "al_mine_set": {
+    "message": "your chance $1%",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "al_mine_too_few": {
+    "message": " · too few to tell apart"
+  },
+  "al_mine_vs": {
+    "message": "You and the board"
+  },
+  "al_mine_worse": {
+    "message": " · the board's chances scored better (gap $1 to $2)",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
   },
   "al_missed": {
     "message": "Missed"
@@ -1541,15 +1652,6 @@
       }
     }
   },
-  "app_rate_ask": {
-    "message": "Liking PriceTab? A rating is how other people find it — it takes a few seconds and helps more than anything else."
-  },
-  "app_rate_ask_call": {
-    "message": "That call came true. If PriceTab helps you read the market, a rating is how other people find it — it takes a few seconds."
-  },
-  "app_rate_ask_target": {
-    "message": "Your target was reached. If PriceTab is useful to you, a rating is how other people find it — it takes a few seconds."
-  },
   "app_read_on": {
     "message": "Read on "
   },
@@ -2236,6 +2338,23 @@
   "as_wed": {
     "message": "Wednesday"
   },
+  "board_call_it": {
+    "message": "CALL IT"
+  },
+  "board_in_band": {
+    "message": "in the band now"
+  },
+  "board_locked": {
+    "message": "LOCKED"
+  },
+  "board_needs": {
+    "message": "needs $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
   "board_ordinary": {
     "message": "as far in as long: $1 of $2",
     "placeholders": {
@@ -2244,6 +2363,14 @@
       },
       "arg2": {
         "content": "$2"
+      }
+    }
+  },
+  "board_settles": {
+    "message": "settles $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
       }
     }
   },
@@ -4699,6 +4826,30 @@
   },
   "mo_withheld": {
     "message": "Evaluation not passed — no estimate is shown"
+  },
+  "mode_fast_desc": {
+    "message": "The freshest price: every ten seconds, and nothing that costs a request of its own — no widgets, news row or scrolling bar."
+  },
+  "mode_fast_name": {
+    "message": "Fast"
+  },
+  "mode_holder_desc": {
+    "message": "For checking in, not watching: a calm chart, the market around it and the headlines, every five minutes."
+  },
+  "mode_holder_name": {
+    "message": "Holder"
+  },
+  "mode_minimal_desc": {
+    "message": "The price and the chart, nothing else. The edge tabs fade until you point at them; the keys still work."
+  },
+  "mode_minimal_name": {
+    "message": "Minimal"
+  },
+  "mode_trader_desc": {
+    "message": "Everything to read a move with: candles, volume, the grid, open/high/low/close on the crosshair, and the derivatives widgets."
+  },
+  "mode_trader_name": {
+    "message": "Trader"
   },
   "mon_close": {
     "message": "Close the monitor"
@@ -11910,6 +12061,30 @@
   "pp_zoom_reset_title": {
     "message": "Show the whole range again"
   },
+  "pref_alarm_keywords": {
+    "message": "alarm notification notify banner sound tone beep target hit liquidated stopped alert"
+  },
+  "pref_alarm_notify_desc": {
+    "message": "A system notification for a target that is hit and a contract that is stopped or liquidated, while a PriceTab tab is open"
+  },
+  "pref_alarm_notify_note": {
+    "message": "Chrome asks for the notifications permission the first time this is switched on, and never at install. Off mutes it and keeps the permission, so an afternoon of quiet does not cost asking again; Withdraw gives the permission back."
+  },
+  "pref_alarm_notify_pending": {
+    "message": "Switched on, but Chrome has not allowed notifications — press again to be asked"
+  },
+  "pref_alarm_notify_title": {
+    "message": "Notification When A Target Is Hit"
+  },
+  "pref_alarm_sound_desc": {
+    "message": "A short tone, made on this device — it plays once when switched on so you know what to listen for"
+  },
+  "pref_alarm_sound_title": {
+    "message": "Sound When A Target Is Hit"
+  },
+  "pref_alarm_withdraw": {
+    "message": "Withdraw the permission"
+  },
   "pref_alert_tab_title_aria": {
     "message": "Toggle price target announcements in the tab title"
   },
@@ -12201,6 +12376,12 @@
   "pref_companion_title": {
     "message": "Chart Companion"
   },
+  "pref_cost_desc": {
+    "message": "Which purchase a sale is matched to, for the profit the portfolio prints. It is stamped on each sale as it is recorded, so changing it never re-decides a sale already made."
+  },
+  "pref_cost_title": {
+    "message": "Cost Basis Method"
+  },
   "pref_currency_about": {
     "message": "About Currency"
   },
@@ -12247,6 +12428,12 @@
         "content": "$1"
       }
     }
+  },
+  "pref_feedback": {
+    "message": "Send feedback"
+  },
+  "pref_feedback_hint": {
+    "message": "Open the issue form on GitHub in a new tab — nothing is sent from here"
   },
   "pref_gloss_contract": {
     "message": "A contract"
@@ -12305,6 +12492,12 @@
   "pref_glossary_title": {
     "message": "What A Futures Contract Is"
   },
+  "pref_group_alerts": {
+    "message": "Targets & alarm"
+  },
+  "pref_group_alerts_desc": {
+    "message": "How a hit target, or a contract that is stopped, gets your attention."
+  },
   "pref_group_basics": {
     "message": "Basics"
   },
@@ -12326,8 +12519,20 @@
   "pref_group_data_desc": {
     "message": "Everything this browser keeps for PriceTab, in one file you can carry to another."
   },
+  "pref_group_futures": {
+    "message": "Futures"
+  },
+  "pref_group_futures_desc": {
+    "message": "The derivatives market: its words, its strip and lines on the main chart, and asking before a contract opens."
+  },
   "pref_group_open_contract": {
     "message": "The open contract"
+  },
+  "pref_group_portfolio": {
+    "message": "Portfolio"
+  },
+  "pref_group_portfolio_desc": {
+    "message": "How the portfolio counts profit, and whether its money shows."
   },
   "pref_group_tab_tickers": {
     "message": "Tab & tickers"
@@ -12352,6 +12557,18 @@
   },
   "pref_group_webapp_desc_2": {
     "message": "The app on a phone: the size of everything, running from the home screen, the swipe from the sides, the screen kept on, and where it opens."
+  },
+  "pref_group_widgets": {
+    "message": "Widgets"
+  },
+  "pref_group_widgets_desc": {
+    "message": "The cards in the drawer on the left: how big they read, and a set to start from."
+  },
+  "pref_hidden_desc": {
+    "message": "Money and amounts read ••• for anyone looking over your shoulder; percentages and prices stay. H does the same from anywhere"
+  },
+  "pref_hidden_title": {
+    "message": "Hide Portfolio Figures"
   },
   "pref_language_aria": {
     "message": "Language"
@@ -12460,9 +12677,6 @@
   "pref_mode_custom_desc_empty": {
     "message": "Nothing saved yet. Set the app up how you like it, then press Save — pressing another mode will not lose it after that."
   },
-  "pref_mode_custom_empty": {
-    "message": "Nothing saved yet — press Save to keep the arrangement you have now"
-  },
   "pref_mode_custom_resave": {
     "message": "Save again"
   },
@@ -12472,8 +12686,14 @@
   "pref_mode_custom_save_title": {
     "message": "Keep what is on screen now as Custom, replacing anything saved before"
   },
+  "pref_mode_in_use": {
+    "message": "In use"
+  },
   "pref_modes": {
     "message": "Modes"
+  },
+  "pref_modes_keep": {
+    "message": "A mode sets a dozen settings in the other sections at once; currency, number format and theme stay as you have them."
   },
   "pref_modes_own_sections": {
     "message": "Not one of these. A mode sets a dozen of the settings in the other sections at once; currency, number format and theme are always left as you have them."
@@ -12680,6 +12900,9 @@
       }
     }
   },
+  "pref_portfolio_keywords": {
+    "message": "portfolio cost basis fifo lifo hifo method profit tax hide mask privacy figures"
+  },
   "pref_position_bottom": {
     "message": "Bottom"
   },
@@ -12814,6 +13037,32 @@
   },
   "pref_show": {
     "message": "Show"
+  },
+  "pref_storage_blocked": {
+    "message": "This browser does not let PriceTab read its storage."
+  },
+  "pref_storage_clear": {
+    "message": "Clear the cache and reload"
+  },
+  "pref_storage_desc": {
+    "message": "$1 of your own — coins, targets, calls, portfolio, settings — and $2 of cached prices and headlines.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "pref_storage_keywords": {
+    "message": "storage space size cache clear memory kept device local data"
+  },
+  "pref_storage_note": {
+    "message": "Everything stays in this browser's local storage; nothing is kept anywhere else. Clearing the cache drops only what the network gives back — the next tab fetches it again — and reloads the page."
+  },
+  "pref_storage_title": {
+    "message": "Kept On This Device"
   },
   "pref_studies_aria": {
     "message": "Which studies to draw"
@@ -13059,6 +13308,29 @@
   "pref_webapp_wake_title": {
     "message": "Keep the screen on"
   },
+  "pref_widget_bundle_desc": {
+    "message": "$1 widgets on now. A bundle replaces which are on; their sizes and order stay as you left them.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "pref_widget_bundle_title": {
+    "message": "Start From A Bundle"
+  },
+  "pref_widget_keywords": {
+    "message": "widgets cards size scale bundle preset holder trader minimal drawer"
+  },
+  "pref_widget_open": {
+    "message": "Arrange the widgets"
+  },
+  "pref_widget_scale_desc": {
+    "message": "Everything on every card, at once. Each card's own shape — small, medium, large — is chosen on the card: hold it or right-click it."
+  },
+  "pref_widget_scale_title": {
+    "message": "Widget Text Size"
+  },
   "pt_tab_baserates": {
     "message": "Base rates"
   },
@@ -13173,11 +13445,47 @@
   "qs_word_target": {
     "message": "target"
   },
+  "rate_anyway": {
+    "message": "Rate anyway"
+  },
+  "rate_aria": {
+    "message": "Rate PriceTab"
+  },
+  "rate_ask": {
+    "message": "How is PriceTab working for you?"
+  },
+  "rate_ask_call": {
+    "message": "That call came true. How is PriceTab working for you?"
+  },
+  "rate_ask_target": {
+    "message": "Your target was reached. How is PriceTab working for you?"
+  },
+  "rate_better": {
+    "message": "Thank you for saying so. What would you change? Tell us opens a form on GitHub — nothing is sent from this page."
+  },
+  "rate_choice_better": {
+    "message": "Could be better"
+  },
+  "rate_choice_good": {
+    "message": "Good"
+  },
+  "rate_good": {
+    "message": "Glad it helps. A rating on the Chrome Web Store is how other people find PriceTab — it takes a few seconds."
+  },
   "rate_later": {
     "message": "Not now — ask again later"
   },
   "rate_never": {
     "message": "Don't ask again"
+  },
+  "rate_not_now": {
+    "message": "Not now"
+  },
+  "rate_store": {
+    "message": "Rate on the Web Store"
+  },
+  "rate_tell": {
+    "message": "Tell us"
   },
   "read_candle": {
     "message": "$1 — open $2, high $3, low $4, close $5",
@@ -13489,6 +13797,42 @@
   "set_add_failed": {
     "message": "Could not add coin"
   },
+  "set_add_fewer": {
+    "message": "Show fewer"
+  },
+  "set_add_full": {
+    "message": "Your list holds $1 coins, the most it can. Remove one to add another.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "set_add_largest": {
+    "message": "Largest"
+  },
+  "set_add_more": {
+    "message": "Show $1 more",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "set_add_moving": {
+    "message": "Moving most"
+  },
+  "set_add_one": {
+    "message": "Add $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "set_add_suggested": {
+    "message": "Suggested"
+  },
   "set_already_listed": {
     "message": "This symbol is already listed"
   },
@@ -13544,11 +13888,20 @@
   "set_nav_access": {
     "message": "Access"
   },
+  "set_nav_app": {
+    "message": "App & data"
+  },
+  "set_nav_features": {
+    "message": "Features"
+  },
   "set_nav_help": {
     "message": "Help"
   },
   "set_no_coins": {
     "message": "No coins yet"
+  },
+  "set_no_match": {
+    "message": "No match — try \"Bitcoin\" or \"BTC\""
   },
   "set_not_recognized": {
     "message": "$1 not recognized",
@@ -13560,9 +13913,6 @@
   },
   "set_quick_add": {
     "message": "Quick add"
-  },
-  "set_rate": {
-    "message": "Rate"
   },
   "set_remove_coin": {
     "message": "Remove $1",
@@ -15466,11 +15816,14 @@
   "tour_back": {
     "message": "Back"
   },
-  "tour_chapter_calling_a_square": {
-    "message": "Calling a square"
+  "tour_chapter_calls_targets": {
+    "message": "Calls & targets"
   },
   "tour_chapter_making_it_yours": {
     "message": "Making it yours"
+  },
+  "tour_chapter_more": {
+    "message": "More"
   },
   "tour_chapter_reading_the_market": {
     "message": "Reading the market"
@@ -15490,11 +15843,28 @@
   "tour_done": {
     "message": "Done"
   },
+  "tour_keep": {
+    "message": "Keep as it is"
+  },
+  "tour_key_refresh": {
+    "message": "Refresh now"
+  },
   "tour_key_rotate": {
     "message": "Rotate through your coins"
   },
+  "tour_key_theme": {
+    "message": "Light or dark"
+  },
   "tour_keys_intro": {
     "message": "Press ? at any time for the full list. A few worth knowing now:"
+  },
+  "tour_more_tips": {
+    "message": "$1 more tips →",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
   },
   "tour_next": {
     "message": "Next"
@@ -15502,68 +15872,88 @@
   "tour_skip": {
     "message": "Skip tour"
   },
-  "tour_text_01c": {
-    "message": "Live crypto charts on every new tab, asking for nothing — no account, no permissions at install, and nothing about you leaving this device. This tour is a few short steps in five chapters. Skip it whenever you like; Settings can replay it."
+  "tour_step_of": {
+    "message": "Step $1 of $2",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
   },
-  "tour_text_02": {
-    "message": "Your active coin and its live price, refreshed while the tab is open and paused while it is not. Click it, or use the arrow keys, to move through your coin list."
+  "tour_text_calls_2": {
+    "message": "Turn calls on and a board of squares grows past now, each with its chance. Click a square twice to lock a call; it settles itself and goes on a record only you keep."
   },
-  "tour_text_03": {
-    "message": "How the price moved across the range on screen — not a fixed 24 hours. Click it to flip between a percentage and an amount."
+  "tour_text_calls_phone": {
+    "message": "Turn calls on and a board of squares grows past now, each with its chance. Tap a square to draft a call and lock it from the sheet; it settles itself and goes on a record only you keep."
   },
-  "tour_text_04": {
-    "message": "The last hour through all time. Each range keeps its own settings — the board you set up on 1H is still there when you come back to it."
+  "tour_text_companion_2": {
+    "message": "Switch on the companion in the chart's settings and it names the patterns and setups it finds, each with what followed on this coin — most did no better than an ordinary day, and it says so."
   },
-  "tour_text_05": {
-    "message": "Type a symbol or a name. Your own coins rank first, and picking one you do not track yet adds it. The same search chooses a coin for a price target."
+  "tour_text_compare_2": {
+    "message": "Lay another coin, or the S&P 500, the Nasdaq 100 or gold, over the chart — both as percent change on one scale, never two axes."
   },
-  "tour_text_06_drawer": {
-    "message": "A drawer of what to lay over the chart: your coins, any coin, and markets — the S&P 500, the Nasdaq 100, gold. Both lines are percent change from the start of the range, on one shared scale — never two axes, which is the trick that makes any two lines look related. Stop is in the drawer and under the price."
+  "tour_text_drag_2": {
+    "message": "Drag through time and price. The wheel zooms where you point; a double-click puts it all back."
   },
-  "tour_text_07": {
-    "message": "T swaps the line for candlesticks. G puts a price and time mesh behind the chart so you can read a level off it. Under the price sits the range high and low, and the volume-weighted average price when the candle data happens to be loaded — it is never fetched just for that."
+  "tour_text_drag_phone": {
+    "message": "Drag through time and price, pinch to zoom, and double-tap to put it back. Hold a finger still to read a point."
   },
-  "tour_text_09": {
-    "message": "A call is a claim: this coin, in this price band, at this time. It settles itself on a later tab and goes on a record you keep. Nothing is scored, nothing is worth anything, and nothing leaves the device — it is a way to find out whether you are actually any good."
+  "tour_text_jump_2": {
+    "message": "Type a symbol or a name; picking a coin you do not track adds it. It also takes commands — try “eth 1w” or “compare spx”."
   },
-  "tour_text_10b": {
-    "message": "Turn calls on and the chart grows a board of squares to the right of now, each with the chance the price is in it when its column ends — counted from this coin's own bars and checked against years of squares before it was allowed on. Click a square once to draft it and again to lock it: two clicks, because one stray click should not commit a prediction. Drag the board up or down to look at other prices, sideways to trade history for board, and use the pill at its top right to change what one square is worth."
+  "tour_text_market_2": {
+    "message": "News with its source and age, advertising dropped. The monitor (M) lays your coins side by side, maps the market, and counts what followed days like today."
   },
-  "tour_text_12": {
-    "message": "Amounts you type in, with purchases and sales if you want cost basis and profit. FIFO, LIFO or HIFO — a reporting method, not a tax calculation, and the report says which method every line used. Everything is stored on this device and there is no wallet to connect."
+  "tour_text_market_phone": {
+    "message": "Under More: news with its source and age, and the monitor — your coins side by side, the market map, and what followed days like today."
   },
-  "tour_text_13": {
-    "message": "Paste a public Bitcoin, Ethereum, Litecoin, Dogecoin, Bitcoin Cash or Zcash address and the balance is read for you — including the ERC-20 tokens an Ethereum address holds, in one request. The address is only ever sent to the balance service, and if a chain cannot be read PriceTab says which chain it is rather than telling you to check a perfectly good address."
+  "tour_text_pick_setup": {
+    "message": "A mode sets a dozen settings at once; change any of them later. Or keep it as it is."
   },
-  "tour_text_14b": {
-    "message": "Tell me when BTC rises above a number, or moves 5% in a day, or when everything I hold is worth less than X. A target is a line on the chart, and a click on the chart picks its price. You are told on your next new tab — or, if you switch the alarm on, by a notification and a tone; that permission is asked for only then."
+  "tour_text_portfolio_2": {
+    "message": "What you hold, with cost and profit when you add purchases — or a public address, read for you. Stored on this device; no wallet to connect."
   },
-  "tour_text_15c": {
-    "message": "Every headline with its source and its age, narrowed by coin, source or search, with advertising dropped. Press a headline once and it opens beside the list — the story's own text where the newsroom allows it, and a counted reading of it; press again to open the page."
+  "tour_text_price_2": {
+    "message": "Your coin's live price. Click it, or press ← →, to step through your coins."
   },
-  "tour_text_16b": {
-    "message": "Years of this coin's daily candles, and what followed each time it was in a state, beside an ordinary day — with how many times every figure is based on. It opens on what came after everything true right now. It never says buy or sell: tested, almost none of it told the next days apart from any days, and saying so is more useful than an arrow."
+  "tour_text_price_phone": {
+    "message": "Your coin's live price. Tap it to step to the next coin in your list."
   },
-  "tour_text_17_pin": {
-    "message": "Watchlist, Fear & Greed, funding, fees and more, in a drawer on the left edge, arranged the way a phone arranges widgets. Edit, then + adds one at the size you swipe to; hold or right-click a card for its size, to remove it, or to pin it to the home screen."
+  "tour_text_range_2": {
+    "message": "From the last hour to all time. Each range keeps its own view and its own board."
   },
-  "tour_text_19": {
-    "message": "Coins, currency, theme, widgets and the tickers, with a search box at the top of Preferences. The modes row sets a dozen of them at once — Minimal, Fast, Trader, Holder — and never touches your currency, number format or theme."
+  "tour_text_settings_2": {
+    "message": "Coins, currency, theme, the alarm and the rest, with a search box. Press ? there for every key."
   },
-  "tour_text_companion": {
-    "message": "Switch on the chart companion in the chart's settings (V) and it names the patterns, setups and readings it finds — triangles, crosses, divergences, the Ichimoku cloud — where they happened, each with what followed it on this coin and how it did when tested on four coins. Most did no better than an ordinary day, and it says so."
+  "tour_text_settings_phone": {
+    "message": "Coins, currency, theme, the alarm and the rest, with a search box — under More."
   },
-  "tour_text_drag": {
-    "message": "Drag the chart any way: sideways through time, up and down through prices. The wheel or two fingers zoom where you point, a drag past the oldest point opens the longer range, and a double-click puts it all back. With the chart focused, ← and → read it point by point."
+  "tour_text_targets_2": {
+    "message": "Be told when a price is reached or a coin moves 5% in a day. A click on the chart picks the price; the alarm can add a notification and a tone."
   },
-  "tour_text_tools": {
-    "message": "The + at the end of the range row opens the tools: a ruler that says how often a move that size has happened, and lines, rays, boxes and notes that stay with the coin. Shift and a drag measure anywhere; a horizontal line can become a price target."
+  "tour_text_targets_phone": {
+    "message": "Be told when a price is reached or a coin moves 5% in a day; the alarm can add a notification and a tone."
+  },
+  "tour_text_tools_2": {
+    "message": "The + at the end of the range row opens the tools: a ruler that counts how often a move that size happened, and lines, boxes and notes that stay with the coin."
+  },
+  "tour_text_two_ways_2": {
+    "message": "T swaps the line for candlesticks; G puts a price and time mesh behind the chart. Both are in the chart's settings too (V)."
+  },
+  "tour_text_welcome_2": {
+    "message": "Live crypto prices on every new tab. No account, no permissions at install, and nothing about you leaves this device. A few short steps — skip whenever you like."
   },
   "tour_text_whats_new": {
     "message": "A few short steps on what changed since your last version. Skip it whenever you like; Settings can replay the whole tour."
   },
-  "tour_title_change": {
-    "message": "Change"
+  "tour_text_widgets_2": {
+    "message": "Fear & Greed, funding, fees and more as cards, each in three sizes that show different things. Hold or right-click a card to change it."
+  },
+  "tour_text_widgets_phone": {
+    "message": "Fear & Greed, funding, fees and more as cards, each in three sizes that show different things — under More. Hold a card to change it."
   },
   "tour_title_companion": {
     "message": "A companion that counts"
@@ -15577,9 +15967,6 @@
   "tour_title_everything_else_lives_here": {
     "message": "Everything else lives here"
   },
-  "tour_title_has_this_happened_before": {
-    "message": "Has this happened before?"
-  },
   "tour_title_it_is_faster_from_the_keyboard": {
     "message": "It is faster from the keyboard"
   },
@@ -15592,11 +15979,8 @@
   "tour_title_move_around": {
     "message": "Move around it"
   },
-  "tour_title_news": {
-    "message": "News"
-  },
-  "tour_title_or_watch_an_address": {
-    "message": "Or watch an address"
+  "tour_title_pick_setup": {
+    "message": "Pick a starting point"
   },
   "tour_title_portfolio": {
     "message": "Portfolio"
@@ -15604,11 +15988,11 @@
   "tour_title_price_targets": {
     "message": "Price targets"
   },
+  "tour_title_read_market": {
+    "message": "News and the monitor"
+  },
   "tour_title_say_where_you_think_it_goes": {
     "message": "Say where you think it goes"
-  },
-  "tour_title_the_board": {
-    "message": "The board"
   },
   "tour_title_time_range": {
     "message": "Time range"
@@ -15651,11 +16035,98 @@
   "view_zoomed_short": {
     "message": "Zoomed"
   },
+  "wd_accounts": {
+    "message": "of accounts, not of money"
+  },
+  "wd_accounts_short": {
+    "message": "of accounts"
+  },
   "wd_all_hidden": {
     "message": "Every widget is hidden."
   },
   "wd_all_widgets": {
     "message": "‹ All widgets"
+  },
+  "wd_alt_alt_end": {
+    "message": "BTC 40%−"
+  },
+  "wd_alt_btc_end": {
+    "message": "BTC 65%+"
+  },
+  "wd_alt_from_dom": {
+    "message": "BTC holds $1% of the market",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_alt_note": {
+    "message": "Not a separate measurement: bitcoin's share of the whole market (Coinlore), placed on a scale where 65% or more reads 0 and 40% or less reads 100. The season words are named at 25 and 75."
+  },
+  "wd_avg_day": {
+    "message": "average day"
+  },
+  "wd_base_tip": {
+    "message": "base $1 · tip $2",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "wd_block_each": {
+    "message": "a square a block"
+  },
+  "wd_blocks_ago": {
+    "message": "$1 blocks ago",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_blocks_left": {
+    "message": "$1 blocks left",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_blocks_to_go": {
+    "message": "blocks to go"
+  },
+  "wd_board_note": {
+    "message": "Every perpetual this app charts on Bybit, sorted from the lowest rate to the highest — above zero, longs pay shorts."
+  },
+  "wd_btc_dom_short": {
+    "message": "BTC $1%",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_btc_per_eth": {
+    "message": "BTC for one ETH"
+  },
+  "wd_btc_share": {
+    "message": "BTC's share"
+  },
+  "wd_by_fee": {
+    "message": "waiting, by fee rate (sat/vB)"
+  },
+  "wd_calls_pct": {
+    "message": "calls $1%",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
   },
   "wd_cancel": {
     "message": "Cancel"
@@ -15663,14 +16134,118 @@
   "wd_card_size": {
     "message": "Card size"
   },
+  "wd_clear_in": {
+    "message": "about $1 to clear",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
   "wd_close": {
     "message": "Close the widgets"
+  },
+  "wd_day_ago": {
+    "message": "a day ago"
+  },
+  "wd_days_longs_paid": {
+    "message": "days longs paid"
+  },
+  "wd_difficulty_note": {
+    "message": "Every 2,016 blocks the network resets how hard a block is to find, so blocks keep coming about every ten minutes. From mempool.space."
   },
   "wd_done": {
     "message": "Done"
   },
   "wd_edit_widgets": {
     "message": "Edit"
+  },
+  "wd_epoch_done": {
+    "message": "$1% of 2,016 blocks",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_era_done": {
+    "message": "$1% of this era mined",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_estimated": {
+    "message": "next change, est."
+  },
+  "wd_etf_day": {
+    "message": "$1 · net, US spot funds",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_etf_day_short": {
+    "message": "$1, net",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_etf_note": {
+    "message": "What went into and out of the US spot bitcoin ETFs each trading day — TFTC's record of SoSoValue and Farside."
+  },
+  "wd_ethbtc_note": {
+    "message": "How much bitcoin one ether buys — the day from the price snapshot, the months from Coinbase Exchange's ETH-BTC book."
+  },
+  "wd_fall_note": {
+    "message": "The deepest fall from a high to a later low inside the range on screen — how bad it got, not how bad it can get."
+  },
+  "wd_fall_took": {
+    "message": "the fall took"
+  },
+  "wd_fee_day": {
+    "message": "median fee of each block, last 24h"
+  },
+  "wd_fee_economy": {
+    "message": "economy"
+  },
+  "wd_fee_fast_line": {
+    "message": "$1 for ~10 min",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_fee_half": {
+    "message": "~30 min"
+  },
+  "wd_fee_hour": {
+    "message": "~1 hour"
+  },
+  "wd_fee_next": {
+    "message": "~10 min"
+  },
+  "wd_fee_note": {
+    "message": "Sats per virtual byte to be confirmed by each deadline, from mempool.space, and what a typical 141 vB send would cost."
+  },
+  "wd_fees_waiting_line": {
+    "message": "$1 BTC in fees",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_fg_note": {
+    "message": "Alternative.me's sentiment index, 0 to 100, one reading a day — their number and their word."
+  },
+  "wd_five_days": {
+    "message": "five days"
   },
   "wd_foot_editing": {
     "message": "Drag to move, − to remove, + to add. Done when finished. This drawer: "
@@ -15687,11 +16262,294 @@
   "wd_fri": {
     "message": "Fri"
   },
+  "wd_funding_every": {
+    "message": "every $1h",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_funding_month_wait": {
+    "message": "The month's settlements come from Bybit."
+  },
+  "wd_funding_note": {
+    "message": "What one side of the perpetual pays the other at each settlement — OKX's rate now, Bybit's by day for the month."
+  },
+  "wd_funding_year": {
+    "message": "$1% a year",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_gainers": {
+    "message": "up most"
+  },
+  "wd_gas_note": {
+    "message": "The base fee every send pays, over the last twenty blocks, and a slow, usual and fast tip on top — priced for a plain ETH transfer."
+  },
+  "wd_halving_eta": {
+    "message": "about $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_halving_note": {
+    "message": "Every 210,000 blocks the reward for a block halves. The date assumes ten minutes a block."
+  },
+  "wd_height_now": {
+    "message": "height now"
+  },
+  "wd_highest": {
+    "message": "highest"
+  },
+  "wd_in_24h": {
+    "message": "in 24h"
+  },
+  "wd_in_month": {
+    "message": "in a month"
+  },
+  "wd_in_month_coins": {
+    "message": "in a month, in $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_in_span": {
+    "message": "in $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_largest_prints": {
+    "message": "largest forced closes · size · price"
+  },
+  "wd_last_change": {
+    "message": "last change"
+  },
+  "wd_liq_day": {
+    "message": "forced closes, 24h · OKX"
+  },
+  "wd_liq_day_short": {
+    "message": "24h · OKX"
+  },
+  "wd_liq_note": {
+    "message": "Positions the venue closed because their margin ran out, last 24 hours on OKX: a long closed is a sale into the market, a short closed a purchase."
+  },
+  "wd_long_pct": {
+    "message": "$1% long",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_long_share_line": {
+    "message": "long share, daily"
+  },
+  "wd_long_word": {
+    "message": "long"
+  },
+  "wd_longs_closed": {
+    "message": "longs $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_longs_pay": {
+    "message": "longs pay shorts"
+  },
+  "wd_longs_paying": {
+    "message": "longs paying"
+  },
+  "wd_losers": {
+    "message": "down most"
+  },
+  "wd_lowest": {
+    "message": "lowest"
+  },
+  "wd_ls_note": {
+    "message": "Of Bybit's accounts holding the $1 perpetual, the share long and short — counted by account, not by size.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_macro_note": {
+    "message": "When the next US CPI, jobs report, Fed statement and PCE come out — the releases the chart marks, from the agencies' own calendars."
+  },
+  "wd_market_note": {
+    "message": "Every coin's market value added up, from Coinlore, and the share of it in bitcoin and ether."
+  },
+  "wd_max_pain_on": {
+    "message": "max pain · $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_mempool_note": {
+    "message": "Transactions waiting for a block, from mempool.space, measured in blocks of about ten minutes each."
+  },
+  "wd_mo_band": {
+    "message": "80% band, $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_mo_tested": {
+    "message": "held $1% of $2 hours when tested",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
   "wd_mon": {
     "message": "Mon"
   },
+  "wd_month_ago": {
+    "message": "a month ago"
+  },
+  "wd_month_avg": {
+    "message": "month's average"
+  },
+  "wd_month_high": {
+    "message": "month's high"
+  },
+  "wd_month_low": {
+    "message": "month's low"
+  },
+  "wd_month_range": {
+    "message": "month's range"
+  },
+  "wd_most_in": {
+    "message": "most in"
+  },
+  "wd_most_out": {
+    "message": "most out"
+  },
+  "wd_movers_note": {
+    "message": "The 24-hour change of the top 100 coins by market value, from Coinlore — the ends of the list."
+  },
+  "wd_next_change": {
+    "message": "next, estimated"
+  },
+  "wd_nobody_pays": {
+    "message": "neither side pays"
+  },
   "wd_none_on": {
     "message": "No widgets are switched on."
+  },
+  "wd_now": {
+    "message": "now"
+  },
+  "wd_of_market_short": {
+    "message": "$1% of all",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_of_top_100": {
+    "message": "top 100 · 24h"
+  },
+  "wd_oi_leaders_note": {
+    "message": "The value of open perpetual contracts on Bybit, the largest eight and their share of the total."
+  },
+  "wd_oi_note": {
+    "message": "The value of perpetual contracts still open — a size, not a side. OKX now; Bybit's daily count in the coin for the month."
+  },
+  "wd_oi_okx": {
+    "message": "OKX perpetual, in dollars"
+  },
+  "wd_oi_okx_short": {
+    "message": "OKX perpetual"
+  },
+  "wd_oi_total": {
+    "message": "$1 perpetuals",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_open_bybit": {
+    "message": "open on Bybit"
+  },
+  "wd_options_note": {
+    "message": "From Bybit's options: max pain is the strike where holders would collect least at the nearest expiry; puts against calls and the at-the-money volatility are what is open now."
+  },
+  "wd_others": {
+    "message": "Others"
+  },
+  "wd_outlook_band": {
+    "message": "5th–95th of replays"
+  },
+  "wd_outlook_band_short": {
+    "message": "5–95% band"
+  },
+  "wd_over_span": {
+    "message": "over $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_peak": {
+    "message": "peak"
+  },
+  "wd_positive_word": {
+    "message": "positive"
+  },
+  "wd_puts_pct": {
+    "message": "puts $1%",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_range_word": {
+    "message": "range"
+  },
+  "wd_regime_after_short": {
+    "message": "20 days later · any day"
+  },
+  "wd_regime_count": {
+    "message": "$1 entries",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_regime_since": {
+    "message": "for $1 days",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
   },
   "wd_resize": {
     "message": "Drawer width"
@@ -15710,8 +16568,56 @@
   "wd_resize_title": {
     "message": "Drag to widen or narrow · double-click for the default width"
   },
+  "wd_rest_share": {
+    "message": "everything else"
+  },
+  "wd_reward_per_block": {
+    "message": "halvings · reward per block, BTC"
+  },
+  "wd_rsi_above_half": {
+    "message": "time above 50"
+  },
+  "wd_rsi_note": {
+    "message": "Momentum on a 0–100 scale (RSI 14, Wilder) over the range on screen. Tested on daily closes, high and low readings did not tell what came next."
+  },
+  "wd_rsi_points": {
+    "message": "readings"
+  },
+  "wd_rsi_scale": {
+    "message": "of 100"
+  },
   "wd_sat": {
     "message": "Sat"
+  },
+  "wd_send_plain": {
+    "message": "$1 to send",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_short_pct": {
+    "message": "$1% short",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_shorts_closed": {
+    "message": "shorts $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_shorts_pay": {
+    "message": "shorts pay longs"
+  },
+  "wd_shorts_paying": {
+    "message": "shorts paying"
   },
   "wd_show_n_hidden": {
     "message": "Show $1 hidden",
@@ -15721,6 +16627,9 @@
       }
     }
   },
+  "wd_since_trough": {
+    "message": "since the trough"
+  },
   "wd_size_aria": {
     "message": "$1 cards",
     "placeholders": {
@@ -15729,17 +16638,90 @@
       }
     }
   },
+  "wd_stable_note": {
+    "message": "The dollar stablecoins among the top 100 by market value, from Coinlore — their total, its share of the market, and the largest."
+  },
+  "wd_strikes_line": {
+    "message": "calls dark · puts light"
+  },
   "wd_sun": {
     "message": "Sun"
+  },
+  "wd_three_months": {
+    "message": "3 months"
   },
   "wd_thu": {
     "message": "Thu"
   },
+  "wd_tier_fast": {
+    "message": "fast"
+  },
+  "wd_tier_slow": {
+    "message": "slow"
+  },
+  "wd_tier_usual": {
+    "message": "usual"
+  },
+  "wd_time_left": {
+    "message": "time left"
+  },
+  "wd_to_send": {
+    "message": "~$1 to send",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_today": {
+    "message": "today"
+  },
+  "wd_trading_days": {
+    "message": "$1 trading days",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_trough": {
+    "message": "trough"
+  },
   "wd_tue": {
     "message": "Tue"
   },
+  "wd_turnover": {
+    "message": "volume / value"
+  },
+  "wd_twenty_days": {
+    "message": "twenty days"
+  },
+  "wd_unit_blocks": {
+    "message": "blocks"
+  },
+  "wd_unit_days": {
+    "message": "days"
+  },
+  "wd_up_today": {
+    "message": "up in 24h"
+  },
+  "wd_volume": {
+    "message": "volume"
+  },
+  "wd_volume_24h": {
+    "message": "24h volume"
+  },
   "wd_wed": {
     "message": "Wed"
+  },
+  "wd_week_ago": {
+    "message": "a week ago"
+  },
+  "wd_worst_mover": {
+    "message": "worst"
+  },
+  "wd_yesterday": {
+    "message": "yesterday"
   },
   "wdesc_altcoin_season": {
     "message": "Are altcoins outperforming Bitcoin?"

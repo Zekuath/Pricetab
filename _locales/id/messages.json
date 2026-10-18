@@ -1,4 +1,22 @@
 {
+  "ahead_days": {
+    "message": "dalam $1 hari"
+  },
+  "ahead_hours": {
+    "message": "dalam $1 jam"
+  },
+  "ahead_minutes": {
+    "message": "dalam $1 mnt"
+  },
+  "ahead_month": {
+    "message": "lebih dari sebulan lagi"
+  },
+  "ahead_now": {
+    "message": "sekarang"
+  },
+  "ahead_tomorrow": {
+    "message": "besok"
+  },
   "al_7d_hit_rate": {
     "message": "tingkat akurasi"
   },
@@ -370,6 +388,36 @@
   },
   "al_luck_title": {
     "message": "Setiap prediksi terwujud dengan peluang yang dimiliki kotaknya saat Anda menyebutnya. Jika peluang itu dijumlahkan sebagai lemparan koin terpisah, inilah seberapa sering hasilnya setidaknya sebanyak tebakan tepat Anda."
+  },
+  "al_mine_better": {
+    "message": " · peluang Anda bernilai lebih baik (selisih $1 sampai $2)"
+  },
+  "al_mine_brier": {
+    "message": "Brier, makin rendah makin baik: Anda $1 · papan $2 · $3 kotak"
+  },
+  "al_mine_few": {
+    "message": "$1 peluang Anda sudah selesai — dinilai mulai $2"
+  },
+  "al_mine_hint": {
+    "message": "Opsional, final setelah diberikan, dan hanya dalam dua menit pertama — catatan membandingkannya dengan peluang papan pada kotak yang sama."
+  },
+  "al_mine_label": {
+    "message": "Peluang Anda untuk kotak ini"
+  },
+  "al_mine_same": {
+    "message": " · tidak dapat dibedakan (selisih $1 sampai $2)"
+  },
+  "al_mine_set": {
+    "message": "peluang Anda $1%"
+  },
+  "al_mine_too_few": {
+    "message": " · terlalu sedikit untuk dibedakan"
+  },
+  "al_mine_vs": {
+    "message": "Anda dan papan"
+  },
+  "al_mine_worse": {
+    "message": " · peluang papan bernilai lebih baik (selisih $1 sampai $2)"
   },
   "al_missed": {
     "message": "Meleset"
@@ -998,15 +1046,6 @@
       }
     }
   },
-  "app_rate_ask": {
-    "message": "Suka dengan PriceTab? Penilaian adalah cara orang lain menemukannya — hanya butuh beberapa detik dan sangat membantu."
-  },
-  "app_rate_ask_call": {
-    "message": "Tebakan itu tepat. Jika PriceTab membantu Anda membaca pasar, rating adalah cara orang lain menemukannya — hanya butuh beberapa detik."
-  },
-  "app_rate_ask_target": {
-    "message": "Target Anda tercapai. Jika PriceTab berguna bagi Anda, rating adalah cara orang lain menemukannya — hanya butuh beberapa detik."
-  },
   "app_read_on": {
     "message": "Baca di "
   },
@@ -1334,8 +1373,23 @@
   "as_wed": {
     "message": "Rabu"
   },
+  "board_call_it": {
+    "message": "TEBAK"
+  },
+  "board_in_band": {
+    "message": "sekarang di dalam pita"
+  },
+  "board_locked": {
+    "message": "TERKUNCI"
+  },
+  "board_needs": {
+    "message": "perlu $1"
+  },
   "board_ordinary": {
     "message": "sejauh ini dalam waktu ini: $1 dari $2"
+  },
+  "board_settles": {
+    "message": "selesai $1"
   },
   "br_above_200d": {
     "message": "Di atas rata-rata 200 harinya"
@@ -3084,6 +3138,30 @@
   },
   "mo_withheld": {
     "message": "Evaluasi tidak lolos — tidak ada estimasi yang ditampilkan"
+  },
+  "mode_fast_desc": {
+    "message": "Harga paling baru: tiap sepuluh detik, dan tanpa apa pun yang butuh permintaan sendiri — tanpa widget, baris berita, atau bilah berjalan."
+  },
+  "mode_fast_name": {
+    "message": "Cepat"
+  },
+  "mode_holder_desc": {
+    "message": "Untuk sekadar melihat, bukan memantau: grafik tenang, pasar di sekitarnya, dan berita utama, tiap lima menit."
+  },
+  "mode_holder_name": {
+    "message": "Holder"
+  },
+  "mode_minimal_desc": {
+    "message": "Harga dan grafik, tidak lebih. Tab di tepi memudar sampai Anda menunjuknya; tombol keyboard tetap berfungsi."
+  },
+  "mode_minimal_name": {
+    "message": "Minimal"
+  },
+  "mode_trader_desc": {
+    "message": "Semua untuk membaca pergerakan: candle, volume, kisi, buka/tinggi/rendah/tutup pada crosshair, dan widget derivatif."
+  },
+  "mode_trader_name": {
+    "message": "Trader"
   },
   "mon_close": {
     "message": "Tutup monitor"
@@ -7866,6 +7944,30 @@
   "pp_zoom_reset_title": {
     "message": "Tampilkan seluruh rentang lagi"
   },
+  "pref_alarm_keywords": {
+    "message": "alarm notifikasi suara nada target tercapai likuidasi dihentikan peringatan alert notification sound"
+  },
+  "pref_alarm_notify_desc": {
+    "message": "Notifikasi sistem saat target tercapai atau kontrak dihentikan atau dilikuidasi, selama tab PriceTab terbuka"
+  },
+  "pref_alarm_notify_note": {
+    "message": "Chrome meminta izin notifikasi saat ini pertama kali dinyalakan, tidak pernah saat instalasi. Mati membisukan dan menyimpan izinnya, agar sore yang tenang tidak berarti meminta lagi; Cabut mengembalikan izin."
+  },
+  "pref_alarm_notify_pending": {
+    "message": "Dinyalakan, tetapi Chrome belum mengizinkan notifikasi — tekan lagi untuk ditanya"
+  },
+  "pref_alarm_notify_title": {
+    "message": "Notifikasi saat target tercapai"
+  },
+  "pref_alarm_sound_desc": {
+    "message": "Nada pendek yang dibuat di perangkat ini — diputar sekali saat dinyalakan agar Anda tahu suaranya"
+  },
+  "pref_alarm_sound_title": {
+    "message": "Suara saat target tercapai"
+  },
+  "pref_alarm_withdraw": {
+    "message": "Cabut izin"
+  },
   "pref_alert_tab_title_aria": {
     "message": "Aktifkan pengumuman target harga di judul tab"
   },
@@ -8139,6 +8241,12 @@
   "pref_companion_title": {
     "message": "Pendamping grafik"
   },
+  "pref_cost_desc": {
+    "message": "Pembelian mana yang dicocokkan dengan penjualan, untuk laba yang ditampilkan portofolio. Dicatat pada setiap penjualan saat direkam, jadi mengubahnya tidak pernah memutuskan ulang penjualan yang sudah ada."
+  },
+  "pref_cost_title": {
+    "message": "Metode basis biaya"
+  },
   "pref_currency_about": {
     "message": "Tentang mata uang"
   },
@@ -8185,6 +8293,12 @@
         "content": "$1"
       }
     }
+  },
+  "pref_feedback": {
+    "message": "Kirim masukan"
+  },
+  "pref_feedback_hint": {
+    "message": "Membuka formulir isu GitHub di tab baru — tidak ada yang dikirim dari sini"
   },
   "pref_gloss_contract": {
     "message": "Sebuah kontrak"
@@ -8243,6 +8357,12 @@
   "pref_glossary_title": {
     "message": "Apa Itu Kontrak Berjangka"
   },
+  "pref_group_alerts": {
+    "message": "Target & alarm"
+  },
+  "pref_group_alerts_desc": {
+    "message": "Bagaimana target yang tercapai, atau kontrak yang dihentikan, menarik perhatian Anda."
+  },
   "pref_group_basics": {
     "message": "Dasar"
   },
@@ -8264,8 +8384,20 @@
   "pref_group_data_desc": {
     "message": "Semua yang disimpan browser ini untuk PriceTab, dalam satu file yang bisa Anda bawa ke tempat lain."
   },
+  "pref_group_futures": {
+    "message": "Futures"
+  },
+  "pref_group_futures_desc": {
+    "message": "Pasar derivatif: penjelasannya, strip dan garisnya di grafik utama, dan konfirmasi sebelum membuka kontrak."
+  },
   "pref_group_open_contract": {
     "message": "Kontrak yang terbuka"
+  },
+  "pref_group_portfolio": {
+    "message": "Portofolio"
+  },
+  "pref_group_portfolio_desc": {
+    "message": "Bagaimana portofolio menghitung laba, dan apakah uangnya terlihat."
   },
   "pref_group_tab_tickers": {
     "message": "Tab & ticker"
@@ -8290,6 +8422,18 @@
   },
   "pref_group_webapp_desc_2": {
     "message": "Aplikasi di ponsel: ukuran semuanya, berjalan dari layar utama, geser dari sisi, layar tetap menyala, dan tempat aplikasi dibuka."
+  },
+  "pref_group_widgets": {
+    "message": "Widget"
+  },
+  "pref_group_widgets_desc": {
+    "message": "Kartu di laci kiri: seberapa besar terbaca, dan satu set untuk memulai."
+  },
+  "pref_hidden_desc": {
+    "message": "Uang dan jumlah tampil ••• bagi yang mengintip; persentase dan harga tetap. H melakukan hal sama dari mana saja"
+  },
+  "pref_hidden_title": {
+    "message": "Sembunyikan angka portofolio"
   },
   "pref_language_aria": {
     "message": "Bahasa"
@@ -8393,9 +8537,6 @@
   "pref_mode_custom_desc_empty": {
     "message": "Belum ada yang disimpan. Atur aplikasi sesuai selera, lalu tekan Simpan — setelah itu menekan mode lain tidak akan menghilangkannya."
   },
-  "pref_mode_custom_empty": {
-    "message": "Belum ada yang disimpan — tekan Simpan untuk menyimpan tatanan Anda sekarang"
-  },
   "pref_mode_custom_resave": {
     "message": "Simpan lagi"
   },
@@ -8405,8 +8546,14 @@
   "pref_mode_custom_save_title": {
     "message": "Simpan tampilan saat ini sebagai Kustom, menggantikan yang tersimpan"
   },
+  "pref_mode_in_use": {
+    "message": "Dipakai"
+  },
   "pref_modes": {
     "message": "Mode"
+  },
+  "pref_modes_keep": {
+    "message": "Mode mengatur belasan pengaturan di bagian lain sekaligus; mata uang, format angka, dan tema tetap seperti milik Anda."
   },
   "pref_modes_own_sections": {
     "message": "Bukan salah satu dari ini. Satu mode mengatur belasan pengaturan di bagian lain sekaligus; mata uang, format angka, dan tema tetap seperti yang Anda atur."
@@ -8588,6 +8735,9 @@
   "pref_phone_tabs_up": {
     "message": "Geser $1 ke kiri"
   },
+  "pref_portfolio_keywords": {
+    "message": "portofolio basis biaya fifo lifo hifo metode laba pajak sembunyi privasi angka portfolio cost basis hide"
+  },
   "pref_position_bottom": {
     "message": "Bawah"
   },
@@ -8722,6 +8872,32 @@
   },
   "pref_show": {
     "message": "Tampilkan"
+  },
+  "pref_storage_blocked": {
+    "message": "Browser ini tidak mengizinkan PriceTab membaca penyimpanannya."
+  },
+  "pref_storage_clear": {
+    "message": "Hapus cache dan muat ulang"
+  },
+  "pref_storage_desc": {
+    "message": "$1 milik Anda — koin, target, prediksi, portofolio, pengaturan — dan $2 harga dan berita dalam cache.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "pref_storage_keywords": {
+    "message": "penyimpanan ruang ukuran cache hapus perangkat lokal data storage cache clear"
+  },
+  "pref_storage_note": {
+    "message": "Semua tetap di penyimpanan lokal browser ini; tidak ada yang disimpan di tempat lain. Menghapus cache hanya membuang apa yang bisa diambil lagi dari jaringan — tab berikutnya mengambilnya lagi — lalu memuat ulang halaman."
+  },
+  "pref_storage_title": {
+    "message": "Tersimpan di perangkat ini"
   },
   "pref_studies_aria": {
     "message": "Studi mana yang digambar"
@@ -8957,6 +9133,29 @@
   "pref_webapp_wake_title": {
     "message": "Biarkan layar menyala"
   },
+  "pref_widget_bundle_desc": {
+    "message": "$1 widget aktif sekarang. Satu set mengganti mana yang aktif; ukuran dan urutannya tetap seperti yang Anda tinggalkan.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "pref_widget_bundle_title": {
+    "message": "Mulai dari satu set"
+  },
+  "pref_widget_keywords": {
+    "message": "widget kartu ukuran skala set preset holder trader minimal laci widgets cards size bundle"
+  },
+  "pref_widget_open": {
+    "message": "Atur widget"
+  },
+  "pref_widget_scale_desc": {
+    "message": "Semua di setiap kartu sekaligus. Bentuk tiap kartu — kecil, sedang, besar — dipilih di kartunya: tahan atau klik kanan."
+  },
+  "pref_widget_scale_title": {
+    "message": "Ukuran teks widget"
+  },
   "pt_tab_baserates": {
     "message": "Tingkat dasar"
   },
@@ -9038,11 +9237,47 @@
   "qs_word_target": {
     "message": "target"
   },
+  "rate_anyway": {
+    "message": "Tetap beri nilai"
+  },
+  "rate_aria": {
+    "message": "Beri nilai PriceTab"
+  },
+  "rate_ask": {
+    "message": "Bagaimana PriceTab bekerja untuk Anda?"
+  },
+  "rate_ask_call": {
+    "message": "Prediksi itu terbukti. Bagaimana PriceTab bekerja untuk Anda?"
+  },
+  "rate_ask_target": {
+    "message": "Target Anda tercapai. Bagaimana PriceTab bekerja untuk Anda?"
+  },
+  "rate_better": {
+    "message": "Terima kasih sudah memberi tahu. Apa yang ingin Anda ubah? Beri tahu kami membuka formulir di GitHub — tidak ada yang dikirim dari halaman ini."
+  },
+  "rate_choice_better": {
+    "message": "Bisa lebih baik"
+  },
+  "rate_choice_good": {
+    "message": "Bagus"
+  },
+  "rate_good": {
+    "message": "Senang membantu. Penilaian di Chrome Web Store adalah cara orang lain menemukan PriceTab — hanya beberapa detik."
+  },
   "rate_later": {
     "message": "Nanti saja — tanyakan lagi nanti"
   },
   "rate_never": {
     "message": "Jangan tanya lagi"
+  },
+  "rate_not_now": {
+    "message": "Nanti saja"
+  },
+  "rate_store": {
+    "message": "Beri nilai di Web Store"
+  },
+  "rate_tell": {
+    "message": "Beri tahu kami"
   },
   "read_candle": {
     "message": "$1 — buka $2, tertinggi $3, terendah $4, tutup $5"
@@ -9315,6 +9550,42 @@
   "set_add_failed": {
     "message": "Koin tidak bisa ditambahkan"
   },
+  "set_add_fewer": {
+    "message": "Tampilkan lebih sedikit"
+  },
+  "set_add_full": {
+    "message": "Daftar Anda berisi $1 koin, batas maksimal. Hapus satu untuk menambah yang lain.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "set_add_largest": {
+    "message": "Terbesar"
+  },
+  "set_add_more": {
+    "message": "Tampilkan $1 lagi",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "set_add_moving": {
+    "message": "Paling bergerak"
+  },
+  "set_add_one": {
+    "message": "Tambah $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "set_add_suggested": {
+    "message": "Saran"
+  },
   "set_already_listed": {
     "message": "Simbol ini sudah ada di daftar"
   },
@@ -9360,20 +9631,26 @@
   "set_nav_access": {
     "message": "Akses"
   },
+  "set_nav_app": {
+    "message": "Aplikasi & data"
+  },
+  "set_nav_features": {
+    "message": "Fitur"
+  },
   "set_nav_help": {
     "message": "Bantuan"
   },
   "set_no_coins": {
     "message": "Belum ada koin"
   },
+  "set_no_match": {
+    "message": "Tidak cocok — coba \"Bitcoin\" atau \"BTC\""
+  },
   "set_not_recognized": {
     "message": "$1 tidak dikenali"
   },
   "set_quick_add": {
     "message": "Tambah cepat"
-  },
-  "set_rate": {
-    "message": "Beri nilai"
   },
   "set_remove_coin": {
     "message": "Hapus $1"
@@ -10746,11 +11023,14 @@
   "tour_back": {
     "message": "Kembali"
   },
-  "tour_chapter_calling_a_square": {
-    "message": "Memprediksi kotak"
+  "tour_chapter_calls_targets": {
+    "message": "Prediksi & target"
   },
   "tour_chapter_making_it_yours": {
     "message": "Sesuaikan dengan Anda"
+  },
+  "tour_chapter_more": {
+    "message": "Lainnya"
   },
   "tour_chapter_reading_the_market": {
     "message": "Membaca pasar"
@@ -10770,11 +11050,28 @@
   "tour_done": {
     "message": "Selesai"
   },
+  "tour_keep": {
+    "message": "Biarkan seperti ini"
+  },
+  "tour_key_refresh": {
+    "message": "Segarkan sekarang"
+  },
   "tour_key_rotate": {
     "message": "Berputar antar koin Anda"
   },
+  "tour_key_theme": {
+    "message": "Terang atau gelap"
+  },
   "tour_keys_intro": {
     "message": "Tekan ? kapan saja untuk daftar lengkap. Beberapa yang layak diketahui sekarang:"
+  },
+  "tour_more_tips": {
+    "message": "$1 tips lagi →",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
   },
   "tour_next": {
     "message": "Lanjut"
@@ -10782,68 +11079,88 @@
   "tour_skip": {
     "message": "Lewati tur"
   },
-  "tour_text_01c": {
-    "message": "Grafik kripto langsung di setiap tab baru, tanpa meminta apa pun — tanpa akun, tanpa izin saat dipasang, dan tidak ada apa pun tentang Anda yang keluar dari perangkat ini. Tur ini beberapa langkah singkat dalam lima bab. Lewati kapan saja; Pengaturan dapat memutarnya ulang."
+  "tour_step_of": {
+    "message": "Langkah $1 dari $2",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
   },
-  "tour_text_02": {
-    "message": "Koin aktif Anda dan harga langsungnya, diperbarui selama tab terbuka dan dijeda saat tidak. Klik, atau gunakan tombol panah, untuk berpindah dalam daftar koin Anda."
+  "tour_text_calls_2": {
+    "message": "Nyalakan prediksi dan papan kotak tumbuh setelah sekarang, masing-masing dengan peluangnya. Klik sebuah kotak dua kali untuk mengunci prediksi; ia selesai sendiri dan masuk catatan yang hanya Anda simpan."
   },
-  "tour_text_03": {
-    "message": "Bagaimana harga bergerak sepanjang rentang di layar — bukan 24 jam tetap. Klik untuk beralih antara persen dan jumlah."
+  "tour_text_calls_phone": {
+    "message": "Nyalakan prediksi dan papan kotak tumbuh setelah sekarang, masing-masing dengan peluangnya. Ketuk sebuah kotak untuk membuat draf lalu kunci dari lembarnya; ia selesai sendiri dan masuk catatan yang hanya Anda simpan."
   },
-  "tour_text_04": {
-    "message": "Dari satu jam terakhir sampai seluruh riwayat. Tiap rentang menyimpan pengaturannya sendiri — papan yang Anda susun di 1H masih ada saat kembali."
+  "tour_text_companion_2": {
+    "message": "Nyalakan pendamping di pengaturan grafik dan ia menamai pola dan setup yang ditemukannya, masing-masing dengan apa yang terjadi sesudahnya di koin ini — sebagian besar tidak lebih baik dari hari biasa, dan ia mengatakannya."
   },
-  "tour_text_05": {
-    "message": "Ketik simbol atau nama. Koin Anda diurutkan lebih dulu, dan memilih yang belum Anda ikuti akan menambahkannya. Pencarian yang sama memilih koin untuk target harga."
+  "tour_text_compare_2": {
+    "message": "Tumpuk koin lain, atau S&P 500, Nasdaq 100, atau emas, di atas grafik — keduanya sebagai perubahan persen di satu skala, tidak pernah dua sumbu."
   },
-  "tour_text_06_drawer": {
-    "message": "Laci berisi apa yang ditaruh di atas grafik: koin Anda, koin apa pun, dan pasar — S&P 500, Nasdaq 100, emas. Kedua garis adalah persentase perubahan sejak awal rentang, pada satu skala bersama — tidak pernah dua sumbu, trik yang membuat dua garis apa pun tampak berkaitan. Berhenti ada di laci dan di bawah harga."
+  "tour_text_drag_2": {
+    "message": "Seret menembus waktu dan harga. Roda menggulir memperbesar di titik yang Anda tunjuk; klik ganda mengembalikan semuanya."
   },
-  "tour_text_07": {
-    "message": "T mengganti garis dengan candle. G menaruh jaring harga dan waktu di belakang grafik agar Anda bisa membaca level. Di bawah harga ada tertinggi dan terendah rentang, serta harga rata-rata tertimbang volume bila data candle kebetulan sudah dimuat — tidak pernah diambil hanya untuk itu."
+  "tour_text_drag_phone": {
+    "message": "Seret menembus waktu dan harga, cubit untuk zoom, dan ketuk dua kali untuk kembali. Tahan satu jari untuk membaca satu titik."
   },
-  "tour_text_09": {
-    "message": "Sebuah prediksi adalah klaim: koin ini, di pita harga ini, pada waktu ini. Ia menyelesaikan dirinya sendiri di tab berikutnya dan masuk ke catatan yang Anda simpan. Tidak ada yang bernilai, tidak ada yang berharga, dan tidak ada yang meninggalkan perangkat — ini cara mengetahui apakah Anda benar-benar jago."
+  "tour_text_jump_2": {
+    "message": "Ketik simbol atau nama; memilih koin yang belum Anda pantau akan menambahkannya. Ia juga menerima perintah — coba \"eth 1w\" atau \"compare spx\"."
   },
-  "tour_text_10b": {
-    "message": "Nyalakan tebakan dan papan kotak tumbuh di kanan saat ini, masing-masing dengan peluang harga berada di dalamnya saat kolomnya berakhir — dihitung dari candle koin ini sendiri dan diuji pada kotak-kotak bertahun-tahun sebelum diizinkan. Klik kotak sekali untuk membuat draf dan sekali lagi untuk menguncinya: dua klik, karena satu klik nyasar tidak boleh mengikat sebuah prediksi. Seret papan ke atas atau ke bawah untuk melihat harga lain, ke samping untuk menukar riwayat dengan papan, dan gunakan pil di kanan atas untuk mengubah nilai satu kotak."
+  "tour_text_market_2": {
+    "message": "Berita dengan sumber dan usianya, tanpa iklan. Monitor (M) menyandingkan koin Anda, memetakan pasar, dan menghitung apa yang terjadi setelah hari seperti hari ini."
   },
-  "tour_text_12": {
-    "message": "Jumlah yang Anda ketik sendiri, lengkap dengan pembelian dan penjualan bila ingin biaya perolehan dan laba. FIFO, LIFO, atau HIFO — sebuah metode pelaporan, bukan perhitungan pajak, dan laporannya menyebut metode tiap baris. Semuanya tersimpan di perangkat ini dan tidak ada dompet yang perlu dihubungkan."
+  "tour_text_market_phone": {
+    "message": "Di Lainnya: berita dengan sumber dan usianya, dan monitor — koin Anda berdampingan, peta pasar, dan apa yang terjadi setelah hari seperti hari ini."
   },
-  "tour_text_13": {
-    "message": "Tempel alamat publik Bitcoin, Ethereum, Litecoin, Dogecoin, Bitcoin Cash, atau Zcash dan saldonya dibaca untuk Anda — termasuk token ERC-20 yang dipegang alamat Ethereum, dalam satu permintaan. Alamat hanya dikirim ke layanan saldo, dan jika sebuah chain tidak bisa dibaca, PriceTab menyebut chain-nya alih-alih menyuruh Anda memeriksa alamat yang sebenarnya baik-baik saja."
+  "tour_text_pick_setup": {
+    "message": "Mode mengatur belasan pengaturan sekaligus; semuanya bisa diubah nanti. Atau biarkan seperti ini."
   },
-  "tour_text_14b": {
-    "message": "Beri tahu saya saat BTC naik di atas suatu angka, bergerak 5% dalam sehari, atau saat semua yang saya pegang bernilai kurang dari X. Target adalah garis pada grafik, dan klik pada grafik memilih harganya. Anda diberi tahu di tab baru berikutnya — atau, jika alarm dinyalakan, lewat notifikasi dan nada; izin itu hanya diminta saat itu."
+  "tour_text_portfolio_2": {
+    "message": "Yang Anda miliki, dengan biaya dan laba bila menambah pembelian — atau alamat publik yang dibacakan untuk Anda. Tersimpan di perangkat ini; tanpa dompet untuk dihubungkan."
   },
-  "tour_text_15c": {
-    "message": "Setiap judul dengan sumber dan usianya, dipersempit menurut koin, sumber, atau pencarian, tanpa iklan. Tekan sebuah judul sekali dan ia terbuka di samping daftar — teks berita itu sendiri bila redaksinya mengizinkan, dan bacaan yang dihitung; tekan lagi untuk membuka halamannya."
+  "tour_text_price_2": {
+    "message": "Harga langsung koin Anda. Klik, atau tekan ← →, untuk berpindah antar koin."
   },
-  "tour_text_16b": {
-    "message": "Bertahun-tahun candle harian koin ini dan apa yang mengikuti setiap kali ia berada dalam suatu keadaan, di samping hari biasa — dengan berapa kali setiap angka didasarkan. Layar ini dibuka dengan apa yang datang setelah semua yang berlaku sekarang. Ia tidak pernah bilang beli atau jual: saat diuji, hampir tidak ada yang membedakan hari-hari berikutnya dari hari mana pun, dan mengatakannya lebih berguna daripada sebuah panah."
+  "tour_text_price_phone": {
+    "message": "Harga langsung koin Anda. Ketuk untuk pindah ke koin berikutnya di daftar."
   },
-  "tour_text_17_pin": {
-    "message": "Watchlist, Fear & Greed, funding, biaya, dan lainnya, dalam laci di tepi kiri, disusun seperti ponsel menyusun widgetnya. Edit, lalu + menambah satu dengan ukuran yang Anda geser; tahan atau klik kanan kartu untuk ukurannya, menghapusnya, atau menyematkannya ke layar utama."
+  "tour_text_range_2": {
+    "message": "Dari satu jam terakhir hingga sepanjang waktu. Setiap rentang menyimpan tampilan dan papannya sendiri."
   },
-  "tour_text_19": {
-    "message": "Koin, mata uang, tema, widget, dan ticker, dengan kotak pencarian di atas Preferensi. Baris mode mengatur belasan di antaranya sekaligus — Minimal, Cepat, Trader, Pemegang — dan tidak pernah menyentuh mata uang, format angka, atau tema Anda."
+  "tour_text_settings_2": {
+    "message": "Koin, mata uang, tema, alarm, dan lainnya, dengan kotak pencarian. Tekan ? di sana untuk semua tombol."
   },
-  "tour_text_companion": {
-    "message": "Nyalakan pendamping grafik di pengaturan grafik (V) dan ia menyebut pola, setup, dan bacaan yang ditemukannya — segitiga, persilangan, divergensi, awan Ichimoku — di tempat terjadinya, masing-masing dengan apa yang mengikuti pada koin ini dan hasilnya saat diuji pada empat koin. Sebagian besar tidak lebih baik daripada hari biasa, dan ia mengatakannya."
+  "tour_text_settings_phone": {
+    "message": "Koin, mata uang, tema, alarm, dan lainnya, dengan kotak pencarian — di Lainnya."
   },
-  "tour_text_drag": {
-    "message": "Seret grafik ke arah mana pun: ke samping melintasi waktu, naik turun melintasi harga. Roda atau dua jari memperbesar di tempat yang Anda tunjuk, menyeret melewati titik tertua membuka rentang yang lebih panjang, dan klik ganda mengembalikan semuanya. Saat grafik terfokus, ← dan → membacanya titik demi titik."
+  "tour_text_targets_2": {
+    "message": "Dapatkan pemberitahuan saat harga tercapai atau koin bergerak 5% dalam sehari. Klik di grafik memilih harganya; alarm bisa menambahkan notifikasi dan nada."
   },
-  "tour_text_tools": {
-    "message": "Tanda + di ujung baris rentang membuka alat: penggaris yang mengatakan seberapa sering gerakan sebesar itu terjadi, serta garis, sinar, kotak, dan catatan yang tetap bersama koinnya. Shift dan seret mengukur di mana saja; garis horizontal bisa menjadi target harga."
+  "tour_text_targets_phone": {
+    "message": "Dapatkan pemberitahuan saat harga tercapai atau koin bergerak 5% dalam sehari; alarm bisa menambahkan notifikasi dan nada."
+  },
+  "tour_text_tools_2": {
+    "message": "Tanda + di ujung baris rentang membuka alat: penggaris yang menghitung seberapa sering gerakan sebesar itu terjadi, serta garis, kotak, dan catatan yang tetap bersama koin."
+  },
+  "tour_text_two_ways_2": {
+    "message": "T mengganti garis dengan candle; G memasang kisi harga dan waktu di belakang grafik. Keduanya juga ada di pengaturan grafik (V)."
+  },
+  "tour_text_welcome_2": {
+    "message": "Harga kripto langsung di setiap tab baru. Tanpa akun, tanpa izin saat instalasi, dan tidak ada data Anda yang keluar dari perangkat ini. Beberapa langkah singkat — lewati kapan saja."
   },
   "tour_text_whats_new": {
     "message": "Beberapa langkah singkat tentang apa yang berubah sejak versi terakhir Anda. Lewati kapan saja; Pengaturan dapat memutar ulang tur lengkapnya."
   },
-  "tour_title_change": {
-    "message": "Perubahan"
+  "tour_text_widgets_2": {
+    "message": "Fear & Greed, funding, biaya, dan lainnya sebagai kartu, masing-masing dalam tiga ukuran yang menampilkan hal berbeda. Tahan atau klik kanan kartu untuk mengubahnya."
+  },
+  "tour_text_widgets_phone": {
+    "message": "Fear & Greed, funding, biaya, dan lainnya sebagai kartu, masing-masing dalam tiga ukuran yang menampilkan hal berbeda — di Lainnya. Tahan kartu untuk mengubahnya."
   },
   "tour_title_companion": {
     "message": "Pendamping yang menghitung"
@@ -10857,9 +11174,6 @@
   "tour_title_everything_else_lives_here": {
     "message": "Semua yang lain ada di sini"
   },
-  "tour_title_has_this_happened_before": {
-    "message": "Pernahkah ini terjadi?"
-  },
   "tour_title_it_is_faster_from_the_keyboard": {
     "message": "Lebih cepat lewat keyboard"
   },
@@ -10872,11 +11186,8 @@
   "tour_title_move_around": {
     "message": "Bergerak di dalamnya"
   },
-  "tour_title_news": {
-    "message": "Berita"
-  },
-  "tour_title_or_watch_an_address": {
-    "message": "Atau pantau sebuah alamat"
+  "tour_title_pick_setup": {
+    "message": "Pilih titik awal"
   },
   "tour_title_portfolio": {
     "message": "Portofolio"
@@ -10884,11 +11195,11 @@
   "tour_title_price_targets": {
     "message": "Target harga"
   },
+  "tour_title_read_market": {
+    "message": "Berita dan monitor"
+  },
   "tour_title_say_where_you_think_it_goes": {
     "message": "Katakan menurut Anda ke mana arahnya"
-  },
-  "tour_title_the_board": {
-    "message": "Papan"
   },
   "tour_title_time_range": {
     "message": "Rentang waktu"
@@ -10926,11 +11237,98 @@
   "view_zoomed_short": {
     "message": "Diperbesar"
   },
+  "wd_accounts": {
+    "message": "menurut akun, bukan uang"
+  },
+  "wd_accounts_short": {
+    "message": "dari akun"
+  },
   "wd_all_hidden": {
     "message": "Semua widget disembunyikan."
   },
   "wd_all_widgets": {
     "message": "‹ Semua widget"
+  },
+  "wd_alt_alt_end": {
+    "message": "BTC 40%−"
+  },
+  "wd_alt_btc_end": {
+    "message": "BTC 65%+"
+  },
+  "wd_alt_from_dom": {
+    "message": "BTC memegang $1% pasar",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_alt_note": {
+    "message": "Bukan pengukuran tersendiri: pangsa bitcoin di seluruh pasar (Coinlore), ditaruh pada skala di mana 65% atau lebih bernilai 0 dan 40% atau kurang bernilai 100. Kata musim ada di 25 dan 75."
+  },
+  "wd_avg_day": {
+    "message": "hari rata-rata"
+  },
+  "wd_base_tip": {
+    "message": "dasar $1 · tip $2",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "wd_block_each": {
+    "message": "satu kotak per blok"
+  },
+  "wd_blocks_ago": {
+    "message": "$1 blok lalu",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_blocks_left": {
+    "message": "sisa $1 blok",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_blocks_to_go": {
+    "message": "blok lagi"
+  },
+  "wd_board_note": {
+    "message": "Setiap perpetual yang ditampilkan aplikasi ini di Bybit, diurutkan dari tarif terendah ke tertinggi — di atas nol, long membayar short."
+  },
+  "wd_btc_dom_short": {
+    "message": "BTC $1%",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_btc_per_eth": {
+    "message": "BTC untuk satu ETH"
+  },
+  "wd_btc_share": {
+    "message": "pangsa BTC"
+  },
+  "wd_by_fee": {
+    "message": "menunggu, menurut tarif biaya (sat/vB)"
+  },
+  "wd_calls_pct": {
+    "message": "call $1%",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
   },
   "wd_cancel": {
     "message": "Batal"
@@ -10938,14 +11336,118 @@
   "wd_card_size": {
     "message": "Ukuran kartu"
   },
+  "wd_clear_in": {
+    "message": "sekitar $1 untuk kosong",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
   "wd_close": {
     "message": "Tutup widget"
+  },
+  "wd_day_ago": {
+    "message": "sehari lalu"
+  },
+  "wd_days_longs_paid": {
+    "message": "hari long membayar"
+  },
+  "wd_difficulty_note": {
+    "message": "Setiap 2.016 blok jaringan menyetel ulang seberapa sulit menemukan blok, agar blok tetap datang sekitar tiap sepuluh menit. Dari mempool.space."
   },
   "wd_done": {
     "message": "Selesai"
   },
   "wd_edit_widgets": {
     "message": "Edit"
+  },
+  "wd_epoch_done": {
+    "message": "$1% dari 2.016 blok",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_era_done": {
+    "message": "$1% era ini telah ditambang",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_estimated": {
+    "message": "perubahan berikut, perkiraan"
+  },
+  "wd_etf_day": {
+    "message": "$1 · bersih, dana spot AS",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_etf_day_short": {
+    "message": "$1, bersih",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_etf_note": {
+    "message": "Yang masuk ke dan keluar dari ETF bitcoin spot AS setiap hari perdagangan — catatan TFTC dari SoSoValue dan Farside."
+  },
+  "wd_ethbtc_note": {
+    "message": "Berapa bitcoin yang dibeli satu ether — hari ini dari cuplikan harga, bulan-bulannya dari buku ETH-BTC Coinbase Exchange."
+  },
+  "wd_fall_note": {
+    "message": "Penurunan terdalam dari puncak ke titik terendah sesudahnya dalam rentang di layar — seberapa buruk yang terjadi, bukan seberapa buruk bisa terjadi."
+  },
+  "wd_fall_took": {
+    "message": "penurunan berlangsung"
+  },
+  "wd_fee_day": {
+    "message": "biaya median tiap blok, 24 jam terakhir"
+  },
+  "wd_fee_economy": {
+    "message": "hemat"
+  },
+  "wd_fee_fast_line": {
+    "message": "$1 untuk ~10 mnt",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_fee_half": {
+    "message": "~30 mnt"
+  },
+  "wd_fee_hour": {
+    "message": "~1 jam"
+  },
+  "wd_fee_next": {
+    "message": "~10 mnt"
+  },
+  "wd_fee_note": {
+    "message": "Satoshi per byte virtual untuk dikonfirmasi pada tiap tenggat, dari mempool.space, dan biaya kiriman umum 141 vB."
+  },
+  "wd_fees_waiting_line": {
+    "message": "$1 BTC dalam biaya",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_fg_note": {
+    "message": "Indeks sentimen Alternative.me, 0 sampai 100, satu bacaan per hari — angka dan kata mereka."
+  },
+  "wd_five_days": {
+    "message": "lima hari"
   },
   "wd_foot_editing": {
     "message": "Seret untuk memindah, − untuk menghapus, + untuk menambah. Selesai bila sudah. Laci ini: "
@@ -10962,11 +11464,294 @@
   "wd_fri": {
     "message": "Jum"
   },
+  "wd_funding_every": {
+    "message": "setiap $1 jam",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_funding_month_wait": {
+    "message": "Penyelesaian bulan ini berasal dari Bybit."
+  },
+  "wd_funding_note": {
+    "message": "Yang dibayar satu sisi perpetual ke sisi lain di setiap penyelesaian — tarif OKX sekarang, Bybit per hari selama sebulan."
+  },
+  "wd_funding_year": {
+    "message": "$1% per tahun",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_gainers": {
+    "message": "naik terbanyak"
+  },
+  "wd_gas_note": {
+    "message": "Biaya dasar yang dibayar setiap kiriman selama dua puluh blok terakhir, ditambah tip lambat, biasa, dan cepat — untuk transfer ETH biasa."
+  },
+  "wd_halving_eta": {
+    "message": "sekitar $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_halving_note": {
+    "message": "Setiap 210.000 blok, imbalan per blok berkurang setengah. Tanggalnya mengandaikan sepuluh menit per blok."
+  },
+  "wd_height_now": {
+    "message": "tinggi sekarang"
+  },
+  "wd_highest": {
+    "message": "tertinggi"
+  },
+  "wd_in_24h": {
+    "message": "dalam 24 jam"
+  },
+  "wd_in_month": {
+    "message": "dalam sebulan"
+  },
+  "wd_in_month_coins": {
+    "message": "dalam sebulan, dalam $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_in_span": {
+    "message": "dalam $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_largest_prints": {
+    "message": "penutupan paksa terbesar · ukuran · harga"
+  },
+  "wd_last_change": {
+    "message": "perubahan terakhir"
+  },
+  "wd_liq_day": {
+    "message": "penutupan paksa, 24 jam · OKX"
+  },
+  "wd_liq_day_short": {
+    "message": "24 jam · OKX"
+  },
+  "wd_liq_note": {
+    "message": "Posisi yang ditutup bursa karena marginnya habis, 24 jam terakhir di OKX: long yang ditutup adalah penjualan ke pasar, short yang ditutup adalah pembelian."
+  },
+  "wd_long_pct": {
+    "message": "$1% long",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_long_share_line": {
+    "message": "pangsa long, harian"
+  },
+  "wd_long_word": {
+    "message": "long"
+  },
+  "wd_longs_closed": {
+    "message": "long $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_longs_pay": {
+    "message": "long membayar short"
+  },
+  "wd_longs_paying": {
+    "message": "long membayar"
+  },
+  "wd_losers": {
+    "message": "turun terbanyak"
+  },
+  "wd_lowest": {
+    "message": "terendah"
+  },
+  "wd_ls_note": {
+    "message": "Dari akun Bybit yang memegang perpetual $1, pangsa long dan short — dihitung per akun, bukan per ukuran.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_macro_note": {
+    "message": "Kapan CPI AS, laporan tenaga kerja, pernyataan Fed, dan PCE berikutnya terbit — rilis yang ditandai grafik, dari kalender lembaga masing-masing."
+  },
+  "wd_market_note": {
+    "message": "Nilai pasar semua koin dijumlahkan, dari Coinlore, dan pangsa bitcoin dan ether di dalamnya."
+  },
+  "wd_max_pain_on": {
+    "message": "max pain · $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_mempool_note": {
+    "message": "Transaksi yang menunggu blok, dari mempool.space, diukur dalam blok sekitar sepuluh menit masing-masing."
+  },
+  "wd_mo_band": {
+    "message": "pita 80%, $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_mo_tested": {
+    "message": "tepat $1% dari $2 jam saat diuji",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
   "wd_mon": {
     "message": "Sen"
   },
+  "wd_month_ago": {
+    "message": "sebulan lalu"
+  },
+  "wd_month_avg": {
+    "message": "rata-rata bulan"
+  },
+  "wd_month_high": {
+    "message": "tertinggi bulan"
+  },
+  "wd_month_low": {
+    "message": "terendah bulan"
+  },
+  "wd_month_range": {
+    "message": "rentang bulan"
+  },
+  "wd_most_in": {
+    "message": "masuk terbesar"
+  },
+  "wd_most_out": {
+    "message": "keluar terbesar"
+  },
+  "wd_movers_note": {
+    "message": "Perubahan 24 jam dari 100 koin terbesar menurut nilai pasar, dari Coinlore — ujung-ujung daftarnya."
+  },
+  "wd_next_change": {
+    "message": "berikutnya, perkiraan"
+  },
+  "wd_nobody_pays": {
+    "message": "tidak ada yang membayar"
+  },
   "wd_none_on": {
     "message": "Tidak ada widget yang aktif."
+  },
+  "wd_now": {
+    "message": "sekarang"
+  },
+  "wd_of_market_short": {
+    "message": "$1% dari semua",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_of_top_100": {
+    "message": "100 teratas · 24 jam"
+  },
+  "wd_oi_leaders_note": {
+    "message": "Nilai kontrak perpetual terbuka di Bybit, delapan terbesar dan pangsanya dari total."
+  },
+  "wd_oi_note": {
+    "message": "Nilai kontrak perpetual yang masih terbuka — ukuran, bukan sisi. OKX sekarang; hitungan harian Bybit dalam koin selama sebulan."
+  },
+  "wd_oi_okx": {
+    "message": "perpetual OKX, dalam dolar"
+  },
+  "wd_oi_okx_short": {
+    "message": "perpetual OKX"
+  },
+  "wd_oi_total": {
+    "message": "$1 perpetual",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_open_bybit": {
+    "message": "terbuka di Bybit"
+  },
+  "wd_options_note": {
+    "message": "Dari opsi Bybit: max pain adalah strike di mana pemegang menerima paling sedikit pada jatuh tempo terdekat; put lawan call dan volatilitas at-the-money adalah yang terbuka sekarang."
+  },
+  "wd_others": {
+    "message": "Lainnya"
+  },
+  "wd_outlook_band": {
+    "message": "ke-5–95 dari ulangan"
+  },
+  "wd_outlook_band_short": {
+    "message": "pita 5–95%"
+  },
+  "wd_over_span": {
+    "message": "selama $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_peak": {
+    "message": "puncak"
+  },
+  "wd_positive_word": {
+    "message": "positif"
+  },
+  "wd_puts_pct": {
+    "message": "put $1%",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_range_word": {
+    "message": "rentang"
+  },
+  "wd_regime_after_short": {
+    "message": "20 hari kemudian · hari mana pun"
+  },
+  "wd_regime_count": {
+    "message": "$1 masuk",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_regime_since": {
+    "message": "selama $1 hari",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
   },
   "wd_resize": {
     "message": "Lebar laci"
@@ -10980,26 +11765,150 @@
   "wd_resize_title": {
     "message": "Seret untuk melebarkan atau menyempitkan · klik dua kali untuk lebar bawaan"
   },
+  "wd_rest_share": {
+    "message": "sisanya"
+  },
+  "wd_reward_per_block": {
+    "message": "halving · imbalan per blok, BTC"
+  },
+  "wd_rsi_above_half": {
+    "message": "waktu di atas 50"
+  },
+  "wd_rsi_note": {
+    "message": "Momentum pada skala 0–100 (RSI 14, Wilder) atas rentang di layar. Diuji pada penutupan harian, bacaan tinggi dan rendah tidak menunjukkan apa yang terjadi berikutnya."
+  },
+  "wd_rsi_points": {
+    "message": "bacaan"
+  },
+  "wd_rsi_scale": {
+    "message": "dari 100"
+  },
   "wd_sat": {
     "message": "Sab"
+  },
+  "wd_send_plain": {
+    "message": "$1 untuk kirim",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_short_pct": {
+    "message": "$1% short",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_shorts_closed": {
+    "message": "short $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_shorts_pay": {
+    "message": "short membayar long"
+  },
+  "wd_shorts_paying": {
+    "message": "short membayar"
   },
   "wd_show_n_hidden": {
     "message": "Tampilkan $1 tersembunyi"
   },
+  "wd_since_trough": {
+    "message": "sejak titik terendah"
+  },
   "wd_size_aria": {
     "message": "Kartu $1"
+  },
+  "wd_stable_note": {
+    "message": "Stablecoin dolar di antara 100 teratas menurut nilai pasar, dari Coinlore — totalnya, pangsanya di pasar, dan yang terbesar."
+  },
+  "wd_strikes_line": {
+    "message": "call gelap · put terang"
   },
   "wd_sun": {
     "message": "Min"
   },
+  "wd_three_months": {
+    "message": "3 bulan"
+  },
   "wd_thu": {
     "message": "Kam"
+  },
+  "wd_tier_fast": {
+    "message": "cepat"
+  },
+  "wd_tier_slow": {
+    "message": "lambat"
+  },
+  "wd_tier_usual": {
+    "message": "biasa"
+  },
+  "wd_time_left": {
+    "message": "sisa waktu"
+  },
+  "wd_to_send": {
+    "message": "~$1 untuk kirim",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_today": {
+    "message": "hari ini"
+  },
+  "wd_trading_days": {
+    "message": "$1 hari perdagangan",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "wd_trough": {
+    "message": "titik terendah"
   },
   "wd_tue": {
     "message": "Sel"
   },
+  "wd_turnover": {
+    "message": "volume / nilai"
+  },
+  "wd_twenty_days": {
+    "message": "dua puluh hari"
+  },
+  "wd_unit_blocks": {
+    "message": "blok"
+  },
+  "wd_unit_days": {
+    "message": "hari"
+  },
+  "wd_up_today": {
+    "message": "naik dalam 24 jam"
+  },
+  "wd_volume": {
+    "message": "volume"
+  },
+  "wd_volume_24h": {
+    "message": "volume 24 jam"
+  },
   "wd_wed": {
     "message": "Rab"
+  },
+  "wd_week_ago": {
+    "message": "seminggu lalu"
+  },
+  "wd_worst_mover": {
+    "message": "terburuk"
+  },
+  "wd_yesterday": {
+    "message": "kemarin"
   },
   "wdesc_altcoin_season": {
     "message": "Apakah altcoin mengungguli Bitcoin?"
