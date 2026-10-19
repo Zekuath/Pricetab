@@ -8654,8 +8654,8 @@
   "pref_group_webapp": {
     "message": "Bu telefon"
   },
-  "pref_group_webapp_desc_2": {
-    "message": "Telefondaki uygulama: her şeyin boyutu, ana ekrandan çalışması, kenarlardan kaydırma, açık kalan ekran ve açıldığı yer."
+  "pref_group_webapp_desc_3": {
+    "message": "Telefondaki uygulama: her şeyin boyutu, ana ekrandan açılması, sekme çubuğu, ekranın açık tutulması ve nerede açılacağı."
   },
   "pref_group_widgets": {
     "message": "Widget'lar"
@@ -8918,35 +8918,35 @@
   "pref_page_ticker_title": {
     "message": "Fiyat şeridi"
   },
-  "pref_phone_nav_aria": {
-    "message": "Telefonda nasıl gezinilir"
+  "pref_phone_bar_pos_bottom": {
+    "message": "Alt"
   },
-  "pref_phone_nav_bar": {
-    "message": "Sekme çubuğu ve kaydırma"
+  "pref_phone_bar_pos_desc": {
+    "message": "Sekme çubuğunun ekranın hangi kenarında duracağı. Sayfa nerede olursa olsun ona yer bırakır."
   },
-  "pref_phone_nav_desc": {
-    "message": "Alttaki sekme çubuğu ya da yalnızca kaydırma: çubuk olmadan grafik onun yüksekliğini alır ve her sekme sol ya da sağ kenardan kaydırınca gelir."
+  "pref_phone_bar_pos_heading": {
+    "message": "Sekme çubuğunun yeri"
   },
-  "pref_phone_nav_heading": {
-    "message": "Gezinme"
+  "pref_phone_bar_pos_keywords": {
+    "message": "sekme çubuğu yer konum üst alt sol sağ yan menü gezinme başparmak"
   },
-  "pref_phone_nav_keywords": {
-    "message": "sekme çubuğu alt menü gezinme kaydırma kenar kolon çubuğu gizle daha fazla yer"
+  "pref_phone_bar_pos_left": {
+    "message": "Sol"
   },
-  "pref_phone_nav_swipe": {
-    "message": "Yalnızca kaydırma"
+  "pref_phone_bar_pos_right": {
+    "message": "Sağ"
   },
-  "pref_phone_nav_title": {
-    "message": "Gezinme"
+  "pref_phone_bar_pos_title": {
+    "message": "Sekme çubuğunun yeri"
+  },
+  "pref_phone_bar_pos_top": {
+    "message": "Üst"
   },
   "pref_phone_tabs_add_aria": {
     "message": "Çubuğa ekle"
   },
   "pref_phone_tabs_desc": {
     "message": "Çubukta en fazla $1 yer, senin sıranla. Gerisi Daha fazla'da."
-  },
-  "pref_phone_tabs_desc_off": {
-    "message": "Çubuk kapalı (Gezinme): burada ayarlanan, çubukla birlikte geri gelir."
   },
   "pref_phone_tabs_down": {
     "message": "$1 sağa taşı"

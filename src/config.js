@@ -2087,17 +2087,17 @@ const WEBAPP_WAKE_KEY = "crypto_chart_webapp_wake";
 const WEBAPP_START_KEY = "crypto_chart_webapp_start";
 const WEBAPP_STARTS = ["chart", "portfolio", "futures", "monitor", "news"];
 const DEFAULT_WEBAPP_START = "chart";
-/* **How a phone gets around** (12 Oct 2026): "bar" is
- * the tab bar at the foot (the browser's own, or the iPhone app's), with the
- * edge swipes beside it; "swipe" takes the bar away and the page reaches the
- * glass — every tab is in the two side columns, a swipe from either edge.
- * The swipes stay with the bar because the iPhone app's bar carries five
- * screens and no More: News, the base rates, the monitor and the chart's
- * drawers are only in the columns there. Read before React by theme-init.js,
- * which sets `data-phone-nav` on the root so the first frame is laid out right. */
-const PHONE_NAV_KEY = "crypto_chart_phone_nav";
-const PHONE_NAV_OPTIONS = ["bar", "swipe"];
-const DEFAULT_PHONE_NAV = "bar";
+/* **Where the phone's tab bar sits** (19 Oct 2026): on a phone in a browser
+ * the tab bar is the one way around — the edge swipes are gone there, since
+ * iOS and Safari keep the edges for themselves — and it can stand at any side
+ * of the screen. Read before React by theme-init.js, which sets
+ * `data-phone-bar-at` on the root (absent for the foot) so the first frame is
+ * laid out right. The iPhone app draws its own bar and keeps its swipes. It
+ * replaced "Getting around" (bar or swipes alone, 12 Oct 2026), whose stored
+ * key is no longer read. */
+const PHONE_BAR_POS_KEY = "crypto_chart_phone_bar_pos";
+const PHONE_BAR_POS_OPTIONS = ["bottom", "top", "left", "right"];
+const DEFAULT_PHONE_BAR_POS = "bottom";
 /* **The tab bar is the person's own** (13 Oct 2026): which places sit on the
  * phone's bar and in what order — at most PHONE_TABS_MAX beside More, which
  * holds everything else. Set in Settings → This phone, so only where there is

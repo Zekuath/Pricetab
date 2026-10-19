@@ -151,7 +151,7 @@
  "s2.monitor.h": "Suas moedas numa tela",
  "s2.monitor.p": "Aperte <kbd>M</kbd>: todas as moedas que você acompanha numa tabela ordenável — o preço, o dia, a semana e o mês, onde ele está na faixa do mês, a distância da máxima e quanto se move num dia típico — e a proximidade com que cada par se moveu junto, com a contagem por trás. Uma linha abre o gráfico.",
  "s2.phone.h": "No celular, como um app",
- "s2.phone.p": "A mesma página roda na web. <a href=\"../\">Abra</a> no celular e adicione à tela inicial: ela abre em tela cheia com seu próprio ícone, uma barra de abas para o gráfico, palpites, alvos e a carteira, painéis que se dispensam deslizando, e as colunas laterais puxadas das bordas — longe do gesto de voltar do próprio navegador. Nada para instalar, e o que você guarda fica no celular.",
+ "s2.phone.p": "A mesma página roda na web. <a href=\"../\">Abra</a> no celular e adicione à tela inicial: ela abre em tela cheia com seu próprio ícone, uma barra de abas para o gráfico, os palpites, os alvos e a carteira no lado da tela que você escolher, e painéis que se fecham com um deslize. Nada para instalar, e o que você guarda fica no celular.",
  "s3.events.alt": "Um mês de Bitcoin com os divulgados de inflação, emprego, Fed e PCE dos EUA marcados onde saíram, e as faixas das próximas 24 horas sob o preço",
  "s3.events.cap": "O calendário econômico no gráfico, e as próximas 24 horas sob o preço — a faixa em que deve cair quatro vezes em cinco, e metade das vezes.",
  "s3.monitor.alt": "O monitor: cada moeda acompanhada numa tabela ordenável, com o preço, o dia, a semana e o mês, onde ela está na faixa do mês e quanto se move num dia típico",

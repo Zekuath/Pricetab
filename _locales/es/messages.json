@@ -8677,8 +8677,8 @@
   "pref_group_webapp": {
     "message": "Este teléfono"
   },
-  "pref_group_webapp_desc_2": {
-    "message": "La app en el teléfono: el tamaño de todo, abrirla desde la pantalla de inicio, deslizar desde los lados, la pantalla encendida y dónde se abre."
+  "pref_group_webapp_desc_3": {
+    "message": "La app en un teléfono: el tamaño de todo, abrirla desde la pantalla de inicio, la barra de pestañas, la pantalla encendida y dónde se abre."
   },
   "pref_group_widgets": {
     "message": "Widgets"
@@ -8941,35 +8941,35 @@
   "pref_page_ticker_title": {
     "message": "Barra de precios"
   },
-  "pref_phone_nav_aria": {
-    "message": "Cómo se navega en el teléfono"
+  "pref_phone_bar_pos_bottom": {
+    "message": "Abajo"
   },
-  "pref_phone_nav_bar": {
-    "message": "Barra de pestañas y deslizar"
+  "pref_phone_bar_pos_desc": {
+    "message": "En qué lado de la pantalla está la barra de pestañas. La página le deja sitio esté donde esté."
   },
-  "pref_phone_nav_desc": {
-    "message": "La barra de pestañas abajo, o solo deslizar: sin la barra el gráfico gana su altura y cada pestaña aparece al deslizar desde el borde izquierdo o derecho."
+  "pref_phone_bar_pos_heading": {
+    "message": "Posición de la barra de pestañas"
   },
-  "pref_phone_nav_heading": {
-    "message": "Navegación"
+  "pref_phone_bar_pos_keywords": {
+    "message": "barra pestañas posición arriba abajo izquierda derecha lado menú navegación pulgar"
   },
-  "pref_phone_nav_keywords": {
-    "message": "barra pestañas menú inferior navegación deslizar lados bordes columnas ocultar barra más espacio"
+  "pref_phone_bar_pos_left": {
+    "message": "Izquierda"
   },
-  "pref_phone_nav_swipe": {
-    "message": "Solo deslizar"
+  "pref_phone_bar_pos_right": {
+    "message": "Derecha"
   },
-  "pref_phone_nav_title": {
-    "message": "Navegación"
+  "pref_phone_bar_pos_title": {
+    "message": "Posición de la barra de pestañas"
+  },
+  "pref_phone_bar_pos_top": {
+    "message": "Arriba"
   },
   "pref_phone_tabs_add_aria": {
     "message": "Poner en la barra"
   },
   "pref_phone_tabs_desc": {
     "message": "Hasta $1 lugares en la barra, en tu orden. Más contiene todo lo demás."
-  },
-  "pref_phone_tabs_desc_off": {
-    "message": "La barra está desactivada (Moverse): lo que se ajuste aquí vuelve con ella."
   },
   "pref_phone_tabs_down": {
     "message": "Mover $1 a la derecha"

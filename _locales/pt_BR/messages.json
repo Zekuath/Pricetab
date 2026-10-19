@@ -8677,8 +8677,8 @@
   "pref_group_webapp": {
     "message": "Este telefone"
   },
-  "pref_group_webapp_desc_2": {
-    "message": "O app no celular: o tamanho de tudo, abrir pela tela de início, deslizar pelas laterais, a tela ligada e onde ele abre."
+  "pref_group_webapp_desc_3": {
+    "message": "O app no celular: o tamanho de tudo, abrir pela tela inicial, a barra de abas, a tela mantida acesa e onde ele abre."
   },
   "pref_group_widgets": {
     "message": "Widgets"
@@ -8941,35 +8941,35 @@
   "pref_page_ticker_title": {
     "message": "Barra de preços"
   },
-  "pref_phone_nav_aria": {
-    "message": "Como navegar no celular"
+  "pref_phone_bar_pos_bottom": {
+    "message": "Embaixo"
   },
-  "pref_phone_nav_bar": {
-    "message": "Barra de abas e deslizar"
+  "pref_phone_bar_pos_desc": {
+    "message": "Em que lado da tela a barra de abas fica. A página deixa espaço para ela onde quer que esteja."
   },
-  "pref_phone_nav_desc": {
-    "message": "A barra de abas embaixo, ou só deslizar: sem a barra o gráfico ganha a altura dela, e cada aba aparece ao deslizar da borda esquerda ou direita."
+  "pref_phone_bar_pos_heading": {
+    "message": "Posição da barra de abas"
   },
-  "pref_phone_nav_heading": {
-    "message": "Navegação"
+  "pref_phone_bar_pos_keywords": {
+    "message": "barra abas posição topo baixo esquerda direita lado menu navegação polegar"
   },
-  "pref_phone_nav_keywords": {
-    "message": "barra abas menu inferior navegação deslizar lados bordas colunas esconder barra mais espaço"
+  "pref_phone_bar_pos_left": {
+    "message": "Esquerda"
   },
-  "pref_phone_nav_swipe": {
-    "message": "Só deslizar"
+  "pref_phone_bar_pos_right": {
+    "message": "Direita"
   },
-  "pref_phone_nav_title": {
-    "message": "Navegação"
+  "pref_phone_bar_pos_title": {
+    "message": "Posição da barra de abas"
+  },
+  "pref_phone_bar_pos_top": {
+    "message": "Em cima"
   },
   "pref_phone_tabs_add_aria": {
     "message": "Pôr na barra"
   },
   "pref_phone_tabs_desc": {
     "message": "Até $1 lugares na barra, na sua ordem. Mais guarda todo o resto."
-  },
-  "pref_phone_tabs_desc_off": {
-    "message": "A barra está desligada (Navegação): o que for definido aqui volta com ela."
   },
   "pref_phone_tabs_down": {
     "message": "Mover $1 para a direita"

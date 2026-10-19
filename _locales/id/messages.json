@@ -8677,8 +8677,8 @@
   "pref_group_webapp": {
     "message": "Ponsel ini"
   },
-  "pref_group_webapp_desc_2": {
-    "message": "Aplikasi di ponsel: ukuran semuanya, berjalan dari layar utama, geser dari sisi, layar tetap menyala, dan tempat aplikasi dibuka."
+  "pref_group_webapp_desc_3": {
+    "message": "Aplikasi di ponsel: ukuran semuanya, dijalankan dari layar utama, bilah tab, layar tetap menyala, dan tempat ia terbuka."
   },
   "pref_group_widgets": {
     "message": "Widget"
@@ -8941,35 +8941,35 @@
   "pref_page_ticker_title": {
     "message": "Bilah harga"
   },
-  "pref_phone_nav_aria": {
-    "message": "Cara berpindah di ponsel"
+  "pref_phone_bar_pos_bottom": {
+    "message": "Bawah"
   },
-  "pref_phone_nav_bar": {
-    "message": "Bilah tab dan geser"
+  "pref_phone_bar_pos_desc": {
+    "message": "Di sisi layar mana bilah tab berada. Halaman selalu menyisakan ruang untuknya."
   },
-  "pref_phone_nav_desc": {
-    "message": "Bilah tab di bawah, atau geser saja: tanpa bilah grafik mendapat tingginya, dan setiap tab muncul dengan geser dari tepi kiri atau kanan."
+  "pref_phone_bar_pos_heading": {
+    "message": "Posisi bilah tab"
   },
-  "pref_phone_nav_heading": {
-    "message": "Navigasi"
+  "pref_phone_bar_pos_keywords": {
+    "message": "bilah tab posisi atas bawah kiri kanan sisi menu navigasi jempol"
   },
-  "pref_phone_nav_keywords": {
-    "message": "bilah tab menu bawah navigasi geser sisi tepi kolom sembunyikan bilah ruang lebih"
+  "pref_phone_bar_pos_left": {
+    "message": "Kiri"
   },
-  "pref_phone_nav_swipe": {
-    "message": "Hanya geser"
+  "pref_phone_bar_pos_right": {
+    "message": "Kanan"
   },
-  "pref_phone_nav_title": {
-    "message": "Navigasi"
+  "pref_phone_bar_pos_title": {
+    "message": "Posisi bilah tab"
+  },
+  "pref_phone_bar_pos_top": {
+    "message": "Atas"
   },
   "pref_phone_tabs_add_aria": {
     "message": "Taruh di bilah"
   },
   "pref_phone_tabs_desc": {
     "message": "Hingga $1 tempat di bilah, sesuai urutanmu. Lainnya memuat sisanya."
-  },
-  "pref_phone_tabs_desc_off": {
-    "message": "Bilah sedang mati (Berpindah): yang diatur di sini kembali bersamanya."
   },
   "pref_phone_tabs_down": {
     "message": "Geser $1 ke kanan"

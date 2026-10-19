@@ -8693,8 +8693,8 @@
   "pref_group_webapp": {
     "message": "이 휴대폰"
   },
-  "pref_group_webapp_desc_2": {
-    "message": "휴대폰의 앱: 모든 것의 크기, 홈 화면에서 실행, 양옆에서 스와이프, 화면 켜두기, 열리는 위치."
+  "pref_group_webapp_desc_3": {
+    "message": "휴대폰에서의 앱: 전체 크기, 홈 화면에서 실행, 탭 바, 화면 켜두기, 열리는 곳."
   },
   "pref_group_widgets": {
     "message": "위젯"
@@ -8957,35 +8957,35 @@
   "pref_page_ticker_title": {
     "message": "가격 티커 바"
   },
-  "pref_phone_nav_aria": {
-    "message": "휴대폰에서 이동하는 방법"
+  "pref_phone_bar_pos_bottom": {
+    "message": "아래"
   },
-  "pref_phone_nav_bar": {
-    "message": "탭 막대와 스와이프"
+  "pref_phone_bar_pos_desc": {
+    "message": "탭 바를 화면의 어느 쪽에 둘지 정합니다. 어디에 두어도 페이지가 가리지 않습니다."
   },
-  "pref_phone_nav_desc": {
-    "message": "하단 탭 막대 또는 스와이프만: 막대가 없으면 차트가 그 높이를 차지하고, 모든 탭은 왼쪽이나 오른쪽 가장자리에서 스와이프하면 나옵니다."
+  "pref_phone_bar_pos_heading": {
+    "message": "탭 바 위치"
   },
-  "pref_phone_nav_heading": {
-    "message": "탐색"
+  "pref_phone_bar_pos_keywords": {
+    "message": "탭 바 위치 위 아래 왼쪽 오른쪽 옆 메뉴 탐색 엄지"
   },
-  "pref_phone_nav_keywords": {
-    "message": "탭 막대 하단 메뉴 탐색 스와이프 가장자리 열 막대 숨기기 더 넓게"
+  "pref_phone_bar_pos_left": {
+    "message": "왼쪽"
   },
-  "pref_phone_nav_swipe": {
-    "message": "스와이프만"
+  "pref_phone_bar_pos_right": {
+    "message": "오른쪽"
   },
-  "pref_phone_nav_title": {
-    "message": "탐색"
+  "pref_phone_bar_pos_title": {
+    "message": "탭 바 위치"
+  },
+  "pref_phone_bar_pos_top": {
+    "message": "위"
   },
   "pref_phone_tabs_add_aria": {
     "message": "바에 추가"
   },
   "pref_phone_tabs_desc": {
     "message": "바에 최대 $1개, 원하는 순서대로. 나머지는 모두 더보기에 있습니다."
-  },
-  "pref_phone_tabs_desc_off": {
-    "message": "바가 꺼져 있습니다(이동 방식). 여기서 정한 것은 바와 함께 돌아옵니다."
   },
   "pref_phone_tabs_down": {
     "message": "$1 오른쪽으로"

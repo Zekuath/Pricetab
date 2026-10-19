@@ -8677,8 +8677,8 @@
   "pref_group_webapp": {
     "message": "Ce téléphone"
   },
-  "pref_group_webapp_desc_2": {
-    "message": "L'app sur un téléphone : la taille de tout, le lancement depuis l'écran d'accueil, le balayage depuis les bords, l'écran maintenu allumé et l'écran d'ouverture."
+  "pref_group_webapp_desc_3": {
+    "message": "L'app sur un téléphone : la taille de tout, le lancement depuis l'écran d'accueil, la barre d'onglets, l'écran maintenu allumé et où elle s'ouvre."
   },
   "pref_group_widgets": {
     "message": "Widgets"
@@ -8941,35 +8941,35 @@
   "pref_page_ticker_title": {
     "message": "Bandeau des prix"
   },
-  "pref_phone_nav_aria": {
-    "message": "Comment naviguer sur le téléphone"
+  "pref_phone_bar_pos_bottom": {
+    "message": "Bas"
   },
-  "pref_phone_nav_bar": {
-    "message": "Barre d'onglets et balayage"
+  "pref_phone_bar_pos_desc": {
+    "message": "De quel côté de l'écran se trouve la barre d'onglets. La page lui laisse la place où qu'elle soit."
   },
-  "pref_phone_nav_desc": {
-    "message": "La barre d'onglets en bas, ou le balayage seul : sans la barre, le graphique prend sa hauteur et chaque onglet s'ouvre d'un balayage depuis le bord gauche ou droit."
+  "pref_phone_bar_pos_heading": {
+    "message": "Position de la barre d'onglets"
   },
-  "pref_phone_nav_heading": {
-    "message": "Navigation"
+  "pref_phone_bar_pos_keywords": {
+    "message": "barre onglets position haut bas gauche droite côté menu navigation pouce"
   },
-  "pref_phone_nav_keywords": {
-    "message": "barre onglets menu bas navigation balayer côtés bords colonnes masquer barre plus de place"
+  "pref_phone_bar_pos_left": {
+    "message": "Gauche"
   },
-  "pref_phone_nav_swipe": {
-    "message": "Balayage seul"
+  "pref_phone_bar_pos_right": {
+    "message": "Droite"
   },
-  "pref_phone_nav_title": {
-    "message": "Navigation"
+  "pref_phone_bar_pos_title": {
+    "message": "Position de la barre d'onglets"
+  },
+  "pref_phone_bar_pos_top": {
+    "message": "Haut"
   },
   "pref_phone_tabs_add_aria": {
     "message": "Mettre sur la barre"
   },
   "pref_phone_tabs_desc": {
     "message": "Jusqu'à $1 emplacements sur la barre, dans votre ordre. Plus contient tout le reste."
-  },
-  "pref_phone_tabs_desc_off": {
-    "message": "La barre est désactivée (Se déplacer) : ce qui est réglé ici revient avec elle."
   },
   "pref_phone_tabs_down": {
     "message": "Déplacer $1 à droite"

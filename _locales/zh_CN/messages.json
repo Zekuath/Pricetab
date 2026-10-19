@@ -8693,8 +8693,8 @@
   "pref_group_webapp": {
     "message": "这部手机"
   },
-  "pref_group_webapp_desc_2": {
-    "message": "手机上的应用：整体大小、从主屏幕运行、从两侧滑动、保持屏幕常亮，以及打开时的页面。"
+  "pref_group_webapp_desc_3": {
+    "message": "手机上的应用：整体大小、从主屏幕运行、标签栏、保持屏幕常亮，以及打开位置。"
   },
   "pref_group_widgets": {
     "message": "小组件"
@@ -8957,35 +8957,35 @@
   "pref_page_ticker_title": {
     "message": "价格行情条"
   },
-  "pref_phone_nav_aria": {
-    "message": "手机上的导航方式"
+  "pref_phone_bar_pos_bottom": {
+    "message": "底部"
   },
-  "pref_phone_nav_bar": {
-    "message": "标签栏和滑动"
+  "pref_phone_bar_pos_desc": {
+    "message": "标签栏放在屏幕的哪一边。无论放在哪里，页面都会为它留出空间。"
   },
-  "pref_phone_nav_desc": {
-    "message": "底部标签栏，或仅滑动：没有标签栏时图表占用它的高度，每个标签都可从左右边缘滑出。"
+  "pref_phone_bar_pos_heading": {
+    "message": "标签栏位置"
   },
-  "pref_phone_nav_heading": {
-    "message": "导航"
+  "pref_phone_bar_pos_keywords": {
+    "message": "标签栏 位置 顶部 底部 左 右 侧边 菜单 导航 拇指"
   },
-  "pref_phone_nav_keywords": {
-    "message": "标签栏 底部 菜单 导航 滑动 边缘 侧栏 隐藏 更多空间"
+  "pref_phone_bar_pos_left": {
+    "message": "左侧"
   },
-  "pref_phone_nav_swipe": {
-    "message": "仅滑动"
+  "pref_phone_bar_pos_right": {
+    "message": "右侧"
   },
-  "pref_phone_nav_title": {
-    "message": "导航"
+  "pref_phone_bar_pos_title": {
+    "message": "标签栏位置"
+  },
+  "pref_phone_bar_pos_top": {
+    "message": "顶部"
   },
   "pref_phone_tabs_add_aria": {
     "message": "放到标签栏上"
   },
   "pref_phone_tabs_desc": {
     "message": "栏上最多 $1 个位置，按你的顺序排列。其余都在“更多”里。"
-  },
-  "pref_phone_tabs_desc_off": {
-    "message": "标签栏已关闭（导航方式）：这里的设置会随它一起恢复。"
   },
   "pref_phone_tabs_down": {
     "message": "将 $1 右移"

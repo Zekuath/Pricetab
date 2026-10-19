@@ -522,8 +522,8 @@ const chartDrawerPhone = css`
     /* Beside the phone's tab bar no column stands at the edge: the sheet is
        the width of the screen, less a margin. */
     html:not([data-platform="ios"]) & {
-      left: 0.5rem;
-      right: 0.5rem;
+      left: calc(0.5rem + var(--pt-dock-left, 0px));
+      right: calc(0.5rem + var(--pt-dock-right, 0px));
     }
     top: auto;
     /* Above the phone app's own bar (the shim's lift; 0 in the extension):

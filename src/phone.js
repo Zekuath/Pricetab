@@ -6,8 +6,10 @@
  *
  *   - **A tab bar at the foot** in place of the two edge pulls, which were
  *     14px wide and hidden by design: the chart, calls, targets, the
- *     portfolio, and More — a sheet with everything else. The columns still
- *     come out on an edge swipe; the pulls are simply not drawn there. A
+ *     portfolio, and More — a sheet with everything else. Since 19 Oct 2026
+ *     it is the one way around (no edge swipes beside it: iOS and Safari
+ *     keep the edges) and it stands at the foot, the top or either side
+ *     (PHONE_BAR_POS_KEY). A
  *     full screen (Settings, the portfolio…) is a pushed page: it covers the
  *     bar and its × brings you back, as an iPhone app's pushed views do.
  *   - **A call is confirmed on a sheet**, not by tapping the same small
@@ -27,6 +29,8 @@ const PHONE_BAR_H = 56; // px, before the home indicator's inset
    in landscape: 36px, the label beside its icon. At 56px a phone at 844x390
    kept 150px for the chart under the price and the range row. */
 const PHONE_BAR_H_SIDE = 36;
+// The bar's width when it stands at a side (PHONE_BAR_POS_KEY), before the notch's inset
+const PHONE_BAR_W = 76;
 // Where the bar is drawn: a phone upright, or a phone on its side (theme.js)
 const PHONE_BAR_MEDIA = `(max-width: 600px), ${PHONE_LANDSCAPE_MEDIA}`;
 
@@ -37,8 +41,7 @@ const phoneBarUp = () => {
     return (
       typeof matchMedia === "function" &&
       matchMedia(PHONE_BAR_MEDIA).matches &&
-      document.documentElement.getAttribute("data-platform") !== "ios" &&
-      document.documentElement.getAttribute("data-phone-nav") !== "swipe"
+      document.documentElement.getAttribute("data-platform") !== "ios"
     );
   } catch (error) {
     return false;
@@ -83,6 +86,45 @@ const PhoneBar = styled.nav`
     padding-left: env(safe-area-inset-left, 0px);
     padding-right: env(safe-area-inset-right, 0px);
   }
+
+  /* **At the top or a side** (PHONE_BAR_POS_KEY, 19 Oct 2026). The page
+     keeps clear of it through --pt-dock-top / -left / -right (app.js). */
+  html[data-phone-bar-at="top"] & {
+    top: 0;
+    bottom: auto;
+    height: calc(${PHONE_BAR_H}px + var(--pt-safe-top, 0px));
+    padding-top: var(--pt-safe-top, 0px);
+    padding-bottom: 0;
+    border-top: none;
+    border-bottom: 1px solid ${({ theme }) => theme.color.border};
+  }
+  @media ${PHONE_LANDSCAPE_MEDIA} {
+    html[data-phone-bar-at="top"] & {
+      height: calc(${PHONE_BAR_H_SIDE}px + var(--pt-safe-top, 0px));
+    }
+  }
+  html[data-phone-bar-at="left"] &,
+  html[data-phone-bar-at="right"] & {
+    top: 0;
+    bottom: 0;
+    height: auto;
+    flex-direction: column;
+    justify-content: center;
+    padding: var(--pt-safe-top, 0px) 0 env(safe-area-inset-bottom, 0px);
+    border-top: none;
+  }
+  html[data-phone-bar-at="left"] & {
+    right: auto;
+    width: calc(${PHONE_BAR_W}px + var(--pt-safe-left, 0px));
+    padding-left: var(--pt-safe-left, 0px);
+    border-right: 1px solid ${({ theme }) => theme.color.border};
+  }
+  html[data-phone-bar-at="right"] & {
+    left: auto;
+    width: calc(${PHONE_BAR_W}px + var(--pt-safe-right, 0px));
+    padding-right: var(--pt-safe-right, 0px);
+    border-left: 1px solid ${({ theme }) => theme.color.border};
+  }
 `;
 
 const PhoneBarItem = styled.button.attrs({ type: "button" })`
@@ -121,6 +163,15 @@ const PhoneBarItem = styled.button.attrs({ type: "button" })`
     gap: 6px;
     font-size: 0.68rem;
   }
+  html[data-phone-bar-at="left"] &,
+  html[data-phone-bar-at="right"] & {
+    flex: 0 1 72px;
+    width: 100%;
+    flex-direction: column;
+    gap: 3px;
+    font-size: 0.6rem;
+    padding: 0 4px;
+  }
 `;
 
 const PhoneBadge = styled.i`
@@ -151,6 +202,9 @@ const PhoneBadge = styled.i`
 const PhoneScrim = styled.div`
   position: fixed;
   inset: 0;
+  top: var(--pt-dock-top, 0px);
+  left: var(--pt-dock-left, 0px);
+  right: var(--pt-dock-right, 0px);
   bottom: var(--pt-dock-lift, 0px);
   z-index: 174;
   background: rgba(0, 0, 0, 0.45);
@@ -160,8 +214,8 @@ const PhoneScrim = styled.div`
    `data-phone-sheet`), the app's ground. */
 const PhoneSheet = styled.div`
   position: fixed;
-  left: 0;
-  right: 0;
+  left: var(--pt-dock-left, 0px);
+  right: var(--pt-dock-right, 0px);
   bottom: ${({ lifted }) => (lifted ? "var(--pt-dock-lift, 0px)" : "0")};
   z-index: 175;
   max-height: 80dvh;
@@ -457,7 +511,8 @@ const TouchHint = ({ onDismiss }) =>
       React.createElement("li", null, React.createElement("b", null, msg("ph_hint_pinch", "Pinch")), " ", React.createElement("span", null, msg("ph_hint_pinch_d", "to zoom — on the calls board, its reach"))),
       React.createElement("li", null, React.createElement("b", null, msg("ph_hint_hold", "Hold")), " ", React.createElement("span", null, msg("ph_hint_hold_d", "to read the price under your finger"))),
       React.createElement("li", null, React.createElement("b", null, msg("ph_hint_double", "Double-tap")), " ", React.createElement("span", null, msg("ph_hint_double_d", "for the whole range again"))),
-      React.createElement("li", null, React.createElement("b", null, msg("ph_hint_edge", "Swipe in from an edge")), " ", React.createElement("span", null, msg("ph_hint_edge_d", "for the tabs beside the chart"))),
+      // Beside the phone's own bar the edges are not swiped (pullSwipeStart)
+      !phoneBarUp() && React.createElement("li", null, React.createElement("b", null, msg("ph_hint_edge", "Swipe in from an edge")), " ", React.createElement("span", null, msg("ph_hint_edge_d", "for the tabs beside the chart"))),
     ),
     React.createElement(CallSheetActions, null, React.createElement(PhoneButton, { primary: true, onClick: onDismiss, "data-hint-dismiss": "true" }, msg("ph_hint_ok", "Got it"))),
   );

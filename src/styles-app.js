@@ -113,8 +113,10 @@ const FullBleed = styled.div`
      ten seconds. The chart keeps its shape and the drawer floats over it —
      which is also why the drawer is see-through. The text above the chart went
      the same way on 26 Sep 2026 (see AppShell's padding-left), so this margin
-     no longer follows a drawer. */
+     no longer follows a drawer. A phone's tab bar at a side is not docked
+     over it but beside it (PHONE_BAR_POS_KEY), so its width is taken off. */
   width: 100vw;
+  width: calc(100vw - var(--pt-dock-left, 0px) - var(--pt-dock-right, 0px));
   margin-left: ${({ theme }) => `calc(-1 * ${theme.spacing.large * 2}rem)`};
   margin-right: calc(-1 * ${({ theme }) => theme.spacing.large * 2}rem);
   display: flex;
@@ -145,8 +147,8 @@ const FullBleed = styled.div`
 
 const OfflineMessage = styled.div`
   position: fixed;
-  top: calc(${({ theme }) => theme.spacing.medium}rem + var(--pt-safe-top, 0px));
-  left: 50%;
+  top: calc(${({ theme }) => theme.spacing.medium}rem + var(--pt-safe-top, 0px) + var(--pt-dock-top, 0px));
+  left: calc(50% + (var(--pt-dock-left, 0px) - var(--pt-dock-right, 0px)) / 2);
   transform: translateX(-50%);
   background: ${({ theme }) => theme.color.bgSecondary};
   border: 1px solid ${({ theme }) => theme.color.border};
@@ -587,8 +589,8 @@ const RateAskButton = styled.button.attrs({ type: "button" })`
 
 const ApiErrorMessage = styled.div`
   position: fixed;
-  top: calc(${({ theme }) => theme.spacing.medium}rem + var(--pt-safe-top, 0px));
-  left: 50%;
+  top: calc(${({ theme }) => theme.spacing.medium}rem + var(--pt-safe-top, 0px) + var(--pt-dock-top, 0px));
+  left: calc(50% + (var(--pt-dock-left, 0px) - var(--pt-dock-right, 0px)) / 2);
   transform: translateX(-50%);
   background: ${({ theme }) => theme.color.bgSecondary};
   border: 1px solid ${({ theme }) => theme.color.border};
@@ -656,8 +658,8 @@ const RetryButton = styled.button.attrs({ type: "button" })`
 
 const InvalidCoinWarning = styled.div`
   position: fixed;
-  top: calc(${({ theme }) => theme.spacing.medium}rem + var(--pt-safe-top, 0px));
-  left: 50%;
+  top: calc(${({ theme }) => theme.spacing.medium}rem + var(--pt-safe-top, 0px) + var(--pt-dock-top, 0px));
+  left: calc(50% + (var(--pt-dock-left, 0px) - var(--pt-dock-right, 0px)) / 2);
   transform: translateX(-50%);
   background: ${({ theme }) => theme.color.bgSecondary};
   border: 1px solid ${({ theme }) => theme.color.chartLineRed};
@@ -1794,15 +1796,6 @@ const DrawerTabsHandle = styled.button.attrs({ type: "button", "data-own-before"
         : ""}
   }
 
-  /* **Without the tab bar and without a finger, the pulls are the way in**
-     (19 Oct 2026): a narrow window driven by a mouse cannot swipe, so with
-     Getting around set to the swipes alone it had no way to any column. */
-  @media (max-width: 600px) and (hover: hover) and (pointer: fine) {
-    html[data-phone-nav="swipe"] & {
-      display: block;
-    }
-  }
-
   /* A phone on its side swipes too, so the pulls go there as well */
   @media ${PHONE_LANDSCAPE_MEDIA} {
     display: none;
@@ -2319,9 +2312,11 @@ const PageTickerShell = styled.div`
   /* A bottom ticker rises above the phone app's own bar (the shim's lift;
      0 in the extension), or the bar would cover every headline. */
   ${({ position }) =>
-    position === "top" ? "top: var(--pt-safe-top, 0px);" : "bottom: var(--pt-dock-lift, 0px);"}
-  left: 0;
-  right: 0;
+    position === "top"
+      ? "top: calc(var(--pt-safe-top, 0px) + var(--pt-dock-top, 0px));"
+      : "bottom: var(--pt-dock-lift, 0px);"}
+  left: var(--pt-dock-left, 0px);
+  right: var(--pt-dock-right, 0px);
   z-index: 90;
   pointer-events: none;
 

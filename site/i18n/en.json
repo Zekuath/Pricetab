@@ -151,7 +151,7 @@
  "s2.monitor.h": "Your coins on one screen",
  "s2.monitor.p": "Press <kbd>M</kbd>: every coin you follow on one sortable table — the price, the day, the week and the month, where it sits in the month's range, how far it is from its high and how far it moves on a typical day — and how closely each pair has moved together, with the count behind it. A row opens its chart.",
  "s2.phone.h": "On your phone, as an app",
- "s2.phone.p": "The same page runs on the web. <a href=\"../\">Open it</a> on a phone and add it to the home screen: it opens full screen with its own icon, a tab bar for the chart, calls, targets and the portfolio, sheets that swipe away, and the side columns swiped in from the edges — clear of the browser's own back gesture. Nothing to install, and what you keep stays on the phone.",
+ "s2.phone.p": "The same page runs on the web. <a href=\"../\">Open it</a> on a phone and add it to the home screen: it opens full screen with its own icon, a tab bar for the chart, calls, targets and the portfolio that stands at whichever side of the screen you choose, and sheets that swipe away. Nothing to install, and what you keep stays on the phone.",
  "s3.events.alt": "A month of Bitcoin with the US inflation, jobs, Fed and PCE releases marked where they fell, and the next 24 hours' ranges under the price",
  "s3.events.cap": "The economic calendar on the chart, and the next 24 hours under the price — the range it should land in four times in five, and half the time.",
  "s3.monitor.alt": "The monitor: every followed coin on one sortable table, with its price, its day, week and month, where it sits in the month's range and how far it moves on a typical day",

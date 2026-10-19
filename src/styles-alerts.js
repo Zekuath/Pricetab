@@ -46,8 +46,8 @@ const toastClock = keyframes`
  * from across the room. */
 const AlertToastStack = styled.div`
   position: fixed;
-  top: calc(${({ theme }) => theme.spacing.medium}rem + var(--pt-safe-top, 0px));
-  left: 50%;
+  top: calc(${({ theme }) => theme.spacing.medium}rem + var(--pt-safe-top, 0px) + var(--pt-dock-top, 0px));
+  left: calc(50% + (var(--pt-dock-left, 0px) - var(--pt-dock-right, 0px)) / 2);
   transform: translateX(-50%);
   z-index: 10001;
   display: flex;

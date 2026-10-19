@@ -16621,18 +16621,28 @@ await page.evaluate(`(() => { const m = document.querySelector("[data-practice-r
     };
     const shown = () => page.evaluate(`(() => { const v = (s) => { const n = document.querySelector(s); return Boolean(n && getComputedStyle(n).visibility === "visible"); }; return { chart: v("[data-drawer-tabs]"), screen: v("[data-screen-tabs]") }; })()`);
     check(JSON.stringify(await shown()) === JSON.stringify({ chart: false, screen: false }), "§93 at rest both columns are in their drawers");
+    /* Beside the phone's tab bar the edges are not swiped (19 Oct 2026): the
+       bar is the way around there, and iOS and Safari keep the edges. */
     await swipe(4, 450, 110, 455);
-    check((await shown()).chart, "§93 a finger swiped in from the left edge brings the chart's column out");
+    await swipe(386, 120, 280, 124);
+    check(JSON.stringify(await shown()) === JSON.stringify({ chart: false, screen: false }), "§93 on a phone with its tab bar an edge swipe opens nothing");
+    // Wider than a phone there is no bar, and a finger still brings the columns out
+    await page.setViewportSize({ width: 820, height: 1000 });
+    await page.waitForTimeout(600);
+    await swipe(4, 450, 110, 455);
+    check((await shown()).chart, "§93 on a tablet a finger swiped in from the left edge brings the chart's column out");
     await swipe(60, 450, 5, 452);
     check(!(await shown()).chart, "§93 …and swiped back towards the edge puts it away");
-    await swipe(386, 120, 280, 124);
-    check((await shown()).screen, "§93 the right edge brings the screens' column out, over the price as well as the chart");
-    await swipe(330, 450, 388, 452);
+    await swipe(816, 450, 710, 454);
+    check((await shown()).screen, "§93 the right edge brings the screens' column out");
+    await swipe(760, 450, 818, 452);
     check(!(await shown()).screen, "§93 …and back");
     await swipe(4, 300, 8, 450);
     check(!(await shown()).chart, "§93 a vertical touch along the edge is the page's, not the column's");
-    await swipe(150, 450, 260, 452);
+    await swipe(300, 450, 420, 452);
     check(JSON.stringify(await shown()) === JSON.stringify({ chart: false, screen: false }), "§93 a drag in the middle of the chart opens nothing");
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.waitForTimeout(600);
     await page.keyboard.press("k");
     await page.waitForTimeout(600);
     const head = await page.evaluate(`(() => { const h = document.querySelector("[data-alerts-card] [data-calls-switch]"); const row = h && h.parentElement; return row ? row.innerText.replace(/\\s+/g, " ").trim() : null; })()`);
@@ -17388,24 +17398,18 @@ await page.evaluate(`(() => { const m = document.querySelector("[data-practice-r
       check(splash === 0, "§105 the splash is gone once the app has drawn", String(splash));
       const pulls = await p.page.evaluate(`[...document.querySelectorAll("[data-drawer-tabs-handle], [data-screen-tabs-handle]")].map((n) => getComputedStyle(n).display)`);
       check(pulls.length === 2 && pulls.every((d) => d === "none"), "§105 a phone shows no pull on either side", JSON.stringify(pulls));
+      // Beside the tab bar no edge is swiped (19 Oct 2026): the bar is the way around
+      await p.swipe(6, 140);
       await p.swipe(30, 140);
-      check((await p.shown()).chart, "§105 a swipe starting 30px in still opens the chart's column — the edge is thicker on a finger");
-      await p.close();
-      await p.swipe(360, 250);
-      check((await p.shown()).screen, "§105 …and from the right, the screens' column");
-      await p.close();
-      await p.swipe(60, 170);
-      check(!(await p.shown()).chart, "§105 …but a swipe from the middle of the chart is still the chart's");
+      await p.swipe(384, 250);
+      check(JSON.stringify(await p.shown()) === JSON.stringify({ chart: false, screen: false }), "§105 a phone in a browser opens no column on an edge swipe — its tab bar is the way around");
       await p.ctx.close();
     }
     {
       const p = await phone(IPHONE, false);
-      await p.swipe(6, 120);
-      check(!(await p.shown()).chart, "§105 in Safari's tab the outer strip is left to iOS's back gesture");
-      await p.swipe(384, 270);
-      check(!(await p.shown()).screen, "§105 …and its forward one");
       await p.swipe(24, 140);
-      check((await p.shown()).chart, "§105 …while a swipe just inside it opens the column");
+      await p.swipe(384, 270);
+      check(JSON.stringify(await p.shown()) === JSON.stringify({ chart: false, screen: false }), "§105 …Safari's tab too, where iOS keeps the edges for itself");
       await p.ctx.close();
     }
     {
@@ -17446,28 +17450,13 @@ await page.evaluate(`(() => { const m = document.querySelector("[data-practice-r
     const group = await page.evaluate(`(() => { const b = [...document.querySelectorAll("button")].find((n) => /^This phone/.test(n.innerText.trim())); if (b) b.click(); return Boolean(b); })()`);
     await page.waitForTimeout(700);
     const phone = await page.evaluate(`({ status: (document.querySelector("[data-webapp-status]") || {}).getAttribute ? document.querySelector("[data-webapp-status]").getAttribute("data-webapp-status") : null, edges: document.querySelectorAll("[data-webapp-edge]").length, wake: Boolean(document.querySelector("[data-webapp-wake]")), starts: document.querySelectorAll("[data-webapp-start]").length, text: (document.querySelector("[data-webapp-status]") || { innerText: "" }).innerText })`);
-    check(group && phone.status === "browser" && /Add to Home screen|Install app/.test(phone.text) && phone.edges === 3 && phone.wake && phone.starts === 5,
-      "§106 a touch phone's Settings has a section for it: how to add it to the home screen, the swipe edge, the screen kept on, where it opens", JSON.stringify(phone));
-    await tap("[data-webapp-edge='wide']");
-    check((await page.evaluate(`localStorage.getItem("crypto_chart_webapp_edge")`)) === "wide", "§106 …and the choice is kept");
+    const barPos = await page.evaluate(`document.querySelectorAll("[data-phone-bar-pos]").length`);
+    // No swipe edge beside the tab bar, which is the way around there (19 Oct 2026)
+    check(group && phone.status === "browser" && /Add to Home screen|Install app/.test(phone.text) && phone.edges === 0 && barPos === 4 && phone.wake && phone.starts === 5,
+      "§106 a touch phone's Settings has a section for it: how to add it to the home screen, where its tab bar stands, the screen kept on, where it opens — and no swipe edge", JSON.stringify(Object.assign({ barPos }, phone)));
     await page.keyboard.press("Escape");
     await page.waitForTimeout(600);
     await tap("[data-phone-tab='home']");
-    // A swipe from 42px in opens a column only with the wide edge (48px)
-    const cdp = await ctx.newCDPSession(page);
-    const swipe = async (x0, x1) => {
-      await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x: x0, y: 450, id: 1 }] });
-      for (let i = 1; i <= 10; i++) {
-        await cdp.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ x: x0 + ((x1 - x0) * i) / 10, y: 452, id: 1 }] });
-        await page.waitForTimeout(16);
-      }
-      await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
-      await page.waitForTimeout(500);
-    };
-    await swipe(42, 150);
-    const opened = await page.evaluate(`(() => { const n = document.querySelector("[data-drawer-tabs]"); return Boolean(n && getComputedStyle(n).visibility === "visible"); })()`);
-    check(opened, "§106 the wide edge is the edge: a swipe from 42px in opens the chart's column");
-    await swipe(70, 2);
 
     // The derivatives page, one part at a time
     await tap("[data-phone-tab='more']");
@@ -19163,11 +19152,12 @@ await page.evaluate(`(() => { const m = document.querySelector("[data-practice-r
     await ctx.close();
   }
 
-  /* §124 — a phone gets around by the tab bar or by the swipes alone (12 Oct
-   * 2026). Settings → This phone → Getting
-   * around: Swipes only takes the bar away, the page reaches the glass and the
-   * chart takes the height; the edges still bring both columns out; the choice
-   * outlives a reload laid out right from the first frame; and Tab bar puts it back. */
+  /* §124 — where the phone's tab bar stands (19 Oct 2026; until then this
+   * was "Getting around", the bar or the swipes alone, and the swipes are gone
+   * on a phone in a browser). Settings → This phone → Tab bar position offers
+   * the four sides, the foot chosen; at each side the bar stands there and the
+   * chart keeps clear of it; the choice outlives a reload laid out right from
+   * the first frame; and the bar is back at the foot as it was. */
   {
     const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
     await ctx.route("**/*", (r) => {
@@ -19186,35 +19176,50 @@ await page.evaluate(`(() => { const m = document.querySelector("[data-practice-r
     await page.waitForTimeout(800);
     const tap = async (sel) => { await page.tap(sel); await page.waitForTimeout(700); };
     const layout = () => page.evaluate(`(() => {
-      const bar = document.querySelector("[data-phone-bar]");
+      const bar = document.querySelector("nav[data-phone-bar]");
+      const b = bar && bar.getBoundingClientRect();
       const svg = [...document.querySelectorAll("svg")].sort((a, b) => b.getBoundingClientRect().width * b.getBoundingClientRect().height - a.getBoundingClientRect().width * a.getBoundingClientRect().height)[0].getBoundingClientRect();
+      const root = document.getElementById("root").getBoundingClientRect();
+      const r = (x) => Math.round(x);
       return {
-        bar: Boolean(bar && bar.getClientRects().length && getComputedStyle(bar).display !== "none"),
-        lift: (() => { const d = document.createElement("div"); d.style.cssText = "position:absolute;height:var(--pt-dock-lift, 0px)"; document.body.appendChild(d); const h = d.getBoundingClientRect().height; d.remove(); return h; })(),
-        nav: document.documentElement.getAttribute("data-phone-nav"),
-        chartH: Math.round(svg.height),
-        chartBottom: Math.round(svg.bottom),
+        at: document.documentElement.getAttribute("data-phone-bar-at"),
+        bar: b && getComputedStyle(bar).display !== "none" ? { l: r(b.left), t: r(b.top), r: r(b.right), b: r(b.bottom) } : null,
+        root: { l: r(root.left), t: r(root.top), r: r(root.right), b: r(root.bottom) },
+        chart: { l: r(svg.left), t: r(svg.top), r: r(svg.right), b: r(svg.bottom) },
       };
     })()`);
-    const withBar = await layout();
-    check(withBar.bar && withBar.nav === null && withBar.lift >= 56, "§124 by default a phone has its tab bar, and the page ends above it", JSON.stringify(withBar));
+    const clear = (x) => x.bar && !(x.chart.l < x.bar.r && x.chart.r > x.bar.l && x.chart.t < x.bar.b && x.chart.b > x.bar.t) && !(x.root.l < x.bar.r && x.root.r > x.bar.l && x.root.t < x.bar.b && x.root.b > x.bar.t);
+    const foot = await layout();
+    check(foot.at === null && foot.bar && foot.bar.b === 844 && foot.bar.t >= 780 && clear(foot), "§124 by default a phone's tab bar is at the foot, and the page ends above it", JSON.stringify(foot));
 
-    await tap("[data-phone-tab='more']");
-    await tap("[data-phone-more='settings']");
-    await page.evaluate(`(() => { const b = [...document.querySelectorAll("button")].find((n) => /^This phone/.test(n.innerText.trim())); if (b) b.click(); })()`);
-    await page.waitForTimeout(700);
-    const chips = await page.evaluate(`[...document.querySelectorAll("[data-phone-nav-choice]")].map((n) => n.getAttribute("data-phone-nav-choice") + ":" + n.getAttribute("aria-pressed"))`);
-    check(chips.join(" ") === "bar:true swipe:false", "§124 This phone offers the tab bar or the swipes alone, the bar chosen", chips.join(" "));
-    await tap("[data-phone-nav-choice='swipe']");
-    check((await page.evaluate(`localStorage.getItem("crypto_chart_phone_nav")`)) === "swipe", "§124 …and the choice is kept");
+    const open = async () => {
+      await tap("[data-phone-tab='more']");
+      await tap("[data-phone-more='settings']");
+      await page.evaluate(`(() => { const b = [...document.querySelectorAll("button")].find((n) => /^This phone/.test(n.innerText.trim())); if (b) b.click(); })()`);
+      await page.waitForTimeout(700);
+    };
+    const pick = async (pos) => {
+      await open();
+      await tap(`[data-phone-bar-pos='${pos}']`);
+      await page.keyboard.press("Escape");
+      await page.waitForTimeout(700);
+      return layout();
+    };
+    await open();
+    const chips = await page.evaluate(`[...document.querySelectorAll("[data-phone-bar-pos]")].map((n) => n.getAttribute("data-phone-bar-pos") + ":" + n.getAttribute("aria-pressed"))`);
+    check(chips.join(" ") === "bottom:true top:false left:false right:false", "§124 This phone offers the four sides for the tab bar, the foot chosen", chips.join(" "));
     await page.keyboard.press("Escape");
     await page.waitForTimeout(700);
 
-    const swipeOnly = await layout();
-    check(!swipeOnly.bar && swipeOnly.nav === "swipe" && swipeOnly.lift === 0,
-      "§124 Swipes only: no bar, and nothing is held back for one", JSON.stringify(swipeOnly));
-    check(swipeOnly.chartH >= withBar.chartH + 40, "§124 …the chart takes the bar's height", JSON.stringify({ before: withBar.chartH, after: swipeOnly.chartH }));
+    const top = await pick("top");
+    check(top.at === "top" && top.bar && top.bar.t === 0 && top.bar.b >= 50 && top.root.t >= top.bar.b - 1 && clear(top), "§124 at the top the bar stands there and the page starts under it", JSON.stringify(top));
+    check((await page.evaluate(`localStorage.getItem("crypto_chart_phone_bar_pos")`)) === "top", "§124 …and the choice is kept");
+    const left = await pick("left");
+    check(left.at === "left" && left.bar && left.bar.l === 0 && left.bar.t === 0 && left.bar.b === 844 && left.root.l >= left.bar.r - 1 && clear(left), "§124 on the left the bar is a column and the page starts beside it", JSON.stringify(left));
+    const right = await pick("right");
+    check(right.at === "right" && right.bar && right.bar.r === 390 && right.root.r <= right.bar.l + 1 && clear(right), "§124 on the right likewise", JSON.stringify(right));
 
+    // No edge swipe beside the bar, wherever it stands
     const cdp = await ctx.newCDPSession(page);
     const swipe = async (x0, x1, y = 450) => {
       await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x: x0, y, id: 1 }] });
@@ -19225,33 +19230,19 @@ await page.evaluate(`(() => { const m = document.querySelector("[data-practice-r
       await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
       await page.waitForTimeout(500);
     };
-    const shown = () => page.evaluate(`(() => { const v = (s) => { const n = document.querySelector(s); return Boolean(n && getComputedStyle(n).visibility === "visible"); }; return { chart: v("[data-drawer-tabs]"), screen: v("[data-screen-tabs]") }; })()`);
     await swipe(6, 140);
-    check((await shown()).chart, "§124 …the left edge still brings the chart's column out");
-    await swipe(70, 2);
     await swipe(384, 250);
-    const right = await shown();
-    check(right.screen, "§124 …and the right edge the screens'", JSON.stringify(right));
-    const settingsTab = await page.evaluate(`Boolean([...document.querySelectorAll("[data-screen-tabs] button")].find((n) => /settings/i.test(n.getAttribute("aria-label") || n.innerText)))`);
-    check(settingsTab, "§124 …where Settings is, so the bar can always be had back");
-    await swipe(320, 388);
+    const cols = await page.evaluate(`(() => { const v = (s) => { const n = document.querySelector(s); return Boolean(n && getComputedStyle(n).visibility === "visible"); }; return { chart: v("[data-drawer-tabs]"), screen: v("[data-screen-tabs]") }; })()`);
+    check(!cols.chart && !cols.screen, "§124 an edge swipe beside the bar opens no column", JSON.stringify(cols));
 
     await page.reload({ waitUntil: "load" });
     await page.waitForSelector("svg path", { timeout: 20000 });
     await page.waitForTimeout(800);
     const again = await layout();
-    check(!again.bar && again.nav === "swipe" && Math.abs(again.chartH - swipeOnly.chartH) <= 2, "§124 it outlives a reload", JSON.stringify(again));
+    check(again.at === "right" && JSON.stringify(again.bar) === JSON.stringify(right.bar) && Math.abs(again.chart.r - right.chart.r) <= 2, "§124 it outlives a reload", JSON.stringify(again));
 
-    // Back to the bar, from Settings reached through the right edge
-    await page.keyboard.press("s");
-    await page.waitForTimeout(700);
-    await page.evaluate(`(() => { const b = [...document.querySelectorAll("button")].find((n) => /^This phone/.test(n.innerText.trim())); if (b) b.click(); })()`);
-    await page.waitForTimeout(700);
-    await tap("[data-phone-nav-choice='bar']");
-    await page.keyboard.press("Escape");
-    await page.waitForTimeout(700);
-    const back = await layout();
-    check(back.bar && back.nav === null && Math.abs(back.chartH - withBar.chartH) <= 2, "§124 Tab bar puts it back as it was", JSON.stringify(back));
+    const back = await pick("bottom");
+    check(back.at === null && JSON.stringify(back.bar) === JSON.stringify(foot.bar) && Math.abs(back.chart.b - foot.chart.b) <= 2 && Math.abs(back.chart.r - foot.chart.r) <= 2, "§124 Bottom puts it back as it was", JSON.stringify(back));
     check(errs.length === 0, "§124 nothing threw", errs.join(" | "));
     await ctx.close();
   }
@@ -20225,37 +20216,6 @@ await page.evaluate(`(() => { const m = document.querySelector("[data-practice-r
     check(Array.isArray(rec) && rec.length === 1 && rec[0].target > Date.now() - 2 * 3600e3, "§137 …and the forecast is on the record before its hour closes", JSON.stringify(rec).slice(0, 200));
     check(errs.length === 0, "§137 nothing threw", errs.join(" | "));
     await ctx.close();
-  }
-
-  /* §138 — the swipes alone, with a mouse (19 Oct 2026): a narrow window
-   * driven by a mouse cannot swipe, and with Getting around set to the swipes
-   * alone it had no tab bar and no pulls — no way to any menu. The pulls are
-   * drawn there, and each brings its column out. With the bar they stay away. */
-  {
-    const run = async (nav) => {
-      const { ctx, page } = await newCtx(browser, `localStorage.setItem("crypto_chart_onboarding_seen", "1"); localStorage.setItem("crypto_chart_touch_hint_seen", "1"); localStorage.setItem("crypto_chart_phone_nav", "${nav}");`, PRICES, 0, false, { viewport: { width: 390, height: 844 } });
-      const errs = [];
-      page.on("pageerror", (e) => errs.push(e.message));
-      await page.waitForTimeout(600);
-      const pulls = await page.evaluate(`[...document.querySelectorAll("[data-drawer-tabs-handle], [data-screen-tabs-handle]")].map((n) => n.getBoundingClientRect().width > 0)`);
-      return { ctx, page, errs, pulls };
-    };
-    const vis = (page, s) => page.evaluate(`getComputedStyle(document.querySelector("${s}")).visibility`);
-    const swipe = await run("swipe");
-    check(swipe.pulls.length === 2 && swipe.pulls.every(Boolean), "§138 with the swipes alone and a mouse, both pulls are drawn", JSON.stringify(swipe.pulls));
-    await swipe.page.click("[data-screen-tabs-handle]");
-    await swipe.page.waitForTimeout(600);
-    check((await vis(swipe.page, "[data-screen-tabs]")) === "visible", "§138 …the right pull brings the screens' column out");
-    await swipe.page.mouse.click(195, 300);
-    await swipe.page.waitForTimeout(600);
-    await swipe.page.click("[data-drawer-tabs-handle]", { force: true });
-    await swipe.page.waitForTimeout(600);
-    check((await vis(swipe.page, "[data-drawer-tabs]")) === "visible", "§138 …and the left pull the chart's");
-    check(swipe.errs.length === 0, "§138 nothing threw", swipe.errs.join(" | "));
-    await swipe.ctx.close();
-    const bar = await run("bar");
-    check(bar.pulls.length === 2 && !bar.pulls.some(Boolean), "§138 with the tab bar the pulls stay away", JSON.stringify(bar.pulls));
-    await bar.ctx.close();
   }
 
   await browser.close();

@@ -154,9 +154,10 @@ submitted, so their changes reach the store here.
   height, and the range row's + is drawn like the ranges beside it.
 - The privacy page reads like the site: its theme, its type, and each
   heading typed out as its section arrives.
-- Settings → This phone → Getting around: keep the tab bar at the foot, or
-  use the swipes from the sides alone and give the chart the bar's height.
-  Works in the browser and in the iPhone app.
+- Settings → This phone → Tab bar position: on a phone in a browser the tab
+  bar is the way around, at the bottom, the top, or either side; the page
+  keeps clear of it. The edge swipes are gone there, since iOS and Safari
+  keep the edges for themselves.
 - Settings → the chart → Room Ahead: the chart rests with some blank time to
   the right of the latest price, as TradingView does. Off by default.
 - The practice account takes deposits up to 10,000,000.
@@ -342,10 +343,6 @@ submitted, so their changes reach the store here.
   more newsrooms, first, saying why each is there.
 
 ### Fixed
-
-- In a narrow window used with a mouse, with Getting around set to swipes
-  only, the menus could not be reached: there was no tab bar and nothing to
-  swipe with. The edge pulls are back there.
 
 - Smoother on slower machines and phones: zooming and dragging the chart no
   longer makes the browser re-measure the page on every movement, the price

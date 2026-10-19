@@ -13,11 +13,12 @@
     document.documentElement.style.fontSize = sizes[savedSize] + 'px';
   }
 
-  /* How a phone gets around (PHONE_NAV_KEY, config.js): without the tab bar
-   * the page reaches the glass, and the rules that leave room for the bar
-   * read this attribute — set here so the first frame is not laid out twice. */
-  if (localStorage.getItem('crypto_chart_phone_nav') === 'swipe') {
-    document.documentElement.setAttribute('data-phone-nav', 'swipe');
+  /* Where the phone's tab bar sits (PHONE_BAR_POS_KEY, config.js): the rules
+   * that leave room for the bar read this attribute — set here so the first
+   * frame is not laid out twice. The foot is the default and sets nothing. */
+  const barPos = localStorage.getItem('crypto_chart_phone_bar_pos');
+  if (barPos === 'top' || barPos === 'left' || barPos === 'right') {
+    document.documentElement.setAttribute('data-phone-bar-at', barPos);
   }
 
   const savedTheme = localStorage.getItem('crypto_chart_theme') || 'auto';

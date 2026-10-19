@@ -34,17 +34,9 @@ const check = (ok, label, detail) => { if (ok) console.log(`  ✔ ${label}`); el
   const kinds0 = await page.evaluate("window.__native.map((m) => m.kind)");
   check(kinds0.includes("theme"), "the page's ground was reported to the app", kinds0.join(","));
 
-  /* The app's bar follows the page's "Getting around" setting: the shim says
-     so on load, and again when the root's attribute changes. */
-  const navs = () => page.evaluate("window.__native.filter((m) => m.kind === 'nav').map((m) => m.bar)");
-  const lift = () => page.evaluate(`(() => { const d = document.createElement("div"); d.style.cssText = "position:absolute;height:var(--pt-dock-lift, 0px)"; document.body.appendChild(d); const h = d.getBoundingClientRect().height; d.remove(); return h; })()`);
-  check((await navs())[0] === true && (await lift()) > 0, "the app was told its bar is wanted, and the page ends above it", JSON.stringify(await navs()));
-  await page.evaluate(`document.documentElement.setAttribute("data-phone-nav", "swipe")`);
-  await page.waitForTimeout(200);
-  check((await navs()).slice(-1)[0] === false && (await lift()) === 0, "Swipes only: the app is told to put its bar away, and the page reaches the foot", JSON.stringify(await navs()));
-  await page.evaluate(`document.documentElement.removeAttribute("data-phone-nav")`);
-  await page.waitForTimeout(200);
-  check((await navs()).slice(-1)[0] === true && (await lift()) > 0, "…and the bar back", JSON.stringify(await navs()));
+  // The page ends above the app's own bar
+  const lift = await page.evaluate(`(() => { const d = document.createElement("div"); d.style.cssText = "position:absolute;height:var(--pt-dock-lift, 0px)"; document.body.appendChild(d); const h = d.getBoundingClientRect().height; d.remove(); return h; })()`);
+  check(lift > 0, "the page ends above the app's own bar", lift);
 
   await page.evaluate(`document.dispatchEvent(new KeyboardEvent("keydown", { key: "a", bubbles: true }))`);
   await page.waitForTimeout(700);

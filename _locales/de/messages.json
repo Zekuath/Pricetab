@@ -8677,8 +8677,8 @@
   "pref_group_webapp": {
     "message": "Dieses Telefon"
   },
-  "pref_group_webapp_desc_2": {
-    "message": "Die App auf dem Telefon: die Größe von allem, vom Home-Bildschirm, das Wischen von den Seiten, der Bildschirm bleibt an, und wo sie startet."
+  "pref_group_webapp_desc_3": {
+    "message": "Die App auf dem Telefon: die Größe von allem, der Start vom Home-Bildschirm, die Tab-Leiste, der wach gehaltene Bildschirm und wo sie öffnet."
   },
   "pref_group_widgets": {
     "message": "Widgets"
@@ -8941,35 +8941,35 @@
   "pref_page_ticker_title": {
     "message": "Kursleiste"
   },
-  "pref_phone_nav_aria": {
-    "message": "Wie das Telefon navigiert"
+  "pref_phone_bar_pos_bottom": {
+    "message": "Unten"
   },
-  "pref_phone_nav_bar": {
-    "message": "Tab-Leiste und Wischen"
+  "pref_phone_bar_pos_desc": {
+    "message": "Auf welcher Seite des Bildschirms die Tab-Leiste steht. Die Seite hält überall Abstand zu ihr."
   },
-  "pref_phone_nav_desc": {
-    "message": "Die Tab-Leiste unten oder nur Wischen: ohne Leiste bekommt der Chart ihre Höhe, und jeder Tab kommt mit einem Wischen vom linken oder rechten Rand."
+  "pref_phone_bar_pos_heading": {
+    "message": "Position der Tab-Leiste"
   },
-  "pref_phone_nav_heading": {
-    "message": "Navigation"
+  "pref_phone_bar_pos_keywords": {
+    "message": "tab leiste position oben unten links rechts seite menü navigation daumen"
   },
-  "pref_phone_nav_keywords": {
-    "message": "tab leiste unten menü navigation wischen seiten ränder spalten leiste ausblenden mehr platz"
+  "pref_phone_bar_pos_left": {
+    "message": "Links"
   },
-  "pref_phone_nav_swipe": {
-    "message": "Nur Wischen"
+  "pref_phone_bar_pos_right": {
+    "message": "Rechts"
   },
-  "pref_phone_nav_title": {
-    "message": "Navigation"
+  "pref_phone_bar_pos_title": {
+    "message": "Position der Tab-Leiste"
+  },
+  "pref_phone_bar_pos_top": {
+    "message": "Oben"
   },
   "pref_phone_tabs_add_aria": {
     "message": "Auf die Leiste"
   },
   "pref_phone_tabs_desc": {
     "message": "Bis zu $1 Plätze auf der Leiste, in deiner Reihenfolge. Mehr enthält alles andere."
-  },
-  "pref_phone_tabs_desc_off": {
-    "message": "Die Leiste ist aus (Navigation): Was hier eingestellt ist, kommt mit ihr zurück."
   },
   "pref_phone_tabs_down": {
     "message": "$1 nach rechts"

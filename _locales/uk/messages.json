@@ -8677,8 +8677,8 @@
   "pref_group_webapp": {
     "message": "Цей телефон"
   },
-  "pref_group_webapp_desc_2": {
-    "message": "Застосунок на телефоні: розмір усього, запуск з екрана «Додому», свайп з країв, екран не гасне і з чого він відкривається."
+  "pref_group_webapp_desc_3": {
+    "message": "Застосунок на телефоні: розмір усього, запуск із головного екрана, панель вкладок, екран, що не гасне, і де він відкривається."
   },
   "pref_group_widgets": {
     "message": "Віджети"
@@ -8941,35 +8941,35 @@
   "pref_page_ticker_title": {
     "message": "Цінова стрічка"
   },
-  "pref_phone_nav_aria": {
-    "message": "Як переміщатися на телефоні"
+  "pref_phone_bar_pos_bottom": {
+    "message": "Знизу"
   },
-  "pref_phone_nav_bar": {
-    "message": "Панель вкладок і свайпи"
+  "pref_phone_bar_pos_desc": {
+    "message": "З якого боку екрана стоїть панель вкладок. Сторінка завжди залишає їй місце."
   },
-  "pref_phone_nav_desc": {
-    "message": "Панель вкладок унизу або лише свайпи: без панелі графік отримує її висоту, а кожна вкладка виїжджає свайпом від лівого чи правого краю."
+  "pref_phone_bar_pos_heading": {
+    "message": "Положення панелі вкладок"
   },
-  "pref_phone_nav_heading": {
-    "message": "Навігація"
+  "pref_phone_bar_pos_keywords": {
+    "message": "панель вкладок положення верх низ ліворуч праворуч збоку меню навігація великий палець"
   },
-  "pref_phone_nav_keywords": {
-    "message": "панель вкладок нижнє меню навігація свайп краї колонки сховати панель більше місця"
+  "pref_phone_bar_pos_left": {
+    "message": "Ліворуч"
   },
-  "pref_phone_nav_swipe": {
-    "message": "Лише свайпи"
+  "pref_phone_bar_pos_right": {
+    "message": "Праворуч"
   },
-  "pref_phone_nav_title": {
-    "message": "Навігація"
+  "pref_phone_bar_pos_title": {
+    "message": "Положення панелі вкладок"
+  },
+  "pref_phone_bar_pos_top": {
+    "message": "Згори"
   },
   "pref_phone_tabs_add_aria": {
     "message": "Додати на панель"
   },
   "pref_phone_tabs_desc": {
     "message": "До $1 місць на панелі, у вашому порядку. Усе інше — у «Ще»."
-  },
-  "pref_phone_tabs_desc_off": {
-    "message": "Панель вимкнено (Навігація): те, що задано тут, повернеться разом із нею."
   },
   "pref_phone_tabs_down": {
     "message": "Посунути «$1» праворуч"

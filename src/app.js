@@ -294,7 +294,7 @@ class CryptoChart extends PureComponent {
       lastSeenEnabled: loadLastSeenEnabled(), // settings toggle
       // The web app's settings (WEBAPP_EDGE_KEY): the swipe's edge, the screen kept on, the screen it opens on
       webAppEdge: loadWebAppEdge(),
-      phoneNav: loadPhoneNav(),
+      phoneBarPos: loadPhoneBarPos(),
       phoneTabs: loadPhoneTabs(),
       webAppWake: loadWebAppWake(),
       webAppStart: loadWebAppStart(),
@@ -3424,6 +3424,11 @@ class CryptoChart extends PureComponent {
         this.pullSwipe = { side: "sheet", x, y: event.clientY, which };
         return;
       }
+      /* **No edge swipes beside the phone's tab bar** (19 Oct 2026): iOS and
+         Safari keep the edges for back, forward and their own gestures, and
+         the bar reaches every place (More holds the rest). The iPhone app,
+         whose own bar has no More, keeps them. */
+      if (phoneBarUp()) return;
       /* An open column is 36px wide — too narrow to swipe across — so it
          and SPINE_NEAR_X beside it are where the swipe back starts. */
       const edge = touchFirst()
@@ -4584,20 +4589,20 @@ class CryptoChart extends PureComponent {
       saveWebAppEdge(v);
       this.setState({ webAppEdge: v });
     });
-    /* The tab bar or the swipes alone (PHONE_NAV_KEY). The root's attribute is
-       what the layout reads — the bar's own rules, --pt-dock-lift, and the
-       iPhone app's shim, which hides its native bar on it. */
-    _defineProperty(this, "handlePhoneNav", (v) => {
-      if (!PHONE_NAV_OPTIONS.includes(v)) return;
-      savePhoneNav(v);
+    /* Where the tab bar sits (PHONE_BAR_POS_KEY). The root's attribute is
+       what the layout reads — the bar's own rules and the --pt-dock-* room
+       the page keeps clear of it. */
+    _defineProperty(this, "handlePhoneBarPos", (v) => {
+      if (!PHONE_BAR_POS_OPTIONS.includes(v)) return;
+      savePhoneBarPos(v);
       try {
-        if (v === "swipe")
-          document.documentElement.setAttribute("data-phone-nav", "swipe");
-        else document.documentElement.removeAttribute("data-phone-nav");
+        if (v === DEFAULT_PHONE_BAR_POS)
+          document.documentElement.removeAttribute("data-phone-bar-at");
+        else document.documentElement.setAttribute("data-phone-bar-at", v);
       } catch (error) {
         /* no document */
       }
-      this.setState({ phoneNav: v, phoneMore: false });
+      this.setState({ phoneBarPos: v, phoneMore: false });
     });
     _defineProperty(this, "handleWebAppStart", (v) => {
       if (!WEBAPP_STARTS.includes(v)) return;
@@ -9920,8 +9925,7 @@ class CryptoChart extends PureComponent {
           return React.createElement(
             Fragment,
             { key: "phone" },
-            this.state.phoneNav !== "swipe" &&
-              React.createElement(PhoneTabBar, {
+            React.createElement(PhoneTabBar, {
                 items: tabs.bar,
                 active: this.phoneActive(),
                 hidden: this.screenUp() || this.modalUp(),
@@ -10133,8 +10137,8 @@ class CryptoChart extends PureComponent {
             onChartColorChange: this.handleChartColorChange,
             webAppEdge: this.state.webAppEdge,
             onWebAppEdge: this.handleWebAppEdge,
-            phoneNav: this.state.phoneNav,
-            onPhoneNav: this.handlePhoneNav,
+            phoneBarPos: this.state.phoneBarPos,
+            onPhoneBarPos: this.handlePhoneBarPos,
             phoneTabs: this.state.phoneTabs,
             phoneTabCatalog: this.phoneTabCatalog(),
             onPhoneTabs: this.handlePhoneTabs,
@@ -10904,16 +10908,32 @@ injectGlobal`
   /* **The page ends above a bar that floats on its foot** (3 Oct 2026): the
      phone's tab bar (phone.js) in a browser, the iPhone app's own bar there
      (its shim sets the same variable). At 100dvh the chart's time axis and
-     its last 72px were under the iPhone app's bar. */
+     its last 72px were under the iPhone app's bar. **Or beside it** (19 Oct
+     2026, PHONE_BAR_POS_KEY): a bar at the top or a side gives the page a
+     --pt-dock-top / -left / -right instead, which #root keeps clear of. */
   @media (max-width: 600px) {
-    :root:not([data-platform="ios"]):not([data-phone-nav="swipe"]) {
+    :root:not([data-platform="ios"]):not([data-phone-bar-at]) {
       --pt-dock-lift: calc(${PHONE_BAR_H}px + env(safe-area-inset-bottom, 0px));
+    }
+    :root:not([data-platform="ios"])[data-phone-bar-at="top"] {
+      --pt-dock-top: ${PHONE_BAR_H}px;
     }
   }
   /* On its side the bar is the compact one (phone.js), and the page ends above it too */
   @media ${PHONE_LANDSCAPE_MEDIA} {
-    :root:not([data-platform="ios"]):not([data-phone-nav="swipe"]) {
+    :root:not([data-platform="ios"]):not([data-phone-bar-at]) {
       --pt-dock-lift: calc(${PHONE_BAR_H_SIDE}px + env(safe-area-inset-bottom, 0px));
+    }
+    :root:not([data-platform="ios"])[data-phone-bar-at="top"] {
+      --pt-dock-top: ${PHONE_BAR_H_SIDE}px;
+    }
+  }
+  @media ${PHONE_BAR_MEDIA} {
+    :root:not([data-platform="ios"])[data-phone-bar-at="left"] {
+      --pt-dock-left: ${PHONE_BAR_W}px;
+    }
+    :root:not([data-platform="ios"])[data-phone-bar-at="right"] {
+      --pt-dock-right: ${PHONE_BAR_W}px;
     }
   }
 
@@ -10990,10 +11010,13 @@ injectGlobal`
 
   #root {
     width: 100%;
+    width: calc(100% - var(--pt-dock-left, 0px) - var(--pt-dock-right, 0px));
+    margin-top: var(--pt-dock-top, 0px);
+    margin-left: var(--pt-dock-left, 0px);
     height: 100vh;
     max-height: 100vh;
-    height: calc(100dvh - var(--pt-dock-lift, 0px));
-    max-height: calc(100dvh - var(--pt-dock-lift, 0px));
+    height: calc(100dvh - var(--pt-dock-lift, 0px) - var(--pt-dock-top, 0px));
+    max-height: calc(100dvh - var(--pt-dock-lift, 0px) - var(--pt-dock-top, 0px));
     display: flex;
     flex-direction: column;
     flex: 1 1 auto;

@@ -151,7 +151,7 @@
  "s2.monitor.h": "Coinleriniz tek ekranda",
  "s2.monitor.p": "<kbd>M</kbd>'ye basın: takip ettiğiniz her coin sıralanabilir tek bir tabloda — fiyat, gün, hafta ve ay, ayın aralığında nerede durduğu, zirvesinden ne kadar uzak olduğu ve tipik bir günde ne kadar hareket ettiği — ve her çiftin birlikte ne kadar yakın hareket ettiği, arkasındaki sayıyla. Bir satır grafiğini açar.",
  "s2.phone.h": "Telefonunuzda, uygulama olarak",
- "s2.phone.p": "Aynı sayfa web'de çalışır. Telefonda <a href=\"../\">açın</a> ve ana ekrana ekleyin: kendi simgesiyle tam ekran açılır; grafik, tahminler, hedefler ve portföy için bir sekme çubuğu, kaydırılarak kapanan sayfalar ve kenarlardan çekilen yan sütunlar sunar — tarayıcının kendi geri hareketinden uzakta. Kurulacak bir şey yok, sakladıklarınız da telefonda kalır.",
+ "s2.phone.p": "Aynı sayfa web'de çalışır. Telefonda <a href=\"../\">açın</a> ve ana ekrana ekleyin: kendi simgesiyle tam ekran açılır; grafik, tahminler, hedefler ve portföy için ekranın istediğiniz kenarında duran bir sekme çubuğu ve kaydırılarak kapanan sayfalar sunar. Kurulacak bir şey yok, sakladıklarınız da telefonda kalır.",
  "s3.events.alt": "ABD enflasyon, istihdam, Fed ve PCE açıklamalarının düştükleri yerde işaretlendiği bir aylık Bitcoin; fiyatın altında önümüzdeki 24 saatin aralıkları",
  "s3.events.cap": "Grafikte ekonomik takvim ve fiyatın altında önümüzdeki 24 saat — beş seferde dördünde ve yarısında içine düşmesi gereken aralık.",
  "s3.monitor.alt": "Monitör: takip edilen her coin sıralanabilir tek bir tabloda; fiyatı, günü, haftası ve ayı, ayın aralığında nerede durduğu ve tipik bir günde ne kadar hareket ettiği ile",

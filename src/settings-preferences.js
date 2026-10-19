@@ -486,7 +486,7 @@ const settingSections = (panel) => {
   indicatorOverlays, onIndicatorOverlayChange,
   chartStudies, onChartStudyToggle,
   chartChances, cellOdds, onChartChanceToggle,
-  webAppEdge, onWebAppEdge, phoneNav, onPhoneNav, phoneTabs, phoneTabCatalog, onPhoneTabs, webAppWake, onWebAppWake, webAppStart, onWebAppStart,
+  webAppEdge, onWebAppEdge, phoneBarPos, onPhoneBarPos, phoneTabs, phoneTabCatalog, onPhoneTabs, webAppWake, onWebAppWake, webAppStart, onWebAppStart,
   moveNews, onMoveNewsChange,
   quietChrome, onQuietChromeChange,
   tabKeys, onTabKeysChange,
@@ -1509,29 +1509,31 @@ const settingSections = (panel) => {
         ),
       );
     },
-    phoneNav: () =>
+    phoneBarPos: () =>
       panel.section(
-        msg("pref_phone_nav_title", "Getting around"),
-        msg("pref_phone_nav_keywords", "tab bar bottom menu navigation swipe sides edges columns hide bar more room"),
+        msg("pref_phone_bar_pos_title", "Tab bar position"),
+        msg("pref_phone_bar_pos_keywords", "tab bar position place top bottom left right side menu navigation thumb"),
         React.createElement(
           ToggleSection,
           null,
-          React.createElement(ToggleSectionTitle, null, msg("pref_phone_nav_heading", "Getting around")),
+          React.createElement(ToggleSectionTitle, null, msg("pref_phone_bar_pos_heading", "Tab bar position")),
           React.createElement(
             ToggleSectionDesc,
             null,
-            msg("pref_phone_nav_desc", "The tab bar at the foot, or the swipes alone: without the bar the chart takes its height, and every tab comes out with a swipe from the left or the right edge."),
+            msg("pref_phone_bar_pos_desc", "Which side of the screen the tab bar stands on. The page keeps clear of it wherever it is."),
           ),
           React.createElement(
             MetricChips,
-            { role: "group", "aria-label": msg("pref_phone_nav_aria", "How the phone gets around") },
+            { role: "group", "aria-label": msg("pref_phone_bar_pos_heading", "Tab bar position") },
             ...[
-              ["bar", msg("pref_phone_nav_bar", "Tab bar and swipes")],
-              ["swipe", msg("pref_phone_nav_swipe", "Swipes only")],
+              ["bottom", msg("pref_phone_bar_pos_bottom", "Bottom")],
+              ["top", msg("pref_phone_bar_pos_top", "Top")],
+              ["left", msg("pref_phone_bar_pos_left", "Left")],
+              ["right", msg("pref_phone_bar_pos_right", "Right")],
             ].map(([id, label]) =>
               React.createElement(
                 MetricChip,
-                { key: id, active: phoneNav === id, "aria-pressed": phoneNav === id ? "true" : "false", "data-phone-nav-choice": id, onClick: () => onPhoneNav && onPhoneNav(id) },
+                { key: id, active: phoneBarPos === id, "aria-pressed": phoneBarPos === id ? "true" : "false", "data-phone-bar-pos": id, onClick: () => onPhoneBarPos && onPhoneBarPos(id) },
                 label,
               ),
             ),
@@ -1561,9 +1563,7 @@ const settingSections = (panel) => {
           React.createElement(
             ToggleSectionDesc,
             null,
-            phoneNav === "swipe"
-              ? msg("pref_phone_tabs_desc_off", "The bar is off (Getting around): what is set here comes back with it.")
-              : msg("pref_phone_tabs_desc", "Up to $1 places on the bar, in your order. More holds everything else.", String(PHONE_TABS_MAX)),
+            msg("pref_phone_tabs_desc", "Up to $1 places on the bar, in your order. More holds everything else.", String(PHONE_TABS_MAX)),
           ),
           React.createElement(
             PhoneTabList,
@@ -1607,8 +1607,12 @@ const settingSections = (panel) => {
         ),
       );
     },
+    /* The swipe's edge only where there is a swipe: beside the phone's own
+       bar there is none (pullSwipeStart), so the row is not drawn there. */
     webAppEdge: () =>
-      panel.section(
+      typeof phoneBarUp === "function" && phoneBarUp()
+        ? null
+        : panel.section(
         msg("pref_webapp_edge_title", "Swipe edge"),
         msg("pref_webapp_edge_keywords", "swipe edge side column thumb finger width gesture"),
         React.createElement(
@@ -3020,8 +3024,8 @@ const preferenceGroupList = (panel) => {
           {
             key: "webApp",
             title: msg("pref_group_webapp", "This phone"),
-            desc: msg("pref_group_webapp_desc_2", "The app on a phone: the size of everything, running from the home screen, the swipe from the sides, the screen kept on, and where it opens."),
-            nodes: [...sizeRow, ...build(["webAppStatus", "phoneNav", "phoneTabs", "webAppEdge", "webAppWake", "webAppStart"])],
+            desc: msg("pref_group_webapp_desc_3", "The app on a phone: the size of everything, running from the home screen, the tab bar, the screen kept on, and where it opens."),
+            nodes: [...sizeRow, ...build(["webAppStatus", "phoneBarPos", "phoneTabs", "webAppEdge", "webAppWake", "webAppStart"])],
           },
         ]
       : []),

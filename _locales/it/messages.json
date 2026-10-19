@@ -8677,8 +8677,8 @@
   "pref_group_webapp": {
     "message": "Questo telefono"
   },
-  "pref_group_webapp_desc_2": {
-    "message": "L'app sul telefono: la dimensione di tutto, l'avvio dalla schermata Home, lo scorrimento dai lati, lo schermo acceso e dove si apre."
+  "pref_group_webapp_desc_3": {
+    "message": "L'app sul telefono: la dimensione di tutto, l'avvio dalla schermata Home, la barra delle schede, lo schermo tenuto acceso e dove si apre."
   },
   "pref_group_widgets": {
     "message": "Widget"
@@ -8941,35 +8941,35 @@
   "pref_page_ticker_title": {
     "message": "Barra dei prezzi"
   },
-  "pref_phone_nav_aria": {
-    "message": "Come ci si muove sul telefono"
+  "pref_phone_bar_pos_bottom": {
+    "message": "In basso"
   },
-  "pref_phone_nav_bar": {
-    "message": "Barra delle schede e scorrimento"
+  "pref_phone_bar_pos_desc": {
+    "message": "Su quale lato dello schermo sta la barra delle schede. La pagina le lascia spazio ovunque sia."
   },
-  "pref_phone_nav_desc": {
-    "message": "La barra delle schede in basso, o solo lo scorrimento: senza la barra il grafico prende la sua altezza e ogni scheda arriva scorrendo dal bordo sinistro o destro."
+  "pref_phone_bar_pos_heading": {
+    "message": "Posizione della barra delle schede"
   },
-  "pref_phone_nav_heading": {
-    "message": "Navigazione"
+  "pref_phone_bar_pos_keywords": {
+    "message": "barra schede posizione alto basso sinistra destra lato menu navigazione pollice"
   },
-  "pref_phone_nav_keywords": {
-    "message": "barra schede menu in basso navigazione scorrere lati bordi colonne nascondi barra più spazio"
+  "pref_phone_bar_pos_left": {
+    "message": "Sinistra"
   },
-  "pref_phone_nav_swipe": {
-    "message": "Solo scorrimento"
+  "pref_phone_bar_pos_right": {
+    "message": "Destra"
   },
-  "pref_phone_nav_title": {
-    "message": "Navigazione"
+  "pref_phone_bar_pos_title": {
+    "message": "Posizione della barra delle schede"
+  },
+  "pref_phone_bar_pos_top": {
+    "message": "In alto"
   },
   "pref_phone_tabs_add_aria": {
     "message": "Metti sulla barra"
   },
   "pref_phone_tabs_desc": {
     "message": "Fino a $1 posti sulla barra, nel tuo ordine. Altro contiene tutto il resto."
-  },
-  "pref_phone_tabs_desc_off": {
-    "message": "La barra è spenta (Spostarsi): ciò che è impostato qui torna con lei."
   },
   "pref_phone_tabs_down": {
     "message": "Sposta $1 a destra"

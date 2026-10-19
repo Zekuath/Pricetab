@@ -12782,8 +12782,8 @@
   "pref_group_webapp": {
     "message": "This phone"
   },
-  "pref_group_webapp_desc_2": {
-    "message": "The app on a phone: the size of everything, running from the home screen, the swipe from the sides, the screen kept on, and where it opens."
+  "pref_group_webapp_desc_3": {
+    "message": "The app on a phone: the size of everything, running from the home screen, the tab bar, the screen kept on, and where it opens."
   },
   "pref_group_widgets": {
     "message": "Widgets"
@@ -13051,26 +13051,29 @@
   "pref_page_ticker_title": {
     "message": "Price Ticker Bar"
   },
-  "pref_phone_nav_aria": {
-    "message": "How the phone gets around"
+  "pref_phone_bar_pos_bottom": {
+    "message": "Bottom"
   },
-  "pref_phone_nav_bar": {
-    "message": "Tab bar and swipes"
+  "pref_phone_bar_pos_desc": {
+    "message": "Which side of the screen the tab bar stands on. The page keeps clear of it wherever it is."
   },
-  "pref_phone_nav_desc": {
-    "message": "The tab bar at the foot, or the swipes alone: without the bar the chart takes its height, and every tab comes out with a swipe from the left or the right edge."
+  "pref_phone_bar_pos_heading": {
+    "message": "Tab bar position"
   },
-  "pref_phone_nav_heading": {
-    "message": "Getting around"
+  "pref_phone_bar_pos_keywords": {
+    "message": "tab bar position place top bottom left right side menu navigation thumb"
   },
-  "pref_phone_nav_keywords": {
-    "message": "tab bar bottom menu navigation swipe sides edges columns hide bar more room"
+  "pref_phone_bar_pos_left": {
+    "message": "Left"
   },
-  "pref_phone_nav_swipe": {
-    "message": "Swipes only"
+  "pref_phone_bar_pos_right": {
+    "message": "Right"
   },
-  "pref_phone_nav_title": {
-    "message": "Getting around"
+  "pref_phone_bar_pos_title": {
+    "message": "Tab bar position"
+  },
+  "pref_phone_bar_pos_top": {
+    "message": "Top"
   },
   "pref_phone_tabs_add_aria": {
     "message": "Put on the bar"
@@ -13082,9 +13085,6 @@
         "content": "$1"
       }
     }
-  },
-  "pref_phone_tabs_desc_off": {
-    "message": "The bar is off (Getting around): what is set here comes back with it."
   },
   "pref_phone_tabs_down": {
     "message": "Move $1 right",

@@ -1963,8 +1963,8 @@ const saveCompareMarkets = (ids) => saveJsonSetting(COMPARE_MARKETS_KEY, sanitiz
 // The web app's settings — see WEBAPP_EDGE_KEY
 const loadWebAppEdge = () => loadEnumSetting(WEBAPP_EDGE_KEY, Object.keys(WEBAPP_EDGES), DEFAULT_WEBAPP_EDGE);
 const saveWebAppEdge = (v) => saveSetting(WEBAPP_EDGE_KEY, v);
-const loadPhoneNav = () => loadEnumSetting(PHONE_NAV_KEY, PHONE_NAV_OPTIONS, DEFAULT_PHONE_NAV);
-const savePhoneNav = (v) => saveSetting(PHONE_NAV_KEY, v);
+const loadPhoneBarPos = () => loadEnumSetting(PHONE_BAR_POS_KEY, PHONE_BAR_POS_OPTIONS, DEFAULT_PHONE_BAR_POS);
+const savePhoneBarPos = (v) => saveSetting(PHONE_BAR_POS_KEY, v);
 // The bar's places, in order (PHONE_TABS_KEY): known keys, once each, at most PHONE_TABS_MAX, at least one
 const sanitizePhoneTabs = (value) => {
   if (!Array.isArray(value)) return null;

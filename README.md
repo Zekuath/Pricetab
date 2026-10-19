@@ -154,10 +154,9 @@ four to the home screen, where they rest as outlines.
 The same page runs on the web at
 [zekuath.github.io/Pricetab](https://zekuath.github.io/Pricetab/). Add it to a
 phone's home screen and it opens full screen with its own icon: a tab bar for
-the chart, calls, targets and the portfolio, sheets that swipe away, and the
-side columns swiped in from the edges, clear of the browser's own back gesture.
-Prefer the screen to yourself? **Settings → This phone → Getting around →
-Swipes only** takes the tab bar away and gives the chart its height.
+the chart, calls, targets and the portfolio, More for everything else, and
+sheets that swipe away. The bar stands where your thumb wants it: **Settings →
+This phone → Tab bar position** puts it at the bottom, the top, or either side.
 
 ![PriceTab on a phone: the chart with its tab bar, a call being placed, and the More sheet](site/shots/phone.png)
 
