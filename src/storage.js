@@ -1398,6 +1398,42 @@ const sanitizeModelOutlookOutcomes = (raw) => {
   }
   return out;
 };
+/* The shadow rows, rebuilt field by field: anything else is dropped, a row
+   without its band or its day is not kept, the newest EVENT_BAND_RECORDS_MAX
+   stay. */
+const sanitizeEventBandRecords = (raw) => {
+  if (!Array.isArray(raw)) return [];
+  const num = (v) => (Number.isFinite(v) ? v : null);
+  const out = [];
+  const seen = new Set();
+  for (const r of raw) {
+    if (!r || typeof r.id !== "string" || seen.has(r.id)) continue;
+    const t = num(r.t);
+    const q10 = num(r.q10);
+    const q50 = num(r.q50);
+    const q90 = num(r.q90);
+    if (t == null || q10 == null || q50 == null || q90 == null || !(q10 <= q50 && q50 <= q90)) continue;
+    if (typeof r.coin !== "string" || typeof r.currency !== "string") continue;
+    seen.add(r.id);
+    out.push({
+      id: r.id,
+      coin: r.coin,
+      currency: r.currency,
+      t,
+      group: ["CPI", "FOMC", "NFP", "other"].includes(r.group) ? r.group : "other",
+      q10,
+      q50,
+      q90,
+      y: r.skipped ? null : num(r.y),
+      ...(r.skipped ? { skipped: true } : {}),
+    });
+  }
+  out.sort((a, b) => a.t - b.t);
+  return out.slice(-EVENT_BAND_RECORDS_MAX);
+};
+const loadEventBandRecords = () => sanitizeEventBandRecords(loadJsonSetting(EVENT_BAND_RECORDS_KEY, null));
+const saveEventBandRecords = (list) => saveJsonSetting(EVENT_BAND_RECORDS_KEY, sanitizeEventBandRecords(list));
+
 const loadModelOutlookRecords = () => sanitizeModelOutlookRecords(loadJsonSetting(MODEL_OUTLOOK_RECORDS_KEY, null));
 const saveModelOutlookRecords = (list) => saveJsonSetting(MODEL_OUTLOOK_RECORDS_KEY, sanitizeModelOutlookRecords(list));
 const loadModelOutlookOutcomes = () => sanitizeModelOutlookOutcomes(loadJsonSetting(MODEL_OUTLOOK_OUTCOMES_KEY, null));

@@ -4312,6 +4312,20 @@
   "odds_chance": {
     "message": "probabilidad $1"
   },
+  "odds_chance_event": {
+    "message": "probabilidad $1 · ampliada por la publicación de $2 en esta columna; en la prueba su 80 % se cumplió el $3 %",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      }
+    }
+  },
   "odds_chance_measured": {
     "message": "probabilidad $1 · de las casillas pasadas con $2–$3, acertaron $4"
   },
@@ -4841,8 +4855,13 @@
   "po_held_note": {
     "message": "Lo que se tenía cada día, reconstruido hacia atrás desde tus compras y ventas, frente a lo que había costado hasta entonces: el escalón discontinuo. Las compras sin fecha cuentan como mantenidas todo el tiempo."
   },
-  "po_held_note_gone": {
-    "message": "Lo que se tenía cada día, reconstruido hacia atrás desde tus compras y ventas, frente a lo que había costado hasta entonces: el escalón discontinuo. Las compras sin fecha cuentan como mantenidas todo el tiempo. Las monedas que ya no tienes ($1) no se dibujan: no se descarga su historial."
+  "po_held_note_gone_2": {
+    "message": "Lo que se tenía cada día, reconstruido desde tus compras y ventas, frente a lo que había costado hasta entonces — el escalón discontinuo. Las compras sin fecha cuentan como tenidas siempre. Las monedas vendidas del todo se dibujan hasta la venta; $1 no, por falta de su historial.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
   },
   "po_held_short": {
     "message": "Mantenido $1 días — corto plazo según el umbral de $2 días usado en muchos sitios"

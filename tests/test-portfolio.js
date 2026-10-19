@@ -1381,7 +1381,21 @@ assert.strictEqual(
     const r6 = (v) => Math.round(v * 1e6) / 1e6;
     assert.deepStrictEqual(built.series.map((p) => r6(p.price)), [500, 2500, 1500, 3500], "the value as held, point by point");
     assert.deepStrictEqual(built.paid.map((p) => r6(p.price)), [500, 2500, 1500, 5500], "…and what had been paid for it by then");
-    assert.strictEqual(built.gone, 1, "a coin sold to nothing is counted, not drawn");
+    assert.strictEqual(built.gone, 1, "a coin sold to nothing, without its history, is counted, not drawn");
+    /* With its history (19 Oct 2026, the "As held" view asks for it), a coin
+       sold to nothing is drawn up to the sale: 2 LTC bought at t=100 for 200,
+       sold at t=200. */
+    sandbox.__histories = {
+      BTC: [50, 150, 250, 400].map((t) => ({ price: 10000, time: t * 1000 })),
+      LTC: [50, 150, 250, 400].map((t) => ({ price: 100, time: t * 1000 })),
+    };
+    sandbox.__holdings = [btc, { coin: "LTC", amount: 0, lots: [], sales: [{ amount: 2, time: 200, received: 260, matched: [{ amount: 2, cost: 200, acquired: 100 }] }] }];
+    const drawn = json('buildHeldParts(__histories, __holdings, "USD")');
+    const ltc = drawn.parts.find((p) => p.coin === "LTC");
+    assert.ok(ltc, "drawn when its history is there");
+    assert.deepStrictEqual(ltc.values.map(r6), [0, 200, 0, 0], "…held only between its purchase and its sale");
+    assert.deepStrictEqual(drawn.paid.map((p) => r6(p.price)), [500, 2700, 1500, 5500], "…and its cost is in the paid-in line only while it was held");
+    assert.strictEqual(drawn.gone, 0, "…and the note counts nothing it could not draw");
   }
 
   /* ── a new record grows the amount by what it adds ─────────────────────

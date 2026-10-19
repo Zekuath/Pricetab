@@ -4312,6 +4312,20 @@
   "odds_chance": {
     "message": "Chance $1"
   },
+  "odds_chance_event": {
+    "message": "Chance $1 · erweitert für die $2-Veröffentlichung in dieser Spalte; im Test hielt ihr 80-%-Bereich $3 %",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      }
+    }
+  },
   "odds_chance_measured": {
     "message": "Chance $1 · von früheren Feldern mit $2–$3 trafen $4 zu"
   },
@@ -4841,8 +4855,13 @@
   "po_held_note": {
     "message": "Was an jedem Tag gehalten wurde, aus deinen Käufen und Verkäufen zurückgerechnet, gegenüber dem, was es bis dahin gekostet hatte — die gestrichelte Stufe. Käufe ohne Datum zählen als durchgehend gehalten."
   },
-  "po_held_note_gone": {
-    "message": "Was an jedem Tag gehalten wurde, aus deinen Käufen und Verkäufen zurückgerechnet, gegenüber dem, was es bis dahin gekostet hatte — die gestrichelte Stufe. Käufe ohne Datum zählen als durchgehend gehalten. Coins, die du nicht mehr hältst ($1), werden nicht gezeichnet: für sie wird kein Verlauf geladen."
+  "po_held_note_gone_2": {
+    "message": "Was an jedem Tag gehalten wurde, aus deinen Käufen und Verkäufen zurückgerechnet, gegen das, was es bis dahin gekostet hatte — die gestrichelte Stufe. Undatierte Käufe zählen als durchgehend gehalten. Bis auf null verkaufte Coins werden bis zum Verkauf gezeichnet; $1 nicht, weil ihr Verlauf fehlt.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
   },
   "po_held_short": {
     "message": "$1 Tage gehalten — kurzfristig nach der in vielen Ländern üblichen $2-Tage-Marke"

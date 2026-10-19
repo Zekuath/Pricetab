@@ -4312,6 +4312,20 @@
   "odds_chance": {
     "message": "probabilité $1"
   },
+  "odds_chance_event": {
+    "message": "chance $1 · élargie pour la publication $2 dans cette colonne ; testée, sa zone de 80 % a tenu $3 %",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      }
+    }
+  },
   "odds_chance_measured": {
     "message": "probabilité $1 · des cases passées données $2–$3, $4 se sont réalisées"
   },
@@ -4841,8 +4855,13 @@
   "po_held_note": {
     "message": "Ce qui était détenu chaque jour, reconstitué à rebours depuis vos achats et ventes, face à ce que cela avait coûté jusque-là — la marche en pointillés. Les achats sans date comptent comme détenus tout du long."
   },
-  "po_held_note_gone": {
-    "message": "Ce qui était détenu chaque jour, reconstitué à rebours depuis vos achats et ventes, face à ce que cela avait coûté jusque-là — la marche en pointillés. Les achats sans date comptent comme détenus tout du long. Les cryptos que vous ne détenez plus ($1) ne sont pas tracées : aucun historique n'est chargé pour elles."
+  "po_held_note_gone_2": {
+    "message": "Ce qui était détenu chaque jour, reconstitué depuis vos achats et ventes, face à ce que cela avait coûté jusque-là — la marche pointillée. Les achats sans date comptent comme détenus tout du long. Les monnaies vendues jusqu'à zéro sont tracées jusqu'à la vente ; $1 ne l'ont pas été, faute d'historique.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
   },
   "po_held_short": {
     "message": "Détenu $1 jours — court terme selon le seuil de $2 jours utilisé dans beaucoup d'endroits"

@@ -6333,6 +6333,20 @@
       }
     }
   },
+  "odds_chance_event": {
+    "message": "chance $1 · widened for the $2 release in this column; tested, its 80% held $3%",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      }
+    }
+  },
   "odds_chance_measured": {
     "message": "chance $1 · of past squares given $2–$3, $4 came true",
     "placeholders": {
@@ -7122,8 +7136,8 @@
   "po_held_note": {
     "message": "What was held on each day, rewound from your purchases and sales, against what it had cost by then — the dashed step. Undated purchases count as held throughout."
   },
-  "po_held_note_gone": {
-    "message": "What was held on each day, rewound from your purchases and sales, against what it had cost by then — the dashed step. Undated purchases count as held throughout. Coins you no longer hold ($1) are not drawn: no history is fetched for them.",
+  "po_held_note_gone_2": {
+    "message": "What was held on each day, rewound from your purchases and sales, against what it had cost by then — the dashed step. Undated purchases count as held throughout. Coins sold to nothing are drawn up to the sale; $1 could not be, for want of their history.",
     "placeholders": {
       "arg1": {
         "content": "$1"

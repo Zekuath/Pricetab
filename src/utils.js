@@ -1253,6 +1253,25 @@ const macroReleaseTimes = (kind) => {
 };
 const macroKinds = () =>
   typeof MACRO_KINDS !== "undefined" ? MACRO_KINDS : ["cpi"];
+/* The release group of a 24-hour window from t (research/event-band-prereg.md):
+   the first of CPI, FOMC and NFP with a release in (t, t + 24h], else
+   "other" — PCE days included, as preregistered. */
+const eventBandGroup = (t) => {
+  for (const [kind, name] of [["cpi", "CPI"], ["fomc", "FOMC"], ["nfp", "NFP"]]) {
+    if (macroReleaseTimes(kind).some((r) => r > t && r <= t + 24 * 3600e3)) return name;
+  }
+  return "other";
+};
+
+/* The release a board column holds (from, to]: CPI, FOMC or NFP, the first
+   in that order — the kinds `CELL_ODDS_EVENT` was measured on — else null. */
+const releaseKindIn = (from, to) => {
+  for (const [kind, name] of [["cpi", "CPI"], ["fomc", "FOMC"], ["nfp", "NFP"]]) {
+    if (macroReleaseTimes(kind).some((r) => r > from && r <= to)) return name;
+  }
+  return null;
+};
+
 /* Every release of every kind in [from, to], as `{ t, kind }` in time order. */
 const macroReleasesBetween = (from, to) =>
   macroKinds()

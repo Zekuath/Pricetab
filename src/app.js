@@ -4019,6 +4019,22 @@ class CryptoChart extends PureComponent {
     /* The next 24 hours for the coin on screen (cell-odds.js, tomorrowRange):
        its 6-hour bars asked for once when the line wants them, and again
        once they are a bar old — the board's own series, shared and kept. */
+    /* The shadow record of the next 24 hours (research/event-band-prereg.md):
+       today's row written while its 24 hours run, earlier rows settled from
+       the same series. Read, changed and written in one turn. Never shown. */
+    _defineProperty(this, "keepEventBandShadow", (series) => {
+      try {
+        const before = loadEventBandRecords();
+        let list = before;
+        const rec = eventBandRecord(series, Date.now(), eventBandGroup);
+        if (rec && !list.some((r) => r.id === rec.id)) list = list.concat([rec]);
+        list = eventBandSettle(list, series);
+        if (list !== before) saveEventBandRecords(list);
+      } catch (e) {
+        /* a shadow record never interrupts the chart */
+      }
+    });
+
     _defineProperty(this, "ensureTomorrow", (coin) => {
       const currency = this.state.currency;
       const key = `${coin}-${currency}`;
@@ -4046,6 +4062,7 @@ class CryptoChart extends PureComponent {
               range: tomorrowRange(series.closes),
             },
           });
+          this.keepEventBandShadow(series);
         })
         .catch(() => {
           /* the line leaves the next 24 hours out */

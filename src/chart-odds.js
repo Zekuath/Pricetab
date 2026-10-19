@@ -48,7 +48,10 @@ const chartOdds = (chart) => ({
     const key = `${model}|${target}`;
     const hit = chart._oddsCols.get(key);
     if (hit && Math.abs(hit.at - now) < span * ODDS_REFRESH_SHARE) return hit.col;
-    const col = oddsColumn(prep, h, { model });
+    /* A release in this column widens it (CELL_ODDS_EVENT,
+       board-release-prereg.md); the readout says so and what it held. */
+    const kind = typeof releaseKindIn === "function" ? releaseKindIn(target - span, target) : null;
+    const col = oddsEventColumn(oddsColumn(prep, h, { model }), chart.props.period, kind);
     chart._oddsCols.set(key, { at: now, col });
     if (chart._oddsCols.size > 64) chart._oddsCols.delete(chart._oddsCols.keys().next().value);
     return col;
@@ -85,7 +88,7 @@ const chartOdds = (chart) => ({
     const data = safePrices(chart.props.prices);
     const live = data.length ? Number(data[data.length - 1].price) : NaN;
     const p = oddsBand(col, live, cell.lo, cell.hi);
-    return isFinite(p) ? { p, n: col.n, stretches: col.stretches } : null;
+    return isFinite(p) ? { p, n: col.n, stretches: col.stretches, event: col.event || null } : null;
   },
 
   /* What the square's readout adds: its chance, and what that chance was
@@ -106,6 +109,10 @@ const chartOdds = (chart) => ({
     }
     if (odds.refused) return ` · ${msg("odds_refused", "no chance: the history holds too few stretches this long")}`;
     const pct = odds.p < 0.01 ? "<1%" : `${Math.round(odds.p * 100)}%`;
+    // A release column: the ordinary bins are not what it was measured against
+    if (odds.event) {
+      return ` · ${msg("odds_chance_event", "chance $1 · widened for the $2 release in this column; tested, its 80% held $3%", pct, odds.event.kind, String(Math.round(odds.event.held * 100)))}`;
+    }
     const bin = measured && Array.isArray(measured.bins)
       ? measured.bins.find((b) => odds.p >= b[0] && odds.p < b[1] && b[4] >= 100)
       : null;

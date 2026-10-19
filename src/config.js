@@ -2574,6 +2574,12 @@ const CALLS_KEY = "crypto_chart_calls";
  * the outcome once its hour has closed. A person's local record: in the
  * backup, never ephemeral. */
 const MODEL_OUTLOOK_RECORDS_KEY = "crypto_chart_model_outlook_records";
+/* The next 24 hours' shadow record (research/event-band-prereg.md): one row
+   per coin, currency and day, written before its 24 hours are over and
+   settled after. Research a person's own browser collects; kept like any
+   record, in the backup, never shown. */
+const EVENT_BAND_RECORDS_KEY = "crypto_chart_event_band_records";
+const EVENT_BAND_RECORDS_MAX = 3000;
 const MODEL_OUTLOOK_OUTCOMES_KEY = "crypto_chart_model_outlook_outcomes";
 const MAX_OPEN_CALLS = 40; // ten squares across a few coins
 /* Settled ones kept for the record: 24 until 8 Oct 2026, when old squares had

@@ -9,6 +9,10 @@ submitted, so their changes reach the store here.
 
 ### Added
 
+- On the 1H and 1D calls boards, the column holding a US CPI, Fed or jobs
+  release widens its chances for the release, and the square's readout
+  says so and how well it held when tested. Measured on two years of
+  releases, those columns' chances were far too narrow before.
 - On a wide touch screen, such as a ChromeOS laptop in tablet mode, the
   phone's sheets (the touch hint and the call sheet) open as a centred card
   instead of spanning the whole screen.

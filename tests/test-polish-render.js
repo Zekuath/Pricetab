@@ -20176,6 +20176,57 @@ await page.evaluate(`(() => { const m = document.querySelector("[data-practice-r
     await ctx.close();
   }
 
+  /* §137 — the model outlook card renders (19 Oct 2026; open since #68:
+   * "no polish section renders the card"). Coinbase Exchange's hourly
+   * BTC-USD bars are served from the request's own start and end, up to the
+   * last completed hour, so the model's validity rules (500 bars, the last
+   * under two hours old, no long gap) hold. At L the card prints the band,
+   * the median, the tested coverage and this browser's own record line, and
+   * the forecast is written to the record before its hour closes. */
+  {
+    const ctx = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+    const H = 3600e3;
+    await ctx.route("**/*", (r) => {
+      const u = r.request().url();
+      if (u.startsWith("file://")) return r.continue();
+      if (u.includes("api.exchange.coinbase.com") && u.includes("BTC-USD/candles") && u.includes("granularity=3600")) {
+        const q = new URL(u).searchParams;
+        const start = Date.parse(q.get("start"));
+        const end = Math.min(Date.parse(q.get("end")), Math.floor(Date.now() / H) * H - H);
+        const rows = [];
+        for (let t = Math.ceil(start / H) * H; t <= end; t += H) {
+          const i = t / H;
+          const c = 60000 * Math.exp(0.004 * Math.sin(i / 7) + 0.002 * Math.cos(i / 3));
+          rows.push([t / 1000, c * 0.998, c * 1.002, c, c, 10]);
+        }
+        return r.fulfill(json(rows.reverse()));
+      }
+      if (u.includes("historic")) return r.fulfill(json({ data: { prices: PRICES } }));
+      if (u.includes("spot")) return r.fulfill(json({ data: { amount: "60000.00", currency: "USD" } }));
+      return r.fulfill(json(u.includes("candles") ? [] : { data: {} }));
+    });
+    await ctx.addInitScript(`localStorage.setItem("crypto_chart_onboarding_seen", "1"); localStorage.setItem("crypto_chart_widgets", JSON.stringify({ modelOutlook: true })); localStorage.setItem("crypto_chart_widget_card_sizes", JSON.stringify({ modelOutlook: "l" }));`);
+    const page = await ctx.newPage();
+    const errs = [];
+    page.on("pageerror", (e) => errs.push(e.message));
+    await page.goto(INDEX, { waitUntil: "load" });
+    await page.waitForSelector("svg path", { timeout: 20000 });
+    await openWidgets(page);
+    await page.waitForSelector("[data-widget='modelOutlook'] [data-model-outlook='band']", { timeout: 15000 }).catch(() => {});
+    const card = await page.evaluate(`(() => {
+      const c = document.querySelector("[data-widget='modelOutlook']");
+      const part = (k) => { const n = c && c.querySelector("[data-model-outlook='" + k + "']"); return n ? n.innerText.replace(/\\s+/g, " ") : null; };
+      return { band: part("band"), median: part("median"), tested: part("tested"), local: part("local") };
+    })()`);
+    check(card.band && card.median && /\$/.test(card.median), "§137 the model outlook card draws its band and median from the hourly bars", JSON.stringify(card));
+    check(card.tested && /80%/.test(card.tested), "§137 …with the coverage it held when tested", String(card.tested));
+    check(card.local && /here:/.test(card.local), "§137 …and this browser's own record line", String(card.local));
+    const rec = await page.evaluate(`JSON.parse(localStorage.getItem("crypto_chart_model_outlook_records") || "[]")`);
+    check(Array.isArray(rec) && rec.length === 1 && rec[0].target > Date.now() - 2 * 3600e3, "§137 …and the forecast is on the record before its hour closes", JSON.stringify(rec).slice(0, 200));
+    check(errs.length === 0, "§137 nothing threw", errs.join(" | "));
+    await ctx.close();
+  }
+
   await browser.close();
   if (failed) {
     console.error(`\n✘ ${failed} POLISH CHECK(S) FAILED`);

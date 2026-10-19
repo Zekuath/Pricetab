@@ -475,19 +475,25 @@ const paidInAt = (h, tSec, currency, lots) => {
 
 /* The same shape as `buildPortfolioParts` — `{ series, parts }` — plus
  * `paid`, the money in the coins held at each point, sampled on the same
- * times. Coins no longer held are not drawn: the chart fetches histories
- * for what is held now, and a coin sold to nothing has none. `gone` counts
- * them, so the note can say so. */
+ * times. A coin sold to nothing is drawn up to its sale when the chart asked
+ * for its history (it does in this view, within PORTFOLIO_CHART_MAX_COINS);
+ * `gone` counts the ones it could not draw, so the note can say so. */
 const buildHeldParts = (histories, holdings, currency, method) => {
   const held = [];
   let gone = 0;
   for (const h of holdings) {
+    const prices = histories[h.coin];
+    const drawable = Array.isArray(prices) && prices.length > 1;
     if (!(holdingAmount(h) > 0)) {
-      if ((h.sales || []).length) gone += 1;
+      /* Sold to nothing: drawn up to the sale when its history was asked
+         for (heldAmountAt rewinds the sales; no lot is held now), counted in
+         the note when it was not. */
+      if (!(h.sales || []).length) continue;
+      if (drawable) held.push({ h, prices, lots: [] });
+      else gone += 1;
       continue;
     }
-    const prices = histories[h.coin];
-    if (Array.isArray(prices) && prices.length > 1) {
+    if (drawable) {
       held.push({ h, prices, lots: heldLots(holdingLots(h), holdingAmount(h), method || DEFAULT_COST_METHOD) });
     }
   }
@@ -1584,11 +1590,19 @@ class Portfolio extends PureComponent {
       const p = prices[h.coin];
       return p && isFinite(p.price) ? p.price * holdingAmount(h) : 0;
     };
-    return holdings
+    const now = holdings
       .filter((h) => holdingAmount(h) > 0)
       .sort((a, b) => value(b) - value(a))
       .slice(0, PORTFOLIO_CHART_MAX_COINS)
       .map((h) => h.coin);
+    /* "As held" also draws the coins sold to nothing, up to their sale
+       (19 Oct 2026): it rewinds sales, so their history is the one thing it
+       lacked. Asked for only in that view, after what is held now. */
+    if (this.state.chartMode !== "held") return now;
+    const sold = holdings
+      .filter((h) => !(holdingAmount(h) > 0) && (h.sales || []).length && !now.includes(h.coin))
+      .map((h) => h.coin);
+    return now.concat(sold).slice(0, PORTFOLIO_CHART_MAX_COINS);
   }
 
   // Idempotent: reloads histories only when the coin set, currency or period
@@ -2272,8 +2286,8 @@ class Portfolio extends PureComponent {
           chartMode === "held"
             ? held && held.gone
               ? msg(
-                  "po_held_note_gone",
-                  "What was held on each day, rewound from your purchases and sales, against what it had cost by then — the dashed step. Undated purchases count as held throughout. Coins you no longer hold ($1) are not drawn: no history is fetched for them.",
+                  "po_held_note_gone_2",
+                  "What was held on each day, rewound from your purchases and sales, against what it had cost by then — the dashed step. Undated purchases count as held throughout. Coins sold to nothing are drawn up to the sale; $1 could not be, for want of their history.",
                   String(held.gone),
                 )
               : msg(

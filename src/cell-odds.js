@@ -452,3 +452,86 @@ const tomorrowRange = (closes) => {
     bars: closes.length,
   };
 };
+
+/* **The shadow record of the next 24 hours** (19 Oct 2026,
+ * research/event-band-prereg.md). The calendar-aware band (M2) brought
+ * release days back to 80% but could not yet show it was sharper on 87
+ * release days, so it is tested forward: once a day, at the 00:00 UTC bar,
+ * the current model's band is written down **before the 24 hours are over**,
+ * with the release group of that day; later its outcome. M2 is a function
+ * of these rows and earlier ones, computed at the next preregistered
+ * evaluation — nothing here is shown, and nothing here changes what is.
+ * Pure: the series in, a row or rows out. */
+const EVENT_BAND_DAY = 24 * 3600e3;
+
+/* The row for the latest 00:00 UTC origin, if its 24 hours are still
+   running and the bar that closes on it is in the series and traded. */
+const eventBandRecord = (series, now, groupOf) => {
+  if (!series || !Array.isArray(series.closes) || !Number.isFinite(series.t0) || series.g !== TOMORROW_G) return null;
+  const g = series.g * 1000;
+  const origin = Math.floor(now / EVENT_BAND_DAY) * EVENT_BAND_DAY;
+  if (!(now < origin + EVENT_BAND_DAY)) return null;
+  const o = Math.round((origin - series.t0) / g) - 1; // the bar closing at the origin
+  if (o < TOMORROW_MIN_BARS || o >= series.closes.length) return null;
+  if ((series.missing || []).includes(o)) return null;
+  const prep = oddsPrepare(series.closes.slice(0, o + 1), TOMORROW_G);
+  const col = prep && oddsColumn(prep, TOMORROW_MS, { model: TOMORROW_MODEL });
+  if (!col) return null;
+  return {
+    id: `${series.coin}|${series.currency}|${origin}`,
+    coin: series.coin,
+    currency: series.currency,
+    t: origin,
+    group: typeof groupOf === "function" ? groupOf(origin) : "other",
+    q10: oddsQuantile(col.cdf, 0.1),
+    q50: oddsQuantile(col.cdf, 0.5),
+    q90: oddsQuantile(col.cdf, 0.9),
+    y: null,
+  };
+};
+
+/* Outcomes for this coin's rows whose 24 hours have closed in the series:
+   the log return from the origin's bar to the bar closing 24 hours on,
+   skipped when either bar had no trade. Returns the same array when
+   nothing settled. */
+const eventBandSettle = (records, series) => {
+  if (!Array.isArray(records) || !series || !Array.isArray(series.closes) || !Number.isFinite(series.t0)) return records;
+  const g = series.g * 1000;
+  const gaps = new Set(series.missing || []);
+  let changed = false;
+  const out = records.map((r) => {
+    if (r.y != null || r.skipped || r.coin !== series.coin || r.currency !== series.currency) return r;
+    const o = Math.round((r.t - series.t0) / g) - 1;
+    const e = Math.round((r.t + EVENT_BAND_DAY - series.t0) / g) - 1;
+    if (o < 0 || e >= series.closes.length) return r;
+    changed = true;
+    if (gaps.has(o) || gaps.has(e) || !(series.closes[o] > 0) || !(series.closes[e] > 0)) return { ...r, y: NaN, skipped: true };
+    return { ...r, y: Math.log(series.closes[e] / series.closes[o]) };
+  });
+  return changed ? out : records;
+};
+
+/* **A square's column that holds a US release** (19 Oct 2026,
+ * research/board-release-prereg.md). Measured on BTC and ETH, 2023 → Sep
+ * 2026: in the column holding a CPI, FOMC or NFP release the board's 80%
+ * held 28% on 1H and 64% on 1D, against 75% and 81% the same columns a week
+ * before (bootstrap gap 24–39 points; ECE four times larger). The rule
+ * called for a recalibration by the event-band method: the column's spread
+ * widened about its median by a factor per kind, √(mean z² on release
+ * columns ÷ on the same columns a week before). Checked sequentially (each
+ * release scaled only by releases before it): 1D back to 82%; 1H up to 67%
+ * — better, still short, and the readout says so. Only the column holding
+ * the release; the columns after it were not measured and are not touched. */
+const CELL_ODDS_EVENT = {
+  hour: { CPI: 5.06, FOMC: 1.67, NFP: 1.68, held: 0.67 },
+  day: { CPI: 2.22, FOMC: 1.35, NFP: 1, held: 0.82 },
+};
+
+/* The column, widened when `kind` is a release it holds; the same column
+   otherwise. Its median stays where it was. */
+const oddsEventColumn = (col, range, kind) => {
+  const f = col && CELL_ODDS_EVENT[range] && CELL_ODDS_EVENT[range][kind];
+  if (!col || !(f > 1)) return col;
+  const m = oddsQuantile(col.cdf, 0.5);
+  return Object.assign({}, col, { cdf: (x) => col.cdf(m + (x - m) / f), event: { kind, factor: f, held: CELL_ODDS_EVENT[range].held } });
+};

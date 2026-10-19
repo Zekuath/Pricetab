@@ -4312,6 +4312,20 @@
   "odds_chance": {
     "message": "probabilidade $1"
   },
+  "odds_chance_event": {
+    "message": "chance $1 · ampliada para a divulgação $2 nesta coluna; no teste, seus 80% acertaram $3%",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      }
+    }
+  },
   "odds_chance_measured": {
     "message": "probabilidade $1 · das casas passadas com $2–$3, $4 se confirmaram"
   },
@@ -4841,8 +4855,13 @@
   "po_held_note": {
     "message": "O que era mantido em cada dia, reconstruído de trás para frente a partir das compras e vendas, contra o que tinha custado até então — o degrau tracejado. Compras sem data contam como mantidas o tempo todo."
   },
-  "po_held_note_gone": {
-    "message": "O que era mantido em cada dia, reconstruído de trás para frente a partir das compras e vendas, contra o que tinha custado até então — o degrau tracejado. Compras sem data contam como mantidas o tempo todo. Moedas que você não tem mais ($1) não são desenhadas: o histórico delas não é buscado."
+  "po_held_note_gone_2": {
+    "message": "O que era mantido a cada dia, reconstruído das suas compras e vendas, contra o que havia custado até então — o degrau tracejado. Compras sem data contam como mantidas o tempo todo. Moedas vendidas até zero são desenhadas até a venda; $1 não puderam ser, por falta do histórico.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
   },
   "po_held_short": {
     "message": "Mantido $1 dias — curto prazo pelo marco de $2 dias usado em muitos lugares"

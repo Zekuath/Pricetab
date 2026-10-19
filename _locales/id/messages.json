@@ -4312,6 +4312,20 @@
   "odds_chance": {
     "message": "peluang $1"
   },
+  "odds_chance_event": {
+    "message": "peluang $1 · diperlebar untuk rilis $2 di kolom ini; saat diuji, 80%-nya tepat $3%",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      }
+    }
+  },
   "odds_chance_measured": {
     "message": "peluang $1 · dari kotak lalu yang diberi $2–$3, $4 terjadi"
   },
@@ -4841,8 +4855,13 @@
   "po_held_note": {
     "message": "Apa yang dipegang setiap hari, dihitung mundur dari pembelian dan penjualanmu, dibanding biayanya sampai saat itu — tangga putus-putus. Pembelian tanpa tanggal dihitung dipegang sepanjang waktu."
   },
-  "po_held_note_gone": {
-    "message": "Apa yang dipegang setiap hari, dihitung mundur dari pembelian dan penjualanmu, dibanding biayanya sampai saat itu — tangga putus-putus. Pembelian tanpa tanggal dihitung dipegang sepanjang waktu. Koin yang tidak lagi kamu pegang ($1) tidak digambar: riwayatnya tidak diambil."
+  "po_held_note_gone_2": {
+    "message": "Yang dimiliki setiap hari, dihitung mundur dari pembelian dan penjualan Anda, dibanding biayanya sampai saat itu — tangga putus-putus. Pembelian tanpa tanggal dihitung dimiliki sepanjang waktu. Koin yang terjual habis digambar sampai penjualannya; $1 tidak bisa, karena riwayatnya tidak ada.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
   },
   "po_held_short": {
     "message": "Dipegang $1 hari — jangka pendek menurut ambang $2 hari yang dipakai di banyak tempat"

@@ -747,3 +747,20 @@ console.log("ALL STORAGE TESTS PASSED");
   sandbox.localStorage = previousStorage;
   console.log("  ✔ the rating ask waits for days of use, a snooze and a cap");
 }
+
+/* ── The next 24 hours' shadow rows are rebuilt field by field (19 Oct 2026) ── */
+{
+  const rows = JSON.parse(JSON.stringify(run(`sanitizeEventBandRecords([
+    { id: "a", coin: "BTC", currency: "USD", t: 2, group: "CPI", q10: -0.03, q50: 0, q90: 0.03, y: 0.01, extra: 1 },
+    { id: "a", coin: "BTC", currency: "USD", t: 2, group: "CPI", q10: -0.03, q50: 0, q90: 0.03 },
+    { id: "b", coin: "BTC", currency: "USD", t: 1, group: "PCE", q10: -0.02, q50: 0, q90: 0.02, skipped: true, y: 5 },
+    { id: "c", coin: "BTC", currency: "USD", t: 3, q10: 0.03, q50: 0, q90: 0.01 },
+    { id: "d", coin: "BTC", t: 4, q10: -1, q50: 0, q90: 1 },
+    null,
+  ])`)));
+  assert.deepStrictEqual(rows.map((r) => r.id), ["b", "a"], "one row an id, bands in order, a coin and currency, oldest first");
+  assert.strictEqual(rows[0].group, "other", "an unknown group is other");
+  assert.strictEqual(rows[0].y, null, "a skipped row keeps no outcome");
+  assert.ok(rows[0].skipped && !("extra" in rows[1]), "…keeps its skip, and nothing it was not given a field for");
+  console.log("  ✔ the shadow rows are sanitized");
+}

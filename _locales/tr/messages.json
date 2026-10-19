@@ -4289,6 +4289,20 @@
   "odds_chance": {
     "message": "olasılık $1"
   },
+  "odds_chance_event": {
+    "message": "olasılık $1 · bu sütundaki $2 açıklaması için genişletildi; testte %80'lik aralığı %$3 tuttu",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      }
+    }
+  },
   "odds_chance_measured": {
     "message": "olasılık $1 · $2–$3 verilen geçmiş karelerin $4'ü tuttu"
   },
@@ -4818,8 +4832,13 @@
   "po_held_note": {
     "message": "Her gün elde olan; alış ve satışlarından geriye doğru hesaplanıp o güne dek maliyetinin karşısında — kesikli basamak. Tarihsiz alışlar baştan beri elde sayılır."
   },
-  "po_held_note_gone": {
-    "message": "Her gün elde olan; alış ve satışlarından geriye doğru hesaplanıp o güne dek maliyetinin karşısında — kesikli basamak. Tarihsiz alışlar baştan beri elde sayılır. Artık elinde olmayan coinler ($1) çizilmez: onların geçmişi çekilmez."
+  "po_held_note_gone_2": {
+    "message": "Her gün elde tutulan, alış ve satışlarınızdan geriye doğru hesaplanmış, o güne kadarki maliyetiyle — kesikli basamak — karşılaştırılır. Tarihsiz alışlar baştan beri tutulmuş sayılır. Tamamen satılan coinler satışa kadar çizilir; $1 tanesi geçmişi olmadığından çizilemedi.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
   },
   "po_held_short": {
     "message": "$1 gün tutuldu — birçok yerde kullanılan $2 günlük eşiğe göre kısa vadeli"

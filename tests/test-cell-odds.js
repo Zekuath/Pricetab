@@ -196,5 +196,55 @@ ok(O.oddsGranularity(28 * 86400e3) === 86400, "a four-week square reads daily ba
      here so nobody "fixes" it against a Gaussian. */
 }
 
+/* ── The shadow record of the next 24 hours (event-band-prereg.md) ── */
+{
+  const S = vm.runInContext("({ eventBandRecord, eventBandSettle, oddsColumn, oddsPrepare, oddsQuantile })", sandbox);
+  const G = 21600e3;
+  const DAY = 86400e3;
+  const closes = [100];
+  for (let i = 1; i < 1600; i++) closes.push(closes[i - 1] * Math.exp(0.012 * normal()));
+  // Bars start on a day boundary, so bar i closes at t0 + (i + 1) × 6h
+  const t0 = Date.UTC(2026, 0, 1);
+  const series = { coin: "BTC", currency: "USD", g: 21600, t0, closes, missing: [] };
+  const lastClose = t0 + closes.length * G;
+  // "Now" is 3 hours into the day whose 00:00 bar closes inside the series
+  const origin = Math.floor((lastClose - 2 * G) / DAY) * DAY;
+  const now = origin + 3 * 3600e3;
+  const rec = S.eventBandRecord(series, now, (t) => (t === origin ? "CPI" : "other"));
+  ok(rec && rec.t === origin && rec.group === "CPI" && rec.y === null, "today's row is written while its 24 hours run, with its group");
+  const o = Math.round((origin - t0) / G) - 1;
+  const col = S.oddsColumn(S.oddsPrepare(closes.slice(0, o + 1), 21600), DAY, { model: "mr" });
+  near(rec.q10, S.oddsQuantile(col.cdf, 0.1), 1e-12, "…from the bars up to the origin only, as the study read them");
+  ok(S.eventBandRecord(series, origin + DAY + 1, () => "other") === null || S.eventBandRecord(series, origin + DAY + 1, () => "other").t !== origin,
+    "…and never written for a day whose 24 hours are over");
+  ok(S.eventBandRecord({ ...series, missing: [o] }, now, () => "other") === null, "an untraded origin bar writes nothing");
+  // Settled once the bar 24 hours on is in the series
+  const longer = { ...series, closes: closes.concat([closes[closes.length - 1] * 1.01, closes[closes.length - 1] * 1.02, closes[closes.length - 1] * 1.03, closes[closes.length - 1] * 1.04, closes[closes.length - 1] * 1.05]) };
+  const unsettled = [rec];
+  const settled = S.eventBandSettle(unsettled, longer);
+  ok(settled !== unsettled && Number.isFinite(settled[0].y), "its outcome arrives with the bar 24 hours on");
+  near(settled[0].y, Math.log(longer.closes[o + 4] / longer.closes[o]), 1e-12, "…the log return over the next four bars");
+  ok(S.eventBandSettle(settled, longer) === settled, "a settled row is not touched again");
+  const gap = S.eventBandSettle([rec], { ...longer, missing: [o + 4] });
+  ok(gap[0].skipped === true && S.eventBandSettle(gap, { ...longer, missing: [o + 4] }) === gap, "an untraded end bar is skipped once, not retried");
+}
+
+/* ── A column that holds a US release (board-release-prereg.md) ── */
+{
+  const E = vm.runInContext("({ oddsEventColumn, oddsQuantile, CELL_ODDS_EVENT, oddsColumn, oddsPrepare })", sandbox);
+  const closes = [100];
+  for (let i = 1; i < 3000; i++) closes.push(closes[i - 1] * Math.exp(0.004 * normal()));
+  const col = E.oddsColumn(E.oddsPrepare(closes, 60), 3 * 60e3);
+  ok(E.oddsEventColumn(col, "hour", null) === col && E.oddsEventColumn(col, "week", "CPI") === col, "no release, or a range it was not measured on: the same column");
+  ok(E.oddsEventColumn(col, "day", "NFP") === col, "a factor of 1 (NFP on 1D) changes nothing");
+  const w = E.oddsEventColumn(col, "hour", "CPI");
+  const f = E.CELL_ODDS_EVENT.hour.CPI;
+  const m = E.oddsQuantile(col.cdf, 0.5);
+  // oddsQuantile bisects to about 1e-6, and the factor multiplies that
+  near(E.oddsQuantile(w.cdf, 0.5), m, 1e-5, "the median stays where it was");
+  near(E.oddsQuantile(w.cdf, 0.9) - m, f * (E.oddsQuantile(col.cdf, 0.9) - m), 2e-5, "the spread widens by the measured factor");
+  ok(w.event && w.event.kind === "CPI" && w.event.held === E.CELL_ODDS_EVENT.hour.held, "and it carries what was measured, for the readout");
+}
+
 console.log(`✔ ${checks} square-odds checks`);
 console.log("CELL ODDS TESTS OK");

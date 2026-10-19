@@ -4312,6 +4312,20 @@
   "odds_chance": {
     "message": "probabilità $1"
   },
+  "odds_chance_event": {
+    "message": "probabilità $1 · allargata per la pubblicazione $2 in questa colonna; nel test il suo 80% ha tenuto il $3%",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      }
+    }
+  },
   "odds_chance_measured": {
     "message": "probabilità $1 · delle caselle passate date $2–$3, si è avverato il $4"
   },
@@ -4841,8 +4855,13 @@
   "po_held_note": {
     "message": "Ciò che era detenuto ogni giorno, ricostruito a ritroso da acquisti e vendite, rispetto a quanto era costato fino ad allora — il gradino tratteggiato. Gli acquisti senza data contano come detenuti per tutto il periodo."
   },
-  "po_held_note_gone": {
-    "message": "Ciò che era detenuto ogni giorno, ricostruito a ritroso da acquisti e vendite, rispetto a quanto era costato fino ad allora — il gradino tratteggiato. Gli acquisti senza data contano come detenuti per tutto il periodo. Le monete che non detieni più ($1) non sono disegnate: per loro non si scarica lo storico."
+  "po_held_note_gone_2": {
+    "message": "Ciò che era detenuto ogni giorno, ricostruito dai tuoi acquisti e vendite, contro quanto era costato fino ad allora — il gradino tratteggiato. Gli acquisti senza data contano come detenuti sempre. Le monete vendute fino a zero sono disegnate fino alla vendita; $1 no, per mancanza della loro storia.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
   },
   "po_held_short": {
     "message": "Detenuto $1 giorni — breve termine secondo la soglia di $2 giorni usata in molti posti"
