@@ -533,9 +533,6 @@
   "al_progress_title": {
     "message": "Bunu kurduğunda bulunduğu yerden itibaren yolun %$1'i"
   },
-  "al_reach_note": {
-    "message": "$1 ve üzeri bir hareket, son $3 günün $2 gününde olmuş."
-  },
   "al_rearm": {
     "message": "Yeniden kur"
   },
@@ -681,6 +678,46 @@
   },
   "al_total_unmeasured": {
     "message": " — toplam eksik sayılmak yerine ölçülmeden bırakılır"
+  },
+  "al_touch_down": {
+    "message": "Bu coinin günlük geçmişinde fiyat, bir kapanışın %$1 altına bir gün içinde $3 günün $2'sinde, bir hafta içinde $5 günün $4'ünde ulaştı.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      },
+      "arg4": {
+        "content": "$4"
+      },
+      "arg5": {
+        "content": "$5"
+      }
+    }
+  },
+  "al_touch_up": {
+    "message": "Bu coinin günlük geçmişinde fiyat, bir kapanışın %$1 üstüne bir gün içinde $3 günün $2'sinde, bir hafta içinde $5 günün $4'ünde ulaştı.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      },
+      "arg4": {
+        "content": "$4"
+      },
+      "arg5": {
+        "content": "$5"
+      }
+    }
   },
   "al_travel_band": {
     "message": "hareket bandı"
@@ -2153,6 +2190,9 @@
   "cmp_c_neither_s": {
     "message": "$1 kırıldı; $2 gün içinde iki seviyeye de ulaşılmadı."
   },
+  "cmp_c_on_coin": {
+    "message": "Bu coinde:"
+  },
   "cmp_c_open": {
     "message": "Boyun çizgisini $1 $2 seviyesinde kırdı — iki seviyeye de henüz ulaşılmadı."
   },
@@ -2161,9 +2201,6 @@
   },
   "cmp_c_pin": {
     "message": "Açık kalması için tıklayın"
-  },
-  "cmp_c_prec": {
-    "message": "Bu coinde: sonuçlanan $2 taneden $1 tanesi önce ölçülen harekete ulaştı · $3 bulundu. $4"
   },
   "cmp_c_rule": {
     "message": "Günlük mumlarda, test edilmeden önce belirlenmiş sabit bir kuralla bulundu — puan yok, giriş yok."
@@ -2544,11 +2581,50 @@
   "cpat_record2": {
     "message": "90 gün içinde sonuçlanan $2 tanesinin $1'inde, geçersizlikten önce ölçülen hareketine ulaştı. "
   },
+  "cpat_running": {
+    "message": "$1 tanesi hâlâ sürüyor.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
   "cpat_section": {
     "message": "Grafik formasyonları · günlük mumlar"
   },
   "cpat_too_few": {
     "message": "$1, sıradan bir günle karşılaştırmak için çok az — karşılaştırma yazılmaz."
+  },
+  "cpat_within_counts": {
+    "message": "90 gün içinde, $1 tanesinden: önce ölçülen hareket $2, önce geçersizlik $3, hiçbiri $4.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      },
+      "arg4": {
+        "content": "$4"
+      }
+    }
+  },
+  "cpat_within_shares": {
+    "message": "Oran olarak, sürenler de sayılarak: %$1 · %$2 · %$3.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      }
+    }
   },
   "cpi_line_hint": {
     "message": "ABD Tüketici Fiyat Endeksi, New York saatiyle 08:30'da açıklanır. Geçmiş açıklamaların bu coine ne yaptığı taban oranları ekranında (B) sayılır."
@@ -3183,6 +3259,25 @@
   "mo_withheld": {
     "message": "Değerlendirme geçmedi — tahmin gösterilmiyor"
   },
+  "mode_applied": {
+    "message": "$1 kullanımda — $2 ayar değişti.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "mode_changes": {
+    "message": "$1 değişiklik:",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
   "mode_fast_desc": {
     "message": "En taze fiyat: on saniyede bir, kendi isteğini gerektiren hiçbir şey yok — widget, haber satırı ya da kayan çubuk yok."
   },
@@ -3195,17 +3290,116 @@
   "mode_holder_name": {
     "message": "Holder"
   },
+  "mode_k_grid": {
+    "message": "ızgara"
+  },
+  "mode_k_last_seen": {
+    "message": "son ziyaretinizden beri"
+  },
+  "mode_k_move_news": {
+    "message": "hareket manşetleri"
+  },
+  "mode_k_news_row": {
+    "message": "haber satırı"
+  },
+  "mode_k_ohlc": {
+    "message": "açılış/yüksek/düşük/kapanış"
+  },
+  "mode_k_page_ticker": {
+    "message": "kayan fiyat çubuğu"
+  },
+  "mode_k_rotate": {
+    "message": "otomatik geçiş"
+  },
+  "mode_k_stats": {
+    "message": "istatistik satırı"
+  },
+  "mode_k_tab_title": {
+    "message": "sekme başlığında fiyatlar"
+  },
+  "mode_k_volume": {
+    "message": "hacim"
+  },
   "mode_minimal_desc": {
     "message": "Fiyat ve grafik, başka bir şey yok. Kenar sekmeleri üzerine gelene kadar soluklaşır; tuşlar çalışmaya devam eder."
   },
   "mode_minimal_name": {
     "message": "Sade"
   },
+  "mode_minutes": {
+    "message": "$1 dk",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "mode_seconds": {
+    "message": "$1 sn",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
   "mode_trader_desc": {
     "message": "Bir hareketi okumak için her şey: mumlar, hacim, ızgara, artı imlecinde açılış/yüksek/düşük/kapanış ve türev widget'ları."
   },
   "mode_trader_name": {
     "message": "Trader"
+  },
+  "mode_turns_off": {
+    "message": "$1 kapalı",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "mode_turns_on": {
+    "message": "$1 açık",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "mode_undo": {
+    "message": "Geri al — öncekini geri getir"
+  },
+  "mode_w_bundle": {
+    "message": "$1 widget'ları",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "mode_w_candles": {
+    "message": "mumlar"
+  },
+  "mode_w_line": {
+    "message": "çizgi grafik"
+  },
+  "mode_w_loud": {
+    "message": "kenar sekmeleri görünür"
+  },
+  "mode_w_no_widgets": {
+    "message": "widget'lar kapalı"
+  },
+  "mode_w_quiet": {
+    "message": "kenar sekmeleri soluk"
+  },
+  "mode_w_refresh": {
+    "message": "fiyatlar her $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "mode_w_saved_widgets": {
+    "message": "kayıtlı widget'larınız"
   },
   "mon_close": {
     "message": "Monitörü kapat"
@@ -9907,8 +10101,16 @@
   "study_range_held": {
     "message": "sonraki verilerde %$1 tuttu"
   },
-  "study_range_label": {
-    "message": "Geçmişteki $1 adet $2'lik aralığın %80'i burada bitti"
+  "study_range_label_scaled": {
+    "message": "$2 uzunluğundaki $1 geçmiş dönemin %80'i, bugünkü oynaklığa göre ölçeklenince, burada bitti",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
   },
   "study_regime_label": {
     "message": "Gölge: her güne kadarki 20 gün %5 veya daha fazla yükseldi (yeşil) ya da düştü (kırmızı) — bu görünümün %$1 / %$2'si"

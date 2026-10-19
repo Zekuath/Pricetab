@@ -117,6 +117,13 @@ const index = "file://" + path.join(root, "index.html");
       await page.locator("[data-nav-reset]").click();
       const reset = await page.evaluate(() => JSON.parse(localStorage.getItem("crypto_chart_nav_layout")));
       assert.deepStrictEqual(reset, { left: ["widgets", "chart", "targets", "calls", "compare"], right: ["settings", "portfolio", "futures", "news", "monitor"] });
+      // The reset is the quiet row now, with Undo in its place (18 Oct 2026)
+      await page.locator("[data-nav-reset='undo']").click();
+      const undone = await page.evaluate(() => JSON.parse(localStorage.getItem("crypto_chart_nav_layout")));
+      assert.strictEqual(undone.left.length, 0, "Undo puts every tab back on the right edge");
+      await page.locator("[data-nav-reset='true']").click();
+      assert.strictEqual(await page.locator("[data-nav-reset='true']").count(), 0, "at the default layout there is nothing to reset…");
+      assert.strictEqual(await page.locator("[data-nav-reset='undo']").count(), 1, "…only the way back from the reset just made");
     }
     await ctx.close();
     console.log("✔ Settings: placement, reorder, cancel, keep, re-enable, reload and scoped deletion");

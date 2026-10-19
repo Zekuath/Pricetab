@@ -2163,6 +2163,38 @@ const ModeCardDesc = styled.p`
   color: ${({ theme }) => theme.color.textSecondary};
 `;
 
+// What a mode would change from here: a quiet list under its sentence
+const ModeCardChanges = styled.p`
+  margin: 0;
+  font-size: 0.64rem;
+  line-height: 1.5;
+  color: ${({ theme }) => theme.color.textSecondary};
+  & > b {
+    font-weight: ${({ theme }) => theme.fontWeight.semibold};
+    color: ${({ theme }) => theme.color.text};
+  }
+`;
+
+// After a mode is applied: what changed, and Undo
+const ModeUndoBar = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  max-width: 44rem;
+  margin: 0 0 0.8rem;
+  padding: 0.55rem 0.8rem;
+  border: 1px solid ${({ theme }) => theme.color.border};
+  border-radius: 8px;
+  font-size: 0.7rem;
+  color: ${({ theme }) => theme.color.text};
+  & > button {
+    position: relative;
+    z-index: 1;
+  }
+`;
+
 const ModeCardFoot = styled.div`
   margin-top: auto;
   display: flex;

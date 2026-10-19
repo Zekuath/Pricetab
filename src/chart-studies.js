@@ -51,7 +51,10 @@ const STUDY_TURN_PLACEBOS = 8; // "any price" draws per level
 const STUDY_TURN_MAX = 8; // levels drawn, nearest the price first
 // Measured out of sample (studies-prereg.md, S6): the median coverage of the
 // in-sample 80% band on later data, four coins × three horizons
-const STUDY_BAND_HELD = 0.92;
+/* What the cone held out of sample: 92% for the flat-weighted band (S6);
+   80.4% (median of 12 cells) since it is scaled to the volatility now
+   (usual-range-conformal-prereg.md, 18 Oct 2026). */
+const STUDY_BAND_HELD = 0.8;
 
 /* ── Pure ──────────────────────────────────────────────────────────────── */
 
@@ -495,7 +498,7 @@ const chartStudies = (chart) => ({
         const perStep = (lastPt.time - first.time) / (scaled.length - 1);
         const steps = perStep > 0 ? Math.max(1, Math.round(future / perStep)) : 0;
         const series = chart.props.countSeries || chart.props.prices;
-        const band = steps ? travelBand(series, steps, 0.1, 0.9) : null;
+        const band = steps ? scaledTravelBand(series, steps, 0.1, 0.9) : null;
         const last = Number(data[data.length - 1].price);
         const map = chart.axisTimeMap();
         if (band && last > 0) {
@@ -507,7 +510,7 @@ const chartStudies = (chart) => ({
           if ([y0, yHi, yLo].every(isFinite)) {
             chart.studyPath(`M${x0},${y0}L${x1},${yHi}L${x1},${yLo}Z`, color.textSecondary, 0.12, color.textSecondary).setAttribute("data-study", "usual-range");
             const span = map ? map.toT(W) - map.toT(x0) : 0;
-            chart.studyLabel(x1 - 4, Math.max(14, Math.min(yHi, yLo) - 8), msg("study_range_label", "80% of $1 past stretches of $2 ended in here", String(band.n), describeSpan(span) || "—"), color.textSecondary, "end", "usual-range");
+            chart.studyLabel(x1 - 4, Math.max(14, Math.min(yHi, yLo) - 8), msg("study_range_label_scaled", "80% of $1 past stretches of $2, scaled to how much it moves now, ended in here", String(band.n), describeSpan(span) || "—"), color.textSecondary, "end", "usual-range");
             chart.studyLabel(x1 - 4, Math.min(H - 4, Math.max(yHi, yLo) + 16), msg("study_range_held", "held $1% on later data", String(Math.round(STUDY_BAND_HELD * 100))), color.textSecondary, "end", "usual-range");
           }
         } else if (map) {

@@ -1,0 +1,27 @@
+name: Design or usability
+description: Something is hard to read, hard to find or looks wrong.
+labels: [design]
+body:
+  - type: input
+    id: screen
+    attributes:
+      label: Which screen or panel
+      placeholder: Settings → Modes, the calls drawer, a widget…
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: What is hard or wrong
+      description: A screenshot with the part circled is the most useful thing here.
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: What you would expect instead
+  - type: input
+    id: size
+    attributes:
+      label: Window size, theme and language
+      placeholder: 1440×900 · dark · English

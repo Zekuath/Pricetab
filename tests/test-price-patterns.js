@@ -17,11 +17,12 @@ vm.runInContext(
   fs.readFileSync(path.join(SRC, "price-patterns.js"), "utf8") +
     "\nthis.detectPricePatterns = detectPricePatterns;" +
     "\nthis.pricePatternRecord = pricePatternRecord;" +
+    "\nthis.patternWithinWalk = patternWithinWalk;" +
     "\nthis.PRICE_PATTERNS = PRICE_PATTERNS;",
   sandbox,
   { filename: "price-patterns.js" },
 );
-const { detectPricePatterns, pricePatternRecord, PRICE_PATTERNS } = sandbox;
+const { detectPricePatterns, pricePatternRecord, patternWithinWalk, PRICE_PATTERNS } = sandbox;
 const plain = (v) => JSON.parse(JSON.stringify(v));
 
 let failed = 0;
@@ -131,6 +132,24 @@ check(PRICE_PATTERNS.map((p) => p.id).join(",") === "hs,ihs,dtop,dbot",
   ], "hs"));
   check(rec.found === 4 && rec.resolved === 2 && rec.targetFirst === 1,
     "the record counts what completed, what resolved, and what reached the target first", JSON.stringify(rec));
+  check(rec.stopFirst === 1 && rec.open === 1 && rec.unfinished === 1 && rec.within === null,
+    "…the invalidations, the walks that ran out and the ones still running; no shares without the last day", JSON.stringify(rec));
+  /* Within the walk, by hand (pattern-survival-prereg.md): a target on day
+     10, an invalidation on day 20, one walk that ran out, one seen for 30
+     days. Day 10: 1 of 4 at risk → target ¼, survival ¾. Day 20: 1 of 3 →
+     invalidation ¾ × ⅓ = ¼, survival ½. The rest are censored: neither ½. */
+  const D = 86400;
+  const w = plain(patternWithinWalk([
+    { out: "target", at: 0, resolvedAt: 10 * D },
+    { out: "stop", at: 0, resolvedAt: 20 * D },
+    { out: "open", at: 0 },
+    { out: "pending", at: 100 * D },
+  ], 130 * D));
+  check(Math.abs(w.target - 0.25) < 1e-12 && Math.abs(w.stop - 0.25) < 1e-12 && Math.abs(w.neither - 0.5) < 1e-12 && w.n === 4,
+    "within 90 days with the running walk kept: a quarter, a quarter, a half", JSON.stringify(w));
+  const dropped = plain(patternWithinWalk([{ out: "target", at: 0, resolvedAt: 5 * D }, { out: "pending", at: 0 }], 2 * D));
+  check(Math.abs(dropped.target - 1) < 1e-12 && dropped.n === 2,
+    "…a walk seen for two days leaves the risk set before day 5: it is counted, not read as a failure", JSON.stringify(dropped));
   check(plain(detectPricePatterns([])).length === 0 && plain(detectPricePatterns(null)).length === 0,
     "no candles, no patterns — and no throw");
 }

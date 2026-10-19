@@ -533,9 +533,6 @@
   "al_progress_title": {
     "message": "$1% do caminho desde onde estava quando você definiu"
   },
-  "al_reach_note": {
-    "message": "Um movimento de $1 ou mais aconteceu em $2 dos últimos $3 dias."
-  },
   "al_rearm": {
     "message": "Rearmar"
   },
@@ -681,6 +678,46 @@
   },
   "al_total_unmeasured": {
     "message": " — o total fica sem medição em vez de ser contado a menos"
+  },
+  "al_touch_down": {
+    "message": "No histórico diário desta moeda, o preço chegou $1 abaixo de um fechamento em um dia em $2 de $3 dias, e em uma semana em $4 de $5.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      },
+      "arg4": {
+        "content": "$4"
+      },
+      "arg5": {
+        "content": "$5"
+      }
+    }
+  },
+  "al_touch_up": {
+    "message": "No histórico diário desta moeda, o preço chegou $1 acima de um fechamento em um dia em $2 de $3 dias, e em uma semana em $4 de $5.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      },
+      "arg4": {
+        "content": "$4"
+      },
+      "arg5": {
+        "content": "$5"
+      }
+    }
   },
   "al_travel_band": {
     "message": "faixa de percurso"
@@ -2153,6 +2190,9 @@
   "cmp_c_neither_s": {
     "message": "Rompeu $1; nenhum dos níveis foi atingido em $2 dias."
   },
+  "cmp_c_on_coin": {
+    "message": "Nesta moeda:"
+  },
   "cmp_c_open": {
     "message": "Rompeu a linha de pescoço $1 a $2 — nenhum dos níveis foi atingido ainda."
   },
@@ -2161,9 +2201,6 @@
   },
   "cmp_c_pin": {
     "message": "Clique para mantê-la aberta"
-  },
-  "cmp_c_prec": {
-    "message": "Nesta moeda: $1 de $2 resolvidas atingiram primeiro o movimento medido · encontrada $3. $4"
   },
   "cmp_c_rule": {
     "message": "Encontrada por uma regra fixa em velas diárias, definida antes de ser testada — sem pontuação, sem entrada."
@@ -2544,11 +2581,50 @@
   "cpat_record2": {
     "message": "Atingiu seu movimento medido antes da invalidação em $1 dos $2 que se resolveram em 90 dias. "
   },
+  "cpat_running": {
+    "message": "$1 ainda em andamento.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
   "cpat_section": {
     "message": "Padrões gráficos · velas diárias"
   },
   "cpat_too_few": {
     "message": "$1 é pouco para comparar com um dia comum — nenhuma comparação é mostrada."
+  },
+  "cpat_within_counts": {
+    "message": "Em 90 dias, de $1: primeiro o movimento medido $2, primeiro a invalidação $3, nenhum dos dois $4.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      },
+      "arg4": {
+        "content": "$4"
+      }
+    }
+  },
+  "cpat_within_shares": {
+    "message": "Em proporções, contando as em andamento: $1% · $2% · $3%.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      }
+    }
   },
   "cpi_line_hint": {
     "message": "O índice de preços ao consumidor dos EUA, divulgado às 08:30 no horário de Nova York. O que as divulgações passadas fizeram com esta moeda é contado na tela de taxas-base (B)."
@@ -3183,6 +3259,25 @@
   "mo_withheld": {
     "message": "A avaliação não passou — nenhuma estimativa é mostrada"
   },
+  "mode_applied": {
+    "message": "$1 está em uso — $2 configurações mudaram.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "mode_changes": {
+    "message": "Muda $1:",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
   "mode_fast_desc": {
     "message": "O preço mais recente: a cada dez segundos, e nada que custe um pedido próprio — sem widgets, linha de notícias ou barra rolante."
   },
@@ -3195,17 +3290,116 @@
   "mode_holder_name": {
     "message": "Holder"
   },
+  "mode_k_grid": {
+    "message": "grade"
+  },
+  "mode_k_last_seen": {
+    "message": "desde sua última visita"
+  },
+  "mode_k_move_news": {
+    "message": "manchetes dos movimentos"
+  },
+  "mode_k_news_row": {
+    "message": "linha de notícias"
+  },
+  "mode_k_ohlc": {
+    "message": "abertura/máxima/mínima/fechamento"
+  },
+  "mode_k_page_ticker": {
+    "message": "barra de preços rolante"
+  },
+  "mode_k_rotate": {
+    "message": "rotação automática"
+  },
+  "mode_k_stats": {
+    "message": "linha de estatísticas"
+  },
+  "mode_k_tab_title": {
+    "message": "preços no título da aba"
+  },
+  "mode_k_volume": {
+    "message": "volume"
+  },
   "mode_minimal_desc": {
     "message": "O preço e o gráfico, nada mais. As abas das bordas esmaecem até você apontar para elas; as teclas continuam funcionando."
   },
   "mode_minimal_name": {
     "message": "Mínimo"
   },
+  "mode_minutes": {
+    "message": "$1 min",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "mode_seconds": {
+    "message": "$1 s",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
   "mode_trader_desc": {
     "message": "Tudo para ler um movimento: velas, volume, a grade, abertura/máxima/mínima/fechamento na mira e os widgets de derivativos."
   },
   "mode_trader_name": {
     "message": "Trader"
+  },
+  "mode_turns_off": {
+    "message": "$1 desligado",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "mode_turns_on": {
+    "message": "$1 ligado",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "mode_undo": {
+    "message": "Desfazer — voltar ao que havia"
+  },
+  "mode_w_bundle": {
+    "message": "os widgets $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "mode_w_candles": {
+    "message": "velas"
+  },
+  "mode_w_line": {
+    "message": "gráfico de linha"
+  },
+  "mode_w_loud": {
+    "message": "abas das bordas visíveis"
+  },
+  "mode_w_no_widgets": {
+    "message": "widgets desligados"
+  },
+  "mode_w_quiet": {
+    "message": "abas das bordas esmaecidas"
+  },
+  "mode_w_refresh": {
+    "message": "preços a cada $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "mode_w_saved_widgets": {
+    "message": "seus widgets salvos"
   },
   "mon_close": {
     "message": "Fechar o monitor"
@@ -9930,8 +10124,16 @@
   "study_range_held": {
     "message": "conteve $1% em dados posteriores"
   },
-  "study_range_label": {
-    "message": "80% de $1 trechos passados de $2 terminaram aqui dentro"
+  "study_range_label_scaled": {
+    "message": "80% de $1 trechos passados de $2, ajustados ao quanto se move agora, terminaram aqui",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
   },
   "study_regime_label": {
     "message": "Sombreado: os 20 dias até cada dia subiram ≥5% (verde) ou caíram ≥5% (vermelho) — $1% / $2% desta vista"

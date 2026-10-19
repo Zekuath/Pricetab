@@ -164,7 +164,8 @@ const renderNavigationSettings = (panel) => {
           React.createElement(ToggleSwitch, { active: switchOn(key), "aria-pressed": switchOn(key) ? "true" : "false",
             "aria-label": msg("pref_features_aria", "Turn $1 on or off", tab.label), onClick: () => toggle(key) }));
     }))),
-    React.createElement(NavRow, { "data-nav-row": "baseRates" },
+    // Outside the list above, so it takes the list's gap itself
+    React.createElement(NavRow, { "data-nav-row": "baseRates", style: { marginTop: "0.5rem" } },
       React.createElement("span", null, msg("pt_tab_baserates", "Base rates"),
         !enabled("monitor") ? React.createElement("small", { style: { display: "block" } }, msg("nav_requires_monitor", "Requires Monitor")) : null),
       React.createElement(ToggleSwitch, { disabled: !enabled("monitor"), active: enabled("baseRates"), "aria-pressed": enabled("baseRates") ? "true" : "false",
@@ -190,5 +191,35 @@ const renderNavigationSettings = (panel) => {
       React.createElement(PracticeTermsRow, null,
         React.createElement(SettingsActionButton, { "data-practice-accept": "true", onClick: () => { panel.setState({ practiceAsk: false }); if (p.onPracticeAccept) p.onPracticeAccept(); } }, msg("pref_practice_accept", "I have read this — turn it on")),
         React.createElement(PresetButton, { onClick: () => panel.setState({ practiceAsk: false }) }, msg("pref_practice_decline", "Not now")))) : null,
-    React.createElement(SettingsActionButton, { "data-nav-reset": "true", onClick: () => p.onNavReset && p.onNavReset() }, msg("nav_reset", "Reset positions and order")));
+    /* The reset in the panel's quiet face, as the coins page has it — it was
+       the black action button, the loudest thing on a page whose subject is
+       the rows above it. One press, with Undo in its place until the layout
+       changes again; nothing to reset, nothing drawn. */
+    (() => {
+      const same = (a, b) => ["left", "right"].every((s) => (a[s] || []).join() === (b[s] || []).join());
+      const atDefault = same(layout, sanitizeNavLayout(DEFAULT_NAV_LAYOUT));
+      const undo = panel.state.navUndo && same(layout, sanitizeNavLayout(DEFAULT_NAV_LAYOUT)) ? panel.state.navUndo : null;
+      if (atDefault && !undo) return null;
+      return React.createElement(
+        ResetRow,
+        null,
+        React.createElement(
+          ResetButton,
+          {
+            "data-nav-reset": undo ? "undo" : "true",
+            onClick: () => {
+              if (!p.onNavReset) return;
+              if (undo) {
+                p.onNavReset(undo);
+                panel.setState({ navUndo: null });
+              } else {
+                panel.setState({ navUndo: { left: layout.left.slice(), right: layout.right.slice() } });
+                p.onNavReset();
+              }
+            },
+          },
+          undo ? msg("set_undo", "Undo") : msg("nav_reset", "Reset positions and order"),
+        ),
+      );
+    })());
 };

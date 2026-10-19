@@ -985,7 +985,9 @@ class BaseRatesPanel extends PureComponent {
    * comparison. The most recent one is named with its levels when it is
    * still being walked, so the chart's lines have a sentence behind them. */
   renderShape(def, episodes) {
-    const rec = pricePatternRecord(episodes, def.id);
+    const candles = this.state.candles;
+    const lastT = Array.isArray(candles) && candles.length ? candles[candles.length - 1].t : NaN;
+    const rec = pricePatternRecord(episodes, def.id, lastT);
     const mine = episodes.filter((e) => e.kind === def.id);
     const latest = mine[mine.length - 1];
     const live = latest && latest.out === "pending";
@@ -1021,17 +1023,12 @@ class BaseRatesPanel extends PureComponent {
         BaseDetail,
         null,
         rec.found
-          ? msg(
-              "cpat_record2",
-              "Reached its measured move before its invalidation on $1 of the $2 that have resolved within 90 days. ",
-              String(rec.targetFirst),
-              String(rec.resolved),
-            ) +
-              (rec.resolved < BASE_RATE_MIN_EPISODES
-                ? msg(
+          ? patternRecordText(rec) +
+              (rec.found < BASE_RATE_MIN_EPISODES
+                ? " " + msg(
                     "cpat_too_few",
                     "$1 is too few to compare with an ordinary day — no comparison is printed.",
-                    String(rec.resolved),
+                    String(rec.found),
                   )
                 : "")
           : msg(

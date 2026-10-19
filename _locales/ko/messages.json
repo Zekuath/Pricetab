@@ -549,9 +549,6 @@
   "al_progress_title": {
     "message": "설정했을 때 위치에서 $1% 진행"
   },
-  "al_reach_note": {
-    "message": "$1 이상의 움직임은 최근 $3일 중 $2일에 있었습니다."
-  },
   "al_rearm": {
     "message": "다시 설정"
   },
@@ -697,6 +694,46 @@
   },
   "al_total_unmeasured": {
     "message": " — 합계는 적게 세는 대신 측정하지 않은 채로 둡니다"
+  },
+  "al_touch_down": {
+    "message": "이 코인의 일봉 기록에서 가격이 종가보다 $1 아래에 하루 안에 닿은 날은 $3일 중 $2일, 일주일 안에는 $5일 중 $4일이었습니다.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      },
+      "arg4": {
+        "content": "$4"
+      },
+      "arg5": {
+        "content": "$5"
+      }
+    }
+  },
+  "al_touch_up": {
+    "message": "이 코인의 일봉 기록에서 가격이 종가보다 $1 위에 하루 안에 닿은 날은 $3일 중 $2일, 일주일 안에는 $5일 중 $4일이었습니다.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      },
+      "arg4": {
+        "content": "$4"
+      },
+      "arg5": {
+        "content": "$5"
+      }
+    }
   },
   "al_travel_band": {
     "message": "이동 폭 밴드"
@@ -2169,6 +2206,9 @@
   "cmp_c_neither_s": {
     "message": "$1에 돌파했지만 $2일 안에 어느 수준에도 닿지 않았습니다."
   },
+  "cmp_c_on_coin": {
+    "message": "이 코인에서:"
+  },
   "cmp_c_open": {
     "message": "$1 $2에서 넥라인을 돌파했습니다 — 아직 어느 수준에도 닿지 않았습니다."
   },
@@ -2177,9 +2217,6 @@
   },
   "cmp_c_pin": {
     "message": "클릭하면 열어 둡니다"
-  },
-  "cmp_c_prec": {
-    "message": "이 코인에서: 결판난 $2번 중 $1번이 측정 폭에 먼저 도달 · $3 발견. $4"
   },
   "cmp_c_rule": {
     "message": "일봉에 고정 규칙으로 찾았으며, 규칙은 검증 전에 정했습니다 — 점수도, 진입도 없습니다."
@@ -2560,11 +2597,50 @@
   "cpat_record2": {
     "message": "90일 안에 결론 난 $2회 중 $1회에서 무효화보다 먼저 측정 폭에 닿았습니다. "
   },
+  "cpat_running": {
+    "message": "$1개는 아직 진행 중입니다.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
   "cpat_section": {
     "message": "차트 패턴 · 일봉"
   },
   "cpat_too_few": {
     "message": "$1회는 평범한 날과 비교하기에 너무 적어 비교를 표시하지 않습니다."
+  },
+  "cpat_within_counts": {
+    "message": "90일 이내, $1개 중: 목표 폭 먼저 $2, 무효화 먼저 $3, 둘 다 아님 $4.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      },
+      "arg4": {
+        "content": "$4"
+      }
+    }
+  },
+  "cpat_within_shares": {
+    "message": "비율로(진행 중인 것 포함): $1% · $2% · $3%.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      }
+    }
   },
   "cpi_line_hint": {
     "message": "미국 소비자물가지수, 뉴욕 시간 08:30 발표. 과거 발표가 이 코인에 준 움직임은 기준율 화면(B)에서 셉니다."
@@ -3199,6 +3275,25 @@
   "mo_withheld": {
     "message": "평가를 통과하지 못함 — 추정치를 표시하지 않습니다"
   },
+  "mode_applied": {
+    "message": "$1 사용 중 — 설정 $2개가 바뀌었습니다.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "mode_changes": {
+    "message": "$1개 변경:",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
   "mode_fast_desc": {
     "message": "가장 신선한 가격: 10초마다, 별도 요청이 드는 것은 모두 끔 — 위젯, 뉴스 줄, 흐르는 바 없음."
   },
@@ -3211,17 +3306,116 @@
   "mode_holder_name": {
     "message": "홀더"
   },
+  "mode_k_grid": {
+    "message": "그리드"
+  },
+  "mode_k_last_seen": {
+    "message": "지난 방문 이후"
+  },
+  "mode_k_move_news": {
+    "message": "움직임 헤드라인"
+  },
+  "mode_k_news_row": {
+    "message": "뉴스 줄"
+  },
+  "mode_k_ohlc": {
+    "message": "시가/고가/저가/종가"
+  },
+  "mode_k_page_ticker": {
+    "message": "흐르는 가격 바"
+  },
+  "mode_k_rotate": {
+    "message": "자동 전환"
+  },
+  "mode_k_stats": {
+    "message": "통계 줄"
+  },
+  "mode_k_tab_title": {
+    "message": "탭 제목의 가격"
+  },
+  "mode_k_volume": {
+    "message": "거래량"
+  },
   "mode_minimal_desc": {
     "message": "가격과 차트만. 가장자리 탭은 가리킬 때까지 흐려지고, 키는 그대로 작동합니다."
   },
   "mode_minimal_name": {
     "message": "미니멀"
   },
+  "mode_minutes": {
+    "message": "$1분",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "mode_seconds": {
+    "message": "$1초",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
   "mode_trader_desc": {
     "message": "움직임을 읽기 위한 모든 것: 캔들, 거래량, 그리드, 십자선의 시가/고가/저가/종가, 파생상품 위젯."
   },
   "mode_trader_name": {
     "message": "트레이더"
+  },
+  "mode_turns_off": {
+    "message": "$1 끔",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "mode_turns_on": {
+    "message": "$1 켬",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "mode_undo": {
+    "message": "실행 취소 — 이전 상태로"
+  },
+  "mode_w_bundle": {
+    "message": "$1 위젯",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "mode_w_candles": {
+    "message": "캔들"
+  },
+  "mode_w_line": {
+    "message": "선 차트"
+  },
+  "mode_w_loud": {
+    "message": "가장자리 탭 표시"
+  },
+  "mode_w_no_widgets": {
+    "message": "위젯 끔"
+  },
+  "mode_w_quiet": {
+    "message": "가장자리 탭 흐리게"
+  },
+  "mode_w_refresh": {
+    "message": "가격 $1마다",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "mode_w_saved_widgets": {
+    "message": "저장한 위젯"
   },
   "mon_close": {
     "message": "모니터 닫기"
@@ -9946,8 +10140,16 @@
   "study_range_held": {
     "message": "이후 데이터에서 $1%를 담음"
   },
-  "study_range_label": {
-    "message": "과거 $2 구간 $1개 중 80%가 여기서 끝남"
+  "study_range_label_scaled": {
+    "message": "과거 $2 구간 $1개 중 80%가(지금의 변동폭에 맞춰 환산) 여기서 끝났습니다",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
   },
   "study_regime_label": {
     "message": "음영: 각 날까지의 20일이 5% 이상 상승(초록) 또는 하락(빨강) — 이 화면의 $1% / $2%"

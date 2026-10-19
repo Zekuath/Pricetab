@@ -533,9 +533,6 @@
   "al_progress_title": {
     "message": "$1% del percorso da dov'era quando l'hai impostato"
   },
-  "al_reach_note": {
-    "message": "Un movimento di $1 o più è avvenuto in $2 degli ultimi $3 giorni."
-  },
   "al_rearm": {
     "message": "Riattiva"
   },
@@ -681,6 +678,46 @@
   },
   "al_total_unmeasured": {
     "message": " — il totale resta non misurato invece che contato per difetto"
+  },
+  "al_touch_down": {
+    "message": "Nella storia giornaliera di questa moneta, il prezzo è arrivato $1 sotto una chiusura entro un giorno in $2 giorni su $3, ed entro una settimana in $4 su $5.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      },
+      "arg4": {
+        "content": "$4"
+      },
+      "arg5": {
+        "content": "$5"
+      }
+    }
+  },
+  "al_touch_up": {
+    "message": "Nella storia giornaliera di questa moneta, il prezzo è arrivato $1 sopra una chiusura entro un giorno in $2 giorni su $3, ed entro una settimana in $4 su $5.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      },
+      "arg4": {
+        "content": "$4"
+      },
+      "arg5": {
+        "content": "$5"
+      }
+    }
   },
   "al_travel_band": {
     "message": "banda di percorso"
@@ -2153,6 +2190,9 @@
   "cmp_c_neither_s": {
     "message": "Rottura $1; nessuno dei due livelli raggiunto entro $2 giorni."
   },
+  "cmp_c_on_coin": {
+    "message": "Su questa moneta:"
+  },
   "cmp_c_open": {
     "message": "Ha rotto la neckline $1 a $2: nessuno dei due livelli è ancora stato raggiunto."
   },
@@ -2161,9 +2201,6 @@
   },
   "cmp_c_pin": {
     "message": "Fai clic per tenerla aperta"
-  },
-  "cmp_c_prec": {
-    "message": "Su questa moneta: $1 su $2 risolte hanno raggiunto prima il movimento misurato · trovata $3. $4"
   },
   "cmp_c_rule": {
     "message": "Trovata con una regola fissa sulle candele giornaliere, stabilita prima di essere testata: nessun punteggio, nessun ingresso."
@@ -2544,11 +2581,50 @@
   "cpat_record2": {
     "message": "Ha raggiunto il movimento misurato prima dell'invalidazione in $1 dei $2 casi risolti entro 90 giorni. "
   },
+  "cpat_running": {
+    "message": "$1 ancora in corso.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
   "cpat_section": {
     "message": "Figure grafiche · candele giornaliere"
   },
   "cpat_too_few": {
     "message": "$1 sono troppo pochi per un confronto con un giorno qualunque: nessun confronto viene mostrato."
+  },
+  "cpat_within_counts": {
+    "message": "Entro 90 giorni, su $1: prima il movimento misurato $2, prima l'invalidazione $3, nessuno dei due $4.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      },
+      "arg4": {
+        "content": "$4"
+      }
+    }
+  },
+  "cpat_within_shares": {
+    "message": "In quote, contando quelle in corso: $1% · $2% · $3%.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      }
+    }
   },
   "cpi_line_hint": {
     "message": "L'indice dei prezzi al consumo USA, pubblicato alle 08:30 ora di New York. Cosa hanno fatto i dati precedenti a questa moneta è contato nella schermata dei tassi di base (B)."
@@ -3183,6 +3259,25 @@
   "mo_withheld": {
     "message": "Valutazione non superata — nessuna stima mostrata"
   },
+  "mode_applied": {
+    "message": "$1 è in uso — $2 impostazioni cambiate.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "mode_changes": {
+    "message": "Cambia $1:",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
   "mode_fast_desc": {
     "message": "Il prezzo più fresco: ogni dieci secondi, e niente che costi una richiesta propria — niente widget, riga di notizie o barra scorrevole."
   },
@@ -3195,17 +3290,116 @@
   "mode_holder_name": {
     "message": "Holder"
   },
+  "mode_k_grid": {
+    "message": "griglia"
+  },
+  "mode_k_last_seen": {
+    "message": "dalla tua ultima visita"
+  },
+  "mode_k_move_news": {
+    "message": "titoli dei movimenti"
+  },
+  "mode_k_news_row": {
+    "message": "riga di notizie"
+  },
+  "mode_k_ohlc": {
+    "message": "apertura/massimo/minimo/chiusura"
+  },
+  "mode_k_page_ticker": {
+    "message": "barra prezzi scorrevole"
+  },
+  "mode_k_rotate": {
+    "message": "rotazione automatica"
+  },
+  "mode_k_stats": {
+    "message": "riga delle statistiche"
+  },
+  "mode_k_tab_title": {
+    "message": "prezzi nel titolo della scheda"
+  },
+  "mode_k_volume": {
+    "message": "volume"
+  },
   "mode_minimal_desc": {
     "message": "Il prezzo e il grafico, nient'altro. Le schede ai bordi sfumano finché non le punti; i tasti funzionano ancora."
   },
   "mode_minimal_name": {
     "message": "Minimale"
   },
+  "mode_minutes": {
+    "message": "$1 min",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "mode_seconds": {
+    "message": "$1 s",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
   "mode_trader_desc": {
     "message": "Tutto per leggere un movimento: candele, volume, la griglia, apertura/massimo/minimo/chiusura sul mirino e i widget dei derivati."
   },
   "mode_trader_name": {
     "message": "Trader"
+  },
+  "mode_turns_off": {
+    "message": "$1 spento",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "mode_turns_on": {
+    "message": "$1 acceso",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "mode_undo": {
+    "message": "Annulla — rimetti com'era"
+  },
+  "mode_w_bundle": {
+    "message": "i widget $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "mode_w_candles": {
+    "message": "candele"
+  },
+  "mode_w_line": {
+    "message": "grafico a linea"
+  },
+  "mode_w_loud": {
+    "message": "schede ai bordi visibili"
+  },
+  "mode_w_no_widgets": {
+    "message": "widget spenti"
+  },
+  "mode_w_quiet": {
+    "message": "schede ai bordi sfumate"
+  },
+  "mode_w_refresh": {
+    "message": "prezzi ogni $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "mode_w_saved_widgets": {
+    "message": "i tuoi widget salvati"
   },
   "mon_close": {
     "message": "Chiudi il monitor"
@@ -9930,8 +10124,16 @@
   "study_range_held": {
     "message": "ha tenuto il $1% su dati successivi"
   },
-  "study_range_label": {
-    "message": "L’80% di $1 tratti passati di $2 è finito qui dentro"
+  "study_range_label_scaled": {
+    "message": "l'80% di $1 tratti passati di $2, scalati a quanto si muove ora, è finito qui",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
   },
   "study_regime_label": {
     "message": "Ombreggiato: i 20 giorni fino a ogni giorno sono saliti ≥5% (verde) o scesi ≥5% (rosso) — $1% / $2% di questa vista"

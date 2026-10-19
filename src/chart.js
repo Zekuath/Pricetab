@@ -6373,17 +6373,9 @@ class LineBase extends PureComponent {
           );
         }
         if (rec) {
+          // The three outcomes within the walk (pattern-survival-prereg.md)
           add(
-            msg(
-              "cmp_c_prec",
-              "On this coin: $1 of $2 that resolved reached the measured move first · found $3. $4",
-              String(rec.targetFirst),
-              String(rec.resolved),
-              rec.found === 1
-                ? msg("br_one_time", "1 time")
-                : msg("br_n_times", "$1 times", rec.found),
-              few(rec.resolved),
-            ).trim(),
+            (msg("cmp_c_on_coin", "On this coin:") + " " + patternRecordText(rec) + " " + few(rec.found)).trim(),
             color.text,
             "record",
           );

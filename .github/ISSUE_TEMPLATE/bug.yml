@@ -1,0 +1,59 @@
+name: Bug report
+description: Something does not work the way it should.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for reporting. Please do not paste wallet private keys, recovery phrases or your portfolio's figures. For a security problem, use private vulnerability reporting instead.
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: What you pressed or typed, one step per line.
+      placeholder: |
+        1. Open a new tab
+        2. Press A and type 50000
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: What happened instead
+      description: A screenshot helps if it is visual.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: PriceTab and Chrome versions
+      description: PriceTab's version is on chrome://extensions; Chrome's on chrome://version.
+      placeholder: PriceTab 2.0.0 · Chrome 131
+  - type: dropdown
+    id: where
+    attributes:
+      label: Where it runs
+      options:
+        - Chrome on a desktop or laptop
+        - ChromeOS
+        - Phone, from the home screen
+        - Phone, in the browser
+        - Other
+  - type: input
+    id: language
+    attributes:
+      label: Language and window size, if relevant
+      placeholder: Turkish · 1280×800
+  - type: textarea
+    id: console
+    attributes:
+      label: Console messages
+      description: Right-click the new tab → Inspect → Console. Paste any red lines.
+      render: text

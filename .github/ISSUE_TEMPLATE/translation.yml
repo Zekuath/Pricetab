@@ -1,0 +1,35 @@
+name: Translation
+description: A word or sentence reads wrong in your language.
+labels: [translation]
+body:
+  - type: input
+    id: locale
+    attributes:
+      label: Language
+      placeholder: tr, de, ja…
+    validations:
+      required: true
+  - type: input
+    id: where
+    attributes:
+      label: Where it appears
+      placeholder: Settings → Portfolio, the cost basis row
+    validations:
+      required: true
+  - type: textarea
+    id: current
+    attributes:
+      label: What it says now
+    validations:
+      required: true
+  - type: textarea
+    id: suggested
+    attributes:
+      label: What it should say
+    validations:
+      required: true
+  - type: input
+    id: key
+    attributes:
+      label: The message key, if you know it
+      description: In _locales/<language>/messages.json.

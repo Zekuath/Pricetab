@@ -533,9 +533,6 @@
   "al_progress_title": {
     "message": "$1% dari perjalanan sejak posisi saat Anda menyetelnya"
   },
-  "al_reach_note": {
-    "message": "Pergerakan $1 atau lebih terjadi pada $2 dari $3 hari terakhir."
-  },
   "al_rearm": {
     "message": "Aktifkan lagi"
   },
@@ -681,6 +678,46 @@
   },
   "al_total_unmeasured": {
     "message": " — totalnya dibiarkan tak terukur alih-alih dihitung kurang"
+  },
+  "al_touch_down": {
+    "message": "Dalam riwayat harian koin ini, harga mencapai $1 di bawah penutupan dalam sehari pada $2 dari $3 hari, dan dalam seminggu pada $4 dari $5.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      },
+      "arg4": {
+        "content": "$4"
+      },
+      "arg5": {
+        "content": "$5"
+      }
+    }
+  },
+  "al_touch_up": {
+    "message": "Dalam riwayat harian koin ini, harga mencapai $1 di atas penutupan dalam sehari pada $2 dari $3 hari, dan dalam seminggu pada $4 dari $5.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      },
+      "arg4": {
+        "content": "$4"
+      },
+      "arg5": {
+        "content": "$5"
+      }
+    }
   },
   "al_travel_band": {
     "message": "pita jelajah"
@@ -2153,6 +2190,9 @@
   "cmp_c_neither_s": {
     "message": "Tembus $1; tidak ada level yang tercapai dalam $2 hari."
   },
+  "cmp_c_on_coin": {
+    "message": "Di koin ini:"
+  },
   "cmp_c_open": {
     "message": "Menembus garis leher $1 di $2 — belum ada level yang tercapai."
   },
@@ -2161,9 +2201,6 @@
   },
   "cmp_c_pin": {
     "message": "Klik agar tetap terbuka"
-  },
-  "cmp_c_prec": {
-    "message": "Pada koin ini: $1 dari $2 yang selesai mencapai gerakan terukur lebih dulu · ditemukan $3. $4"
   },
   "cmp_c_rule": {
     "message": "Ditemukan dengan aturan tetap pada lilin harian, ditetapkan sebelum diuji — tanpa skor, tanpa entri."
@@ -2544,11 +2581,50 @@
   "cpat_record2": {
     "message": "Mencapai gerakan terukurnya sebelum pembatalan pada $1 dari $2 yang selesai dalam 90 hari. "
   },
+  "cpat_running": {
+    "message": "$1 masih berjalan.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
   "cpat_section": {
     "message": "Pola grafik · lilin harian"
   },
   "cpat_too_few": {
     "message": "$1 terlalu sedikit untuk dibandingkan dengan hari biasa — tidak ada perbandingan yang ditampilkan."
+  },
+  "cpat_within_counts": {
+    "message": "Dalam 90 hari, dari $1: gerakan terukur lebih dulu $2, invalidasi lebih dulu $3, tidak keduanya $4.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      },
+      "arg4": {
+        "content": "$4"
+      }
+    }
+  },
+  "cpat_within_shares": {
+    "message": "Sebagai bagian, yang masih berjalan ikut dihitung: $1% · $2% · $3%.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      }
+    }
   },
   "cpi_line_hint": {
     "message": "Indeks Harga Konsumen AS, dirilis pukul 08:30 waktu New York. Apa yang dilakukan rilis sebelumnya pada koin ini dihitung di layar tingkat dasar (B)."
@@ -3183,6 +3259,25 @@
   "mo_withheld": {
     "message": "Evaluasi tidak lolos — tidak ada estimasi yang ditampilkan"
   },
+  "mode_applied": {
+    "message": "$1 sedang dipakai — $2 pengaturan berubah.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "mode_changes": {
+    "message": "Mengubah $1:",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
   "mode_fast_desc": {
     "message": "Harga paling baru: tiap sepuluh detik, dan tanpa apa pun yang butuh permintaan sendiri — tanpa widget, baris berita, atau bilah berjalan."
   },
@@ -3195,17 +3290,116 @@
   "mode_holder_name": {
     "message": "Holder"
   },
+  "mode_k_grid": {
+    "message": "kisi"
+  },
+  "mode_k_last_seen": {
+    "message": "sejak kunjungan terakhir"
+  },
+  "mode_k_move_news": {
+    "message": "berita pergerakan"
+  },
+  "mode_k_news_row": {
+    "message": "baris berita"
+  },
+  "mode_k_ohlc": {
+    "message": "buka/tinggi/rendah/tutup"
+  },
+  "mode_k_page_ticker": {
+    "message": "bilah harga berjalan"
+  },
+  "mode_k_rotate": {
+    "message": "rotasi otomatis"
+  },
+  "mode_k_stats": {
+    "message": "baris statistik"
+  },
+  "mode_k_tab_title": {
+    "message": "harga di judul tab"
+  },
+  "mode_k_volume": {
+    "message": "volume"
+  },
   "mode_minimal_desc": {
     "message": "Harga dan grafik, tidak lebih. Tab di tepi memudar sampai Anda menunjuknya; tombol keyboard tetap berfungsi."
   },
   "mode_minimal_name": {
     "message": "Minimal"
   },
+  "mode_minutes": {
+    "message": "$1 mnt",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "mode_seconds": {
+    "message": "$1 dtk",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
   "mode_trader_desc": {
     "message": "Semua untuk membaca pergerakan: candle, volume, kisi, buka/tinggi/rendah/tutup pada crosshair, dan widget derivatif."
   },
   "mode_trader_name": {
     "message": "Trader"
+  },
+  "mode_turns_off": {
+    "message": "$1 mati",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "mode_turns_on": {
+    "message": "$1 nyala",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "mode_undo": {
+    "message": "Urungkan — kembalikan yang tadi"
+  },
+  "mode_w_bundle": {
+    "message": "widget $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "mode_w_candles": {
+    "message": "candle"
+  },
+  "mode_w_line": {
+    "message": "grafik garis"
+  },
+  "mode_w_loud": {
+    "message": "tab tepi terlihat"
+  },
+  "mode_w_no_widgets": {
+    "message": "widget mati"
+  },
+  "mode_w_quiet": {
+    "message": "tab tepi memudar"
+  },
+  "mode_w_refresh": {
+    "message": "harga tiap $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "mode_w_saved_widgets": {
+    "message": "widget yang Anda simpan"
   },
   "mon_close": {
     "message": "Tutup monitor"
@@ -9930,8 +10124,16 @@
   "study_range_held": {
     "message": "bertahan $1% pada data berikutnya"
   },
-  "study_range_label": {
-    "message": "80% dari $1 bentangan $2 sebelumnya berakhir di sini"
+  "study_range_label_scaled": {
+    "message": "80% dari $1 rentang $2 sebelumnya, diskalakan ke gerak saat ini, berakhir di sini",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
   },
   "study_regime_label": {
     "message": "Diarsir: 20 hari hingga tiap hari naik ≥5% (hijau) atau turun ≥5% (merah) — $1% / $2% dari tampilan ini"

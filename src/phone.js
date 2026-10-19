@@ -178,6 +178,18 @@ const PhoneSheet = styled.div`
   box-shadow: 0 -12px 40px ${({ theme }) => theme.color.shadow};
   animation: ${phoneSheetIn} ${() => motionMs(220)}ms cubic-bezier(0.22, 1, 0.36, 1);
 
+  /* **On a wide touch screen, a card** (18 Oct 2026, measured on a 1366px
+     ChromeOS-sized window in tablet mode): a phone's edge-to-edge sheet ran
+     the full width of a laptop. Centred by its two insets — the entrance
+     already uses transform — at most 30rem, off the bottom edge. */
+  @media (min-width: 760px) {
+    left: max(1rem, calc(50% - 15rem));
+    right: max(1rem, calc(50% - 15rem));
+    bottom: calc(1rem + ${({ lifted }) => (lifted ? "var(--pt-dock-lift, 0px)" : "0px")});
+    border-radius: 16px;
+    border-bottom: 1px solid ${({ theme }) => theme.color.border};
+  }
+
   /* **From the top** for a call (3 Oct 2026): a sheet from the foot lay over
      the board and hid the very square it asked about; the price above the
      chart is what can be covered while the call is decided. */

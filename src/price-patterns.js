@@ -192,12 +192,90 @@ const detectPricePatterns = (candles) => {
    resolved one way or the other, and how many of those reached the target
    first. The comparison with an ordinary day is left to the caller's
    `BASE_RATE_MIN_EPISODES` — below it there is none to print. */
-const pricePatternRecord = (episodes, kind) => {
+const pricePatternRecord = (episodes, kind, lastT) => {
   const mine = (Array.isArray(episodes) ? episodes : []).filter((e) => e.kind === kind);
   const resolved = mine.filter((e) => e.out === "target" || e.out === "stop");
+  const targetFirst = resolved.filter((e) => e.out === "target").length;
   return {
     found: mine.length,
     resolved: resolved.length,
-    targetFirst: resolved.filter((e) => e.out === "target").length,
+    targetFirst,
+    stopFirst: resolved.length - targetFirst,
+    // Walks that ran their length without either, and walks still running
+    open: mine.filter((e) => e.out === "open").length,
+    unfinished: mine.filter((e) => e.out === "pending").length,
+    within: Number.isFinite(lastT) ? patternWithinWalk(mine, lastT) : null,
   };
+};
+
+/* **Within the walk, with the running ones kept** (18 Oct 2026,
+   research/pattern-survival-prereg.md). The share of episodes that reached
+   the measured move first, the invalidation first, or neither within
+   `PRICE_PATTERN_WALK` days — Aalen–Johansen cumulative incidence, so a walk
+   still running counts for the days it has been seen and a walk that ran
+   out is "neither", not dropped. Measured: neither was 0–12% of episodes,
+   which "k of the resolved" never said. Times in days from the breakout. */
+const patternWithinWalk = (mine, lastT, walk = PRICE_PATTERN_WALK) => {
+  const DAY = 86400;
+  const obs = [];
+  for (const e of mine) {
+    if (e.out === "target" || e.out === "stop") {
+      obs.push({ time: Math.round((e.resolvedAt - e.at) / DAY), cause: e.out === "target" ? 1 : 2 });
+    } else if (e.out === "open") {
+      obs.push({ time: walk, cause: 0 });
+    } else {
+      obs.push({ time: Math.max(0, Math.min(walk, Math.round((lastT - e.at) / DAY))), cause: 0 });
+    }
+  }
+  if (!obs.length) return null;
+  obs.sort((x, y) => x.time - y.time);
+  let surv = 1;
+  let target = 0;
+  let stop = 0;
+  let i = 0;
+  while (i < obs.length && obs[i].time <= walk) {
+    const t = obs[i].time;
+    const atRisk = obs.length - i;
+    let d1 = 0;
+    let d2 = 0;
+    let j = i;
+    for (; j < obs.length && obs[j].time === t; j += 1) {
+      if (obs[j].cause === 1) d1 += 1;
+      else if (obs[j].cause === 2) d2 += 1;
+    }
+    target += surv * (d1 / atRisk);
+    stop += surv * (d2 / atRisk);
+    surv *= 1 - (d1 + d2) / atRisk;
+    i = j;
+  }
+  return { n: obs.length, target, stop, neither: Math.max(0, 1 - target - stop) };
+};
+
+/* The record in words, shared by the base-rate screen and the chart's card:
+   the three outcomes within the walk as counts, the running ones named, and
+   the shares — with the running ones kept — from BASE_RATE_MIN_EPISODES. */
+const patternRecordText = (rec) => {
+  const counts = msg(
+    "cpat_within_counts",
+    "Within 90 days, of $1: the measured move first $2, the invalidation first $3, neither $4.",
+    String(rec.found),
+    String(rec.targetFirst),
+    String(rec.stopFirst),
+    String(rec.open),
+  );
+  const running = rec.unfinished
+    ? " " + msg("cpat_running", "$1 still running.", String(rec.unfinished))
+    : "";
+  const w = rec.within;
+  const shares =
+    w && rec.found >= BASE_RATE_MIN_EPISODES
+      ? " " + msg(
+          "cpat_within_shares",
+          "As shares, the running ones kept: $1% · $2% · $3%.",
+          (w.target * 100).toFixed(0),
+          (w.stop * 100).toFixed(0),
+          (w.neither * 100).toFixed(0),
+        )
+      : "";
+  return counts + running + shares;
 };

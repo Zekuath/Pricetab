@@ -2674,8 +2674,9 @@ class CryptoChart extends PureComponent {
         return { navLayout: layout };
       });
     });
-    _defineProperty(this, "handleNavReset", () => {
-      const layout = sanitizeNavLayout(DEFAULT_NAV_LAYOUT);
+    // The default layout — or, given one, that layout back (Settings' Undo)
+    _defineProperty(this, "handleNavReset", (restore) => {
+      const layout = sanitizeNavLayout(restore && restore.left ? restore : DEFAULT_NAV_LAYOUT);
       if (saveNavLayout(layout)) this.setState({ navLayout: layout });
     });
 
@@ -4219,8 +4220,9 @@ class CryptoChart extends PureComponent {
                 .sort((a, b) => a.at - b.at)
             : [];
           const records = {};
+          const lastT = candles && candles.length ? candles[candles.length - 1].t : NaN;
           for (const def of COMPANION_PATTERN_DEFS)
-            records[def.id] = pricePatternRecord(episodes, def.id);
+            records[def.id] = pricePatternRecord(episodes, def.id, lastT);
           /* The strategy setups on the same candles: where each was
              entered, and its record here — the numbers only, never a word
              for better or worse (setups-prereg.md). */
@@ -4460,12 +4462,23 @@ class CryptoChart extends PureComponent {
       if (modeKey === "custom") {
         const saved = this.state.customMode;
         if (!saved) return;
+        this.setState({ modeUndo: { mode: "custom", settings: this.modeSnapshot(), widgets: { ...(this.state.widgets || {}) } } });
         this.applyModeArrangement(saved.settings, saved.widgets);
         return;
       }
       const mode = APP_MODES.find((m) => m.value === modeKey);
       if (!mode) return;
+      /* What was on screen, kept for Settings' Undo (18 Oct 2026): a mode
+         moves a dozen switches at once, and one press should bring them back. */
+      this.setState({ modeUndo: { mode: modeKey, settings: this.modeSnapshot(), widgets: { ...(this.state.widgets || {}) } } });
       this.applyModeArrangement(mode.settings, mode.widgets);
+    });
+
+    _defineProperty(this, "handleModeUndo", () => {
+      const prev = this.state.modeUndo;
+      if (!prev) return;
+      this.setState({ modeUndo: null });
+      this.applyModeArrangement(prev.settings, prev.widgets);
     });
 
     /* Put an arrangement on screen. **One place**, used by the four recipes and
@@ -10180,7 +10193,12 @@ class CryptoChart extends PureComponent {
              * the row needs the same values the switches below it are drawn
              * from — see `activeAppMode`. */
             appMode: activeAppMode(this.modeSnapshot(), widgets),
+            // What each mode would change is read against this
+            modeSnapshot: this.modeSnapshot(),
+            modeUndo: this.state.modeUndo || null,
+            onModeUndo: this.handleModeUndo,
             customSaved: Boolean(this.state.customMode),
+            customMode: this.state.customMode || null,
             customActive: matchesCustomMode(
               this.modeSnapshot(),
               widgets,

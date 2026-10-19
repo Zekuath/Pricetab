@@ -1703,6 +1703,41 @@ for (const [name, node] of [["A", labelA], ["B", labelB]]) {
   Object.assign(sandbox, stubs);
 }
 
+/* ── scaledTravelBand: the usual range at today's volatility (18 Oct 2026) ── */
+{
+  // A series that swung 4% a step for 600 steps, then 1% for 200
+  let seed = 3;
+  const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647 - 0.5) * 2;
+  const pts = [{ price: 100 }];
+  for (let i = 1; i < 800; i++) pts.push({ price: pts[i - 1].price * Math.exp((i < 600 ? 0.04 : 0.01) * rnd()) });
+  vm.runInContext(`this.__vol = ${JSON.stringify(pts)};`, sandbox);
+  const flat = json("travelBand(__vol, 5, 0.1, 0.9)");
+  const scaled = json("scaledTravelBand(__vol, 5, 0.1, 0.9)");
+  assert.ok(scaled && flat, "both bands are drawn");
+  assert.ok(Math.log(scaled.hi / scaled.lo) < Math.log(flat.hi / flat.lo) * 0.6,
+    `after the swings calm, the scaled band is the narrower: ${Math.log(scaled.hi / scaled.lo).toFixed(3)} vs ${Math.log(flat.hi / flat.lo).toFixed(3)}`);
+  assert.ok(scaled.lo < 1 && scaled.hi > 1, "it straddles the price now");
+  assert.strictEqual(run("scaledTravelBand(__vol.slice(0, 10), 5, 0.1, 0.9)"), null, "too short a series, no band");
+  console.log("  ✔ scaledTravelBand: narrower once the swings have calmed");
+}
+
+/* ── dailyTouchCount: a touch, one way, within the horizon (18 Oct 2026) ── */
+{
+  // Closes flat at 100; every fifth day's high reaches 103 and low 99
+  vm.runInContext(`this.__cd = Array.from({ length: 200 }, (_, i) => ({ close: 100, high: i % 5 === 0 ? 103 : 100.5, low: 99, open: 100 }));`, sandbox);
+  const up1 = json("dailyTouchCount(__cd, 2, 1)");
+  assert.strictEqual(up1.of, 199, "every close with a day after it");
+  assert.strictEqual(up1.n, 39, "2% above was reached the next day on the days before every fifth");
+  const up7 = json("dailyTouchCount(__cd, 2, 7)");
+  assert.strictEqual(up7.of, 193, "…and within a week, every close with a week after it");
+  assert.strictEqual(up7.n, 193, "…which always holds a fifth day");
+  assert.strictEqual(json("dailyTouchCount(__cd, -2, 7)").n, 0, "the other way: the low never went 2% down");
+  assert.strictEqual(json("dailyTouchCount(__cd, -1, 1)").n, 199, "…and 1% down it did every day");
+  assert.strictEqual(run("dailyTouchCount(__cd.slice(0, 50), 2, 1)"), null, "too short a history gives no count");
+  assert.strictEqual(run("dailyTouchCount(__cd, 0, 1)"), null, "no distance, no count");
+  console.log("  ✔ dailyTouchCount: one way, by touch, within a day and a week");
+}
+
 /* ── dailyMoveCount: a count with its denominator ───────────────────────── */
 
 {

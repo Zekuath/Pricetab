@@ -121,12 +121,70 @@ const modeWords = (value) => {
   }
 };
 
+/* One setting a mode would change, in words: what it becomes. */
+const modeSettingWord = (key, v) => {
+  const on = (name) => (v ? msg("mode_turns_on", "$1 on", name) : msg("mode_turns_off", "$1 off", name));
+  switch (key) {
+    case "chartType":
+      return v === "candles" ? msg("mode_w_candles", "candles") : msg("mode_w_line", "line chart");
+    case "quietChrome":
+      return v ? msg("mode_w_quiet", "edge tabs faded") : msg("mode_w_loud", "edge tabs shown");
+    case "chartGrid":
+      return on(msg("mode_k_grid", "grid"));
+    case "volumeBars":
+      return on(msg("mode_k_volume", "volume"));
+    case "ohlcEnabled":
+      return on(msg("mode_k_ohlc", "open/high/low/close"));
+    case "marketStats":
+      return on(msg("mode_k_stats", "stats row"));
+    case "lastSeen":
+      return on(msg("mode_k_last_seen", "since your last visit"));
+    case "moveHeadlines":
+      return on(msg("mode_k_move_news", "move headlines"));
+    case "tickerEnabled":
+      return on(msg("mode_k_tab_title", "prices in the tab title"));
+    case "pageTicker":
+      return on(msg("mode_k_page_ticker", "scrolling price bar"));
+    case "newsTicker":
+      return on(msg("mode_k_news_row", "news row"));
+    case "autoRotate":
+      return on(msg("mode_k_rotate", "auto-rotate"));
+    case "refreshInterval": {
+      const s = Math.round(Number(v) / 1000);
+      return msg("mode_w_refresh", "prices every $1", s >= 60 ? msg("mode_minutes", "$1 min", String(Math.round(s / 60))) : msg("mode_seconds", "$1 s", String(s)));
+    }
+    default:
+      return null;
+  }
+};
+
+/* What pressing a mode would change, read against what is on screen now:
+   each setting that differs, and the widgets when they would change. */
+const modeChanges = (settings, widgetSpec, now, widgets) => {
+  const out = [];
+  for (const key of Object.keys(settings || {})) {
+    if (!now || now[key] === settings[key]) continue;
+    const word = modeSettingWord(key, settings[key]);
+    if (word) out.push(word);
+  }
+  const anyOn = widgets ? Object.keys(widgets).some((w) => widgets[w]) : false;
+  if (widgetSpec === "none") {
+    if (anyOn) out.push(msg("mode_w_no_widgets", "widgets off"));
+  } else if (typeof widgetSpec === "string" && widgetSpec) {
+    if (!isPresetActive(widgets || {}, widgetSpec)) out.push(msg("mode_w_bundle", "the $1 widgets", modeWords(widgetSpec)[0]));
+  } else if (widgetSpec && typeof widgetSpec === "object") {
+    const names = new Set(Object.keys(widgetSpec).concat(Object.keys(widgets || {})));
+    if ([...names].some((w) => Boolean(widgetSpec[w]) !== Boolean((widgets || {})[w]))) out.push(msg("mode_w_saved_widgets", "your saved widgets"));
+  }
+  return out;
+};
+
 /* **Modes as cards** (18 Oct 2026). They were five pills whose meaning
  * appeared only under the pointer — on a phone, never. Each card now says
  * what it does; the button inside carries the name alone, and its hit area
  * is stretched over the card. Custom's card holds Save. */
 const renderModeRow = (panel) => {
-  const { appMode, onAppMode, customSaved, customActive, onSaveCustomMode } =
+  const { appMode, onAppMode, customSaved, customActive, onSaveCustomMode, modeSnapshot, widgets, customMode, modeUndo, onModeUndo } =
     panel.props;
   const modes = APP_MODES.concat([CUSTOM_MODE]);
   const inUse = msg("pref_mode_in_use", "In use");
@@ -162,6 +220,23 @@ const renderModeRow = (panel) => {
             name,
           ),
           React.createElement(ModeCardDesc, null, text),
+          /* **What it would change, from here** (18 Oct 2026): each setting
+             that differs from what is on screen, so the press holds no
+             surprise. None for the mode in use. */
+          (() => {
+            if (active) return null;
+            const changes = isCustom
+              ? customMode ? modeChanges(customMode.settings, customMode.widgets, modeSnapshot, widgets) : []
+              : modeChanges(mode.settings, mode.widgets, modeSnapshot, widgets);
+            if (!changes.length) return null;
+            return React.createElement(
+              ModeCardChanges,
+              { "data-mode-changes": String(changes.length) },
+              React.createElement("b", null, msg("mode_changes", "Changes $1:", String(changes.length))),
+              " ",
+              changes.join(" · "),
+            );
+          })(),
           React.createElement(
             ModeCardFoot,
             null,
@@ -184,6 +259,28 @@ const renderModeRow = (panel) => {
         );
       }),
     ),
+    /* Just applied: what changed, and the way back in one press. */
+    modeUndo && (modeUndo.mode === appMode || (modeUndo.mode === "custom" && customActive))
+      ? React.createElement(
+          ModeUndoBar,
+          { "data-mode-undo": modeUndo.mode, role: "status" },
+          React.createElement(
+            "span",
+            null,
+            msg(
+              "mode_applied",
+              "$1 is in use — $2 settings changed.",
+              modeWords(modeUndo.mode)[0],
+              String(modeChanges(modeUndo.settings, modeUndo.widgets, modeSnapshot, widgets).length),
+            ),
+          ),
+          React.createElement(
+            ModeSaveButton,
+            { onClick: () => onModeUndo && onModeUndo(), "data-mode-undo-press": "true" },
+            msg("mode_undo", "Undo — put back what was there"),
+          ),
+        )
+      : null,
     React.createElement(
       ModeDesc,
       { dim: true },

@@ -9,6 +9,26 @@ submitted, so their changes reach the store here.
 
 ### Added
 
+- On a wide touch screen, such as a ChromeOS laptop in tablet mode, the
+  phone's sheets (the touch hint and the call sheet) open as a centred card
+  instead of spanning the whole screen.
+- While you type a price target, the drawer says how often the price
+  reached that far in the target's own direction, within a day and within
+  a week. It used to count moves of that size in either direction, from one
+  close to the next.
+- The usual range on the chart is scaled to how much the price moves now.
+  Measured on later data, it holds its 80% instead of 92%.
+- Settings → Modes:
+  - Each mode lists what pressing it would change from the current setup.
+  - After you press one, it says how many settings changed and offers
+    Undo.
+- Settings → Menu layout: the reset is a quiet row with Undo, and appears
+  only when there is something to reset.
+- A chart pattern's record now says what happened within 90 days in three
+  parts: the measured move first, the invalidation first, or neither. It
+  also says how many walks are still running. It used to count only the
+  episodes that resolved, which left out the 0–12% that reached neither
+  level.
 - The calls record shows the board's chances against what came true, in
   tenths, beside the diagonal where the two would agree. The model outlook
   card shows the same for the hours this browser has recorded.

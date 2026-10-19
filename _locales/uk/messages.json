@@ -533,9 +533,6 @@
   "al_progress_title": {
     "message": "$1% шляху від того місця, де вона була, коли ви це задали"
   },
-  "al_reach_note": {
-    "message": "Рух на $1 або більше траплявся в $2 з останніх $3 днів."
-  },
   "al_rearm": {
     "message": "Звести знову"
   },
@@ -681,6 +678,46 @@
   },
   "al_total_unmeasured": {
     "message": " — підсумок лишається невиміряним, а не применшеним"
+  },
+  "al_touch_down": {
+    "message": "У денній історії цієї монети ціна опускалася на $1 нижче закриття протягом дня в $2 з $3 днів, а протягом тижня — у $4 з $5.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      },
+      "arg4": {
+        "content": "$4"
+      },
+      "arg5": {
+        "content": "$5"
+      }
+    }
+  },
+  "al_touch_up": {
+    "message": "У денній історії цієї монети ціна піднімалася на $1 вище закриття протягом дня в $2 з $3 днів, а протягом тижня — у $4 з $5.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      },
+      "arg4": {
+        "content": "$4"
+      },
+      "arg5": {
+        "content": "$5"
+      }
+    }
   },
   "al_travel_band": {
     "message": "смуга пробігу"
@@ -2153,6 +2190,9 @@
   "cmp_c_neither_s": {
     "message": "Пробій $1; жоден із рівнів не було досягнуто за $2 дн."
   },
+  "cmp_c_on_coin": {
+    "message": "На цій монеті:"
+  },
   "cmp_c_open": {
     "message": "Пробив лінію шиї $1 за $2 — жодного з рівнів ще не досягнуто."
   },
@@ -2161,9 +2201,6 @@
   },
   "cmp_c_pin": {
     "message": "Клацніть, щоб залишити відкритим"
-  },
-  "cmp_c_prec": {
-    "message": "На цій монеті: $1 з $2 завершених першими досягли виміряного руху · знайдено $3. $4"
   },
   "cmp_c_rule": {
     "message": "Знайдено за фіксованим правилом на денних свічках, заданим до перевірки — ні оцінки, ні входу."
@@ -2544,11 +2581,50 @@
   "cpat_record2": {
     "message": "Пройшла виміряний хід раніше за скасування в $1 із $2 випадків, що вирішилися за 90 днів. "
   },
+  "cpat_running": {
+    "message": "Ще тривають: $1.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
   "cpat_section": {
     "message": "Графічні фігури · денні свічки"
   },
   "cpat_too_few": {
     "message": "$1 — замало для порівняння зі звичайним днем, порівняння не виводиться."
+  },
+  "cpat_within_counts": {
+    "message": "За 90 днів, із $1: спершу розрахунковий рух $2, спершу скасування $3, ні те ні інше $4.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      },
+      "arg4": {
+        "content": "$4"
+      }
+    }
+  },
+  "cpat_within_shares": {
+    "message": "У частках, з урахуванням ще тривалих: $1% · $2% · $3%.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      }
+    }
   },
   "cpi_line_hint": {
     "message": "Індекс споживчих цін США, публікується о 08:30 за Нью-Йорком. Що минулі публікації робили з цією монетою, рахується на екрані базових частот (B)."
@@ -3183,6 +3259,25 @@
   "mo_withheld": {
     "message": "Оцінку не пройдено — прогноз не показується"
   },
+  "mode_applied": {
+    "message": "Використовується $1 — змінено налаштувань: $2.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "mode_changes": {
+    "message": "Змінює $1:",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
   "mode_fast_desc": {
     "message": "Найсвіжіша ціна: кожні десять секунд і нічого, що потребує окремого запиту, — без віджетів, рядка новин і рухомого рядка."
   },
@@ -3195,17 +3290,116 @@
   "mode_holder_name": {
     "message": "Холдер"
   },
+  "mode_k_grid": {
+    "message": "сітка"
+  },
+  "mode_k_last_seen": {
+    "message": "з минулого візиту"
+  },
+  "mode_k_move_news": {
+    "message": "заголовки про рухи"
+  },
+  "mode_k_news_row": {
+    "message": "рядок новин"
+  },
+  "mode_k_ohlc": {
+    "message": "відкриття/максимум/мінімум/закриття"
+  },
+  "mode_k_page_ticker": {
+    "message": "рухомий рядок цін"
+  },
+  "mode_k_rotate": {
+    "message": "автозміна"
+  },
+  "mode_k_stats": {
+    "message": "рядок статистики"
+  },
+  "mode_k_tab_title": {
+    "message": "ціни в заголовку вкладки"
+  },
+  "mode_k_volume": {
+    "message": "обсяг"
+  },
   "mode_minimal_desc": {
     "message": "Ціна й графік, нічого більше. Вкладки по краях бліднуть, доки на них не наведеш; клавіші працюють."
   },
   "mode_minimal_name": {
     "message": "Мінімум"
   },
+  "mode_minutes": {
+    "message": "$1 хв",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "mode_seconds": {
+    "message": "$1 с",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
   "mode_trader_desc": {
     "message": "Усе, щоб читати рух: свічки, обсяг, сітка, відкриття/максимум/мінімум/закриття в перехресті та віджети деривативів."
   },
   "mode_trader_name": {
     "message": "Трейдер"
+  },
+  "mode_turns_off": {
+    "message": "$1 вимк.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "mode_turns_on": {
+    "message": "$1 увімк.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "mode_undo": {
+    "message": "Скасувати — повернути як було"
+  },
+  "mode_w_bundle": {
+    "message": "віджети $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "mode_w_candles": {
+    "message": "свічки"
+  },
+  "mode_w_line": {
+    "message": "лінійний графік"
+  },
+  "mode_w_loud": {
+    "message": "вкладки по краях видимі"
+  },
+  "mode_w_no_widgets": {
+    "message": "віджети вимк."
+  },
+  "mode_w_quiet": {
+    "message": "вкладки по краях бліді"
+  },
+  "mode_w_refresh": {
+    "message": "ціни кожні $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "mode_w_saved_widgets": {
+    "message": "ваші збережені віджети"
   },
   "mon_close": {
     "message": "Закрити монітор"
@@ -9930,8 +10124,16 @@
   "study_range_held": {
     "message": "на пізніших даних утримав $1%"
   },
-  "study_range_label": {
-    "message": "80% з $1 минулих відрізків по $2 закінчилися тут"
+  "study_range_label_scaled": {
+    "message": "80% із $1 минулих відрізків по $2, перерахованих на теперішній розмах, закінчилися тут",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
   },
   "study_regime_label": {
     "message": "Зафарбовано: 20 днів до кожного дня зросли ≥5% (зелений) або впали ≥5% (червоний) — $1% / $2% цього вигляду"

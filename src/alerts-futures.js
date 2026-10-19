@@ -7980,16 +7980,19 @@ const alertsFutures = (panel) => ({
     const coin = panel.props.activeCoin;
     if (!coin) return;
     if (panel.state.edgeFor !== coin) {
-      panel.setState({ edgeFor: coin, edgeCloses: null, edgeLoading: true });
+      panel.setState({ edgeFor: coin, edgeCloses: null, edgeCandles: null, edgeLoading: true });
     }
-    Promise.resolve(fetchDailyCloses(coin))
-      .then((closes) => {
+    /* The candles, not only their closes: the targets form counts touches
+       off the daily highs and lows (dailyTouchCount). Same request, same cache. */
+    Promise.resolve(fetchDailyCandles(coin))
+      .then((candles) => {
         if (panel._gone || panel.props.activeCoin !== coin) return;
-        panel.setState({ edgeCloses: closes, edgeFor: coin, edgeLoading: false });
+        const closes = Array.isArray(candles) ? candles.map((c) => c.close) : candles;
+        panel.setState({ edgeCloses: closes, edgeCandles: candles, edgeFor: coin, edgeLoading: false });
       })
       .catch(() => {
         if (panel._gone || panel.props.activeCoin !== coin) return;
-        panel.setState({ edgeCloses: false, edgeFor: coin, edgeLoading: false });
+        panel.setState({ edgeCloses: false, edgeCandles: null, edgeFor: coin, edgeLoading: false });
       });
   },
 

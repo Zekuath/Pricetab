@@ -1693,6 +1693,43 @@ const dailyMoveCount = (closes, share) => {
   return of >= DAILY_MOVE_MIN_DAYS ? { n, of } : null;
 };
 
+/* **How often the price reached a level this far, in its direction**
+ * (18 Oct 2026, research/target-touch-prereg.md). A target fires on a touch,
+ * one way, maybe days later; the count above is two-sided, close to close,
+ * over one day. Measured out of sample on four coins (2024–2026), this
+ * directional touch count read off daily highs and lows scored better
+ * (Brier, DM p 0.010, 3 of 4 coins) — and every count of this kind
+ * over-said in those calmer years, so it stays a count of what happened.
+ * Windows: every close with `horizon` days after it. Null under the minimum. */
+const dailyTouchCount = (candles, share, horizon = 1) => {
+  if (!Array.isArray(candles)) return null;
+  const x = Math.abs(Number(share)) / 100;
+  if (!(x > 0) || !Number.isFinite(x)) return null;
+  const up = Number(share) > 0;
+  let n = 0;
+  let of = 0;
+  for (let i = 0; i + horizon < candles.length; i += 1) {
+    const base = candles[i] && Number(candles[i].close);
+    if (!(base > 0)) continue;
+    let reached = false;
+    let seen = true;
+    for (let k = i + 1; k <= i + horizon; k += 1) {
+      const c = candles[k];
+      const hi = c && Number(c.high);
+      const lo = c && Number(c.low);
+      if (!(hi > 0) || !(lo > 0)) {
+        seen = false;
+        break;
+      }
+      if (up ? hi >= base * (1 + x) : lo <= base * (1 - x)) reached = true;
+    }
+    if (!seen) continue;
+    of += 1;
+    if (reached) n += 1;
+  }
+  return of >= DAILY_MOVE_MIN_DAYS ? { n, of } : null;
+};
+
 /* **And then what?**
  *
  * A card that says "XRP fell 7%" and stops is half the story: the thing you
@@ -2104,6 +2141,58 @@ const travelBand = (prices, steps, lo, hi) => {
   const qHi = quantileOf(dev, hi);
   if (qLo == null || qHi == null) return null;
   return { lo: Math.exp(qLo), hi: Math.exp(qHi), n: rs.length };
+};
+
+/* **The usual range, scaled to how much the price moves now** (18 Oct 2026,
+ * research/usual-range-conformal-prereg.md). `travelBand` weighs every past
+ * stretch alike, and the early years swung harder: out of sample its "80%"
+ * held 92%. Here each past stretch is divided by the volatility at its start
+ * (EWMA of the series' own step returns, λ 0.97 — the board's), its quantiles
+ * taken, and multiplied by the volatility now — filtered historical
+ * simulation. Preregistered and run once: within 5 points of 80% in 10 of 12
+ * cells (median 80.4%), against 0 of 12, with a better interval score.
+ * Median removed, as before: how far, never which way. Same refusal. */
+const SCALED_BAND_LAMBDA = 0.97;
+const scaledTravelBand = (prices, steps, lo, hi) => {
+  if (!Array.isArray(prices) || !(steps >= 1)) return null;
+  const span = Math.round(steps);
+  const p = prices.map((x) => Number(x && x.price));
+  if (p.length <= span + 2) return null;
+  // EWMA variance of one step, known at each point (seeded on the first 30 steps)
+  const v = new Array(p.length).fill(NaN);
+  let seed = 0;
+  let k = 0;
+  for (let i = 1; i < Math.min(p.length, 31); i += 1) {
+    if (p[i] > 0 && p[i - 1] > 0) {
+      seed += Math.log(p[i] / p[i - 1]) ** 2;
+      k += 1;
+    }
+  }
+  if (!k) return null;
+  let cur = seed / k;
+  v[0] = cur;
+  for (let i = 1; i < p.length; i += 1) {
+    if (p[i] > 0 && p[i - 1] > 0) cur = SCALED_BAND_LAMBDA * cur + (1 - SCALED_BAND_LAMBDA) * Math.log(p[i] / p[i - 1]) ** 2;
+    v[i] = cur;
+  }
+  const z = [];
+  for (let i = span; i < p.length; i += 1) {
+    const s = i - span;
+    const sg = Math.sqrt(span * v[s]);
+    if (p[s] > 0 && p[i] > 0 && sg > 0) {
+      const r = Math.log(p[i] / p[s]) / sg;
+      if (isFinite(r)) z.push(r);
+    }
+  }
+  if (z.length < MIN_TRAVEL_SAMPLES) return null;
+  const now = Math.sqrt(span * v[p.length - 1]);
+  if (!(now > 0)) return null;
+  const drift = medianOf(z);
+  const dev = z.map((x) => x - drift).sort((a, b) => a - b);
+  const qLo = quantileOf(dev, lo);
+  const qHi = quantileOf(dev, hi);
+  if (qLo == null || qHi == null) return null;
+  return { lo: Math.exp(qLo * now), hi: Math.exp(qHi * now), n: z.length };
 };
 
 /* **How often this series has landed in that band, over that horizon.**

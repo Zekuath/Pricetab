@@ -45,10 +45,25 @@ Check the following when relevant:
 
 Read [ARCHITECTURE.md](ARCHITECTURE.md) for the runtime model and test layers.
 
+## How you can help
+
+Not every useful contribution is code.
+
+- **Test on real devices.** A phone from its home screen (the safe areas,
+  the swipe from the edges, the keyboard over a drawer), a ChromeOS laptop
+  in tablet mode, a small window. Report what feels wrong with the
+  Design or usability form.
+- **Read it in your language.** PriceTab ships in thirteen languages, and a
+  machine-checked catalogue is not a native reader. The Translation form
+  takes one sentence at a time.
+- **Small interface fixes.** A label cut short, a control that is hard to
+  reach by keyboard, a contrast too low in one theme. Run the one command
+  above, and send a screenshot before and after.
+
 ## Bugs and security
 
-For bugs, open a GitHub issue with reproduction steps, the expected result,
-the actual result and your Chrome version.
+For bugs, open a GitHub issue with the Bug report form: reproduction steps,
+the expected result, the actual result and your Chrome version.
 
 Do not include wallet private keys, recovery phrases or personal portfolio
 data. For a vulnerability that could expose data or execute code, use GitHub's

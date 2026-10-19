@@ -908,20 +908,6 @@
       }
     }
   },
-  "al_reach_note": {
-    "message": "A move of $1 or more has happened on $2 of the last $3 days.",
-    "placeholders": {
-      "arg1": {
-        "content": "$1"
-      },
-      "arg2": {
-        "content": "$2"
-      },
-      "arg3": {
-        "content": "$3"
-      }
-    }
-  },
   "al_rearm": {
     "message": "Re-arm"
   },
@@ -1138,6 +1124,46 @@
   },
   "al_total_unmeasured": {
     "message": " — the total is left unmeasured rather than counted short"
+  },
+  "al_touch_down": {
+    "message": "In this coin's daily history, the price reached $1 below a close within a day on $2 of $3 days, and within a week on $4 of $5.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      },
+      "arg4": {
+        "content": "$4"
+      },
+      "arg5": {
+        "content": "$5"
+      }
+    }
+  },
+  "al_touch_up": {
+    "message": "In this coin's daily history, the price reached $1 above a close within a day on $2 of $3 days, and within a week on $4 of $5.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      },
+      "arg4": {
+        "content": "$4"
+      },
+      "arg5": {
+        "content": "$5"
+      }
+    }
   },
   "al_travel_band": {
     "message": "travel band"
@@ -3595,6 +3621,9 @@
       }
     }
   },
+  "cmp_c_on_coin": {
+    "message": "On this coin:"
+  },
   "cmp_c_open": {
     "message": "Broke its neckline $1 at $2 — neither level reached yet.",
     "placeholders": {
@@ -3619,23 +3648,6 @@
   },
   "cmp_c_pin": {
     "message": "Click to keep it open"
-  },
-  "cmp_c_prec": {
-    "message": "On this coin: $1 of $2 that resolved reached the measured move first · found $3. $4",
-    "placeholders": {
-      "arg1": {
-        "content": "$1"
-      },
-      "arg2": {
-        "content": "$2"
-      },
-      "arg3": {
-        "content": "$3"
-      },
-      "arg4": {
-        "content": "$4"
-      }
-    }
   },
   "cmp_c_rule": {
     "message": "Found by a fixed rule on daily candles, set before it was tested — no score, no entry."
@@ -4155,6 +4167,14 @@
       }
     }
   },
+  "cpat_running": {
+    "message": "$1 still running.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
   "cpat_section": {
     "message": "Chart patterns · daily candles"
   },
@@ -4163,6 +4183,37 @@
     "placeholders": {
       "arg1": {
         "content": "$1"
+      }
+    }
+  },
+  "cpat_within_counts": {
+    "message": "Within 90 days, of $1: the measured move first $2, the invalidation first $3, neither $4.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      },
+      "arg4": {
+        "content": "$4"
+      }
+    }
+  },
+  "cpat_within_shares": {
+    "message": "As shares, the running ones kept: $1% · $2% · $3%.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
       }
     }
   },
@@ -4871,6 +4922,25 @@
   "mo_withheld": {
     "message": "Evaluation not passed — no estimate is shown"
   },
+  "mode_applied": {
+    "message": "$1 is in use — $2 settings changed.",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "mode_changes": {
+    "message": "Changes $1:",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
   "mode_fast_desc": {
     "message": "The freshest price: every ten seconds, and nothing that costs a request of its own — no widgets, news row or scrolling bar."
   },
@@ -4883,17 +4953,116 @@
   "mode_holder_name": {
     "message": "Holder"
   },
+  "mode_k_grid": {
+    "message": "grid"
+  },
+  "mode_k_last_seen": {
+    "message": "since your last visit"
+  },
+  "mode_k_move_news": {
+    "message": "move headlines"
+  },
+  "mode_k_news_row": {
+    "message": "news row"
+  },
+  "mode_k_ohlc": {
+    "message": "open/high/low/close"
+  },
+  "mode_k_page_ticker": {
+    "message": "scrolling price bar"
+  },
+  "mode_k_rotate": {
+    "message": "auto-rotate"
+  },
+  "mode_k_stats": {
+    "message": "stats row"
+  },
+  "mode_k_tab_title": {
+    "message": "prices in the tab title"
+  },
+  "mode_k_volume": {
+    "message": "volume"
+  },
   "mode_minimal_desc": {
     "message": "The price and the chart, nothing else. The edge tabs fade until you point at them; the keys still work."
   },
   "mode_minimal_name": {
     "message": "Minimal"
   },
+  "mode_minutes": {
+    "message": "$1 min",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "mode_seconds": {
+    "message": "$1 s",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
   "mode_trader_desc": {
     "message": "Everything to read a move with: candles, volume, the grid, open/high/low/close on the crosshair, and the derivatives widgets."
   },
   "mode_trader_name": {
     "message": "Trader"
+  },
+  "mode_turns_off": {
+    "message": "$1 off",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "mode_turns_on": {
+    "message": "$1 on",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "mode_undo": {
+    "message": "Undo — put back what was there"
+  },
+  "mode_w_bundle": {
+    "message": "the $1 widgets",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "mode_w_candles": {
+    "message": "candles"
+  },
+  "mode_w_line": {
+    "message": "line chart"
+  },
+  "mode_w_loud": {
+    "message": "edge tabs shown"
+  },
+  "mode_w_no_widgets": {
+    "message": "widgets off"
+  },
+  "mode_w_quiet": {
+    "message": "edge tabs faded"
+  },
+  "mode_w_refresh": {
+    "message": "prices every $1",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "mode_w_saved_widgets": {
+    "message": "your saved widgets"
   },
   "mon_close": {
     "message": "Close the monitor"
@@ -14244,8 +14413,8 @@
       }
     }
   },
-  "study_range_label": {
-    "message": "80% of $1 past stretches of $2 ended in here",
+  "study_range_label_scaled": {
+    "message": "80% of $1 past stretches of $2, scaled to how much it moves now, ended in here",
     "placeholders": {
       "arg1": {
         "content": "$1"

@@ -549,9 +549,6 @@
   "al_progress_title": {
     "message": "距离你设定时的位置已走完 $1%"
   },
-  "al_reach_note": {
-    "message": "$1 或以上的波动在最近 $3 天中出现过 $2 天。"
-  },
   "al_rearm": {
     "message": "重新布置"
   },
@@ -697,6 +694,46 @@
   },
   "al_total_unmeasured": {
     "message": "——总额宁可不予计量，也不少算"
+  },
+  "al_touch_down": {
+    "message": "在这枚币的日线历史中，价格在一天内跌到收盘价下方 $1 的情况出现在 $3 天中的 $2 天，一周内为 $5 天中的 $4 天。",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      },
+      "arg4": {
+        "content": "$4"
+      },
+      "arg5": {
+        "content": "$5"
+      }
+    }
+  },
+  "al_touch_up": {
+    "message": "在这枚币的日线历史中，价格在一天内涨到收盘价上方 $1 的情况出现在 $3 天中的 $2 天，一周内为 $5 天中的 $4 天。",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      },
+      "arg4": {
+        "content": "$4"
+      },
+      "arg5": {
+        "content": "$5"
+      }
+    }
   },
   "al_travel_band": {
     "message": "移动幅度带"
@@ -2169,6 +2206,9 @@
   "cmp_c_neither_s": {
     "message": "$1 突破；$2 天内两个水平都未到达。"
   },
+  "cmp_c_on_coin": {
+    "message": "在这枚币上："
+  },
   "cmp_c_open": {
     "message": "$1 在 $2 突破颈线——两个水平都尚未到达。"
   },
@@ -2177,9 +2217,6 @@
   },
   "cmp_c_pin": {
     "message": "点击以保持打开"
-  },
-  "cmp_c_prec": {
-    "message": "在这枚币上：已有结果的 $2 次中有 $1 次先到达测算幅度 · 共出现 $3。$4"
   },
   "cmp_c_rule": {
     "message": "按日K线上的固定规则找到，规则在检验前已定——没有评分，也没有入场点。"
@@ -2560,11 +2597,50 @@
   "cpat_record2": {
     "message": "在 90 天内有结果的 $2 次中，有 $1 次先于失效位达到测算幅度。"
   },
+  "cpat_running": {
+    "message": "$1 个仍在进行中。",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
   "cpat_section": {
     "message": "图表形态 · 日K线"
   },
   "cpat_too_few": {
     "message": "$1 次太少，无法与普通日子比较——不显示比较。"
+  },
+  "cpat_within_counts": {
+    "message": "90 天内，共 $1 次：先到目标幅度 $2，先失效 $3，两者都没有 $4。",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      },
+      "arg4": {
+        "content": "$4"
+      }
+    }
+  },
+  "cpat_within_shares": {
+    "message": "按比例（含进行中的）：$1% · $2% · $3%。",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      }
+    }
   },
   "cpi_line_hint": {
     "message": "美国消费者价格指数，纽约时间08:30公布。过去的公布对这个币的影响在基准率页面（B）中统计。"
@@ -3199,6 +3275,25 @@
   "mo_withheld": {
     "message": "未通过评估 — 不显示估计"
   },
+  "mode_applied": {
+    "message": "正在使用 $1——已更改 $2 项设置。",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "mode_changes": {
+    "message": "更改 $1 项：",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
   "mode_fast_desc": {
     "message": "最新的价格：每十秒一次，去掉一切需要单独请求的东西——没有小组件、新闻行或滚动条。"
   },
@@ -3211,17 +3306,116 @@
   "mode_holder_name": {
     "message": "持有者"
   },
+  "mode_k_grid": {
+    "message": "网格"
+  },
+  "mode_k_last_seen": {
+    "message": "自上次访问以来"
+  },
+  "mode_k_move_news": {
+    "message": "异动头条"
+  },
+  "mode_k_news_row": {
+    "message": "新闻行"
+  },
+  "mode_k_ohlc": {
+    "message": "开/高/低/收"
+  },
+  "mode_k_page_ticker": {
+    "message": "滚动价格条"
+  },
+  "mode_k_rotate": {
+    "message": "自动轮换"
+  },
+  "mode_k_stats": {
+    "message": "统计行"
+  },
+  "mode_k_tab_title": {
+    "message": "标签标题中的价格"
+  },
+  "mode_k_volume": {
+    "message": "成交量"
+  },
   "mode_minimal_desc": {
     "message": "只有价格和图表。边缘标签在指针移上去之前会变淡；按键照常可用。"
   },
   "mode_minimal_name": {
     "message": "极简"
   },
+  "mode_minutes": {
+    "message": "$1 分钟",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "mode_seconds": {
+    "message": "$1 秒",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
   "mode_trader_desc": {
     "message": "读懂行情所需的一切：K线、成交量、网格、十字线上的开高低收，以及衍生品小组件。"
   },
   "mode_trader_name": {
     "message": "交易者"
+  },
+  "mode_turns_off": {
+    "message": "$1 关闭",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "mode_turns_on": {
+    "message": "$1 开启",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "mode_undo": {
+    "message": "撤销——恢复原来的设置"
+  },
+  "mode_w_bundle": {
+    "message": "$1 小组件",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "mode_w_candles": {
+    "message": "K线"
+  },
+  "mode_w_line": {
+    "message": "折线图"
+  },
+  "mode_w_loud": {
+    "message": "边缘标签显示"
+  },
+  "mode_w_no_widgets": {
+    "message": "关闭小组件"
+  },
+  "mode_w_quiet": {
+    "message": "边缘标签变淡"
+  },
+  "mode_w_refresh": {
+    "message": "每 $1 更新价格",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "mode_w_saved_widgets": {
+    "message": "你保存的小组件"
   },
   "mon_close": {
     "message": "关闭监视器"
@@ -9946,8 +10140,16 @@
   "study_range_held": {
     "message": "在后续数据上覆盖了 $1%"
   },
-  "study_range_label": {
-    "message": "过去 $1 个 $2 区间中有 80% 在此范围内结束"
+  "study_range_label_scaled": {
+    "message": "过去 $1 段 $2 区间中的 80%（按当前波动幅度换算）落在这里",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
   },
   "study_regime_label": {
     "message": "着色：截至每日的20天上涨≥5%（绿）或下跌≥5%（红）— 占此视图的 $1% / $2%"

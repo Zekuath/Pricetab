@@ -549,9 +549,6 @@
   "al_progress_title": {
     "message": "設定時の位置からの道のりの $1%"
   },
-  "al_reach_note": {
-    "message": "$1 以上の動きは直近 $3 日のうち $2 日で起きています。"
-  },
   "al_rearm": {
     "message": "再設定"
   },
@@ -697,6 +694,46 @@
   },
   "al_total_unmeasured": {
     "message": "（合計は少なく数えるのではなく、測らないままにします）"
+  },
+  "al_touch_down": {
+    "message": "このコインの日足の履歴では、終値から $1 下に1日以内に届いたのは $3 日中 $2 日、1週間以内では $5 日中 $4 日でした。",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      },
+      "arg4": {
+        "content": "$4"
+      },
+      "arg5": {
+        "content": "$5"
+      }
+    }
+  },
+  "al_touch_up": {
+    "message": "このコインの日足の履歴では、終値から $1 上に1日以内に届いたのは $3 日中 $2 日、1週間以内では $5 日中 $4 日でした。",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      },
+      "arg4": {
+        "content": "$4"
+      },
+      "arg5": {
+        "content": "$5"
+      }
+    }
   },
   "al_travel_band": {
     "message": "移動幅バンド"
@@ -2169,6 +2206,9 @@
   "cmp_c_neither_s": {
     "message": "$1 にブレイクしましたが、$2 日以内にどちらの水準にも届きませんでした。"
   },
+  "cmp_c_on_coin": {
+    "message": "このコインでは："
+  },
   "cmp_c_open": {
     "message": "$1 に $2 でネックラインを抜けました — まだどちらの水準にも届いていません。"
   },
@@ -2177,9 +2217,6 @@
   },
   "cmp_c_pin": {
     "message": "クリックで開いたままに"
-  },
-  "cmp_c_prec": {
-    "message": "このコインでは：決着した $2 回のうち $1 回が先に計測値幅に到達 · 検出 $3。$4"
   },
   "cmp_c_rule": {
     "message": "日足に対する固定ルールで検出。ルールは検証前に決めたもの — 点数も、エントリーもありません。"
@@ -2560,11 +2597,50 @@
   "cpat_record2": {
     "message": "90日以内に決着した $2 回のうち $1 回で、無効化より先に測定値幅へ届きました。"
   },
+  "cpat_running": {
+    "message": "$1 件はまだ進行中です。",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
   "cpat_section": {
     "message": "チャートパターン · 日足"
   },
   "cpat_too_few": {
     "message": "$1 回では普通の日と比べるには少なすぎるため、比較は表示しません。"
+  },
+  "cpat_within_counts": {
+    "message": "90日以内、$1 件中：先に目標値幅 $2、先に無効化 $3、どちらもなし $4。",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      },
+      "arg4": {
+        "content": "$4"
+      }
+    }
+  },
+  "cpat_within_shares": {
+    "message": "割合（進行中も含めて）：$1% · $2% · $3%。",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      },
+      "arg3": {
+        "content": "$3"
+      }
+    }
   },
   "cpi_line_hint": {
     "message": "米国の消費者物価指数。ニューヨーク時間08:30に発表されます。過去の発表がこのコインに与えた動きは、基準率の画面（B）で数えています。"
@@ -3199,6 +3275,25 @@
   "mo_withheld": {
     "message": "評価に合格していません — 推定は表示されません"
   },
+  "mode_applied": {
+    "message": "$1 を使用中 — 設定が $2 個変わりました。",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
+  },
+  "mode_changes": {
+    "message": "変更 $1 件：",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
   "mode_fast_desc": {
     "message": "最新の価格：10秒ごと。個別のリクエストが要るもの（ウィジェット、ニュース行、流れるバー）は外します。"
   },
@@ -3211,17 +3306,116 @@
   "mode_holder_name": {
     "message": "ホルダー"
   },
+  "mode_k_grid": {
+    "message": "グリッド"
+  },
+  "mode_k_last_seen": {
+    "message": "前回の訪問から"
+  },
+  "mode_k_move_news": {
+    "message": "値動きの見出し"
+  },
+  "mode_k_news_row": {
+    "message": "ニュース行"
+  },
+  "mode_k_ohlc": {
+    "message": "始値/高値/安値/終値"
+  },
+  "mode_k_page_ticker": {
+    "message": "流れる価格バー"
+  },
+  "mode_k_rotate": {
+    "message": "自動切り替え"
+  },
+  "mode_k_stats": {
+    "message": "統計行"
+  },
+  "mode_k_tab_title": {
+    "message": "タブのタイトルに価格"
+  },
+  "mode_k_volume": {
+    "message": "出来高"
+  },
   "mode_minimal_desc": {
     "message": "価格とチャートだけ。端のタブはポインターを向けるまで薄くなり、キーはそのまま使えます。"
   },
   "mode_minimal_name": {
     "message": "ミニマル"
   },
+  "mode_minutes": {
+    "message": "$1 分",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "mode_seconds": {
+    "message": "$1 秒",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
   "mode_trader_desc": {
     "message": "値動きを読むためのすべて：ローソク足、出来高、グリッド、十字線の始値/高値/安値/終値、デリバティブのウィジェット。"
   },
   "mode_trader_name": {
     "message": "トレーダー"
+  },
+  "mode_turns_off": {
+    "message": "$1 オフ",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "mode_turns_on": {
+    "message": "$1 オン",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "mode_undo": {
+    "message": "元に戻す — 前の状態へ"
+  },
+  "mode_w_bundle": {
+    "message": "$1 のウィジェット",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "mode_w_candles": {
+    "message": "ローソク足"
+  },
+  "mode_w_line": {
+    "message": "折れ線チャート"
+  },
+  "mode_w_loud": {
+    "message": "端のタブを表示"
+  },
+  "mode_w_no_widgets": {
+    "message": "ウィジェットなし"
+  },
+  "mode_w_quiet": {
+    "message": "端のタブを薄く"
+  },
+  "mode_w_refresh": {
+    "message": "価格を $1 ごと",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      }
+    }
+  },
+  "mode_w_saved_widgets": {
+    "message": "保存したウィジェット"
   },
   "mon_close": {
     "message": "モニターを閉じる"
@@ -9946,8 +10140,16 @@
   "study_range_held": {
     "message": "後のデータでは $1% を含んだ"
   },
-  "study_range_label": {
-    "message": "過去の $2 の区間 $1 件の80%がこの中で終了"
+  "study_range_label_scaled": {
+    "message": "過去の $2 の区間 $1 個のうち80%（いまの値動きに合わせて換算）がここで終わりました",
+    "placeholders": {
+      "arg1": {
+        "content": "$1"
+      },
+      "arg2": {
+        "content": "$2"
+      }
+    }
   },
   "study_regime_label": {
     "message": "塗り：各日までの20日間が5%以上上昇（緑）または下落（赤）— この表示の $1% / $2%"

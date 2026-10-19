@@ -1682,9 +1682,12 @@ class AlertsPanel extends PureComponent {
     if (!(now > 0)) return null;
     const away = ((value - now) / now) * 100;
     if (!isFinite(away) || Math.abs(away) < 0.01) return null;
-    const closes = this.state.edgeCloses;
-    const reach = Array.isArray(closes) ? dailyMoveCount(closes, away) : null;
-    if (!reach) return null;
+    /* The candles are the active coin's: a target typed for another coin
+       gets no line rather than this coin's count (it used to get it). */
+    const candles = this.state.edgeFor === coin ? this.state.edgeCandles : null;
+    const day = Array.isArray(candles) ? dailyTouchCount(candles, away, 1) : null;
+    const week = Array.isArray(candles) ? dailyTouchCount(candles, away, 7) : null;
+    if (!day || !week) return null;
     return React.createElement(
       AlertsNote,
       null,
@@ -1693,13 +1696,29 @@ class AlertsPanel extends PureComponent {
          lines later reads as the same sentence stuttering. This one is the
          count, and it names the size it counted so it still stands alone
          when the hint is not there. */
-      msg(
-        "al_reach_note",
-        "A move of $1 or more has happened on $2 of the last $3 days.",
-        formatPercentValue(Math.abs(away)),
-        String(reach.n),
-        String(reach.of),
-      ),
+      /* A touch, in the target's direction, within a day and within a week
+         — what a target waits for (research/target-touch-prereg.md). A
+         count over the coin's whole history, never a chance: measured, such
+         counts over-said in the calmer 2024–2026. */
+      away > 0
+        ? msg(
+            "al_touch_up",
+            "In this coin's daily history, the price reached $1 above a close within a day on $2 of $3 days, and within a week on $4 of $5.",
+            formatPercentValue(Math.abs(away)),
+            String(day.n),
+            String(day.of),
+            String(week.n),
+            String(week.of),
+          )
+        : msg(
+            "al_touch_down",
+            "In this coin's daily history, the price reached $1 below a close within a day on $2 of $3 days, and within a week on $4 of $5.",
+            formatPercentValue(Math.abs(away)),
+            String(day.n),
+            String(day.of),
+            String(week.n),
+            String(week.of),
+          ),
     );
   }
 

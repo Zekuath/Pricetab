@@ -11334,19 +11334,21 @@ await page.evaluate(`(() => { const m = document.querySelector("[data-practice-r
        for twelve hours and shared with the base-rate panel), so the line
        arrives after the form does. */
     await page.waitForFunction(
-      `/has happened on/.test((document.querySelector("[data-alerts-drawer]") || document.body).innerText)`,
+      `/within a week on/.test((document.querySelector("[data-alerts-drawer]") || document.body).innerText)`,
       { timeout: 8000 },
     ).catch(() => {});
     const reach = await page.evaluate(`(() => {
       const t = document.querySelector("[data-alerts-drawer]").innerText;
-      const m = t.match(/[^\\n]*has happened on[^\\n]*/);
+      const m = t.match(/[^\\n]*within a week on[^\\n]*/);
       return m ? m[0] : null;
     })()`);
-    check(Boolean(reach) && /of the last [0-9]+ days/.test(reach),
-      "the form counts how many days have moved that far", String(reach));
-    const nums = reach ? reach.match(/on ([0-9]+) of the last ([0-9]+)/) : null;
-    check(Boolean(nums) && Number(nums[1]) <= Number(nums[2]),
-      "…and the count never exceeds its denominator", String(reach));
+    /* A touch in the target's own direction, within a day and a week
+       (18 Oct 2026, research/target-touch-prereg.md). */
+    check(Boolean(reach) && /reached [0-9.,]+% (above|below) a close within a day on [0-9]+ of [0-9]+ days/.test(reach),
+      "the form counts how often the price reached that far, in the target's direction", String(reach));
+    const nums = reach ? reach.match(/on ([0-9]+) of ([0-9]+) days, and within a week on ([0-9]+) of ([0-9]+)/) : null;
+    check(Boolean(nums) && Number(nums[1]) <= Number(nums[2]) && Number(nums[3]) <= Number(nums[4]) && Number(nums[1]) <= Number(nums[3]) + 1,
+      "…each count within its denominator, and a week reaching it at least about as often as a day", String(reach));
 
     /* The gesture belongs to the board whenever the board is up: two meanings
        for one click is neither. */
@@ -12602,7 +12604,7 @@ await page.evaluate(`(() => { const m = document.querySelector("[data-practice-r
       "switched on, it names the head and shoulders where it completed", JSON.stringify(on.read.names));
     check(on.read.record === null, "…with only its name on the chart — the record is in its card", String(on.read.record));
     check(on.card && on.card.cards === 1 && /^Head and shoulders · said to mark a top/.test(on.card.title) &&
-      /0 of 0 that resolved reached the measured move first · found 1 time/.test(on.card.record) && /too few to compare/.test(on.card.record),
+      /On this coin: Within 90 days, of 1: the measured move first 0, the invalidation first 0, neither 0\. 1 still running\./.test(on.card.record) && /too few to compare/.test(on.card.record),
       "pointing at its name opens its card: the claim in reported speech, and this coin's count with its size", JSON.stringify(on.card));
     check(on.read.neck === 1 && on.read.target === 1 && on.read.stop === 1 && on.read.finite,
       "…its neckline, measured target and invalidation drawn, every coordinate a number", JSON.stringify(on.read));
@@ -15030,7 +15032,7 @@ await page.evaluate(`(() => { const m = document.querySelector("[data-practice-r
       check(r.count("usual-range") === 1 && r.lastX < r.plotW * 0.9 && before > r.plotW * 0.95,
         "Usual range gives itself a strip of future: the price line now ends short of the edge", JSON.stringify({ before, lastX: r.lastX, plotW: r.plotW }));
       const range = r.words.filter((w) => w.tag === "usual-range").map((w) => w.text);
-      check(range.some((t) => /^80% of \d+ past stretches of .+ ended in here$/.test(t)) && range.some((t) => /held 92% on later data/.test(t)),
+      check(range.some((t) => /^80% of \d+ past stretches of .+, scaled to how much it moves now, ended in here$/.test(t)) && range.some((t) => /held 80% on later data/.test(t)),
         "…and says what it counts, and what the out-of-sample test found", JSON.stringify(range));
 
       // Where it sits, regimes, turn levels
@@ -15493,7 +15495,10 @@ await page.evaluate(`(() => { const m = document.querySelector("[data-practice-r
        release, which moves the chart down a row on those days — a geometry
        check must not depend on the calendar (12 Oct 2026: two days before
        CPI this section failed on every version of the code). §54 holds the line. */
-    await ctx.addInitScript(`localStorage.setItem("crypto_chart_onboarding_seen", "1"); localStorage.setItem("crypto_chart_macro_events", "false"); localStorage.setItem("crypto_chart_page_ticker_enabled", "false");`);
+    /* With touch, the one-time touch hint would be up; it is not what this
+       section tests, and since 18 Oct 2026 it is a card over the chart's
+       middle on a wide screen rather than a strip along the foot. */
+    await ctx.addInitScript(`localStorage.setItem("crypto_chart_onboarding_seen", "1"); localStorage.setItem("crypto_chart_macro_events", "false"); localStorage.setItem("crypto_chart_page_ticker_enabled", "false"); localStorage.setItem("crypto_chart_touch_hint_seen", "true");`);
     const page = await ctx.newPage();
     const errors = [];
     page.on("pageerror", (e) => errors.push(e.message));

@@ -187,9 +187,17 @@ const HEADINGS = `[...document.querySelectorAll("h4")].map((h) => ({
     check(before.stats === "true" && before.pageTicker === "true",
       "there is something for Minimal to turn off");
 
+    /* Before the press, the card says what it would change from here
+       (18 Oct 2026): the stats line, the bar and the polling among them. */
+    const told = await page.evaluate(`(() => { const n = document.querySelector("[data-mode-card='minimal'] [data-mode-changes]"); return n ? n.innerText : ""; })()`);
+    check(/stats row off/.test(told) && /scrolling price bar off/.test(told) && /prices every 1 min/.test(told),
+      "the Minimal card lists what pressing it would change", told);
+
     await page.click('button:text-is("Minimal")');
     await page.waitForTimeout(900);
     const after = await stored();
+    const bar = await page.evaluate(`(() => { const n = document.querySelector("[data-mode-undo]"); return n ? n.innerText : ""; })()`);
+    check(/Minimal is in use — [0-9]+ settings changed/.test(bar), "…says what it changed once pressed, with Undo", bar);
     check(after.quiet === "true", "Minimal quietens the controls", after.quiet);
     check(after.stats === "false", "…turns the stats line off", after.stats);
     check(after.pageTicker === "false", "…and the scrolling bar", after.pageTicker);
@@ -199,6 +207,15 @@ const HEADINGS = `[...document.querySelectorAll("h4")].map((h) => ({
       "…and clears every widget",
       after.widgets,
     );
+    // Undo puts back what was there (the widgets compared as the set that is on)
+    const onSet = (w) => Object.keys(JSON.parse(w || "{}")).filter((k) => JSON.parse(w || "{}")[k]).sort().join();
+    await page.click("[data-mode-undo-press]");
+    await page.waitForTimeout(900);
+    const undone = await stored();
+    check(undone.stats === "true" && undone.pageTicker === "true" && undone.refresh === (before.refresh || "30000") && (before.widgets ? onSet(undone.widgets) === onSet(before.widgets) : onSet(undone.widgets).length > 0),
+      "…and Undo puts back what was there", JSON.stringify(undone));
+    await page.click('button:text-is("Minimal")');
+    await page.waitForTimeout(900);
     /* Through the switches, not around them: the point of applying a mode by
      * calling each setting's own handler is that the panel below it tells the
      * truth afterwards. Quiet Controls is in the chart's section. */
