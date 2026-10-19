@@ -20227,6 +20227,37 @@ await page.evaluate(`(() => { const m = document.querySelector("[data-practice-r
     await ctx.close();
   }
 
+  /* §138 — the swipes alone, with a mouse (19 Oct 2026): a narrow window
+   * driven by a mouse cannot swipe, and with Getting around set to the swipes
+   * alone it had no tab bar and no pulls — no way to any menu. The pulls are
+   * drawn there, and each brings its column out. With the bar they stay away. */
+  {
+    const run = async (nav) => {
+      const { ctx, page } = await newCtx(browser, `localStorage.setItem("crypto_chart_onboarding_seen", "1"); localStorage.setItem("crypto_chart_touch_hint_seen", "1"); localStorage.setItem("crypto_chart_phone_nav", "${nav}");`, PRICES, 0, false, { viewport: { width: 390, height: 844 } });
+      const errs = [];
+      page.on("pageerror", (e) => errs.push(e.message));
+      await page.waitForTimeout(600);
+      const pulls = await page.evaluate(`[...document.querySelectorAll("[data-drawer-tabs-handle], [data-screen-tabs-handle]")].map((n) => n.getBoundingClientRect().width > 0)`);
+      return { ctx, page, errs, pulls };
+    };
+    const vis = (page, s) => page.evaluate(`getComputedStyle(document.querySelector("${s}")).visibility`);
+    const swipe = await run("swipe");
+    check(swipe.pulls.length === 2 && swipe.pulls.every(Boolean), "§138 with the swipes alone and a mouse, both pulls are drawn", JSON.stringify(swipe.pulls));
+    await swipe.page.click("[data-screen-tabs-handle]");
+    await swipe.page.waitForTimeout(600);
+    check((await vis(swipe.page, "[data-screen-tabs]")) === "visible", "§138 …the right pull brings the screens' column out");
+    await swipe.page.mouse.click(195, 300);
+    await swipe.page.waitForTimeout(600);
+    await swipe.page.click("[data-drawer-tabs-handle]", { force: true });
+    await swipe.page.waitForTimeout(600);
+    check((await vis(swipe.page, "[data-drawer-tabs]")) === "visible", "§138 …and the left pull the chart's");
+    check(swipe.errs.length === 0, "§138 nothing threw", swipe.errs.join(" | "));
+    await swipe.ctx.close();
+    const bar = await run("bar");
+    check(bar.pulls.length === 2 && !bar.pulls.some(Boolean), "§138 with the tab bar the pulls stay away", JSON.stringify(bar.pulls));
+    await bar.ctx.close();
+  }
+
   await browser.close();
   if (failed) {
     console.error(`\n✘ ${failed} POLISH CHECK(S) FAILED`);

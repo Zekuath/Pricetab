@@ -1794,6 +1794,15 @@ const DrawerTabsHandle = styled.button.attrs({ type: "button", "data-own-before"
         : ""}
   }
 
+  /* **Without the tab bar and without a finger, the pulls are the way in**
+     (19 Oct 2026): a narrow window driven by a mouse cannot swipe, so with
+     Getting around set to the swipes alone it had no way to any column. */
+  @media (max-width: 600px) and (hover: hover) and (pointer: fine) {
+    html[data-phone-nav="swipe"] & {
+      display: block;
+    }
+  }
+
   /* A phone on its side swipes too, so the pulls go there as well */
   @media ${PHONE_LANDSCAPE_MEDIA} {
     display: none;

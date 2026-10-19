@@ -343,6 +343,10 @@ submitted, so their changes reach the store here.
 
 ### Fixed
 
+- In a narrow window used with a mouse, with Getting around set to swipes
+  only, the menus could not be reached: there was no tab bar and nothing to
+  swipe with. The edge pulls are back there.
+
 - Smoother on slower machines and phones: zooming and dragging the chart no
   longer makes the browser re-measure the page on every movement, the price
   and time axes only touch what changed, and opening Base rates or News no
